@@ -338,7 +338,9 @@ impl DesktopSourceHost {
             .read(&mut bytes)
             .map_err(|error| safe_io_error(&error, "read_range_read"))?;
         bytes.truncate(read);
-        let end = offset.saturating_add(u64::try_from(read).expect("read length fits u64"))
+        let read_length = u64::try_from(read)
+            .map_err(|_| budget_error("The completed read does not fit the source contract"))?;
+        let end = offset.saturating_add(read_length)
             >= record.summary.external_revision.byte_length;
         Ok(ReadRangeResult {
             source_id: source_id.clone(),
@@ -442,7 +444,8 @@ impl DesktopSourceHost {
             .read(&mut bytes)
             .map_err(|error| safe_io_error(&error, "read_stream_read"))?;
         bytes.truncate(read);
-        let consumed = u64::try_from(read).expect("read length fits u64");
+        let consumed = u64::try_from(read)
+            .map_err(|_| budget_error("The completed stream read does not fit the contract"))?;
         let end_of_source = offset.saturating_add(consumed) >= current_revision.byte_length;
         if let Some(stream) = state.streams.get_mut(stream_id) {
             stream.lease.consumed += consumed;
@@ -1347,14 +1350,14 @@ pub(crate) mod tests {
     fn expired_user_activation_cannot_authorize_a_link() {
         let host = DesktopSourceHost::new();
         let proof = host.begin_user_activation();
+        let expired = Instant::now()
+            .checked_sub(USER_ACTIVATION_LIFETIME + Duration::from_millis(1))
+            .expect("activation lifetime fits Instant");
         host.state
             .lock()
             .expect("lock host state")
             .activations
-            .insert(
-                proof.id.clone(),
-                Instant::now() - USER_ACTIVATION_LIFETIME - Duration::from_millis(1),
-            );
+            .insert(proof.id.clone(), expired);
         assert_eq!(
             host.authorize_external_link(proof, "https://example.com")
                 .expect_err("reject expired activation")

@@ -26,6 +26,9 @@ importers:
       prettier:
         specifier: 3.9.6
         version: 3.9.6
+      puppeteer:
+        specifier: 25.9.0
+        version: 25.9.0(proxy-agent@8.0.2)
       yaml:
         specifier: 2.9.0
         version: 2.9.0

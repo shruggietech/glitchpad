@@ -285,14 +285,14 @@ pub fn detect(input: &DetectionInput<'_>) -> DetectionResult {
         );
     }
 
-    let extension = extension(name);
+    let extension = extension(name).to_ascii_lowercase();
     let decoded = decode_text(input.probe, truncated);
     let (text, profile, encoding_detail) = match decoded {
         Ok(value) => value,
-        Err(profile) if text_extension_hint(extension).is_some() => {
+        Err(profile) if text_extension_hint(extension.as_str()).is_some() => {
             return DetectionResult {
                 outcome: DetectionOutcome::Ambiguous,
-                candidate: text_extension_hint(extension),
+                candidate: text_extension_hint(extension.as_str()),
                 confidence: Some(DetectionConfidence::Low),
                 evidence: bounded_evidence(
                     vec![
@@ -348,7 +348,9 @@ pub fn detect(input: &DetectionInput<'_>) -> DetectionResult {
             DetectionConfidence::High,
             "Standalone Mermaid directive",
         )
-    } else if markdown_structure(trimmed) || matches!(extension, "md" | "markdown" | "mdown") {
+    } else if markdown_structure(trimmed)
+        || matches!(extension.as_str(), "md" | "markdown" | "mdown")
+    {
         (
             FormatCandidate::Markdown,
             if markdown_structure(trimmed) {
@@ -358,7 +360,7 @@ pub fn detect(input: &DetectionInput<'_>) -> DetectionResult {
             },
             "Markdown structure or compatible filename",
         )
-    } else if let Some(language) = source_language(extension) {
+    } else if let Some(language) = source_language(extension.as_str()) {
         (
             FormatCandidate::SourceCode {
                 language: language.into(),
@@ -450,17 +452,14 @@ fn decode_text(
     truncated: bool,
 ) -> Result<(String, TextProfile, String), TextProfile> {
     let decoded = if let Some(bytes) = probe.strip_prefix(&[0xEF, 0xBB, 0xBF]) {
-        std::str::from_utf8(bytes)
-            .map(|text| (text.to_owned(), TextEncoding::Utf8Bom, BomIntent::Present))
-            .map_err(|_| ())
+        decode_utf8(bytes, truncated)
+            .map(|text| (text, TextEncoding::Utf8Bom, BomIntent::Present))
     } else if let Some(bytes) = probe.strip_prefix(&[0xFF, 0xFE]) {
         decode_utf16(bytes, true).map(|text| (text, TextEncoding::Utf16LeBom, BomIntent::Present))
     } else if let Some(bytes) = probe.strip_prefix(&[0xFE, 0xFF]) {
         decode_utf16(bytes, false).map(|text| (text, TextEncoding::Utf16BeBom, BomIntent::Present))
     } else {
-        std::str::from_utf8(probe)
-            .map(|text| (text.to_owned(), TextEncoding::Utf8, BomIntent::Absent))
-            .map_err(|_| ())
+        decode_utf8(probe, truncated).map(|text| (text, TextEncoding::Utf8, BomIntent::Absent))
     };
 
     match decoded {
@@ -475,6 +474,18 @@ fn decode_text(
             terminal_newline: Presence::Unknown,
             undecodable_bytes: UndecodableBytes::RequiresUserDecision,
         }),
+    }
+}
+
+fn decode_utf8(bytes: &[u8], truncated: bool) -> Result<String, ()> {
+    match std::str::from_utf8(bytes) {
+        Ok(text) => Ok(text.to_owned()),
+        Err(error) if truncated && error.error_len().is_none() => {
+            std::str::from_utf8(&bytes[..error.valid_up_to()])
+                .map(str::to_owned)
+                .map_err(|_| ())
+        }
+        Err(_) => Err(()),
     }
 }
 
@@ -634,6 +645,10 @@ mod tests {
             Some(FormatCandidate::PlainText)
         );
         assert_eq!(
+            detected("README.MD", b"ordinary notes", None).candidate,
+            Some(FormatCandidate::Markdown)
+        );
+        assert_eq!(
             detected("main.rs", b"fn main() {}", None).candidate,
             Some(FormatCandidate::SourceCode {
                 language: "rust".into()
@@ -749,6 +764,28 @@ mod tests {
                 .as_ref()
                 .map(|profile| profile.undecodable_bytes),
             Some(UndecodableBytes::RequiresUserDecision)
+        );
+    }
+
+    #[test]
+    fn truncated_utf8_probe_uses_only_the_complete_verified_prefix() {
+        let result = detected("extensionless", b"plain \xE2\x82", Some(9));
+        assert_eq!(result.outcome, DetectionOutcome::Supported);
+        assert_eq!(result.candidate, Some(FormatCandidate::PlainText));
+        assert_eq!(
+            result.text_profile,
+            Some(TextProfile {
+                encoding: TextEncoding::Utf8,
+                bom: BomIntent::Absent,
+                newlines: NewlinePattern::None,
+                terminal_newline: Presence::Unknown,
+                undecodable_bytes: UndecodableBytes::None,
+            })
+        );
+
+        assert_eq!(
+            detected("extensionless", &[b'a', 0xFF], Some(3)).outcome,
+            DetectionOutcome::Binary
         );
     }
 

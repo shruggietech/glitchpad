@@ -182,21 +182,29 @@ impl SessionRegistry {
         })
     }
 
-    /// Activates a live session and backgrounds the previous active session.
+    /// Selects a live session and backgrounds the previous active session.
+    ///
+    /// Failed sessions remain failed while selected so their error state stays visible.
     ///
     /// # Errors
     ///
     /// Returns not-found when the session does not exist or is no longer live.
     pub fn activate(&mut self, id: SessionId) -> Result<(), CoreError> {
         let target = self.position(id)?;
+        let lifecycle = self.sessions[target].lifecycle;
         if !matches!(
-            self.sessions[target].lifecycle,
-            SessionLifecycle::Ready | SessionLifecycle::Active | SessionLifecycle::Background
+            lifecycle,
+            SessionLifecycle::Ready
+                | SessionLifecycle::Active
+                | SessionLifecycle::Background
+                | SessionLifecycle::Failed
         ) {
             return Err(not_found(id));
         }
         self.background_active();
-        self.sessions[target].lifecycle = SessionLifecycle::Active;
+        if lifecycle != SessionLifecycle::Failed {
+            self.sessions[target].lifecycle = SessionLifecycle::Active;
+        }
         self.sessions[target].revision += 1;
         self.active = Some(id);
         Ok(())
@@ -488,6 +496,43 @@ mod tests {
         assert_eq!(registry.active_id(), Some(ids[2]));
         registry.close(ids[2]).expect("close final");
         assert_eq!(registry.active_id(), Some(ids[0]));
+    }
+
+    #[test]
+    fn close_selects_a_remaining_failed_session_without_losing_its_error_state() {
+        let mut registry = SessionRegistry::new();
+        let supported = registry
+            .open(
+                source("supported", IdentityStrength::Strong),
+                detection(),
+                renderer(),
+            )
+            .expect("open supported source")
+            .session_id;
+        let mut unsupported_detection = detection();
+        unsupported_detection.outcome = DetectionOutcome::Unsupported;
+        unsupported_detection.candidate = None;
+        unsupported_detection.confidence = None;
+        let failed = registry
+            .open(
+                source("failed", IdentityStrength::Strong),
+                unsupported_detection,
+                renderer(),
+            )
+            .expect("open failed source")
+            .session_id;
+
+        registry
+            .activate(supported)
+            .expect("reactivate supported source");
+        registry
+            .close(supported)
+            .expect("close supported source");
+
+        assert_eq!(registry.active_id(), Some(failed));
+        assert_eq!(registry.sessions().len(), 1);
+        assert_eq!(registry.sessions()[0].lifecycle, SessionLifecycle::Failed);
+        assert!(registry.sessions()[0].error.is_some());
     }
 
     #[test]

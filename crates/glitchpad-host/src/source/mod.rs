@@ -765,17 +765,14 @@ impl DesktopSourceHost {
             normalized_target,
         } = authorization;
         let mut state = self.lock_state()?;
-        let target = state
-            .link_authorizations
-            .remove(&id)
-            .ok_or_else(|| {
-                CoreError::new(
-                    CoreErrorCategory::CapabilityDenied,
-                    "The external-link authorization is invalid or already used",
-                    false,
-                    false,
-                )
-            })?;
+        let target = state.link_authorizations.remove(&id).ok_or_else(|| {
+            CoreError::new(
+                CoreErrorCategory::CapabilityDenied,
+                "The external-link authorization is invalid or already used",
+                false,
+                false,
+            )
+        })?;
         if target != normalized_target {
             return Err(CoreError::new(
                 CoreErrorCategory::CapabilityDenied,
@@ -994,9 +991,8 @@ fn find_renamed_source(parent: &Path, identity: &NativeIdentity) -> Option<PathB
 }
 
 fn is_regular_non_symlink(path: &Path) -> bool {
-    fs::symlink_metadata(path).is_ok_and(|metadata| {
-        metadata.is_file() && !metadata.file_type().is_symlink()
-    })
+    fs::symlink_metadata(path)
+        .is_ok_and(|metadata| metadata.is_file() && !metadata.file_type().is_symlink())
 }
 
 fn validate_external_target(target: &str) -> Result<String, CoreError> {
@@ -1027,10 +1023,12 @@ fn contains_encoded_control(target: &str) -> bool {
     }
     lower.as_bytes().windows(3).any(|window| {
         window[0] == b'%'
-            && hex_value(window[1]).zip(hex_value(window[2])).is_some_and(|(high, low)| {
-                let value = high * 16 + low;
-                value <= 0x1f || value == 0x7f
-            })
+            && hex_value(window[1])
+                .zip(hex_value(window[2]))
+                .is_some_and(|(high, low)| {
+                    let value = high * 16 + low;
+                    value <= 0x1f || value == 0x7f
+                })
     })
 }
 
@@ -1245,13 +1243,10 @@ pub(crate) mod tests {
         assert_eq!(
             host.save(request(
                 2,
-                vec![
-                    0;
-                    usize::try_from(MAX_SAVE_BYTES).expect("save budget fits usize") + 1
-                ],
+                vec![0; usize::try_from(MAX_SAVE_BYTES).expect("save budget fits usize") + 1],
             ))
-                .expect_err("reject oversized save")
-                .category,
+            .expect_err("reject oversized save")
+            .category,
             CoreErrorCategory::BudgetExceeded
         );
         assert_eq!(fs::read(source.path()).expect("read source"), b"original");
@@ -1288,13 +1283,12 @@ pub(crate) mod tests {
             .category,
             CoreErrorCategory::AcknowledgementRequired
         );
-        request.durability_acknowledgement = Some(
-            glitchpad_core::source::DurabilityAcknowledgement {
+        request.durability_acknowledgement =
+            Some(glitchpad_core::source::DurabilityAcknowledgement {
                 source_id,
                 expected_external_revision: revision.clone(),
                 guarantee: DurabilityGuarantee::RecoverableNonAtomic,
-            },
-        );
+            });
         validate_durability_acknowledgement(
             &request,
             &revision,

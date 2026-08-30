@@ -1,0 +1,28 @@
+[workspace]
+members = [
+    "crates/glitchpad-core",
+    "crates/glitchpad-host",
+    "crates/xtask",
+]
+resolver = "3"
+
+[workspace.package]
+version = "0.0.0"
+edition = "2024"
+rust-version = "1.96.0"
+license = "Apache-2.0"
+repository = "https://github.com/ShruggieTech/glitchpad"
+
+[workspace.dependencies]
+serde = { version = "1.0.229", features = ["derive"] }
+tauri = "2.11.5"
+tauri-build = "2.6.3"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+all = { level = "deny", priority = -1 }
+pedantic = { level = "deny", priority = -1 }
+module_name_repetitions = "allow"
+must_use_candidate = "allow"

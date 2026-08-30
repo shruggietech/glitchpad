@@ -1,0 +1,36 @@
+{
+  "name": "@shruggietech/glitchpad-workspace",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Repository tooling for Glitchpad.",
+  "license": "Apache-2.0",
+  "packageManager": "pnpm@10.28.2",
+  "engines": {
+    "node": ">=24.11.0 <25",
+    "pnpm": ">=10.28.2 <11"
+  },
+  "scripts": {
+    "build": "pnpm --filter @shruggietech/glitchpad build",
+    "check": "cargo xtask check",
+    "check:frontend": "pnpm --filter @shruggietech/glitchpad check",
+    "check:config": "node scripts/check-config.mjs && taplo lint \"**/*.toml\"",
+    "dev": "pnpm --filter @shruggietech/glitchpad dev",
+    "docs:format": "prettier --check \"*.md\" \"*.json\" \"*.jsonc\" \".github/**/*.{md,json,yml,yaml}\" \"docs/**/*.md\" \"fixtures/**/*.md\" \"specs/**/*.md\" \"apps/glitchpad/package.json\" \"crates/glitchpad-host/{capabilities,icons}/**/*.{json,md}\" \"crates/glitchpad-host/tauri.conf.json\"",
+    "docs:format:fix": "prettier --write \"*.md\" \"*.json\" \"*.jsonc\" \".github/**/*.{md,json,yml,yaml}\" \"docs/**/*.md\" \"fixtures/**/*.md\" \"specs/**/*.md\" \"apps/glitchpad/package.json\" \"crates/glitchpad-host/{capabilities,icons}/**/*.{json,md}\" \"crates/glitchpad-host/tauri.conf.json\"",
+    "docs:links": "pwsh -NoLogo -NoProfile -File scripts/check-links.ps1",
+    "docs:lint": "markdownlint-cli2 \"*.md\" \".github/**/*.md\" \"docs/**/*.md\" \"fixtures/**/*.md\" \"specs/**/*.md\" \"crates/glitchpad-host/icons/README.md\"",
+    "docs:mermaid": "pwsh -NoLogo -NoProfile -File scripts/check-mermaid.ps1",
+    "docs": "cargo xtask docs",
+    "tauri": "cd crates/glitchpad-host && tauri",
+    "test": "pnpm --filter @shruggietech/glitchpad test:run"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "2.11.4",
+    "@mermaid-js/mermaid-cli": "11.16.0",
+    "@taplo/cli": "0.7.0",
+    "markdown-link-check": "3.15.0",
+    "markdownlint-cli2": "0.23.2",
+    "prettier": "3.9.6",
+    "yaml": "2.9.0"
+  }
+}

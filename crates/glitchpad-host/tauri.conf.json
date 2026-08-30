@@ -1,0 +1,33 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Glitchpad",
+  "version": "0.0.0",
+  "identifier": "com.shruggietech.glitchpad",
+  "build": {
+    "beforeDevCommand": "pnpm --dir ../apps/glitchpad dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "pnpm --dir ../apps/glitchpad build",
+    "frontendDist": "../../apps/glitchpad/dist"
+  },
+  "app": {
+    "security": {
+      "csp": "default-src 'self'; img-src 'self' asset: data:; style-src 'self' 'unsafe-inline'"
+    },
+    "windows": [
+      {
+        "title": "Glitchpad",
+        "width": 960,
+        "height": 680,
+        "minWidth": 480,
+        "minHeight": 360,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ]
+  },
+  "bundle": {
+    "active": false,
+    "icon": [],
+    "targets": "all"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Minimum capability set for the Glitchpad foundation shell.",
+  "windows": ["main"],
+  "permissions": ["core:default"]
+}

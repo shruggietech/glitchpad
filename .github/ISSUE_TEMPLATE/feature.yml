@@ -1,0 +1,31 @@
+name: Feature proposal
+description: Propose a focused file-viewing or editing capability.
+title: 'feature: '
+labels: [enhancement, triage]
+body:
+  - type: textarea
+    id: outcome
+    attributes:
+      label: User outcome
+      description: Describe the file interaction or result, not a preferred implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: formats
+    attributes:
+      label: Formats and platforms
+      description: Identify affected file formats, operating systems, and Android behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: minimality
+    attributes:
+      label: Fit with Glitchpad
+      description: Explain how this remains focused and keeps UI interaction secondary to file interaction.
+    validations:
+      required: true
+  - type: textarea
+    id: risks
+    attributes:
+      label: Risks and evidence
+      description: Note security, privacy, data-integrity, performance, accessibility, licensing, or fixture concerns.

@@ -1,0 +1,53 @@
+* text=auto eol=lf
+
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=lf
+*.sh text eol=lf
+gradlew text eol=lf
+
+*.avif binary
+*.aab binary
+*.apk binary
+*.appimage binary
+*.bmp binary
+*.bz2 binary
+*.deb binary
+*.dmg binary
+*.doc binary
+*.docx binary
+*.gif binary
+*.gz binary
+*.ico binary
+*.icns binary
+*.exe binary
+*.jpeg binary
+*.jpg binary
+*.jar binary
+*.jks binary
+*.keystore binary
+*.odf binary
+*.odg binary
+*.odp binary
+*.ods binary
+*.odt binary
+*.otf binary
+*.pdf binary
+*.p12 binary
+*.pfx binary
+*.pkg binary
+*.png binary
+*.rpm binary
+*.tar binary
+*.ttf binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.xz binary
+*.7z binary
+*.msi binary
+*.zip binary
+
+Cargo.lock linguist-generated=false
+pnpm-lock.yaml linguist-generated=false
+crates/glitchpad-host/gen/android/** linguist-generated=true

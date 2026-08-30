@@ -1,0 +1,5 @@
+schema_version = 1
+
+# Every committed fixture adds a unique [[fixture]] table containing source,
+# author, license, redistribution permission, digest, sensitivity review,
+# format, purpose, and expected result. No fixtures are committed at v0.0.0.

@@ -1,0 +1,40 @@
+# Rust
+/target/
+**/*.rs.bk
+
+# Node and frontend output
+/node_modules/
+**/node_modules/
+**/dist/
+**/coverage/
+*.tsbuildinfo
+
+# Tauri and Android generated output
+crates/glitchpad-host/gen/android/.gradle/
+crates/glitchpad-host/gen/android/**/build/
+crates/glitchpad-host/gen/android/local.properties
+crates/glitchpad-host/gen/android/keystore.properties
+crates/glitchpad-host/gen/android/tauri.settings.gradle
+*.jks
+*.keystore
+*.aab
+*.apk
+
+# Editors and operating systems
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Local environment and logs
+.env
+.env.*
+!.env.example
+*.log
+*.tmp
+*.temp
+
+# Spec Kit local state
+.specify/memory/active-feature.md

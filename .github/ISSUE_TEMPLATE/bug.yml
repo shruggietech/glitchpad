@@ -1,0 +1,41 @@
+name: Bug report
+description: Report reproducible behavior that differs from the specification.
+title: 'bug: '
+labels: [bug, triage]
+body:
+  - type: markdown
+    attributes:
+      value: Do not submit security-sensitive details or private documents here. Follow SECURITY.md instead.
+  - type: input
+    id: version
+    attributes:
+      label: Version or revision
+      description: Provide the Glitchpad version or Git commit.
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options: [Windows, macOS, Linux, Android]
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Observed behavior
+      description: Explain what happened and what the specification led you to expect.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Provide minimal steps and a safe synthetic fixture when the file itself matters.
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics
+      description: Include relevant doctor output and logs after removing personal paths and private data.

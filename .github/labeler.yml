@@ -1,0 +1,20 @@
+'area: android':
+  - changed-files:
+      - any-glob-to-any-file: 'crates/glitchpad-host/gen/android/**'
+'area: documentation':
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.md'
+          - 'docs/**'
+          - 'specs/**'
+'area: frontend':
+  - changed-files:
+      - any-glob-to-any-file: 'apps/glitchpad/**'
+'area: native':
+  - changed-files:
+      - any-glob-to-any-file: 'crates/**'
+'area: repository':
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/**'
+          - 'scripts/**'

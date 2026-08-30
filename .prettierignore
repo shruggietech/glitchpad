@@ -1,0 +1,5 @@
+Cargo.lock
+pnpm-lock.yaml
+crates/glitchpad-host/gen/
+node_modules/
+target/

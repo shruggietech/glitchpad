@@ -1,0 +1,45 @@
+name: release-readiness
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  readiness:
+    name: Version, documentation, and publication readiness
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.28.2
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate source and documentation
+        run: cargo xtask check
+
+      - name: Verify release state
+        shell: pwsh
+        run: ./scripts/check-release-readiness.ps1 -Tag '${{ github.ref_name }}'
+
+      - name: Publication remains separately authorized
+        run: Write-Host 'Readiness passed. Artifact signing and publication require a reviewed release workflow change.'

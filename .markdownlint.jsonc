@@ -1,0 +1,7 @@
+{
+  // Glitchpad uses one physical line per prose paragraph.
+  "MD013": false,
+  // The public README uses the organization's centered HTML identity block.
+  "MD033": false,
+  "MD041": false,
+}

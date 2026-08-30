@@ -5,6 +5,7 @@ use glitchpad_core::{
     },
     detection::{DetectionOutcome, DetectionResult, TextProfile},
     session::DocumentSession,
+    source::{DesktopSourceSummary, ExternalRevision, SaveReceipt, SourceEvent},
 };
 
 #[test]
@@ -43,6 +44,10 @@ fn schemas_cover_source_detection_text_profile_and_session_contracts() {
         schemars::schema_for!(DetectionResult),
         schemars::schema_for!(TextProfile),
         schemars::schema_for!(DocumentSession),
+        schemars::schema_for!(DesktopSourceSummary),
+        schemars::schema_for!(ExternalRevision),
+        schemars::schema_for!(SourceEvent),
+        schemars::schema_for!(SaveReceipt),
     ];
 
     for schema in schemas {

@@ -20,5 +20,12 @@ glitchpad-core = { path = "../glitchpad-core", version = "=0.0.0" }
 serde.workspace = true
 tauri.workspace = true
 
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+atomic-write-file.workspace = true
+file-id.workspace = true
+notify.workspace = true
+url.workspace = true
+uuid.workspace = true
+
 [lints]
 workspace = true

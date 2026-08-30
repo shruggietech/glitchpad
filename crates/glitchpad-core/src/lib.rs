@@ -3,6 +3,7 @@
 pub mod contracts;
 pub mod detection;
 pub mod session;
+pub mod source;
 
 /// The user-facing product name.
 pub const PRODUCT_NAME: &str = "Glitchpad";

@@ -14,6 +14,37 @@ permissions:
   contents: read
 
 jobs:
+  s006-bootstrap:
+    name: S006 remote bootstrap
+    if: github.event_name == 'pull_request' && github.head_ref == 'codex/006-desktop-source-lifecycle'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Generate lockfile and formatting patch
+        shell: bash
+        run: |
+          cargo generate-lockfile
+          cargo fmt --all
+          git diff -- Cargo.lock > s006-lock.patch
+          git diff -- '*.rs' > s006-format.patch
+
+      - name: Compile S006
+        run: cargo check --workspace --all-targets
+
+      - name: Upload generated corrections
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: s006-generated-corrections
+          path: |
+            Cargo.lock
+            s006-lock.patch
+            s006-format.patch
+          if-no-files-found: error
+          retention-days: 1
+
   docs:
     name: Documentation and public surface
     runs-on: ubuntu-latest
@@ -117,6 +148,9 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           shared-key: desktop-${{ matrix.os }}
+
+      - name: Run desktop source adapter conformance
+        run: cargo test -p glitchpad-host --test desktop_source_conformance --locked
 
       - name: Build desktop foundation host
         run: pnpm tauri build --debug

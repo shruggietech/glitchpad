@@ -36,6 +36,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Install Mermaid browser
+        run: pnpm exec puppeteer browsers install chrome-headless-shell
+
       - name: Validate documentation
         run: cargo xtask docs
 
@@ -204,9 +207,9 @@ jobs:
           command: check
 
       - name: Scan for committed secrets
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: docker://zricethezav/gitleaks:v8.30.1
+        with:
+          args: detect --source . --verbose --redact --no-banner
 
   labeler:
     name: Pull request labels

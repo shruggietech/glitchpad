@@ -20,3 +20,12 @@
 - Do not default to one GitHub Issue per implementation slice. Split work only when dependencies, risk, reviewability, platform boundaries, conflicting validation needs, or independent delivery value make separate slices materially clearer or safer.
 - Preserve issue-level traceability inside a bundled slice by naming every included issue, satisfying each issue's acceptance criteria, and reporting any issue that remains incomplete instead of closing it implicitly.
 - Prefer slices that deliver a meaningful end-to-end capability or release increment over artificially narrow issue-by-issue churn.
+
+## Headless command execution on Windows
+
+- Foreground, flashing, or focus-stealing console windows are prohibited. Do not interpret this as a blanket ban on command execution that remains headless.
+- Direct `git` and `gh` commands are allowed through the Codex command runner for status inspection, review, commit, fetch, push, pull-request publication, and related repository work. Invoke them directly without a PowerShell or `cmd.exe` wrapper.
+- Do not launch a fresh PowerShell process for each file read, check, or polling iteration. Prefer direct file tools, batch compatible checks, reuse one verified process host, or invoke the underlying tool directly.
+- If a launch pattern produces visible windows, stop that specific executable and pattern immediately. Record what caused the behavior and continue unrelated direct Git or verified headless operations.
+- Non-Git console tools that have not been verified headless MUST use an integrated terminal, repository-aware API, or a launcher with a `CREATE_NO_WINDOW` guarantee, redirected output, and non-interactive arguments.
+- Project-owned Windows process launchers MUST apply the `CREATE_NO_WINDOW` creation flag to console child processes. A successful build or test does not justify visible desktop console windows.

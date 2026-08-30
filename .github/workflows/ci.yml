@@ -118,6 +118,9 @@ jobs:
         with:
           shared-key: desktop-${{ matrix.os }}
 
+      - name: Run desktop source adapter conformance
+        run: cargo test -p glitchpad-host --test desktop_source_conformance --locked
+
       - name: Build desktop foundation host
         run: pnpm tauri build --debug
 

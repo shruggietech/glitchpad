@@ -18,8 +18,12 @@ export interface SourceCapabilities {
   metadata: boolean;
   observe_revision: boolean;
   revalidate: boolean;
+  watch: boolean;
   write: boolean;
   replace_atomically: boolean;
+  persistent_permission: boolean;
+  rename: boolean;
+  observe_deletion: boolean;
   reopen: boolean;
   reveal_location: boolean;
 }
@@ -45,6 +49,75 @@ export interface SourceDescriptor {
   capabilities: SourceCapabilities;
 }
 
+export type SourceId = string;
+export type StreamId = string;
+export type UserActivationId = string;
+export type LinkAuthorizationId = string;
+
+export interface ExternalRevision {
+  identity: DocumentIdentity;
+  byte_length: number;
+  modified_unix_nanos: string | null;
+  change_token: string | null;
+}
+
+export interface DesktopSourceSummary {
+  source_id: SourceId;
+  descriptor: SourceDescriptor;
+  external_revision: ExternalRevision;
+}
+
+export type SourceState =
+  | 'available'
+  | 'changed'
+  | 'renamed'
+  | 'deleted'
+  | 'permission_revoked'
+  | 'watcher_overflow'
+  | 'unavailable'
+  | 'closed';
+
+export interface SourceEvent {
+  source_id: SourceId;
+  sequence: number;
+  state: SourceState;
+  display_name: string | null;
+  revalidation_required: boolean;
+}
+
+export type RevalidationStatus =
+  | 'match'
+  | 'changed'
+  | 'deleted'
+  | 'permission_revoked'
+  | 'unavailable';
+
+export interface RevalidationResult {
+  source_id: SourceId;
+  expected: ExternalRevision;
+  current: ExternalRevision | null;
+  status: RevalidationStatus;
+}
+
+export type DurabilityGuarantee =
+  | 'atomic_file_and_directory'
+  | 'atomic_file'
+  | 'recoverable_non_atomic';
+
+export interface SaveReceipt {
+  source_id: SourceId;
+  accepted_session_revision: number;
+  previous_external_revision: ExternalRevision;
+  new_external_revision: ExternalRevision;
+  byte_count: number;
+  durability: DurabilityGuarantee;
+}
+
+export interface LinkAuthorization {
+  id: LinkAuthorizationId;
+  normalized_target: string;
+}
+
 export interface RendererDescriptor {
   id: string;
   label: string;
@@ -56,6 +129,7 @@ export type SessionLifecycle =
   | 'ready'
   | 'active'
   | 'background'
+  | 'conflicted'
   | 'closing'
   | 'closed'
   | 'failed';
@@ -82,8 +156,12 @@ export const noSourceCapabilities = (): SourceCapabilities => ({
   metadata: false,
   observe_revision: false,
   revalidate: false,
+  watch: false,
   write: false,
   replace_atomically: false,
+  persistent_permission: false,
+  rename: false,
+  observe_deletion: false,
   reopen: false,
   reveal_location: false,
 });

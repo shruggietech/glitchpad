@@ -340,8 +340,8 @@ impl DesktopSourceHost {
         bytes.truncate(read);
         let read_length = u64::try_from(read)
             .map_err(|_| budget_error("The completed read does not fit the source contract"))?;
-        let end = offset.saturating_add(read_length)
-            >= record.summary.external_revision.byte_length;
+        let end =
+            offset.saturating_add(read_length) >= record.summary.external_revision.byte_length;
         Ok(ReadRangeResult {
             source_id: source_id.clone(),
             offset,
@@ -1252,6 +1252,36 @@ pub(crate) mod tests {
             .category,
             CoreErrorCategory::BudgetExceeded
         );
+        assert_eq!(fs::read(source.path()).expect("read source"), b"original");
+    }
+
+    #[test]
+    fn read_only_capability_rejects_save_before_persistence() {
+        let source = TemporarySource::new(b"original");
+        let host = DesktopSourceHost::new();
+        let summary = host
+            .acquire(DesktopDelivery::dialog(source.path()))
+            .expect("acquire source");
+        host.state
+            .lock()
+            .expect("lock host state")
+            .sources
+            .get_mut(&summary.source_id)
+            .expect("source record")
+            .summary
+            .descriptor
+            .capabilities
+            .write = false;
+        let error = host
+            .save(SaveRequest {
+                source_id: summary.source_id,
+                expected_external_revision: summary.external_revision,
+                expected_session_revision: 1,
+                bytes: b"replacement".to_vec(),
+                durability_acknowledgement: None,
+            })
+            .expect_err("read-only source must reject save");
+        assert_eq!(error.category, CoreErrorCategory::CapabilityDenied);
         assert_eq!(fs::read(source.path()).expect("read source"), b"original");
     }
 

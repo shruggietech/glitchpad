@@ -89,6 +89,31 @@ mod tests {
     }
 
     #[test]
+    fn missing_destination_fails_without_recreating_it() {
+        let source = TemporarySource::new(b"original");
+        fs::remove_file(source.path()).expect("remove source before replacement");
+        let error = replace(source.path(), b"replacement").expect_err("replacement must fail");
+        assert_eq!(error.category, CoreErrorCategory::NotFound);
+        assert!(!source.path().exists());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn replacement_preserves_supported_unix_permissions() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let source = TemporarySource::new(b"original");
+        fs::set_permissions(source.path(), fs::Permissions::from_mode(0o640))
+            .expect("set source permissions");
+        replace(source.path(), b"replacement").expect("replace source");
+        let mode = fs::metadata(source.path())
+            .expect("read replacement metadata")
+            .permissions()
+            .mode();
+        assert_eq!(mode & 0o777, 0o640);
+    }
+
+    #[test]
     fn platform_guarantee_is_never_silent_non_atomic() {
         assert!(!platform_guarantee().requires_acknowledgement());
     }

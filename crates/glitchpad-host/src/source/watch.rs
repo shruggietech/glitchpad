@@ -147,4 +147,17 @@ mod tests {
             None
         );
     }
+
+    #[test]
+    fn source_removal_maps_to_deleted() {
+        let event = Event::new(EventKind::Remove(notify::event::RemoveKind::File))
+            .add_path(PathBuf::from("/tmp/a.md"));
+        assert_eq!(
+            map_event(&event, Path::new("/tmp/a.md"), Path::new("/tmp")),
+            Some(MappedWatchEvent {
+                state: SourceState::Deleted,
+                renamed_path: None,
+            })
+        );
+    }
 }

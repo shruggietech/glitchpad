@@ -36,6 +36,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Install Mermaid browser
+        run: pnpm exec puppeteer browsers install chrome-headless-shell
+
       - name: Validate documentation
         run: cargo xtask docs
 

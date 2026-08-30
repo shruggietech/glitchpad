@@ -452,8 +452,7 @@ fn decode_text(
     truncated: bool,
 ) -> Result<(String, TextProfile, String), TextProfile> {
     let decoded = if let Some(bytes) = probe.strip_prefix(&[0xEF, 0xBB, 0xBF]) {
-        decode_utf8(bytes, truncated)
-            .map(|text| (text, TextEncoding::Utf8Bom, BomIntent::Present))
+        decode_utf8(bytes, truncated).map(|text| (text, TextEncoding::Utf8Bom, BomIntent::Present))
     } else if let Some(bytes) = probe.strip_prefix(&[0xFF, 0xFE]) {
         decode_utf16(bytes, true).map(|text| (text, TextEncoding::Utf16LeBom, BomIntent::Present))
     } else if let Some(bytes) = probe.strip_prefix(&[0xFE, 0xFF]) {

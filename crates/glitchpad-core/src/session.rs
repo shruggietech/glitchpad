@@ -525,9 +525,7 @@ mod tests {
         registry
             .activate(supported)
             .expect("reactivate supported source");
-        registry
-            .close(supported)
-            .expect("close supported source");
+        registry.close(supported).expect("close supported source");
 
         assert_eq!(registry.active_id(), Some(failed));
         assert_eq!(registry.sessions().len(), 1);

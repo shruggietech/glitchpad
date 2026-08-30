@@ -96,14 +96,12 @@ pub(super) fn map_event(
                     .filter(|path| path.as_path() != source_path)
                     .cloned(),
                 RenameMode::From => None,
-                _ => None,
             };
             (SourceState::Renamed, candidate)
         }
         EventKind::Modify(_) | EventKind::Create(_) => (SourceState::Changed, None),
         EventKind::Other | EventKind::Any => (SourceState::WatcherOverflow, None),
         EventKind::Access(_) => return None,
-        _ => (SourceState::WatcherOverflow, None),
     };
     Some(MappedWatchEvent {
         state,

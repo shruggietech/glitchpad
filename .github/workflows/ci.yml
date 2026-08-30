@@ -27,13 +27,30 @@ jobs:
           sudo apt-get update
           sudo apt-get install --yes libwebkit2gtk-4.1-dev libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev patchelf
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.28.2
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
       - name: Generate lockfile and formatting patch
         shell: bash
         run: |
           cargo generate-lockfile
           cargo fmt --all
+          pnpm exec prettier specs/006-desktop-source-lifecycle/spec.md --write
           git diff -- Cargo.lock > s006-lock.patch
           git diff -- '*.rs' > s006-format.patch
+          git diff -- specs/006-desktop-source-lifecycle/spec.md > s006-prettier.patch
 
       - name: Compile S006
         run: cargo check --workspace --all-targets
@@ -47,6 +64,7 @@ jobs:
             Cargo.lock
             s006-lock.patch
             s006-format.patch
+            s006-prettier.patch
           if-no-files-found: error
           retention-days: 1
 

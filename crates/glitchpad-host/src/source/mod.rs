@@ -16,7 +16,7 @@ use glitchpad_core::contracts::{
     SourceDescriptor, SourceKind, compare_identity,
 };
 use glitchpad_core::source::{
-    DesktopSourceSummary, DurabilityGuarantee, ExternalRevision, LinkAuthorization,
+    DesktopSourceSummary, ExternalRevision, LinkAuthorization,
     LinkAuthorizationId, MAX_SAVE_BYTES, MAX_SOURCE_CHUNK_BYTES, ReadRangeResult,
     RevalidationResult, RevalidationStatus, SaveReceipt, SaveRequest, SourceEvent, SourceId,
     SourceMetadata, SourceState, StreamId, StreamLease, UserActivationId, UserActivationProof,

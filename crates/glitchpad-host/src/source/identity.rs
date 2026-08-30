@@ -64,7 +64,10 @@ fn strong_contract(file_id: &FileId) -> DocumentIdentity {
         FileId::Inode {
             device_id,
             inode_number,
-        } => (format!("unix-device-{device_id:x}"), format!("{inode_number:x}")),
+        } => (
+            format!("unix-device-{device_id:x}"),
+            format!("{inode_number:x}"),
+        ),
         FileId::LowRes {
             volume_serial_number,
             file_index,
@@ -104,7 +107,11 @@ fn weak_path_contract(path: &Path) -> DocumentIdentity {
 fn platform_change_token(metadata: &fs::Metadata) -> Option<String> {
     use std::os::unix::fs::MetadataExt;
 
-    Some(format!("{:x}:{:x}", metadata.ctime(), metadata.ctime_nsec()))
+    Some(format!(
+        "{:x}:{:x}",
+        metadata.ctime(),
+        metadata.ctime_nsec()
+    ))
 }
 
 #[cfg(windows)]

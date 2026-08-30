@@ -138,7 +138,12 @@ fn native_watcher_emits_path_free_ordered_change_state() {
             .drain_events(&summary.source_id, 32)
             .expect("drain events")
             .into_iter()
-            .find(|event| matches!(event.state, SourceState::Changed | SourceState::WatcherOverflow))
+            .find(|event| {
+                matches!(
+                    event.state,
+                    SourceState::Changed | SourceState::WatcherOverflow
+                )
+            })
         {
             break event;
         }
@@ -147,9 +152,11 @@ fn native_watcher_emits_path_free_ordered_change_state() {
     };
     assert_eq!(event.sequence, 1);
     assert!(event.revalidation_required);
-    assert!(!serde_json::to_string(&event)
-        .expect("serialize event")
-        .contains(&source.path().to_string_lossy().to_string()));
+    assert!(
+        !serde_json::to_string(&event)
+            .expect("serialize event")
+            .contains(&source.path().to_string_lossy().to_string())
+    );
 }
 
 #[test]

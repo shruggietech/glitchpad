@@ -52,16 +52,12 @@ pub const fn can_transition(from: SessionLifecycle, to: SessionLifecycle) -> boo
         SessionLifecycle::Background => {
             matches!(
                 to,
-                SessionLifecycle::Active
-                    | SessionLifecycle::Conflicted
-                    | SessionLifecycle::Closing
+                SessionLifecycle::Active | SessionLifecycle::Conflicted | SessionLifecycle::Closing
             )
         }
         SessionLifecycle::Conflicted => matches!(
             to,
-            SessionLifecycle::Active
-                | SessionLifecycle::Background
-                | SessionLifecycle::Closing
+            SessionLifecycle::Active | SessionLifecycle::Background | SessionLifecycle::Closing
         ),
         SessionLifecycle::Failed => matches!(to, SessionLifecycle::Closing),
         SessionLifecycle::Closing => matches!(to, SessionLifecycle::Closed),
@@ -223,7 +219,10 @@ impl SessionRegistry {
             return Err(not_found(id));
         }
         self.background_active();
-        if !matches!(lifecycle, SessionLifecycle::Failed | SessionLifecycle::Conflicted) {
+        if !matches!(
+            lifecycle,
+            SessionLifecycle::Failed | SessionLifecycle::Conflicted
+        ) {
             self.sessions[target].lifecycle = SessionLifecycle::Active;
         }
         self.sessions[target].revision += 1;

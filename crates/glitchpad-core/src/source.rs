@@ -12,22 +12,30 @@ pub const MAX_SOURCE_CHUNK_BYTES: u64 = 1024 * 1024;
 pub const MAX_SAVE_BYTES: u64 = 16 * 1024 * 1024;
 
 /// Opaque process-local authorization for one acquired source.
-#[derive(Clone, Debug, Eq, Hash, JsonSchema, Ord, PartialEq, PartialOrd, Serialize, Deserialize)]
+#[derive(
+    Clone, Debug, Eq, Hash, JsonSchema, Ord, PartialEq, PartialOrd, Serialize, Deserialize,
+)]
 #[serde(transparent)]
 pub struct SourceId(pub String);
 
 /// Opaque authorization for one bounded stream.
-#[derive(Clone, Debug, Eq, Hash, JsonSchema, Ord, PartialEq, PartialOrd, Serialize, Deserialize)]
+#[derive(
+    Clone, Debug, Eq, Hash, JsonSchema, Ord, PartialEq, PartialOrd, Serialize, Deserialize,
+)]
 #[serde(transparent)]
 pub struct StreamId(pub String);
 
 /// Opaque proof that native interface code observed an explicit user action.
-#[derive(Clone, Debug, Eq, Hash, JsonSchema, Ord, PartialEq, PartialOrd, Serialize, Deserialize)]
+#[derive(
+    Clone, Debug, Eq, Hash, JsonSchema, Ord, PartialEq, PartialOrd, Serialize, Deserialize,
+)]
 #[serde(transparent)]
 pub struct UserActivationId(pub String);
 
 /// One-use authorization for a validated external link.
-#[derive(Clone, Debug, Eq, Hash, JsonSchema, Ord, PartialEq, PartialOrd, Serialize, Deserialize)]
+#[derive(
+    Clone, Debug, Eq, Hash, JsonSchema, Ord, PartialEq, PartialOrd, Serialize, Deserialize,
+)]
 #[serde(transparent)]
 pub struct LinkAuthorizationId(pub String);
 

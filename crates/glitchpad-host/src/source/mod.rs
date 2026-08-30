@@ -236,8 +236,8 @@ impl DesktopSourceHost {
             return Ok(existing.summary.clone());
         }
 
-        let metadata = fs::metadata(&path)
-            .map_err(|error| safe_io_error(&error, "acquire_metadata"))?;
+        let metadata =
+            fs::metadata(&path).map_err(|error| safe_io_error(&error, "acquire_metadata"))?;
         let writable = OpenOptions::new().write(true).open(&path).is_ok();
         let display_name = safe_display_name(&path);
         let source_id = random_source_id();
@@ -316,8 +316,8 @@ impl DesktopSourceHost {
         let state = self.lock_state()?;
         let record = state.sources.get(source_id).ok_or_else(source_not_found)?;
         ensure_available_revision(record)?;
-        let mut file = File::open(&record.path)
-            .map_err(|error| safe_io_error(&error, "read_range_open"))?;
+        let mut file =
+            File::open(&record.path).map_err(|error| safe_io_error(&error, "read_range_open"))?;
         file.seek(SeekFrom::Start(offset))
             .map_err(|error| safe_io_error(&error, "read_range_seek"))?;
         let mut bytes = vec![0; usize::try_from(length).expect("chunk size is bounded")];
@@ -347,7 +347,9 @@ impl DesktopSourceHost {
         total_budget: u64,
     ) -> Result<StreamLease, CoreError> {
         if total_budget == 0 || offset.checked_add(total_budget).is_none() {
-            return Err(budget_error("The stream budget is zero or overflows the source offset"));
+            return Err(budget_error(
+                "The stream budget is zero or overflows the source offset",
+            ));
         }
         let mut state = self.lock_state()?;
         let record = state.sources.get(source_id).ok_or_else(source_not_found)?;
@@ -380,19 +382,26 @@ impl DesktopSourceHost {
         length: u64,
     ) -> Result<ReadRangeResult, CoreError> {
         let mut state = self.lock_state()?;
-        let lease = state.streams.get(stream_id).ok_or_else(|| {
-            CoreError::new(
-                CoreErrorCategory::NotFound,
-                "The source stream was not found",
-                false,
-                false,
-            )
-        })?.lease.clone();
+        let lease = state
+            .streams
+            .get(stream_id)
+            .ok_or_else(|| {
+                CoreError::new(
+                    CoreErrorCategory::NotFound,
+                    "The source stream was not found",
+                    false,
+                    false,
+                )
+            })?
+            .lease
+            .clone();
         if length > MAX_SOURCE_CHUNK_BYTES
             || lease.consumed.checked_add(length).is_none()
             || lease.consumed + length > lease.total_budget
         {
-            return Err(budget_error("The stream chunk exceeds its remaining budget"));
+            return Err(budget_error(
+                "The stream chunk exceeds its remaining budget",
+            ));
         }
         let source_id = lease.source_id;
         let offset = lease.offset + lease.consumed;
@@ -408,8 +417,8 @@ impl DesktopSourceHost {
                 true,
             ));
         }
-        let mut file = File::open(&record.path)
-            .map_err(|error| safe_io_error(&error, "read_stream_open"))?;
+        let mut file =
+            File::open(&record.path).map_err(|error| safe_io_error(&error, "read_stream_open"))?;
         file.seek(SeekFrom::Start(offset))
             .map_err(|error| safe_io_error(&error, "read_stream_seek"))?;
         let mut bytes = vec![0; usize::try_from(length).expect("chunk size is bounded")];
@@ -438,8 +447,8 @@ impl DesktopSourceHost {
     pub fn query_metadata(&self, source_id: &SourceId) -> Result<SourceMetadata, CoreError> {
         let state = self.lock_state()?;
         let record = state.sources.get(source_id).ok_or_else(source_not_found)?;
-        let metadata = fs::metadata(&record.path)
-            .map_err(|error| safe_io_error(&error, "query_metadata"))?;
+        let metadata =
+            fs::metadata(&record.path).map_err(|error| safe_io_error(&error, "query_metadata"))?;
         Ok(SourceMetadata {
             display_name: record.summary.descriptor.display_name.clone(),
             byte_length: metadata.len(),
@@ -592,7 +601,9 @@ impl DesktopSourceHost {
     /// Returns a stable stale, conflict, capability, budget, acknowledgement, or persistence error.
     pub fn save(&self, request: SaveRequest) -> Result<SaveReceipt, CoreError> {
         if u64::try_from(request.bytes.len()).unwrap_or(u64::MAX) > MAX_SAVE_BYTES {
-            return Err(budget_error("The save payload exceeds the 16 MiB host budget"));
+            return Err(budget_error(
+                "The save payload exceeds the 16 MiB host budget",
+            ));
         }
         let mut record = self.record_mut(&request.source_id)?;
         if request.expected_session_revision != record.session_revision {
@@ -633,11 +644,14 @@ impl DesktopSourceHost {
         }
         let guarantee = persistence::platform_guarantee();
         if guarantee.requires_acknowledgement()
-            && request.durability_acknowledgement.as_ref().is_none_or(|acknowledgement| {
-                acknowledgement.source_id != request.source_id
-                    || acknowledgement.expected_external_revision != current
-                    || acknowledgement.guarantee != guarantee
-            })
+            && request
+                .durability_acknowledgement
+                .as_ref()
+                .is_none_or(|acknowledgement| {
+                    acknowledgement.source_id != request.source_id
+                        || acknowledgement.expected_external_revision != current
+                        || acknowledgement.guarantee != guarantee
+                })
         {
             return Err(CoreError::new(
                 CoreErrorCategory::AcknowledgementRequired,
@@ -892,7 +906,10 @@ fn safe_display_name(path: &Path) -> String {
         .file_name()
         .map(|name| name.to_string_lossy())
         .unwrap_or_default();
-    let value: String = value.chars().filter(|character| !character.is_control()).collect();
+    let value: String = value
+        .chars()
+        .filter(|character| !character.is_control())
+        .collect();
     if value.is_empty() {
         "Untitled document".into()
     } else {
@@ -933,9 +950,9 @@ fn find_renamed_source(parent: &Path, identity: &NativeIdentity) -> Option<PathB
 
 fn validate_external_target(target: &str) -> Result<String, CoreError> {
     if target.is_empty()
-        || target.chars().any(|character| {
-            character.is_control() || matches!(character, '\u{2028}' | '\u{2029}')
-        })
+        || target
+            .chars()
+            .any(|character| character.is_control() || matches!(character, '\u{2028}' | '\u{2029}'))
     {
         return Err(unsafe_link_error());
     }
@@ -1068,7 +1085,10 @@ pub(crate) mod tests {
             })
             .expect_err("stale save must fail");
         assert_eq!(error.category, CoreErrorCategory::Conflict);
-        assert_eq!(fs::read(source.path()).expect("read source"), b"external edit");
+        assert_eq!(
+            fs::read(source.path()).expect("read source"),
+            b"external edit"
+        );
     }
 
     #[test]
@@ -1088,7 +1108,10 @@ pub(crate) mod tests {
             })
             .expect("save source");
         assert_eq!(receipt.byte_count, 5);
-        assert_eq!(fs::read(source.path()).expect("read saved source"), b"saved");
+        assert_eq!(
+            fs::read(source.path()).expect("read saved source"),
+            b"saved"
+        );
         host.close(&summary.source_id).expect("close source");
         assert_eq!(
             host.query_metadata(&summary.source_id)

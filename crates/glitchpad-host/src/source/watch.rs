@@ -79,7 +79,8 @@ pub(super) fn map_event(
     let related = event.paths.is_empty()
         || event.paths.iter().any(|path| {
             path == source_path
-                || path.parent() == Some(watched_parent) && path.file_name() == source_path.file_name()
+                || path.parent() == Some(watched_parent)
+                    && path.file_name() == source_path.file_name()
         });
     if !related {
         return None;
@@ -89,9 +90,11 @@ pub(super) fn map_event(
         EventKind::Remove(_) => (SourceState::Deleted, None),
         EventKind::Modify(ModifyKind::Name(mode)) => {
             let candidate = match mode {
-                RenameMode::Both | RenameMode::To | RenameMode::Any | RenameMode::Other => {
-                    event.paths.last().filter(|path| path.as_path() != source_path).cloned()
-                }
+                RenameMode::Both | RenameMode::To | RenameMode::Any | RenameMode::Other => event
+                    .paths
+                    .last()
+                    .filter(|path| path.as_path() != source_path)
+                    .cloned(),
                 RenameMode::From => None,
                 _ => None,
             };
@@ -131,8 +134,8 @@ mod tests {
         let event = Event::new(EventKind::Modify(ModifyKind::Name(RenameMode::Both)))
             .add_path(PathBuf::from("/tmp/a.md"))
             .add_path(PathBuf::from("/tmp/b.md"));
-        let mapped = map_event(&event, Path::new("/tmp/a.md"), Path::new("/tmp"))
-            .expect("mapped rename");
+        let mapped =
+            map_event(&event, Path::new("/tmp/a.md"), Path::new("/tmp")).expect("mapped rename");
         assert_eq!(mapped.state, SourceState::Renamed);
         assert_eq!(mapped.renamed_path, Some(PathBuf::from("/tmp/b.md")));
     }

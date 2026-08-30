@@ -22,6 +22,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
+      - name: Install Linux host libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes libwebkit2gtk-4.1-dev libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+
       - name: Generate lockfile and formatting patch
         shell: bash
         run: |

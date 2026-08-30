@@ -36,14 +36,16 @@ pub(super) fn replace(path: &Path, bytes: &[u8]) -> Result<DurabilityGuarantee, 
     pending
         .sync_all()
         .map_err(|error| safe_io_error(&error, "save_sync_file"))?;
-    pending
-        .commit()
-        .map_err(|error| CoreError::new(
+    pending.commit().map_err(|error| {
+        CoreError::new(
             CoreErrorCategory::PartialWritePrevented,
             "The replacement did not complete; the original source was preserved",
             true,
             true,
-        ).with_context("operation", "save_commit").with_context("error_kind", format!("{:?}", error.kind())))?;
+        )
+        .with_context("operation", "save_commit")
+        .with_context("error_kind", format!("{:?}", error.kind()))
+    })?;
 
     #[cfg(unix)]
     sync_parent(path)?;
@@ -61,8 +63,8 @@ fn sync_parent(path: &Path) -> Result<(), CoreError> {
             false,
         )
     })?;
-    let directory = fs::File::open(parent)
-        .map_err(|error| safe_io_error(&error, "save_open_parent"))?;
+    let directory =
+        fs::File::open(parent).map_err(|error| safe_io_error(&error, "save_open_parent"))?;
     directory
         .sync_all()
         .map_err(|error| safe_io_error(&error, "save_sync_parent"))

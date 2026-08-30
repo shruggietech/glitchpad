@@ -57,7 +57,7 @@ export type LinkAuthorizationId = string;
 export interface ExternalRevision {
   identity: DocumentIdentity;
   byte_length: number;
-  modified_unix_nanos: number | null;
+  modified_unix_nanos: string | null;
   change_token: string | null;
 }
 

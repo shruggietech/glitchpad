@@ -11,6 +11,26 @@ pub const MAX_SOURCE_CHUNK_BYTES: u64 = 1024 * 1024;
 /// Largest in-memory save payload accepted by the initial desktop host.
 pub const MAX_SAVE_BYTES: u64 = 16 * 1024 * 1024;
 
+mod optional_u64_decimal {
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+    pub fn serialize<S>(value: &Option<u64>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        value.as_ref().map(u64::to_string).serialize(serializer)
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<u64>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        Option::<String>::deserialize(deserializer)?
+            .map(|value| value.parse().map_err(serde::de::Error::custom))
+            .transpose()
+    }
+}
+
 /// Opaque process-local authorization for one acquired source.
 #[derive(
     Clone, Debug, Eq, Hash, JsonSchema, Ord, PartialEq, PartialOrd, Serialize, Deserialize,
@@ -44,6 +64,8 @@ pub struct LinkAuthorizationId(pub String);
 pub struct ExternalRevision {
     pub identity: DocumentIdentity,
     pub byte_length: u64,
+    #[schemars(with = "Option<String>")]
+    #[serde(with = "optional_u64_decimal")]
     pub modified_unix_nanos: Option<u64>,
     pub change_token: Option<String>,
 }
@@ -115,6 +137,8 @@ pub struct RevalidationResult {
 pub struct SourceMetadata {
     pub display_name: String,
     pub byte_length: u64,
+    #[schemars(with = "Option<String>")]
+    #[serde(with = "optional_u64_decimal")]
     pub modified_unix_nanos: Option<u64>,
     pub read_only: bool,
 }
@@ -246,5 +270,19 @@ mod tests {
         let source_id = SourceId("1c437647-132b-4bed-8f6e-620893e825ce".into());
         let value = serde_json::to_value(source_id).expect("serialize source id");
         assert_eq!(value, "1c437647-132b-4bed-8f6e-620893e825ce");
+    }
+
+    #[test]
+    fn revision_nanoseconds_round_trip_as_lossless_decimal_strings() {
+        let mut original = revision("file-a", 12);
+        original.modified_unix_nanos = Some(1_788_044_400_000_000_123);
+        let value = serde_json::to_value(&original).expect("serialize revision");
+        assert_eq!(
+            value["modified_unix_nanos"],
+            "1788044400000000123"
+        );
+        let decoded: ExternalRevision =
+            serde_json::from_value(value).expect("deserialize revision");
+        assert_eq!(decoded, original);
     }
 }

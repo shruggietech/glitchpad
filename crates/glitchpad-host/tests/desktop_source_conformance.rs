@@ -125,6 +125,39 @@ fn one_thousand_stale_save_attempts_preserve_the_external_revision() {
 }
 
 #[test]
+fn matched_revalidation_adopts_the_revision_for_subsequent_save() {
+    let source = TemporarySource::new(b"original");
+    let host = DesktopSourceHost::new();
+    let summary = host
+        .acquire(DesktopDelivery::dialog(source.path()))
+        .expect("acquire source");
+    fs::write(source.path(), b"accepted external revision").expect("mutate source");
+    let changed = host
+        .revalidate(&summary.source_id, &summary.external_revision)
+        .expect("observe changed revision");
+    assert_eq!(changed.status, RevalidationStatus::Changed);
+    let accepted = changed.current.expect("current revision");
+    let matched = host
+        .revalidate(&summary.source_id, &accepted)
+        .expect("accept current revision");
+    assert_eq!(matched.status, RevalidationStatus::Match);
+    let receipt = host
+        .save(SaveRequest {
+            source_id: summary.source_id,
+            expected_external_revision: accepted,
+            expected_session_revision: 1,
+            bytes: b"local revision after acceptance".to_vec(),
+            durability_acknowledgement: None,
+        })
+        .expect("save after accepting current revision");
+    assert_eq!(receipt.previous_external_revision, matched.current.unwrap());
+    assert_eq!(
+        fs::read(source.path()).expect("read saved source"),
+        b"local revision after acceptance"
+    );
+}
+
+#[test]
 fn native_watcher_emits_path_free_ordered_change_state() {
     let source = TemporarySource::new(b"before");
     let host = DesktopSourceHost::new();

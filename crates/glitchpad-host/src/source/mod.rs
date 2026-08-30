@@ -28,6 +28,7 @@ use self::identity::{NativeIdentity, observe_revision};
 use self::watch::WatchRegistration;
 
 const USER_ACTIVATION_LIFETIME: Duration = Duration::from_secs(1);
+const MAX_ACTIVE_STREAMS_PER_SOURCE: usize = 32;
 
 #[tauri::command]
 #[allow(clippy::needless_pass_by_value)]
@@ -367,6 +368,16 @@ impl DesktopSourceHost {
             ));
         }
         let mut state = self.lock_state()?;
+        let active_streams = state
+            .streams
+            .values()
+            .filter(|stream| &stream.lease.source_id == source_id)
+            .count();
+        if active_streams >= MAX_ACTIVE_STREAMS_PER_SOURCE {
+            return Err(budget_error(
+                "The source has reached its active stream lease limit",
+            ));
+        }
         let record = state.sources.get(source_id).ok_or_else(source_not_found)?;
         ensure_available_revision(record)?;
         validate_source_offset(offset, record.summary.external_revision.byte_length)?;
@@ -447,8 +458,11 @@ impl DesktopSourceHost {
         let consumed = u64::try_from(read)
             .map_err(|_| budget_error("The completed stream read does not fit the contract"))?;
         let end_of_source = offset.saturating_add(consumed) >= current_revision.byte_length;
-        if let Some(stream) = state.streams.get_mut(stream_id) {
-            stream.lease.consumed += consumed;
+        let next_consumed = lease.consumed + consumed;
+        if end_of_source || next_consumed >= lease.total_budget {
+            state.streams.remove(stream_id);
+        } else if let Some(stream) = state.streams.get_mut(stream_id) {
+            stream.lease.consumed = next_consumed;
         }
         Ok(ReadRangeResult {
             source_id,
@@ -585,6 +599,12 @@ impl DesktopSourceHost {
                 };
                 if status == RevalidationStatus::Match {
                     record.native_identity = identity;
+                    record.summary.external_revision = current.clone();
+                    record.summary.descriptor.identity = current.identity.clone();
+                    record.summary.descriptor.byte_length = Some(current.byte_length);
+                    record.summary.descriptor.modified_unix_ms = current
+                        .modified_unix_nanos
+                        .map(|value| i64::try_from(value / 1_000_000).unwrap_or(i64::MAX));
                 }
                 Ok(RevalidationResult {
                     source_id: source_id.clone(),
@@ -666,7 +686,14 @@ impl DesktopSourceHost {
         }
         let guarantee = persistence::platform_guarantee();
         validate_durability_acknowledgement(&request, &current, guarantee)?;
-        let actual_guarantee = persistence::replace(&record.path, &request.bytes)?;
+        let actual_guarantee = match persistence::replace(&record.path, &request.bytes, &current) {
+            Ok(guarantee) => guarantee,
+            Err(error) if error.category == CoreErrorCategory::Conflict => {
+                record.state = SourceState::Changed;
+                return Err(error);
+            }
+            Err(error) => return Err(error),
+        };
         let (native_identity, new_revision) = observe_revision(&record.path)?;
         let previous_external_revision = record.summary.external_revision.clone();
         record.native_identity = native_identity;
@@ -1153,6 +1180,39 @@ pub(crate) mod tests {
                 .category,
             CoreErrorCategory::BudgetExceeded
         );
+    }
+
+    #[test]
+    fn stream_leases_are_capped_and_retired_at_their_terminal_read() {
+        let source = TemporarySource::new(b"x");
+        let host = DesktopSourceHost::new();
+        let summary = host
+            .acquire(DesktopDelivery::dialog(source.path()))
+            .expect("acquire source");
+        let leases: Vec<_> = (0..MAX_ACTIVE_STREAMS_PER_SOURCE)
+            .map(|_| {
+                host.open_stream(&summary.source_id, 0, 1)
+                    .expect("open bounded stream")
+            })
+            .collect();
+        assert_eq!(
+            host.open_stream(&summary.source_id, 0, 1)
+                .expect_err("reject stream above source cap")
+                .category,
+            CoreErrorCategory::BudgetExceeded
+        );
+        let completed = host
+            .read_stream(&leases[0].stream_id, 1)
+            .expect("complete stream");
+        assert!(completed.end_of_source);
+        assert_eq!(
+            host.read_stream(&leases[0].stream_id, 1)
+                .expect_err("terminal stream is retired")
+                .category,
+            CoreErrorCategory::NotFound
+        );
+        host.open_stream(&summary.source_id, 0, 1)
+            .expect("retired stream releases capacity");
     }
 
     #[test]

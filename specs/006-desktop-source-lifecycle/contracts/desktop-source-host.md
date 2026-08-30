@@ -25,6 +25,8 @@ Only trusted native application code may call `acquire`. Interface code may call
 
 - Acquisition requests are constructed inside native delivery handlers and cannot be deserialized from renderer input.
 - Source IDs and stream leases are random, process-local, single-source tokens.
+- External revision nanoseconds serialize as decimal strings so renderer round trips preserve all `u64` precision.
+- Each source may hold at most 32 active stream leases; reaching EOF or consuming the declared budget retires the lease automatically.
 - Paths remain inside host-private source records and never appear in returned values, events, logs, or safe errors.
 - Every byte count and offset is checked for overflow and budget before I/O.
 - Watch events are hints. Overflow, backend error, ambiguous rename, or coalescing requires revalidation.
@@ -55,6 +57,7 @@ sequenceDiagram
     else revision matches and full guarantee available
         H->>F: create sibling temporary file
         H->>F: write, flush, synchronize, preserve permissions
+        H->>F: reobserve and compare destination revision
         H->>F: atomic replacement and available directory sync
         H->>F: observe durable revision
         H-->>I: save receipt

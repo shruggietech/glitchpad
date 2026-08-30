@@ -6,9 +6,9 @@ use std::path::Path;
 
 use atomic_write_file::AtomicWriteFile;
 use glitchpad_core::contracts::{CoreError, CoreErrorCategory};
-use glitchpad_core::source::DurabilityGuarantee;
+use glitchpad_core::source::{DurabilityGuarantee, ExternalRevision};
 
-use super::safe_io_error;
+use super::{identity::observe_revision, safe_io_error};
 
 pub(super) fn platform_guarantee() -> DurabilityGuarantee {
     if cfg!(unix) {
@@ -18,7 +18,25 @@ pub(super) fn platform_guarantee() -> DurabilityGuarantee {
     }
 }
 
-pub(super) fn replace(path: &Path, bytes: &[u8]) -> Result<DurabilityGuarantee, CoreError> {
+pub(super) fn replace(
+    path: &Path,
+    bytes: &[u8],
+    expected_revision: &ExternalRevision,
+) -> Result<DurabilityGuarantee, CoreError> {
+    replace_with_revision_check(path, bytes, expected_revision, |path| {
+        observe_revision(path).map(|(_, revision)| revision)
+    })
+}
+
+fn replace_with_revision_check<F>(
+    path: &Path,
+    bytes: &[u8],
+    expected_revision: &ExternalRevision,
+    observe_destination: F,
+) -> Result<DurabilityGuarantee, CoreError>
+where
+    F: FnOnce(&Path) -> Result<ExternalRevision, CoreError>,
+{
     let original = fs::metadata(path).map_err(|error| safe_io_error(&error, "save_metadata"))?;
     let permissions = original.permissions();
     let mut pending = AtomicWriteFile::options()
@@ -36,6 +54,14 @@ pub(super) fn replace(path: &Path, bytes: &[u8]) -> Result<DurabilityGuarantee, 
     pending
         .sync_all()
         .map_err(|error| safe_io_error(&error, "save_sync_file"))?;
+    if observe_destination(path)? != *expected_revision {
+        return Err(CoreError::new(
+            CoreErrorCategory::Conflict,
+            "The external source changed while the replacement was prepared",
+            true,
+            true,
+        ));
+    }
     pending.commit().map_err(|error| {
         CoreError::new(
             CoreErrorCategory::PartialWritePrevented,
@@ -80,7 +106,8 @@ mod tests {
     #[test]
     fn replacement_commits_complete_content_and_reports_platform_guarantee() {
         let source = TemporarySource::new(b"original");
-        let guarantee = replace(source.path(), b"complete replacement").expect("replace");
+        let (_, revision) = observe_revision(source.path()).expect("observe source");
+        let guarantee = replace(source.path(), b"complete replacement", &revision).expect("replace");
         assert_eq!(
             fs::read(source.path()).expect("read replacement"),
             b"complete replacement"
@@ -92,7 +119,19 @@ mod tests {
     fn missing_destination_fails_without_recreating_it() {
         let source = TemporarySource::new(b"original");
         fs::remove_file(source.path()).expect("remove source before replacement");
-        let error = replace(source.path(), b"replacement").expect_err("replacement must fail");
+        let revision = ExternalRevision {
+            identity: glitchpad_core::contracts::DocumentIdentity {
+                authority: glitchpad_core::contracts::IdentityAuthority::Synthetic,
+                scope: "missing".into(),
+                token: "missing".into(),
+                strength: glitchpad_core::contracts::IdentityStrength::Unavailable,
+            },
+            byte_length: 0,
+            modified_unix_nanos: None,
+            change_token: None,
+        };
+        let error = replace(source.path(), b"replacement", &revision)
+            .expect_err("replacement must fail");
         assert_eq!(error.category, CoreErrorCategory::NotFound);
         assert!(!source.path().exists());
     }
@@ -105,12 +144,40 @@ mod tests {
         let source = TemporarySource::new(b"original");
         fs::set_permissions(source.path(), fs::Permissions::from_mode(0o640))
             .expect("set source permissions");
-        replace(source.path(), b"replacement").expect("replace source");
+        let (_, revision) = observe_revision(source.path()).expect("observe source");
+        replace(source.path(), b"replacement", &revision).expect("replace source");
         let mode = fs::metadata(source.path())
             .expect("read replacement metadata")
             .permissions()
             .mode();
         assert_eq!(mode & 0o777, 0o640);
+    }
+
+    #[test]
+    fn destination_change_during_preparation_aborts_commit_and_cleans_temporary_file() {
+        let source = TemporarySource::new(b"original");
+        let (_, expected) = observe_revision(source.path()).expect("observe source");
+        let error = replace_with_revision_check(
+            source.path(),
+            b"local replacement",
+            &expected,
+            |path| {
+                fs::write(path, b"newer external replacement").expect("external replacement");
+                observe_revision(path).map(|(_, revision)| revision)
+            },
+        )
+        .expect_err("stale prepared replacement must fail");
+        assert_eq!(error.category, CoreErrorCategory::Conflict);
+        assert_eq!(
+            fs::read(source.path()).expect("read destination"),
+            b"newer external replacement"
+        );
+        assert_eq!(
+            fs::read_dir(source.path().parent().expect("source parent"))
+                .expect("read source directory")
+                .count(),
+            1
+        );
     }
 
     #[test]

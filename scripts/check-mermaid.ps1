@@ -6,6 +6,12 @@ $repositoryRoot = Split-Path -Parent $PSScriptRoot
 $temporaryRoot = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath())
 $workDirectory = Join-Path $temporaryRoot "glitchpad-mermaid-$([guid]::NewGuid().ToString('N'))"
 $workDirectory = [System.IO.Path]::GetFullPath($workDirectory)
+$ciPuppeteerArguments = @()
+
+if ($IsLinux -and $env:GITHUB_ACTIONS -eq 'true') {
+    $ciPuppeteerConfig = Join-Path $repositoryRoot '.github/puppeteer-ci.json'
+    $ciPuppeteerArguments = @('--puppeteerConfigFile', $ciPuppeteerConfig)
+}
 
 if (-not $workDirectory.StartsWith($temporaryRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
     throw 'Mermaid validation directory did not resolve under the operating-system temporary directory.'
@@ -27,7 +33,7 @@ try {
             $inputPath = Join-Path $workDirectory "$diagramCount.mmd"
             $outputPath = Join-Path $workDirectory "$diagramCount.svg"
             [System.IO.File]::WriteAllText($inputPath, $block.Groups['diagram'].Value, [System.Text.UTF8Encoding]::new($false))
-            & pnpm exec mmdc --input $inputPath --output $outputPath --backgroundColor transparent --quiet
+            & pnpm exec mmdc --input $inputPath --output $outputPath --backgroundColor transparent --quiet @ciPuppeteerArguments
             if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $outputPath -PathType Leaf)) {
                 $relative = [System.IO.Path]::GetRelativePath($repositoryRoot, $file.FullName)
                 throw "Mermaid rendering failed for diagram $diagramCount in $relative."

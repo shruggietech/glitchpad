@@ -18,9 +18,9 @@
 
 **Purpose**: Add reviewed dependencies and establish the portable and native module boundaries.
 
-- [ ] T001 Add pinned `atomic-write-file`, `file-id`, `notify`, `url`, and `uuid` workspace dependencies in `Cargo.toml`, `crates/glitchpad-host/Cargo.toml`, `Cargo.lock`, and accepted license policy when required
-- [ ] T002 [P] Create the portable source lifecycle module export in `crates/glitchpad-core/src/source.rs` and `crates/glitchpad-core/src/lib.rs`
-- [ ] T003 [P] Create the private desktop adapter module layout in `crates/glitchpad-host/src/source/mod.rs`, `identity.rs`, `watch.rs`, and `persistence.rs`
+- [x] T001 Add pinned `atomic-write-file`, `file-id`, `notify`, `url`, and `uuid` workspace dependencies in `Cargo.toml`, `crates/glitchpad-host/Cargo.toml`, `Cargo.lock`, and accepted license policy when required
+- [x] T002 [P] Create the portable source lifecycle module export in `crates/glitchpad-core/src/source.rs` and `crates/glitchpad-core/src/lib.rs`
+- [x] T003 [P] Create the private desktop adapter module layout in `crates/glitchpad-host/src/source/mod.rs`, `identity.rs`, `watch.rs`, and `persistence.rs`
 
 ---
 
@@ -30,11 +30,11 @@
 
 **Critical**: No native acquisition or I/O implementation begins until these contracts compile, serialize, and pass pure tests.
 
-- [ ] T004 [P] Write failing source ID, revision comparison, event sequencing, revalidation, durability, save receipt, and safe-error tests in `crates/glitchpad-core/src/source.rs`
-- [ ] T005 [P] Write failing capability completeness and serialized source lifecycle schema tests in `crates/glitchpad-core/tests/contract_schema.rs`
-- [ ] T006 Implement opaque IDs, external revisions, source states/events, revalidation results, bounded request/receipt values, durability guarantees, and link authorization contracts in `crates/glitchpad-core/src/source.rs`
-- [ ] T007 Extend independent source capabilities and stable error categories in `crates/glitchpad-core/src/contracts.rs` without changing strong/weak identity semantics
-- [ ] T008 Mirror the serialized S006 contract additions in `apps/glitchpad/src/domain/contracts.ts`
+- [x] T004 [P] Write failing source ID, revision comparison, event sequencing, revalidation, durability, save receipt, and safe-error tests in `crates/glitchpad-core/src/source.rs`
+- [x] T005 [P] Write failing capability completeness and serialized source lifecycle schema tests in `crates/glitchpad-core/tests/contract_schema.rs`
+- [x] T006 Implement opaque IDs, external revisions, source states/events, revalidation results, bounded request/receipt values, durability guarantees, and link authorization contracts in `crates/glitchpad-core/src/source.rs`
+- [x] T007 Extend independent source capabilities and stable error categories in `crates/glitchpad-core/src/contracts.rs` without changing strong/weak identity semantics
+- [x] T008 Mirror the serialized S006 contract additions in `apps/glitchpad/src/domain/contracts.ts`
 
 **Checkpoint**: Portable S006 values are exhaustive, path-free, schema-covered, and independently testable.
 
@@ -48,14 +48,14 @@
 
 ### Tests for User Story 1
 
-- [ ] T009 [P] [US1] Write failing trusted-delivery, regular-file rejection, opaque ID, safe summary, and close invalidation tests in `crates/glitchpad-host/tests/desktop_source_conformance.rs`
-- [ ] T010 [P] [US1] Write failing platform identity strength, rename stability, replacement distinction, and weak-fallback tests in `crates/glitchpad-host/src/source/identity.rs`
+- [x] T009 [P] [US1] Write failing trusted-delivery, regular-file rejection, opaque ID, safe summary, and close invalidation tests in `crates/glitchpad-host/tests/desktop_source_conformance.rs`
+- [x] T010 [P] [US1] Write failing platform identity strength, rename stability, replacement distinction, and weak-fallback tests in `crates/glitchpad-host/src/source/identity.rs`
 
 ### Implementation for User Story 1
 
-- [ ] T011 [US1] Implement platform identity derivation through safe Unix device/inode and Windows volume/file evidence with explicit weak fallback in `crates/glitchpad-host/src/source/identity.rs`
-- [ ] T012 [US1] Implement trusted `DesktopDelivery`, process-local `DesktopSourceHost`, random source registry, capability derivation, safe acquisition summary, and close cleanup in `crates/glitchpad-host/src/source/mod.rs`
-- [ ] T013 [US1] Integrate the source host as managed Tauri state without registering a renderer path-acquisition command in `crates/glitchpad-host/src/lib.rs`
+- [x] T011 [US1] Implement platform identity derivation through safe Unix device/inode and Windows volume/file evidence with explicit weak fallback in `crates/glitchpad-host/src/source/identity.rs`
+- [x] T012 [US1] Implement trusted `DesktopDelivery`, process-local `DesktopSourceHost`, random source registry, capability derivation, safe acquisition summary, and close cleanup in `crates/glitchpad-host/src/source/mod.rs`
+- [x] T013 [US1] Integrate the source host as managed Tauri state without registering a renderer path-acquisition command in `crates/glitchpad-host/src/lib.rs`
 
 **Checkpoint**: Trusted desktop deliveries produce safe opaque records, strong duplicate identity remains usable by the session layer, and arbitrary interface paths are impossible.
 
@@ -69,15 +69,15 @@
 
 ### Tests for User Story 2
 
-- [ ] T014 [P] [US2] Write failing range arithmetic, 1 MiB operation limit, stream budget, changed-revision, and safe metadata tests in `crates/glitchpad-host/tests/desktop_source_conformance.rs`
-- [ ] T015 [P] [US2] Write failing changed, rename, deletion, rescan/overflow, backend error, filtering, sequence, and revalidation tests in `crates/glitchpad-host/src/source/watch.rs`
+- [x] T014 [P] [US2] Write failing range arithmetic, 1 MiB operation limit, stream budget, changed-revision, and safe metadata tests in `crates/glitchpad-host/tests/desktop_source_conformance.rs`
+- [x] T015 [P] [US2] Write failing changed, rename, deletion, rescan/overflow, backend error, filtering, sequence, and revalidation tests in `crates/glitchpad-host/src/source/watch.rs`
 
 ### Implementation for User Story 2
 
-- [ ] T016 [US2] Implement bounded range and stream-lease operations plus safe metadata projection in `crates/glitchpad-host/src/source/mod.rs`
-- [ ] T017 [US2] Implement parent-aware recommended native watching, path filtering, stable event mapping, bounded event draining, and watcher cleanup in `crates/glitchpad-host/src/source/watch.rs`
-- [ ] T018 [US2] Implement authoritative revision observation and revalidation outcomes for changed, deleted, revoked, unavailable, and matching sources in `crates/glitchpad-host/src/source/mod.rs` and `identity.rs`
-- [ ] T019 [US2] Apply watcher and revalidation states to sessions without discarding dirty state in `crates/glitchpad-core/src/session.rs`
+- [x] T016 [US2] Implement bounded range and stream-lease operations plus safe metadata projection in `crates/glitchpad-host/src/source/mod.rs`
+- [x] T017 [US2] Implement parent-aware recommended native watching, path filtering, stable event mapping, bounded event draining, and watcher cleanup in `crates/glitchpad-host/src/source/watch.rs`
+- [x] T018 [US2] Implement authoritative revision observation and revalidation outcomes for changed, deleted, revoked, unavailable, and matching sources in `crates/glitchpad-host/src/source/mod.rs` and `identity.rs`
+- [x] T019 [US2] Apply watcher and revalidation states to sessions without discarding dirty state in `crates/glitchpad-core/src/session.rs`
 
 **Checkpoint**: All source reads are bounded, watcher uncertainty is explicit, and only revalidation can restore revision certainty.
 
@@ -91,14 +91,14 @@
 
 ### Tests for User Story 3
 
-- [ ] T020 [P] [US3] Write failing stale session/external revision, oversized payload, read-only, acknowledgement, and receipt tests in `crates/glitchpad-host/tests/desktop_source_conformance.rs`
-- [ ] T021 [P] [US3] Write failing sibling-temp, flush/sync ordering, permission preservation, atomic replacement, cleanup, and fault-path tests in `crates/glitchpad-host/src/source/persistence.rs`
+- [x] T020 [P] [US3] Write failing stale session/external revision, oversized payload, read-only, acknowledgement, and receipt tests in `crates/glitchpad-host/tests/desktop_source_conformance.rs`
+- [x] T021 [P] [US3] Write failing sibling-temp, flush/sync ordering, permission preservation, atomic replacement, cleanup, and fault-path tests in `crates/glitchpad-host/src/source/persistence.rs`
 
 ### Implementation for User Story 3
 
-- [ ] T022 [US3] Implement full-strength atomic persistence, supported permission preservation, platform directory-durability reporting, and recoverable failure cleanup in `crates/glitchpad-host/src/source/persistence.rs`
-- [ ] T023 [US3] Implement save precondition validation, weaker-guarantee acknowledgement binding, durable receipt construction, and post-save revision update in `crates/glitchpad-host/src/source/mod.rs`
-- [ ] T024 [US3] Extend session conflict transitions and save receipt application while preserving dirty state until durable success in `crates/glitchpad-core/src/session.rs`
+- [x] T022 [US3] Implement full-strength atomic persistence, supported permission preservation, platform directory-durability reporting, and recoverable failure cleanup in `crates/glitchpad-host/src/source/persistence.rs`
+- [x] T023 [US3] Implement save precondition validation, weaker-guarantee acknowledgement binding, durable receipt construction, and post-save revision update in `crates/glitchpad-host/src/source/mod.rs`
+- [x] T024 [US3] Extend session conflict transitions and save receipt application while preserving dirty state until durable success in `crates/glitchpad-core/src/session.rs`
 
 **Checkpoint**: A stale or partial save never replaces the destination or clears dirty state, and only a durable receipt advances the source revision.
 
@@ -112,11 +112,11 @@
 
 ### Tests for User Story 4
 
-- [ ] T025 [US4] Write failing scheme, normalization, credential, control-character, activation expiry, replay, and deterministic policy tests in `crates/glitchpad-host/src/source/mod.rs`
+- [x] T025 [US4] Write failing scheme, normalization, credential, control-character, activation expiry, replay, and deterministic policy tests in `crates/glitchpad-host/src/source/mod.rs`
 
 ### Implementation for User Story 4
 
-- [ ] T026 [US4] Implement explicit user-activation proofs and one-use external-link authorizations without an arbitrary operating-system opener in `crates/glitchpad-host/src/source/mod.rs`
+- [x] T026 [US4] Implement explicit user-activation proofs and one-use external-link authorizations without an arbitrary operating-system opener in `crates/glitchpad-host/src/source/mod.rs`
 
 **Checkpoint**: Untrusted document content cannot launch an external target, and allowed link intent is narrow, normalized, explicit, and single-use.
 
@@ -126,11 +126,11 @@
 
 **Purpose**: Complete issue #46 with platform evidence, documentation impact, licensing, and repository-wide validation.
 
-- [ ] T027 [P] Add Windows, macOS, and Linux execution of the shared desktop adapter conformance test to `.github/workflows/ci.yml`
-- [ ] T028 [P] Record issue #46 requirement-to-test mapping, platform evidence, durability guarantees, and honest manual-check limits in `specs/006-desktop-source-lifecycle/verification.md`
-- [ ] T029 [P] Add the unreleased host lifecycle entry and dependency attribution updates in `CHANGELOG.md`, `NOTICE`, and `changelog.d/desktop-source-lifecycle.added.md`
-- [ ] T030 Validate UTF-8 without BOM, mojibake absence, one-line Markdown paragraphs, top-to-bottom Mermaid direction, formatting, linting, dependency licenses, Rust tests, interface checks, documentation, and public surface through `cargo xtask check`
-- [ ] T031 Run the available platform and manual procedures in `specs/006-desktop-source-lifecycle/quickstart.md` and record any non-local platform evidence as CI-required rather than locally verified in `verification.md`
+- [x] T027 [P] Add Windows, macOS, and Linux execution of the shared desktop adapter conformance test to `.github/workflows/ci.yml`
+- [x] T028 [P] Record issue #46 requirement-to-test mapping, platform evidence, durability guarantees, and honest manual-check limits in `specs/006-desktop-source-lifecycle/verification.md`
+- [x] T029 [P] Add the unreleased host lifecycle entry and dependency attribution updates in `CHANGELOG.md`, `NOTICE`, and `changelog.d/desktop-source-lifecycle.added.md`
+- [x] T030 Validate UTF-8 without BOM, mojibake absence, one-line Markdown paragraphs, top-to-bottom Mermaid direction, formatting, linting, dependency licenses, Rust tests, interface checks, documentation, and public surface through the hosted composite equivalent of `cargo xtask check`
+- [x] T031 Run the available platform and manual procedures in `specs/006-desktop-source-lifecycle/quickstart.md` and record any non-local platform evidence as CI-required rather than locally verified in `verification.md`
 
 ---
 

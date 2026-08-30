@@ -19,7 +19,7 @@ No supported desktop adapter silently selects a non-atomic fallback. A failed at
 
 ## Automated validation
 
-The final evidence source is the required GitHub Actions run attached to Pull Request #98. It must show green Windows, macOS, and Linux conformance and desktop builds, the Android non-regression build, workspace formatting, Clippy with warnings denied, Rust tests, frontend checks, documentation and public-surface checks, dependency review, license/advisory/secret checks, and CodeQL before the pull request leaves draft state.
+[GitHub Actions run 33324951889](https://github.com/shruggietech/glitchpad/actions/runs/33324951889) passed Windows, macOS, and Linux conformance and desktop builds, the Android non-regression build, workspace formatting, Clippy with warnings denied, Rust tests, frontend checks, documentation and public-surface checks, dependency review, and license/advisory/secret checks on implementation commit `f8067c1`. The temporary S006 bootstrap job generated no further source correction and was removed after that evidence was established. Pull Request #98 remains subject to the normal required CI and CodeQL checks on the review-ready commit.
 
 ## Environment limits and manual checks
 

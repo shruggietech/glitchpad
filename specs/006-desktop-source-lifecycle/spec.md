@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-30
 
-**Status**: Ready for implementation
+**Status**: Ready for review
 
 **Input**: User description: "Spec out `S006` and run it end-to-end under the autopilot protocol as usual."
 

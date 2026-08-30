@@ -93,7 +93,7 @@ fn bounded_stream_never_exceeds_declared_budget() {
 }
 
 #[test]
-fn external_mutation_revalidates_as_changed_and_blocks_stale_save() {
+fn one_thousand_stale_save_attempts_preserve_the_external_revision() {
     let source = TemporarySource::new(b"original");
     let host = DesktopSourceHost::new();
     let summary = host
@@ -104,18 +104,20 @@ fn external_mutation_revalidates_as_changed_and_blocks_stale_save() {
         .revalidate(&summary.source_id, &summary.external_revision)
         .expect("revalidate source");
     assert_eq!(revalidation.status, RevalidationStatus::Changed);
-    assert_eq!(
-        host.save(SaveRequest {
-            source_id: summary.source_id,
-            expected_external_revision: summary.external_revision,
-            expected_session_revision: 1,
-            bytes: b"local revision".to_vec(),
-            durability_acknowledgement: None,
-        })
-        .expect_err("stale save must fail")
-        .category,
-        CoreErrorCategory::Conflict
-    );
+    for _ in 0..1_000 {
+        assert_eq!(
+            host.save(SaveRequest {
+                source_id: summary.source_id.clone(),
+                expected_external_revision: summary.external_revision.clone(),
+                expected_session_revision: 1,
+                bytes: b"local revision".to_vec(),
+                durability_acknowledgement: None,
+            })
+            .expect_err("stale save must fail")
+            .category,
+            CoreErrorCategory::Conflict
+        );
+    }
     assert_eq!(
         fs::read(source.path()).expect("read preserved external source"),
         b"external revision"

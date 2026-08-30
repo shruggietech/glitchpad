@@ -544,7 +544,7 @@ mod tests {
     #[test]
     fn uncertain_identity_delivery_never_merges() {
         let mut registry = SessionRegistry::new();
-        for _ in 0..3 {
+        for _ in 0..100 {
             registry
                 .open(
                     source("weak", IdentityStrength::Weak),
@@ -553,7 +553,7 @@ mod tests {
                 )
                 .expect("open source");
         }
-        assert_eq!(registry.sessions().len(), 3);
+        assert_eq!(registry.sessions().len(), 100);
     }
 
     #[test]
@@ -722,5 +722,88 @@ mod tests {
         assert!(capabilities.view);
         assert!(!capabilities.edit);
         assert!(!capabilities.save);
+    }
+
+    #[test]
+    fn external_change_conflicts_dirty_session_and_preserves_edits() {
+        let mut registry = SessionRegistry::new();
+        let id = registry
+            .open(
+                source("conflict", IdentityStrength::Strong),
+                detection(),
+                renderer(),
+            )
+            .expect("open source")
+            .session_id;
+        registry.set_dirty(id, true).expect("mark dirty");
+        registry
+            .apply_source_event(
+                id,
+                &SourceEvent {
+                    source_id: crate::source::SourceId("source-conflict".into()),
+                    sequence: 1,
+                    state: SourceState::Changed,
+                    display_name: None,
+                    revalidation_required: true,
+                },
+            )
+            .expect("apply source event");
+
+        let session = &registry.sessions()[0];
+        assert!(session.dirty);
+        assert_eq!(session.lifecycle, SessionLifecycle::Conflicted);
+        assert_eq!(session.source_state, SourceState::Changed);
+        assert_eq!(
+            registry
+                .prepare_save(id, session.revision)
+                .expect_err("unrevalidated source cannot save")
+                .category,
+            CoreErrorCategory::Conflict
+        );
+    }
+
+    #[test]
+    fn only_current_durable_receipt_clears_dirty_state() {
+        let mut registry = SessionRegistry::new();
+        let descriptor = source("receipt", IdentityStrength::Strong);
+        let identity = descriptor.identity.clone();
+        let id = registry
+            .open(descriptor, detection(), renderer())
+            .expect("open source")
+            .session_id;
+        registry.set_dirty(id, true).expect("mark dirty");
+        let revision = registry.sessions()[0].revision;
+        let external_revision = crate::source::ExternalRevision {
+            identity,
+            byte_length: 10,
+            modified_unix_nanos: Some(1),
+            change_token: None,
+        };
+        let receipt = SaveReceipt {
+            source_id: crate::source::SourceId("source-receipt".into()),
+            accepted_session_revision: revision - 1,
+            previous_external_revision: external_revision.clone(),
+            new_external_revision: external_revision,
+            byte_count: 10,
+            durability: crate::source::DurabilityGuarantee::AtomicFile,
+        };
+        assert_eq!(
+            registry
+                .apply_save_receipt(id, &receipt)
+                .expect_err("reject stale receipt")
+                .category,
+            CoreErrorCategory::StaleSession
+        );
+        assert!(registry.sessions()[0].dirty);
+
+        let current_receipt = SaveReceipt {
+            accepted_session_revision: revision,
+            ..receipt
+        };
+        registry
+            .apply_save_receipt(id, &current_receipt)
+            .expect("apply current receipt");
+        assert!(!registry.sessions()[0].dirty);
+        assert_eq!(registry.sessions()[0].lifecycle, SessionLifecycle::Active);
     }
 }

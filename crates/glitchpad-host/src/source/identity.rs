@@ -104,6 +104,7 @@ fn weak_path_contract(path: &Path) -> DocumentIdentity {
 }
 
 #[cfg(unix)]
+#[allow(clippy::unnecessary_wraps)]
 fn platform_change_token(metadata: &fs::Metadata) -> Option<String> {
     use std::os::unix::fs::MetadataExt;
 
@@ -115,6 +116,7 @@ fn platform_change_token(metadata: &fs::Metadata) -> Option<String> {
 }
 
 #[cfg(windows)]
+#[allow(clippy::unnecessary_wraps)]
 fn platform_change_token(metadata: &fs::Metadata) -> Option<String> {
     use std::os::windows::fs::MetadataExt;
 

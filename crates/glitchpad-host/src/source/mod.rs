@@ -16,10 +16,10 @@ use glitchpad_core::contracts::{
     SourceDescriptor, SourceKind, compare_identity,
 };
 use glitchpad_core::source::{
-    DesktopSourceSummary, ExternalRevision, LinkAuthorization, LinkAuthorizationId, MAX_SAVE_BYTES,
-    MAX_SOURCE_CHUNK_BYTES, ReadRangeResult, RevalidationResult, RevalidationStatus, SaveReceipt,
-    SaveRequest, SourceEvent, SourceId, SourceMetadata, SourceState, StreamId, StreamLease,
-    UserActivationId, UserActivationProof,
+    DesktopSourceSummary, DurabilityGuarantee, ExternalRevision, LinkAuthorization,
+    LinkAuthorizationId, MAX_SAVE_BYTES, MAX_SOURCE_CHUNK_BYTES, ReadRangeResult,
+    RevalidationResult, RevalidationStatus, SaveReceipt, SaveRequest, SourceEvent, SourceId,
+    SourceMetadata, SourceState, StreamId, StreamLease, UserActivationId, UserActivationProof,
 };
 use url::Url;
 use uuid::Uuid;
@@ -30,6 +30,7 @@ use self::watch::WatchRegistration;
 const USER_ACTIVATION_LIFETIME: Duration = Duration::from_secs(1);
 
 #[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
 pub(crate) fn read_source_range(
     host: tauri::State<'_, DesktopSourceHost>,
     source_id: SourceId,
@@ -41,6 +42,7 @@ pub(crate) fn read_source_range(
 }
 
 #[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
 pub(crate) fn open_source_stream(
     host: tauri::State<'_, DesktopSourceHost>,
     source_id: SourceId,
@@ -51,6 +53,7 @@ pub(crate) fn open_source_stream(
 }
 
 #[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
 pub(crate) fn read_source_stream(
     host: tauri::State<'_, DesktopSourceHost>,
     stream_id: StreamId,
@@ -60,6 +63,7 @@ pub(crate) fn read_source_stream(
 }
 
 #[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
 pub(crate) fn query_source_metadata(
     host: tauri::State<'_, DesktopSourceHost>,
     source_id: SourceId,
@@ -68,6 +72,7 @@ pub(crate) fn query_source_metadata(
 }
 
 #[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
 pub(crate) fn start_source_watch(
     host: tauri::State<'_, DesktopSourceHost>,
     source_id: SourceId,
@@ -76,6 +81,7 @@ pub(crate) fn start_source_watch(
 }
 
 #[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
 pub(crate) fn drain_source_events(
     host: tauri::State<'_, DesktopSourceHost>,
     source_id: SourceId,
@@ -85,6 +91,7 @@ pub(crate) fn drain_source_events(
 }
 
 #[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
 pub(crate) fn revalidate_source(
     host: tauri::State<'_, DesktopSourceHost>,
     source_id: SourceId,
@@ -94,6 +101,7 @@ pub(crate) fn revalidate_source(
 }
 
 #[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
 pub(crate) fn save_source(
     host: tauri::State<'_, DesktopSourceHost>,
     request: SaveRequest,
@@ -102,6 +110,7 @@ pub(crate) fn save_source(
 }
 
 #[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
 pub(crate) fn close_source(
     host: tauri::State<'_, DesktopSourceHost>,
     source_id: SourceId,
@@ -201,7 +210,8 @@ impl DesktopSourceHost {
     ///
     /// Returns a safe error when the delivery is missing, inaccessible, a symlink, or not a regular file.
     pub fn acquire(&self, delivery: DesktopDelivery) -> Result<DesktopSourceSummary, CoreError> {
-        let symlink_metadata = fs::symlink_metadata(&delivery.path)
+        let path = delivery.path;
+        let symlink_metadata = fs::symlink_metadata(&path)
             .map_err(|error| safe_io_error(&error, "acquire_metadata"))?;
         if symlink_metadata.file_type().is_symlink() || !symlink_metadata.is_file() {
             return Err(CoreError::new(
@@ -211,7 +221,7 @@ impl DesktopSourceHost {
                 false,
             ));
         }
-        let path = fs::canonicalize(&delivery.path)
+        let path = fs::canonicalize(path)
             .map_err(|error| safe_io_error(&error, "acquire_canonicalize"))?;
         let parent = path.parent().map(Path::to_path_buf).ok_or_else(|| {
             CoreError::new(
@@ -262,7 +272,7 @@ impl DesktopSourceHost {
                 rename: true,
                 observe_deletion: true,
                 reopen: true,
-                reveal_location: true,
+                reveal_location: false,
             },
         };
         let summary = DesktopSourceSummary {
@@ -316,11 +326,14 @@ impl DesktopSourceHost {
         let state = self.lock_state()?;
         let record = state.sources.get(source_id).ok_or_else(source_not_found)?;
         ensure_available_revision(record)?;
+        validate_source_offset(offset, record.summary.external_revision.byte_length)?;
         let mut file =
             File::open(&record.path).map_err(|error| safe_io_error(&error, "read_range_open"))?;
         file.seek(SeekFrom::Start(offset))
             .map_err(|error| safe_io_error(&error, "read_range_seek"))?;
-        let mut bytes = vec![0; usize::try_from(length).expect("chunk size is bounded")];
+        let requested_length = usize::try_from(length)
+            .map_err(|_| budget_error("The requested byte range does not fit this platform"))?;
+        let mut bytes = vec![0; requested_length];
         let read = file
             .read(&mut bytes)
             .map_err(|error| safe_io_error(&error, "read_range_read"))?;
@@ -354,6 +367,7 @@ impl DesktopSourceHost {
         let mut state = self.lock_state()?;
         let record = state.sources.get(source_id).ok_or_else(source_not_found)?;
         ensure_available_revision(record)?;
+        validate_source_offset(offset, record.summary.external_revision.byte_length)?;
         let lease = StreamLease {
             stream_id: random_stream_id(),
             source_id: source_id.clone(),
@@ -421,7 +435,9 @@ impl DesktopSourceHost {
             File::open(&record.path).map_err(|error| safe_io_error(&error, "read_stream_open"))?;
         file.seek(SeekFrom::Start(offset))
             .map_err(|error| safe_io_error(&error, "read_stream_seek"))?;
-        let mut bytes = vec![0; usize::try_from(length).expect("chunk size is bounded")];
+        let requested_length = usize::try_from(length)
+            .map_err(|_| budget_error("The stream chunk does not fit this platform"))?;
+        let mut bytes = vec![0; requested_length];
         let read = file
             .read(&mut bytes)
             .map_err(|error| safe_io_error(&error, "read_stream_read"))?;
@@ -507,6 +523,7 @@ impl DesktopSourceHost {
         let mut events = Vec::with_capacity(mapped.len());
         for event in mapped {
             if let Some(candidate) = event.renamed_path
+                && is_regular_non_symlink(&candidate)
                 && identity::observe_identity(&candidate).file_id == record.native_identity.file_id
             {
                 record.path = candidate;
@@ -600,7 +617,9 @@ impl DesktopSourceHost {
     ///
     /// Returns a stable stale, conflict, capability, budget, acknowledgement, or persistence error.
     pub fn save(&self, request: SaveRequest) -> Result<SaveReceipt, CoreError> {
-        if u64::try_from(request.bytes.len()).unwrap_or(u64::MAX) > MAX_SAVE_BYTES {
+        let byte_count = u64::try_from(request.bytes.len())
+            .map_err(|_| budget_error("The save payload does not fit this platform"))?;
+        if byte_count > MAX_SAVE_BYTES {
             return Err(budget_error(
                 "The save payload exceeds the 16 MiB host budget",
             ));
@@ -643,23 +662,7 @@ impl DesktopSourceHost {
             ));
         }
         let guarantee = persistence::platform_guarantee();
-        if guarantee.requires_acknowledgement()
-            && request
-                .durability_acknowledgement
-                .as_ref()
-                .is_none_or(|acknowledgement| {
-                    acknowledgement.source_id != request.source_id
-                        || acknowledgement.expected_external_revision != current
-                        || acknowledgement.guarantee != guarantee
-                })
-        {
-            return Err(CoreError::new(
-                CoreErrorCategory::AcknowledgementRequired,
-                "This source requires acknowledgement of a weaker persistence guarantee",
-                false,
-                true,
-            ));
-        }
+        validate_durability_acknowledgement(&request, &current, guarantee)?;
         let actual_guarantee = persistence::replace(&record.path, &request.bytes)?;
         let (native_identity, new_revision) = observe_revision(&record.path)?;
         let previous_external_revision = record.summary.external_revision.clone();
@@ -676,7 +679,7 @@ impl DesktopSourceHost {
             accepted_session_revision: request.expected_session_revision,
             previous_external_revision,
             new_external_revision: new_revision,
-            byte_count: u64::try_from(request.bytes.len()).expect("save budget fits u64"),
+            byte_count,
             durability: actual_guarantee,
         })
     }
@@ -718,8 +721,9 @@ impl DesktopSourceHost {
         proof: UserActivationProof,
         target: &str,
     ) -> Result<LinkAuthorization, CoreError> {
+        let UserActivationProof { id } = proof;
         let mut state = self.lock_state()?;
-        let created = state.activations.remove(&proof.id).ok_or_else(|| {
+        let created = state.activations.remove(&id).ok_or_else(|| {
             CoreError::new(
                 CoreErrorCategory::CapabilityDenied,
                 "External links require a current explicit user action",
@@ -756,10 +760,14 @@ impl DesktopSourceHost {
         &self,
         authorization: LinkAuthorization,
     ) -> Result<String, CoreError> {
+        let LinkAuthorization {
+            id,
+            normalized_target,
+        } = authorization;
         let mut state = self.lock_state()?;
         let target = state
             .link_authorizations
-            .remove(&authorization.id)
+            .remove(&id)
             .ok_or_else(|| {
                 CoreError::new(
                     CoreErrorCategory::CapabilityDenied,
@@ -768,7 +776,7 @@ impl DesktopSourceHost {
                     false,
                 )
             })?;
-        if target != authorization.normalized_target {
+        if target != normalized_target {
             return Err(CoreError::new(
                 CoreErrorCategory::CapabilityDenied,
                 "The external-link authorization target changed",
@@ -860,6 +868,43 @@ fn validate_chunk(offset: u64, length: u64, operation_budget: u64) -> Result<(),
     Ok(())
 }
 
+fn validate_source_offset(offset: u64, byte_length: u64) -> Result<(), CoreError> {
+    if offset > byte_length {
+        return Err(CoreError::new(
+            CoreErrorCategory::InvalidInput,
+            "The requested byte offset is beyond the current source",
+            false,
+            false,
+        ));
+    }
+    Ok(())
+}
+
+fn validate_durability_acknowledgement(
+    request: &SaveRequest,
+    current: &ExternalRevision,
+    guarantee: DurabilityGuarantee,
+) -> Result<(), CoreError> {
+    if guarantee.requires_acknowledgement()
+        && request
+            .durability_acknowledgement
+            .as_ref()
+            .is_none_or(|acknowledgement| {
+                acknowledgement.source_id != request.source_id
+                    || acknowledgement.expected_external_revision != *current
+                    || acknowledgement.guarantee != guarantee
+            })
+    {
+        return Err(CoreError::new(
+            CoreErrorCategory::AcknowledgementRequired,
+            "This source requires acknowledgement of a weaker persistence guarantee",
+            false,
+            true,
+        ));
+    }
+    Ok(())
+}
+
 fn budget_error(summary: &str) -> CoreError {
     CoreError::new(CoreErrorCategory::BudgetExceeded, summary, false, false)
 }
@@ -943,9 +988,15 @@ fn find_renamed_source(parent: &Path, identity: &NativeIdentity) -> Option<PathB
         .filter_map(Result::ok)
         .map(|entry| entry.path())
         .find(|candidate| {
-            candidate.is_file()
+            is_regular_non_symlink(candidate)
                 && identity::observe_identity(candidate).file_id.as_ref() == Some(expected)
         })
+}
+
+fn is_regular_non_symlink(path: &Path) -> bool {
+    fs::symlink_metadata(path).is_ok_and(|metadata| {
+        metadata.is_file() && !metadata.file_type().is_symlink()
+    })
 }
 
 fn validate_external_target(target: &str) -> Result<String, CoreError> {
@@ -953,6 +1004,7 @@ fn validate_external_target(target: &str) -> Result<String, CoreError> {
         || target
             .chars()
             .any(|character| character.is_control() || matches!(character, '\u{2028}' | '\u{2029}'))
+        || contains_encoded_control(target)
     {
         return Err(unsafe_link_error());
     }
@@ -966,6 +1018,28 @@ fn validate_external_target(target: &str) -> Result<String, CoreError> {
         _ => return Err(unsafe_link_error()),
     }
     Ok(parsed.to_string())
+}
+
+fn contains_encoded_control(target: &str) -> bool {
+    let lower = target.to_ascii_lowercase();
+    if lower.contains("%e2%80%a8") || lower.contains("%e2%80%a9") {
+        return true;
+    }
+    lower.as_bytes().windows(3).any(|window| {
+        window[0] == b'%'
+            && hex_value(window[1]).zip(hex_value(window[2])).is_some_and(|(high, low)| {
+                let value = high * 16 + low;
+                value <= 0x1f || value == 0x7f
+            })
+    })
+}
+
+const fn hex_value(value: u8) -> Option<u8> {
+    match value {
+        b'0'..=b'9' => Some(value - b'0'),
+        b'a'..=b'f' => Some(value - b'a' + 10),
+        _ => None,
+    }
 }
 
 fn unsafe_link_error() -> CoreError {
@@ -1033,6 +1107,7 @@ pub(crate) mod tests {
             .expect("acquire dropped source");
         assert_eq!(first.source_id, second.source_id);
         assert_eq!(first.descriptor.identity.strength, IdentityStrength::Strong);
+        assert!(!first.descriptor.capabilities.reveal_location);
         let serialized = serde_json::to_string(&first).expect("serialize summary");
         assert!(!serialized.contains(&source.path().to_string_lossy().to_string()));
     }
@@ -1048,6 +1123,18 @@ pub(crate) mod tests {
             .read_range(&summary.source_id, 0, 7, 7)
             .expect("read bounded range");
         assert_eq!(result.bytes, b"bounded");
+        assert!(
+            host.read_range(&summary.source_id, 13, 0, 0)
+                .expect("allow zero-length read at end")
+                .bytes
+                .is_empty()
+        );
+        assert_eq!(
+            host.read_range(&summary.source_id, 14, 0, 0)
+                .expect_err("reject offset beyond source")
+                .category,
+            CoreErrorCategory::InvalidInput
+        );
         assert_eq!(
             host.read_range(
                 &summary.source_id,
@@ -1064,6 +1151,18 @@ pub(crate) mod tests {
                 .expect_err("reject overflow")
                 .category,
             CoreErrorCategory::BudgetExceeded
+        );
+    }
+
+    #[test]
+    fn directories_are_rejected_without_granting_source_authority() {
+        let source = TemporarySource::new(b"regular file");
+        let host = DesktopSourceHost::new();
+        assert_eq!(
+            host.acquire(DesktopDelivery::dialog(&source.directory))
+                .expect_err("reject directory")
+                .category,
+            CoreErrorCategory::UnsupportedInput
         );
     }
 
@@ -1122,6 +1221,89 @@ pub(crate) mod tests {
     }
 
     #[test]
+    fn stale_session_and_oversized_payloads_fail_before_replacement() {
+        let source = TemporarySource::new(b"original");
+        let host = DesktopSourceHost::new();
+        let summary = host
+            .acquire(DesktopDelivery::dialog(source.path()))
+            .expect("acquire source");
+        host.note_session_revision(&summary.source_id, 2)
+            .expect("record session revision");
+        let request = |expected_session_revision, bytes| SaveRequest {
+            source_id: summary.source_id.clone(),
+            expected_external_revision: summary.external_revision.clone(),
+            expected_session_revision,
+            bytes,
+            durability_acknowledgement: None,
+        };
+        assert_eq!(
+            host.save(request(1, b"stale edit".to_vec()))
+                .expect_err("reject stale session")
+                .category,
+            CoreErrorCategory::StaleSession
+        );
+        assert_eq!(
+            host.save(request(
+                2,
+                vec![
+                    0;
+                    usize::try_from(MAX_SAVE_BYTES).expect("save budget fits usize") + 1
+                ],
+            ))
+                .expect_err("reject oversized save")
+                .category,
+            CoreErrorCategory::BudgetExceeded
+        );
+        assert_eq!(fs::read(source.path()).expect("read source"), b"original");
+    }
+
+    #[test]
+    fn weaker_guarantee_acknowledgement_is_revision_bound() {
+        let source_id = SourceId("weaker-source".into());
+        let revision = ExternalRevision {
+            identity: glitchpad_core::contracts::DocumentIdentity {
+                authority: glitchpad_core::contracts::IdentityAuthority::Synthetic,
+                scope: "tests".into(),
+                token: "weaker-revision".into(),
+                strength: IdentityStrength::Strong,
+            },
+            byte_length: 8,
+            modified_unix_nanos: Some(1),
+            change_token: None,
+        };
+        let mut request = SaveRequest {
+            source_id: source_id.clone(),
+            expected_external_revision: revision.clone(),
+            expected_session_revision: 1,
+            bytes: b"replacement".to_vec(),
+            durability_acknowledgement: None,
+        };
+        assert_eq!(
+            validate_durability_acknowledgement(
+                &request,
+                &revision,
+                DurabilityGuarantee::RecoverableNonAtomic,
+            )
+            .expect_err("require acknowledgement")
+            .category,
+            CoreErrorCategory::AcknowledgementRequired
+        );
+        request.durability_acknowledgement = Some(
+            glitchpad_core::source::DurabilityAcknowledgement {
+                source_id,
+                expected_external_revision: revision.clone(),
+                guarantee: DurabilityGuarantee::RecoverableNonAtomic,
+            },
+        );
+        validate_durability_acknowledgement(
+            &request,
+            &revision,
+            DurabilityGuarantee::RecoverableNonAtomic,
+        )
+        .expect("accept matching acknowledgement");
+    }
+
+    #[test]
     fn link_policy_requires_one_use_activation_and_safe_scheme() {
         let host = DesktopSourceHost::new();
         let proof = host.begin_user_activation();
@@ -1151,6 +1333,39 @@ pub(crate) mod tests {
                 .expect_err("reject file scheme")
                 .category,
             CoreErrorCategory::InvalidInput
+        );
+        for unsafe_target in [
+            "https://user:secret@example.com",
+            "https://example.com/%0aheader",
+            "https://example.com/%E2%80%A8separator",
+        ] {
+            let proof = host.begin_user_activation();
+            assert_eq!(
+                host.authorize_external_link(proof, unsafe_target)
+                    .expect_err("reject unsafe target")
+                    .category,
+                CoreErrorCategory::InvalidInput
+            );
+        }
+    }
+
+    #[test]
+    fn expired_user_activation_cannot_authorize_a_link() {
+        let host = DesktopSourceHost::new();
+        let proof = host.begin_user_activation();
+        host.state
+            .lock()
+            .expect("lock host state")
+            .activations
+            .insert(
+                proof.id.clone(),
+                Instant::now() - USER_ACTIVATION_LIFETIME - Duration::from_millis(1),
+            );
+        assert_eq!(
+            host.authorize_external_link(proof, "https://example.com")
+                .expect_err("reject expired activation")
+                .category,
+            CoreErrorCategory::CapabilityDenied
         );
     }
 }

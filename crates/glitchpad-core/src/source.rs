@@ -14,6 +14,7 @@ pub const MAX_SAVE_BYTES: u64 = 16 * 1024 * 1024;
 mod optional_u64_decimal {
     use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
+    #[allow(clippy::ref_option)]
     pub fn serialize<S>(value: &Option<u64>, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,

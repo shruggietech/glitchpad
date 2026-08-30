@@ -107,7 +107,8 @@ mod tests {
     fn replacement_commits_complete_content_and_reports_platform_guarantee() {
         let source = TemporarySource::new(b"original");
         let (_, revision) = observe_revision(source.path()).expect("observe source");
-        let guarantee = replace(source.path(), b"complete replacement", &revision).expect("replace");
+        let guarantee =
+            replace(source.path(), b"complete replacement", &revision).expect("replace");
         assert_eq!(
             fs::read(source.path()).expect("read replacement"),
             b"complete replacement"
@@ -130,8 +131,8 @@ mod tests {
             modified_unix_nanos: None,
             change_token: None,
         };
-        let error = replace(source.path(), b"replacement", &revision)
-            .expect_err("replacement must fail");
+        let error =
+            replace(source.path(), b"replacement", &revision).expect_err("replacement must fail");
         assert_eq!(error.category, CoreErrorCategory::NotFound);
         assert!(!source.path().exists());
     }
@@ -157,16 +158,12 @@ mod tests {
     fn destination_change_during_preparation_aborts_commit_and_cleans_temporary_file() {
         let source = TemporarySource::new(b"original");
         let (_, expected) = observe_revision(source.path()).expect("observe source");
-        let error = replace_with_revision_check(
-            source.path(),
-            b"local replacement",
-            &expected,
-            |path| {
+        let error =
+            replace_with_revision_check(source.path(), b"local replacement", &expected, |path| {
                 fs::write(path, b"newer external replacement").expect("external replacement");
                 observe_revision(path).map(|(_, revision)| revision)
-            },
-        )
-        .expect_err("stale prepared replacement must fail");
+            })
+            .expect_err("stale prepared replacement must fail");
         assert_eq!(error.category, CoreErrorCategory::Conflict);
         assert_eq!(
             fs::read(source.path()).expect("read destination"),

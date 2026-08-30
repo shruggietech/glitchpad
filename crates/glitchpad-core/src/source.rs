@@ -277,10 +277,7 @@ mod tests {
         let mut original = revision("file-a", 12);
         original.modified_unix_nanos = Some(1_788_044_400_000_000_123);
         let value = serde_json::to_value(&original).expect("serialize revision");
-        assert_eq!(
-            value["modified_unix_nanos"],
-            "1788044400000000123"
-        );
+        assert_eq!(value["modified_unix_nanos"], "1788044400000000123");
         let decoded: ExternalRevision =
             serde_json::from_value(value).expect("deserialize revision");
         assert_eq!(decoded, original);

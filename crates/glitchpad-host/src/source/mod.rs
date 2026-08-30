@@ -16,10 +16,10 @@ use glitchpad_core::contracts::{
     SourceDescriptor, SourceKind, compare_identity,
 };
 use glitchpad_core::source::{
-    DesktopSourceSummary, ExternalRevision, LinkAuthorization,
-    LinkAuthorizationId, MAX_SAVE_BYTES, MAX_SOURCE_CHUNK_BYTES, ReadRangeResult,
-    RevalidationResult, RevalidationStatus, SaveReceipt, SaveRequest, SourceEvent, SourceId,
-    SourceMetadata, SourceState, StreamId, StreamLease, UserActivationId, UserActivationProof,
+    DesktopSourceSummary, ExternalRevision, LinkAuthorization, LinkAuthorizationId, MAX_SAVE_BYTES,
+    MAX_SOURCE_CHUNK_BYTES, ReadRangeResult, RevalidationResult, RevalidationStatus, SaveReceipt,
+    SaveRequest, SourceEvent, SourceId, SourceMetadata, SourceState, StreamId, StreamLease,
+    UserActivationId, UserActivationProof,
 };
 use url::Url;
 use uuid::Uuid;

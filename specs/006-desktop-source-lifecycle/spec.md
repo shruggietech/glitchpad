@@ -18,7 +18,7 @@
 - Q: May the interface acquire an arbitrary path directly? A: No. Paths enter only through trusted desktop deliveries such as a system dialog, drag-and-drop, command-line launch, or operating-system association. The interface receives only opaque source IDs and bounded values.
 - Q: What happens when the host cannot provide the full atomic durability protocol? A: The host must classify the weaker guarantee before any write, require explicit acknowledgement for that specific save, retain a recoverable backup until success, and never treat a partial operation as a successful save.
 
-## User Scenarios & Testing *(mandatory)*
+## User Scenarios & Testing _(mandatory)_
 
 ### User Story 1 - Open an explicitly delivered desktop file (Priority: P1)
 
@@ -97,7 +97,7 @@ A user may explicitly request that an allowed external link open through the ope
 - A source name contains invalid Unicode, control characters, or values unsafe for diagnostics.
 - An external link uses mixed-case schemes, leading whitespace, embedded credentials, encoded controls, or a deceptive unsupported scheme.
 
-## Requirements *(mandatory)*
+## Requirements _(mandatory)_
 
 ### Functional Requirements
 
@@ -134,7 +134,7 @@ A user may explicitly request that an allowed external link open through the ope
 - **Save receipt**: Durable evidence of a completed replacement and the new external revision.
 - **Link authorization**: One-use approval for one normalized allowed target tied to a current explicit user action.
 
-## Success Criteria *(mandatory)*
+## Success Criteria _(mandatory)_
 
 ### Measurable Outcomes
 

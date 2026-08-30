@@ -1,5 +1,9 @@
 //! Platform-independent domain primitives for Glitchpad.
 
+pub mod contracts;
+pub mod detection;
+pub mod session;
+
 /// The user-facing product name.
 pub const PRODUCT_NAME: &str = "Glitchpad";
 

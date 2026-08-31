@@ -42,10 +42,18 @@ export function Mermaid({ chart }: { chart: string }) {
       </pre>
     );
   return (
-    <div
-      className="mermaid-diagram"
-      aria-label="Rendered diagram"
-      dangerouslySetInnerHTML={{ __html: svg }}
-    />
+    <figure className="mermaid-figure">
+      <div
+        className="mermaid-diagram"
+        aria-hidden="true"
+        dangerouslySetInnerHTML={{ __html: svg }}
+      />
+      <figcaption className="sr-only">
+        Mermaid diagram source:
+        <pre>
+          <code>{chart}</code>
+        </pre>
+      </figcaption>
+    </figure>
   );
 }

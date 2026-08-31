@@ -45,7 +45,7 @@ export function adaptTechnicalSpecification(source) {
   return `${frontmatter}${escapeMdx(withoutTitle).trimEnd()}\n`;
 }
 
-function extractSection(source, heading) {
+export function extractSection(source, heading) {
   const lines = source.replaceAll('\r\n', '\n').split('\n');
   const start = lines.findIndex((line) => line.trim() === `## ${heading}`);
   if (start === -1) return '';
@@ -102,7 +102,7 @@ async function main() {
     'export const installableReleaseAvailable = false;',
     `export const licenseText = ${JSON.stringify(license.trimEnd())};`,
     `export const noticeText = ${JSON.stringify(notice.trimEnd())};`,
-    `export const supportText = ${JSON.stringify(extractSection(support, 'Getting help') || support.trimEnd())};`,
+    `export const supportText = ${JSON.stringify(extractSection(support, 'Where to ask') || support.trimEnd())};`,
     `export const securityText = ${JSON.stringify(extractSection(security, 'Reporting a vulnerability') || security.trimEnd())};`,
     '',
   ].join('\n');

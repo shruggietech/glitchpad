@@ -33,3 +33,16 @@ test('light, dark, and reduced-motion preferences remain usable', async ({
   const landmarks = await page.locator('main, [role="main"]').count();
   expect(landmarks).toBe(1);
 });
+
+test('rendered Mermaid diagrams retain an assistive-text source', async ({
+  page,
+}) => {
+  await page.goto('/docs/technical-specification');
+  const diagram = page.locator('figure.mermaid-figure').first();
+  await expect(diagram).toBeAttached({ timeout: 15_000 });
+  await expect(diagram.locator('.mermaid-diagram')).toHaveAttribute(
+    'aria-hidden',
+    'true',
+  );
+  await expect(diagram.locator('figcaption')).toContainText('flowchart TB');
+});

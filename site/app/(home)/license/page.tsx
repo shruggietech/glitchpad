@@ -1,12 +1,12 @@
-import type { Metadata } from 'next';
 import { ProsePage } from '@/components/prose-page';
 import { licenseText, noticeText } from '@/lib/generated/project';
+import { routeMetadata } from '@/lib/metadata';
 
-export const metadata: Metadata = {
+export const metadata = routeMetadata({
   title: 'License',
   description: 'Glitchpad license and attribution information.',
-  alternates: { canonical: '/license' },
-};
+  path: '/license',
+});
 
 export default function LicensePage() {
   return (

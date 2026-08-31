@@ -1,23 +1,18 @@
-import type { Metadata } from 'next';
 import { ProsePage } from '@/components/prose-page';
+import { RepositoryMarkdown } from '@/components/repository-markdown';
 import { supportText } from '@/lib/generated/project';
+import { routeMetadata } from '@/lib/metadata';
 
-export const metadata: Metadata = {
+export const metadata = routeMetadata({
   title: 'Support',
   description: 'How to get help with Glitchpad.',
-  alternates: { canonical: '/support' },
-};
+  path: '/support',
+});
 
 export default function SupportPage() {
   return (
     <ProsePage title="Support">
-      <p className="authority-copy">{supportText}</p>
-      <p>
-        <a href="https://github.com/ShruggieTech/glitchpad/issues">
-          Open or review a GitHub issue
-        </a>
-        .
-      </p>
+      <RepositoryMarkdown>{supportText}</RepositoryMarkdown>
     </ProsePage>
   );
 }

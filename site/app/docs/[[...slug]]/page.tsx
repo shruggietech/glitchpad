@@ -7,6 +7,7 @@ import {
   DocsTitle,
 } from 'fumadocs-ui/page';
 import { Footer } from '@/components/footer';
+import { routeMetadata } from '@/lib/metadata';
 import { source } from '@/lib/source';
 import { getMDXComponents } from '@/mdx-components';
 
@@ -47,9 +48,11 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const page = source.getPage((await params).slug);
   if (!page) notFound();
-  return {
+  return routeMetadata({
     title: page.data.title,
-    description: page.data.description,
-    alternates: { canonical: page.url },
-  };
+    description:
+      page.data.description ??
+      `${page.data.title} documentation for Glitchpad.`,
+    path: page.url,
+  });
 }

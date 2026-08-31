@@ -1,4 +1,11 @@
 import { ProsePage } from '@/components/prose-page';
+import { routeMetadata } from '@/lib/metadata';
+
+export const metadata = routeMetadata({
+  title: 'Page not found',
+  description: 'The requested Glitchpad page does not exist.',
+  path: '/404',
+});
 
 export default function NotFound() {
   return (

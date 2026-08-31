@@ -1,0 +1,895 @@
+{
+  "$schema": "./canon.schema.json",
+  "id": "shruggietech",
+  "kind": "canon",
+  "version": "1.0.0",
+  "generated": "2026-08-22",
+  "generator": "shruggie-brandbuilder/gen_canon.py",
+  "summary": "The ShruggieTech inheritance root. Every sub-brand kit is generated against this file. Values marked immutable are copied verbatim and never re-decided. Values marked constrained are chosen per sub-brand but must satisfy the stated rule, which is machine-checkable. Everything else is free.",
+  "provenance": {
+    "primary_source": "shruggie-web styles/globals.css, lifted into shruggietech-brand/tokens/*.css",
+    "verified_against": [
+      "fragcap-brand v1.1.0",
+      "go-schedule-brand"
+    ],
+    "contrast_method": "WCAG 2.1 relative luminance, re-derived from hex by coloraide at generation time",
+    "rule": "No contrast number in this file was typed by hand. Regenerate rather than edit.",
+    "confidence_labels": {
+      "VERIFIED BY INSPECTION": "checked against real installed files or measured from real values",
+      "RESEARCH-SOURCED": "from provider documentation, not independently confirmed here"
+    }
+  },
+  "tiers": {
+    "immutable": "Inherited verbatim. A sub-brand that changes one of these is not a ShruggieTech sub-brand.",
+    "constrained": "Chosen per sub-brand, must satisfy the attached machine-checkable rule.",
+    "free": "Entirely the sub-brand's own."
+  },
+  "typography": {
+    "tier": "immutable",
+    "families": {
+      "display": {
+        "name": "Space Grotesk",
+        "weights": [
+          500,
+          700
+        ],
+        "stack": "\"Space Grotesk\", system-ui, sans-serif"
+      },
+      "body": {
+        "name": "Geist",
+        "weights": [
+          400,
+          500
+        ],
+        "stack": "\"Geist\", system-ui, sans-serif"
+      },
+      "mono": {
+        "name": "Geist Mono",
+        "weights": [
+          400
+        ],
+        "stack": "\"Geist Mono\", ui-monospace, monospace"
+      }
+    },
+    "hard_rules": [
+      "Never introduce a fourth family. Domain needs are met with the three above.",
+      "Geist ships 400 and 500 only. Geist Mono ships 400 only. Requesting a weight that does not exist makes the renderer synthesise a faux bold, which prints badly and forces outlined glyphs into PDFs.",
+      "In mono contexts carry emphasis with color, never with weight.",
+      "Sentence case is the default. Uppercase is reserved for compact labels and table metadata.",
+      "Disable ligatures and smart-quote substitution on code, pre, kbd and samp."
+    ],
+    "scale": {
+      "display": {
+        "xl": {
+          "size": "4.5rem",
+          "px": 72,
+          "line_height": 1.05,
+          "tracking": "-0.03em"
+        },
+        "lg": {
+          "size": "3.5rem",
+          "px": 56,
+          "line_height": 1.1,
+          "tracking": "-0.025em"
+        },
+        "md": {
+          "size": "2.5rem",
+          "px": 40,
+          "line_height": 1.15,
+          "tracking": "-0.02em"
+        },
+        "sm": {
+          "size": "1.75rem",
+          "px": 28,
+          "line_height": 1.2,
+          "tracking": "-0.015em"
+        },
+        "xs": {
+          "size": "1.25rem",
+          "px": 20,
+          "line_height": 1.25,
+          "tracking": "-0.01em"
+        }
+      },
+      "body": {
+        "lg": {
+          "size": "1.15rem",
+          "px": 18.4,
+          "line_height": 1.6
+        },
+        "md": {
+          "size": "1rem",
+          "px": 16,
+          "line_height": 1.7
+        },
+        "sm": {
+          "size": "0.875rem",
+          "px": 14,
+          "line_height": 1.6
+        },
+        "xs": {
+          "size": "0.75rem",
+          "px": 12,
+          "line_height": 1.5
+        }
+      }
+    },
+    "tracking": {
+      "eyebrow": "0.12em",
+      "mono_label": "0.08em"
+    },
+    "sourcing": {
+      "evidence": "VERIFIED BY INSPECTION of installed skills, 2026-08-22. Not inferred.",
+      "rule": "Bundle the binaries. Do not fetch fonts at build time.",
+      "order": [
+        {
+          "rank": 1,
+          "source": "Bundled in the kit at assets/fonts/",
+          "why": "No network, nothing to fail. This is what shruggie-docs already does (six TTFs, 703KB, embedded into every emitted .docx) and what Anthropic's own `morning` skill does (fraunces woff2, base64'd into a data URI).",
+          "applies_to": "anything the skill itself renders: PDFs, DOCX, specimens, static HTML mocks, social previews"
+        },
+        {
+          "rank": 2,
+          "source": "npm packages in the GENERATED project",
+          "why": "Different context from rank 1. A Next.js project the kit scaffolds uses `geist` (geist/font/sans, geist/font/mono) and next/font/google for Space Grotesk. The build machine has registry access; the skill sandbox may not.",
+          "applies_to": "the consumer application, never the skill's own rendering path"
+        },
+        {
+          "rank": 3,
+          "source": "cdn.shruggie.tech, recorded as provenance only",
+          "why": "Document where the bundled bytes came from so they can be refreshed. Never a runtime or build-time request.",
+          "applies_to": "the refresh procedure, documented in the kit README"
+        }
+      ],
+      "hard_warning": "fonts.gstatic.com is BLOCKED by the egress proxy in the Claude sandbox. fonts.googleapis.com (the CSS) resolves, so a Google Fonts fetch appears to succeed and then fails at the binary step with a 403 tunnel error or curl exit 56. Any build path that reaches for Google Fonts is broken by construction.",
+      "flat_knowledge_caveat": "In a FLAT KNOWLEDGE upload (Gemini Gems knowledge, Custom GPT Knowledge) a font binary is inert, because those surfaces have no filesystem and no execution. That is a statement about what can be USED there, and it is not an argument against bundling. The skill-package path is unaffected.",
+      "size_budget": "Six TTFs run about 700KB. Claude's Skills API allows 30MB total and OpenAI allows 50MB. Fonts are not near any limit."
+    },
+    "scripting": {
+      "evidence": "VERIFIED BY INSPECTION, 2026-08-22.",
+      "note": "PowerShell in skill packages is fine and already in use: shruggie-powershell ships six .ps1 files, shruggie-markdown and shruggie-speckit ship one each. The only real constraint is the execution host.",
+      "rule": "Write build and verify scripts that must run inside the Claude or OpenAI cloud sandbox in Python, because those containers are Linux. PowerShell is correct for anything targeting a Windows workstation via Claude Code, which is the ShruggieTech house environment."
+    }
+  },
+  "geometry": {
+    "tier": "immutable",
+    "radius": {
+      "sm": {
+        "px": 6,
+        "applies_to": [
+          "chips",
+          "small controls"
+        ]
+      },
+      "md": {
+        "px": 8,
+        "applies_to": [
+          "buttons",
+          "inputs",
+          "popovers",
+          "dropdowns",
+          "selects"
+        ]
+      },
+      "xl": {
+        "px": 12,
+        "applies_to": [
+          "cards",
+          "panels",
+          "dialogs"
+        ]
+      },
+      "2xl": {
+        "px": 16,
+        "applies_to": [
+          "large feature surfaces"
+        ]
+      },
+      "full": {
+        "px": 9999,
+        "applies_to": [
+          "badges",
+          "pills",
+          "avatars"
+        ]
+      },
+      "base_variable": "8px"
+    },
+    "spacing": {
+      "base": 4,
+      "scale_px": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32,
+        48,
+        64,
+        96,
+        120
+      ]
+    },
+    "layout": {
+      "content_max": "1200px",
+      "narrow_max": "720px",
+      "gutter": {
+        "base": "24px",
+        "md@768": "48px",
+        "lg@1024": "80px"
+      },
+      "section_gap": {
+        "base": "120px",
+        "md@768": "160px",
+        "lg@1024": "200px"
+      },
+      "component_gap": {
+        "base": "48px",
+        "md@768": "64px"
+      }
+    },
+    "density": {
+      "rule": "Every kit ships BOTH. A product switches per screen. A sub-brand does not pick one as its baseline.",
+      "default": {
+        "control_height": 40,
+        "row_height": 48,
+        "card_padding": 24,
+        "stack_gap": 16
+      },
+      "compact": {
+        "control_height": 32,
+        "row_height": 32,
+        "card_padding": 16,
+        "stack_gap": 8,
+        "use_when": "dense tabular data: packet rows, schedule grids, log views"
+      }
+    }
+  },
+  "color": {
+    "tier_note": "The identity accent is constrained. Everything else here is immutable.",
+    "immutable": {
+      "black": {
+        "hex": "#000000",
+        "oklch": "oklch(0.0000 0.0000 0.00)",
+        "hue": null,
+        "role": "dark base surface",
+        "contrast": {
+          "on_dark_base": 1.0,
+          "on_light_base": 19.75
+        },
+        "legal_foreground_when_used_as_fill": {
+          "color": "#FFFFFF",
+          "ratio": 21.0
+        }
+      },
+      "white": {
+        "hex": "#FFFFFF",
+        "oklch": "oklch(1.0000 0.0000 0.00)",
+        "hue": null,
+        "role": "primary text on dark",
+        "contrast": {
+          "on_dark_base": 21.0,
+          "on_light_base": 1.06
+        },
+        "legal_foreground_when_used_as_fill": {
+          "color": "#000000",
+          "ratio": 21.0
+        }
+      },
+      "orange": {
+        "hex": "#FF5300",
+        "oklch": "oklch(0.6738 0.2190 38.33)",
+        "hue": 38.3,
+        "role": "shared emphasis and warning hue",
+        "contrast": {
+          "on_dark_base": 6.49,
+          "on_light_base": 3.04
+        },
+        "legal_foreground_when_used_as_fill": {
+          "color": "#000000",
+          "ratio": 6.49
+        },
+        "note": "The lineage thread. Every sub-brand inherits this exact value even when it shares no other color with the parent. fragcap kept it while sharing zero else."
+      },
+      "orange-cta": {
+        "hex": "#C24000",
+        "oklch": "oklch(0.5519 0.1759 39.26)",
+        "hue": 39.3,
+        "role": "CTA fill and required-field marks",
+        "contrast": {
+          "on_dark_base": 4.03,
+          "on_light_base": 4.9
+        },
+        "legal_foreground_when_used_as_fill": {
+          "color": "#FFFFFF",
+          "ratio": 5.21
+        },
+        "note": "Legal as a FILL with white text. Illegal as text on the dark base (measured below)."
+      },
+      "fault": {
+        "hex": "#E9505F",
+        "oklch": "oklch(0.6437 0.1882 18.59)",
+        "hue": 18.6,
+        "role": "failure state on dark surfaces",
+        "contrast": {
+          "on_dark_base": 5.78,
+          "on_light_base": 3.42
+        },
+        "legal_foreground_when_used_as_fill": {
+          "color": "#000000",
+          "ratio": 5.78
+        },
+        "note": "Promoted to canon from fragcap 1.1.0. The parent canon had no failure color at all."
+      },
+      "fault-deep": {
+        "hex": "#C0293A",
+        "oklch": "oklch(0.5308 0.1857 20.87)",
+        "hue": 20.9,
+        "role": "failure state on light surfaces",
+        "contrast": {
+          "on_dark_base": 3.62,
+          "on_light_base": 5.46
+        },
+        "legal_foreground_when_used_as_fill": {
+          "color": "#FFFFFF",
+          "ratio": 5.8
+        },
+        "note": "Promoted to canon from fragcap 1.1.0."
+      }
+    },
+    "neutral_ramp": {
+      "gray-950": {
+        "hex": "#0A0A0A",
+        "oklch": "oklch(0.1448 0.0000 0.00)",
+        "hue": null,
+        "role": "elevated dark surface",
+        "contrast": {
+          "on_dark_base": 1.06,
+          "on_light_base": 18.62
+        },
+        "legal_foreground_when_used_as_fill": {
+          "color": "#FFFFFF",
+          "ratio": 19.8
+        }
+      },
+      "gray-900": {
+        "hex": "#111111",
+        "oklch": "oklch(0.1776 0.0000 0.00)",
+        "hue": null,
+        "role": "secondary dark surface, muted fill",
+        "contrast": {
+          "on_dark_base": 1.11,
+          "on_light_base": 17.76
+        },
+        "legal_foreground_when_used_as_fill": {
+          "color": "#FFFFFF",
+          "ratio": 18.88
+        }
+      },
+      "gray-800": {
+        "hex": "#1A1A1A",
+        "oklch": "oklch(0.2178 0.0000 0.00)",
+        "hue": null,
+        "role": "hover fill on dark",
+        "contrast": {
+          "on_dark_base": 1.21,
+          "on_light_base": 16.37
+        },
+        "legal_foreground_when_used_as_fill": {
+          "color": "#FFFFFF",
+          "ratio": 17.4
+        }
+      },
+      "border-dark": {
+        "hex": "#262626",
+        "oklch": "oklch(0.2686 0.0000 0.00)",
+        "hue": null,
+        "role": "hairline border on dark",
+        "contrast": {
+          "on_dark_base": 1.39,
+          "on_light_base": 14.23
+        },
+        "legal_foreground_when_used_as_fill": {
+          "color": "#FFFFFF",
+          "ratio": 15.13
+        }
+      },
+      "gray-600": {
+        "hex": "#6B6B6B",
+        "oklch": "oklch(0.5278 0.0000 0.00)",
+        "hue": null,
+        "role": "muted text on LIGHT surfaces only",
+        "contrast": {
+          "on_dark_base": 3.94,
+          "on_light_base": 5.01
+        },
+        "legal_foreground_when_used_as_fill": {
+          "color": "#FFFFFF",
+          "ratio": 5.33
+        }
+      },
+      "gray-400": {
+        "hex": "#9A9A9A",
+        "oklch": "oklch(0.6862 0.0000 0.00)",
+        "hue": null,
+        "role": "muted text on DARK surfaces only",
+        "contrast": {
+          "on_dark_base": 7.46,
+          "on_light_base": 2.65
+        },
+        "legal_foreground_when_used_as_fill": {
+          "color": "#000000",
+          "ratio": 7.46
+        }
+      },
+      "gray-200": {
+        "hex": "#E5E5E5",
+        "oklch": "oklch(0.9219 0.0000 0.00)",
+        "hue": null,
+        "role": "hairline border on light",
+        "contrast": {
+          "on_dark_base": 16.67,
+          "on_light_base": 1.18
+        },
+        "legal_foreground_when_used_as_fill": {
+          "color": "#000000",
+          "ratio": 16.67
+        }
+      },
+      "gray-100": {
+        "hex": "#F5F5F5",
+        "oklch": "oklch(0.9702 0.0000 0.00)",
+        "hue": null,
+        "role": "secondary light surface",
+        "contrast": {
+          "on_dark_base": 19.26,
+          "on_light_base": 1.03
+        },
+        "legal_foreground_when_used_as_fill": {
+          "color": "#000000",
+          "ratio": 19.26
+        }
+      },
+      "light-base": {
+        "hex": "#F8F8F6",
+        "oklch": "oklch(0.9786 0.0026 106.45)",
+        "hue": null,
+        "role": "light reading surface",
+        "contrast": {
+          "on_dark_base": 19.75,
+          "on_light_base": 1.0
+        },
+        "legal_foreground_when_used_as_fill": {
+          "color": "#000000",
+          "ratio": 19.75
+        }
+      }
+    },
+    "parent_identity_accent": {
+      "note": "ShruggieTech's own accent. A sub-brand replaces this trio with its own, subject to the rule below.",
+      "bright": {
+        "hex": "#2BCC73",
+        "oklch": "oklch(0.7457 0.1802 152.99)",
+        "hue": 153.0,
+        "role": "identity accent, links, focus, icons",
+        "contrast": {
+          "on_dark_base": 9.99,
+          "on_light_base": 1.98
+        },
+        "legal_foreground_when_used_as_fill": {
+          "color": "#000000",
+          "ratio": 9.99
+        }
+      },
+      "deep": {
+        "hex": "#00AB21",
+        "oklch": "oklch(0.6433 0.2094 143.88)",
+        "hue": 143.9,
+        "role": "hover / active",
+        "contrast": {
+          "on_dark_base": 6.85,
+          "on_light_base": 2.88
+        },
+        "legal_foreground_when_used_as_fill": {
+          "color": "#000000",
+          "ratio": 6.85
+        }
+      },
+      "accessible": {
+        "hex": "#037B40",
+        "oklch": "oklch(0.5114 0.1308 152.98)",
+        "hue": 153.0,
+        "role": "the accent on LIGHT surfaces",
+        "contrast": {
+          "on_dark_base": 3.91,
+          "on_light_base": 5.05
+        },
+        "legal_foreground_when_used_as_fill": {
+          "color": "#FFFFFF",
+          "ratio": 5.37
+        },
+        "note": "NEW in canon 1.0.0. Derived at hue 152.99 to clear 5:1 on the light base. The parent kit set bright green as the light-mode link color, which measures 1.98:1 and is a live accessibility defect."
+      }
+    },
+    "dark_surfaces": {
+      "tier": "constrained",
+      "rule": "One hue family, OKLCH lightness between 0.10 and 0.22, chroma at or below 0.030. Subtle depth as the page scrolls, never obvious.",
+      "parent_values": {
+        "surface-warm": {
+          "hex": "#0D0F12",
+          "oklch": "oklch(0.1676 0.0071 258.37)"
+        },
+        "surface-rich": {
+          "hex": "#0A0E18",
+          "oklch": "oklch(0.1649 0.0222 267.23)"
+        },
+        "surface-slate": {
+          "hex": "#111318",
+          "oklch": "oklch(0.1869 0.0107 268.11)"
+        },
+        "surface-deep": {
+          "hex": "#060608",
+          "oklch": "oklch(0.1234 0.0055 285.56)"
+        },
+        "surface-products": {
+          "hex": "#0E1014",
+          "oklch": "oklch(0.1727 0.0089 264.31)"
+        }
+      }
+    },
+    "constrained_rules": {
+      "identity_accent": {
+        "tier": "constrained",
+        "checks": [
+          {
+            "id": "hue-separation",
+            "rule": "OKLCH hue at least 30 degrees from every existing sibling IDENTITY accent.",
+            "current_siblings": {
+              "shruggietech": {
+                "hex": "#2BCC73",
+                "hue": 153.0
+              },
+              "fragcap": {
+                "hex": "#27C7E7",
+                "hue": 215.7
+              },
+              "go-schedule": {
+                "hex": "#58A6FF",
+                "hue": 253.3
+              }
+            },
+            "minimum_observed_separation_deg": 37.6,
+            "scope_note": "Compare identity accents only. go-schedule's Interval Mint sits 18.8 degrees from green but is a semantic success color, not the identity accent, so it is out of scope for this check."
+          },
+          {
+            "id": "contrast-dark",
+            "rule": "At least 4.5:1 against the dark base."
+          },
+          {
+            "id": "light-variant",
+            "rule": "A separate accessible variant clearing 4.5:1 against the light base MUST exist. The bright accent is almost never legal as text on light."
+          },
+          {
+            "id": "foreground-pairing",
+            "rule": "The legal text color on top of the accent fill must be measured and recorded, never assumed."
+          },
+          {
+            "id": "orange-distance",
+            "rule": "At least 30 degrees from the inherited orange at hue 38.3, so emphasis stays distinguishable from identity."
+          }
+        ]
+      },
+      "chart_palette": {
+        "tier": "constrained",
+        "rule": "Derived from the identity accent by formula, never hand-picked. Rotate hue by 0, -52, +52, -104, +104 degrees off the accent; hold chroma at 0.92x for entries 2-5; then SOLVE lightness against the actual surface, taking the value closest to the target that still clears 4.5:1.",
+        "target_lightness": {
+          "on_dark": "the accent's own OKLCH lightness, clamped to 0.58-0.82",
+          "on_light": "the ACCESSIBLE variant's own lightness, clamped to 0.35-0.62"
+        },
+        "two_failure_modes_this_guards_against": [
+          "A palette tuned for a black background is too pale to read on near-white. Solve against the real surface.",
+          "A naive solve runs entries to near-monochrome extremes that technically pass at 9:1 and lose the brand. Take the value closest to target, not the first one found.",
+          "Do not re-darken on the light path. The accessible variant is already darkened; darkening twice produces the 9:1 failure above."
+        ],
+        "reference_implementation": "templates/gen_nextjs.py charts()"
+      }
+    }
+  },
+  "icons": {
+    "tier": "immutable",
+    "set": "lucide",
+    "why_immutable": "Icon set is the single biggest source of agent drift and standardising costs nothing. Two ShruggieTech products must not read as two companies.",
+    "grid": 24,
+    "stroke_px": [
+      1.5,
+      2.0
+    ],
+    "caps": "round or butt",
+    "color": "currentColor",
+    "rendering": "inline SVG so icons inherit the semantic text token of their container",
+    "bespoke_icons": "A sub-brand MAY draw domain icons that lucide lacks (a packet lane, a cron cell). They are drawn to the same 24 grid and stroke spec and shipped in the kit's icons/ directory. Swapping to a different icon library is not permitted.",
+    "third_party_logos": "Use the entity-icon PNGs from the ShruggieTech CDN index rather than redrawing another company's mark."
+  },
+  "motion": {
+    "tier": "constrained",
+    "rule": "Interface transitions between 120ms and 300ms on an approved easing. Decorative loops are permitted only if they respect prefers-reduced-motion.",
+    "approved_easing": [
+      "cubic-bezier(.2,.6,.2,1)",
+      "ease-out"
+    ],
+    "forbidden": [
+      "pulsing glow",
+      "glitch effects",
+      "screen shake",
+      "decorative scan lines"
+    ]
+  },
+  "accessibility": {
+    "tier": "immutable",
+    "floor": "WCAG 2.1 AA at rendered size.",
+    "rules": [
+      "Every interactive element carries a visible 2px focus ring at 2px offset, driven by :focus-visible.",
+      "Status is never carried by color alone. Every state ships a label or a shape.",
+      "Respect prefers-reduced-motion on every transition and animation.",
+      "The bright identity accent is never body text on a light surface. Use the accessible variant.",
+      "Contrast claims are re-derived from hex on every build. A kit that ships a transcribed ratio fails verify."
+    ]
+  },
+  "endorsement": {
+    "tier": "immutable",
+    "text": "A ShruggieTech project",
+    "typeface": "Geist Mono",
+    "case": "uppercase",
+    "tracking": "positive",
+    "placement": "footer, About page, repository metadata, title-page colophon, social preview",
+    "rules": [
+      "Visually subordinate to the product's own mark.",
+      "Outside the product logo's clear space.",
+      "Never combine the parent mark and the product mark into a single lockup."
+    ]
+  },
+  "voice": {
+    "tier": "constrained",
+    "registers": {
+      "direct-witty": "parent ShruggieTech: confidently scrappy, we/you, sparing humour",
+      "precise-dry": "fragcap: technically literate, states prerequisites and limits",
+      "operator-runbook": "go-schedule: exact nouns, explicit policy"
+    },
+    "shruggie_flourish": {
+      "glyph": "¯\\_(ツ)_/¯",
+      "pairing": "We'll figure it out.",
+      "rule": "Opt-in per sub-brand. At most one moment per view, always in the identity accent. fragcap correctly declines it: a security-adjacent tool should not wink."
+    },
+    "banned_rhetoric": [
+      {
+        "pattern": "X, not Y",
+        "example": "evidence, not theatre",
+        "why": "The most recognisable tell of machine-written copy. It substitutes a shape for an argument.",
+        "enforced": true
+      },
+      {
+        "pattern": "X over Y",
+        "why": "Same device wearing a different coat.",
+        "enforced": true
+      },
+      {
+        "pattern": "rather than merely Z",
+        "why": "Same device.",
+        "enforced": true
+      },
+      {
+        "pattern": "trailing 'never decorate'-style coda",
+        "why": "Tacked onto a sentence that had already finished.",
+        "enforced": true
+      },
+      {
+        "pattern": "em-dash as default connector",
+        "why": "House style. Prefer parentheses, commas, or hyphens.",
+        "enforced": true
+      },
+      {
+        "pattern": "synergy / leverage / best-in-class / revolutionary / effortless",
+        "why": "Corporate filler.",
+        "enforced": true
+      }
+    ],
+    "preferred_language": {
+      "prefer": [
+        "you",
+        "your project",
+        "requires",
+        "emits",
+        "records",
+        "supported",
+        "experimental",
+        "unknown"
+      ],
+      "avoid": [
+        "the operator",
+        "the end user",
+        "unlocks",
+        "dominates",
+        "supercharges",
+        "flawless"
+      ]
+    }
+  },
+  "shadcn": {
+    "why": "shadcn is how a Next.js agent's hands already work. A kit that only publishes --brand-* variables gets read, agreed with, and then ignored in favour of bg-slate-900. Mapping canon onto shadcn's own slot names is what makes the brand the path of least resistance.",
+    "radius_pegs": {
+      "deviation": "shadcn derives its radius scale from a single --radius by fixed ratios (sm 0.6x, md 0.8x, lg 1x, xl 1.4x). That derivation cannot land 6/8/12 simultaneously. We therefore override the derived steps explicitly in @theme inline. The pegs are non-negotiable; the ratio is not.",
+      "values": {
+        "--radius": "8px",
+        "--radius-sm": "6px",
+        "--radius-md": "8px",
+        "--radius-lg": "10px",
+        "--radius-xl": "12px",
+        "--radius-2xl": "16px"
+      },
+      "lands_on": {
+        "--radius-sm": "chips",
+        "--radius-md": "Button, Input, Select, Popover, Dropdown",
+        "--radius-xl": "Card, Dialog",
+        "--radius-2xl": "large feature surfaces"
+      }
+    },
+    "slot_map": {
+      "note": "ACCENT / ACCENT_DEEP / ACCENT_LIGHT are substituted with the sub-brand's identity accent trio. Everything else is inherited verbatim.",
+      "dark": {
+        "--background": "#000000",
+        "--foreground": "#FFFFFF",
+        "--card": "#0D0F12",
+        "--card-foreground": "#FFFFFF",
+        "--popover": "#0A0A0A",
+        "--popover-foreground": "#FFFFFF",
+        "--primary": "ACCENT",
+        "--primary-foreground": "MEASURED, see legal_foreground_when_used_as_fill",
+        "--secondary": "#111111",
+        "--secondary-foreground": "#FFFFFF",
+        "--muted": "#111111",
+        "--muted-foreground": "#9A9A9A",
+        "--accent": "#1A1A1A",
+        "--accent-foreground": "#FFFFFF",
+        "--destructive": "#E9505F",
+        "--border": "#262626",
+        "--input": "#262626",
+        "--ring": "ACCENT"
+      },
+      "light": {
+        "--background": "#F8F8F6",
+        "--foreground": "#0A0A0A",
+        "--card": "#FFFFFF",
+        "--card-foreground": "#0A0A0A",
+        "--popover": "#FFFFFF",
+        "--popover-foreground": "#0A0A0A",
+        "--primary": "ACCENT_LIGHT",
+        "--primary-foreground": "MEASURED",
+        "--secondary": "#F0EFED",
+        "--secondary-foreground": "#0A0A0A",
+        "--muted": "#F5F5F5",
+        "--muted-foreground": "#6B6B6B",
+        "--accent": "#F0EFED",
+        "--accent-foreground": "#0A0A0A",
+        "--destructive": "#C0293A",
+        "--border": "#E5E5E5",
+        "--input": "#E5E5E5",
+        "--ring": "ACCENT_LIGHT"
+      },
+      "muted_foreground_correction": "gray-600 #6B6B6B measures 3.94:1 on the dark base and FAILS AA for normal text, so it is the LIGHT-surface muted token only. gray-400 #9A9A9A measures 7.46:1 on dark and 2.65:1 on light, so it is the DARK-surface muted token only. The parent kit had these the wrong way round.",
+      "distribution": "Each kit publishes a shadcn registry: one registry:theme carrying these cssVars, one registry:font, and registry:ui items only where the brand genuinely diverges from stock. Consumers add the namespace to components.json and run `npx shadcn add @<brand>/theme`."
+    }
+  },
+  "verify": {
+    "note": "Every kit ships a VERIFY.md whose numbers are measured, not transcribed. A kit that fails any check is not shippable.",
+    "checks": [
+      {
+        "id": "contrast-rederived",
+        "desc": "Re-derive every stated contrast ratio from the hex. Any mismatch fails."
+      },
+      {
+        "id": "accent-rule",
+        "desc": "Identity accent satisfies every check in color.constrained_rules.identity_accent."
+      },
+      {
+        "id": "foreground-pairing",
+        "desc": "Every fill token declares a measured legal foreground."
+      },
+      {
+        "id": "immutables-verbatim",
+        "desc": "Diff the kit's immutable values against canon. Any drift fails."
+      },
+      {
+        "id": "radius-pegs",
+        "desc": "Generated globals.css carries the exact radius pegs."
+      },
+      {
+        "id": "banned-rhetoric",
+        "desc": "Scan all brand copy for voice.banned_rhetoric patterns."
+      },
+      {
+        "id": "no-raw-values",
+        "desc": "No raw hex and no raw px literals in component source. Tokens only."
+      },
+      {
+        "id": "font-weights-exist",
+        "desc": "No stylesheet requests a weight the shipped face does not contain."
+      },
+      {
+        "id": "svg-no-live-text",
+        "desc": "No shipped SVG depends on an installed font. All type outlined."
+      },
+      {
+        "id": "svg-viewbox",
+        "desc": "No path geometry falls outside its own viewBox."
+      },
+      {
+        "id": "ico-entries",
+        "desc": "favicon.ico carries every declared resolution as a real entry."
+      },
+      {
+        "id": "pdf-fonts-embedded",
+        "desc": "Every font in the brand guide PDF is embedded as Type0."
+      },
+      {
+        "id": "encoding",
+        "desc": "All text files are UTF-8 without BOM and free of mojibake."
+      },
+      {
+        "id": "manifest-checksums",
+        "desc": "manifest.json sha256 matches every shipped file."
+      }
+    ]
+  },
+  "defects_corrected": [
+    {
+      "id": "D1",
+      "where": "shruggietech-brand/tokens/colors.css light :root",
+      "problem": "--accent-color is #2BCC73, used as the light-mode link colour. Measures 1.98:1 on #F8F8F6. --accent-hover #00AB21 measures 2.88:1. Both fail AA badly.",
+      "fix": "Added green-accessible #037B40 at 5.05:1. The bright accent is dark-surface only."
+    },
+    {
+      "id": "D2",
+      "where": "shruggietech-brand/tokens/colors.css .dark",
+      "problem": "--text-muted is #6B6B6B, which measures 3.94:1 on #000 and fails AA for normal text.",
+      "fix": "Dark muted text is gray-400 #9A9A9A at 7.46:1. #6B6B6B is the light-surface muted token."
+    },
+    {
+      "id": "D3",
+      "where": "canon-wide",
+      "problem": "No failure or error colour existed anywhere in the parent system. fragcap had to invent one.",
+      "fix": "Promoted fragcap's Fault #E9505F (5.78:1 on dark) and Fault Deep #C0293A (5.46:1 on light) into canon."
+    },
+    {
+      "id": "D4",
+      "where": "agent behaviour",
+      "problem": "White text on the bright accent measures 2.1:1. This is the single most likely mistake an agent makes with this palette.",
+      "fix": "Every fill token in this file carries a measured legal_foreground. Verify asserts it."
+    },
+    {
+      "id": "D5",
+      "where": "all three existing SKILL.md files",
+      "problem": "They declare `user-invocable: true`. Portable frontmatter is six keys only; anything else hard-fails claude.ai and Skills-API upload validation.",
+      "fix": "Canon fixes the six-key frontmatter contract. Existing kits need this field removed."
+    },
+    {
+      "id": "D6",
+      "where": "orange-cta usage",
+      "problem": "#C24000 measures 4.03:1 as text on the dark base and fails AA for normal text.",
+      "fix": "Declared fill-only. White text on it measures 5.21:1."
+    },
+    {
+      "id": "D7",
+      "where": "shruggietech-brand/_adherence.oxlintrc.json",
+      "problem": "The kit's only enforcement artifact is built entirely on `no-restricted-syntax` and `no-restricted-imports`. oxlint 1.79.0 implements NEITHER, and implements no no-restricted-* rule at all. Pointed at that config, oxlint aborts with a parse error. The config has never run.",
+      "fix": "Adherence rules are emitted as an ESLint flat config (`enforcement/eslint.brand.mjs`) because ESLint is the engine that implements ESTree selectors. Verified against deliberately-bad source: 9 of 9 planted violations caught, 0 false positives on conforming source. CSS side verified with stylelint: 4 of 4 caught, 0 false positives.",
+      "evidence": "VERIFIED BY EXECUTION 2026-08-22, oxlint 1.79.0 and eslint flat config."
+    },
+    {
+      "id": "D8",
+      "where": "oxlint and stylelint config schemas",
+      "problem": "Both reject unknown top-level keys and fail to parse. A generated config carrying a _generated_by provenance field will not load.",
+      "fix": "Provenance lives in enforcement/README.md and in a comment header in the .mjs config, never as a JSON key.",
+      "evidence": "VERIFIED BY EXECUTION 2026-08-22."
+    }
+  ]
+}

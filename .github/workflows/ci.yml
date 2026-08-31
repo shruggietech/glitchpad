@@ -39,6 +39,19 @@ jobs:
       - name: Install Mermaid browser
         run: pnpm exec puppeteer browsers install chrome-headless-shell
 
+      - name: Install website browser
+        run: pnpm --filter @shruggietech/glitchpad-site exec playwright install --with-deps chromium
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+
+      - name: Verify the delivered brand canon
+        run: |
+          python -m pip install coloraide==8.12
+          python brand/build/verify.py brand --out /tmp/glitchpad-brand-verification.md
+
       - name: Validate documentation
         run: cargo xtask docs
 

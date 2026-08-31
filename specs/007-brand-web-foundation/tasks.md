@@ -10,10 +10,10 @@
 
 **Purpose**: Establish the approved source inputs and package boundaries.
 
-- [ ] T001 Import the complete approved canon 1.0.0 delivery into `brand/` without modifying governed files
-- [ ] T002 Add the `site/` workspace package boundary and pinned scripts/dependencies in `pnpm-workspace.yaml`, `package.json`, `site/package.json`, and `pnpm-lock.yaml`
-- [ ] T003 Extend generated-output and dependency exclusions for the site in `.gitignore` and the root lint/format configuration
-- [ ] T004 Record S007 issue and user-visible change traceability in `changelog.d/brand-web-foundation.added.md`
+- [x] T001 Import the complete approved canon 1.0.0 delivery into `brand/` without modifying governed files
+- [x] T002 Add the `site/` workspace package boundary and pinned scripts/dependencies in `pnpm-workspace.yaml`, `package.json`, `site/package.json`, and `pnpm-lock.yaml`
+- [x] T003 Extend generated-output and dependency exclusions for the site in `.gitignore` and the root lint/format configuration
+- [x] T004 Record S007 issue and user-visible change traceability in `changelog.d/brand-web-foundation.added.md`
 
 ---
 
@@ -23,12 +23,12 @@
 
 **Critical**: Complete this phase before user-story implementation.
 
-- [ ] T005 Add deterministic canon manifest, UTF-8, production-reference, and license checks in `scripts/check-brand.mjs`
-- [ ] T006 Integrate brand and website checks into repository validation in `crates/xtask/src/main.rs`, `package.json`, and `.github/workflows/ci.yml`
-- [ ] T007 Create static-export, documentation-source, and metadata configuration in `site/next.config.mjs`, `site/source.config.ts`, `site/tsconfig.json`, `site/postcss.config.mjs`, and `site/next-env.d.ts`
-- [ ] T008 Create authoritative-source adaptation and static-host marker generation in `site/scripts/prebuild.mjs` and `site/scripts/postbuild.mjs`
-- [ ] T009 Create production-server and route/link audit support in `site/scripts/serve-export.mjs` and `site/scripts/audit-export.mjs`
-- [ ] T010 Add shared local fonts, canonical brand assets, icons, manifest, and social preview under `site/public/`
+- [x] T005 Add deterministic canon manifest, UTF-8, production-reference, and license checks in `scripts/check-brand.mjs`
+- [x] T006 Integrate brand and website checks into repository validation in `crates/xtask/src/main.rs`, `package.json`, and `.github/workflows/ci.yml`
+- [x] T007 Create static-export, documentation-source, and metadata configuration in `site/next.config.mjs`, `site/source.config.ts`, `site/tsconfig.json`, `site/postcss.config.mjs`, and `site/next-env.d.ts`
+- [x] T008 Create authoritative-source adaptation and static-host marker generation in `site/scripts/prebuild.mjs` and `site/scripts/postbuild.mjs`
+- [x] T009 Create production-server and route/link audit support in `site/scripts/serve-export.mjs` and `site/scripts/audit-export.mjs`
+- [x] T010 Add shared local fonts, canonical brand assets, icons, manifest, and social preview under `site/public/`
 
 **Checkpoint**: The brand authority and empty static-site shell can be validated without public content.
 
@@ -42,11 +42,11 @@
 
 ### Tests for User Story 1
 
-- [ ] T011 [US1] Add README banner source, fallback, alternative-text, and canonical-path assertions in `scripts/check-brand.mjs`
+- [x] T011 [US1] Add README banner source, fallback, alternative-text, and canonical-path assertions in `scripts/check-brand.mjs`
 
 ### Implementation for User Story 1
 
-- [ ] T012 [US1] Add the color-scheme-aware approved horizontal banner before the existing heading in `README.md`
+- [x] T012 [US1] Add the color-scheme-aware approved horizontal banner before the existing heading in `README.md`
 
 **Checkpoint**: The repository entry point independently presents the approved identity in light and dark themes.
 
@@ -60,13 +60,13 @@
 
 ### Tests for User Story 2
 
-- [ ] T013 [P] [US2] Add manifest coverage, checksum mismatch, missing-license, mojibake, and forbidden production-reference fixtures in `scripts/check-brand.test.mjs`
-- [ ] T014 [P] [US2] Add hosted execution of the canon verifier and its declared dependencies in `.github/workflows/ci.yml`
+- [x] T013 [P] [US2] Add manifest coverage, checksum mismatch, missing-license, mojibake, and forbidden production-reference fixtures in `scripts/check-brand.test.mjs`
+- [x] T014 [P] [US2] Add hosted execution of the canon verifier and its declared dependencies in `.github/workflows/ci.yml`
 
 ### Implementation for User Story 2
 
-- [ ] T015 [US2] Document canonical, generated, exploratory, and quality-control asset boundaries plus regeneration and provenance in `brand/INTEGRATION.md` without modifying manifest-governed canon files
-- [ ] T016 [US2] Wire the deterministic brand checker into contributor and aggregate check documentation in `CONTRIBUTING.md` and `README.md`
+- [x] T015 [US2] Document canonical, generated, exploratory, and quality-control asset boundaries plus regeneration and provenance in `brand/INTEGRATION.md` without modifying manifest-governed canon files
+- [x] T016 [US2] Wire the deterministic brand checker into contributor and aggregate check documentation in `CONTRIBUTING.md` and `README.md`
 
 **Checkpoint**: Maintainers can select and verify approved assets without consulting the external ZIP or using exploratory files.
 
@@ -80,18 +80,18 @@
 
 ### Tests for User Story 3
 
-- [ ] T017 [P] [US3] Add unit tests for claim sourcing, technical-specification adaptation, route inventory, and required metadata in `site/tests/content-contract.test.mjs`
-- [ ] T018 [P] [US3] Add Playwright coverage for landing, documentation, legal, support, security, and not-found routes in `site/tests/public-routes.spec.mjs`
-- [ ] T019 [P] [US3] Add Playwright light/dark, keyboard, reduced-motion, responsive-overflow, and automated accessibility coverage in `site/tests/accessibility.spec.mjs`
+- [x] T017 [P] [US3] Add unit tests for claim sourcing, technical-specification adaptation, route inventory, and required metadata in `site/tests/content-contract.test.mjs`
+- [x] T018 [P] [US3] Add Playwright coverage for landing, documentation, legal, support, security, and not-found routes in `site/tests/public-routes.spec.mjs`
+- [x] T019 [P] [US3] Add Playwright light/dark, keyboard, reduced-motion, responsive-overflow, and automated accessibility coverage in `site/tests/accessibility.spec.mjs`
 
 ### Implementation for User Story 3
 
-- [ ] T020 [US3] Implement canonical local fonts, theme provider, skip link, shared layout, navigation, and footer in `site/app/layout.tsx`, `site/app/global.css`, `site/components/`, and `site/lib/`
-- [ ] T021 [US3] Implement the accurate pre-release landing-page pitch and primary actions in `site/app/(home)/page.tsx` and `site/app/(home)/layout.tsx`
-- [ ] T022 [US3] Implement Fumadocs source loading and the `/docs` shell in `site/lib/source.ts`, `site/app/docs/layout.tsx`, `site/app/docs/[[...slug]]/page.tsx`, and `site/mdx-components.tsx`
-- [ ] T023 [US3] Add the public documentation index and generated technical-specification navigation in `site/content/docs/index.mdx` and `site/content/docs/meta.json`
-- [ ] T024 [US3] Implement license, support, security, and not-found routes from repository authorities in `site/app/(home)/license/page.tsx`, `site/app/(home)/support/page.tsx`, `site/app/(home)/security/page.tsx`, and `site/app/not-found.tsx`
-- [ ] T025 [US3] Add complete canonical, favicon, manifest, theme, and social-preview metadata in `site/app/layout.tsx` using checksum-verified canonical files under `site/public/`
+- [x] T020 [US3] Implement canonical local fonts, theme provider, skip link, shared layout, navigation, and footer in `site/app/layout.tsx`, `site/app/global.css`, `site/components/`, and `site/lib/`
+- [x] T021 [US3] Implement the accurate pre-release landing-page pitch and primary actions in `site/app/(home)/page.tsx` and `site/app/(home)/layout.tsx`
+- [x] T022 [US3] Implement Fumadocs source loading and the `/docs` shell in `site/lib/source.ts`, `site/app/docs/layout.tsx`, `site/app/docs/[[...slug]]/page.tsx`, and `site/mdx-components.tsx`
+- [x] T023 [US3] Add the public documentation index and generated technical-specification navigation in `site/content/docs/index.mdx` and `site/content/docs/meta.json`
+- [x] T024 [US3] Implement license, support, security, and not-found routes from repository authorities in `site/app/(home)/license/page.tsx`, `site/app/(home)/support/page.tsx`, `site/app/(home)/security/page.tsx`, and `site/app/not-found.tsx`
+- [x] T025 [US3] Add complete canonical, favicon, manifest, theme, and social-preview metadata in `site/app/layout.tsx` using checksum-verified canonical files under `site/public/`
 
 **Checkpoint**: A first-time visitor can understand the product and navigate authoritative public documentation on a complete static site.
 
@@ -105,13 +105,13 @@
 
 ### Tests for User Story 4
 
-- [ ] T026 [P] [US4] Add workflow contract checks for permissions, triggers, environment protection, artifact path, `.nojekyll`, and `CNAME` in `scripts/check-config.mjs`
-- [ ] T027 [P] [US4] Add production artifact route, asset, external-request, and marker assertions in `site/tests/export-contract.test.mjs`
+- [x] T026 [P] [US4] Add workflow contract checks for permissions, triggers, environment protection, artifact path, `.nojekyll`, and `CNAME` in `scripts/check-config.mjs`
+- [x] T027 [P] [US4] Add production artifact route, asset, external-request, and marker assertions in `site/tests/export-contract.test.mjs`
 
 ### Implementation for User Story 4
 
-- [ ] T028 [US4] Add build-on-review and explicitly dispatched protected Pages deployment in `.github/workflows/docs.yml`
-- [ ] T029 [US4] Document Pages, custom-domain, DNS, rollback, and first-publication authorization steps in `site/README.md`
+- [x] T028 [US4] Add build-on-review and explicitly dispatched protected Pages deployment in `.github/workflows/docs.yml`
+- [x] T029 [US4] Document Pages, custom-domain, DNS, rollback, and first-publication authorization steps in `site/README.md`
 
 **Checkpoint**: Hosted validation proves deployment readiness while S007 performs no public infrastructure mutation.
 
@@ -121,10 +121,10 @@
 
 **Purpose**: Reconcile documentation, issue traceability, and final evidence across the complete slice.
 
-- [ ] T030 [P] Reconcile brand and public-site architecture as an unreleased delta in `docs/glitchpad-technical-specification.md`
-- [ ] T031 [P] Update Issue #61 and Issue #99 acceptance traceability with the implemented paths and validation evidence
-- [ ] T032 Run all quickstart and hosted validation scenarios and record exact evidence in `specs/007-brand-web-foundation/verification.md`
-- [ ] T033 Complete a final mojibake, prohibited-em-dash, Markdown physical-line, Mermaid-TB, public-claim, and clean-worktree audit across S007 files
+- [x] T030 [P] Reconcile brand and public-site architecture as an unreleased delta in `docs/glitchpad-technical-specification.md`
+- [x] T031 [P] Update Issue #61 and Issue #99 acceptance traceability with the implemented paths and validation evidence
+- [x] T032 Run all quickstart and hosted validation scenarios and record exact evidence in `specs/007-brand-web-foundation/verification.md`
+- [x] T033 Complete a final mojibake, prohibited-em-dash, Markdown physical-line, Mermaid-TB, public-claim, and clean-worktree audit across S007 files
 
 ---
 

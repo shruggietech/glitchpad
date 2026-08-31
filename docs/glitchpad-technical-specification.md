@@ -760,9 +760,11 @@ The required source kit contains primary symbol, wordmark, horizontal and stacke
 
 Required exports include SVG master assets; Windows ICO with required embedded sizes; macOS ICNS; Linux PNG/SVG sizes; Android adaptive foreground, background, and monochrome layers; launcher and notification icons; repository social preview; release artwork; favicon/web metadata; store listing icon, feature graphic, and screenshots; and print-safe monochrome assets.
 
-Source assets live under `docs/brand/` and generated application/store assets live under platform-owned directories. A deterministic export command regenerates outputs and CI checks drift. Color tokens pass WCAG contrast in both themes. Fonts require redistribution and embedding approval recorded with the brand sources.
+Source assets live under `brand/` and generated application/store assets live under platform-owned directories. A deterministic export command regenerates outputs and CI checks drift. Color tokens pass WCAG contrast in both themes. Fonts require redistribution and embedding approval recorded with the brand sources.
 
 Brand changes use Spec Kit when they alter product naming, UI tokens, accessibility, packaging, or public assets. A release cannot publish placeholder icons or assets that disagree with the approved kit.
+
+The unreleased S007 repository delta imports approved brand canon 1.0.0 under `brand/`, uses selected checksum-verified copies in production integrations, and introduces a statically exported Next.js and Fumadocs public site under `site/`. The repository `docs/` tree remains the authored documentation authority, with a generated public adaptation served under `/docs`. Pull requests and default-branch updates validate the export without publishing it; production deployment, Pages configuration, and `glitchpad.com` DNS remain explicit owner-controlled operations.
 
 ## 35. Spec Kit Decomposition and Decision Records
 

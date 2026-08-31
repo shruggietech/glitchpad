@@ -24,7 +24,7 @@
 **Critical**: Complete this phase before user-story implementation.
 
 - [ ] T005 Add deterministic canon manifest, UTF-8, production-reference, and license checks in `scripts/check-brand.mjs`
-- [ ] T006 Integrate brand and website checks into repository validation in `crates/xtask/src/docs.rs`, `package.json`, and `.github/workflows/ci.yml`
+- [ ] T006 Integrate brand and website checks into repository validation in `crates/xtask/src/main.rs`, `package.json`, and `.github/workflows/ci.yml`
 - [ ] T007 Create static-export, documentation-source, and metadata configuration in `site/next.config.mjs`, `site/source.config.ts`, `site/tsconfig.json`, `site/postcss.config.mjs`, and `site/next-env.d.ts`
 - [ ] T008 Create authoritative-source adaptation and static-host marker generation in `site/scripts/prebuild.mjs` and `site/scripts/postbuild.mjs`
 - [ ] T009 Create production-server and route/link audit support in `site/scripts/serve-export.mjs` and `site/scripts/audit-export.mjs`
@@ -65,7 +65,7 @@
 
 ### Implementation for User Story 2
 
-- [ ] T015 [US2] Document canonical, generated, exploratory, and quality-control asset boundaries plus regeneration and provenance in `brand/README.md`
+- [ ] T015 [US2] Document canonical, generated, exploratory, and quality-control asset boundaries plus regeneration and provenance in `brand/INTEGRATION.md` without modifying manifest-governed canon files
 - [ ] T016 [US2] Wire the deterministic brand checker into contributor and aggregate check documentation in `CONTRIBUTING.md` and `README.md`
 
 **Checkpoint**: Maintainers can select and verify approved assets without consulting the external ZIP or using exploratory files.
@@ -91,7 +91,7 @@
 - [ ] T022 [US3] Implement Fumadocs source loading and the `/docs` shell in `site/lib/source.ts`, `site/app/docs/layout.tsx`, `site/app/docs/[[...slug]]/page.tsx`, and `site/mdx-components.tsx`
 - [ ] T023 [US3] Add the public documentation index and generated technical-specification navigation in `site/content/docs/index.mdx` and `site/content/docs/meta.json`
 - [ ] T024 [US3] Implement license, support, security, and not-found routes from repository authorities in `site/app/(home)/license/page.tsx`, `site/app/(home)/support/page.tsx`, `site/app/(home)/security/page.tsx`, and `site/app/not-found.tsx`
-- [ ] T025 [US3] Add complete canonical, favicon, manifest, theme, and social-preview metadata in `site/app/layout.tsx`, `site/app/icon.tsx`, and `site/app/opengraph-image.tsx`
+- [ ] T025 [US3] Add complete canonical, favicon, manifest, theme, and social-preview metadata in `site/app/layout.tsx` using checksum-verified canonical files under `site/public/`
 
 **Checkpoint**: A first-time visitor can understand the product and navigate authoritative public documentation on a complete static site.
 

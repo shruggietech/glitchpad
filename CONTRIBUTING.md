@@ -22,6 +22,8 @@ Do not add product features directly to the foundation shell without an approved
 
 Use a UTF-8 capable editor that honors `.editorconfig`. Markdown prose must remain one physical line per paragraph; do not configure an automatic prose wrapper. Project-authored Mermaid flowcharts must use top-to-bottom direction with `flowchart TB` or `flowchart TD`.
 
+The approved brand canon lives under `brand/`; read `brand/INTEGRATION.md` before consuming or replacing governed assets. Run `pnpm check:brand` for focused canon and integration validation. The Next.js and Fumadocs public site lives under `site/`, derives its technical documentation from the authoritative `docs/` tree, and is validated with `pnpm check:site`.
+
 ## Platform environments
 
 ### Windows

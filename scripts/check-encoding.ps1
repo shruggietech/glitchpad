@@ -6,7 +6,7 @@ $repositoryRoot = Split-Path -Parent $PSScriptRoot
 $strictUtf8 = [System.Text.UTF8Encoding]::new($false, $true)
 $textExtensions = @('.css', '.gradle', '.html', '.js', '.json', '.jsonc', '.kt', '.kts', '.lock', '.md', '.mjs', '.properties', '.ps1', '.rs', '.svg', '.toml', '.ts', '.tsx', '.txt', '.xml', '.yaml', '.yml')
 $textNames = @('.editorconfig', '.gitattributes', '.gitignore', '.node-version', '.prettierignore', 'gradlew')
-$excludedDirectories = @('.git', 'node_modules', 'target', 'dist', 'coverage', '.gradle', 'build')
+$excludedDirectories = @('.git', 'node_modules', 'target', 'dist', 'coverage', '.gradle', 'build', '.next', '.source', 'out', 'playwright-report', 'test-results')
 $corruptionMarkers = @(
     "$([char]0x00C3)$([char]0x00A2)",
     "$([char]0x00C3)$([char]0x00A9)",

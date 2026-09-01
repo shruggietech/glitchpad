@@ -1,0 +1,539 @@
+{
+  "schema_version": 1,
+  "run_id": "20260901T013047Z",
+  "started_at": "2026-09-01T01:30:47Z",
+  "captured_at": "2026-09-01T02:04:33Z",
+  "source_revision": "c93395edc16ec64900dbfc8cabbad9162a40c0d2",
+  "state": "legacy_retired",
+  "operator": "h8rt3rmin8r",
+  "redactions": [
+    "Cloudflare OAuth and GitHub authentication material are never requested or persisted.",
+    "Email Routing matcher values and action destinations remain [redacted] and compare equal to the pre-cutover snapshot."
+  ],
+  "baseline_reference": "docs/operations/evidence/2026-09-01-cloudflare-pre-cutover.json",
+  "acceptance_outcome": {
+    "FR-014": "deviation: legacy Pages was disabled before the complete required-asset inventory had passed",
+    "SC-009": "deviation: C14 retirement preceded proof for both manifest-declared Android icons",
+    "remediation": "production assets are healthy after reviewed branch deployment 6193381435; a main-ref redeployment remains a post-merge housekeeping gate"
+  },
+  "post_merge_gate": {
+    "status": "pending_user_merge",
+    "required_ref": "main",
+    "workflow": ".github/workflows/docs.yml",
+    "input": "deploy=true",
+    "required_checks": [
+      "deployment head equals the merged main revision",
+      "all 10 canonical production assets return non-empty 200 responses",
+      "github-pages environment contains only main policy 58765725"
+    ]
+  },
+  "cloudflare": {
+    "account": {
+      "id": "39e3052d61e3edccea7d68269ec07182",
+      "name": "ShruggieTech"
+    },
+    "zone": {
+      "id": "ae5e724f63fc2f3292a8cb1b5bd1d76f",
+      "name": "glitchpad.com",
+      "status": "active",
+      "paused": false,
+      "type": "full",
+      "name_servers": ["norah.ns.cloudflare.com", "rex.ns.cloudflare.com"]
+    },
+    "dns_records": [
+      {
+        "id": "14f6c43c0fefb41626b28901829a8c32",
+        "type": "A",
+        "name": "glitchpad.com",
+        "content": "185.199.108.153",
+        "ttl": 1,
+        "proxied": false,
+        "priority": null,
+        "comment": "GitHub Pages production website record managed by S009."
+      },
+      {
+        "id": "74c5462306c7fbf1bc206fa4135c54bb",
+        "type": "A",
+        "name": "glitchpad.com",
+        "content": "185.199.109.153",
+        "ttl": 1,
+        "proxied": false,
+        "priority": null,
+        "comment": "GitHub Pages production website record managed by S009."
+      },
+      {
+        "id": "38e705fe73ff654aba709cec7d92663f",
+        "type": "A",
+        "name": "glitchpad.com",
+        "content": "185.199.110.153",
+        "ttl": 1,
+        "proxied": false,
+        "priority": null,
+        "comment": "GitHub Pages production website record managed by S009."
+      },
+      {
+        "id": "c7ced6bc92e8bf431e529f78498bfd1f",
+        "type": "A",
+        "name": "glitchpad.com",
+        "content": "185.199.111.153",
+        "ttl": 1,
+        "proxied": false,
+        "priority": null,
+        "comment": "GitHub Pages production website record managed by S009."
+      },
+      {
+        "id": "19bca97611f31777a2a6d958f4d1081c",
+        "type": "AAAA",
+        "name": "glitchpad.com",
+        "content": "2606:50c0:8000::153",
+        "ttl": 1,
+        "proxied": false,
+        "priority": null,
+        "comment": "GitHub Pages production website record managed by S009."
+      },
+      {
+        "id": "4afd9e357b4306fdcd3b61833cdc699b",
+        "type": "AAAA",
+        "name": "glitchpad.com",
+        "content": "2606:50c0:8001::153",
+        "ttl": 1,
+        "proxied": false,
+        "priority": null,
+        "comment": "GitHub Pages production website record managed by S009."
+      },
+      {
+        "id": "9d2c0e8b76a4faf2fb5a3e7aafc8c98f",
+        "type": "AAAA",
+        "name": "glitchpad.com",
+        "content": "2606:50c0:8002::153",
+        "ttl": 1,
+        "proxied": false,
+        "priority": null,
+        "comment": "GitHub Pages production website record managed by S009."
+      },
+      {
+        "id": "79f4eb2ea4de99ef9c49d8fa9b4c5c17",
+        "type": "AAAA",
+        "name": "glitchpad.com",
+        "content": "2606:50c0:8003::153",
+        "ttl": 1,
+        "proxied": false,
+        "priority": null,
+        "comment": "GitHub Pages production website record managed by S009."
+      },
+      {
+        "id": "8efff6a0ef1bdaa42c2b88a5be4521bb",
+        "type": "CNAME",
+        "name": "www.glitchpad.com",
+        "content": "shruggietech.github.io",
+        "ttl": 1,
+        "proxied": false,
+        "priority": null,
+        "comment": "GitHub Pages production website record managed by S009."
+      },
+      {
+        "id": "a645502759838290ab31d2032149f686",
+        "type": "TXT",
+        "name": "_github-pages-challenge-shruggietech.glitchpad.com",
+        "content": "20611fd6ae632e3e0f27d661236e5c",
+        "ttl": 1,
+        "proxied": false,
+        "priority": null,
+        "comment": "Persistent GitHub Pages organization-domain verification for shruggietech."
+      },
+      {
+        "id": "fd3b119c55c1865535eb2fe0090b831c",
+        "type": "CNAME",
+        "name": "_domainconnect.glitchpad.com",
+        "content": "connect.domains.google.com",
+        "ttl": 1,
+        "proxied": true,
+        "priority": null,
+        "comment": null
+      },
+      {
+        "id": "8d1f3d123cd4b5cda23f7b75dc4c2458",
+        "type": "MX",
+        "name": "glitchpad.com",
+        "content": "gmr-smtp-in.l.google.com",
+        "ttl": 3600,
+        "proxied": false,
+        "priority": 5,
+        "comment": null
+      },
+      {
+        "id": "a6bb8d777a8d6c83ce08016e0faf7219",
+        "type": "MX",
+        "name": "glitchpad.com",
+        "content": "alt1.gmr-smtp-in.l.google.com",
+        "ttl": 3600,
+        "proxied": false,
+        "priority": 10,
+        "comment": null
+      },
+      {
+        "id": "e5e2aa3c21c84e7926baf7bb00d54034",
+        "type": "MX",
+        "name": "glitchpad.com",
+        "content": "alt2.gmr-smtp-in.l.google.com",
+        "ttl": 3600,
+        "proxied": false,
+        "priority": 20,
+        "comment": null
+      },
+      {
+        "id": "a5b9846cae72f323ea373b0d4983baf4",
+        "type": "MX",
+        "name": "glitchpad.com",
+        "content": "alt3.gmr-smtp-in.l.google.com",
+        "ttl": 3600,
+        "proxied": false,
+        "priority": 30,
+        "comment": null
+      },
+      {
+        "id": "50e1878b24298808d334928291612821",
+        "type": "MX",
+        "name": "glitchpad.com",
+        "content": "alt4.gmr-smtp-in.l.google.com",
+        "ttl": 3600,
+        "proxied": false,
+        "priority": 40,
+        "comment": null
+      },
+      {
+        "id": "b8f860846036c0c4f1c7acedb5c9dc88",
+        "type": "TXT",
+        "name": "glitchpad.com",
+        "content": "\"openai-domain-verification=dv-BSp5RK8uIwPEOblk7VnDxoU8\"",
+        "ttl": 1,
+        "proxied": false,
+        "priority": null,
+        "comment": "ChatGPT domain ownership verification added on 2025-10-26."
+      }
+    ],
+    "retained_surface_comparison": {
+      "captured_at": "2026-09-01T02:01:19.834Z",
+      "zone": true,
+      "dnssec": true,
+      "zone_settings": {
+        "equal": true,
+        "count": 56,
+        "classified_count": 56,
+        "decision": "retain",
+        "decisions_file": "docs/operations/evidence/2026-09-01-zone-setting-decisions.md"
+      },
+      "page_rules": {
+        "equal": true,
+        "count": 0
+      },
+      "zone_rulesets": {
+        "equal": true,
+        "count": 3,
+        "classification": "Cloudflare-managed"
+      },
+      "account_rulesets": {
+        "equal": true,
+        "count": 1,
+        "classification": "Cloudflare-managed"
+      },
+      "workers_routes": {
+        "equal": true,
+        "count": 0
+      },
+      "account_lists": {
+        "equal": true,
+        "count": 0
+      },
+      "email_routing": {
+        "equal": true,
+        "enabled": false,
+        "status": "unconfigured",
+        "rule_count": 1,
+        "values": "[redacted]"
+      },
+      "retained_dns_records": {
+        "equal": true,
+        "count": 7
+      },
+      "ssl": {
+        "configuration_equal": true,
+        "mode": "full",
+        "universal_ssl": {
+          "enabled": true,
+          "certificate_authority": "google"
+        },
+        "current_certificate_packs": [
+          {
+            "id": "99d8f048-5549-486b-862b-65804f96f2b5",
+            "type": "universal",
+            "hosts": ["glitchpad.com", "*.glitchpad.com"],
+            "status": "active",
+            "validation_method": "txt",
+            "validity_days": 90,
+            "certificate_authority": "google"
+          }
+        ],
+        "provider_managed_drift": "The pre-cutover SSL.com backup pack 12a59992-f3ed-4ffb-8e8f-b24ed30ca849 was no longer returned. S009 made no Cloudflare SSL mutation, and DNS-only website records do not use the Cloudflare edge certificate."
+      }
+    },
+    "dnssec": {
+      "status": "disabled"
+    }
+  },
+  "github": {
+    "organization_pages_domain": {
+      "domain": "glitchpad.com",
+      "state": "verified",
+      "challenge_hostname": "_github-pages-challenge-shruggietech.glitchpad.com",
+      "challenge_token": "20611fd6ae632e3e0f27d661236e5c"
+    },
+    "source_pages": {
+      "enabled": false,
+      "http_status": 404,
+      "retired_at": "2026-09-01T02:04:33Z",
+      "retired_configuration": {
+        "status": "built",
+        "cname": null,
+        "html_url": "http://h8rt3rmin8r.github.io/glitchpad.com/",
+        "build_type": "legacy",
+        "source": {
+          "branch": "master",
+          "path": "/docs"
+        },
+        "https_enforced": false
+      },
+      "repository_recovery_source": {
+        "repository": "h8rt3rmin8r/glitchpad.com",
+        "disabled": false,
+        "archived": false,
+        "visibility": "public",
+        "default_branch": "master",
+        "commit": "ff751363e3cb1408ed93e8568ec2b3ed85371390",
+        "tree": "9d3d336ea735db580d11cafa7b8c5a9f3a20b03b",
+        "docs_entry_count": 54
+      }
+    },
+    "destination_pages": {
+      "enabled": true,
+      "status": null,
+      "cname": "glitchpad.com",
+      "html_url": "https://glitchpad.com/",
+      "build_type": "workflow",
+      "source": {
+        "branch": "main",
+        "path": "/"
+      },
+      "protected_domain_state": "verified",
+      "pending_domain_unverified_at": null,
+      "https_enforced": true,
+      "https_certificate": {
+        "state": "approved",
+        "description": "The certificate has been approved.",
+        "domains": ["glitchpad.com", "www.glitchpad.com"],
+        "expires_at": "2026-11-29"
+      }
+    },
+    "destination_environment": {
+      "id": 20971361063,
+      "name": "github-pages",
+      "protection_rule_id": 64237058,
+      "deployment_branch_policy": {
+        "protected_branches": false,
+        "custom_branch_policies": true,
+        "branches": [
+          {
+            "id": 58765725,
+            "name": "main",
+            "type": "branch"
+          }
+        ]
+      }
+    },
+    "workflow_run": {
+      "purpose": "initial cutover and C14 snapshot",
+      "id": 33459610523,
+      "head_ref": "main",
+      "head_sha": "c93395edc16ec64900dbfc8cabbad9162a40c0d2",
+      "status": "completed",
+      "conclusion": "success",
+      "event": "workflow_dispatch",
+      "run_attempt": 1,
+      "created_at": "2026-09-01T01:39:57Z",
+      "updated_at": "2026-09-01T01:41:28Z",
+      "artifact_id": 9782708795,
+      "deployment_id": 6192857732
+    },
+    "review_remediation_workflow_run": {
+      "purpose": "temporary production correction pending merge and main-ref redeployment",
+      "id": 33462819066,
+      "head_ref": "codex/009-domain-cutover",
+      "head_sha": "0c4b9b77e0c0e908f7067d878c3cd3840071830f",
+      "status": "completed",
+      "conclusion": "success",
+      "event": "workflow_dispatch",
+      "deployment_id": 6193381435,
+      "environment_policy_restored_to_main_only": true
+    }
+  },
+  "public_dns": {
+    "authoritative": {
+      "nameservers": ["norah.ns.cloudflare.com", "rex.ns.cloudflare.com"],
+      "a": [
+        "185.199.108.153",
+        "185.199.109.153",
+        "185.199.110.153",
+        "185.199.111.153"
+      ],
+      "aaaa": [
+        "2606:50c0:8000::153",
+        "2606:50c0:8001::153",
+        "2606:50c0:8002::153",
+        "2606:50c0:8003::153"
+      ],
+      "www_cname": "shruggietech.github.io",
+      "challenge_txt": "20611fd6ae632e3e0f27d661236e5c",
+      "preview": "NXDOMAIN"
+    },
+    "public_resolvers": {
+      "cloudflare_1_1_1_1": "matches_authoritative",
+      "google_8_8_8_8": "matches_authoritative",
+      "quad9_9_9_9_9": "matches_authoritative"
+    }
+  },
+  "tls": {
+    "authorized": true,
+    "subject": "glitchpad.com",
+    "issuer": "Let's Encrypt YR1",
+    "subject_alt_names": ["glitchpad.com", "www.glitchpad.com"],
+    "valid_from": "2026-09-01T00:57:09Z",
+    "valid_to": "2026-11-30T00:57:08Z",
+    "fingerprint_sha256": "5A:95:5B:FE:74:3D:02:71:49:7F:E7:5B:36:FA:E8:F4:B0:FB:37:E8:F1:20:BC:A6:D9:D6:A5:16:43:FD:E4:C0"
+  },
+  "http": {
+    "canonical": "https://glitchpad.com/",
+    "apex_http_to_https": "301 then 200",
+    "www_http_to_canonical": "301 then 301 then 200",
+    "www_https_to_canonical": "301 then 200",
+    "routes": {
+      "/": 200,
+      "/docs": 200,
+      "/docs/technical-specification": 200,
+      "/security": 200,
+      "/support": 200,
+      "/license": 200,
+      "/definitely-missing-s009": 404
+    },
+    "metadata": {
+      "canonical": true,
+      "open_graph": true,
+      "twitter": true
+    },
+    "assets": {
+      "observed_at": "2026-09-01T02:33:04.614Z",
+      "deployment_run": 33462819066,
+      "deployment_id": 6193381435,
+      "source_revision": "0c4b9b77e0c0e908f7067d878c3cd3840071830f",
+      "source_ref": "codex/009-domain-cutover",
+      "deployment_provenance": "temporary_review_remediation_pending_merge_and_main_ref_redeployment",
+      "environment_policy_after_deployment": {
+        "total_count": 1,
+        "name": "main",
+        "type": "branch",
+        "id": 58765725
+      },
+      "responses": [
+        {
+          "path": "/_next/static/media/GeistMono_Regular-s.p.08p89kvuvf-k1.woff2",
+          "status": 200,
+          "content_type": "font/woff2",
+          "bytes": 50196
+        },
+        {
+          "path": "/site.webmanifest",
+          "status": 200,
+          "content_type": "application/manifest+json; charset=utf-8",
+          "bytes": 378
+        },
+        {
+          "path": "/favicon.svg",
+          "status": 200,
+          "content_type": "image/svg+xml",
+          "bytes": 622
+        },
+        {
+          "path": "/favicon-32x32.png",
+          "status": 200,
+          "content_type": "image/png",
+          "bytes": 432
+        },
+        {
+          "path": "/favicon-16x16.png",
+          "status": 200,
+          "content_type": "image/png",
+          "bytes": 281
+        },
+        {
+          "path": "/favicon.ico",
+          "status": 200,
+          "content_type": "image/vnd.microsoft.icon",
+          "bytes": 104496
+        },
+        {
+          "path": "/apple-touch-icon.png",
+          "status": 200,
+          "content_type": "image/png",
+          "bytes": 2084
+        },
+        {
+          "path": "/android-chrome-192x192.png",
+          "status": 200,
+          "content_type": "image/png",
+          "bytes": 2327
+        },
+        {
+          "path": "/android-chrome-512x512.png",
+          "status": 200,
+          "content_type": "image/png",
+          "bytes": 7603
+        },
+        {
+          "path": "/social-preview.png",
+          "status": 200,
+          "content_type": "image/png",
+          "bytes": 28118
+        }
+      ]
+    },
+    "transport": {
+      "ipv4": {
+        "status": 200,
+        "address": "185.199.111.153"
+      },
+      "ipv6": {
+        "status": 200,
+        "address": "2606:50c0:8003::153"
+      }
+    }
+  },
+  "legacy_retirement": {
+    "authorized_by": "C11-C13 with an incomplete C12 required-asset inventory",
+    "status": "complete_with_recorded_prerequisite_deviation",
+    "contract_result": "FR-014 and SC-009 did not pass because two manifest-declared assets were discovered missing after retirement",
+    "completed_at": "2026-09-01T02:04:33Z",
+    "pages_http_status": 404,
+    "repository_content_preserved": true,
+    "canonical_post_retirement_smoke": {
+      "/": 200,
+      "/docs": 200,
+      "/docs/technical-specification": 200,
+      "/definitely-missing-s009": 404,
+      "tls_authorized": true,
+      "destination_pages_verified": true,
+      "destination_https_enforced": true,
+      "cloudflare_dns_record_count": 17,
+      "retained_dns_records_present": true
+    },
+    "post_retirement_refresh_required": false
+  }
+}

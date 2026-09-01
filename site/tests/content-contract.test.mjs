@@ -46,6 +46,18 @@ test('root metadata declares the production domain and social preview', async ()
   assert.match(layout, /site\.webmanifest/);
 });
 
+test('web manifest icons are present in the public export source', async () => {
+  const manifest = JSON.parse(
+    await readFile(join(siteRoot, 'public', 'site.webmanifest'), 'utf8'),
+  );
+
+  for (const icon of manifest.icons) {
+    assert.match(icon.src, /^\/[a-z0-9.-]+$/);
+    const asset = await readFile(join(siteRoot, 'public', icon.src.slice(1)));
+    assert.ok(asset.byteLength > 0, `${icon.src} must not be empty`);
+  }
+});
+
 test('repository support and security sections preserve actionable Markdown links', async () => {
   const support = await readFile(join(repositoryRoot, 'SUPPORT.md'), 'utf8');
   const security = await readFile(join(repositoryRoot, 'SECURITY.md'), 'utf8');

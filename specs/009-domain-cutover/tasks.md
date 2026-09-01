@@ -172,3 +172,4 @@ Task: "Add Issue #102 traceability in changelog.d/102.fixed.md and docs/glitchpa
 - Never advance from a failed or ambiguous checkpoint.
 - Direct Git and GitHub operations are permitted; Windows child launchers must remain hidden and non-interactive.
 - Commit after the pre-mutation foundation and after the final evidence set so rollback history survives task interruption.
+- T030 and T031 record that legacy retirement and its follow-up inspection were executed, not that FR-014 or SC-009 passed. The complete asset inventory later found two missing manifest icons, so the specification and runbook preserve that irreversible ordering deviation explicitly.

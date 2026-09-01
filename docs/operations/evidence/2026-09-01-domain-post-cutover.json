@@ -1,15 +1,32 @@
 {
   "schema_version": 1,
   "run_id": "20260901T013047Z",
+  "started_at": "2026-09-01T01:30:47Z",
   "captured_at": "2026-09-01T02:04:33Z",
-  "source_revision": "acd4af1ba88ba7844ff63708c8646ed3cc93ea94",
-  "state": "complete_after_legacy_retirement",
+  "source_revision": "c93395edc16ec64900dbfc8cabbad9162a40c0d2",
+  "state": "legacy_retired",
   "operator": "h8rt3rmin8r",
   "redactions": [
     "Cloudflare OAuth and GitHub authentication material are never requested or persisted.",
     "Email Routing matcher values and action destinations remain [redacted] and compare equal to the pre-cutover snapshot."
   ],
   "baseline_reference": "docs/operations/evidence/2026-09-01-cloudflare-pre-cutover.json",
+  "acceptance_outcome": {
+    "FR-014": "deviation: legacy Pages was disabled before the complete required-asset inventory had passed",
+    "SC-009": "deviation: C14 retirement preceded proof for both manifest-declared Android icons",
+    "remediation": "production assets are healthy after reviewed branch deployment 6193381435; a main-ref redeployment remains a post-merge housekeeping gate"
+  },
+  "post_merge_gate": {
+    "status": "pending_user_merge",
+    "required_ref": "main",
+    "workflow": ".github/workflows/docs.yml",
+    "input": "deploy=true",
+    "required_checks": [
+      "deployment head equals the merged main revision",
+      "all 10 canonical production assets return non-empty 200 responses",
+      "github-pages environment contains only main policy 58765725"
+    ]
+  },
   "cloudflare": {
     "account": {
       "id": "39e3052d61e3edccea7d68269ec07182",
@@ -201,7 +218,10 @@
       "dnssec": true,
       "zone_settings": {
         "equal": true,
-        "count": 56
+        "count": 56,
+        "classified_count": 56,
+        "decision": "retain",
+        "decisions_file": "docs/operations/evidence/2026-09-01-zone-setting-decisions.md"
       },
       "page_rules": {
         "equal": true,
@@ -331,7 +351,9 @@
       }
     },
     "workflow_run": {
+      "purpose": "initial cutover and C14 snapshot",
       "id": 33459610523,
+      "head_ref": "main",
       "head_sha": "c93395edc16ec64900dbfc8cabbad9162a40c0d2",
       "status": "completed",
       "conclusion": "success",
@@ -341,6 +363,17 @@
       "updated_at": "2026-09-01T01:41:28Z",
       "artifact_id": 9782708795,
       "deployment_id": 6192857732
+    },
+    "review_remediation_workflow_run": {
+      "purpose": "temporary production correction pending merge and main-ref redeployment",
+      "id": 33462819066,
+      "head_ref": "codex/009-domain-cutover",
+      "head_sha": "0c4b9b77e0c0e908f7067d878c3cd3840071830f",
+      "status": "completed",
+      "conclusion": "success",
+      "event": "workflow_dispatch",
+      "deployment_id": 6193381435,
+      "environment_policy_restored_to_main_only": true
     }
   },
   "public_dns": {
@@ -401,6 +434,8 @@
       "deployment_run": 33462819066,
       "deployment_id": 6193381435,
       "source_revision": "0c4b9b77e0c0e908f7067d878c3cd3840071830f",
+      "source_ref": "codex/009-domain-cutover",
+      "deployment_provenance": "temporary_review_remediation_pending_merge_and_main_ref_redeployment",
       "environment_policy_after_deployment": {
         "total_count": 1,
         "name": "main",
@@ -482,8 +517,9 @@
     }
   },
   "legacy_retirement": {
-    "authorized_by": "C11-C13",
-    "status": "complete",
+    "authorized_by": "C11-C13 with an incomplete C12 required-asset inventory",
+    "status": "complete_with_recorded_prerequisite_deviation",
+    "contract_result": "FR-014 and SC-009 did not pass because two manifest-declared assets were discovered missing after retirement",
     "completed_at": "2026-09-01T02:04:33Z",
     "pages_http_status": 404,
     "repository_content_preserved": true,

@@ -18,7 +18,7 @@
 | Canonical production host | `https://glitchpad.com` |
 | Temporary preview host | `s009-preview.glitchpad.com` |
 | Pre-mutation commit | `4692625e1f22bf0fbe53ce890d8de7174d039b85` |
-| Run state | C01-C14 passed; canonical production is fully validated, preview and legacy Pages are retired, and final evidence is captured |
+| Run state | Production is healthy and reconciled; C14 has a recorded FR-014/SC-009 asset-prerequisite deviation; reviewed branch remediation is deployed; main-ref redeployment remains post-merge housekeeping |
 
 The branch was created from the reviewed `main` revision shown above. Direct GitHub administration and Cloudflare OAuth access were verified for the selected repositories, organization, account, and zone. The Cloudflare Email Routing read surface reported a newly timestamped, disabled, unconfigured settings object while returning the previously existing disabled catch-all rule; it changed no DNS record, route, destination, or enabled state and is retained exactly as observed.
 
@@ -26,6 +26,7 @@ The branch was created from the reviewed `main` revision shown above. Direct Git
 
 - Pre-cutover provider snapshot: `docs/operations/evidence/2026-09-01-cloudflare-pre-cutover.json`
 - Post-cutover provider snapshot: `docs/operations/evidence/2026-09-01-domain-post-cutover.json` (created after final validation)
+- Zone-setting decisions: `docs/operations/evidence/2026-09-01-zone-setting-decisions.md` (56 individual retain decisions and rationales)
 - Evidence contract: `specs/009-domain-cutover/contracts/cutover-evidence.md`
 - Ordered tasks: `specs/009-domain-cutover/tasks.md`
 
@@ -54,7 +55,7 @@ The personal Pages site is built with `build_type: legacy`, source `master:/docs
 | D11 | Preview CNAME | Absent | Add temporarily, then retire | Absent after canonical production passes | Cloudflare ID `c512a433e329c81cf77415a7668a3cbd` | Verified retired at C13 |
 | D12 | Apex AAAA set | Absent | Add | Four DNS-only GitHub Pages AAAA records | Created Cloudflare IDs | Verified at C09-C10 |
 | D13 | DNSSEC | Disabled | Retain | Disabled | Snapshot | Verified unchanged |
-| D14 | Zone settings | 56 returned settings | Retain | Value-equivalent | Snapshot | Verified unchanged |
+| D14 | Zone settings | 56 returned settings | Retain individually | Value-equivalent | Snapshot plus zone-setting decision appendix | All 56 individually classified and verified unchanged |
 | D15 | Page Rules | Empty | Retain | Empty | Snapshot | Verified unchanged |
 | D16 | Zone rulesets | Three Cloudflare-managed rulesets | Retain | Provider-managed; no S009 mutation | Snapshot summaries | Verified unchanged |
 | D17 | Account rulesets | One Cloudflare-managed ruleset view | Retain | Provider-managed; no S009 mutation | Snapshot summary | Verified unchanged |
@@ -71,8 +72,8 @@ The personal Pages site is built with `build_type: legacy`, source `master:/docs
 
 | Check | Expected | Observation | Result |
 | --- | --- | --- | --- |
-| `pnpm check:site` | Static export, routes, assets, metadata, and domain marker pass | Build passed; 6 unit and 11 Chromium tests passed | Pass |
-| `cargo xtask docs` | Repository documentation validation passes | Brand, site, validation topology, configuration, formatting, Markdown, links, 28 Mermaid diagrams, version authorities, and 369 UTF-8 text files passed | Pass |
+| `pnpm check:site` | Static export, routes, assets, metadata, and domain marker pass | Build passed; 7 unit and 11 Chromium tests passed | Pass |
+| `cargo xtask docs` | Repository documentation validation passes | Brand, site, validation topology, configuration, formatting, Markdown, 120 links, 28 Mermaid diagrams, version authorities, and 371 UTF-8 text files passed | Pass |
 | `site/out/CNAME` | Exact `glitchpad.com` marker | Validated by `GitHub Pages markers are complete` and postbuild contract | Pass |
 | Snapshot schema | Required provider surfaces present and JSON parses | JSON valid; 9 DNS records, 56 settings, 3 zone rulesets, 1 account ruleset, and all empty surfaces match live capture | Pass |
 | Secret and email scan | No credential material or unredacted destinations | Credential marker scan returned zero matches; routing destinations are `[redacted]`; structured email-address scan passed | Pass |
@@ -199,14 +200,14 @@ Every checkpoint is fail-closed. A checkpoint starts only when its expected-befo
 - Rollback R13: Recreate the DNS-only preview CNAME and reattach it only if needed for organization-origin recovery.
 - Observation: Pass at `2026-09-01T01:58Z`. A guard proved all 18 expected records, the complete final A/AAAA/`www`/challenge set, and preview ID `c512a433e329c81cf77415a7668a3cbd`; Cloudflare deleted only that preview record. API readback and both authoritative nameservers plus Cloudflare, Google, and Quad9 resolvers report the preview absent. Destination Pages remains attached only to `glitchpad.com`.
 
-### C14 - Retire legacy Pages
+### C14 - Retire legacy Pages (completed with prerequisite deviation)
 
 - Expected before: C12 and C13 pass; final post-cutover evidence is captured; personal repository and captured source remain accessible; destination production is healthy.
 - Mutation: Disable Pages for `h8rt3rmin8r/glitchpad.com` without deleting or changing repository content.
 - Expected after: Legacy Pages API returns disabled/not found while canonical production remains healthy.
 - Stop condition: Any final smoke case regresses, evidence is incomplete, or legacy repository/source is unavailable for recovery.
 - Rollback R14: Recreate legacy Pages from `master:/docs`. Before C07 it may reclaim `glitchpad.com` directly. After C07, exact personal-domain restoration additionally requires R08B to release the destination custom-domain attachment while organization verification remains active, followed by R09 immediately before attaching the apex.
-- Observation: Pass at `2026-09-01T02:04:33Z`. The committed pre-retirement evidence, C11-C13, and a final legacy-state guard authorized deletion of only the personal repository's Pages configuration. GitHub now returns 404 for `h8rt3rmin8r/glitchpad.com` Pages. The repository remains public, enabled, unarchived, and unchanged on `master` commit `ff751363e3cb1408ed93e8568ec2b3ed85371390`; its `/docs` recovery source contains 54 entries. Destination Pages remains workflow-published, verified, certificate-approved, and HTTPS-enforced. Post-retirement `/`, `/docs`, and `/docs/technical-specification` returned 200, the missing path returned 404, TLS retained the approved fingerprint, and Cloudflare retained the exact 17-record final state.
+- Observation: Completed at `2026-09-01T02:04:33Z`, but not a contract pass. The committed pre-retirement evidence, C11-C13, and a final legacy-state guard authorized deletion of only the personal repository's Pages configuration; however, C12 had requested one font rather than every required public asset. The first complete inventory at `2026-09-01T02:20:11.216Z` proved that both manifest-declared Android icons returned 404, so FR-014 and SC-009 were not satisfied before retirement. GitHub now returns 404 for `h8rt3rmin8r/glitchpad.com` Pages. The repository remains public, enabled, unarchived, and unchanged on `master` commit `ff751363e3cb1408ed93e8568ec2b3ed85371390`; its `/docs` recovery source contains 54 entries. Destination Pages remains workflow-published, verified, certificate-approved, and HTTPS-enforced. The missing assets were repaired and fully validated during pull request review, but that later remediation cannot retroactively change C14 ordering.
 
 ## Phase-specific rollback
 
@@ -246,7 +247,7 @@ This is the last-resort path when no validated organization deployment can be re
 | `/` | Pass: 200, Glitchpad content | Pass: 200 | Pass: 200 |
 | `/docs` | Pass: 200, Glitchpad content | Pass: 200 | Pass: 200 |
 | Nested documentation route | Pass: `/docs/technical-specification`, 200 | Pass: 200 | Pass: 200 |
-| Static brand and application assets | Pass: deployed font asset 200; hosted browser suite passed | Pass: font, manifest, favicon set, Apple icon, manifest icon set, and social preview all return 200 after review remediation | Pass: 10 inventoried assets return non-empty 200 responses |
+| Static brand and application assets | Partial: deployed font asset 200 and hosted browser suite passed, but the complete inventory was not executed | Deviation at C12/C14: both manifest-declared Android icons were later found to return 404 | Remediated: 10 inventoried assets return non-empty 200 responses |
 | Title, description, canonical URL, social metadata | Pass: hosted metadata retains `https://glitchpad.com` canonical and social fields | Pass on all inventoried routes | Pass |
 | Missing path | Pass: 404 | Pass: branded 404 | Pass: branded 404 |
 | IPv4 transport | Pass through resolved preview A set | Pass: direct 200 | Pass |
@@ -254,20 +255,22 @@ This is the last-resort path when no validated organization deployment can be re
 
 ## Final reconciliation
 
-The final snapshot refreshed at `2026-09-01T02:04:33Z` contains 17 live DNS records and reconciles every change to D01-D25 and C01-C14. Zone identity, DNSSEC, all 56 zone settings, empty Page Rules, three zone managed rulesets, one account managed ruleset view, empty Workers routes, empty account lists, redacted Email Routing state, and all seven unrelated DNS records compare equal to the baseline. Cloudflare no longer returns pre-cutover SSL.com backup certificate pack `12a59992-f3ed-4ffb-8e8f-b24ed30ca849`; this is explained provider-managed certificate lifecycle drift because S009 performed no Cloudflare SSL mutation, the active Google Universal SSL configuration is unchanged, and final website records are DNS-only. There are zero unexplained differences. Legacy Pages is disabled while its repository recovery source remains intact, and canonical production passes after retirement.
+The provider-state snapshot at `2026-09-01T02:04:33Z` contains 17 live DNS records and reconciles every external change to D01-D25 and C01-C14. Zone identity, DNSSEC, all 56 individually classified zone settings, empty Page Rules, three zone managed rulesets, one account managed ruleset view, empty Workers routes, empty account lists, redacted Email Routing state, and all seven unrelated DNS records compare equal to the baseline. Cloudflare no longer returns pre-cutover SSL.com backup certificate pack `12a59992-f3ed-4ffb-8e8f-b24ed30ca849`; this is explained provider-managed certificate lifecycle drift because S009 performed no Cloudflare SSL mutation, the active Google Universal SSL configuration is unchanged, and final website records are DNS-only. There are zero unexplained provider differences. Legacy Pages is disabled while its repository recovery source remains intact, and canonical production is healthy after review remediation. C14 remains an explicit FR-014/SC-009 ordering deviation because the complete asset prerequisite was not proven before retirement.
 
 ## Recovery dry-run
 
-The reverse-order recovery was dry-run against the committed pre-cutover and final snapshots after C14. The check confirmed the exact legacy apex value and proxy flag, exact legacy `www` value and proxy flag, all nine live replacement-record IDs, the retained organization challenge, absence of the preview record, the preserved personal repository recovery commit and 54-entry `/docs` source, the destination custom-domain claim, the organization-verification constraint, and the required R08B then R09 then R14 then R08 order for exact personal restoration. The validated stopping point is the healthy organization deployment. Exact personal restoration remains a guarded last resort because the destination attachment must be released while organization verification still protects the domain, then verification must be removed immediately before the personal claim is recreated; no provider state was changed during the dry-run. All D01-D25 decisions and C01-C14 checkpoints are verified, and the migration run is complete.
+The reverse-order recovery was dry-run against the committed pre-cutover and final snapshots after C14. The check confirmed the exact legacy apex value and proxy flag, exact legacy `www` value and proxy flag, all nine live replacement-record IDs, the retained organization challenge, absence of the preview record, the preserved personal repository recovery commit and 54-entry `/docs` source, the destination custom-domain claim, the organization-verification constraint, and the required R08B then R09 then R14 then R08 order for exact personal restoration. The validated stopping point is the healthy organization deployment. Exact personal restoration remains a guarded last resort because the destination attachment must be released while organization verification still protects the domain, then verification must be removed immediately before the personal claim is recreated; no provider state was changed during the dry-run. All D01-D25 decisions are verified. C01-C13 passed, while C14 completed with the recorded asset-prerequisite deviation.
 
 ## Local convergence
 
-The final local convergence completed successfully on 2026-09-01. `cargo xtask check` passed the Rust workspace checks and tests, dependency policy, frontend linting, type checking, unit tests and build, brand validation, site build, unit and browser tests, deployment-topology validation, configuration checks, Markdown formatting and linting, link validation across 119 Markdown files, rendering of all 28 Mermaid diagrams, version-authority agreement, UTF-8-without-BOM and mojibake validation across 370 text files, and public-documentation metadata checks. A separate S009 evidence audit parsed both committed evidence snapshots and found no BOM, credential marker, authorization value, bearer token, or email address.
+The final local convergence completed successfully on 2026-09-01. `cargo xtask check` passed the Rust workspace checks and tests, dependency policy, frontend linting, type checking, unit tests and build, brand validation, site build, unit and browser tests, deployment-topology validation, configuration checks, Markdown formatting and linting, link validation across 120 Markdown files, rendering of all 28 Mermaid diagrams, version-authority agreement, UTF-8-without-BOM and mojibake validation across 371 text files, and public-documentation metadata checks. A separate S009 evidence audit parsed both committed evidence snapshots and found no BOM, credential marker, authorization value, bearer token, or email address.
 
 ## Pull request review remediation
 
 The first complete live asset inventory at `2026-09-01T02:20:11.216Z` found that `/android-chrome-192x192.png` and `/android-chrome-512x512.png`, both declared by the deployed manifest, returned 404 while the other eight inventoried assets returned non-empty 200 responses. Commit `0c4b9b77e0c0e908f7067d878c3cd3840071830f` copies the canonical brand-kit files into the public export and adds a unit contract that loads every manifest-declared icon from the export source. The same commit corrects exact personal recovery so R08B detaches the destination custom domain while organization verification still protects it, before R09 removes verification and R14 recreates the personal claim.
 
 After the complete hosted matrix passed on the correction commit, the exact branch `codex/009-domain-cutover` was temporarily added to the protected `github-pages` environment, workflow run `33462819066` deployed artifact `6193381435`, and temporary policy `58769246` was removed immediately. Final environment inspection shows only the original `main` policy `58765725`. At `2026-09-01T02:33:04.614Z`, the font, manifest, SVG favicon, 32px favicon, 16px favicon, ICO favicon, Apple touch icon, both manifest icons, and social preview each returned a non-empty 200 response from canonical production. The destination Pages API remained workflow-published with `cname: glitchpad.com`, verified protection, an approved apex-plus-`www` certificate, and HTTPS enforcement.
+
+The review-remediation deployment is intentionally classified as temporary provenance, not the final publication state, because it came from the open pull request branch. After pull request #105 is merged, standard housekeeping must dispatch `.github/workflows/docs.yml` with `deploy: true` from `main`, verify that the deployment head equals the merged main revision, repeat the 10-asset canonical production inventory, and confirm the environment still contains only policy `58765725`. This gate cannot be executed before the user performs final review and merge.
 
 The review assertion that pre-mutation commit `4692625e1f22bf0fbe53ce890d8de7174d039b85` was unreachable was checked and rejected. `git merge-base --is-ancestor 4692625e1f22bf0fbe53ce890d8de7174d039b85 HEAD` exits 0, the branch graph places it directly after reviewed base `c93395edc16ec64900dbfc8cabbad9162a40c0d2`, and GitHub lists it as the first commit in pull request #105. The runbook reference therefore already has durable branch and eventual merged-history reachability.

@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-31
 
-**Status**: Ready for Review
+**Status**: Ready for Review with Recorded Deviation
 
 **Input**: User description: "Cloudflare setup complete. Verify access and begin S009."
 
@@ -130,3 +130,11 @@ A maintainer can understand every retained, replaced, or retired production sett
 - The S009 authorization includes controlled production mutation after the pre-cutover snapshot, plan, tasks, analysis, and explicit checklist prerequisites are complete.
 - Provider certificate issuance and DNS propagation may require bounded waiting; a pending external process is not treated as success and does not justify bypassing a checkpoint.
 - GitHub organization-domain verification may require an authenticated dashboard operation because no supported public API is documented; that operation must occur only at its planned cutover checkpoint.
+
+## Recorded Outcome Deviation
+
+S009 does not claim FR-014 or SC-009 as passed. Legacy Pages was disabled at `2026-09-01T02:04:33Z` after C12 had checked one deployed font but before the complete required-asset inventory was executed. The first complete inventory at `2026-09-01T02:20:11.216Z` found both manifest-declared Android icons returning 404. This is an irreversible historical ordering nonconformance, not a temporary exception.
+
+The defect was caused by an incomplete production-smoke implementation that treated one static font request plus metadata assertions as sufficient evidence for the manifest, icon, and social-preview contract. Correction revision `0c4b9b77e0c0e908f7067d878c3cd3840071830f` adds both canonical brand icons to the public export and an automated unit contract that loads every manifest-declared icon. Production deployment `6193381435` now serves all 10 inventoried assets successfully. Owner: `h8rt3rmin8r`. Preventive control: future retirement checkpoints must enumerate every contract asset and must not infer deployed availability from source metadata or a representative asset.
+
+Because the corrective deployment originated from the open review branch, final main-ref deployment provenance remains a post-merge housekeeping gate. The gate expires when pull request #105 is merged, the merged `main` revision is deployed through the protected `github-pages` environment, and the complete live asset inventory passes again. The historical FR-014/SC-009 deviation remains recorded after that gate closes.

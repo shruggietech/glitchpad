@@ -12,7 +12,7 @@ class RestorationInstrumentedTest {
   fun privateRestorationRecordSurvivesProcessBoundary() {
     val instrumentation = InstrumentationRegistry.getInstrumentation()
     val preferences = instrumentation.targetContext.getSharedPreferences("s011-restoration-fixture", 0)
-    when (instrumentation.arguments.getString("restorationPhase")) {
+    when (InstrumentationRegistry.getArguments().getString("restorationPhase")) {
       "seed" -> preferences.edit().putString("identity", "fixture:seekable.txt").commit()
       "verify" -> assertEquals("fixture:seekable.txt", preferences.getString("identity", null))
       else -> {

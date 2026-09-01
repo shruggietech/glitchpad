@@ -59,7 +59,9 @@ export function verifyReadmeBanner(readme) {
     return ['README banner must precede the existing # Glitchpad heading'];
   }
 
-  const introduction = readme.slice(0, headingIndex);
+  const introduction = readme
+    .slice(0, headingIndex)
+    .replace(/<!--[\s\S]*?-->/g, '');
   const centeredWrapper = introduction.match(/^\s*(<div\b[^>]*>)([\s\S]*)$/i);
   if (!centeredWrapper || /<\/div\s*>/i.test(centeredWrapper[2])) {
     return [

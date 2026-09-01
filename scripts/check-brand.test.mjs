@@ -94,6 +94,19 @@ test('README banner validation rejects a picture outside the centered introducti
   assert.ok(problems.some((problem) => problem.includes('centered introduction')));
 });
 
+test('README banner validation rejects a picture hidden inside an HTML comment', () => {
+  const problems = verifyReadmeBanner(
+    readmeWithCenteredBanner(`<!--
+${canonicalBanner}
+-->`),
+  );
+  assert.ok(
+    problems.some((problem) =>
+      problem.includes('exactly one <picture> before the # Glitchpad heading'),
+    ),
+  );
+});
+
 test('README banner validation rejects reversed asset mappings', () => {
   const problems = verifyReadmeBanner(readmeWithCenteredBanner(`
 <picture>

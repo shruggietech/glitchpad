@@ -195,7 +195,10 @@ jobs:
 
   android-instrumentation:
     name: Android provider lifecycle (API ${{ matrix.api-level }})
-    runs-on: ubuntu-latest
+    # Android emulator installation repeatedly stalls without hardware acceleration
+    # on Linux-hosted runners. The Intel macOS image provides accelerated x86_64
+    # emulation for the required API 24 and API 36 lifecycle evidence.
+    runs-on: macos-15-intel
     timeout-minutes: 45
     strategy:
       fail-fast: false

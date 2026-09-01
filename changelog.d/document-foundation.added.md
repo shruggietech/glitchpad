@@ -1,0 +1,1 @@
+- Added portable document contracts, bounded Markdown, Mermaid, text, and source detection, compact document tabs with overflow, and capability-driven commands.

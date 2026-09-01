@@ -1,0 +1,18 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "fonts",
+  "type": "registry:font",
+  "title": "Glitchpad Typography",
+  "description": "Space Grotesk display, Geist body, Geist Mono code.",
+  "font": {
+    "family": "'Geist', system-ui, sans-serif",
+    "provider": "google",
+    "import": "Geist",
+    "variable": "--font-geist",
+    "subsets": [
+      "latin"
+    ],
+    "dependency": "geist"
+  },
+  "docs": "Prefer the `geist` npm package (geist/font/sans, geist/font/mono) over a network fetch. See nextjs/fonts.ts. Never fetch from fonts.gstatic.com in a sandboxed build; it is blocked by the egress proxy."
+}

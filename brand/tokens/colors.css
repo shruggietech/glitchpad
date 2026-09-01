@@ -1,0 +1,58 @@
+/* Glitchpad color tokens. Dark product surface by default. */
+:root {
+  --gp-sulfur: #FFD900;
+  --gp-sulfur-deep: #CBAD00;
+  --gp-sulfur-accessible: #867100;
+  --gp-paper: #A8A39D;
+  --gp-orange: #FF5300;
+  --gp-orange-cta: #C24000;
+  --gp-fault: #E9505F;
+  --gp-fault-deep: #C0293A;
+  --gp-void: #0B0C0D;
+  --gp-surface: #121416;
+  --gp-surface-raised: #151719;
+  --gp-surface-hover: #181A1D;
+  --gp-line: #262626;
+  --gp-text: #FFFFFF;
+  --gp-text-muted: #9A9A9A;
+  --gp-light-surface: #F8F8F6;
+  --gp-light-panel: #FFFFFF;
+  --gp-light-text: #0A0A0A;
+  --gp-light-text-muted: #6B6B6B;
+  --gp-light-line: #E5E5E5;
+  --gp-sulfur-10: rgb(255 217 0 / 10%);
+  --gp-sulfur-20: rgb(255 217 0 / 20%);
+  --gp-orange-12: rgb(255 83 0 / 12%);
+  --gp-fault-12: rgb(233 80 95 / 12%);
+  --gp-bg: var(--gp-void);
+  --gp-panel: var(--gp-surface);
+  --gp-panel-raised: var(--gp-surface-raised);
+  --gp-hover: var(--gp-surface-hover);
+  --gp-border: var(--gp-line);
+  --gp-fg: var(--gp-text);
+  --gp-fg-muted: var(--gp-text-muted);
+  --gp-accent: var(--gp-sulfur);
+  --gp-accent-deep: var(--gp-sulfur-deep);
+  --gp-link: var(--gp-sulfur);
+  --gp-focus: var(--gp-sulfur);
+  --gp-warning: var(--gp-orange);
+  --gp-danger: var(--gp-fault);
+  --gp-primary-foreground: #000000;
+}
+
+.gp-light {
+  --gp-bg: var(--gp-light-surface);
+  --gp-panel: var(--gp-light-panel);
+  --gp-panel-raised: var(--gp-light-panel);
+  --gp-hover: #F0EFED;
+  --gp-border: var(--gp-light-line);
+  --gp-fg: var(--gp-light-text);
+  --gp-fg-muted: var(--gp-light-text-muted);
+  --gp-accent: var(--gp-sulfur-accessible);
+  --gp-accent-deep: var(--gp-sulfur-accessible);
+  --gp-link: var(--gp-sulfur-accessible);
+  --gp-focus: var(--gp-sulfur-accessible);
+  --gp-warning: var(--gp-orange-cta);
+  --gp-danger: var(--gp-fault-deep);
+  --gp-primary-foreground: #FFFFFF;
+}

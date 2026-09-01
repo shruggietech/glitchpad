@@ -1,0 +1,36 @@
+.gp-button { align-items: center; border: var(--gp-stroke-hairline) solid transparent; border-radius: var(--gp-radius-md); cursor: pointer; display: inline-flex; font-family: var(--gp-font-body); font-weight: var(--gp-weight-medium); gap: var(--gp-space-2); justify-content: center; transition: background var(--gp-motion-fast) var(--gp-ease), border-color var(--gp-motion-fast) var(--gp-ease), color var(--gp-motion-fast) var(--gp-ease); }
+.gp-button--sm { font-size: var(--gp-body-xs); min-height: 2rem; padding: 0 var(--gp-space-3); }
+.gp-button--md { font-size: var(--gp-body-sm); min-height: 2.5rem; padding: 0 var(--gp-space-4); }
+.gp-button--lg { font-size: var(--gp-body-md); min-height: 3rem; padding: 0 var(--gp-space-5); }
+.gp-button--primary { background: var(--gp-accent); color: var(--gp-primary-foreground); }
+.gp-button--primary:hover { background: var(--gp-accent-deep); }
+.gp-button--secondary { background: var(--gp-panel-raised); border-color: var(--gp-border); color: var(--gp-fg); }
+.gp-button--secondary:hover, .gp-button--ghost:hover { background: var(--gp-hover); }
+.gp-button--ghost { background: transparent; color: var(--gp-fg-muted); }
+.gp-badge { align-items: center; border: var(--gp-stroke-hairline) solid var(--gp-border); border-radius: var(--gp-radius-pill); display: inline-flex; font-family: var(--gp-font-mono); font-size: var(--gp-body-xs); gap: var(--gp-space-1); line-height: 1; padding: var(--gp-space-1) var(--gp-space-2); }
+.gp-badge::before { background: currentColor; border-radius: 50%; content: ""; height: .375rem; width: .375rem; }
+.gp-badge--accent { background: var(--gp-sulfur-10); border-color: var(--gp-sulfur-20); color: var(--gp-accent); }
+.gp-badge--emphasis { background: var(--gp-orange-12); color: var(--gp-warning); }
+.gp-badge--neutral { color: var(--gp-fg-muted); }
+.gp-badge--danger { background: var(--gp-fault-12); color: var(--gp-danger); }
+.gp-card { background: var(--gp-panel); border: var(--gp-stroke-hairline) solid var(--gp-border); border-radius: var(--gp-radius-xl); padding: var(--gp-space-5); }
+.gp-divider { background: var(--gp-border); border: 0; height: var(--gp-stroke-hairline); margin: var(--gp-space-5) 0; }
+.gp-section-heading { max-width: var(--gp-content-narrow); }
+.gp-section-heading__title { margin-top: var(--gp-space-2); }
+.gp-section-heading__description { color: var(--gp-fg-muted); }
+.gp-field { display: grid; gap: var(--gp-space-2); }
+.gp-field__label { font-size: var(--gp-body-sm); font-weight: var(--gp-weight-medium); }
+.gp-field__required { color: var(--gp-warning); }
+.gp-field__control { background: var(--gp-bg); border: var(--gp-stroke-hairline) solid var(--gp-border); border-radius: var(--gp-radius-md); color: var(--gp-fg); font: inherit; min-height: 2.75rem; padding: var(--gp-space-2) var(--gp-space-3); width: 100%; }
+.gp-field__control:hover { border-color: var(--gp-fg-muted); }
+.gp-field__control[aria-invalid="true"] { border-color: var(--gp-danger); }
+.gp-field__error { color: var(--gp-danger); font-size: var(--gp-body-xs); }
+.gp-file-row { align-items: center; border: var(--gp-stroke-hairline) solid transparent; border-radius: var(--gp-radius-md); color: var(--gp-fg-muted); display: grid; font-family: var(--gp-font-mono); font-size: var(--gp-body-xs); gap: var(--gp-space-3); grid-template-columns: minmax(0, 1fr) 5rem 6rem 9rem; min-height: 2.75rem; padding: 0 var(--gp-space-3); }
+.gp-file-row:hover { background: var(--gp-hover); color: var(--gp-fg); }
+.gp-file-row[aria-selected="true"] { background: var(--gp-sulfur-10); border-color: var(--gp-sulfur-20); color: var(--gp-fg); }
+.gp-file-row__name { align-items: center; display: flex; gap: var(--gp-space-2); min-width: 0; }
+.gp-file-row__name::before { background: var(--gp-paper); border-radius: 1px; content: ""; height: .875rem; width: .7rem; }
+.gp-file-row[aria-selected="true"] .gp-file-row__name::before { background: var(--gp-accent); }
+.gp-file-row__name span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+@media (max-width: 42rem) { .gp-file-row { grid-template-columns: minmax(0, 1fr) 4rem; } .gp-file-row__kind, .gp-file-row__modified { display: none; } }

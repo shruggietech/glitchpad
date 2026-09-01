@@ -1,0 +1,663 @@
+{
+  "name": "glitchpad-brand-kit",
+  "version": "1.0.0",
+  "parent": "ShruggieTech",
+  "canon": "1.0.0",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 4817,
+      "sha256": "aff2320663f734603d8ad938736afedb33ef23e885f07c3322575765feaf5933"
+    },
+    {
+      "path": "SKILL.md",
+      "bytes": 1513,
+      "sha256": "5c5f110ed9bcc8c0105035f4855d7f27a554ed5f04ceba1dcd33d42902b3997e"
+    },
+    {
+      "path": "brand-guide.pdf",
+      "bytes": 189325,
+      "sha256": "84304a75f9d289943bd58296c9f6a5c5cfe116e47ff8ca0b3779380338a28891"
+    },
+    {
+      "path": "brand.json",
+      "bytes": 12702,
+      "sha256": "e827bb6a685eb5c892c394c9f739037617e6b126e09bdd51ef1e311744518b8e"
+    },
+    {
+      "path": "styles.css",
+      "bytes": 199,
+      "sha256": "48b09fd0bd2b3c9e0af787fd6803d0b1304653dfc1e8a01c20b481667b7d94cc"
+    },
+    {
+      "path": "build/README.md",
+      "bytes": 1047,
+      "sha256": "c317d844a054b03c5b20059a54931c909f6659fa7863d241708f0fb794f113e5"
+    },
+    {
+      "path": "build/_guidekit.py",
+      "bytes": 1803,
+      "sha256": "6520bf882a26193eec3d276fbb67c10f10cfad2d54b73b0838e6cb905eb8e7e6"
+    },
+    {
+      "path": "build/brand-guide.print.html",
+      "bytes": 393877,
+      "sha256": "727ed88580230e8636d596b7934c35b268999f1ee0ad8b64674db114ff284428"
+    },
+    {
+      "path": "build/build_kit.py",
+      "bytes": 4815,
+      "sha256": "6ba6334d0bb15ede19c6e6a82e68e148d4f9610d53f9fb5139043a5a7b2396b8"
+    },
+    {
+      "path": "build/build_specimen.py",
+      "bytes": 2544,
+      "sha256": "a74b85536c99732b8489ab8c85d3516a2bc5ed3c95531a5d88a677d553b430bf"
+    },
+    {
+      "path": "build/enrich_brand.py",
+      "bytes": 3972,
+      "sha256": "1ba4d63b836a9c4f4573c099347c78d375b6cca9897201fa54ea5a1e326c823b"
+    },
+    {
+      "path": "build/gen_enforcement.py",
+      "bytes": 14470,
+      "sha256": "9b5e5b4295a507623c864daacea09cedab83e14592b99d53f1dcf27bf43015e5"
+    },
+    {
+      "path": "build/gen_guide_pdf.py",
+      "bytes": 26291,
+      "sha256": "cd74cb72e813dc7167bfbc628707859f1f06073d1dd949177f47a3f8967898f0"
+    },
+    {
+      "path": "build/gen_guidelines.py",
+      "bytes": 11429,
+      "sha256": "30bb3d905a8f7cf1d6c4442494fdf923e237ee9b76c10dc02ad20c9840b43f31"
+    },
+    {
+      "path": "build/gen_logo.py",
+      "bytes": 17770,
+      "sha256": "f3d97b9b4c19d21e63daea2ad0d929317d77b41fd9fd02ddbea5ec366269ad74"
+    },
+    {
+      "path": "build/gen_nextjs.py",
+      "bytes": 18313,
+      "sha256": "79d85453785595dd7ec7062d3605cf2351c07defdd7723423a5e22985126e9ed"
+    },
+    {
+      "path": "build/qc_images.py",
+      "bytes": 6369,
+      "sha256": "f3a0db8871c0c8e79fb9092129d31e1800004bb1d924a5da9f1897c8eb9492e5"
+    },
+    {
+      "path": "build/qc_paginate.py",
+      "bytes": 2612,
+      "sha256": "bcc0d730f0e244b72e1f0a8efcfdf7ccb46ff4ff606eed5602b4b010b5c2d251"
+    },
+    {
+      "path": "build/qc_render.py",
+      "bytes": 9904,
+      "sha256": "9e01ec7e2c70fbb3e85468c1ee15632ef6634e4e64100bccec525f22c36854fb"
+    },
+    {
+      "path": "build/rsvg-convert.js",
+      "bytes": 931,
+      "sha256": "60880df26a6ff45491d148136b44ebd26044402603546aa198911f5aaae6ee81"
+    },
+    {
+      "path": "build/verify.py",
+      "bytes": 21475,
+      "sha256": "b811398d6c6f6863cacc7f89293fdaa294e17e1071f06af3f27b1218113f7118"
+    },
+    {
+      "path": "components/README.md",
+      "bytes": 692,
+      "sha256": "b224152f1539ff6bdf6c14c96c4343411c6c2705cfcded1dbde1e100c2c3aa27"
+    },
+    {
+      "path": "components/components.css",
+      "bytes": 4173,
+      "sha256": "20c1a6f39a38bc412e52e3a095d8b52c55d3d7ac66705b90cd2232bd08536c0f"
+    },
+    {
+      "path": "components/core/Badge.jsx",
+      "bytes": 133,
+      "sha256": "83b8ff9f410b3dbb875f8c287a8d7e977806e54f5b6c32a4e332d1562a48b0a4"
+    },
+    {
+      "path": "components/core/Button.jsx",
+      "bytes": 213,
+      "sha256": "62eb0cfb5a15082b932aac5c69586fa8a0636bac34b9bb1b060623bf57f4703c"
+    },
+    {
+      "path": "components/core/Card.jsx",
+      "bytes": 158,
+      "sha256": "4ae93900cf5e7fad444a50b63b282d20248fee092e61fe6c6d413fee7fe5ddab"
+    },
+    {
+      "path": "components/core/Divider.jsx",
+      "bytes": 70,
+      "sha256": "d58f501fb143c784fc2899250bd7db58b3c689b14c269f41d7dc8504cf990584"
+    },
+    {
+      "path": "components/core/FileRow.jsx",
+      "bytes": 387,
+      "sha256": "1e05ee68dc604087a10ac757951e62a3c82d0c2055004af4bcde8cfa5d20bc8a"
+    },
+    {
+      "path": "components/core/SectionHeading.jsx",
+      "bytes": 311,
+      "sha256": "cb3031203287b7541eed23ba6e9db658df241ad546203aad1633d8ee972eb08d"
+    },
+    {
+      "path": "components/forms/Input.jsx",
+      "bytes": 623,
+      "sha256": "96cb58af282798d953e03356d7c77e0b61414a0751c95682a5e18180b5f4caa1"
+    },
+    {
+      "path": "components/forms/Select.jsx",
+      "bytes": 712,
+      "sha256": "6789e3d32e39aba0008bb00878a2fc9cf72c3ae598ee94d4416bdbb0b1fa1b65"
+    },
+    {
+      "path": "components/forms/Textarea.jsx",
+      "bytes": 624,
+      "sha256": "94a234e3b0eab4c7218fa90a735ac9841ccd22b8b2c9a0e222d3545f7d4779b4"
+    },
+    {
+      "path": "enforcement/AGENTS.md",
+      "bytes": 4131,
+      "sha256": "af85e86171f0239a0153d1fb5d5384a418694383aef7514a34b40ecbaa9916c3"
+    },
+    {
+      "path": "enforcement/README.md",
+      "bytes": 685,
+      "sha256": "f25da0984261894cfd695a4d515b51dad38bcf0a31b0716d4e8a16bf818a3d9e"
+    },
+    {
+      "path": "enforcement/eslint.brand.mjs",
+      "bytes": 6721,
+      "sha256": "8689f7f879ea61fb67649f65e06efd853613215ff4f6870de81b686313cfbf7b"
+    },
+    {
+      "path": "enforcement/stylelint.config.json",
+      "bytes": 378,
+      "sha256": "bdc4a9825599b7226830458512eac3a3674ba126324874e0256e13d9d7da9476"
+    },
+    {
+      "path": "favicons/android-chrome-192x192.png",
+      "bytes": 2327,
+      "sha256": "0dcfd1ed96dc0d1c02ce29fc9af47f66ff32bcf9f456cfa1d1fd527dd4453242"
+    },
+    {
+      "path": "favicons/android-chrome-512x512.png",
+      "bytes": 7603,
+      "sha256": "faf6d747821832b2b5528282ebe68dd3ca56341ad11ee0ecf1e9d4dcbdbbdadd"
+    },
+    {
+      "path": "favicons/apple-touch-icon.png",
+      "bytes": 2084,
+      "sha256": "ad10384ff9dba1e277e0fe41d63621fcb2ea99e82789205e929dab4f0211c101"
+    },
+    {
+      "path": "favicons/favicon-128x128.png",
+      "bytes": 1482,
+      "sha256": "6b4b62a23de9b9fcfefff83e465ab84f767f15f440ee12ecff042dd0e0cad1e2"
+    },
+    {
+      "path": "favicons/favicon-16x16.png",
+      "bytes": 281,
+      "sha256": "ed436f7f9571cc45a06b6652c14b15d6472a0af35ebd718376ba40e4599f1b40"
+    },
+    {
+      "path": "favicons/favicon-192x192.png",
+      "bytes": 2327,
+      "sha256": "0dcfd1ed96dc0d1c02ce29fc9af47f66ff32bcf9f456cfa1d1fd527dd4453242"
+    },
+    {
+      "path": "favicons/favicon-24x24.png",
+      "bytes": 361,
+      "sha256": "af0eb37ae69f8664d295106069a599f00499e7cb50539795ed8908894414f32f"
+    },
+    {
+      "path": "favicons/favicon-256x256.png",
+      "bytes": 3447,
+      "sha256": "5ce8fe715cb2e9619acb595ba6dd4f8b30f1f1c26108f15422b416b47d162f88"
+    },
+    {
+      "path": "favicons/favicon-32x32.png",
+      "bytes": 432,
+      "sha256": "e16cbead4fff219425ad8b5d2f373115d5ed07041fa265de81cb0eca77d06c83"
+    },
+    {
+      "path": "favicons/favicon-48x48.png",
+      "bytes": 539,
+      "sha256": "4fb35ddb8d679dafca76f2efcb03e07130a2e3d3038f54eca3782fc60fcb89e9"
+    },
+    {
+      "path": "favicons/favicon-512x512.png",
+      "bytes": 7603,
+      "sha256": "faf6d747821832b2b5528282ebe68dd3ca56341ad11ee0ecf1e9d4dcbdbbdadd"
+    },
+    {
+      "path": "favicons/favicon-64x64.png",
+      "bytes": 655,
+      "sha256": "873e675198ad37e296bae94455a033658b9c8ea850db39073a010e56db1f7137"
+    },
+    {
+      "path": "favicons/favicon-reduced.svg",
+      "bytes": 570,
+      "sha256": "684283623176f3eab6ae36e1a7bd49a3f549c83b0d8f986d049d2924528dc5bb"
+    },
+    {
+      "path": "favicons/favicon.ico",
+      "bytes": 104496,
+      "sha256": "afa7a455d9047361836347e49c7b000a8c83a69dc3aa1b4ef7639499408a93eb"
+    },
+    {
+      "path": "favicons/favicon.svg",
+      "bytes": 622,
+      "sha256": "fb5d54faf7c7ddb4af2cb9b609d4af23e100e39cee0f8c87f7d89eb9cc048bfc"
+    },
+    {
+      "path": "favicons/site.webmanifest",
+      "bytes": 378,
+      "sha256": "7de121ca7210929b4e703874b02c3aad53f96b11011a410ee1684b12359724fa"
+    },
+    {
+      "path": "fonts/README.md",
+      "bytes": 988,
+      "sha256": "46342f806f3cff108f0ef136bec41234539ac8168917c464358b1ad08cf39d97"
+    },
+    {
+      "path": "fonts/fonts.css",
+      "bytes": 848,
+      "sha256": "a0dca3df29d9275788f8f69ee2190cbe26c6e9fc4cbda021218f64db09016287"
+    },
+    {
+      "path": "fonts/licenses/OFL-Geist.txt",
+      "bytes": 4383,
+      "sha256": "942560b236adfa83745b2c64e5fc09ebaf91cb331751b1157eb92187e5d6e930"
+    },
+    {
+      "path": "fonts/licenses/OFL-Space-Grotesk.txt",
+      "bytes": 4401,
+      "sha256": "18a4de52385f6b988782639d5d0cc1326e5a8c2de9a7f01d7b20d9aedcc60943"
+    },
+    {
+      "path": "fonts/ttf/Geist-Medium.ttf",
+      "bytes": 90528,
+      "sha256": "b649842011528395954b56221749719041cc6a7b84cb4d29d4f5189338cb62df"
+    },
+    {
+      "path": "fonts/ttf/Geist-Regular.ttf",
+      "bytes": 90440,
+      "sha256": "43065e72260288e84672cd1f27e1a8f8889b636a74f5f9252649365c41e8eca8"
+    },
+    {
+      "path": "fonts/ttf/GeistMono-Regular.ttf",
+      "bytes": 101868,
+      "sha256": "990f0e094fe02b8872429209c09abf4c03d22183c33c2a2ddb891dc7f086271c"
+    },
+    {
+      "path": "fonts/ttf/SpaceGrotesk-Bold.ttf",
+      "bytes": 88404,
+      "sha256": "4372b0b9200ee5f40edbfbe46285f1048afd4cea35ee62999f8f4fef93395022"
+    },
+    {
+      "path": "fonts/ttf/SpaceGrotesk-Medium.ttf",
+      "bytes": 88500,
+      "sha256": "9483bddc72cef2760eae1f432ecb7d2c9fd537c99768d57d29fefcbb08fa0a68"
+    },
+    {
+      "path": "fonts/woff2/Geist-Medium.woff2",
+      "bytes": 46356,
+      "sha256": "0b50074337a05ed834a1474d3d13fc6bd8480e2ce3075d02f1d38c017a8ac2a4"
+    },
+    {
+      "path": "fonts/woff2/Geist-Regular.woff2",
+      "bytes": 45172,
+      "sha256": "faed18848df4a6e1b5503b589bbbc055fbdab0e1780781edf5105457395e1e5d"
+    },
+    {
+      "path": "fonts/woff2/GeistMono-Regular.woff2",
+      "bytes": 50196,
+      "sha256": "c88d20967768754cbdca230acd74ecb25de78d0dc47e31694aa8bd2c528fec26"
+    },
+    {
+      "path": "fonts/woff2/SpaceGrotesk-Bold.woff2",
+      "bytes": 12840,
+      "sha256": "35f8aec56cfd5cbfdb03cc68733a54a0b05bb3617ffcd5fd332badc0b045ca55"
+    },
+    {
+      "path": "fonts/woff2/SpaceGrotesk-Medium.woff2",
+      "bytes": 13312,
+      "sha256": "1b1a8131d9edf975d9decee81e2f2bf504812f7a4f498e5500f28a613e22e64c"
+    },
+    {
+      "path": "guidelines/index.html",
+      "bytes": 328367,
+      "sha256": "e39d5bc4350fa9a78d0cd1b01e3b0a9e62ca9b32c63f86b2c190039994379999"
+    },
+    {
+      "path": "logos/png/glitchpad-horizontal-black-1024.png",
+      "bytes": 15656,
+      "sha256": "f47bffea16a36286f2c2d8aecb2322845a9ef25c51c2a2d0587c1fce592bb9cb"
+    },
+    {
+      "path": "logos/png/glitchpad-horizontal-color-1024.png",
+      "bytes": 17496,
+      "sha256": "89a20cf688747471551c9810928a90563159e404f4cabee27485bcc26f6322b3"
+    },
+    {
+      "path": "logos/png/glitchpad-horizontal-light-1024.png",
+      "bytes": 19802,
+      "sha256": "fa874ccc060ea0b6d47e936e38c0673697c2881b163aa550ae5a280cbb5ecfde"
+    },
+    {
+      "path": "logos/png/glitchpad-horizontal-white-1024.png",
+      "bytes": 20471,
+      "sha256": "d93e7f7355bf24083b4b205c8ed9e383867aa309ca376700515264abc1a1b7a2"
+    },
+    {
+      "path": "logos/png/glitchpad-mark-black-1024.png",
+      "bytes": 9544,
+      "sha256": "f65c961ce955f5bbc7cec4c530dfe9c11198c0bc052d78b3ebb7a683dde9c36a"
+    },
+    {
+      "path": "logos/png/glitchpad-mark-color-1024.png",
+      "bytes": 10710,
+      "sha256": "49b7b67a14091571c6b429ac94d619c6f269d45f8174c416bf78cccf65b5edac"
+    },
+    {
+      "path": "logos/png/glitchpad-mark-light-1024.png",
+      "bytes": 10556,
+      "sha256": "95c17673a6ff0cf483464ada55289afef0b92bcbb9ddc3d7319f83a7205c3313"
+    },
+    {
+      "path": "logos/png/glitchpad-mark-reduced-black-1024.png",
+      "bytes": 9524,
+      "sha256": "0ec9cb3f457644c9363a8843cf7e4d25c861dc7109ac84f4c96f35a5c87265bd"
+    },
+    {
+      "path": "logos/png/glitchpad-mark-reduced-color-1024.png",
+      "bytes": 10089,
+      "sha256": "645e6a5a4c03b870bdebd594a21fe78c80f03222c1de8ca4bc64e65ff6916516"
+    },
+    {
+      "path": "logos/png/glitchpad-mark-reduced-light-1024.png",
+      "bytes": 10361,
+      "sha256": "01c95f2f43ca4a13cc621db95aaad0b27e81d9ddbbf160b7ef32a0427c3f8b3d"
+    },
+    {
+      "path": "logos/png/glitchpad-mark-reduced-white-1024.png",
+      "bytes": 9845,
+      "sha256": "0e9f902ef3e2de241b39d1e09e7bbf939a4faa7fc914769877635b6e929ba9c6"
+    },
+    {
+      "path": "logos/png/glitchpad-mark-white-1024.png",
+      "bytes": 9900,
+      "sha256": "b44bcd0c34fae3d5b39c53ec19b188ba4f268b3d9098c2f0f025b22b4e36de82"
+    },
+    {
+      "path": "logos/png/glitchpad-social-preview-1280.png",
+      "bytes": 28118,
+      "sha256": "c1a2fa7c5d73a088966c5f892323c70a1474df6f43b7ade46ba9387f2b1fec3a"
+    },
+    {
+      "path": "logos/png/glitchpad-stacked-black-1024.png",
+      "bytes": 22609,
+      "sha256": "244f4064123a372f9b0dea718c2368d9ae40ffa0ef605a1628aa77d375227c26"
+    },
+    {
+      "path": "logos/png/glitchpad-stacked-color-1024.png",
+      "bytes": 24340,
+      "sha256": "eb39045d2316429c6505b6a64dfe440e1d2aadfaa9f1421b32bc52d4a79c86b6"
+    },
+    {
+      "path": "logos/png/glitchpad-stacked-light-1024.png",
+      "bytes": 26229,
+      "sha256": "ef9b0da26a60dc6a18aae9748fbd3bb810461e844fac3a4c01e99c0dfecf698b"
+    },
+    {
+      "path": "logos/png/glitchpad-stacked-white-1024.png",
+      "bytes": 27260,
+      "sha256": "e54c672afc2bbdbfef660f3a1ee6d380790ad7bf3936a5a0dde1ccf7488b8b31"
+    },
+    {
+      "path": "logos/png/glitchpad-wordmark-black-1024.png",
+      "bytes": 16348,
+      "sha256": "4bbbdc86f367601b4645420e0ec42b51265d67933252610880ea762222271b37"
+    },
+    {
+      "path": "logos/png/glitchpad-wordmark-color-1024.png",
+      "bytes": 18175,
+      "sha256": "f2a4ebf04c53f43af216c95c5c9e7bd22e8cac39a0de38409b746d48e7070294"
+    },
+    {
+      "path": "logos/png/glitchpad-wordmark-light-1024.png",
+      "bytes": 20744,
+      "sha256": "d0e3f7dae4ec7100f010d95bfcd1652c4456503907822b2462b621e46a3f1d5a"
+    },
+    {
+      "path": "logos/png/glitchpad-wordmark-white-1024.png",
+      "bytes": 20756,
+      "sha256": "46964cb4af87fba41e987a395637d9dcab215cccc0e2777542f54c37dc445cbb"
+    },
+    {
+      "path": "logos/svg/glitchpad-horizontal-black.svg",
+      "bytes": 6687,
+      "sha256": "c9b8ccaea8f8e6411bc8822b37979fb7d91a5cc0b9b010a36cccad8c447ed2f5"
+    },
+    {
+      "path": "logos/svg/glitchpad-horizontal-color.svg",
+      "bytes": 6687,
+      "sha256": "a3273f87c50315a973953c9b37357968b42c68fd5588022e7725c7dc770fbd1f"
+    },
+    {
+      "path": "logos/svg/glitchpad-horizontal-light.svg",
+      "bytes": 6687,
+      "sha256": "cd9a3aa4a908daa422c71d8381854be24fd625e9203df49e8a936ecc6adf9a40"
+    },
+    {
+      "path": "logos/svg/glitchpad-horizontal-white.svg",
+      "bytes": 6687,
+      "sha256": "3a1afa4be42e39e7d8c6a32a402a6b165fab5fc446bdd9686bd8690bbccbb414"
+    },
+    {
+      "path": "logos/svg/glitchpad-mark-black.svg",
+      "bytes": 522,
+      "sha256": "475bc14634b9b8ab74093ab76a9aa41d9514017a95222fa47ab90371bda8fbb2"
+    },
+    {
+      "path": "logos/svg/glitchpad-mark-color.svg",
+      "bytes": 522,
+      "sha256": "30cf793503711955d512435247766482f3bcfd603c765129ad243598eb5e4dbb"
+    },
+    {
+      "path": "logos/svg/glitchpad-mark-light.svg",
+      "bytes": 522,
+      "sha256": "c16b523ee29136272b23e1ba313bc76cb34601a660e5bbc1547c97d970221288"
+    },
+    {
+      "path": "logos/svg/glitchpad-mark-reduced-black.svg",
+      "bytes": 472,
+      "sha256": "2bb3674f63f2e49923545033695d95fc8ef58c7ae6e122ea061e299f046b24f9"
+    },
+    {
+      "path": "logos/svg/glitchpad-mark-reduced-color.svg",
+      "bytes": 472,
+      "sha256": "03208d6b87a12b1df635b35a80bd0c41fd8ca1434d618ce845cefb03bfa873b0"
+    },
+    {
+      "path": "logos/svg/glitchpad-mark-reduced-light.svg",
+      "bytes": 472,
+      "sha256": "f1839b886c297a1c3377d79b2a780019b71f2bc059e9bdf7f3978f7452dc507b"
+    },
+    {
+      "path": "logos/svg/glitchpad-mark-reduced-white.svg",
+      "bytes": 472,
+      "sha256": "2ea9490bc37bcc542f25e849d92bd197dcf7ed54cf2301ff841063093d7ea3d1"
+    },
+    {
+      "path": "logos/svg/glitchpad-mark-white.svg",
+      "bytes": 522,
+      "sha256": "81434d13e3af1935b351d7efbba44af8c4806697dbf105bbc81d8c0fbfbdb7b2"
+    },
+    {
+      "path": "logos/svg/glitchpad-social-preview.svg",
+      "bytes": 13626,
+      "sha256": "c8acdae91eefdd3d4f2f3e7261819f61c1199b8cae12954c20a4705c1c4f1d8b"
+    },
+    {
+      "path": "logos/svg/glitchpad-stacked-black.svg",
+      "bytes": 6709,
+      "sha256": "75e87a2fe13440f0f6e80907738220f4da1841473dfcab7c734a0cf478234b2b"
+    },
+    {
+      "path": "logos/svg/glitchpad-stacked-color.svg",
+      "bytes": 6709,
+      "sha256": "fe1c47e0f69e49d23f034effb87dbf480ce8bf72768a37fb29dacd03659cb5b2"
+    },
+    {
+      "path": "logos/svg/glitchpad-stacked-light.svg",
+      "bytes": 6709,
+      "sha256": "9d33d8c6c9437936e7dda2631f0b12802e87d92def684f0b17a72d5b5b8b9f33"
+    },
+    {
+      "path": "logos/svg/glitchpad-stacked-white.svg",
+      "bytes": 6709,
+      "sha256": "f58f962390e0a818a8acf6f374cf281378e069ef6307c1e9f2dd0f9ecddac97a"
+    },
+    {
+      "path": "logos/svg/glitchpad-wordmark-black.svg",
+      "bytes": 6173,
+      "sha256": "2df7bf3f7b2135ef9a92e14dbb2e9773b2f8454a731de3e4131d0d145998f1ea"
+    },
+    {
+      "path": "logos/svg/glitchpad-wordmark-color.svg",
+      "bytes": 6173,
+      "sha256": "3115dad78134748b18059d24f0b16ca0f8079ce8f576a95c703cfa310e77e625"
+    },
+    {
+      "path": "logos/svg/glitchpad-wordmark-light.svg",
+      "bytes": 6173,
+      "sha256": "c3c9133c5ef43c7175fb0d5a048fd7bd2930da2538313275d551e1004c0e672b"
+    },
+    {
+      "path": "logos/svg/glitchpad-wordmark-white.svg",
+      "bytes": 6173,
+      "sha256": "abf6da01963805ce206114aaa703778e3d10afffd274781e86db368da6ae095d"
+    },
+    {
+      "path": "nextjs/README.md",
+      "bytes": 968,
+      "sha256": "aba83bd19d6588a922645d5497ce1ef1e406f609a37f94c83e3b9851341fa65e"
+    },
+    {
+      "path": "nextjs/app-icon.tsx",
+      "bytes": 190,
+      "sha256": "6da9d45bc37f0c0d2bf98e579b375be381da746d3ef857dd30dcd1b54bf92984"
+    },
+    {
+      "path": "nextjs/components.json.snippet",
+      "bytes": 88,
+      "sha256": "4e6beecf59e7ebe98b7169289555db12123d02a310253a3b1b30cdfe6d9c3bdf"
+    },
+    {
+      "path": "nextjs/fonts.ts",
+      "bytes": 753,
+      "sha256": "5cb83533ea3417e6a71dca68119443589b86dc5a460ae875b5f6ef0c875953d0"
+    },
+    {
+      "path": "nextjs/globals.css",
+      "bytes": 7078,
+      "sha256": "5203404f098c5312d2af7ccfde60cfdc907c381c3cd556b8d8ed2556b58103a8"
+    },
+    {
+      "path": "nextjs/opengraph-image.tsx",
+      "bytes": 261,
+      "sha256": "f44ef3dc137488439055c41275a14688cbb5e6a096ae8443130d3d04a4203cb1"
+    },
+    {
+      "path": "nextjs/providers.tsx",
+      "bytes": 581,
+      "sha256": "54be642206bcef2e7520a59ab71119960a6ef9f2c280cfdb2373381a7a99af4a"
+    },
+    {
+      "path": "nextjs/registry/file-row.json",
+      "bytes": 766,
+      "sha256": "af48ad3ee0f68525df6ac61521e0312c3764ab08f778776a99c8777e2ef013d9"
+    },
+    {
+      "path": "nextjs/registry/font.json",
+      "bytes": 644,
+      "sha256": "f3dc61d1a853560cacbf3156b046931a63f6f049569476708a32540bf2d5a86d"
+    },
+    {
+      "path": "nextjs/registry/registry.json",
+      "bytes": 398,
+      "sha256": "10515eefdf4c10d56686a025ed45cce9f1c53523017692087af194545ba7d0cd"
+    },
+    {
+      "path": "nextjs/registry/theme.json",
+      "bytes": 4099,
+      "sha256": "139140982e49a50220c78bf92f3c8d6aa847654b7ebc39d838bb0b6533a7b592"
+    },
+    {
+      "path": "references/01-canon.json",
+      "bytes": 32383,
+      "sha256": "e6cd8eda6304e25b6382c809fc64ca30b8b1351285d6120477ba4edf9000ded3"
+    },
+    {
+      "path": "specimens/README.md",
+      "bytes": 317,
+      "sha256": "d4d26997ec6557e7a2693685ad694a3d705ed2f30965f78d21f1bc028b0d5216"
+    },
+    {
+      "path": "specimens/glitchpad-type-specimen.png",
+      "bytes": 72730,
+      "sha256": "87c39a30129b0cb5b80c263dcaeb4bae02d9b03730f94ee0c75869be6a365272"
+    },
+    {
+      "path": "specimens/glitchpad-type-specimen.svg",
+      "bytes": 175434,
+      "sha256": "2bf325e79e38ab98d39122f55df77384e39aac7eeed4337c72e3d8ed9d16a1a5"
+    },
+    {
+      "path": "tokens/base.css",
+      "bytes": 1468,
+      "sha256": "3f558cf588f74b77d66a646486daf660190bda6ba16013f46edaec382eadd6a8"
+    },
+    {
+      "path": "tokens/brand.tokens.json",
+      "bytes": 1739,
+      "sha256": "4d125cce71412c32007683eb1ed2ec229c9a3a24d60be3e4d77d992f3c1885f0"
+    },
+    {
+      "path": "tokens/colors.css",
+      "bytes": 1820,
+      "sha256": "c0dce00e223d74cf1ce4b18fbf19e316f268aefb88e42648f46251dd1fdc3c7c"
+    },
+    {
+      "path": "tokens/spacing.css",
+      "bytes": 661,
+      "sha256": "401478841fd2248c8854bd20247ee38c9f6927f9f35747bfcc72782adf70c4fc"
+    },
+    {
+      "path": "tokens/typography.css",
+      "bytes": 672,
+      "sha256": "5715d4f0ad1a02b7c1c0474e4d9ca9f401b28c6e0557287c0e14ef8295b71f44"
+    },
+    {
+      "path": "ui_kits/glitchpad-web/README.md",
+      "bytes": 399,
+      "sha256": "af9156f75489f9c4ce0e29d2bcd34e50d4611361b72c5aa74215400fb3f4e068"
+    },
+    {
+      "path": "ui_kits/glitchpad-web/index.html",
+      "bytes": 10446,
+      "sha256": "e6e1a69dd480e1504274fd9bfd6987eea93b642790241e89c58374fe37723ef6"
+    }
+  ]
+}

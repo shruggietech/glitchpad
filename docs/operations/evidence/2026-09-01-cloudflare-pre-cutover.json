@@ -1,0 +1,717 @@
+{
+  "schema_version": 1,
+  "run_id": "20260901T013047Z",
+  "captured_at": "2026-09-01T01:30:47.029Z",
+  "source_revision": "c93395edc16ec64900dbfc8cabbad9162a40c0d2",
+  "operator": "h8rt3rmin8r",
+  "redactions": [
+    "Cloudflare OAuth and GitHub authentication material are never requested or persisted.",
+    "Email Routing matcher values and action destinations are replaced with [redacted] because S009 does not modify them."
+  ],
+  "cloudflare": {
+    "account": {
+      "id": "39e3052d61e3edccea7d68269ec07182",
+      "name": "ShruggieTech"
+    },
+    "zone": {
+      "id": "ae5e724f63fc2f3292a8cb1b5bd1d76f",
+      "name": "glitchpad.com",
+      "status": "active",
+      "paused": false,
+      "type": "full",
+      "name_servers": ["norah.ns.cloudflare.com", "rex.ns.cloudflare.com"],
+      "modified_on": "2022-12-29T22:35:10.672136Z"
+    },
+    "dns_records": [
+      {
+        "id": "1223d3bd28b734c27a72fb7e26e2fc46",
+        "type": "A",
+        "name": "glitchpad.com",
+        "content": "192.30.252.153",
+        "ttl": 1,
+        "proxied": true,
+        "priority": null,
+        "comment": null,
+        "tags": [],
+        "created_on": "2022-12-29T22:29:16.621802Z",
+        "modified_on": "2022-12-29T22:29:16.621802Z",
+        "settings": {},
+        "meta": {}
+      },
+      {
+        "id": "fd3b119c55c1865535eb2fe0090b831c",
+        "type": "CNAME",
+        "name": "_domainconnect.glitchpad.com",
+        "content": "connect.domains.google.com",
+        "ttl": 1,
+        "proxied": true,
+        "priority": null,
+        "comment": null,
+        "tags": [],
+        "created_on": "2022-12-29T22:29:16.626494Z",
+        "modified_on": "2022-12-29T22:29:16.626494Z",
+        "settings": {
+          "flatten_cname": false
+        },
+        "meta": {}
+      },
+      {
+        "id": "fd8ef00fb74b6dd3bb3f18d573e9f076",
+        "type": "CNAME",
+        "name": "www.glitchpad.com",
+        "content": "h8rt3rmin8r.github.io",
+        "ttl": 1,
+        "proxied": true,
+        "priority": null,
+        "comment": null,
+        "tags": [],
+        "created_on": "2022-12-29T22:29:47.942383Z",
+        "modified_on": "2022-12-29T22:30:22.647848Z",
+        "settings": {
+          "flatten_cname": false
+        },
+        "meta": {}
+      },
+      {
+        "id": "8d1f3d123cd4b5cda23f7b75dc4c2458",
+        "type": "MX",
+        "name": "glitchpad.com",
+        "content": "gmr-smtp-in.l.google.com",
+        "ttl": 3600,
+        "proxied": false,
+        "priority": 5,
+        "comment": null,
+        "tags": [],
+        "created_on": "2022-12-29T22:29:47.96211Z",
+        "modified_on": "2022-12-29T22:29:47.96211Z",
+        "settings": {},
+        "meta": {}
+      },
+      {
+        "id": "a6bb8d777a8d6c83ce08016e0faf7219",
+        "type": "MX",
+        "name": "glitchpad.com",
+        "content": "alt1.gmr-smtp-in.l.google.com",
+        "ttl": 3600,
+        "proxied": false,
+        "priority": 10,
+        "comment": null,
+        "tags": [],
+        "created_on": "2022-12-29T22:29:47.958299Z",
+        "modified_on": "2022-12-29T22:29:47.958299Z",
+        "settings": {},
+        "meta": {}
+      },
+      {
+        "id": "e5e2aa3c21c84e7926baf7bb00d54034",
+        "type": "MX",
+        "name": "glitchpad.com",
+        "content": "alt2.gmr-smtp-in.l.google.com",
+        "ttl": 3600,
+        "proxied": false,
+        "priority": 20,
+        "comment": null,
+        "tags": [],
+        "created_on": "2022-12-29T22:29:47.954835Z",
+        "modified_on": "2022-12-29T22:29:47.954835Z",
+        "settings": {},
+        "meta": {}
+      },
+      {
+        "id": "a5b9846cae72f323ea373b0d4983baf4",
+        "type": "MX",
+        "name": "glitchpad.com",
+        "content": "alt3.gmr-smtp-in.l.google.com",
+        "ttl": 3600,
+        "proxied": false,
+        "priority": 30,
+        "comment": null,
+        "tags": [],
+        "created_on": "2022-12-29T22:29:47.950902Z",
+        "modified_on": "2022-12-29T22:29:47.950902Z",
+        "settings": {},
+        "meta": {}
+      },
+      {
+        "id": "50e1878b24298808d334928291612821",
+        "type": "MX",
+        "name": "glitchpad.com",
+        "content": "alt4.gmr-smtp-in.l.google.com",
+        "ttl": 3600,
+        "proxied": false,
+        "priority": 40,
+        "comment": null,
+        "tags": [],
+        "created_on": "2022-12-29T22:29:47.947115Z",
+        "modified_on": "2022-12-29T22:29:47.947115Z",
+        "settings": {},
+        "meta": {}
+      },
+      {
+        "id": "b8f860846036c0c4f1c7acedb5c9dc88",
+        "type": "TXT",
+        "name": "glitchpad.com",
+        "content": "\"openai-domain-verification=dv-BSp5RK8uIwPEOblk7VnDxoU8\"",
+        "ttl": 1,
+        "proxied": false,
+        "priority": null,
+        "comment": "ChatGPT domain ownership verification added on 2025-10-26.",
+        "tags": [],
+        "created_on": "2025-10-26T22:51:25.185189Z",
+        "modified_on": "2025-10-26T22:51:25.185189Z",
+        "settings": {},
+        "meta": {}
+      }
+    ],
+    "dnssec": {
+      "algorithm": null,
+      "digest": null,
+      "digest_algorithm": null,
+      "digest_type": null,
+      "ds": null,
+      "flags": null,
+      "key_tag": null,
+      "key_type": null,
+      "public_key": null,
+      "status": "disabled"
+    },
+    "zone_settings": [
+      {
+        "id": "0rtt",
+        "value": "off",
+        "editable": true,
+        "modified_on": null
+      },
+      {
+        "id": "advanced_ddos",
+        "value": "on",
+        "editable": false,
+        "modified_on": null
+      },
+      {
+        "id": "always_online",
+        "value": "off",
+        "editable": true,
+        "modified_on": null
+      },
+      {
+        "id": "always_use_https",
+        "value": "on",
+        "editable": true,
+        "modified_on": "2022-12-29T22:31:48.844102Z"
+      },
+      {
+        "id": "automatic_https_rewrites",
+        "value": "on",
+        "editable": true,
+        "modified_on": null
+      },
+      {
+        "id": "brotli",
+        "value": "on",
+        "editable": true,
+        "modified_on": null
+      },
+      {
+        "id": "browser_cache_ttl",
+        "value": 14400,
+        "editable": true,
+        "modified_on": null
+      },
+      {
+        "id": "browser_check",
+        "value": "on",
+        "editable": true,
+        "modified_on": null
+      },
+      {
+        "id": "cache_level",
+        "value": "aggressive",
+        "editable": true,
+        "modified_on": null
+      },
+      {
+        "id": "challenge_ttl",
+        "value": 1800,
+        "editable": true,
+        "modified_on": null
+      },
+      {
+        "id": "ciphers",
+        "value": [],
+        "editable": true,
+        "modified_on": null
+      },
+      {
+        "id": "cname_flattening",
+        "value": "flatten_at_root",
+        "editable": true,
+        "modified_on": null
+      },
+      {
+        "id": "development_mode",
+        "value": "off",
+        "editable": true,
+        "modified_on": null
+      },
+      {
+        "id": "early_hints",
+        "value": "off",
+        "editable": true,
+        "modified_on": null
+      },
+      {
+        "id": "ech",
+        "value": "on",
+        "editable": true,
+        "modified_on": null
+      },
+      {
+        "id": "edge_cache_ttl",
+        "value": 7200,
+        "editable": true,
+        "modified_on": null
+      },
+      {
+        "id": "email_obfuscation",
+        "value": "on",
+        "editable": true,
+        "modified_on": null
+      },
+      {
+        "id": "filter_logs_to_cloudflare",
+        "value": "off",
+        "editable": true,
+        "modified_on": null
+      },
+      {
+        "id": "hotlink_protection",
+        "value": "off",
+        "editable": true,
+        "modified_on": null
+      },
+      {
+        "id": "http2",
+        "value": "on",
+        "editable": false,
+        "modified_on": null
+      },
+      {
+        "id": "http3",
+        "value": "on",
+        "editable": true,
+        "modified_on": null
+      },
+      {
+        "id": "ip_geolocation",
+        "value": "on",
+        "editable": true,
+        "modified_on": null
+      },
+      {
+        "id": "ipv6",
+        "value": "on",
+        "editable": true,
+        "modified_on": "2022-12-29T22:28:58.973409Z"
+      },
+      {
+        "id": "log_to_cloudflare",
+        "value": "on",
+        "editable": true,
+        "modified_on": null
+      },
+      {
+        "id": "long_lived_grpc",
+        "value": "off",
+        "editable": false,
+        "modified_on": null
+      },
+      {
+        "id": "max_upload",
+        "value": 100,
+        "editable": true,
+        "modified_on": null
+      },
+      {
+        "id": "min_tls_version",
+        "value": "1.0",
+        "editable": true,
+        "modified_on": null
+      },
+      {
+        "id": "minify",
+        "value": {
+          "css": "off",
+          "html": "off",
+          "js": "off"
+        },
+        "editable": true,
+        "modified_on": null
+      },
+      {
+        "id": "mirage",
+        "value": "off",
+        "editable": false,
+        "modified_on": null
+      },
+      {
+        "id": "mobile_redirect",
+        "value": {
+          "status": "off",
+          "mobile_subdomain": null,
+          "strip_uri": false
+        },
+        "editable": true,
+        "modified_on": null
+      },
+      {
+        "id": "opportunistic_encryption",
+        "value": "on",
+        "editable": true,
+        "modified_on": null
+      },
+      {
+        "id": "opportunistic_onion",
+        "value": "on",
+        "editable": true,
+        "modified_on": null
+      },
+      {
+        "id": "orange_to_orange",
+        "value": "off",
+        "editable": true,
+        "modified_on": null
+      },
+      {
+        "id": "origin_error_page_pass_thru",
+        "value": "off",
+        "editable": false,
+        "modified_on": null
+      },
+      {
+        "id": "polish",
+        "value": "off",
+        "editable": false,
+        "modified_on": null
+      },
+      {
+        "id": "pq_keyex",
+        "value": "on",
+        "editable": true,
+        "modified_on": null
+      },
+      {
+        "id": "prefetch_preload",
+        "value": "off",
+        "editable": false,
+        "modified_on": null
+      },
+      {
+        "id": "privacy_pass",
+        "value": "on",
+        "editable": true,
+        "modified_on": null
+      },
+      {
+        "id": "proxy_read_timeout",
+        "value": "125",
+        "editable": false,
+        "modified_on": null
+      },
+      {
+        "id": "pseudo_ipv4",
+        "value": "off",
+        "editable": true,
+        "modified_on": null
+      },
+      {
+        "id": "replace_insecure_js",
+        "value": "on",
+        "editable": true,
+        "modified_on": null
+      },
+      {
+        "id": "response_buffering",
+        "value": "off",
+        "editable": false,
+        "modified_on": null
+      },
+      {
+        "id": "rocket_loader",
+        "value": "off",
+        "editable": true,
+        "modified_on": null
+      },
+      {
+        "id": "security_header",
+        "value": {
+          "strict_transport_security": {
+            "enabled": false,
+            "max_age": 0,
+            "include_subdomains": false,
+            "preload": false,
+            "nosniff": false
+          }
+        },
+        "editable": true,
+        "modified_on": null
+      },
+      {
+        "id": "security_level",
+        "value": "medium",
+        "editable": true,
+        "modified_on": null
+      },
+      {
+        "id": "server_side_exclude",
+        "value": "on",
+        "editable": true,
+        "modified_on": null
+      },
+      {
+        "id": "sort_query_string_for_cache",
+        "value": "off",
+        "editable": false,
+        "modified_on": null
+      },
+      {
+        "id": "ssl",
+        "value": "full",
+        "editable": true,
+        "modified_on": "2025-01-01T19:07:08.841551Z"
+      },
+      {
+        "id": "tls_1_2_only",
+        "value": "off",
+        "editable": true,
+        "modified_on": null
+      },
+      {
+        "id": "tls_1_3",
+        "value": "on",
+        "editable": true,
+        "modified_on": null
+      },
+      {
+        "id": "tls_client_auth",
+        "value": "off",
+        "editable": true,
+        "modified_on": null
+      },
+      {
+        "id": "true_client_ip_header",
+        "value": "off",
+        "editable": false,
+        "modified_on": null
+      },
+      {
+        "id": "visitor_ip",
+        "value": "on",
+        "editable": true,
+        "modified_on": null
+      },
+      {
+        "id": "waf",
+        "value": "off",
+        "editable": true,
+        "modified_on": null
+      },
+      {
+        "id": "webp",
+        "value": "off",
+        "editable": false,
+        "modified_on": null
+      },
+      {
+        "id": "websockets",
+        "value": "on",
+        "editable": true,
+        "modified_on": null
+      }
+    ],
+    "page_rules": [],
+    "zone_rulesets": [
+      {
+        "id": "70339d97bdb34195bbf054b1ebe81f76",
+        "name": "Cloudflare Normalization Ruleset",
+        "description": "Created by the Cloudflare security team, this ruleset provides normalization on the URL path",
+        "kind": "managed",
+        "phase": "http_request_sanitize",
+        "version": "6",
+        "last_updated": "2024-08-01T17:37:11.538019Z",
+        "rule_count": 4,
+        "enabled_count": 1
+      },
+      {
+        "id": "77454fe2d30c4220b5701f6fdfb893ba",
+        "name": "Cloudflare Managed Free Ruleset",
+        "description": "Created by the Cloudflare security team, this ruleset is designed to provide protection for free zones",
+        "kind": "managed",
+        "phase": "http_request_firewall_managed",
+        "version": "74",
+        "last_updated": "2026-08-17T16:24:51.912839Z",
+        "rule_count": 31,
+        "enabled_count": 31
+      },
+      {
+        "id": "4d21379b4f9f4bb088e0729962c8b3cf",
+        "name": "DDoS L7 ruleset",
+        "description": "Automatic mitigation of HTTP-based DDoS attacks. Cloudflare routinely adds signatures to address new attack vectors. Additional configuration allows you to customize the sensitivity of each rule and the performed mitigation action.",
+        "kind": "managed",
+        "phase": "ddos_l7",
+        "version": "3403",
+        "last_updated": "2026-08-28T16:33:26.352186Z",
+        "rule_count": 148,
+        "enabled_count": 147
+      }
+    ],
+    "workers_routes": [],
+    "email_routing": {
+      "settings": {
+        "id": "ae5e724f63fc2f3292a8cb1b5bd1d76f",
+        "tag": "ae5e724f63fc2f3292a8cb1b5bd1d76f",
+        "name": "glitchpad.com",
+        "enabled": false,
+        "created": "2026-09-01T01:17:33.123374Z",
+        "modified": "2026-09-01T01:17:33.123374Z",
+        "skip_wizard": false,
+        "support_subaddress": false,
+        "synced": true,
+        "admin_locked": false,
+        "status": "unconfigured"
+      },
+      "dns": [
+        {
+          "name": "glitchpad.com",
+          "content": "route1.mx.cloudflare.net.",
+          "type": "MX",
+          "priority": 33,
+          "ttl": 1
+        },
+        {
+          "name": "glitchpad.com",
+          "content": "route2.mx.cloudflare.net.",
+          "type": "MX",
+          "priority": 31,
+          "ttl": 1
+        },
+        {
+          "name": "glitchpad.com",
+          "content": "route3.mx.cloudflare.net.",
+          "type": "MX",
+          "priority": 16,
+          "ttl": 1
+        },
+        {
+          "name": "cf2024-1._domainkey.glitchpad.com",
+          "content": "\"v=DKIM1; h=sha256; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAiweykoi+o48IOGuP7GR3X0MOExCUDY/BCRHoWBnh3rChl7WhdyCxW3jgq1daEjPPqoi7sJvdg5hEQVsgVRQP4DcnQDVjGMbASQtrY4WmB1VebF+RPJB2ECPsEDTpeiI5ZyUAwJaVX7r6bznU67g7LvFq35yIo4sdlmtZGV+i0H4cpYH9+3JJ78km4KXwaf9xUJCWF6nxeD+qG6Fyruw1Qlbds2r85U9dkNDVAS3gioCvELryh1TxKGiVTkg4wqHTyHfWsp7KD3WQHYJn0RyfJJu6YEmL77zonn7p2SRMvTMP3ZEXibnC9gz3nnhR6wcYL8Q7zXypKTMD58bTixDSJwIDAQAB\"",
+          "type": "TXT",
+          "ttl": 1
+        },
+        {
+          "name": "glitchpad.com",
+          "content": "\"v=spf1 include:_spf.mx.cloudflare.net ~all\"",
+          "type": "TXT",
+          "ttl": 1
+        }
+      ],
+      "rules": [
+        {
+          "id": "e184083a04144d41be2692a368c89563",
+          "name": "",
+          "enabled": false,
+          "priority": 2147483647,
+          "matchers": [
+            {
+              "type": "all",
+              "value": "[redacted]"
+            }
+          ],
+          "actions": [
+            {
+              "type": "drop",
+              "value": "[redacted]"
+            }
+          ]
+        }
+      ]
+    },
+    "account_rulesets": [
+      {
+        "id": "77454fe2d30c4220b5701f6fdfb893ba",
+        "name": "Cloudflare Managed Free Ruleset",
+        "description": "Created by the Cloudflare security team, this ruleset is designed to provide protection for free zones",
+        "kind": "managed",
+        "phase": "http_request_firewall_managed",
+        "version": "74",
+        "last_updated": "2026-08-17T16:24:51.912839Z",
+        "rule_count": 31,
+        "enabled_count": 31
+      }
+    ],
+    "account_lists": [],
+    "ssl": {
+      "mode": "full",
+      "certificate_packs": [
+        {
+          "id": "99d8f048-5549-486b-862b-65804f96f2b5",
+          "type": "universal",
+          "hosts": ["glitchpad.com", "*.glitchpad.com"],
+          "status": "active",
+          "validation_method": "txt",
+          "validity_days": 90,
+          "certificate_authority": "google"
+        },
+        {
+          "id": "12a59992-f3ed-4ffb-8e8f-b24ed30ca849",
+          "type": "universal",
+          "hosts": ["glitchpad.com", "*.glitchpad.com"],
+          "status": "backup_issued",
+          "validation_method": "txt",
+          "validity_days": 90,
+          "certificate_authority": "ssl_com"
+        }
+      ],
+      "universal": {
+        "enabled": true,
+        "certificate_authority": "google"
+      }
+    }
+  },
+  "github": {
+    "source_pages": {
+      "url": "https://api.github.com/repos/h8rt3rmin8r/glitchpad.com/pages",
+      "status": "built",
+      "cname": "glitchpad.com",
+      "custom_404": false,
+      "html_url": "http://glitchpad.com/",
+      "build_type": "legacy",
+      "source": {
+        "branch": "master",
+        "path": "/docs"
+      },
+      "public": true,
+      "protected_domain_state": null,
+      "pending_domain_unverified_at": null,
+      "https_enforced": false
+    },
+    "destination_pages": {
+      "enabled": false,
+      "http_status": 404
+    },
+    "destination_environment": {
+      "exists": false,
+      "http_status": 404
+    }
+  },
+  "public_dns": {
+    "a": ["172.67.162.239", "104.21.57.100"],
+    "aaaa": ["2606:4700:3031::6815:3964", "2606:4700:3035::ac43:a2ef"],
+    "www": {
+      "error": "ENODATA"
+    },
+    "challenge": {
+      "error": "ENOTFOUND"
+    }
+  }
+}

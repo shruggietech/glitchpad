@@ -1,0 +1,22 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry.json",
+  "name": "glitchpad",
+  "homepage": "https://glitchpad.com",
+  "items": [
+    {
+      "name": "theme",
+      "type": "registry:theme",
+      "files": []
+    },
+    {
+      "name": "fonts",
+      "type": "registry:font",
+      "files": []
+    },
+    {
+      "name": "file-row",
+      "type": "registry:ui",
+      "files": []
+    }
+  ]
+}

@@ -53,8 +53,8 @@
 - [x] T013 [US1] Attach the unique preview hostname to destination Pages, create its DNS-only Cloudflare CNAME, and record both identifiers in `docs/operations/glitchpad-domain-cutover.md`
 - [x] T014 [US1] Dispatch `.github/workflows/docs.yml` from reviewed `main` with `deploy=true`, watch the single workflow run to completion, and record its run, deployment, artifact, and revision evidence in `docs/operations/glitchpad-domain-cutover.md`
 - [x] T015 [US1] Run preview landing, documentation, nested-route, asset, metadata, and missing-page smoke checks and record results in `docs/operations/glitchpad-domain-cutover.md`
-- [ ] T016 [US1] Create the pending `shruggietech` Pages-domain verification entry for `glitchpad.com` and record the issued challenge name and value in `docs/operations/glitchpad-domain-cutover.md`
-- [ ] T017 [US1] Add the persistent challenge TXT record through Cloudflare, confirm authoritative and public resolution, and update `docs/operations/glitchpad-domain-cutover.md`
+- [x] T016 [US1] Create the pending `shruggietech` Pages-domain verification entry for `glitchpad.com` and record the issued challenge name and value in `docs/operations/glitchpad-domain-cutover.md`
+- [x] T017 [US1] Add the persistent challenge TXT record through Cloudflare, confirm authoritative and public resolution, and update `docs/operations/glitchpad-domain-cutover.md`
 - [ ] T018 [US1] Execute the GitHub organization Verify action only after T011-T017 pass, then confirm the personal claim release and organization verification in `docs/operations/glitchpad-domain-cutover.md`
 - [ ] T019 [US1] Attach `glitchpad.com` to `shruggietech/glitchpad` Pages with an expected-state guard and record the result in `docs/operations/glitchpad-domain-cutover.md`
 - [ ] T020 [US1] Replace the legacy apex and `www` website records with the complete DNS-only A, AAAA, and organization CNAME set while preserving all unrelated records, recording provider identifiers in `docs/operations/glitchpad-domain-cutover.md`

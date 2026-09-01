@@ -17,7 +17,7 @@
 | Canonical production host | `https://glitchpad.com` |
 | Temporary preview host | `s009-preview.glitchpad.com` |
 | Pre-mutation commit | `4692625e1f22bf0fbe53ce890d8de7174d039b85` |
-| Run state | C01-C04 passed; preview is validated and legacy production remains unchanged; C05 awaits an authenticated GitHub Pages organization-settings browser session |
+| Run state | C01-C06 passed; Pages challenge is authoritative and public, preview is validated, and legacy production remains unchanged; C07 verification is pending final guard readback |
 
 The branch was created from the reviewed `main` revision shown above. Direct GitHub administration and Cloudflare OAuth access were verified for the selected repositories, organization, account, and zone. The Cloudflare Email Routing read surface reported a newly timestamped, disabled, unconfigured settings object while returning the previously existing disabled catch-all rule; it changed no DNS record, route, destination, or enabled state and is retained exactly as observed.
 
@@ -49,7 +49,7 @@ The personal Pages site is built with `build_type: legacy`, source `master:/docs
 | D07 | Google MX priority 30 | `a5b9846cae72f323ea373b0d4983baf4`, `alt3.gmr-smtp-in.l.google.com` | Retain | Byte-equivalent | Snapshot | Planned |
 | D08 | Google MX priority 40 | `50e1878b24298808d334928291612821`, `alt4.gmr-smtp-in.l.google.com` | Retain | Byte-equivalent | Snapshot | Planned |
 | D09 | OpenAI apex TXT | `b8f860846036c0c4f1c7acedb5c9dc88`, existing public verification value | Retain | Byte-equivalent | Snapshot | Planned |
-| D10 | Organization challenge TXT | Absent | Add and retain | Public GitHub-issued TXT value | GitHub verification UI and created Cloudflare ID | Planned |
+| D10 | Organization challenge TXT | Absent | Add and retain | Public GitHub-issued TXT value | GitHub Pages UI; Cloudflare ID `a645502759838290ab31d2032149f686` | Verified at C06 |
 | D11 | Preview CNAME | Absent | Add temporarily, then retire | Absent after canonical production passes | Cloudflare ID `c512a433e329c81cf77415a7668a3cbd` | Applied at C03; retirement pending |
 | D12 | Apex AAAA set | Absent | Add | Four DNS-only GitHub Pages AAAA records | Created Cloudflare IDs | Planned |
 | D13 | DNSSEC | Disabled | Retain | Disabled | Snapshot | Planned |
@@ -124,7 +124,7 @@ Every checkpoint is fail-closed. A checkpoint starts only when its expected-befo
 - Expected after: GitHub shows a pending domain and returns the exact challenge name and value without releasing the personal claim.
 - Stop condition: GitHub indicates the personal claim would be released before an explicit Verify action, emits an unexpected challenge name, or reports an ownership conflict that changes state.
 - Rollback R05: Remove the pending verification entry if GitHub supports doing so without affecting the personal claim.
-- Observation: Paused at the authenticated Pages UI boundary after preview validation. The GitHub CLI has administrative API authority, but the available in-app browser is signed out and no external authenticated browser connection is available. The current public GraphQL schema was inspected as a possible supported alternative. `addVerifiableDomain` created transient unverified object `VD_kwHOBpohEc4ABoF4` with `_gh-shruggietech-o.glitchpad.com`, proving that API belongs to GitHub's separate organization identity/email-domain system rather than the Pages-specific `_github-pages-challenge-shruggietech` ownership control. The object was immediately deleted, the organization domain count returned to zero, and no DNS or Pages claim changed. C05 remains unstarted until the Pages-specific UI is authenticated.
+- Observation: Pass after authentication at `2026-09-01T01:47Z`. The GitHub Pages organization settings showed zero verified Pages domains, accepted pending domain `glitchpad.com`, and issued hostname `_github-pages-challenge-shruggietech.glitchpad.com` with token `20611fd6ae632e3e0f27d661236e5c`. The Verify button was deliberately left untouched. Before authentication, the current public GraphQL schema was inspected as a possible supported alternative. `addVerifiableDomain` created transient unverified object `VD_kwHOBpohEc4ABoF4` with `_gh-shruggietech-o.glitchpad.com`, proving that API belongs to GitHub's separate organization identity/email-domain system rather than the Pages ownership control. The object was immediately deleted, the organization identity-domain count returned to zero, and no DNS or Pages claim changed.
 
 ### C06 - Publish the challenge
 
@@ -133,7 +133,7 @@ Every checkpoint is fail-closed. A checkpoint starts only when its expected-befo
 - Expected after: Cloudflare returns a stable record ID and the exact TXT value resolves through both authoritative nameservers and at least two public resolvers.
 - Stop condition: Existing conflicting TXT, retained-record drift, or incomplete bounded propagation.
 - Rollback R06: Delete the challenge record by returned ID only before verification; after verification retain it unless executing R09.
-- Observation: Pending.
+- Observation: Pass at `2026-09-01T01:51:31Z`. An in-request guard confirmed ten expected DNS records, the preview ID/value, the legacy apex and `www` IDs/values, and absence of a challenge record. Cloudflare created TXT ID `a645502759838290ab31d2032149f686` with Auto TTL and DNS-only status. The first representation included literal presentation quotes in `content`; Cloudflare's API showed the object but all authoritative servers returned NXDOMAIN. A guarded PUT normalized the same ID to the raw GitHub token, after which all six authoritative nameserver IPv4 endpoints and Cloudflare (`1.1.1.1`), Google (`8.8.8.8`), and Quad9 (`9.9.9.9`) returned the exact token on the first check. This provider-specific normalization is retained in the final record contract.
 
 ### C07 - Transfer organization verification
 

@@ -108,7 +108,7 @@
 - [x] T037 Run `cargo xtask check` and record complete local convergence in `docs/operations/glitchpad-domain-cutover.md`
 - [x] T038 Mark completed tasks and set the S009 specification status to ready for review in `specs/009-domain-cutover/tasks.md` and `specs/009-domain-cutover/spec.md`
 - [x] T039 Commit final evidence and documentation, push `codex/009-domain-cutover`, and open a pull request that closes Issue #102 with validation and rollback summaries
-- [ ] T040 Watch hosted checks through completion, inspect all AI review threads, apply warranted fixes, reply under each addressed comment, and resolve each addressed thread before handoff
+- [x] T040 Watch hosted checks through completion, inspect all AI review threads, apply warranted fixes, reply under each addressed comment, and resolve each addressed thread before handoff
 
 ---
 

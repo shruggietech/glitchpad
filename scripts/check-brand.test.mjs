@@ -5,7 +5,11 @@ import { dirname, join, resolve } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { verifyBrand } from './check-brand.mjs';
+import {
+  verifyBrand,
+  verifyPublicCopy,
+  verifyReadmeBanner,
+} from './check-brand.mjs';
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -47,18 +51,89 @@ test('checksum drift is rejected', async () => {
   await rm(root, { recursive: true, force: true });
 });
 
-test('README uses canonical light and dark banner sources with fallback text', async () => {
+test('README binds the canonical dark and light surface banners', async () => {
   const readme = await readFile(join(repositoryRoot, 'README.md'), 'utf8');
-  assert.match(readme, /<picture>/);
-  assert.match(readme, /prefers-color-scheme:\s*dark/);
-  assert.match(
-    readme,
-    /brand\/logos\/svg\/glitchpad-horizontal-(?:light|white)\.svg/,
-  );
-  assert.match(
-    readme,
-    /brand\/logos\/svg\/glitchpad-horizontal-(?:black|color)\.svg/,
-  );
-  assert.match(readme, /alt="Glitchpad"/);
+  assert.deepEqual(verifyReadmeBanner(readme), []);
   assert.match(readme, /^# Glitchpad$/m);
+});
+
+test('the exact README banner contract accepts one canonical picture', () => {
+  const readme = `
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="brand/logos/svg/glitchpad-horizontal-white.svg">
+  <img src="brand/logos/svg/glitchpad-horizontal-black.svg" alt="Glitchpad" width="480">
+</picture>
+
+# Glitchpad
+`;
+
+  assert.deepEqual(verifyReadmeBanner(readme), []);
+});
+
+test('README banner validation rejects reversed asset mappings', () => {
+  const problems = verifyReadmeBanner(`
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="brand/logos/svg/glitchpad-horizontal-black.svg">
+  <img src="brand/logos/svg/glitchpad-horizontal-white.svg" alt="Glitchpad" width="480">
+</picture>
+# Glitchpad
+`);
+  assert.ok(problems.some((problem) => problem.includes('dark source srcset')));
+  assert.ok(problems.some((problem) => problem.includes('light fallback src')));
+});
+
+for (const [name, markup] of [
+  [
+    'missing',
+    '<picture><img src="brand/logos/svg/glitchpad-horizontal-black.svg" alt="Glitchpad" width="480"></picture>',
+  ],
+  [
+    'duplicated',
+    '<picture><source media="(prefers-color-scheme: dark)" srcset="brand/logos/svg/glitchpad-horizontal-white.svg"><source media="(prefers-color-scheme: dark)" srcset="brand/logos/svg/glitchpad-horizontal-white.svg"><img src="brand/logos/svg/glitchpad-horizontal-black.svg" alt="Glitchpad" width="480"></picture>',
+  ],
+  [
+    'detached',
+    '<source media="(prefers-color-scheme: dark)" srcset="brand/logos/svg/glitchpad-horizontal-white.svg"><picture><img src="brand/logos/svg/glitchpad-horizontal-black.svg" alt="Glitchpad" width="480"></picture>',
+  ],
+]) {
+  test(`README banner validation rejects ${name} direct children`, () => {
+    const problems = verifyReadmeBanner(`${markup}\n# Glitchpad\n`);
+    assert.ok(
+      problems.some((problem) => problem.includes('one direct <source>')),
+    );
+  });
+}
+
+test('README banner validation rejects missing fallback semantics', () => {
+  const problems = verifyReadmeBanner(`
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="brand/logos/svg/glitchpad-horizontal-white.svg">
+  <img src="brand/logos/svg/glitchpad-horizontal-black.svg" alt="" width="480">
+</picture>
+# Glitchpad
+`);
+  assert.ok(
+    problems.some((problem) => problem.includes('fallback alternative text')),
+  );
+});
+
+test('public copy validation accepts equality and rejects drift or absence', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'glitchpad-copy-test-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const canonical = join(root, 'canonical.svg');
+  const integrated = join(root, 'integrated.svg');
+  const label = 'site/public/logos/integrated.svg';
+  await writeFile(canonical, '<svg>canonical</svg>\n');
+  await writeFile(integrated, '<svg>canonical</svg>\n');
+  assert.deepEqual(await verifyPublicCopy(canonical, integrated, label), []);
+
+  await writeFile(integrated, '<svg>drifted</svg>\n');
+  assert.deepEqual(await verifyPublicCopy(canonical, integrated, label), [
+    `site asset drift: ${label}`,
+  ]);
+
+  await rm(integrated);
+  assert.deepEqual(await verifyPublicCopy(canonical, integrated, label), [
+    `missing site asset copy: ${label}`,
+  ]);
 });

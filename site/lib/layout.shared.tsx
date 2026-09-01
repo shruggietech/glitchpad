@@ -6,15 +6,18 @@ export function baseOptions(): BaseLayoutProps {
       title: (
         <span className="brand-lockup">
           <img
-            src="/logos/glitchpad-horizontal-light.svg"
-            alt="Glitchpad"
-            className="brand-lockup-dark"
+            src="/logos/glitchpad-horizontal-white.svg"
+            alt=""
+            aria-hidden="true"
+            className="brand-lockup-on-dark"
           />
           <img
             src="/logos/glitchpad-horizontal-black.svg"
             alt=""
-            className="brand-lockup-light"
+            aria-hidden="true"
+            className="brand-lockup-on-light"
           />
+          <span className="sr-only">Glitchpad</span>
         </span>
       ),
     },

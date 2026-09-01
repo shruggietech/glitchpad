@@ -39,9 +39,12 @@ async function collectFiles(directory) {
 function parseTagAttributes(tag) {
   const attributes = new Map();
   const duplicates = new Set();
+  const attributeText = tag
+    .replace(/^<\s*[^\s/>]+/, '')
+    .replace(/\/?>\s*$/, '');
   const pattern =
-    /([^\s=/>]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/g;
-  for (const match of tag.matchAll(pattern)) {
+    /([^\s=/>]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
+  for (const match of attributeText.matchAll(pattern)) {
     const name = match[1].toLowerCase();
     if (attributes.has(name)) duplicates.add(name);
     else attributes.set(name, match[2] ?? match[3] ?? match[4]);
@@ -56,10 +59,25 @@ export function verifyReadmeBanner(readme) {
     return ['README banner must precede the existing # Glitchpad heading'];
   }
 
+  const introduction = readme.slice(0, headingIndex);
+  const centeredWrapper = introduction.match(/^\s*(<div\b[^>]*>)([\s\S]*)$/i);
+  if (!centeredWrapper || /<\/div\s*>/i.test(centeredWrapper[2])) {
+    return [
+      'README banner must remain inside the centered introduction before the # Glitchpad heading',
+    ];
+  }
+  const { attributes: wrapper, duplicates: wrapperDuplicates } =
+    parseTagAttributes(centeredWrapper[1]);
+  if (wrapper.get('align') !== 'center' || wrapperDuplicates.has('align')) {
+    return [
+      'README banner introduction must use one centered <div align="center"> wrapper',
+    ];
+  }
+
   const pictures = [
-    ...readme
-      .slice(0, headingIndex)
-      .matchAll(/<picture\b[^>]*>([\s\S]*?)<\/picture>/g),
+    ...centeredWrapper[2].matchAll(
+      /<picture\b[^>]*>([\s\S]*?)<\/picture>/g,
+    ),
   ];
   if (pictures.length !== 1) {
     return [

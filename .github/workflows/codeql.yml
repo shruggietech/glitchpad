@@ -25,26 +25,16 @@ jobs:
           - language: javascript-typescript
             build-mode: none
           - language: rust
-            build-mode: manual
+            build-mode: none
     steps:
       - name: Checkout
         uses: actions/checkout@v7
-
-      - name: Install Linux host libraries
-        if: matrix.language == 'rust'
-        run: |
-          sudo apt-get update
-          sudo apt-get install --yes libwebkit2gtk-4.1-dev libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev patchelf
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
-
-      - name: Build Rust workspace
-        if: matrix.language == 'rust'
-        run: cargo build --workspace --locked
 
       - name: Analyze
         uses: github/codeql-action/analyze@v4

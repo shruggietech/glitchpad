@@ -6,6 +6,10 @@
 *.sh text eol=lf
 gradlew text eol=lf
 
+# Approved brand canon is checksum-governed and must survive Git unchanged.
+brand/** -text
+brand/INTEGRATION.md text eol=lf
+
 *.avif binary
 *.aab binary
 *.apk binary

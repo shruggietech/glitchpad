@@ -1,0 +1,14 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "file-row",
+  "type": "registry:ui",
+  "title": "Glitchpad File Row",
+  "description": "A dense, keyboard-friendly row for file inspection surfaces.",
+  "files": [
+    {
+      "path": "components/glitchpad/file-row.jsx",
+      "type": "registry:ui",
+      "content": "export function FileRow({ name, kind, size, modified, selected = false }) {\n  return <div className=\"gp-file-row\" role=\"row\" aria-selected={selected}><div className=\"gp-file-row__name\" role=\"cell\"><span>{name}</span></div><div className=\"gp-file-row__kind\" role=\"cell\">{kind}</div><div role=\"cell\">{size}</div><div className=\"gp-file-row__modified\" role=\"cell\">{modified}</div></div>;\n}\n"
+    }
+  ]
+}

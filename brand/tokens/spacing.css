@@ -1,0 +1,27 @@
+:root {
+  --gp-space-1: 0.25rem;
+  --gp-space-2: 0.5rem;
+  --gp-space-3: 0.75rem;
+  --gp-space-4: 1rem;
+  --gp-space-5: 1.5rem;
+  --gp-space-6: 2rem;
+  --gp-space-7: 3rem;
+  --gp-space-8: 4rem;
+  --gp-space-9: 6rem;
+  --gp-space-10: 7.5rem;
+  --gp-radius-sm: 6px;
+  --gp-radius-md: 8px;
+  --gp-radius-xl: 12px;
+  --gp-radius-2xl: 16px;
+  --gp-radius-pill: 9999px;
+  --gp-stroke-hairline: 1px;
+  --gp-stroke-icon: 1.5px;
+  --gp-stroke-focus: 2px;
+  --gp-motion-fast: 120ms;
+  --gp-motion-normal: 180ms;
+  --gp-motion-slow: 240ms;
+  --gp-ease: cubic-bezier(.2,.6,.2,1);
+  --gp-content-max: 1200px;
+  --gp-content-narrow: 720px;
+  --gp-clearspace-ratio: 0.0972;
+}

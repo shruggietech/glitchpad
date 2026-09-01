@@ -3,11 +3,15 @@ package com.shruggietech.glitchpad.source
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.ParcelFileDescriptor
+import android.os.SystemClock
 import android.provider.DocumentsContract
 import android.system.Os
 import android.system.OsConstants
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry
+import androidx.test.runner.lifecycle.Stage
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import org.junit.After
@@ -21,17 +25,16 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class AndroidSourceInstrumentedTest {
   private val instrumentation = InstrumentationRegistry.getInstrumentation()
-  private val providerContext = instrumentation.context
   private val clientContext = instrumentation.targetContext
   private val resolver = clientContext.contentResolver
   private val modes = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+  private val clientUid = clientContext.packageManager.getApplicationInfo(clientContext.packageName, 0).uid
   private val grantedUris = mutableSetOf<Uri>()
 
   @After
   fun revokeFixtureGrants() {
-    grantedUris.forEach { uri ->
-      providerContext.revokeUriPermission(clientContext.packageName, uri, modes)
-    }
+    finishGrantActivity()
+    grantedUris.clear()
   }
 
   @Test
@@ -89,10 +92,9 @@ class AndroidSourceInstrumentedTest {
   @Test
   fun controlledProviderExposesRenameFailureAndRevocationEvidence() {
     val source = grant(documentUri("seekable.txt"))
-    val targetUid = clientContext.packageManager.getApplicationInfo(clientContext.packageName, 0).uid
     assertEquals(
       PackageManager.PERMISSION_GRANTED,
-      clientContext.checkUriPermission(source, -1, targetUid, Intent.FLAG_GRANT_READ_URI_PERMISSION),
+      clientContext.checkUriPermission(source, -1, clientUid, Intent.FLAG_GRANT_READ_URI_PERMISSION),
     )
 
     val mutable = grant(requireNotNull(DocumentsContract.createDocument(resolver, grant(rootUri()), "text/plain", "rename-me.txt")))
@@ -110,18 +112,50 @@ class AndroidSourceInstrumentedTest {
       // Expected controlled provider failure.
     }
 
-    providerContext.revokeUriPermission(clientContext.packageName, source, modes)
+    finishGrantActivity()
     grantedUris.remove(source)
-    assertEquals(
-      PackageManager.PERMISSION_DENIED,
-      clientContext.checkUriPermission(source, -1, targetUid, Intent.FLAG_GRANT_READ_URI_PERMISSION),
-    )
+    assertGrantRevoked(source)
   }
 
   private fun grant(uri: Uri): Uri {
-    providerContext.grantUriPermission(clientContext.packageName, uri, modes)
+    // ActivityManager stands in for the system picker, which alone can grant a protected provider URI.
+    executeShellCommand(
+      "am start -W --grant-read-uri-permission --grant-write-uri-permission " +
+        "-a com.shruggietech.glitchpad.TEST_URI_GRANT -d $uri " +
+        "-n ${clientContext.packageName}/.MainActivity",
+    )
+    assertEquals(
+      PackageManager.PERMISSION_GRANTED,
+      clientContext.checkUriPermission(uri, -1, clientUid, modes),
+    )
     grantedUris.add(uri)
     return uri
+  }
+
+  private fun executeShellCommand(command: String) {
+    val descriptor = instrumentation.uiAutomation.executeShellCommand(command)
+    ParcelFileDescriptor.AutoCloseInputStream(descriptor).use { output -> output.readBytes() }
+  }
+
+  private fun finishGrantActivity() {
+    instrumentation.runOnMainSync {
+      Stage.values()
+        .flatMap { stage -> ActivityLifecycleMonitorRegistry.getInstance().getActivitiesInStage(stage) }
+        .toSet()
+        .forEach { activity -> activity.finish() }
+    }
+    instrumentation.waitForIdleSync()
+  }
+
+  private fun assertGrantRevoked(uri: Uri) {
+    repeat(20) {
+      if (clientContext.checkUriPermission(uri, -1, clientUid, modes) == PackageManager.PERMISSION_DENIED) return
+      SystemClock.sleep(50)
+    }
+    assertEquals(
+      PackageManager.PERMISSION_DENIED,
+      clientContext.checkUriPermission(uri, -1, clientUid, modes),
+    )
   }
 
   private fun rootUri(): Uri = DocumentsContract.buildDocumentUri(AUTHORITY, ROOT_ID)

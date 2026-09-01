@@ -1,11 +1,11 @@
 package com.shruggietech.glitchpad.source
 
-import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 
-internal class RestorationStore(activity: Activity) {
-  private val preferences = activity.getSharedPreferences(STORE, Activity.MODE_PRIVATE)
+class RestorationStore(context: Context) {
+  private val preferences = context.getSharedPreferences(STORE, Context.MODE_PRIVATE)
 
   fun put(uri: Uri, modes: Int) {
     val current = preferences.getStringSet(RECORDS, emptySet()).orEmpty().toMutableSet()
@@ -13,13 +13,13 @@ internal class RestorationStore(activity: Activity) {
     current.removeAll { it.substringAfter('|', "") == uri.toString() }
     current.add(encoded)
     while (current.size > MAX_RECORDS) current.remove(current.first())
-    preferences.edit().putStringSet(RECORDS, current).apply()
+    preferences.edit().putStringSet(RECORDS, current).commit()
   }
 
   fun remove(uri: Uri) {
     val current = preferences.getStringSet(RECORDS, emptySet()).orEmpty().toMutableSet()
     current.removeAll { it.substringAfter('|', "") == uri.toString() }
-    preferences.edit().putStringSet(RECORDS, current).apply()
+    preferences.edit().putStringSet(RECORDS, current).commit()
   }
 
   fun records(): List<Pair<Uri, Int>> = preferences

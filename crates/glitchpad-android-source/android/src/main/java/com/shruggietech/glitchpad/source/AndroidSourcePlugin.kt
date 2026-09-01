@@ -2,6 +2,7 @@ package com.shruggietech.glitchpad.source
 
 import android.app.Activity
 import android.content.Intent
+import android.content.UriPermission
 import android.database.Cursor
 import android.net.Uri
 import android.os.CancellationSignal
@@ -311,10 +312,13 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
 
   private fun acquire(candidate: DeliveryCandidate): Result<JSObject> = runCatching {
     val persistModes = DeliveryPolicy.persistableModes(candidate)
+    val previousPermission = if (persistModes != 0) persistedPermission(candidate.uri) else null
     if (persistModes != 0) runCatching {
       activity.contentResolver.takePersistableUriPermission(candidate.uri, persistModes)
     }
-    val persisted = activity.contentResolver.persistedUriPermissions.firstOrNull { it.uri == candidate.uri }
+    // Inbound VIEW and SEND grants are always temporary, even if the same URI was
+    // persisted earlier through the document picker.
+    val persisted = if (persistModes != 0) persistedPermission(candidate.uri) else null
     val source = NativeSource(
       token = UUID.randomUUID().toString(),
       uri = candidate.uri,
@@ -328,11 +332,28 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
       throw SecurityException("read_authority_required")
     }
     sources[source.token] = source
-    if (source.persistedRead || source.persistedWrite) restoration.put(candidate.uri, persistModes)
-    acquireSnapshot(source).getOrElse {
+    val snapshot = acquireSnapshot(source).getOrElse {
       sources.remove(source.token)
+      val newlyPersistedModes = permissionModes(persisted) and permissionModes(previousPermission).inv()
+      if (newlyPersistedModes != 0) {
+        runCatching { activity.contentResolver.releasePersistableUriPermission(candidate.uri, newlyPersistedModes) }
+      }
+      if (permissionModes(previousPermission) == 0) restoration.remove(candidate.uri)
       throw it
     }
+    val heldModes = permissionModes(persisted)
+    if (heldModes != 0) restoration.put(candidate.uri, heldModes)
+    snapshot
+  }
+
+  private fun persistedPermission(uri: Uri): UriPermission? =
+    activity.contentResolver.persistedUriPermissions.firstOrNull { it.uri == uri }
+
+  private fun permissionModes(permission: UriPermission?): Int {
+    var modes = 0
+    if (permission?.isReadPermission == true) modes = modes or Intent.FLAG_GRANT_READ_URI_PERMISSION
+    if (permission?.isWritePermission == true) modes = modes or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+    return modes
   }
 
   private fun acquireSnapshot(source: NativeSource): Result<JSObject> = runCatching {

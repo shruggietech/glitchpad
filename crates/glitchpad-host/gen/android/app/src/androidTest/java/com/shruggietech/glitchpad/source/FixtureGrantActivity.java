@@ -10,7 +10,9 @@ public final class FixtureGrantActivity extends Activity {
   static final String ACTION_REVOKE = "com.shruggietech.glitchpad.fixture.REVOKE_URI";
   static final String EXTRA_URI = "fixture_uri";
   private static final int MODES =
-      Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION;
+      Intent.FLAG_GRANT_READ_URI_PERMISSION
+          | Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+          | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {

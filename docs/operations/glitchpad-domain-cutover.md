@@ -9,6 +9,7 @@
 | Run ID | `20260901T013047Z` |
 | Operator | `h8rt3rmin8r` |
 | Working branch | `codex/009-domain-cutover` |
+| Pull request | [#105](https://github.com/shruggietech/glitchpad/pull/105) |
 | Reviewed source revision | `c93395edc16ec64900dbfc8cabbad9162a40c0d2` |
 | Cloudflare account | ShruggieTech (`39e3052d61e3edccea7d68269ec07182`) |
 | Cloudflare zone | `glitchpad.com` (`ae5e724f63fc2f3292a8cb1b5bd1d76f`) |

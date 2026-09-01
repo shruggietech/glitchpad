@@ -509,13 +509,17 @@ impl SessionRegistry {
                 false,
             ));
         }
-        if self.sessions[position].dirty != dirty {
-            self.sessions[position].dirty = dirty;
-            self.sessions[position].integrity = SessionIntegrity::Dirty;
-            self.sessions[position].pending_save = None;
-            self.sessions[position].recovery_coverage = RecoveryCoverage::Stale;
-            self.sessions[position].revision += 1;
+        let session = &mut self.sessions[position];
+        session.dirty = true;
+        if matches!(
+            session.integrity,
+            SessionIntegrity::Clean | SessionIntegrity::Saving
+        ) {
+            session.integrity = SessionIntegrity::Dirty;
         }
+        session.pending_save = None;
+        session.recovery_coverage = RecoveryCoverage::Stale;
+        session.revision += 1;
         Ok(())
     }
 
@@ -1198,6 +1202,59 @@ mod tests {
             .expect("apply current receipt");
         assert!(!registry.sessions()[0].dirty);
         assert_eq!(registry.sessions()[0].lifecycle, SessionLifecycle::Active);
+    }
+
+    #[test]
+    fn every_edit_invalidates_an_earlier_pending_save() {
+        let mut registry = SessionRegistry::new();
+        let descriptor = source("receipt-after-edit", IdentityStrength::Strong);
+        let identity = descriptor.identity.clone();
+        let id = registry
+            .open(descriptor, detection(), renderer())
+            .expect("open source")
+            .session_id;
+        let external_revision = crate::source::ExternalRevision {
+            identity,
+            byte_length: Some(10),
+            modified_unix_nanos: Some(1),
+            change_token: None,
+        };
+        let source_id = crate::source::SourceId("source-receipt-after-edit".into());
+        registry
+            .bind_source(id, source_id.clone(), external_revision.clone())
+            .expect("bind source");
+        registry.set_dirty(id, true).expect("first edit");
+        let saved_payload_revision = registry.sessions()[0].revision;
+        let pending = registry
+            .begin_save(
+                id,
+                saved_payload_revision,
+                10,
+                crate::source::DurabilityGuarantee::AtomicFile,
+            )
+            .expect("begin save");
+        let receipt = SaveReceipt {
+            operation_id: pending.operation_id,
+            source_id,
+            accepted_session_revision: saved_payload_revision,
+            previous_external_revision: external_revision.clone(),
+            new_external_revision: external_revision,
+            byte_count: 10,
+            durability: crate::source::DurabilityGuarantee::AtomicFile,
+        };
+
+        registry.set_dirty(id, true).expect("second edit");
+
+        assert!(registry.sessions()[0].revision > saved_payload_revision);
+        assert!(registry.sessions()[0].pending_save.is_none());
+        assert_eq!(
+            registry
+                .apply_save_receipt(id, &receipt)
+                .expect_err("receipt for the older payload must be stale")
+                .category,
+            CoreErrorCategory::StaleSession
+        );
+        assert!(registry.sessions()[0].dirty);
     }
 
     #[test]

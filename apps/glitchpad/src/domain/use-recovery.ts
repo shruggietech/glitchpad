@@ -6,9 +6,13 @@ import type {
   RecoveryRecord,
   RecoveryRecordDraft,
 } from './recovery-gateway';
+import { projectRecoveryInventory } from './recovery';
 
 const IDLE_SNAPSHOT_MS = 2_000;
 const MAX_SNAPSHOT_MS = 30_000;
+const CLEANUP_RETRY_MS = 30_000;
+const CLEANUP_WARNING =
+  'Resolved recovery cleanup is pending and will be retried safely.';
 
 const createRecordId = (): string => {
   const bytes = crypto.getRandomValues(new Uint8Array(16));
@@ -39,6 +43,8 @@ export const useRecovery = (
   const [candidates, setCandidates] = useState<RecoveryInventoryEntry[]>([]);
   const [warning, setWarning] = useState<string | null>(null);
   const bindings = useRef(new Map<string, RecordBinding>());
+  const pendingCleanups = useRef(new Set<string>());
+  const cleanupInFlight = useRef(new Set<string>());
   const sessionsRef = useRef(sessions);
   sessionsRef.current = sessions;
 
@@ -48,17 +54,46 @@ export const useRecovery = (
     void gateway
       .inventory()
       .then((entries) => {
-        if (active)
-          setCandidates(entries.filter(({ status }) => status === 'available'));
+        if (!active) return;
+        const projection = projectRecoveryInventory(entries);
+        setCandidates(projection.available);
+        setWarning(
+          projection.notices.length > 0 ? projection.notices.join(' ') : null,
+        );
       })
       .catch(() => {
         if (active)
-          setWarning('Recovery inventory is unavailable. Dirty content remains open.');
+          setWarning(
+            'Recovery inventory is unavailable. Dirty content remains open.',
+          );
       });
     return () => {
       active = false;
     };
   }, [gateway]);
+
+  const attemptCleanup = useCallback(
+    (recordId: string) => {
+      if (
+        !gateway ||
+        !pendingCleanups.current.has(recordId) ||
+        cleanupInFlight.current.has(recordId)
+      )
+        return;
+      cleanupInFlight.current.add(recordId);
+      void gateway
+        .remove(recordId)
+        .then(() => {
+          pendingCleanups.current.delete(recordId);
+          setWarning((current) =>
+            current === CLEANUP_WARNING ? null : current,
+          );
+        })
+        .catch(() => setWarning(CLEANUP_WARNING))
+        .finally(() => cleanupInFlight.current.delete(recordId));
+    },
+    [gateway],
+  );
 
   const persist = useCallback(
     (session: ShellSession) => {
@@ -91,7 +126,9 @@ export const useRecovery = (
           encoding: 'utf8',
           bom: 'absent',
           newlines: 'lf',
-          terminal_newline: session.content.endsWith('\n') ? 'present' : 'absent',
+          terminal_newline: session.content.endsWith('\n')
+            ? 'present'
+            : 'absent',
           undecodable_bytes: 'none',
         },
         created_unix_ms: binding.createdUnixMs,
@@ -122,15 +159,22 @@ export const useRecovery = (
     for (const [sessionId, binding] of bindings.current) {
       if (dirtyIds.has(sessionId)) continue;
       bindings.current.delete(sessionId);
-      void gateway.remove(binding.recordId).catch(() => {
-        setWarning('Resolved recovery cleanup is pending and will be retried safely.');
-      });
+      pendingCleanups.current.add(binding.recordId);
+      attemptCleanup(binding.recordId);
     }
     const timers = sessions
       .filter(({ dirty }) => dirty)
       .map((session) => setTimeout(() => persist(session), IDLE_SNAPSHOT_MS));
     return () => timers.forEach(clearTimeout);
-  }, [gateway, persist, sessions]);
+  }, [attemptCleanup, gateway, persist, sessions]);
+
+  useEffect(() => {
+    if (!gateway) return;
+    const timer = setInterval(() => {
+      pendingCleanups.current.forEach(attemptCleanup);
+    }, CLEANUP_RETRY_MS);
+    return () => clearInterval(timer);
+  }, [attemptCleanup, gateway]);
 
   useEffect(() => {
     if (!gateway) return;

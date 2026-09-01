@@ -47,7 +47,7 @@
 
 - [x] T009 [P] [US1] Write failing Kotlin JVM tests for inbound action normalization, duplicate share compatibility, distinct multi-item rejection, picker-result classification, grant intersection, and redaction in `crates/glitchpad-android-source/android/src/test/java/com/shruggietech/glitchpad/source/DeliveryPolicyTest.kt`
 - [x] T010 [P] [US1] Write failing Rust host tests for strong/weak Android identity, session deduplication, capability derivation, stable errors, and delivery queue bounds in `crates/glitchpad-host/tests/android_source_contract.rs`
-- [x] T011 [P] [US1] Create failing instrumentation acquisition scenarios and the controlled provider metadata fixtures in `crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/FixtureDocumentsProvider.kt` and `crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidSourceInstrumentedTest.kt`
+- [x] T011 [P] [US1] Create failing instrumentation acquisition scenarios and the controlled provider metadata fixtures in `crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/FixtureDocumentsProvider.java` and `crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidSourceInstrumentedTest.kt`
 
 ### Implementation for User Story 1
 
@@ -69,7 +69,7 @@
 ### Tests for User Story 2
 
 - [x] T016 [P] [US2] Extend Rust tests with failing boundary/property cases for range and stream budgets, optional metadata, revalidation, lease invalidation, restoration limits, and revoked/unavailable mapping in `crates/glitchpad-host/tests/android_source_contract.rs`
-- [x] T017 [P] [US2] Extend instrumentation fixtures with failing seekable, pipe, missing-metadata, rename, mutation, provider-failure, persistence-rejection, and revoked-grant scenarios in `crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/FixtureDocumentsProvider.kt` and `crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidSourceInstrumentedTest.kt`
+- [x] T017 [P] [US2] Extend instrumentation fixtures with failing seekable, pipe, missing-metadata, rename, mutation, provider-failure, persistence-rejection, and revoked-grant scenarios in `crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/FixtureDocumentsProvider.java` and `crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidSourceInstrumentedTest.kt`
 - [x] T018 [P] [US2] Write failing two-phase process-restoration instrumentation and force-stop driver assertions in `crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/RestorationInstrumentedTest.kt` and `.github/workflows/ci.yml`
 
 ### Implementation for User Story 2
@@ -77,7 +77,7 @@
 - [x] T019 [US2] Implement cancellation-aware off-main-thread descriptor reads, seek probing, bounded stream leases, metadata refresh, revalidation, and close in `crates/glitchpad-android-source/android/src/main/java/com/shruggietech/glitchpad/source/AndroidSourcePlugin.kt`
 - [x] T020 [US2] Implement bounded application-private restoration records for actually persisted grants, held-permission reconciliation, activity reload handling, and native registry replacement in `crates/glitchpad-android-source/android/src/main/java/com/shruggietech/glitchpad/source/RestorationStore.kt`
 - [x] T021 [US2] Implement Rust range/stream/metadata/revalidation/restoration/close policy, public stream leases, and Android command wiring in `crates/glitchpad-host/src/android_source/mod.rs` and `crates/glitchpad-host/src/lib.rs`
-- [x] T022 [US2] Complete the controlled provider behavior needed for real descriptor, grant, metadata, and lifecycle evidence in `crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/FixtureDocumentsProvider.kt`
+- [x] T022 [US2] Complete the controlled provider behavior needed for real descriptor, grant, metadata, and lifecycle evidence in `crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/FixtureDocumentsProvider.java`
 
 **Checkpoint**: Android sources remain provider-native, bounded, revalidated, and explicit across temporary, persisted, revoked, renamed, unavailable, and restored states.
 

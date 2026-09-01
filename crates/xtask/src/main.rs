@@ -263,7 +263,7 @@ fn verify_android_source_layout(repository: &Path) -> Result<(), String> {
     let required_files = [
         "crates/glitchpad-android-source/src/models.rs",
         "crates/glitchpad-android-source/android/src/main/java/com/shruggietech/glitchpad/source/DeliveryPolicy.kt",
-        "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/FixtureDocumentsProvider.kt",
+        "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/FixtureDocumentsProvider.java",
         "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidSourceInstrumentedTest.kt",
         "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/RestorationInstrumentedTest.kt",
     ];
@@ -336,10 +336,16 @@ fn platform_program(program: &str) -> String {
 }
 
 fn headless_command(program: &str) -> Command {
-    let mut command = Command::new(program);
     #[cfg(windows)]
-    command.creation_flags(CREATE_NO_WINDOW);
-    command
+    {
+        let mut command = Command::new(program);
+        command.creation_flags(CREATE_NO_WINDOW);
+        command
+    }
+    #[cfg(not(windows))]
+    {
+        Command::new(program)
+    }
 }
 
 fn run_powershell(repository: &Path, script: &str) -> Result<(), String> {

@@ -104,7 +104,7 @@ crates/glitchpad-host/gen/android/app/
     ├── AndroidManifest.xml
     └── java/com/shruggietech/glitchpad/source/
         ├── AndroidSourceInstrumentedTest.kt
-        ├── FixtureDocumentsProvider.kt
+        ├── FixtureDocumentsProvider.java
         └── RestorationInstrumentedTest.kt
 
 crates/xtask/

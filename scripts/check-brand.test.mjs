@@ -101,9 +101,7 @@ ${canonicalBanner}
 -->`),
   );
   assert.ok(
-    problems.some((problem) =>
-      problem.includes('exactly one <picture> before the # Glitchpad heading'),
-    ),
+    problems.some((problem) => problem.includes('must not contain HTML comments')),
   );
 });
 

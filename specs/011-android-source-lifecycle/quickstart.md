@@ -31,7 +31,7 @@ Start one headless x86_64 emulator at API 24 or API 36, build the matching x86_6
 
 ```text
 gradlew :glitchpad-android-source:testDebugUnitTest
-gradlew :app:connectedUniversalDebugAndroidTest
+gradlew :app:connectedUniversalDebugAndroidTest -PabiList=x86_64 -ParchList=x86_64 -PtargetList=x86_64 -x :app:rustBuildUniversalDebug -x :app:rustBuildX86_64Debug
 ```
 
 Run the restoration test twice with instrumentation argument `restorationPhase` set first to `seed` and then to `verify`, with `adb shell am force-stop com.shruggietech.glitchpad` between the runs. Expected result: controlled provider acquisition, reads, picker results, verified Save As, optional metadata, and restoration all pass. Repeat on both required API levels. The immutable CI job is the canonical command transcript.

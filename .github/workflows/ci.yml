@@ -259,13 +259,13 @@ jobs:
             ./crates/glitchpad-host/gen/android/gradlew --project-dir crates/glitchpad-host/gen/android :app:connectedUniversalDebugAndroidTest -PabiList=x86_64 -ParchList=x86_64 -PtargetList=x86_64 -x :app:rustBuildUniversalDebug -x :app:rustBuildX86_64Debug --no-daemon
             adb install -r crates/glitchpad-host/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk
             adb install -r crates/glitchpad-host/gen/android/app/build/outputs/apk/androidTest/universal/debug/app-universal-debug-androidTest.apk
-            seed_output="$(adb shell am instrument -w -e class com.shruggietech.glitchpad.source.RestorationInstrumentedTest#privateRestorationRecordSurvivesProcessBoundary -e restorationPhase seed com.shruggietech.glitchpad.test/androidx.test.runner.AndroidJUnitRunner)"
-            printf '%s\n' "$seed_output"
-            grep -Fq 'OK (1 test)' <<<"$seed_output"
+            adb shell am instrument -w -e class com.shruggietech.glitchpad.source.RestorationInstrumentedTest#privateRestorationRecordSurvivesProcessBoundary -e restorationPhase seed com.shruggietech.glitchpad.test/androidx.test.runner.AndroidJUnitRunner > "$RUNNER_TEMP/restoration-seed.txt"
+            cat "$RUNNER_TEMP/restoration-seed.txt"
+            grep -Fq 'OK (1 test)' "$RUNNER_TEMP/restoration-seed.txt"
             adb shell am force-stop com.shruggietech.glitchpad
-            verify_output="$(adb shell am instrument -w -e class com.shruggietech.glitchpad.source.RestorationInstrumentedTest#privateRestorationRecordSurvivesProcessBoundary -e restorationPhase verify com.shruggietech.glitchpad.test/androidx.test.runner.AndroidJUnitRunner)"
-            printf '%s\n' "$verify_output"
-            grep -Fq 'OK (1 test)' <<<"$verify_output"
+            adb shell am instrument -w -e class com.shruggietech.glitchpad.source.RestorationInstrumentedTest#privateRestorationRecordSurvivesProcessBoundary -e restorationPhase verify com.shruggietech.glitchpad.test/androidx.test.runner.AndroidJUnitRunner > "$RUNNER_TEMP/restoration-verify.txt"
+            cat "$RUNNER_TEMP/restoration-verify.txt"
+            grep -Fq 'OK (1 test)' "$RUNNER_TEMP/restoration-verify.txt"
 
       - name: Upload Android instrumentation reports
         if: always()

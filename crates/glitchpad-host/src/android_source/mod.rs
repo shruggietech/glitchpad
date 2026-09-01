@@ -97,14 +97,18 @@ impl AndroidSourceHost {
                 existing_id,
                 AndroidSourceRecord {
                     #[cfg(target_os = "android")]
-                    bridge_token: _existing.bridge_token,
+                    bridge_token: delivery.bridge_token.clone(),
                     summary: candidate.clone(),
                 },
             );
+            #[cfg(target_os = "android")]
+            registry
+                .streams
+                .retain(|_, stream| stream.lease.source_id != candidate.source_id);
             drop(registry);
             #[cfg(target_os = "android")]
             self.plugin
-                .discard(&delivery.bridge_token)
+                .discard(&_existing.bridge_token)
                 .map_err(plugin_error)?;
             return Ok(candidate);
         }
@@ -216,26 +220,111 @@ impl AndroidSourceHost {
         self.accept_delivery(&delivery)
     }
 
-    /// Returns safe cached provider metadata without exposing native authority.
+    /// Returns safe provider metadata without exposing native authority.
     ///
     /// # Errors
     ///
     /// Returns a safe not-found or registry error when the source is unavailable.
     pub fn query_metadata(&self, source_id: &SourceId) -> Result<SourceMetadata, CoreError> {
-        let registry = self.lock_registry()?;
-        let source = registry.sources.get(source_id).ok_or_else(|| {
-            safe_error(
-                CoreErrorCategory::NotFound,
-                "Android source is not available",
-                false,
-            )
-        })?;
+        #[cfg(target_os = "android")]
+        let summary = self.refresh_source(source_id)?;
+        #[cfg(not(target_os = "android"))]
+        let summary = self
+            .lock_registry()?
+            .sources
+            .get(source_id)
+            .map(|source| source.summary.clone())
+            .ok_or_else(|| {
+                safe_error(
+                    CoreErrorCategory::NotFound,
+                    "Android source is not available",
+                    false,
+                )
+            })?;
         Ok(SourceMetadata {
-            display_name: source.summary.descriptor.display_name.clone(),
-            byte_length: source.summary.descriptor.byte_length,
-            modified_unix_nanos: source.summary.external_revision.modified_unix_nanos,
+            display_name: summary.descriptor.display_name,
+            byte_length: summary.descriptor.byte_length,
+            modified_unix_nanos: summary.external_revision.modified_unix_nanos,
             read_only: true,
         })
+    }
+
+    #[cfg(target_os = "android")]
+    fn refresh_source(&self, source_id: &SourceId) -> Result<AndroidSourceSummary, CoreError> {
+        let record = self.source_record(source_id)?;
+        let observed = match self.plugin.revalidate(&record.bridge_token) {
+            Ok(observed) => observed,
+            Err(error) => {
+                if matches!(
+                    revalidation_failure_status(&error),
+                    RevalidationStatus::PermissionRevoked | RevalidationStatus::Deleted
+                ) {
+                    self.invalidate_source_streams(source_id);
+                }
+                return Err(plugin_error(error));
+            }
+        };
+        let mut refreshed = summary_from_delivery(&observed)?;
+        refreshed.source_id = source_id.clone();
+        if refreshed.external_revision != record.summary.external_revision {
+            self.invalidate_source_streams(source_id);
+        }
+        if let Some(active) = self.lock_registry()?.sources.get_mut(source_id) {
+            active.summary = refreshed.clone();
+        }
+        Ok(refreshed)
+    }
+
+    #[cfg(target_os = "android")]
+    fn ensure_current(
+        &self,
+        source_id: &SourceId,
+        record: &AndroidSourceRecord,
+    ) -> Result<(), CoreError> {
+        let observed = match self.plugin.revalidate(&record.bridge_token) {
+            Ok(observed) => observed,
+            Err(error) => {
+                if matches!(
+                    revalidation_failure_status(&error),
+                    RevalidationStatus::PermissionRevoked | RevalidationStatus::Deleted
+                ) {
+                    self.invalidate_source_streams(source_id);
+                }
+                return Err(plugin_error(error));
+            }
+        };
+        let current = summary_from_delivery(&observed)?.external_revision;
+        if current != record.summary.external_revision {
+            self.invalidate_source_streams(source_id);
+            return Err(safe_error(
+                CoreErrorCategory::Conflict,
+                "Android source changed before provider I/O",
+                true,
+            ));
+        }
+        Ok(())
+    }
+
+    #[cfg(target_os = "android")]
+    fn invalidate_source_streams(&self, source_id: &SourceId) {
+        let tokens = self
+            .lock_registry()
+            .map(|mut registry| {
+                let tokens = registry
+                    .streams
+                    .values()
+                    .filter(|stream| &stream.lease.source_id == source_id)
+                    .map(|stream| stream.bridge_token.clone())
+                    .collect::<Vec<_>>();
+                registry
+                    .streams
+                    .retain(|_, stream| &stream.lease.source_id != source_id);
+                tokens
+            })
+            .unwrap_or_default();
+        for token in tokens {
+            let _ = self.plugin.close_stream(&token);
+        }
     }
 
     #[cfg(target_os = "android")]
@@ -260,8 +349,8 @@ impl AndroidSourceHost {
                 true,
             ));
         }
-        let mut registry = self.lock_registry()?;
-        if registry
+        if self
+            .lock_registry()?
             .streams
             .values()
             .filter(|stream| &stream.lease.source_id == source_id)
@@ -274,6 +363,7 @@ impl AndroidSourceHost {
                 true,
             ));
         }
+        self.ensure_current(source_id, &source)?;
         let opened = self
             .plugin
             .open_stream(&source.bridge_token, offset, total_budget)
@@ -286,7 +376,7 @@ impl AndroidSourceHost {
             consumed: 0,
             external_revision: source.summary.external_revision,
         };
-        registry.streams.insert(
+        self.lock_registry()?.streams.insert(
             lease.stream_id.clone(),
             AndroidStreamRecord {
                 bridge_token: opened.stream_token,
@@ -340,17 +430,21 @@ impl AndroidSourceHost {
             ));
         }
         let consumed = response.bytes.len() as u64;
-        let terminal =
-            response.end_of_source || stream.lease.consumed + consumed == stream.lease.total_budget;
         let mut registry = self.lock_registry()?;
+        let current_consumed = registry
+            .streams
+            .get(stream_id)
+            .map_or(stream.lease.consumed, |active| active.lease.consumed);
+        let next_consumed = current_consumed + consumed;
+        let terminal = response.end_of_source || next_consumed == stream.lease.total_budget;
         if terminal {
             registry.streams.remove(stream_id);
         } else if let Some(active) = registry.streams.get_mut(stream_id) {
-            active.lease.consumed += consumed;
+            active.lease.consumed = next_consumed;
         }
         Ok(ReadRangeResult {
             source_id: stream.lease.source_id,
-            offset: stream.lease.offset + stream.lease.consumed,
+            offset: stream.lease.offset + current_consumed,
             bytes: response.bytes,
             end_of_source: response.end_of_source,
         })
@@ -391,6 +485,7 @@ impl AndroidSourceHost {
                 true,
             ));
         }
+        self.ensure_current(source_id, &record)?;
         let response = self
             .plugin
             .read_range(&record.bridge_token, offset, length)
@@ -420,11 +515,18 @@ impl AndroidSourceHost {
         let observed = match self.plugin.revalidate(&record.bridge_token) {
             Ok(observed) => observed,
             Err(error) => {
+                let status = revalidation_failure_status(&error);
+                if matches!(
+                    status,
+                    RevalidationStatus::PermissionRevoked | RevalidationStatus::Deleted
+                ) {
+                    self.invalidate_source_streams(source_id);
+                }
                 return Ok(RevalidationResult {
                     source_id: source_id.clone(),
                     expected: expected.clone(),
                     current: None,
-                    status: revalidation_failure_status(&error),
+                    status,
                 });
             }
         };

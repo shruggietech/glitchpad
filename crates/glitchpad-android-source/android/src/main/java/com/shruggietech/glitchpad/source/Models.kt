@@ -33,6 +33,11 @@ class ReadStreamArgs {
 }
 
 @InvokeArg
+class StreamTokenArgs {
+  lateinit var streamToken: String
+}
+
+@InvokeArg
 class PickerArgs {
   var mediaType: String? = null
   var suggestedName: String? = null

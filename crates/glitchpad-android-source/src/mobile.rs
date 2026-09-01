@@ -3,7 +3,8 @@ use tauri::{AppHandle, Runtime};
 
 use crate::models::{
     BridgeDelivery, DeliveryBatch, DrainRequest, OpenStreamRequest, PickerRequest, ReadRequest,
-    ReadResponse, ReadStreamRequest, SaveAsResponse, StreamOpened, TokenRequest,
+    ReadResponse, ReadStreamRequest, SaveAsResponse, StreamOpened, StreamTokenRequest,
+    TokenRequest,
 };
 
 const PLUGIN_IDENTIFIER: &str = "com.shruggietech.glitchpad.source";
@@ -97,6 +98,12 @@ impl<R: Runtime> AndroidSource<R> {
                     length,
                 },
             )
+            .map_err(|error| error.to_string())
+    }
+
+    pub fn close_stream(&self, stream_token: &str) -> Result<(), String> {
+        self.0
+            .run_mobile_plugin("closeStream", StreamTokenRequest { stream_token })
             .map_err(|error| error.to_string())
     }
 

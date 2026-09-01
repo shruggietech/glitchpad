@@ -84,6 +84,12 @@ pub struct ReadStreamRequest<'a> {
 
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct StreamTokenRequest<'a> {
+    pub stream_token: &'a str,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PickerRequest<'a> {
     pub media_type: Option<&'a str>,
     pub suggested_name: Option<&'a str>,

@@ -159,9 +159,9 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
   fun readStream(invoke: Invoke) {
     val args = invoke.parseArgs(ReadStreamArgs::class.java)
     if (args.length <= 0 || args.length > MAX_CHUNK_BYTES) return invoke.reject("budget_exceeded")
-    val stream = streams[args.streamToken] ?: return invoke.reject("stream_not_found")
-    if (args.length > stream.remaining) return invoke.reject("budget_exceeded")
     ioExecutor.execute {
+      val stream = streams[args.streamToken] ?: return@execute invoke.reject("stream_not_found")
+      if (args.length > stream.remaining) return@execute invoke.reject("budget_exceeded")
       runCatching {
         val requested = args.length.toInt()
         val output = ByteArray(requested)
@@ -182,6 +182,14 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
         invoke.reject(code(it))
       }
     }
+  }
+
+  @Command
+  fun closeStream(invoke: Invoke) {
+    val args = invoke.parseArgs(StreamTokenArgs::class.java)
+    streams.remove(args.streamToken)?.close()
+      ?: return invoke.reject("stream_not_found")
+    invoke.resolve()
   }
 
   @Command

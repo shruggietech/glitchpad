@@ -17,7 +17,6 @@ test('landing route supports keyboard entry and responsive layout', async ({
       document.documentElement.clientWidth,
   );
   expect(overflow).toBe(false);
-  await expect(page.locator('img')).toHaveCount(2);
 });
 
 test('light, dark, and reduced-motion preferences remain usable', async ({

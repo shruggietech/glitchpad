@@ -36,6 +36,129 @@ async function collectFiles(directory) {
   return result;
 }
 
+function parseTagAttributes(tag) {
+  const attributes = new Map();
+  const duplicates = new Set();
+  const attributeText = tag
+    .replace(/^<\s*[^\s/>]+/, '')
+    .replace(/\/?>\s*$/, '');
+  const pattern =
+    /([^\s=/>]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
+  for (const match of attributeText.matchAll(pattern)) {
+    const name = match[1].toLowerCase();
+    if (attributes.has(name)) duplicates.add(name);
+    else attributes.set(name, match[2] ?? match[3] ?? match[4]);
+  }
+  return { attributes, duplicates };
+}
+
+export function verifyReadmeBanner(readme) {
+  const problems = [];
+  const headingIndex = readme.search(/^# Glitchpad$/m);
+  if (headingIndex < 0) {
+    return ['README banner must precede the existing # Glitchpad heading'];
+  }
+
+  const introduction = readme.slice(0, headingIndex);
+  if (introduction.includes('<!--') || introduction.includes('-->')) {
+    return [
+      'README banner introduction must not contain HTML comments or inert banner markup',
+    ];
+  }
+  const centeredWrapper = introduction.match(/^\s*(<div\b[^>]*>)([\s\S]*)$/i);
+  if (!centeredWrapper || /<\/div\s*>/i.test(centeredWrapper[2])) {
+    return [
+      'README banner must remain inside the centered introduction before the # Glitchpad heading',
+    ];
+  }
+  const { attributes: wrapper, duplicates: wrapperDuplicates } =
+    parseTagAttributes(centeredWrapper[1]);
+  if (wrapper.get('align') !== 'center' || wrapperDuplicates.has('align')) {
+    return [
+      'README banner introduction must use one centered <div align="center"> wrapper',
+    ];
+  }
+
+  const pictures = [
+    ...centeredWrapper[2].matchAll(
+      /<picture>([\s\S]*?)<\/picture>/g,
+    ),
+  ];
+  if (pictures.length !== 1) {
+    return [
+      'README banner introduction must contain exactly one <picture> before the # Glitchpad heading',
+    ];
+  }
+
+  const children = pictures[0][1].match(
+    /^\s*(<source\b[^>]*>)\s*(<img\b[^>]*>)\s*$/,
+  );
+  if (!children) {
+    problems.push(
+      'README banner must contain one direct <source> followed by one direct <img>',
+    );
+    return problems;
+  }
+
+  const { attributes: source, duplicates: sourceDuplicates } =
+    parseTagAttributes(children[1]);
+  const { attributes: image, duplicates: imageDuplicates } =
+    parseTagAttributes(children[2]);
+  for (const [label, duplicates, governedAttributes] of [
+    ['dark source', sourceDuplicates, ['media', 'srcset']],
+    ['fallback image', imageDuplicates, ['src', 'alt', 'width']],
+  ]) {
+    for (const attribute of governedAttributes) {
+      if (duplicates.has(attribute)) {
+        problems.push(
+          `README banner ${label} must not repeat the "${attribute}" attribute`,
+        );
+      }
+    }
+  }
+  for (const [label, actual, expected] of [
+    ['dark source media', source.get('media'), '(prefers-color-scheme: dark)'],
+    [
+      'dark source srcset',
+      source.get('srcset'),
+      'brand/logos/svg/glitchpad-horizontal-white.svg',
+    ],
+    [
+      'light fallback src',
+      image.get('src'),
+      'brand/logos/svg/glitchpad-horizontal-black.svg',
+    ],
+    ['fallback alternative text', image.get('alt'), 'Glitchpad'],
+    ['fallback width', image.get('width'), '480'],
+  ]) {
+    if (actual !== expected) {
+      problems.push(
+        `README banner ${label} must be "${expected}" (received ${JSON.stringify(actual)})`,
+      );
+    }
+  }
+
+  return problems;
+}
+
+export async function verifyPublicCopy(
+  canonicalPath,
+  integratedPath,
+  integratedLabel = integratedPath,
+) {
+  try {
+    const [expected, actual] = await Promise.all([
+      readFile(canonicalPath),
+      readFile(integratedPath),
+    ]);
+    return expected.equals(actual)
+      ? []
+      : [`site asset drift: ${integratedLabel}`];
+  } catch {
+    return [`missing site asset copy: ${integratedLabel}`];
+  }
+}
+
 export async function verifyBrand(
   brandRoot = join(repositoryRoot, 'brand'),
   projectRoot = repositoryRoot,
@@ -100,21 +223,7 @@ export async function verifyBrand(
   const readme = integrations
     ? await readFile(join(projectRoot, 'README.md'), 'utf8')
     : '';
-  for (const [label, pattern] of [
-    ['picture wrapper', /<picture>/],
-    ['dark color-scheme source', /prefers-color-scheme:\s*dark/],
-    [
-      'approved dark banner',
-      /brand\/logos\/svg\/glitchpad-horizontal-(?:light|white)\.svg/,
-    ],
-    [
-      'approved light banner',
-      /brand\/logos\/svg\/glitchpad-horizontal-(?:black|color)\.svg/,
-    ],
-    ['banner alternative text', /alt="Glitchpad"/],
-  ]) {
-    if (!pattern.test(readme)) problems.push(`README is missing ${label}`);
-  }
+  if (integrations) problems.push(...verifyReadmeBanner(readme));
 
   const publicCopies = [
     [
@@ -140,8 +249,8 @@ export async function verifyBrand(
       'site/public/fonts/OFL-Space-Grotesk.txt',
     ],
     [
-      'logos/svg/glitchpad-horizontal-light.svg',
-      'site/public/logos/glitchpad-horizontal-light.svg',
+      'logos/svg/glitchpad-horizontal-white.svg',
+      'site/public/logos/glitchpad-horizontal-white.svg',
     ],
     [
       'logos/svg/glitchpad-horizontal-black.svg',
@@ -163,16 +272,13 @@ export async function verifyBrand(
     ['favicons/site.webmanifest', 'site/public/site.webmanifest'],
   ];
   for (const [canonical, integrated] of integrations ? publicCopies : []) {
-    try {
-      const [expected, actual] = await Promise.all([
-        readFile(join(brandRoot, ...canonical.split('/'))),
-        readFile(join(projectRoot, ...integrated.split('/'))),
-      ]);
-      if (!expected.equals(actual))
-        problems.push(`site asset drift: ${integrated}`);
-    } catch {
-      problems.push(`missing site asset copy: ${integrated}`);
-    }
+    problems.push(
+      ...(await verifyPublicCopy(
+        join(brandRoot, ...canonical.split('/')),
+        join(projectRoot, ...integrated.split('/')),
+        integrated,
+      )),
+    );
   }
 
   const governed = [join(projectRoot, 'README.md'), join(projectRoot, 'site')];

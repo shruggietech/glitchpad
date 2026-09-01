@@ -1,7 +1,7 @@
 <div align="center">
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="brand/logos/svg/glitchpad-horizontal-light.svg">
+  <source media="(prefers-color-scheme: dark)" srcset="brand/logos/svg/glitchpad-horizontal-white.svg">
   <img src="brand/logos/svg/glitchpad-horizontal-black.svg" alt="Glitchpad" width="480">
 </picture>
 

@@ -35,16 +35,16 @@ a {
   width: auto;
   height: 1.65rem;
 }
-.brand-lockup-light {
+.brand-lockup-on-light {
   display: inline-block;
 }
-.brand-lockup-dark {
+.brand-lockup-on-dark {
   display: none;
 }
-.dark .brand-lockup-light {
+.dark .brand-lockup-on-light {
   display: none;
 }
-.dark .brand-lockup-dark {
+.dark .brand-lockup-on-dark {
   display: inline-block;
 }
 .hero {

@@ -297,6 +297,17 @@ test('Focused validation enforces the production process topology', async () => 
   );
 });
 
+test('Hosted Mermaid validation selects the installed headless shell', async () => {
+  const configuration = JSON.parse(
+    await readFile(
+      join(repositoryRoot, '.github', 'puppeteer-ci.json'),
+      'utf8',
+    ),
+  );
+  assert.equal(configuration.headless, 'shell');
+  assert.ok(configuration.args.includes('--no-sandbox'));
+});
+
 for (const [label, source] of [
   ['package manager', 'await pnpm();'],
   ['PowerShell', 'await powershell();'],

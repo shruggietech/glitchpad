@@ -17,15 +17,16 @@ tauri-build.workspace = true
 
 [dependencies]
 glitchpad-core = { path = "../glitchpad-core", version = "=0.0.0" }
+glitchpad-android-source = { path = "../glitchpad-android-source", version = "=0.0.0" }
 serde.workspace = true
 tauri.workspace = true
+uuid.workspace = true
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 atomic-write-file.workspace = true
 file-id.workspace = true
 notify.workspace = true
 url.workspace = true
-uuid.workspace = true
 
 [dev-dependencies]
 serde_json.workspace = true

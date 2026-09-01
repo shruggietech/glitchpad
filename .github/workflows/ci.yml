@@ -193,6 +193,83 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  android-instrumentation:
+    name: Android provider lifecycle (API ${{ matrix.api-level }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        api-level: [24, 36]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Install Android platform and NDK
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0" "ndk;28.2.13676358"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.28.2
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Add Rust Android emulator target
+        run: rustup target add x86_64-linux-android
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: android-x86_64-api-${{ matrix.api-level }}
+
+      - name: Run controlled-provider and restoration evidence
+        uses: ReactiveCircus/android-emulator-runner@4c44018e59b437e86cdfc41da381398f93ed8808 # v2
+        with:
+          api-level: ${{ matrix.api-level }}
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          emulator-options: -no-window -no-audio -no-snapshot -no-boot-anim -gpu swiftshader_indirect
+          script: |
+            export NDK_HOME="${ANDROID_SDK_ROOT}/ndk/28.2.13676358"
+            pnpm tauri android build --debug --apk --target x86_64 --ci --config '{"version":"0.0.1"}'
+            cd crates/glitchpad-host/gen/android
+            ./gradlew :glitchpad-android-source:testDebugUnitTest --no-daemon
+            ./gradlew :app:connectedDebugAndroidTest --no-daemon
+            adb shell am instrument -w -e class com.shruggietech.glitchpad.source.RestorationInstrumentedTest#privateRestorationRecordSurvivesProcessBoundary -e restorationPhase seed com.shruggietech.glitchpad.test/androidx.test.runner.AndroidJUnitRunner
+            adb shell am force-stop com.shruggietech.glitchpad
+            adb shell am instrument -w -e class com.shruggietech.glitchpad.source.RestorationInstrumentedTest#privateRestorationRecordSurvivesProcessBoundary -e restorationPhase verify com.shruggietech.glitchpad.test/androidx.test.runner.AndroidJUnitRunner
+
+      - name: Upload Android instrumentation reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-provider-lifecycle-api-${{ matrix.api-level }}
+          path: |
+            crates/glitchpad-host/gen/android/app/build/reports/androidTests/**
+            crates/glitchpad-host/gen/android/app/build/outputs/androidTest-results/**
+          if-no-files-found: warn
+          retention-days: 7
+
   dependency-review:
     name: Dependency review
     if: github.event_name == 'pull_request'
@@ -241,7 +318,16 @@ jobs:
   ci-ok:
     name: ci-ok
     needs:
-      [docs, shared, platform, android, dependency-review, security, labeler]
+      [
+        docs,
+        shared,
+        platform,
+        android,
+        android-instrumentation,
+        dependency-review,
+        security,
+        labeler,
+      ]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -251,11 +337,12 @@ jobs:
           SHARED_RESULT: ${{ needs.shared.result }}
           PLATFORM_RESULT: ${{ needs.platform.result }}
           ANDROID_RESULT: ${{ needs.android.result }}
+          ANDROID_INSTRUMENTATION_RESULT: ${{ needs.android-instrumentation.result }}
           DEPENDENCY_RESULT: ${{ needs.dependency-review.result }}
           SECURITY_RESULT: ${{ needs.security.result }}
           LABELER_RESULT: ${{ needs.labeler.result }}
         run: |
-          results="$DOCS_RESULT $SHARED_RESULT $PLATFORM_RESULT $ANDROID_RESULT $DEPENDENCY_RESULT $SECURITY_RESULT $LABELER_RESULT"
+          results="$DOCS_RESULT $SHARED_RESULT $PLATFORM_RESULT $ANDROID_RESULT $ANDROID_INSTRUMENTATION_RESULT $DEPENDENCY_RESULT $SECURITY_RESULT $LABELER_RESULT"
           echo "Job results: $results"
           for result in $results; do
             if [ "$result" = "failure" ] || [ "$result" = "cancelled" ]; then

@@ -237,6 +237,7 @@ fn release_check(repository: &Path) -> Result<(), String> {
 }
 
 fn check(repository: &Path) -> Result<(), String> {
+    verify_android_source_layout(repository)?;
     run(repository, "cargo", ["fmt", "--all", "--", "--check"])?;
     run(
         repository,
@@ -255,6 +256,51 @@ fn check(repository: &Path) -> Result<(), String> {
     run(repository, "cargo", ["deny", "check"])?;
     run(repository, "pnpm", ["run", "check:frontend"])?;
     docs(repository)?;
+    Ok(())
+}
+
+fn verify_android_source_layout(repository: &Path) -> Result<(), String> {
+    let required_files = [
+        "crates/glitchpad-android-source/src/models.rs",
+        "crates/glitchpad-android-source/android/src/main/java/com/shruggietech/glitchpad/source/DeliveryPolicy.kt",
+        "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/FixtureDocumentsProvider.kt",
+        "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidSourceInstrumentedTest.kt",
+        "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/RestorationInstrumentedTest.kt",
+    ];
+    for relative in required_files {
+        if !repository.join(relative).is_file() {
+            return Err(format!(
+                "required Android source lifecycle file is missing: {relative}"
+            ));
+        }
+    }
+
+    let models_path = repository.join("crates/glitchpad-android-source/src/models.rs");
+    let models = std::fs::read_to_string(&models_path)
+        .map_err(|error| format!("could not read {}: {error}", models_path.display()))?;
+    if models.contains("raw_uri") || models.contains("rawUri") || models.contains("pub uri:") {
+        return Err("Android bridge models must not expose raw provider URIs".to_owned());
+    }
+
+    let workflow_path = repository.join(".github/workflows/ci.yml");
+    let workflow = std::fs::read_to_string(&workflow_path)
+        .map_err(|error| format!("could not read {}: {error}", workflow_path.display()))?;
+    for required in [
+        "api-level: [24, 36]",
+        "x86_64-linux-android",
+        "android-instrumentation",
+    ] {
+        if !workflow.contains(required) {
+            return Err(format!(
+                "Android CI matrix is missing required marker: {required}"
+            ));
+        }
+    }
+    if workflow.contains("ReactiveCircus/android-emulator-runner@v") {
+        return Err("Android emulator actions must use an immutable commit SHA".to_owned());
+    }
+
+    println!("Android source lifecycle layout and CI policy verified.");
     Ok(())
 }
 
@@ -306,7 +352,7 @@ fn run_powershell(repository: &Path, script: &str) -> Result<(), String> {
 
 #[cfg(test)]
 mod tests {
-    use super::{parse_version, platform_program, repository_root};
+    use super::{parse_version, platform_program, repository_root, verify_android_source_layout};
 
     #[test]
     fn repository_root_contains_workspace_manifest() {
@@ -327,5 +373,10 @@ mod tests {
             Some((2, 55, 0))
         );
         assert_eq!(parse_version("v24.11.0"), Some((24, 11, 0)));
+    }
+
+    #[test]
+    fn android_source_layout_is_policy_checked() {
+        verify_android_source_layout(&repository_root()).unwrap();
     }
 }

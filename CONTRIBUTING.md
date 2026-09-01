@@ -48,6 +48,8 @@ Install Android Studio Quail 3 (2026.1.3) or a compatible newer stable release, 
 
 The explicitly selected Android JDK is authoritative for Android work even when another Java version is installed globally. `cargo xtask doctor` reports the active paths so version and path mistakes are visible before a Gradle build.
 
+Android provider lifecycle work requires headless x86_64 API 24 and API 36 emulators. From `crates/glitchpad-host/gen/android`, run `gradlew :app:testDebugUnitTest` for Kotlin policy tests and `gradlew :app:connectedDebugAndroidTest` for the controlled DocumentsProvider suite. CI additionally runs restoration seed and verify phases around `adb shell am force-stop com.shruggietech.glitchpad`; local evidence is optional when a compatible headless emulator is unavailable, but both CI matrix entries remain required for merge.
+
 ## Bootstrap
 
 ```powershell

@@ -341,8 +341,11 @@ impl DesktopSourceHost {
         bytes.truncate(read);
         let read_length = u64::try_from(read)
             .map_err(|_| budget_error("The completed read does not fit the source contract"))?;
-        let end =
-            offset.saturating_add(read_length) >= record.summary.external_revision.byte_length;
+        let end = record
+            .summary
+            .external_revision
+            .byte_length
+            .is_some_and(|byte_length| offset.saturating_add(read_length) >= byte_length);
         Ok(ReadRangeResult {
             source_id: source_id.clone(),
             offset,
@@ -457,7 +460,9 @@ impl DesktopSourceHost {
         bytes.truncate(read);
         let consumed = u64::try_from(read)
             .map_err(|_| budget_error("The completed stream read does not fit the contract"))?;
-        let end_of_source = offset.saturating_add(consumed) >= current_revision.byte_length;
+        let end_of_source = current_revision
+            .byte_length
+            .is_some_and(|byte_length| offset.saturating_add(consumed) >= byte_length);
         let next_consumed = lease.consumed + consumed;
         if end_of_source || next_consumed >= lease.total_budget {
             state.streams.remove(stream_id);
@@ -484,7 +489,7 @@ impl DesktopSourceHost {
             fs::metadata(&record.path).map_err(|error| safe_io_error(&error, "query_metadata"))?;
         Ok(SourceMetadata {
             display_name: record.summary.descriptor.display_name.clone(),
-            byte_length: metadata.len(),
+            byte_length: Some(metadata.len()),
             modified_unix_nanos: metadata
                 .modified()
                 .ok()
@@ -601,7 +606,7 @@ impl DesktopSourceHost {
                     record.native_identity = identity;
                     record.summary.external_revision = current.clone();
                     record.summary.descriptor.identity = current.identity.clone();
-                    record.summary.descriptor.byte_length = Some(current.byte_length);
+                    record.summary.descriptor.byte_length = current.byte_length;
                     record.summary.descriptor.modified_unix_ms = current
                         .modified_unix_nanos
                         .map(|value| i64::try_from(value / 1_000_000).unwrap_or(i64::MAX));
@@ -699,7 +704,7 @@ impl DesktopSourceHost {
         record.native_identity = native_identity;
         record.summary.external_revision = new_revision.clone();
         record.summary.descriptor.identity = new_revision.identity.clone();
-        record.summary.descriptor.byte_length = Some(new_revision.byte_length);
+        record.summary.descriptor.byte_length = new_revision.byte_length;
         record.summary.descriptor.modified_unix_ms = new_revision
             .modified_unix_nanos
             .map(|value| i64::try_from(value / 1_000_000).unwrap_or(i64::MAX));
@@ -895,8 +900,8 @@ fn validate_chunk(offset: u64, length: u64, operation_budget: u64) -> Result<(),
     Ok(())
 }
 
-fn validate_source_offset(offset: u64, byte_length: u64) -> Result<(), CoreError> {
-    if offset > byte_length {
+fn validate_source_offset(offset: u64, byte_length: Option<u64>) -> Result<(), CoreError> {
+    if byte_length.is_some_and(|byte_length| offset > byte_length) {
         return Err(CoreError::new(
             CoreErrorCategory::InvalidInput,
             "The requested byte offset is beyond the current source",
@@ -1355,7 +1360,7 @@ pub(crate) mod tests {
                 token: "weaker-revision".into(),
                 strength: IdentityStrength::Strong,
             },
-            byte_length: 8,
+            byte_length: Some(8),
             modified_unix_nanos: Some(1),
             change_token: None,
         };

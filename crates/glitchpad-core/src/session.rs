@@ -775,7 +775,7 @@ mod tests {
         let revision = registry.sessions()[0].revision;
         let external_revision = crate::source::ExternalRevision {
             identity,
-            byte_length: 10,
+            byte_length: Some(10),
             modified_unix_nanos: Some(1),
             change_token: None,
         };

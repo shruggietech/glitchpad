@@ -127,7 +127,7 @@ mod tests {
                 token: "missing".into(),
                 strength: glitchpad_core::contracts::IdentityStrength::Unavailable,
             },
-            byte_length: 0,
+            byte_length: Some(0),
             modified_unix_nanos: None,
             change_token: None,
         };

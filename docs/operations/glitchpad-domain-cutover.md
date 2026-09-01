@@ -142,7 +142,7 @@ Every checkpoint is fail-closed. A checkpoint starts only when its expected-befo
 - Mutation: Execute GitHub's organization Verify action for `glitchpad.com`.
 - Expected after: `shruggietech` reports the domain verified and the personal Pages custom-domain claim is released.
 - Stop condition: Organization verification is ambiguous, challenge no longer resolves, or the personal claim remains in an unexplained partial state.
-- Rollback R07: Prefer continuing to C08 using the already validated organization origin. Exact personal restoration requires R09 followed by R14 and R08; do not remove verification merely to regain the old claim unless the destination cannot be restored.
+- Rollback R07: Prefer continuing to C08 using the already validated organization origin. Exact personal restoration requires R08B, R09, R14, and R08 in that order; do not release the destination claim or remove verification merely to regain the old claim unless the destination cannot be restored.
 - Observation: Pass at `2026-09-01T01:52Z`. Immediately before the action, the legacy site was built with its captured CNAME, the destination preview served the reviewed technical specification, destination state was `protected_domain_state: unverified`, all eleven expected DNS records matched, retained-record drift was zero, and the challenge resolved from all authoritative and public resolvers. GitHub displayed `Successfully verified glitchpad.com` and listed the domain as `Verified`. Immediate API readback showed the legacy Pages build retained but its `cname` released to `null`; destination state changed to `protected_domain_state: verified` while retaining the preview CNAME.
 
 ### C08 - Attach the apex to destination Pages
@@ -151,7 +151,7 @@ Every checkpoint is fail-closed. A checkpoint starts only when its expected-befo
 - Mutation: Replace the destination Pages CNAME with `glitchpad.com`.
 - Expected after: Destination Pages reports the apex CNAME and retains workflow publication.
 - Stop condition: GitHub rejects the verified apex, destination state changes unexpectedly, or the source claim reappears.
-- Rollback R08A: Restore the destination preview CNAME and keep the verified organization domain while diagnosing. If this cannot restore a validated organization serving state, execute the guarded exact-legacy recovery R09, R14, then R08.
+- Rollback R08A: Restore the destination preview CNAME and keep the verified organization domain while diagnosing. If this cannot restore a validated organization serving state, execute the guarded exact-legacy recovery R08B, R09, R14, then R08.
 - Observation: Pass at `2026-09-01T01:53Z`. The expected-before readback matched C07. GitHub accepted destination CNAME `glitchpad.com` and returned `build_type: workflow`, `protected_domain_state: verified`, `https_enforced: false`, and `html_url: http://glitchpad.com/`. The legacy Pages build remained available at its repository host with `cname: null`.
 
 ### C09 - Activate final website DNS
@@ -160,7 +160,7 @@ Every checkpoint is fail-closed. A checkpoint starts only when its expected-befo
 - Mutation: Replace the old website records with DNS-only A `185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153`; AAAA `2606:50c0:8000::153`, `2606:50c0:8001::153`, `2606:50c0:8002::153`, `2606:50c0:8003::153`; and `www` CNAME `shruggietech.github.io`.
 - Expected after: Exactly that website record set exists with Auto TTL and `proxied: false`; all D02 and D04-D10 retained records are unchanged.
 - Stop condition: Expected-before ID/value mismatch, partial write, unexpected record, wildcard, or retained-record drift.
-- Rollback R08: Delete the created website records by returned IDs, recreate apex A `192.30.252.153` and `www` CNAME `h8rt3rmin8r.github.io` with Auto TTL and `proxied: true`, then confirm retained records. The personal attachment must already be available through R14; if organization verification blocks it, execute R09 first.
+- Rollback R08: Delete the created website records by returned IDs, recreate apex A `192.30.252.153` and `www` CNAME `h8rt3rmin8r.github.io` with Auto TTL and `proxied: true`, then confirm retained records. The personal attachment must already be available through R14. Exact personal restoration must first release the destination custom-domain attachment through R08B while organization verification still protects the domain, then execute R09 and R14.
 - Observation: Pass at `2026-09-01T01:53Z`. A single guarded Cloudflare batch deleted only legacy apex ID `1223d3bd28b734c27a72fb7e26e2fc46` and legacy `www` ID `fd8ef00fb74b6dd3bb3f18d573e9f076`, then created: A IDs `14f6c43c0fefb41626b28901829a8c32`, `74c5462306c7fbf1bc206fa4135c54bb`, `38e705fe73ff654aba709cec7d92663f`, and `c7ced6bc92e8bf431e529f78498bfd1f`; AAAA IDs `19bca97611f31777a2a6d958f4d1081c`, `4afd9e357b4306fdcd3b61833cdc699b`, `9d2c0e8b76a4faf2fb5a3e7aafc8c98f`, and `79f4eb2ea4de99ef9c49d8fa9b4c5c17`; and `www` CNAME ID `8efff6a0ef1bdaa42c2b88a5be4521bb`. Every new website record is DNS-only with Auto TTL and the S009 comment. Readback contained exactly 18 records: the nine new production records, preview, challenge, and all seven unrelated baseline records.
 
 ### C10 - Validate provider ownership and DNS
@@ -169,7 +169,7 @@ Every checkpoint is fail-closed. A checkpoint starts only when its expected-befo
 - Mutation: None; inspect Pages domain status and resolve authoritative plus public DNS.
 - Expected after: Destination owns `glitchpad.com`; A, AAAA, CNAME, and challenge TXT values match the final contract; no legacy or wildcard website record remains.
 - Stop condition: Ownership mismatch, stale unsupported target beyond the bounded observation window, missing address family, wildcard, or unrelated drift.
-- Rollback R10: Restore the last validated organization preview state using R08A when possible; otherwise use R09, R14, and R08.
+- Rollback R10: Restore the last validated organization preview state using R08A when possible; otherwise use R08B, R09, R14, and R08.
 - Observation: Pass at `2026-09-01T01:54Z`. GitHub reports the organization repository owns verified `glitchpad.com`. Both authoritative nameservers and Cloudflare (`1.1.1.1`), Google (`8.8.8.8`), and Quad9 (`9.9.9.9`) return all four expected A records, all four expected AAAA records, `www` CNAME `shruggietech.github.io`, and the exact persistent challenge token. No wildcard exists and the Cloudflare API readback shows every unrelated record unchanged. Certificate state is not yet returned, so C11 remains blocked on approval.
 
 ### C11 - Approve and enforce HTTPS
@@ -205,7 +205,7 @@ Every checkpoint is fail-closed. A checkpoint starts only when its expected-befo
 - Mutation: Disable Pages for `h8rt3rmin8r/glitchpad.com` without deleting or changing repository content.
 - Expected after: Legacy Pages API returns disabled/not found while canonical production remains healthy.
 - Stop condition: Any final smoke case regresses, evidence is incomplete, or legacy repository/source is unavailable for recovery.
-- Rollback R14: Recreate legacy Pages from `master:/docs`. Before C07 it may reclaim `glitchpad.com` directly. After C07, exact personal-domain restoration additionally requires R09 before attaching the apex.
+- Rollback R14: Recreate legacy Pages from `master:/docs`. Before C07 it may reclaim `glitchpad.com` directly. After C07, exact personal-domain restoration additionally requires R08B to release the destination custom-domain attachment while organization verification remains active, followed by R09 immediately before attaching the apex.
 - Observation: Pass at `2026-09-01T02:04:33Z`. The committed pre-retirement evidence, C11-C13, and a final legacy-state guard authorized deletion of only the personal repository's Pages configuration. GitHub now returns 404 for `h8rt3rmin8r/glitchpad.com` Pages. The repository remains public, enabled, unarchived, and unchanged on `master` commit `ff751363e3cb1408ed93e8568ec2b3ed85371390`; its `/docs` recovery source contains 54 entries. Destination Pages remains workflow-published, verified, certificate-approved, and HTTPS-enforced. Post-retirement `/`, `/docs`, and `/docs/technical-specification` returned 200, the missing path returned 404, TLS retained the approved fingerprint, and Cloudflare retained the exact 17-record final state.
 
 ## Phase-specific rollback
@@ -222,13 +222,14 @@ GitHub verification restricts `glitchpad.com` to repositories owned by `shruggie
 
 This is the last-resort path when no validated organization deployment can be restored. It deliberately deviates from the preferred recovery because removing verification briefly weakens domain takeover protection.
 
-1. Confirm the challenge TXT still resolves, the destination and legacy repository states match captured evidence, and the old DNS values are ready for immediate restoration.
-2. R09: Remove `glitchpad.com` from the `shruggietech` verified-domain settings through the authenticated GitHub owner UI. Do not remove the TXT yet.
-3. R14: Recreate personal Pages with legacy publication from `master:/docs`, attach `glitchpad.com`, and verify the personal repository owns the claim.
-4. R08: Replace the organization website DNS set with apex A `192.30.252.153` and `www` CNAME `h8rt3rmin8r.github.io`, both proxied with Auto TTL, preserving every unrelated record.
-5. Disable or detach the destination Pages site only after the legacy apex is serving and validated.
-6. Remove the organization challenge TXT only if GitHub no longer associates it with an active organization verification and retention would misrepresent ownership.
-7. Validate apex and `www` DNS, TLS/HTTP behavior, the legacy source, and all unrelated records; record every new provider identifier because restored DNS objects receive new IDs.
+1. Confirm the challenge TXT still resolves, the destination and legacy repository states match captured evidence, the legacy Pages source is ready to recreate, and the old DNS values are ready for immediate restoration.
+2. R08B: Remove only the `glitchpad.com` custom-domain attachment from destination Pages while leaving the destination workflow publication enabled and the organization verification plus challenge TXT intact. Confirm the destination repository no longer claims the apex before continuing.
+3. R09: Remove `glitchpad.com` from the `shruggietech` verified-domain settings through the authenticated GitHub owner UI. Do not remove the TXT yet. From this point until R14 succeeds, the apex is deliberately unclaimed and must remain an attended, immediate sequence.
+4. R14: Recreate personal Pages with legacy publication from `master:/docs`, attach `glitchpad.com`, and verify the personal repository owns the claim.
+5. R08: Replace the organization website DNS set with apex A `192.30.252.153` and `www` CNAME `h8rt3rmin8r.github.io`, both proxied with Auto TTL, preserving every unrelated record.
+6. Disable the destination Pages publication only after the legacy apex is serving and validated. Its custom domain was already detached at R08B and must not be deferred to this step.
+7. Remove the organization challenge TXT only if GitHub no longer associates it with an active organization verification and retention would misrepresent ownership.
+8. Validate apex and `www` DNS, TLS/HTTP behavior, the legacy source, and all unrelated records; record every new provider identifier because restored DNS objects receive new IDs.
 
 ## Smoke-result inventory
 
@@ -257,7 +258,7 @@ The final snapshot refreshed at `2026-09-01T02:04:33Z` contains 17 live DNS reco
 
 ## Recovery dry-run
 
-The reverse-order recovery was dry-run against the committed pre-cutover and final snapshots after C14. The check confirmed the exact legacy apex value and proxy flag, exact legacy `www` value and proxy flag, all nine live replacement-record IDs, the retained organization challenge, absence of the preview record, the preserved personal repository recovery commit and 54-entry `/docs` source, the organization-verification constraint, and the required R09 then R14 then R08 order for exact personal restoration. The validated stopping point is the healthy organization deployment. Exact personal restoration remains a guarded last resort because organization verification must be removed first; no provider state was changed during the dry-run. All D01-D25 decisions and C01-C14 checkpoints are verified, and the migration run is complete.
+The reverse-order recovery was dry-run against the committed pre-cutover and final snapshots after C14. The check confirmed the exact legacy apex value and proxy flag, exact legacy `www` value and proxy flag, all nine live replacement-record IDs, the retained organization challenge, absence of the preview record, the preserved personal repository recovery commit and 54-entry `/docs` source, the destination custom-domain claim, the organization-verification constraint, and the required R08B then R09 then R14 then R08 order for exact personal restoration. The validated stopping point is the healthy organization deployment. Exact personal restoration remains a guarded last resort because the destination attachment must be released while organization verification still protects the domain, then verification must be removed immediately before the personal claim is recreated; no provider state was changed during the dry-run. All D01-D25 decisions and C01-C14 checkpoints are verified, and the migration run is complete.
 
 ## Local convergence
 

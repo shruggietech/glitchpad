@@ -50,16 +50,20 @@ function parseTagAttributes(tag) {
 
 export function verifyReadmeBanner(readme) {
   const problems = [];
-  const pictures = [
-    ...readme.matchAll(/<picture\b[^>]*>([\s\S]*?)<\/picture>/g),
-  ];
-  if (pictures.length !== 1) {
-    return ['README banner must contain exactly one <picture>'];
+  const headingIndex = readme.search(/^# Glitchpad$/m);
+  if (headingIndex < 0) {
+    return ['README banner must precede the existing # Glitchpad heading'];
   }
 
-  const headingIndex = readme.search(/^# Glitchpad$/m);
-  if (headingIndex < 0 || pictures[0].index >= headingIndex) {
-    problems.push('README banner must appear before the # Glitchpad heading');
+  const pictures = [
+    ...readme
+      .slice(0, headingIndex)
+      .matchAll(/<picture\b[^>]*>([\s\S]*?)<\/picture>/g),
+  ];
+  if (pictures.length !== 1) {
+    return [
+      'README banner introduction must contain exactly one <picture> before the # Glitchpad heading',
+    ];
   }
 
   const children = pictures[0][1].match(

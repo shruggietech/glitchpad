@@ -70,6 +70,21 @@ test('the exact README banner contract accepts one canonical picture', () => {
   assert.deepEqual(verifyReadmeBanner(readme), []);
 });
 
+test('README banner validation ignores unrelated pictures after the heading', () => {
+  const readme = `
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="brand/logos/svg/glitchpad-horizontal-white.svg">
+  <img src="brand/logos/svg/glitchpad-horizontal-black.svg" alt="Glitchpad" width="480">
+</picture>
+
+# Glitchpad
+
+<picture><img src="docs/example.png" alt="Example"></picture>
+`;
+
+  assert.deepEqual(verifyReadmeBanner(readme), []);
+});
+
 test('README banner validation rejects reversed asset mappings', () => {
   const problems = verifyReadmeBanner(`
 <picture>

@@ -253,6 +253,20 @@ pub struct AndroidSourceSummary {
     pub grant: AndroidGrantState,
 }
 
+/// Stable rejection returned while draining Android system deliveries.
+#[derive(Clone, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
+pub struct AndroidDeliveryRejection {
+    pub code: String,
+    pub retryable: bool,
+}
+
+/// Bounded Android delivery drain preserving accepted and rejected items.
+#[derive(Clone, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
+pub struct AndroidDeliveryDrain {
+    pub sources: Vec<AndroidSourceSummary>,
+    pub rejections: Vec<AndroidDeliveryRejection>,
+}
+
 /// Result of restoring one native-private Android source record.
 #[derive(Clone, Copy, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]

@@ -282,6 +282,21 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
     invoke.resolve()
   }
 
+  @Command
+  fun discard(invoke: Invoke) {
+    val args = invoke.parseArgs(TokenArgs::class.java)
+    val source = sources.remove(args.bridgeToken) ?: return invoke.reject("source_not_found")
+    streams.entries.removeIf { (_, stream) ->
+      if (stream.sourceToken == source.token) {
+        stream.close()
+        true
+      } else {
+        false
+      }
+    }
+    invoke.resolve()
+  }
+
   private fun enqueueInbound(intent: Intent?) {
     DeliveryPolicy.inbound(intent).onSuccess(pending::add).onFailure { rejections.add(code(it)) }
   }

@@ -9,8 +9,8 @@ use glitchpad_core::contracts::{
     IdentityStrength, SourceCapabilities, SourceDescriptor, SourceKind, compare_identity,
 };
 use glitchpad_core::source::{
-    AndroidDeliveryKind, AndroidGrantState, AndroidSourceSummary, ExternalRevision, SourceId,
-    SourceMetadata,
+    AndroidDeliveryDrain, AndroidDeliveryKind, AndroidDeliveryRejection, AndroidGrantState,
+    AndroidSourceSummary, ExternalRevision, SourceId, SourceMetadata,
 };
 #[cfg(target_os = "android")]
 use glitchpad_core::source::{StreamId, StreamLease};
@@ -79,15 +79,34 @@ impl AndroidSourceHost {
         &self,
         delivery: &BridgeDelivery,
     ) -> Result<AndroidSourceSummary, CoreError> {
-        let candidate = summary_from_delivery(delivery)?;
+        let mut candidate = summary_from_delivery(delivery)?;
         let mut registry = self.lock_registry()?;
-        if let Some(existing) = registry.sources.values().find(|record| {
-            compare_identity(
-                &record.summary.descriptor.identity,
-                &candidate.descriptor.identity,
-            ) == IdentityMatch::Same
-        }) {
-            return Ok(existing.summary.clone());
+        if let Some((existing_id, _existing)) = registry
+            .sources
+            .iter()
+            .find(|(_, record)| {
+                compare_identity(
+                    &record.summary.descriptor.identity,
+                    &candidate.descriptor.identity,
+                ) == IdentityMatch::Same
+            })
+            .map(|(source_id, record)| (source_id.clone(), record.clone()))
+        {
+            candidate.source_id = existing_id.clone();
+            registry.sources.insert(
+                existing_id,
+                AndroidSourceRecord {
+                    #[cfg(target_os = "android")]
+                    bridge_token: _existing.bridge_token,
+                    summary: candidate.clone(),
+                },
+            );
+            drop(registry);
+            #[cfg(target_os = "android")]
+            self.plugin
+                .discard(&delivery.bridge_token)
+                .map_err(plugin_error)?;
+            return Ok(candidate);
         }
         registry.sources.insert(
             candidate.source_id.clone(),
@@ -123,6 +142,27 @@ impl AndroidSourceHost {
             .collect()
     }
 
+    /// Registers a bounded bridge batch while preserving each safe rejection.
+    ///
+    /// # Errors
+    ///
+    /// Returns a safe contract error when the batch or any accepted delivery is invalid.
+    pub fn accept_drain(&self, batch: &DeliveryBatch) -> Result<AndroidDeliveryDrain, CoreError> {
+        let sources = self.accept_batch(batch)?;
+        let rejections = batch
+            .rejections
+            .iter()
+            .map(|rejection| AndroidDeliveryRejection {
+                code: rejection.code.clone(),
+                retryable: rejection.retryable,
+            })
+            .collect();
+        Ok(AndroidDeliveryDrain {
+            sources,
+            rejections,
+        })
+    }
+
     #[cfg(target_os = "android")]
     fn source_record(&self, source_id: &SourceId) -> Result<AndroidSourceRecord, CoreError> {
         self.lock_registry()?
@@ -149,7 +189,7 @@ impl AndroidSourceHost {
     }
 
     #[cfg(target_os = "android")]
-    pub fn drain_deliveries(&self, maximum: usize) -> Result<Vec<AndroidSourceSummary>, CoreError> {
+    pub fn drain_deliveries(&self, maximum: usize) -> Result<AndroidDeliveryDrain, CoreError> {
         if maximum == 0 || maximum > 64 {
             return Err(safe_error(
                 CoreErrorCategory::InvalidInput,
@@ -161,7 +201,7 @@ impl AndroidSourceHost {
             .plugin
             .drain_deliveries(maximum)
             .map_err(plugin_error)?;
-        self.accept_batch(&batch)
+        self.accept_drain(&batch)
     }
 
     #[cfg(target_os = "android")]
@@ -377,11 +417,23 @@ impl AndroidSourceHost {
         expected: &ExternalRevision,
     ) -> Result<RevalidationResult, CoreError> {
         let record = self.source_record(source_id)?;
-        let observed = self
-            .plugin
-            .revalidate(&record.bridge_token)
-            .map_err(plugin_error)?;
-        let current = summary_from_delivery(&observed)?.external_revision;
+        let observed = match self.plugin.revalidate(&record.bridge_token) {
+            Ok(observed) => observed,
+            Err(error) => {
+                return Ok(RevalidationResult {
+                    source_id: source_id.clone(),
+                    expected: expected.clone(),
+                    current: None,
+                    status: revalidation_failure_status(&error),
+                });
+            }
+        };
+        let mut refreshed = summary_from_delivery(&observed)?;
+        refreshed.source_id = source_id.clone();
+        let current = refreshed.external_revision.clone();
+        if let Some(active) = self.lock_registry()?.sources.get_mut(source_id) {
+            active.summary = refreshed;
+        }
         let status = if &current == expected {
             RevalidationStatus::Match
         } else {
@@ -445,6 +497,18 @@ impl AndroidSourceHost {
             return Err(safe_error(
                 CoreErrorCategory::Conflict,
                 "Android source revision changed before Save As",
+                true,
+            ));
+        }
+        let observed = self
+            .plugin
+            .revalidate(&record.bridge_token)
+            .map_err(plugin_error)?;
+        let current = summary_from_delivery(&observed)?.external_revision;
+        if current != request.expected_external_revision {
+            return Err(safe_error(
+                CoreErrorCategory::Conflict,
+                "Android source changed before Save As",
                 true,
             ));
         }
@@ -575,6 +639,17 @@ fn plugin_error(error: String) -> CoreError {
         CoreErrorCategory::Unavailable
     };
     safe_error(category, "Android provider operation failed safely", true)
+}
+
+#[cfg(target_os = "android")]
+fn revalidation_failure_status(error: &str) -> RevalidationStatus {
+    if error.contains("permission_revoked") {
+        RevalidationStatus::PermissionRevoked
+    } else if error.contains("source_not_found") {
+        RevalidationStatus::Deleted
+    } else {
+        RevalidationStatus::Unavailable
+    }
 }
 
 #[cfg(test)]

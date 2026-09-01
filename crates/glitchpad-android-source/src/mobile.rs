@@ -129,4 +129,10 @@ impl<R: Runtime> AndroidSource<R> {
             .run_mobile_plugin("close", TokenRequest { bridge_token })
             .map_err(|error| error.to_string())
     }
+
+    pub fn discard(&self, bridge_token: &str) -> Result<(), String> {
+        self.0
+            .run_mobile_plugin("discard", TokenRequest { bridge_token })
+            .map_err(|error| error.to_string())
+    }
 }

@@ -140,6 +140,16 @@ export interface AndroidSourceSummary {
   grant: AndroidGrantState;
 }
 
+export interface AndroidDeliveryRejection {
+  code: string;
+  retryable: boolean;
+}
+
+export interface AndroidDeliveryDrain {
+  sources: AndroidSourceSummary[];
+  rejections: AndroidDeliveryRejection[];
+}
+
 export type AndroidRestorationStatus =
   | 'restored'
   | 'needs_redelivery'

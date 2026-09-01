@@ -68,8 +68,7 @@ pub fn run() {
 fn drain_android_deliveries(
     host: tauri::State<'_, android_source::AndroidSourceHost>,
     maximum: usize,
-) -> Result<Vec<glitchpad_core::source::AndroidSourceSummary>, glitchpad_core::contracts::CoreError>
-{
+) -> Result<glitchpad_core::source::AndroidDeliveryDrain, glitchpad_core::contracts::CoreError> {
     host.drain_deliveries(maximum)
 }
 

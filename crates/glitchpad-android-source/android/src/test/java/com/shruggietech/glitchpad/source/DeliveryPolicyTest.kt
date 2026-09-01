@@ -22,10 +22,11 @@ class DeliveryPolicyTest {
 
   @Test
   fun duplicateShareCompatibilityFieldsNormalizeToOneItem() {
-    val intent = Intent(Intent.ACTION_SEND)
-      .putExtra(Intent.EXTRA_STREAM, uri)
-      .setClipData(ClipData.newRawUri("document", uri))
-      .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
+    val intent = Intent(Intent.ACTION_SEND).apply {
+      putExtra(Intent.EXTRA_STREAM, uri)
+      clipData = ClipData.newRawUri("document", uri)
+      addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
+    }
     val candidate = DeliveryPolicy.inbound(intent).getOrThrow()
     assertEquals(DeliveryKind.SHARE, candidate.kind)
     assertEquals(0, DeliveryPolicy.persistableModes(candidate))
@@ -35,8 +36,10 @@ class DeliveryPolicyTest {
   fun distinctSharedItemsAreRejected() {
     val clip = ClipData.newRawUri("one", uri)
     clip.addItem(ClipData.Item(Uri.parse("content://fixture/document/two")))
-    val intent = Intent(Intent.ACTION_SEND).setClipData(clip)
-      .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    val intent = Intent(Intent.ACTION_SEND).apply {
+      clipData = clip
+      addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    }
     assertTrue(DeliveryPolicy.inbound(intent).isFailure)
   }
 

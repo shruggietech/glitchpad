@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Glitchpad file viewer specimen</title>
+  <link rel="stylesheet" href="../../styles.css">
+  <link rel="stylesheet" href="../../components/components.css">
+  <style>
+    body { background: var(--gp-bg); color: var(--gp-fg); min-height: 100vh; }
+    .app { display: grid; grid-template-rows: auto auto 1fr; min-height: 100vh; }
+    .topbar { align-items: center; border-bottom: var(--gp-stroke-hairline) solid var(--gp-border); display: flex; gap: var(--gp-space-4); min-height: 4rem; padding: 0 var(--gp-space-5); }
+    .brand { align-items: center; display: flex; gap: var(--gp-space-3); margin-right: auto; }
+    .brand img { height: 2.25rem; width: auto; }
+    .brand strong { font-family: var(--gp-font-display); font-size: var(--gp-display-xs); letter-spacing: var(--gp-tracking-display); }
+    .command { align-items: center; background: var(--gp-panel); border: var(--gp-stroke-hairline) solid var(--gp-border); border-radius: var(--gp-radius-md); color: var(--gp-fg-muted); display: flex; font-family: var(--gp-font-mono); font-size: var(--gp-body-xs); gap: var(--gp-space-2); min-width: 18rem; padding: var(--gp-space-2) var(--gp-space-3); }
+    .command kbd { background: var(--gp-panel-raised); border: var(--gp-stroke-hairline) solid var(--gp-border); border-radius: var(--gp-radius-sm); color: var(--gp-fg); margin-left: auto; padding: 0 var(--gp-space-2); }
+    .pathbar { align-items: center; border-bottom: var(--gp-stroke-hairline) solid var(--gp-border); color: var(--gp-fg-muted); display: flex; font-family: var(--gp-font-mono); font-size: var(--gp-body-xs); min-height: 2.75rem; overflow: hidden; padding: 0 var(--gp-space-5); white-space: nowrap; }
+    .pathbar span { color: var(--gp-fg); }
+    .workspace { display: grid; grid-template-columns: 16rem minmax(0, 1fr) 18rem; min-height: 0; }
+    .rail { background: var(--gp-surface); min-height: 0; overflow: auto; padding: var(--gp-space-4); }
+    .rail--left { border-right: var(--gp-stroke-hairline) solid var(--gp-border); }
+    .rail--right { border-left: var(--gp-stroke-hairline) solid var(--gp-border); }
+    .rail-title { color: var(--gp-fg-muted); font-family: var(--gp-font-mono); font-size: var(--gp-body-xs); letter-spacing: var(--gp-tracking-eyebrow); margin: 0 0 var(--gp-space-3); text-transform: uppercase; }
+    .tree { display: grid; gap: var(--gp-space-1); }
+    .tree-item { align-items: center; border-radius: var(--gp-radius-sm); color: var(--gp-fg-muted); display: flex; font-family: var(--gp-font-mono); font-size: var(--gp-body-xs); gap: var(--gp-space-2); min-height: 2rem; padding: 0 var(--gp-space-2); }
+    .tree-item::before { background: var(--gp-paper); border-radius: 50%; content: ""; height: .375rem; width: .375rem; }
+    .tree-item--folder::before { border-radius: 1px; height: .5rem; width: .75rem; }
+    .tree-item--active { background: var(--gp-sulfur-10); color: var(--gp-fg); }
+    .tree-item--active::before { background: var(--gp-accent); }
+    .indent { margin-left: var(--gp-space-4); }
+    .viewer { display: grid; grid-template-rows: auto auto 1fr; min-width: 0; }
+    .file-head { align-items: end; display: flex; gap: var(--gp-space-5); padding: var(--gp-space-6) var(--gp-space-6) var(--gp-space-4); }
+    .file-head h1 { font-size: var(--gp-display-sm); margin: 0; }
+    .file-head p { color: var(--gp-fg-muted); font-family: var(--gp-font-mono); font-size: var(--gp-body-xs); margin: var(--gp-space-1) 0 0; }
+    .file-head .gp-badge { margin-left: auto; }
+    .tabs { border-bottom: var(--gp-stroke-hairline) solid var(--gp-border); display: flex; gap: var(--gp-space-5); padding: 0 var(--gp-space-6); }
+    .tab { border-bottom: var(--gp-stroke-focus) solid transparent; color: var(--gp-fg-muted); font-family: var(--gp-font-mono); font-size: var(--gp-body-xs); padding: var(--gp-space-3) 0; }
+    .tab--active { border-color: var(--gp-accent); color: var(--gp-fg); }
+    .hex { font-family: var(--gp-font-mono); font-size: var(--gp-body-sm); line-height: 2; overflow: auto; padding: var(--gp-space-5) var(--gp-space-6); }
+    .hex-row { display: grid; gap: var(--gp-space-4); grid-template-columns: 5.5rem minmax(25rem, 1fr) 12rem; white-space: pre; }
+    .offset { color: var(--gp-fg-muted); }
+    .bytes { color: var(--gp-fg); letter-spacing: .06em; }
+    .bytes mark { background: var(--gp-sulfur-20); border-radius: 2px; color: var(--gp-accent); padding: .125rem .2rem; }
+    .ascii { color: var(--gp-fg-muted); }
+    .meta { display: grid; gap: var(--gp-space-4); margin: 0; }
+    .meta div { border-bottom: var(--gp-stroke-hairline) solid var(--gp-border); padding-bottom: var(--gp-space-3); }
+    .meta dt { color: var(--gp-fg-muted); font-family: var(--gp-font-mono); font-size: var(--gp-body-xs); }
+    .meta dd { font-family: var(--gp-font-mono); font-size: var(--gp-body-sm); margin: var(--gp-space-1) 0 0; }
+    .signal { border: var(--gp-stroke-hairline) solid var(--gp-sulfur-20); border-radius: var(--gp-radius-md); margin-top: var(--gp-space-5); padding: var(--gp-space-3); }
+    .signal strong { color: var(--gp-accent); display: block; font-family: var(--gp-font-mono); font-size: var(--gp-body-xs); margin-bottom: var(--gp-space-1); text-transform: uppercase; }
+    .signal p { color: var(--gp-fg-muted); font-size: var(--gp-body-xs); margin: 0; }
+    @media (max-width: 68rem) { .workspace { grid-template-columns: 13rem minmax(0, 1fr); } .rail--right { display: none; } }
+    @media (max-width: 46rem) { .command { display: none; } .topbar, .pathbar { padding-left: var(--gp-space-4); padding-right: var(--gp-space-4); } .workspace { grid-template-columns: 1fr; } .rail--left { display: none; } .file-head, .hex { padding-left: var(--gp-space-4); padding-right: var(--gp-space-4); } .tabs { gap: var(--gp-space-4); overflow: auto; padding-left: var(--gp-space-4); padding-right: var(--gp-space-4); } .hex-row { grid-template-columns: 5rem minmax(24rem, 1fr); } .ascii { display: none; } }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand"><img src="../../logos/svg/glitchpad-mark-reduced-color.svg" alt=""><strong>Glitchpad</strong></div>
+      <div class="command">Open file or run command <kbd>Ctrl K</kbd></div>
+      <button class="gp-button gp-button--secondary gp-button--sm" type="button">Open file</button>
+    </header>
+    <nav class="pathbar" aria-label="Current file path">A:\ samples \ headers \ <span>archive-header.bin</span></nav>
+    <div class="workspace">
+      <aside class="rail rail--left" aria-label="File tree">
+        <h2 class="rail-title">Workspace</h2>
+        <div class="tree">
+          <div class="tree-item tree-item--folder">samples</div>
+          <div class="tree-item tree-item--folder indent">headers</div>
+          <div class="tree-item indent">header.dat</div>
+          <div class="tree-item tree-item--active indent">archive-header.bin</div>
+          <div class="tree-item indent">strings.txt</div>
+          <div class="tree-item tree-item--folder">reference</div>
+          <div class="tree-item">notes.md</div>
+        </div>
+      </aside>
+      <section class="viewer" aria-label="File contents">
+        <header class="file-head">
+          <div><h1>archive-header.bin</h1><p>64.0 KB · modified 14:32:08</p></div>
+          <span class="gp-badge gp-badge--accent">binary</span>
+        </header>
+        <nav class="tabs" aria-label="Representations"><span class="tab">Text</span><span class="tab tab--active">Hex</span><span class="tab">Metadata</span><span class="tab">Strings</span></nav>
+        <div class="hex" role="table" aria-label="Hexadecimal content">
+          <div class="hex-row" role="row"><span class="offset">00000000</span><span class="bytes"><mark>47 50 44 31</mark>  10 00 00 00  20 00 00 00  7C 11 A0 08</span><span class="ascii">GPD1.... ...|...</span></div>
+          <div class="hex-row" role="row"><span class="offset">00000010</span><span class="bytes">0A 00 04 00  66 72 61 67  6D 65 6E 74  2D 30 31 00</span><span class="ascii">....fragment-01.</span></div>
+          <div class="hex-row" role="row"><span class="offset">00000020</span><span class="bytes">FF D8 FF E0  00 10 4A 46  49 46 00 01  01 00 00 01</span><span class="ascii">......JFIF......</span></div>
+          <div class="hex-row" role="row"><span class="offset">00000030</span><span class="bytes">00 01 00 00  FF DB 00 43  00 06 04 05  06 05 04 06</span><span class="ascii">.......C........</span></div>
+          <div class="hex-row" role="row"><span class="offset">00000040</span><span class="bytes">06 05 06 07  07 06 08 0A  10 0A 0A 09  09 0A 14 0E</span><span class="ascii">................</span></div>
+          <div class="hex-row" role="row"><span class="offset">00000050</span><span class="bytes">0F 0C 10 17  14 18 18 17  14 16 16 1A  1D 25 1F 1A</span><span class="ascii">.............%..</span></div>
+          <div class="hex-row" role="row"><span class="offset">00000060</span><span class="bytes">1B 23 1C 16  16 20 2C 20  23 26 27 29  2A 29 19 1F</span><span class="ascii">.#... , #&')*)..</span></div>
+          <div class="hex-row" role="row"><span class="offset">00000070</span><span class="bytes">2D 30 2D 28  30 25 28 29  28 FF C0 00  11 08 02 D0</span><span class="ascii">-0-(0%()(.......</span></div>
+          <div class="hex-row" role="row"><span class="offset">00000080</span><span class="bytes">02 D0 03 01  22 00 02 11  01 03 11 01  FF C4 00 1F</span><span class="ascii">...."...........</span></div>
+          <div class="hex-row" role="row"><span class="offset">00000090</span><span class="bytes">00 00 01 05  01 01 01 01  01 01 00 00  00 00 00 00</span><span class="ascii">................</span></div>
+        </div>
+      </section>
+      <aside class="rail rail--right" aria-label="File metadata">
+        <h2 class="rail-title">Inspector</h2>
+        <dl class="meta"><div><dt>Format</dt><dd>Unknown binary</dd></div><div><dt>Size</dt><dd>65,536 bytes</dd></div><div><dt>Entropy</dt><dd>7.81 bits</dd></div><div><dt>Byte order</dt><dd>Little endian</dd></div><div><dt>Selection</dt><dd>0x00–0x03</dd></div></dl>
+        <div class="signal"><strong>Signature found</strong><p>JPEG marker begins at offset 0x20. The surrounding container remains unidentified.</p></div>
+      </aside>
+    </div>
+  </main>
+</body>
+</html>

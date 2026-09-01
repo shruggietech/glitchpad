@@ -1,0 +1,50 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "meta": {
+    "name": "Glitchpad",
+    "version": "1.0.0",
+    "parent": "ShruggieTech",
+    "mode": "dark-first"
+  },
+  "color": {
+    "$type": "color",
+    "identity": { "$value": "#FFD900" },
+    "identityDeep": { "$value": "#CBAD00" },
+    "identityAccessible": { "$value": "#867100" },
+    "paper": { "$value": "#A8A39D" },
+    "background": { "$value": "#0B0C0D" },
+    "surface": { "$value": "#121416" },
+    "surfaceRaised": { "$value": "#151719" },
+    "border": { "$value": "#262626" },
+    "text": { "$value": "#FFFFFF" },
+    "textMuted": { "$value": "#9A9A9A" },
+    "emphasis": { "$value": "#FF5300" },
+    "fault": { "$value": "#E9505F" }
+  },
+  "fontFamily": {
+    "$type": "fontFamily",
+    "display": { "$value": "Space Grotesk" },
+    "body": { "$value": "Geist" },
+    "mono": { "$value": "Geist Mono" }
+  },
+  "dimension": {
+    "$type": "dimension",
+    "space1": { "$value": { "value": 4, "unit": "px" } },
+    "space2": { "$value": { "value": 8, "unit": "px" } },
+    "space3": { "$value": { "value": 12, "unit": "px" } },
+    "space4": { "$value": { "value": 16, "unit": "px" } },
+    "space5": { "$value": { "value": 24, "unit": "px" } },
+    "space6": { "$value": { "value": 32, "unit": "px" } },
+    "radiusSmall": { "$value": { "value": 6, "unit": "px" } },
+    "radiusControl": { "$value": { "value": 8, "unit": "px" } },
+    "radiusPanel": { "$value": { "value": 12, "unit": "px" } }
+  },
+  "logo": {
+    "canvas": { "$value": "800 × 1000" },
+    "paper": { "$value": "720 × 900" },
+    "gThickness": { "$value": 70 },
+    "gInset": { "$value": 70 },
+    "clearSpace": { "$value": 70 },
+    "reducedBelow": { "$value": 32 }
+  }
+}

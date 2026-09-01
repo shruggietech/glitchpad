@@ -8,5 +8,12 @@ repository.workspace = true
 description = "Platform-independent domain core for Glitchpad."
 publish = false
 
+[dependencies]
+schemars.workspace = true
+serde.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
+
 [lints]
 workspace = true

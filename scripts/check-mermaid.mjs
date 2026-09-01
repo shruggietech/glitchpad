@@ -55,9 +55,10 @@ async function defaultLaunchOptions(repositoryRoot) {
 
 export async function validateMermaid({
   repositoryRoot = defaultRepositoryRoot,
-  launchBrowser = (options) => puppeteer.launch(options),
+  launchBrowser,
   renderDiagram = renderMermaid,
   launchOptions,
+  loadLaunchOptions = defaultLaunchOptions,
 } = {}) {
   const files = await collectMarkdownFiles(repositoryRoot, {
     excludedDirectories: mermaidExcludedDirectories,
@@ -80,9 +81,11 @@ export async function validateMermaid({
   let browser;
   try {
     try {
-      browser = await launchBrowser(
-        launchOptions ?? (await defaultLaunchOptions(repositoryRoot)),
-      );
+      const launch = launchBrowser ?? ((options) => puppeteer.launch(options));
+      const options =
+        launchOptions ??
+        (launchBrowser ? {} : await loadLaunchOptions(repositoryRoot));
+      browser = await launch(options);
     } catch (error) {
       const first = diagrams[0];
       failures.push(

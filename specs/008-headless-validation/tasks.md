@@ -106,7 +106,7 @@
 - [x] T022 Format all changed JavaScript, JSON, and Markdown and verify UTF-8 without BOM and no mojibake
 - [x] T023 Run `cargo xtask check` to completion on Windows; record the passing topology evidence and leave desktop-window observation for explicit owner confirmation in the pull request
 - [x] T024 Run Spec-Kit cross-artifact analysis and converge `spec.md`, `plan.md`, `research.md`, `data-model.md`, `contracts/validation-cli.md`, `quickstart.md`, and `tasks.md`
-- [X] T025 Commit the coherent S008 change, push `codex/008-headless-validation`, and open a pull request that closes GitHub Issue #101
+- [x] T025 Commit the coherent S008 change, push `codex/008-headless-validation`, and open a pull request that closes GitHub Issue #101
 - [ ] T026 Wait for every required hosted check, inspect automated review comments, address warranted findings, respond under each reviewed comment, and resolve every responded thread
 
 ---

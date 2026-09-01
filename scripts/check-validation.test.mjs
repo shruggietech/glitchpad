@@ -107,6 +107,9 @@ test('Mermaid validation reuses one browser for every diagram', async (t) => {
       launches += 1;
       return browser;
     },
+    loadLaunchOptions: async () => {
+      throw new Error('injected launchers must not load production options');
+    },
     renderDiagram: async (actualBrowser, definition, format, options) => {
       assert.equal(actualBrowser, browser);
       assert.equal(format, 'svg');

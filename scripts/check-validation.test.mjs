@@ -1,13 +1,16 @@
 import assert from 'node:assert/strict';
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { dirname, join, relative, sep } from 'node:path';
+import { dirname, join, relative, resolve, sep } from 'node:path';
 import test from 'node:test';
+import { fileURLToPath } from 'node:url';
 
 import { assertValidatorTopology } from './check-config.mjs';
 import { validateLinks } from './check-links.mjs';
 import { extractMermaidBlocks, validateMermaid } from './check-mermaid.mjs';
 import { collectMarkdownFiles } from './validation-files.mjs';
+
+const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 async function temporaryRepository(t) {
   const root = await mkdtemp(join(tmpdir(), 'glitchpad-validation-test-'));
@@ -268,6 +271,28 @@ test('Validator topology accepts direct Node scripts and one browser launch', ()
         mermaid:
           "import puppeteer from 'puppeteer';\nawait puppeteer.launch({});\n",
       },
+    }),
+  );
+});
+
+test('Focused validation enforces the production process topology', async () => {
+  const packageJson = JSON.parse(
+    await readFile(join(repositoryRoot, 'package.json'), 'utf8'),
+  );
+  const sources = {
+    links: await readFile(
+      join(repositoryRoot, 'scripts', 'check-links.mjs'),
+      'utf8',
+    ),
+    mermaid: await readFile(
+      join(repositoryRoot, 'scripts', 'check-mermaid.mjs'),
+      'utf8',
+    ),
+  };
+  assert.doesNotThrow(() =>
+    assertValidatorTopology({
+      packageScripts: packageJson.scripts,
+      sources,
     }),
   );
 });

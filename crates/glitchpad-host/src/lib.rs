@@ -2,10 +2,38 @@
 
 use tauri::Manager;
 
+pub mod recovery;
 #[cfg(not(mobile))]
 pub mod source;
 
 pub mod android_source;
+
+struct RecoveryHostState {
+    store: Result<recovery::RecoveryStore, glitchpad_core::contracts::CoreError>,
+}
+
+impl RecoveryHostState {
+    fn available(store: recovery::RecoveryStore) -> Self {
+        Self { store: Ok(store) }
+    }
+
+    fn unavailable(error: glitchpad_core::contracts::CoreError) -> Self {
+        Self { store: Err(error) }
+    }
+
+    fn store(&self) -> Result<&recovery::RecoveryStore, glitchpad_core::contracts::CoreError> {
+        self.store.as_ref().map_err(Clone::clone)
+    }
+}
+
+fn recovery_unavailable() -> glitchpad_core::contracts::CoreError {
+    glitchpad_core::contracts::CoreError::new(
+        glitchpad_core::contracts::CoreErrorCategory::Unavailable,
+        "Recovery storage is unavailable. Dirty documents remain usable.",
+        true,
+        true,
+    )
+}
 
 /// Starts the Glitchpad host shell.
 ///
@@ -21,6 +49,10 @@ pub fn run() {
     let builder = builder.plugin(glitchpad_android_source::init());
     #[cfg(not(mobile))]
     let builder = builder.invoke_handler(tauri::generate_handler![
+        inventory_recovery,
+        persist_recovery,
+        load_recovery,
+        remove_recovery,
         source::read_source_range,
         source::open_source_stream,
         source::read_source_stream,
@@ -33,6 +65,10 @@ pub fn run() {
     ]);
     #[cfg(target_os = "android")]
     let builder = builder.invoke_handler(tauri::generate_handler![
+        inventory_recovery,
+        persist_recovery,
+        load_recovery,
+        remove_recovery,
         drain_android_deliveries,
         open_android_document,
         read_android_range,
@@ -48,6 +84,17 @@ pub fn run() {
     builder
         .setup(move |app| {
             app.manage(product);
+            let recovery_quota = if cfg!(target_os = "android") {
+                recovery::ANDROID_RECOVERY_QUOTA_BYTES
+            } else {
+                recovery::DESKTOP_RECOVERY_QUOTA_BYTES
+            };
+            let recovery_state = match app.path().app_local_data_dir() {
+                Ok(root) => recovery::RecoveryStore::open(root.join("recovery-v1"), recovery_quota)
+                    .map_or_else(RecoveryHostState::unavailable, RecoveryHostState::available),
+                Err(_) => RecoveryHostState::unavailable(recovery_unavailable()),
+            };
+            app.manage(recovery_state);
             #[cfg(not(mobile))]
             app.manage(source::DesktopSourceHost::new());
             #[cfg(target_os = "android")]
@@ -61,6 +108,87 @@ pub fn run() {
         })
         .run(tauri::generate_context!())
         .expect("Glitchpad host failed while processing a runtime event");
+}
+
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
+fn inventory_recovery(
+    state: tauri::State<'_, RecoveryHostState>,
+) -> Result<
+    (
+        Vec<glitchpad_core::recovery::RecoveryInventoryEntry>,
+        u64,
+        u32,
+    ),
+    glitchpad_core::contracts::CoreError,
+> {
+    let inventory = state.store()?.inventory()?;
+    Ok((
+        inventory.entries,
+        inventory.committed_bytes,
+        inventory.removed_invalid_records,
+    ))
+}
+
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
+fn persist_recovery(
+    state: tauri::State<'_, RecoveryHostState>,
+    record: glitchpad_core::recovery::RecoveryRecordDraft,
+) -> Result<glitchpad_core::recovery::RecoveryInventoryEntry, glitchpad_core::contracts::CoreError>
+{
+    let record = record.into_record().map_err(|_| {
+        glitchpad_core::contracts::CoreError::new(
+            glitchpad_core::contracts::CoreErrorCategory::InvalidInput,
+            "The recovery snapshot did not satisfy the bounded record contract",
+            false,
+            true,
+        )
+    })?;
+    state.store()?.persist(&record)
+}
+
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
+fn load_recovery(
+    state: tauri::State<'_, RecoveryHostState>,
+    record_id: String,
+) -> Result<glitchpad_core::recovery::RecoveryRecord, glitchpad_core::contracts::CoreError> {
+    state.store()?.load(&record_id)
+}
+
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
+fn remove_recovery(
+    state: tauri::State<'_, RecoveryHostState>,
+    record_id: String,
+) -> Result<bool, glitchpad_core::contracts::CoreError> {
+    Ok(matches!(
+        state.store()?.remove(&record_id)?,
+        recovery::RecoveryRemoval::Removed
+    ))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn unavailable_recovery_storage_degrades_to_a_safe_command_error() {
+        let state = RecoveryHostState::unavailable(recovery_unavailable());
+        let Err(error) = state.store() else {
+            panic!("unavailable recovery must not expose a store");
+        };
+
+        assert_eq!(
+            error.category,
+            glitchpad_core::contracts::CoreErrorCategory::Unavailable
+        );
+        assert!(error.retryable);
+        assert!(error.recoverable);
+        assert!(error.context.is_empty());
+        assert!(!error.summary.contains(['/', '\\']));
+    }
 }
 
 #[cfg(target_os = "android")]

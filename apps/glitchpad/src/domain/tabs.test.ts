@@ -75,10 +75,136 @@ describe('tab state', () => {
       'session-4',
     ]);
     state = tabReducer(state, { type: 'close', id: 'session-2' });
+    expect(state.pendingTransition?.target_session_id).toBe('session-2');
+    expect(state.sessions.some(({ id }) => id === 'session-2')).toBe(true);
+    state = tabReducer(state, {
+      type: 'resolve_transition',
+      decision: 'discard',
+    });
     expect(state.activeId).toBe('session-4');
     expect(state.sessions.find(({ id }) => id === 'session-4')?.lifecycle).toBe(
       'active',
     );
+  });
+
+  it('guards dirty background and overflow closes without changing focus or integrity', () => {
+    let state = createTabState(sessions(8));
+    state = tabReducer(state, { type: 'activate', id: 'session-8' });
+    const before = state.sessions.find(({ id }) => id === 'session-2');
+    expect(projectTabs(state).overflow.map(({ id }) => id)).toContain(
+      'session-2',
+    );
+
+    state = tabReducer(state, { type: 'close', id: 'session-2' });
+    expect(state.activeId).toBe('session-8');
+    expect(state.pendingTransition?.target_session_id).toBe('session-2');
+    expect(state.sessions.find(({ id }) => id === 'session-2')).toMatchObject({
+      dirty: true,
+      lifecycle: before?.lifecycle,
+    });
+
+    state = tabReducer(state, {
+      type: 'resolve_transition',
+      decision: 'cancel',
+    });
+    expect(state.pendingTransition).toBeNull();
+    expect(state.sessions.find(({ id }) => id === 'session-2')?.dirty).toBe(
+      true,
+    );
+  });
+
+  it('retains the session while save intent awaits a real durable receipt', () => {
+    const writable = sessions(2).map((item) =>
+      item.id === 'session-2'
+        ? {
+            ...item,
+            source: {
+              ...item.source,
+              capabilities: {
+                ...item.source.capabilities,
+                write: true,
+                revalidate: true,
+              },
+            },
+          }
+        : item,
+    );
+    let state = createTabState(writable);
+    state = tabReducer(state, { type: 'close', id: 'session-2' });
+    state = tabReducer(state, {
+      type: 'resolve_transition',
+      decision: 'save',
+    });
+    expect(state.sessions.map(({ id }) => id)).toContain('session-2');
+    expect(state.pendingTransition).toMatchObject({
+      status: 'saving',
+      save_intent: 'save',
+    });
+    expect(state.announcement).toMatch(/durable save receipt/i);
+  });
+
+  it('does not erase conflict integrity when activating a session', () => {
+    const conflicted = sessions(2).map((item) =>
+      item.id === 'session-2'
+        ? { ...item, integrity: 'conflicted' as const }
+        : item,
+    );
+    const state = tabReducer(createTabState(conflicted), {
+      type: 'activate',
+      id: 'session-2',
+    });
+    expect(state.sessions.find(({ id }) => id === 'session-2')).toMatchObject({
+      lifecycle: 'active',
+      focus: 'active',
+      integrity: 'conflicted',
+      revision: 1,
+    });
+  });
+
+  it('rejects a destructive decision when edits changed after the prompt opened', () => {
+    let state = createTabState(sessions(2));
+    state = tabReducer(state, { type: 'close', id: 'session-2' });
+    state = {
+      ...state,
+      sessions: state.sessions.map((item) =>
+        item.id === 'session-2'
+          ? { ...item, revision: item.revision + 1, content: 'newer edits' }
+          : item,
+      ),
+    };
+    state = tabReducer(state, {
+      type: 'resolve_transition',
+      decision: 'discard',
+    });
+    expect(state.sessions.find(({ id }) => id === 'session-2')).toMatchObject({
+      revision: 2,
+      content: 'newer edits',
+      dirty: true,
+    });
+    expect(state.pendingTransition?.requested_session_revision).toBe(2);
+    expect(state.announcement).toMatch(/changed while the decision was open/i);
+  });
+
+  it('reload resolution keeps the session and clears only explicitly discarded edits', () => {
+    let state = createTabState(sessions(2));
+    state = tabReducer(state, {
+      type: 'request_transition',
+      id: 'session-2',
+      kind: 'reload',
+    });
+    state = tabReducer(state, {
+      type: 'resolve_transition',
+      decision: 'discard',
+    });
+
+    expect(state.sessions).toHaveLength(2);
+    expect(state.sessions.find(({ id }) => id === 'session-2')).toMatchObject({
+      dirty: false,
+      integrity: 'clean',
+      content: 'Document 2',
+    });
+    expect(state.pendingTransition).toBeNull();
+    expect(state.announcement).toMatch(/reload authorized/i);
   });
 
   it('keeps dirty background models and every overflowed session reachable', () => {

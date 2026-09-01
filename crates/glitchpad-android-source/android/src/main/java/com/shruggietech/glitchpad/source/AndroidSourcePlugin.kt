@@ -263,6 +263,11 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
           } ?: throw IllegalStateException("provider_unavailable")
           if (!observed.contentEquals(bytes)) throw IllegalStateException("write_verification_failed")
           acquire(candidate).getOrThrow() to bytes.size
+        }.onFailure {
+          // ACTION_CREATE_DOCUMENT may already have created a destination. Remove an
+          // unverified partial write when the provider supports deletion, while
+          // preserving the caller's staged bytes for a later retry or Save As.
+          runCatching { DocumentsContract.deleteDocument(activity.contentResolver, candidate.uri) }
         }
       }.onSuccess { (delivery, count) ->
         invoke.resolve(JSObject().put("delivery", delivery).put("byteCount", count))

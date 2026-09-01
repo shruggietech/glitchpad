@@ -105,6 +105,7 @@ export type DurabilityGuarantee =
   | 'recoverable_non_atomic';
 
 export interface SaveReceipt {
+  operation_id: string;
   source_id: SourceId;
   accepted_session_revision: number;
   previous_external_revision: ExternalRevision;
@@ -185,11 +186,72 @@ export type SessionLifecycle =
   | 'closed'
   | 'failed';
 
+export type SessionFocus = 'active' | 'background';
+export type SessionIntegrity =
+  | 'clean'
+  | 'dirty'
+  | 'saving'
+  | 'conflicted'
+  | 'recovery_only';
+export type RecoveryCoverage = 'none' | 'current' | 'stale' | 'unavailable';
+export type DestructiveTransitionKind = 'close' | 'reload' | 'exit';
+export type DestructiveTransitionStatus =
+  | 'awaiting_decision'
+  | 'saving'
+  | 'cancelled'
+  | 'resolved';
+export type SaveMode = 'ordinary' | 'save_as' | 'confirmed_overwrite';
+
+export interface SaveOperation {
+  operation_id: string;
+  source_id: SourceId;
+  session_revision: number;
+  expected_external_revision: ExternalRevision;
+  payload_bytes: number;
+  payload_digest: string;
+  mode: SaveMode;
+  durability: DurabilityGuarantee;
+}
+
+export interface DestructiveTransition {
+  kind: DestructiveTransitionKind;
+  target_session_id: string;
+  requested_session_revision: number;
+  status: DestructiveTransitionStatus;
+  save_intent: 'save' | 'save_as' | null;
+}
+
+export type RecoveryInventoryStatus =
+  | 'available'
+  | 'expired'
+  | 'corrupted'
+  | 'unsupported'
+  | 'coverage_at_risk';
+
+export interface RecoveryInventoryEntry {
+  record_id: string;
+  display_hint: string;
+  updated_unix_ms: number;
+  expires_unix_ms: number;
+  committed_bytes: number;
+  status: RecoveryInventoryStatus;
+}
+
 export interface ShellSession {
   id: string;
   source: SourceDescriptor;
   renderer: RendererDescriptor;
   lifecycle: SessionLifecycle;
+  /** Compatibility projection for the existing shell. Safety policy uses focus. */
+  focus?: SessionFocus;
+  /** Compatibility projection for the existing shell. Safety policy uses integrity. */
+  integrity?: SessionIntegrity;
+  source_state?: SourceState;
+  pending_save?: SaveOperation | null;
+  recovery_coverage?: RecoveryCoverage;
+  recovery_warning_code?: string | null;
+  external_revision?: ExternalRevision | null;
+  saved_revision?: number;
   dirty: boolean;
   revision: number;
   content: string;

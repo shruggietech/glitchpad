@@ -2,6 +2,11 @@ import { useEffect, useReducer, useState } from 'react';
 
 import { CommandBar } from './components/CommandBar';
 import { DocumentSurface } from './components/DocumentSurface';
+import {
+  RecoveryCandidateResolution,
+  RecoveryResolution,
+  type RecoveryCandidateDecision,
+} from './components/RecoveryResolution';
 import { TabStrip } from './components/TabStrip';
 import {
   executeCommand,
@@ -13,7 +18,18 @@ import {
   noSourceCapabilities,
   type ShellSession,
 } from './domain/contracts';
+import {
+  canSaveInPlace,
+  integrityOf,
+  projectRecoveredSession,
+} from './domain/recovery';
+import {
+  nativeRecoveryAvailable,
+  nativeRecoveryGateway,
+  type RecoveryGateway,
+} from './domain/recovery-gateway';
 import { createTabState, tabReducer } from './domain/tabs';
+import { useRecovery } from './domain/use-recovery';
 
 const makeSession = (
   id: string,
@@ -41,6 +57,9 @@ const makeSession = (
       read: true,
       metadata: options.metadata ?? true,
       write: options.writable ?? false,
+      observe_revision: options.writable ?? false,
+      revalidate: options.writable ?? false,
+      replace_atomically: options.writable ?? false,
     },
   },
   renderer: {
@@ -112,14 +131,33 @@ export const initialSessions: ShellSession[] = [
 
 interface AppProps {
   sessions?: ShellSession[];
+  recoveryGateway?: RecoveryGateway | null;
 }
 
-export function App({ sessions = initialSessions }: AppProps) {
+export function App({
+  sessions = initialSessions,
+  recoveryGateway,
+}: AppProps) {
   const [state, dispatch] = useReducer(tabReducer, sessions, createTabState);
   const [commandStatus, setCommandStatus] = useState('');
+  const selectedRecoveryGateway =
+    recoveryGateway === undefined
+      ? nativeRecoveryAvailable()
+        ? nativeRecoveryGateway
+        : null
+      : recoveryGateway;
+  const recovery = useRecovery(state.sessions, selectedRecoveryGateway);
+  const recoveryCandidate = recovery.candidates[0] ?? null;
   const activeSession =
     state.sessions.find(({ id }) => id === state.activeId) ?? null;
-  const commands = commandSetFor(activeSession);
+  const commands = commandSetFor(activeSession).filter(
+    ({ id }) => id !== 'save' || (activeSession && canSaveInPlace(activeSession)),
+  );
+  const resolutionSession = state.pendingTransition
+    ? (state.sessions.find(
+        ({ id }) => id === state.pendingTransition?.target_session_id,
+      ) ?? null)
+    : null;
 
   useEffect(() => setCommandStatus(''), [state.activeId]);
 
@@ -127,9 +165,44 @@ export function App({ sessions = initialSessions }: AppProps) {
     const result = executeCommand(command, activeSession);
     setCommandStatus(
       result.ok
-        ? result.message
+        ? command.id === 'save' && activeSession
+          ? `Save requested for ${activeSession.source.display_name}. Waiting for a durable save receipt.`
+          : result.message
         : 'Command cancelled because the active document changed',
     );
+  };
+
+  const resolveRecoveryCandidate = (
+    decision: RecoveryCandidateDecision,
+  ) => {
+    if (!recoveryCandidate) return;
+    if (decision === 'cancel') {
+      recovery.defer(recoveryCandidate);
+      return;
+    }
+    if (decision === 'refuse') {
+      void recovery.refuse(recoveryCandidate).catch(() => {
+        setCommandStatus(
+          'Recovery refusal could not be confirmed. The record was preserved.',
+        );
+      });
+      return;
+    }
+    void recovery
+      .accept(recoveryCandidate)
+      .then((record) => {
+        dispatch({
+          type: 'open',
+          session: projectRecoveredSession({
+            inventory: recoveryCandidate,
+            content: record.content,
+            snapshot_session_revision: record.snapshot_session_revision,
+          }),
+        });
+      })
+      .catch(() => {
+        setCommandStatus('Recovery could not be opened. The record was preserved.');
+      });
   };
 
   const handleShellKey = (event: React.KeyboardEvent<HTMLElement>) => {
@@ -147,7 +220,36 @@ export function App({ sessions = initialSessions }: AppProps) {
     <main className="app-shell" onKeyDown={handleShellKey}>
       <TabStrip state={state} dispatch={dispatch} />
       <CommandBar commands={commands} onInvoke={invoke} />
+      {activeSession &&
+        (integrityOf(activeSession) === 'conflicted' ||
+          integrityOf(activeSession) === 'recovery_only') && (
+          <aside className="integrity-banner" role="status" aria-live="polite">
+            {integrityOf(activeSession) === 'recovery_only'
+              ? 'Recovered local edits have no confirmed source authority. Save As is available.'
+              : 'The source changed outside Glitchpad. Local edits remain available; in-place save is blocked.'}
+          </aside>
+        )}
+      {recovery.warning && (
+        <aside className="integrity-banner" role="status" aria-live="assertive">
+          {recovery.warning}
+        </aside>
+      )}
       <DocumentSurface session={activeSession} />
+      {!recoveryCandidate && state.pendingTransition && resolutionSession && (
+        <RecoveryResolution
+          session={resolutionSession}
+          transition={state.pendingTransition}
+          onDecision={(decision) =>
+            dispatch({ type: 'resolve_transition', decision })
+          }
+        />
+      )}
+      {recoveryCandidate && (
+        <RecoveryCandidateResolution
+          entry={recoveryCandidate}
+          onDecision={resolveRecoveryCandidate}
+        />
+      )}
       <p
         className="visually-hidden"
         role="status"

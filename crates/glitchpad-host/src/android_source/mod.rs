@@ -631,6 +631,7 @@ impl AndroidSourceHost {
         }
         let new_source = self.accept_delivery(&response.delivery)?;
         Ok(AndroidSaveAsReceipt {
+            operation_id: request.operation_id,
             previous_source_id: request.source_id,
             new_source,
             byte_count: response.byte_count,

@@ -6,7 +6,10 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use glitchpad_core::contracts::{CoreErrorCategory, IdentityStrength};
-use glitchpad_core::source::{RevalidationStatus, SaveRequest, SourceState};
+use glitchpad_core::source::{
+    DurabilityGuarantee, OverwriteAuthorization, RevalidationStatus, SaveOperationId, SaveRequest,
+    SourceState,
+};
 use glitchpad_lib::source::{DesktopDelivery, DesktopSourceHost};
 use uuid::Uuid;
 
@@ -107,11 +110,13 @@ fn one_thousand_stale_save_attempts_preserve_the_external_revision() {
     for _ in 0..1_000 {
         assert_eq!(
             host.save(SaveRequest {
+                operation_id: glitchpad_core::source::SaveOperationId(1),
                 source_id: summary.source_id.clone(),
                 expected_external_revision: summary.external_revision.clone(),
                 expected_session_revision: 1,
                 bytes: b"local revision".to_vec(),
                 durability_acknowledgement: None,
+                overwrite_authorization: None,
             })
             .expect_err("stale save must fail")
             .category,
@@ -143,17 +148,72 @@ fn matched_revalidation_adopts_the_revision_for_subsequent_save() {
     assert_eq!(matched.status, RevalidationStatus::Match);
     let receipt = host
         .save(SaveRequest {
+            operation_id: glitchpad_core::source::SaveOperationId(2),
             source_id: summary.source_id,
             expected_external_revision: accepted,
             expected_session_revision: 1,
             bytes: b"local revision after acceptance".to_vec(),
             durability_acknowledgement: None,
+            overwrite_authorization: None,
         })
         .expect("save after accepting current revision");
     assert_eq!(receipt.previous_external_revision, matched.current.unwrap());
     assert_eq!(
         fs::read(source.path()).expect("read saved source"),
         b"local revision after acceptance"
+    );
+}
+
+#[test]
+fn reviewed_external_revision_requires_an_exact_second_overwrite_confirmation() {
+    let source = TemporarySource::new(b"original");
+    let host = DesktopSourceHost::new();
+    let summary = host
+        .acquire(DesktopDelivery::dialog(source.path()))
+        .expect("acquire source");
+    fs::write(source.path(), b"external revision").expect("mutate source");
+    let reviewed = host
+        .revalidate(&summary.source_id, &summary.external_revision)
+        .expect("review external revision")
+        .current
+        .expect("current revision");
+    let guarantee = if cfg!(unix) {
+        DurabilityGuarantee::AtomicFileAndDirectory
+    } else {
+        DurabilityGuarantee::AtomicFile
+    };
+    let mut request = SaveRequest {
+        operation_id: SaveOperationId(3),
+        source_id: summary.source_id.clone(),
+        expected_external_revision: reviewed.clone(),
+        expected_session_revision: 1,
+        bytes: b"confirmed local revision".to_vec(),
+        durability_acknowledgement: None,
+        overwrite_authorization: None,
+    };
+
+    assert_eq!(
+        host.save(request.clone())
+            .expect_err("overwrite requires confirmation")
+            .category,
+        CoreErrorCategory::AcknowledgementRequired
+    );
+    assert_eq!(
+        fs::read(source.path()).expect("external revision remains"),
+        b"external revision"
+    );
+
+    request.overwrite_authorization = Some(OverwriteAuthorization {
+        source_id: summary.source_id,
+        reviewed_external_revision: reviewed.clone(),
+        session_revision: 1,
+        durability: guarantee,
+    });
+    let receipt = host.save(request).expect("confirmed overwrite");
+    assert_eq!(receipt.previous_external_revision, reviewed);
+    assert_eq!(
+        fs::read(source.path()).expect("read confirmed revision"),
+        b"confirmed local revision"
     );
 }
 

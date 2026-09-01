@@ -9,7 +9,10 @@ use crate::{
         SourceDescriptor, compare_identity,
     },
     detection::{DetectionOutcome, DetectionResult},
-    source::{SaveReceipt, SourceEvent, SourceState},
+    source::{
+        DurabilityGuarantee, ExternalRevision, SaveOperationId, SaveReceipt, SourceEvent, SourceId,
+        SourceState,
+    },
 };
 
 /// Stable session identifier within one registry lifetime.
@@ -30,6 +33,66 @@ pub enum SessionLifecycle {
     Closing,
     Closed,
     Failed,
+}
+
+/// Edit and source integrity, independent from active/background focus.
+#[derive(Clone, Copy, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SessionIntegrity {
+    Clean,
+    Dirty,
+    Saving,
+    Conflicted,
+    RecoveryOnly,
+}
+
+/// Recovery coverage for the current editable revision.
+#[derive(Clone, Copy, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RecoveryCoverage {
+    None,
+    Current,
+    Stale,
+    Unavailable,
+}
+
+/// Destructive action waiting for explicit dirty-state resolution.
+#[derive(Clone, Copy, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DestructiveTransition {
+    Close,
+    Reload,
+    Exit,
+}
+
+/// Explicit user decision for one guarded destructive transition.
+#[derive(Clone, Copy, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TransitionDecision {
+    Save,
+    SaveAs,
+    Discard,
+    Cancel,
+}
+
+/// Portable result of applying a current transition decision.
+#[derive(Clone, Copy, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TransitionResolution {
+    AwaitingSave,
+    Discarded,
+    Cancelled,
+}
+
+/// One exact in-flight save that may clear dirty state.
+#[derive(Clone, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
+pub struct PendingSave {
+    pub operation_id: SaveOperationId,
+    pub source_id: SourceId,
+    pub session_revision: u64,
+    pub expected_external_revision: ExternalRevision,
+    pub payload_bytes: u64,
+    pub durability: DurabilityGuarantee,
 }
 
 /// Returns whether a lifecycle transition is part of the documented state machine.
@@ -83,6 +146,13 @@ pub struct DocumentSession {
     pub lifecycle: SessionLifecycle,
     pub source_state: SourceState,
     pub dirty: bool,
+    pub integrity: SessionIntegrity,
+    pub source_id: Option<SourceId>,
+    pub external_revision: Option<ExternalRevision>,
+    pub saved_revision: u64,
+    pub pending_save: Option<PendingSave>,
+    pub pending_transition: Option<DestructiveTransition>,
+    pub recovery_coverage: RecoveryCoverage,
     pub navigation: NavigationProjection,
     pub revision: u64,
     pub error: Option<CoreError>,
@@ -101,6 +171,7 @@ pub struct SessionRegistry {
     sessions: Vec<DocumentSession>,
     active: Option<SessionId>,
     next_id: u64,
+    next_save_operation_id: u64,
 }
 
 impl SessionRegistry {
@@ -110,6 +181,7 @@ impl SessionRegistry {
             sessions: Vec::new(),
             active: None,
             next_id: 1,
+            next_save_operation_id: 1,
         }
     }
 
@@ -183,6 +255,13 @@ impl SessionRegistry {
             },
             source_state: SourceState::Available,
             dirty: false,
+            integrity: SessionIntegrity::Clean,
+            source_id: None,
+            external_revision: None,
+            saved_revision: 1,
+            pending_save: None,
+            pending_transition: None,
+            recovery_coverage: RecoveryCoverage::None,
             navigation: NavigationProjection::default(),
             revision: 1,
             error,
@@ -225,7 +304,6 @@ impl SessionRegistry {
         ) {
             self.sessions[target].lifecycle = SessionLifecycle::Active;
         }
-        self.sessions[target].revision += 1;
         self.active = Some(id);
         Ok(())
     }
@@ -237,6 +315,131 @@ impl SessionRegistry {
     /// Returns not-found when the session does not exist.
     pub fn close(&mut self, id: SessionId) -> Result<DocumentSession, CoreError> {
         let index = self.position(id)?;
+        if self.sessions[index].dirty {
+            self.sessions[index].pending_transition = Some(DestructiveTransition::Close);
+            return Err(CoreError::new(
+                CoreErrorCategory::Conflict,
+                "Unsaved changes require an explicit close decision",
+                false,
+                true,
+            ));
+        }
+        self.close_resolved(index)
+    }
+
+    /// Requests a destructive transition without removing unresolved dirty edits.
+    ///
+    /// Returns `true` when the transition is immediately safe and `false` when a
+    /// revision-bound user decision is required.
+    ///
+    /// # Errors
+    ///
+    /// Returns not-found when the session does not exist.
+    pub fn request_transition(
+        &mut self,
+        id: SessionId,
+        transition: DestructiveTransition,
+    ) -> Result<bool, CoreError> {
+        let position = self.position(id)?;
+        if !self.sessions[position].dirty {
+            return Ok(true);
+        }
+        self.sessions[position].pending_transition = Some(transition);
+        Ok(false)
+    }
+
+    /// Guards every dirty session for a multi-document application exit.
+    pub fn request_exit(&mut self) -> Vec<SessionId> {
+        self.sessions
+            .iter_mut()
+            .filter_map(|session| {
+                session.dirty.then(|| {
+                    session.pending_transition = Some(DestructiveTransition::Exit);
+                    session.id
+                })
+            })
+            .collect()
+    }
+
+    /// Resolves one current guarded transition without accepting stale decisions.
+    ///
+    /// # Errors
+    ///
+    /// Returns not-found, stale-session, conflict, or invalid-input when the
+    /// decision cannot apply to the exact pending revision.
+    pub fn resolve_transition(
+        &mut self,
+        id: SessionId,
+        expected_revision: u64,
+        decision: TransitionDecision,
+    ) -> Result<TransitionResolution, CoreError> {
+        let position = self.position(id)?;
+        let session = &mut self.sessions[position];
+        if session.revision != expected_revision {
+            return Err(CoreError::new(
+                CoreErrorCategory::StaleSession,
+                "The document changed while the destructive decision was open",
+                true,
+                true,
+            ));
+        }
+        if session.pending_transition.is_none() {
+            return Err(CoreError::new(
+                CoreErrorCategory::InvalidInput,
+                "No destructive transition is awaiting a decision",
+                false,
+                false,
+            ));
+        }
+        match decision {
+            TransitionDecision::Cancel => {
+                session.pending_transition = None;
+                Ok(TransitionResolution::Cancelled)
+            }
+            TransitionDecision::Discard => {
+                session.dirty = false;
+                session.integrity = SessionIntegrity::Clean;
+                session.pending_save = None;
+                session.pending_transition = None;
+                session.recovery_coverage = RecoveryCoverage::None;
+                session.error = None;
+                Ok(TransitionResolution::Discarded)
+            }
+            TransitionDecision::Save
+                if matches!(
+                    session.integrity,
+                    SessionIntegrity::Conflicted | SessionIntegrity::RecoveryOnly
+                ) =>
+            {
+                Err(CoreError::new(
+                    CoreErrorCategory::Conflict,
+                    "In-place save is unavailable until source authority is resolved",
+                    true,
+                    true,
+                ))
+            }
+            TransitionDecision::Save | TransitionDecision::SaveAs => {
+                Ok(TransitionResolution::AwaitingSave)
+            }
+        }
+    }
+
+    /// Explicitly discards local edits and closes one session.
+    ///
+    /// # Errors
+    ///
+    /// Returns not-found when the session does not exist.
+    pub fn discard_and_close(&mut self, id: SessionId) -> Result<DocumentSession, CoreError> {
+        let index = self.position(id)?;
+        self.sessions[index].dirty = false;
+        self.sessions[index].integrity = SessionIntegrity::Clean;
+        self.sessions[index].pending_save = None;
+        self.sessions[index].pending_transition = None;
+        self.close_resolved(index)
+    }
+
+    fn close_resolved(&mut self, index: usize) -> Result<DocumentSession, CoreError> {
+        let id = self.sessions[index].id;
         let was_active = self.active == Some(id);
         self.sessions[index].lifecycle = SessionLifecycle::Closing;
         let mut closed = self.sessions.remove(index);
@@ -298,10 +501,44 @@ impl SessionRegistry {
     /// Returns not-found when the session does not exist.
     pub fn set_dirty(&mut self, id: SessionId, dirty: bool) -> Result<(), CoreError> {
         let position = self.position(id)?;
-        if self.sessions[position].dirty != dirty {
-            self.sessions[position].dirty = dirty;
-            self.sessions[position].revision += 1;
+        if !dirty {
+            return Err(CoreError::new(
+                CoreErrorCategory::InvalidInput,
+                "Dirty state clears only after a durable save or explicit discard",
+                false,
+                false,
+            ));
         }
+        let session = &mut self.sessions[position];
+        session.dirty = true;
+        if matches!(
+            session.integrity,
+            SessionIntegrity::Clean | SessionIntegrity::Saving
+        ) {
+            session.integrity = SessionIntegrity::Dirty;
+        }
+        session.pending_save = None;
+        session.recovery_coverage = RecoveryCoverage::Stale;
+        session.revision += 1;
+        Ok(())
+    }
+
+    /// Binds native source authority and its last accepted external revision.
+    ///
+    /// # Errors
+    ///
+    /// Returns not-found when the session does not exist.
+    pub fn bind_source(
+        &mut self,
+        id: SessionId,
+        source_id: SourceId,
+        external_revision: ExternalRevision,
+    ) -> Result<(), CoreError> {
+        let position = self.position(id)?;
+        self.sessions[position].source_id = Some(source_id);
+        self.sessions[position].external_revision = Some(external_revision);
+        self.sessions[position].revision += 1;
+        self.sessions[position].saved_revision = self.sessions[position].revision;
         Ok(())
     }
 
@@ -316,9 +553,25 @@ impl SessionRegistry {
         event: &SourceEvent,
     ) -> Result<(), CoreError> {
         let position = self.position(id)?;
+        if self.sessions[position].source_id.as_ref() != Some(&event.source_id) {
+            return Err(CoreError::new(
+                CoreErrorCategory::InvalidInput,
+                "The source event does not belong to this document session",
+                false,
+                false,
+            ));
+        }
         self.sessions[position].source_state = event.state;
         if self.sessions[position].dirty && event.state != SourceState::Available {
-            self.sessions[position].lifecycle = SessionLifecycle::Conflicted;
+            self.sessions[position].integrity = if matches!(
+                event.state,
+                SourceState::Deleted | SourceState::PermissionRevoked | SourceState::Unavailable
+            ) {
+                SessionIntegrity::RecoveryOnly
+            } else {
+                SessionIntegrity::Conflicted
+            };
+            self.sessions[position].pending_save = None;
             self.sessions[position].error = Some(CoreError::new(
                 CoreErrorCategory::Conflict,
                 "The external source changed while local edits are present",
@@ -326,6 +579,80 @@ impl SessionRegistry {
                 true,
             ));
         }
+        self.sessions[position].revision += 1;
+        Ok(())
+    }
+
+    /// Begins one fully bound save operation for the current dirty revision.
+    ///
+    /// # Errors
+    ///
+    /// Returns a stable error when authority, revision, or integrity is not current.
+    pub fn begin_save(
+        &mut self,
+        id: SessionId,
+        expected_revision: u64,
+        payload_bytes: u64,
+        durability: DurabilityGuarantee,
+    ) -> Result<PendingSave, CoreError> {
+        self.prepare_save(id, expected_revision)?;
+        let position = self.position(id)?;
+        let source_id = self.sessions[position].source_id.clone().ok_or_else(|| {
+            CoreError::new(
+                CoreErrorCategory::CapabilityDenied,
+                "The document session has no bound native source authority",
+                false,
+                true,
+            )
+        })?;
+        let expected_external_revision = self.sessions[position]
+            .external_revision
+            .clone()
+            .ok_or_else(|| {
+                CoreError::new(
+                    CoreErrorCategory::Conflict,
+                    "The document session has no accepted external revision",
+                    true,
+                    true,
+                )
+            })?;
+        let operation_id = SaveOperationId(self.next_save_operation_id);
+        self.next_save_operation_id =
+            self.next_save_operation_id.checked_add(1).ok_or_else(|| {
+                CoreError::new(
+                    CoreErrorCategory::ResourceLimit,
+                    "Save operation identifier space is exhausted",
+                    false,
+                    false,
+                )
+            })?;
+        let pending = PendingSave {
+            operation_id,
+            source_id,
+            session_revision: expected_revision,
+            expected_external_revision,
+            payload_bytes,
+            durability,
+        };
+        self.sessions[position].pending_save = Some(pending.clone());
+        self.sessions[position].integrity = SessionIntegrity::Saving;
+        Ok(pending)
+    }
+
+    /// Leaves a failed save dirty while preserving its recovery coverage.
+    ///
+    /// # Errors
+    ///
+    /// Returns not-found when the session does not exist.
+    pub fn fail_save(&mut self, id: SessionId, conflict: bool) -> Result<(), CoreError> {
+        let position = self.position(id)?;
+        self.sessions[position].pending_save = None;
+        self.sessions[position].integrity = if conflict {
+            SessionIntegrity::Conflicted
+        } else {
+            SessionIntegrity::Dirty
+        };
+        self.sessions[position].dirty = true;
         self.sessions[position].revision += 1;
         Ok(())
     }
@@ -362,6 +689,17 @@ impl SessionRegistry {
                 true,
             ));
         }
+        if matches!(
+            session.integrity,
+            SessionIntegrity::Conflicted | SessionIntegrity::RecoveryOnly
+        ) {
+            return Err(CoreError::new(
+                CoreErrorCategory::Conflict,
+                "The document conflict must be resolved before ordinary save",
+                true,
+                true,
+            ));
+        }
         Ok(())
     }
 
@@ -376,15 +714,38 @@ impl SessionRegistry {
         receipt: &SaveReceipt,
     ) -> Result<(), CoreError> {
         let position = self.position(id)?;
-        if self.sessions[position].revision != receipt.accepted_session_revision {
+        let pending = self.sessions[position]
+            .pending_save
+            .as_ref()
+            .ok_or_else(|| {
+                CoreError::new(
+                    CoreErrorCategory::StaleSession,
+                    "No current save operation accepts this receipt",
+                    true,
+                    true,
+                )
+            })?;
+        if pending.operation_id != receipt.operation_id
+            || pending.source_id != receipt.source_id
+            || pending.session_revision != receipt.accepted_session_revision
+            || pending.expected_external_revision != receipt.previous_external_revision
+            || pending.payload_bytes != receipt.byte_count
+            || pending.durability != receipt.durability
+        {
             return Err(CoreError::new(
                 CoreErrorCategory::StaleSession,
-                "The save receipt targets an earlier document session revision",
+                "The save receipt does not match the current bound save operation",
                 true,
                 true,
             ));
         }
         self.sessions[position].dirty = false;
+        self.sessions[position].integrity = SessionIntegrity::Clean;
+        self.sessions[position].external_revision = Some(receipt.new_external_revision.clone());
+        self.sessions[position].saved_revision = receipt.accepted_session_revision;
+        self.sessions[position].pending_save = None;
+        self.sessions[position].pending_transition = None;
+        self.sessions[position].recovery_coverage = RecoveryCoverage::None;
         self.sessions[position].source_state = SourceState::Available;
         self.sessions[position].error = None;
         self.sessions[position].lifecycle = if self.active == Some(id) {
@@ -437,7 +798,6 @@ impl SessionRegistry {
             && session.lifecycle == SessionLifecycle::Active
         {
             session.lifecycle = SessionLifecycle::Background;
-            session.revision += 1;
         }
     }
 }
@@ -735,12 +1095,25 @@ mod tests {
             )
             .expect("open source")
             .session_id;
+        let source_id = crate::source::SourceId("source-conflict".into());
+        registry
+            .bind_source(
+                id,
+                source_id.clone(),
+                crate::source::ExternalRevision {
+                    identity: source("conflict", IdentityStrength::Strong).identity,
+                    byte_length: Some(10),
+                    modified_unix_nanos: Some(1),
+                    change_token: None,
+                },
+            )
+            .expect("bind source");
         registry.set_dirty(id, true).expect("mark dirty");
         registry
             .apply_source_event(
                 id,
                 &SourceEvent {
-                    source_id: crate::source::SourceId("source-conflict".into()),
+                    source_id,
                     sequence: 1,
                     state: SourceState::Changed,
                     display_name: None,
@@ -751,7 +1124,8 @@ mod tests {
 
         let session = &registry.sessions()[0];
         assert!(session.dirty);
-        assert_eq!(session.lifecycle, SessionLifecycle::Conflicted);
+        assert_eq!(session.lifecycle, SessionLifecycle::Active);
+        assert_eq!(session.integrity, SessionIntegrity::Conflicted);
         assert_eq!(session.source_state, SourceState::Changed);
         assert_eq!(
             registry
@@ -771,39 +1145,287 @@ mod tests {
             .open(descriptor, detection(), renderer())
             .expect("open source")
             .session_id;
-        registry.set_dirty(id, true).expect("mark dirty");
-        let revision = registry.sessions()[0].revision;
         let external_revision = crate::source::ExternalRevision {
             identity,
             byte_length: Some(10),
             modified_unix_nanos: Some(1),
             change_token: None,
         };
+        let source_id = crate::source::SourceId("source-receipt".into());
+        registry
+            .bind_source(id, source_id.clone(), external_revision.clone())
+            .expect("bind source");
+        registry.set_dirty(id, true).expect("mark dirty");
+        let revision = registry.sessions()[0].revision;
+        let pending = registry
+            .begin_save(
+                id,
+                revision,
+                10,
+                crate::source::DurabilityGuarantee::AtomicFile,
+            )
+            .expect("begin save");
         let receipt = SaveReceipt {
-            source_id: crate::source::SourceId("source-receipt".into()),
-            accepted_session_revision: revision - 1,
+            operation_id: pending.operation_id,
+            source_id: source_id.clone(),
+            accepted_session_revision: revision,
+            previous_external_revision: external_revision.clone(),
+            new_external_revision: external_revision.clone(),
+            byte_count: 10,
+            durability: crate::source::DurabilityGuarantee::AtomicFile,
+        };
+        for attempt in 1..=1_000 {
+            let mut mismatched = receipt.clone();
+            match attempt % 6 {
+                0 => mismatched.operation_id = SaveOperationId(pending.operation_id.0 + attempt),
+                1 => mismatched.source_id = SourceId(format!("other-source-{attempt}")),
+                2 => mismatched.accepted_session_revision = revision.saturating_sub(1),
+                3 => {
+                    mismatched.previous_external_revision.byte_length =
+                        Some(10_u64.saturating_add(attempt));
+                }
+                4 => mismatched.byte_count = 10_u64.saturating_add(attempt),
+                _ => mismatched.durability = DurabilityGuarantee::RecoverableNonAtomic,
+            }
+            assert_eq!(
+                registry
+                    .apply_save_receipt(id, &mismatched)
+                    .expect_err("reject mismatched receipt")
+                    .category,
+                CoreErrorCategory::StaleSession
+            );
+            assert!(registry.sessions()[0].dirty);
+        }
+
+        registry
+            .apply_save_receipt(id, &receipt)
+            .expect("apply current receipt");
+        assert!(!registry.sessions()[0].dirty);
+        assert_eq!(registry.sessions()[0].lifecycle, SessionLifecycle::Active);
+    }
+
+    #[test]
+    fn every_edit_invalidates_an_earlier_pending_save() {
+        let mut registry = SessionRegistry::new();
+        let descriptor = source("receipt-after-edit", IdentityStrength::Strong);
+        let identity = descriptor.identity.clone();
+        let id = registry
+            .open(descriptor, detection(), renderer())
+            .expect("open source")
+            .session_id;
+        let external_revision = crate::source::ExternalRevision {
+            identity,
+            byte_length: Some(10),
+            modified_unix_nanos: Some(1),
+            change_token: None,
+        };
+        let source_id = crate::source::SourceId("source-receipt-after-edit".into());
+        registry
+            .bind_source(id, source_id.clone(), external_revision.clone())
+            .expect("bind source");
+        registry.set_dirty(id, true).expect("first edit");
+        let saved_payload_revision = registry.sessions()[0].revision;
+        let pending = registry
+            .begin_save(
+                id,
+                saved_payload_revision,
+                10,
+                crate::source::DurabilityGuarantee::AtomicFile,
+            )
+            .expect("begin save");
+        let receipt = SaveReceipt {
+            operation_id: pending.operation_id,
+            source_id,
+            accepted_session_revision: saved_payload_revision,
             previous_external_revision: external_revision.clone(),
             new_external_revision: external_revision,
             byte_count: 10,
             durability: crate::source::DurabilityGuarantee::AtomicFile,
         };
+
+        registry.set_dirty(id, true).expect("second edit");
+
+        assert!(registry.sessions()[0].revision > saved_payload_revision);
+        assert!(registry.sessions()[0].pending_save.is_none());
         assert_eq!(
             registry
                 .apply_save_receipt(id, &receipt)
-                .expect_err("reject stale receipt")
+                .expect_err("receipt for the older payload must be stale")
                 .category,
             CoreErrorCategory::StaleSession
         );
         assert!(registry.sessions()[0].dirty);
+    }
 
-        let current_receipt = SaveReceipt {
-            accepted_session_revision: revision,
-            ..receipt
-        };
+    #[test]
+    fn dirty_close_is_guarded_until_explicit_discard() {
+        let mut registry = SessionRegistry::new();
+        let id = registry
+            .open(
+                source("guarded-close", IdentityStrength::Strong),
+                detection(),
+                renderer(),
+            )
+            .expect("open source")
+            .session_id;
+        registry.set_dirty(id, true).expect("mark dirty");
+        let revision = registry.sessions()[0].revision;
+
+        assert_eq!(
+            registry
+                .close(id)
+                .expect_err("dirty close must be guarded")
+                .category,
+            CoreErrorCategory::Conflict
+        );
+        assert_eq!(registry.sessions().len(), 1);
+        assert!(registry.sessions()[0].dirty);
+        assert_eq!(registry.sessions()[0].revision, revision);
+        assert_eq!(
+            registry.sessions()[0].pending_transition,
+            Some(DestructiveTransition::Close)
+        );
+
         registry
-            .apply_save_receipt(id, &current_receipt)
-            .expect("apply current receipt");
-        assert!(!registry.sessions()[0].dirty);
-        assert_eq!(registry.sessions()[0].lifecycle, SessionLifecycle::Active);
+            .resolve_transition(id, revision, TransitionDecision::Discard)
+            .expect("discard current edits");
+        let closed = registry.close(id).expect("close resolved session");
+        assert_eq!(closed.lifecycle, SessionLifecycle::Closed);
+    }
+
+    #[test]
+    fn reload_decisions_are_revision_bound_and_cancel_preserves_edits() {
+        let mut registry = SessionRegistry::new();
+        let id = registry
+            .open(
+                source("guarded-reload", IdentityStrength::Strong),
+                detection(),
+                renderer(),
+            )
+            .expect("open source")
+            .session_id;
+        registry.set_dirty(id, true).expect("mark dirty");
+        let revision = registry.sessions()[0].revision;
+        assert!(
+            !registry
+                .request_transition(id, DestructiveTransition::Reload)
+                .expect("request reload")
+        );
+        assert_eq!(
+            registry
+                .resolve_transition(id, revision - 1, TransitionDecision::Discard)
+                .expect_err("reject stale decision")
+                .category,
+            CoreErrorCategory::StaleSession
+        );
+        assert_eq!(
+            registry
+                .resolve_transition(id, revision, TransitionDecision::Cancel)
+                .expect("cancel current decision"),
+            TransitionResolution::Cancelled
+        );
+        assert!(registry.sessions()[0].dirty);
+        assert_eq!(registry.sessions()[0].pending_transition, None);
+    }
+
+    #[test]
+    fn exit_guards_every_dirty_session_without_closing_any_session() {
+        let mut registry = SessionRegistry::new();
+        let first = registry
+            .open(
+                source("exit-a", IdentityStrength::Strong),
+                detection(),
+                renderer(),
+            )
+            .expect("open first")
+            .session_id;
+        let second = registry
+            .open(
+                source("exit-b", IdentityStrength::Strong),
+                detection(),
+                renderer(),
+            )
+            .expect("open second")
+            .session_id;
+        let third = registry
+            .open(
+                source("exit-c", IdentityStrength::Strong),
+                detection(),
+                renderer(),
+            )
+            .expect("open third")
+            .session_id;
+        registry.set_dirty(first, true).expect("dirty first");
+        registry.set_dirty(third, true).expect("dirty third");
+
+        assert_eq!(registry.request_exit(), vec![first, third]);
+        assert_eq!(registry.sessions().len(), 3);
+        assert_eq!(
+            registry
+                .sessions()
+                .iter()
+                .find(|session| session.id == second)
+                .expect("clean session")
+                .pending_transition,
+            None
+        );
+        assert_eq!(
+            registry
+                .sessions()
+                .iter()
+                .find(|session| session.id == first)
+                .expect("dirty first")
+                .pending_transition,
+            Some(DestructiveTransition::Exit)
+        );
+        assert_eq!(
+            registry
+                .sessions()
+                .iter()
+                .find(|session| session.id == third)
+                .expect("dirty third")
+                .pending_transition,
+            Some(DestructiveTransition::Exit)
+        );
+    }
+
+    #[test]
+    fn focus_changes_do_not_mutate_integrity_or_save_revision() {
+        let mut registry = SessionRegistry::new();
+        let first = registry
+            .open(
+                source("focus-a", IdentityStrength::Strong),
+                detection(),
+                renderer(),
+            )
+            .expect("open first")
+            .session_id;
+        let second = registry
+            .open(
+                source("focus-b", IdentityStrength::Strong),
+                detection(),
+                renderer(),
+            )
+            .expect("open second")
+            .session_id;
+        registry.set_dirty(first, true).expect("dirty first");
+        let revision = registry
+            .sessions()
+            .iter()
+            .find(|session| session.id == first)
+            .expect("first session")
+            .revision;
+
+        registry.activate(first).expect("activate first");
+        registry.activate(second).expect("activate second");
+
+        let first = registry
+            .sessions()
+            .iter()
+            .find(|session| session.id == first)
+            .expect("first session");
+        assert_eq!(first.revision, revision);
+        assert_eq!(first.integrity, SessionIntegrity::Dirty);
+        assert!(first.dirty);
     }
 }

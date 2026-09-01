@@ -1,4 +1,14 @@
-import type { ShellSession } from './contracts';
+import type {
+  DestructiveTransition,
+  DestructiveTransitionKind,
+  ShellSession,
+} from './contracts';
+import {
+  canSaveInPlace,
+  hasUnresolvedEdits,
+  requestTransition,
+  type ResolutionDecision,
+} from './recovery';
 
 export const DEFAULT_INLINE_TAB_CAPACITY = 5;
 export const DESKTOP_CHROME_MAX_PX = 80;
@@ -9,12 +19,15 @@ export interface TabState {
   activeId: string | null;
   overflowOpen: boolean;
   announcement: string;
+  pendingTransition: DestructiveTransition | null;
 }
 
 export type TabAction =
   | { type: 'open'; session: ShellSession }
   | { type: 'activate'; id: string }
   | { type: 'close'; id: string }
+  | { type: 'request_transition'; id: string; kind: DestructiveTransitionKind }
+  | { type: 'resolve_transition'; decision: ResolutionDecision }
   | { type: 'reorder'; id: string; offset: -1 | 1 }
   | { type: 'next' }
   | { type: 'previous' }
@@ -36,9 +49,18 @@ export const createTabState = (sessions: ShellSession[]): TabState => {
     sessions: sessions.map((session) => ({
       ...session,
       lifecycle: active && session.id === active.id ? 'active' : 'background',
+      focus: active && session.id === active.id ? 'active' : 'background',
+      integrity:
+        session.integrity ??
+        (session.lifecycle === 'conflicted'
+          ? 'conflicted'
+          : session.dirty
+            ? 'dirty'
+            : 'clean'),
     })),
     activeId: active?.id ?? null,
     overflowOpen: false,
+    pendingTransition: null,
     announcement: active
       ? `${active.source.display_name} active`
       : 'No document is open',
@@ -92,7 +114,11 @@ export const tabReducer = (state: TabState, action: TabAction): TabState => {
     case 'activate':
       return activate(state, action.id);
     case 'close':
-      return close(state, action.id);
+      return requestDestructiveTransition(state, action.id, 'close');
+    case 'request_transition':
+      return requestDestructiveTransition(state, action.id, action.kind);
+    case 'resolve_transition':
+      return resolveTransition(state, action.decision);
     case 'reorder':
       return reorder(state, action.id, action.offset);
     case 'next':
@@ -121,15 +147,107 @@ const activate = (state: TabState, id: string): TabState => {
     sessions: state.sessions.map((session) => ({
       ...session,
       lifecycle: session.id === id ? 'active' : 'background',
-      revision:
-        session.id === id || session.id === state.activeId
-          ? session.revision + 1
-          : session.revision,
+      focus: session.id === id ? 'active' : 'background',
     })),
   };
 };
 
-const close = (state: TabState, id: string): TabState => {
+const requestDestructiveTransition = (
+  state: TabState,
+  id: string,
+  kind: DestructiveTransitionKind,
+): TabState => {
+  if (state.pendingTransition) return state;
+  const target = state.sessions.find((session) => session.id === id);
+  if (!target) return state;
+  if (!hasUnresolvedEdits(target)) return completeTransition(state, id, kind);
+  return {
+    ...state,
+    pendingTransition: requestTransition(target, kind),
+    announcement: `${target.source.display_name} has unsaved changes. Choose how to continue.`,
+  };
+};
+
+const resolveTransition = (
+  state: TabState,
+  decision: ResolutionDecision,
+): TabState => {
+  const transition = state.pendingTransition;
+  if (!transition) return state;
+  const target = state.sessions.find(
+    ({ id }) => id === transition.target_session_id,
+  );
+  if (!target) return { ...state, pendingTransition: null };
+  if (target.revision !== transition.requested_session_revision) {
+    return {
+      ...state,
+      pendingTransition: requestTransition(target, transition.kind),
+      announcement: `${target.source.display_name} changed while the decision was open. Review the current unsaved changes.`,
+    };
+  }
+  if (decision === 'cancel') {
+    return {
+      ...state,
+      pendingTransition: null,
+      announcement: `${transition.kind} cancelled. ${target.source.display_name} remains open with unsaved changes.`,
+    };
+  }
+  if (decision === 'discard') {
+    return completeTransition(
+      { ...state, pendingTransition: null },
+      target.id,
+      transition.kind,
+    );
+  }
+  if (decision === 'save' && !canSaveInPlace(target)) {
+    return {
+      ...state,
+      announcement: `In-place save is unavailable for ${target.source.display_name}. Use Save As, discard, or cancel.`,
+    };
+  }
+  const label = decision === 'save' ? 'Save' : 'Save As';
+  return {
+    ...state,
+    pendingTransition: {
+      ...transition,
+      status: 'saving',
+      save_intent: decision,
+    },
+    announcement: `${label} requested for ${target.source.display_name}. Waiting for a durable save receipt; the document remains open.`,
+  };
+};
+
+const completeTransition = (
+  state: TabState,
+  id: string,
+  kind: DestructiveTransitionKind,
+): TabState => {
+  if (kind !== 'reload') return disposeSession(state, id, kind);
+  const target = state.sessions.find((session) => session.id === id);
+  if (!target) return state;
+  return {
+    ...state,
+    sessions: state.sessions.map((session) =>
+      session.id === id
+        ? {
+            ...session,
+            dirty: false,
+            integrity: 'clean',
+            pending_save: null,
+            recovery_coverage: 'none',
+          }
+        : session,
+    ),
+    pendingTransition: null,
+    announcement: `${target.source.display_name} reload authorized after resolving local edits.`,
+  };
+};
+
+const disposeSession = (
+  state: TabState,
+  id: string,
+  kind: DestructiveTransitionKind,
+): TabState => {
   const closingIndex = state.sessions.findIndex((session) => session.id === id);
   if (closingIndex < 0) return state;
   const closing = state.sessions[closingIndex];
@@ -138,7 +256,8 @@ const close = (state: TabState, id: string): TabState => {
     return {
       ...state,
       sessions,
-      announcement: `${closing.source.display_name} closed`,
+      pendingTransition: null,
+      announcement: `${closing.source.display_name} ${kind === 'close' ? 'closed' : `${kind} resolved`}`,
     };
   }
   const successor =
@@ -148,9 +267,11 @@ const close = (state: TabState, id: string): TabState => {
     sessions: sessions.map((session) => ({
       ...session,
       lifecycle: session.id === successor?.id ? 'active' : 'background',
+      focus: session.id === successor?.id ? 'active' : 'background',
     })),
     activeId: successor?.id ?? null,
     overflowOpen: false,
+    pendingTransition: null,
     announcement: successor
       ? `${closing.source.display_name} closed. ${successor.source.display_name} active`
       : 'No document is open',

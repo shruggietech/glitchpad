@@ -7,13 +7,16 @@ import android.net.Uri
 class RestorationStore(context: Context) {
   private val preferences = context.getSharedPreferences(STORE, Context.MODE_PRIVATE)
 
-  fun put(uri: Uri, modes: Int) {
+  fun canPut(uri: Uri): Boolean {
+    val current = preferences.getStringSet(RECORDS, emptySet()).orEmpty()
+    return current.any { it.substringAfter('|', "") == uri.toString() } || current.size < MAX_RESTORATION_RECORDS
+  }
+
+  fun put(uri: Uri, modes: Int): Boolean {
     val current = preferences.getStringSet(RECORDS, emptySet()).orEmpty().toMutableSet()
     val encoded = "$modes|$uri"
-    current.removeAll { it.substringAfter('|', "") == uri.toString() }
-    current.add(encoded)
-    while (current.size > MAX_RECORDS) current.remove(current.first())
-    preferences.edit().putStringSet(RECORDS, current).commit()
+    val updated = updatedRestorationRecords(current, encoded, uri.toString()) ?: return false
+    return preferences.edit().putStringSet(RECORDS, updated).commit()
   }
 
   fun remove(uri: Uri) {
@@ -25,7 +28,7 @@ class RestorationStore(context: Context) {
   fun records(): List<Pair<Uri, Int>> = preferences
     .getStringSet(RECORDS, emptySet())
     .orEmpty()
-    .take(MAX_RECORDS)
+    .take(MAX_RESTORATION_RECORDS)
     .mapNotNull { value ->
       val separator = value.indexOf('|')
       if (separator <= 0) return@mapNotNull null
@@ -38,6 +41,18 @@ class RestorationStore(context: Context) {
   companion object {
     private const val STORE = "glitchpad_android_sources"
     private const val RECORDS = "persisted_sources_v1"
-    private const val MAX_RECORDS = 64
   }
 }
+
+internal fun updatedRestorationRecords(
+  current: Set<String>,
+  encoded: String,
+  uri: String,
+  maximum: Int = MAX_RESTORATION_RECORDS,
+): Set<String>? {
+  val replacing = current.any { it.substringAfter('|', "") == uri }
+  if (!replacing && current.size >= maximum) return null
+  return current.filterNotTo(mutableSetOf()) { it.substringAfter('|', "") == uri }.apply { add(encoded) }
+}
+
+private const val MAX_RESTORATION_RECORDS = 64

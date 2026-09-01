@@ -3,7 +3,6 @@ package com.shruggietech.glitchpad.source
 import android.app.Activity
 import android.content.Intent
 import android.content.UriPermission
-import android.database.Cursor
 import android.net.Uri
 import android.os.CancellationSignal
 import android.provider.DocumentsContract
@@ -22,16 +21,16 @@ import app.tauri.plugin.Plugin
 import java.io.FileInputStream
 import java.security.MessageDigest
 import java.util.UUID
+import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 
 @TauriPlugin
 class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
   private val ioExecutor = Executors.newSingleThreadExecutor()
-  private val pending = ConcurrentLinkedQueue<DeliveryCandidate>()
-  private val rejections = ConcurrentLinkedQueue<String>()
+  private val pending = ArrayBlockingQueue<DeliveryCandidate>(MAX_PENDING_DELIVERIES)
+  private val rejections = ArrayBlockingQueue<String>(MAX_PENDING_REJECTIONS)
   private val sources = ConcurrentHashMap<String, NativeSource>()
   private val streams = ConcurrentHashMap<String, NativeStream>()
   private val restoration = RestorationStore(activity)
@@ -53,7 +52,7 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
       val deliveries = JSArray()
       repeat(maximum) {
         val candidate = pending.poll() ?: return@repeat
-        acquire(candidate).onSuccess(deliveries::put).onFailure { rejections.add(code(it)) }
+        acquire(candidate).onSuccess(deliveries::put).onFailure { enqueueRejection(code(it)) }
       }
       val rejected = JSArray()
       repeat(maximum) {
@@ -309,11 +308,24 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
   }
 
   private fun enqueueInbound(intent: Intent?) {
-    DeliveryPolicy.inbound(intent).onSuccess(pending::add).onFailure { rejections.add(code(it)) }
+    DeliveryPolicy.inbound(intent)
+      .onSuccess { candidate ->
+        if (!pending.offer(candidate)) enqueueRejection("delivery_queue_full")
+      }
+      .onFailure { enqueueRejection(code(it)) }
+  }
+
+  private fun enqueueRejection(rejection: String) {
+    if (rejections.offer(rejection)) return
+    rejections.poll()
+    rejections.offer(rejection)
   }
 
   private fun acquire(candidate: DeliveryCandidate): Result<JSObject> = runCatching {
     val persistModes = DeliveryPolicy.persistableModes(candidate)
+    if (persistModes != 0 && !restoration.canPut(candidate.uri)) {
+      throw IllegalStateException("restoration_capacity_exceeded")
+    }
     val previousPermission = if (persistModes != 0) persistedPermission(candidate.uri) else null
     if (persistModes != 0) runCatching {
       activity.contentResolver.takePersistableUriPermission(candidate.uri, persistModes)
@@ -344,7 +356,14 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
       throw it
     }
     val heldModes = permissionModes(persisted)
-    if (heldModes != 0) restoration.put(candidate.uri, heldModes)
+    if (heldModes != 0 && !restoration.put(candidate.uri, heldModes)) {
+      sources.remove(source.token)
+      val newlyPersistedModes = heldModes and permissionModes(previousPermission).inv()
+      if (newlyPersistedModes != 0) {
+        runCatching { activity.contentResolver.releasePersistableUriPermission(candidate.uri, newlyPersistedModes) }
+      }
+      throw IllegalStateException("restoration_capacity_exceeded")
+    }
     snapshot
   }
 
@@ -398,31 +417,33 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
   }
 
   private fun queryMetadata(uri: Uri): ProviderMetadata {
-    val projection = arrayOf(
-      OpenableColumns.DISPLAY_NAME,
-      OpenableColumns.SIZE,
-      DocumentsContract.Document.COLUMN_LAST_MODIFIED,
-      DocumentsContract.Document.COLUMN_FLAGS,
+    val portable = queryMetadataColumns(uri, PORTABLE_METADATA_PROJECTION)
+    val document = if (DocumentsContract.isDocumentUri(activity, uri)) {
+      queryMetadataColumns(uri, DOCUMENT_METADATA_PROJECTION)
+    } else {
+      null
+    }
+    return ProviderMetadata(
+      displayName = portable.optionalString(OpenableColumns.DISPLAY_NAME) ?: "Untitled document",
+      size = portable.optionalLong(OpenableColumns.SIZE),
+      modified = document?.optionalLong(DocumentsContract.Document.COLUMN_LAST_MODIFIED),
+      flags = document?.optionalLong(DocumentsContract.Document.COLUMN_FLAGS)?.toInt() ?: 0,
+      mimeType = activity.contentResolver.getType(uri),
     )
+  }
+
+  private fun queryMetadataColumns(uri: Uri, projection: Array<String>): MetadataColumns {
     val cursor = activity.contentResolver.query(uri, projection, null, null, null, CancellationSignal())
       ?: throw IllegalStateException("provider_unavailable")
     cursor.use {
       if (!it.moveToFirst()) throw IllegalStateException("provider_unavailable")
-      return ProviderMetadata(
-        displayName = it.optionalString(OpenableColumns.DISPLAY_NAME) ?: "Untitled document",
-        size = it.optionalLong(OpenableColumns.SIZE),
-        modified = it.optionalLong(DocumentsContract.Document.COLUMN_LAST_MODIFIED),
-        flags = it.optionalLong(DocumentsContract.Document.COLUMN_FLAGS)?.toInt() ?: 0,
-        mimeType = activity.contentResolver.getType(uri),
-      )
+      return MetadataColumns(projection.associateWith { column ->
+        it.getColumnIndex(column).takeIf { index -> index >= 0 && !it.isNull(index) }?.let { index ->
+          if (column == OpenableColumns.DISPLAY_NAME) it.getString(index) else it.getLong(index)
+        }
+      })
     }
   }
-
-  private fun Cursor.optionalString(column: String): String? =
-    getColumnIndex(column).takeIf { it >= 0 && !isNull(it) }?.let(::getString)
-
-  private fun Cursor.optionalLong(column: String): Long? =
-    getColumnIndex(column).takeIf { it >= 0 && !isNull(it) }?.let(::getLong)
 
   private fun code(error: Throwable): String = when (error) {
     is SecurityException -> "permission_revoked"
@@ -438,8 +459,15 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
     val mimeType: String?,
   )
 
+  private data class MetadataColumns(val values: Map<String, Any?>) {
+    fun optionalString(column: String): String? = values[column] as? String
+    fun optionalLong(column: String): Long? = values[column] as? Long
+  }
+
   companion object {
     private const val MAX_QUEUE_DRAIN = 64
+    private const val MAX_PENDING_DELIVERIES = 64
+    private const val MAX_PENDING_REJECTIONS = 64
     private const val MAX_CHUNK_BYTES = 1024L * 1024L
     private const val MAX_SAVE_BYTES = 16 * 1024 * 1024
     private const val MAX_NAME_CHARS = 256
@@ -448,6 +476,12 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
       "missing_delivery", "unsupported_action", "invalid_source_shape", "read_authority_required",
       "missing_picker_source", "invalid_source_scheme", "directory_unsupported",
       "virtual_document_unsupported", "provider_unavailable", "write_verification_failed",
+      "restoration_capacity_exceeded",
+    )
+    private val PORTABLE_METADATA_PROJECTION = arrayOf(OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE)
+    private val DOCUMENT_METADATA_PROJECTION = arrayOf(
+      DocumentsContract.Document.COLUMN_LAST_MODIFIED,
+      DocumentsContract.Document.COLUMN_FLAGS,
     )
   }
 }

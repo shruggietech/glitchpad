@@ -19,6 +19,38 @@ class DeliveryPolicyTest {
     assertEquals("short-id", boundedDocumentIdentity("short-id"))
   }
 
+  @Test
+  fun restorationCapacityRejectsNewRecordsWithoutEvictingTrackedGrants() {
+    val current = (0 until 64).mapTo(mutableSetOf()) { "1|content://fixture/document/$it" }
+
+    assertEquals(
+      null,
+      updatedRestorationRecords(
+        current,
+        "1|content://fixture/document/overflow",
+        "content://fixture/document/overflow",
+      ),
+    )
+    assertEquals(64, current.size)
+    assertTrue(current.contains("1|content://fixture/document/0"))
+  }
+
+  @Test
+  fun restorationCapacityStillAllowsExistingRecordsToBeUpdated() {
+    val current = (0 until 64).mapTo(mutableSetOf()) { "1|content://fixture/document/$it" }
+    val updated = requireNotNull(
+      updatedRestorationRecords(
+        current,
+        "3|content://fixture/document/0",
+        "content://fixture/document/0",
+      ),
+    )
+
+    assertEquals(64, updated.size)
+    assertFalse(updated.contains("1|content://fixture/document/0"))
+    assertTrue(updated.contains("3|content://fixture/document/0"))
+  }
+
   private val uri = "content://fixture/document/one"
 
   @Test

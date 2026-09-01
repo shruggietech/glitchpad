@@ -105,6 +105,24 @@ ${canonicalBanner}
   );
 });
 
+for (const openingTag of [
+  '<picture hidden>',
+  '<picture style="display: none">',
+]) {
+  test(`README banner validation rejects ${openingTag}`, () => {
+    const problems = verifyReadmeBanner(
+      readmeWithCenteredBanner(
+        canonicalBanner.replace('<picture>', openingTag),
+      ),
+    );
+    assert.ok(
+      problems.some((problem) =>
+        problem.includes('exactly one <picture> before the # Glitchpad heading'),
+      ),
+    );
+  });
+}
+
 test('README banner validation rejects reversed asset mappings', () => {
   const problems = verifyReadmeBanner(readmeWithCenteredBanner(`
 <picture>

@@ -81,7 +81,7 @@ export function verifyReadmeBanner(readme) {
 
   const pictures = [
     ...centeredWrapper[2].matchAll(
-      /<picture\b[^>]*>([\s\S]*?)<\/picture>/g,
+      /<picture>([\s\S]*?)<\/picture>/g,
     ),
   ];
   if (pictures.length !== 1) {

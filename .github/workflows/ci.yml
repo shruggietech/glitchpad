@@ -43,7 +43,7 @@ jobs:
         run: pnpm --filter @shruggietech/glitchpad-site exec playwright install --with-deps chromium
 
       - name: Setup Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: '3.14'
 

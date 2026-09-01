@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <full-backup-content>
+    <exclude domain="root" path="recovery-v1/" />
     <exclude domain="sharedpref" path="glitchpad_android_sources.xml" />
 </full-backup-content>

@@ -21,6 +21,7 @@ notify = "8.2.0"
 schemars = { version = "1.2.2", features = ["derive"] }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.145"
+sha2 = "0.10.9"
 tauri = "2.11.5"
 tauri-build = "2.6.3"
 tauri-plugin = "2.6.3"

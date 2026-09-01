@@ -32,6 +32,27 @@ mod optional_u64_decimal {
     }
 }
 
+mod u64_decimal {
+    use serde::{Deserialize, Deserializer, Serializer};
+
+    #[allow(clippy::trivially_copy_pass_by_ref)]
+    pub fn serialize<S>(value: &u64, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&value.to_string())
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<u64, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        String::deserialize(deserializer)?
+            .parse()
+            .map_err(serde::de::Error::custom)
+    }
+}
+
 /// Opaque process-local authorization for one acquired source.
 #[derive(
     Clone, Debug, Eq, Hash, JsonSchema, Ord, PartialEq, PartialOrd, Serialize, Deserialize,
@@ -59,6 +80,17 @@ pub struct UserActivationId(pub String);
 )]
 #[serde(transparent)]
 pub struct LinkAuthorizationId(pub String);
+
+/// One-use identifier binding a save request to its durable receipt.
+#[derive(
+    Clone, Copy, Debug, Eq, Hash, JsonSchema, Ord, PartialEq, PartialOrd, Serialize, Deserialize,
+)]
+#[serde(transparent)]
+pub struct SaveOperationId(
+    #[schemars(with = "String")]
+    #[serde(with = "u64_decimal")]
+    pub u64,
+);
 
 /// Comparable host facts observed for one source version.
 #[derive(Clone, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
@@ -188,19 +220,31 @@ pub struct DurabilityAcknowledgement {
     pub guarantee: DurabilityGuarantee,
 }
 
+/// Explicit second confirmation for overwriting one reviewed external revision.
+#[derive(Clone, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
+pub struct OverwriteAuthorization {
+    pub source_id: SourceId,
+    pub reviewed_external_revision: ExternalRevision,
+    pub session_revision: u64,
+    pub durability: DurabilityGuarantee,
+}
+
 /// Save input after session policy has selected its current revision.
 #[derive(Clone, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
 pub struct SaveRequest {
+    pub operation_id: SaveOperationId,
     pub source_id: SourceId,
     pub expected_external_revision: ExternalRevision,
     pub expected_session_revision: u64,
     pub bytes: Vec<u8>,
     pub durability_acknowledgement: Option<DurabilityAcknowledgement>,
+    pub overwrite_authorization: Option<OverwriteAuthorization>,
 }
 
 /// Durable evidence returned only after replacement succeeds.
 #[derive(Clone, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
 pub struct SaveReceipt {
+    pub operation_id: SaveOperationId,
     pub source_id: SourceId,
     pub accepted_session_revision: u64,
     pub previous_external_revision: ExternalRevision,
@@ -288,6 +332,7 @@ pub struct AndroidRestorationResult {
 /// Complete bounded payload staged before launching Android Save As.
 #[derive(Clone, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
 pub struct AndroidSaveAsRequest {
+    pub operation_id: SaveOperationId,
     pub source_id: SourceId,
     pub expected_external_revision: ExternalRevision,
     pub suggested_name: String,
@@ -298,6 +343,7 @@ pub struct AndroidSaveAsRequest {
 /// Verified result of writing a new provider destination.
 #[derive(Clone, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
 pub struct AndroidSaveAsReceipt {
+    pub operation_id: SaveOperationId,
     pub previous_source_id: SourceId,
     pub new_source: AndroidSourceSummary,
     pub byte_count: u64,
@@ -384,6 +430,16 @@ mod tests {
         assert_eq!(value["modified_unix_nanos"], "1788044400000000123");
         let decoded: ExternalRevision =
             serde_json::from_value(value).expect("deserialize revision");
+        assert_eq!(decoded, original);
+    }
+
+    #[test]
+    fn save_operation_ids_round_trip_as_lossless_decimal_strings() {
+        let original = SaveOperationId(u64::MAX);
+        let value = serde_json::to_value(original).expect("serialize operation id");
+        assert_eq!(value, u64::MAX.to_string());
+        let decoded: SaveOperationId =
+            serde_json::from_value(value).expect("deserialize operation id");
         assert_eq!(decoded, original);
     }
 }

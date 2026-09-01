@@ -37,6 +37,30 @@ fn replace_with_revision_check<F>(
 where
     F: FnOnce(&Path) -> Result<ExternalRevision, CoreError>,
 {
+    #[cfg(unix)]
+    let sync_parent_directory = sync_parent_after_commit;
+    #[cfg(not(unix))]
+    let sync_parent_directory = |_path: &Path| Ok(());
+    replace_with_revision_check_and_parent_sync(
+        path,
+        bytes,
+        expected_revision,
+        observe_destination,
+        sync_parent_directory,
+    )
+}
+
+fn replace_with_revision_check_and_parent_sync<F, S>(
+    path: &Path,
+    bytes: &[u8],
+    expected_revision: &ExternalRevision,
+    observe_destination: F,
+    sync_parent_directory: S,
+) -> Result<DurabilityGuarantee, CoreError>
+where
+    F: FnOnce(&Path) -> Result<ExternalRevision, CoreError>,
+    S: FnOnce(&Path) -> Result<(), CoreError>,
+{
     let original = fs::metadata(path).map_err(|error| safe_io_error(&error, "save_metadata"))?;
     let permissions = original.permissions();
     let mut pending = AtomicWriteFile::options()
@@ -73,14 +97,18 @@ where
         .with_context("error_kind", format!("{:?}", error.kind()))
     })?;
 
-    #[cfg(unix)]
-    sync_parent(path)?;
-
-    Ok(platform_guarantee())
+    // The file replacement has already committed. A late directory-sync failure
+    // must not claim that the original was preserved, so truthfully downgrade
+    // the receipt while keeping the caller's dirty/recovery coverage intact.
+    Ok(if sync_parent_directory(path).is_ok() {
+        platform_guarantee()
+    } else {
+        DurabilityGuarantee::AtomicFile
+    })
 }
 
 #[cfg(unix)]
-fn sync_parent(path: &Path) -> Result<(), CoreError> {
+fn sync_parent_after_commit(path: &Path) -> Result<(), CoreError> {
     let parent = path.parent().ok_or_else(|| {
         CoreError::new(
             CoreErrorCategory::InvalidInput,
@@ -180,5 +208,32 @@ mod tests {
     #[test]
     fn platform_guarantee_is_never_silent_non_atomic() {
         assert!(!platform_guarantee().requires_acknowledgement());
+    }
+
+    #[test]
+    fn late_parent_sync_failure_reports_the_committed_file_truthfully() {
+        let source = TemporarySource::new(b"original");
+        let (_, expected) = observe_revision(source.path()).expect("observe source");
+        let guarantee = replace_with_revision_check_and_parent_sync(
+            source.path(),
+            b"complete replacement",
+            &expected,
+            |path| observe_revision(path).map(|(_, revision)| revision),
+            |_| {
+                Err(CoreError::new(
+                    CoreErrorCategory::Unavailable,
+                    "Injected directory synchronization failure",
+                    true,
+                    true,
+                ))
+            },
+        )
+        .expect("replacement itself committed");
+
+        assert_eq!(guarantee, DurabilityGuarantee::AtomicFile);
+        assert_eq!(
+            fs::read(source.path()).expect("read committed replacement"),
+            b"complete replacement"
+        );
     }
 }

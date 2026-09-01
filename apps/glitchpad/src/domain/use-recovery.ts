@@ -1,0 +1,169 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
+
+import type { RecoveryInventoryEntry, ShellSession } from './contracts';
+import type {
+  RecoveryGateway,
+  RecoveryRecord,
+  RecoveryRecordDraft,
+} from './recovery-gateway';
+
+const IDLE_SNAPSHOT_MS = 2_000;
+const MAX_SNAPSHOT_MS = 30_000;
+
+const createRecordId = (): string => {
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = [...bytes].map((byte) => byte.toString(16).padStart(2, '0'));
+  return `${hex.slice(0, 4).join('')}-${hex.slice(4, 6).join('')}-${hex.slice(6, 8).join('')}-${hex.slice(8, 10).join('')}-${hex.slice(10).join('')}`;
+};
+
+interface RecordBinding {
+  recordId: string;
+  createdUnixMs: number;
+  lastSnapshotRevision: number | null;
+}
+
+export interface RecoveryController {
+  candidates: RecoveryInventoryEntry[];
+  warning: string | null;
+  accept(entry: RecoveryInventoryEntry): Promise<RecoveryRecord>;
+  refuse(entry: RecoveryInventoryEntry): Promise<void>;
+  defer(entry: RecoveryInventoryEntry): void;
+}
+
+export const useRecovery = (
+  sessions: ShellSession[],
+  gateway: RecoveryGateway | null,
+): RecoveryController => {
+  const [candidates, setCandidates] = useState<RecoveryInventoryEntry[]>([]);
+  const [warning, setWarning] = useState<string | null>(null);
+  const bindings = useRef(new Map<string, RecordBinding>());
+  const sessionsRef = useRef(sessions);
+  sessionsRef.current = sessions;
+
+  useEffect(() => {
+    if (!gateway) return;
+    let active = true;
+    void gateway
+      .inventory()
+      .then((entries) => {
+        if (active)
+          setCandidates(entries.filter(({ status }) => status === 'available'));
+      })
+      .catch(() => {
+        if (active)
+          setWarning('Recovery inventory is unavailable. Dirty content remains open.');
+      });
+    return () => {
+      active = false;
+    };
+  }, [gateway]);
+
+  const persist = useCallback(
+    (session: ShellSession) => {
+      if (!gateway || !session.dirty) return;
+      const existing = bindings.current.get(session.id);
+      if (existing?.lastSnapshotRevision === session.revision) return;
+      const now = Date.now();
+      const binding = existing ?? {
+        recordId: createRecordId(),
+        createdUnixMs: now,
+        lastSnapshotRevision: null,
+      };
+      bindings.current.set(session.id, binding);
+      const savedRevision =
+        session.saved_revision ?? Math.max(0, session.revision - 1);
+      const snapshotRevision = Math.max(session.revision, savedRevision + 1);
+      const record: RecoveryRecordDraft = {
+        record_id: binding.recordId,
+        display_hint: session.source.display_name,
+        source_identity_evidence: JSON.stringify(session.source.identity),
+        base_revision_evidence: JSON.stringify(
+          session.external_revision ?? {
+            byte_length: session.source.byte_length,
+            modified_unix_ms: session.source.modified_unix_ms,
+          },
+        ),
+        saved_session_revision: savedRevision,
+        snapshot_session_revision: snapshotRevision,
+        text_profile: {
+          encoding: 'utf8',
+          bom: 'absent',
+          newlines: 'lf',
+          terminal_newline: session.content.endsWith('\n') ? 'present' : 'absent',
+          undecodable_bytes: 'none',
+        },
+        created_unix_ms: binding.createdUnixMs,
+        updated_unix_ms: now,
+        content: session.content,
+        eviction_eligible: false,
+      };
+      void gateway
+        .persist(record)
+        .then(() => {
+          binding.lastSnapshotRevision = session.revision;
+          setWarning(null);
+        })
+        .catch(() => {
+          setWarning(
+            `Recovery coverage is at risk for ${session.source.display_name}. Keep the document open and free private storage before retrying.`,
+          );
+        });
+    },
+    [gateway],
+  );
+
+  useEffect(() => {
+    if (!gateway) return;
+    const dirtyIds = new Set(
+      sessions.filter(({ dirty }) => dirty).map(({ id }) => id),
+    );
+    for (const [sessionId, binding] of bindings.current) {
+      if (dirtyIds.has(sessionId)) continue;
+      bindings.current.delete(sessionId);
+      void gateway.remove(binding.recordId).catch(() => {
+        setWarning('Resolved recovery cleanup is pending and will be retried safely.');
+      });
+    }
+    const timers = sessions
+      .filter(({ dirty }) => dirty)
+      .map((session) => setTimeout(() => persist(session), IDLE_SNAPSHOT_MS));
+    return () => timers.forEach(clearTimeout);
+  }, [gateway, persist, sessions]);
+
+  useEffect(() => {
+    if (!gateway) return;
+    const timer = setInterval(() => {
+      sessionsRef.current.filter(({ dirty }) => dirty).forEach(persist);
+    }, MAX_SNAPSHOT_MS);
+    return () => clearInterval(timer);
+  }, [gateway, persist]);
+
+  const dismiss = (recordId: string) =>
+    setCandidates((entries) =>
+      entries.filter(({ record_id }) => record_id !== recordId),
+    );
+
+  return {
+    candidates,
+    warning,
+    async accept(entry) {
+      const record = await gateway!.load(entry.record_id);
+      bindings.current.set(`recovery-${entry.record_id}`, {
+        recordId: entry.record_id,
+        createdUnixMs: record.created_unix_ms,
+        lastSnapshotRevision: record.snapshot_session_revision,
+      });
+      dismiss(entry.record_id);
+      return record;
+    },
+    async refuse(entry) {
+      await gateway!.remove(entry.record_id);
+      dismiss(entry.record_id);
+    },
+    defer(entry) {
+      dismiss(entry.record_id);
+    },
+  };
+};

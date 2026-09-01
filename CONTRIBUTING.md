@@ -72,6 +72,8 @@ The aggregate gate runs Rust formatting, Clippy with warnings denied, native tes
 
 To diagnose documentation validation independently, run `pnpm check:validation`, `pnpm docs:links`, and `pnpm docs:mermaid` from an existing integrated terminal. On Windows, observe the desktop while running `cargo xtask docs`; any native console flash is a failure even when the command exits successfully.
 
+For focused recovery-store validation, run `cargo test -p glitchpad-host --test recovery_conformance`. This suite uses injected private roots and clocks to cover atomic publication, exact quota accounting, expiry, corruption isolation, protected-record refusal, cleanup, and redacted diagnostics without touching real application data.
+
 When platform behavior changes, also run the affected desktop or Android build and record the result in the pull request. A platform claim requires build, smoke-test, packaging, and documentation evidence.
 
 ## Pull requests

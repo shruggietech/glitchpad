@@ -4,10 +4,14 @@ use glitchpad_core::{
         SourceCapabilities, SourceDescriptor, SourceKind,
     },
     detection::{DetectionOutcome, DetectionResult, TextProfile},
-    session::DocumentSession,
+    recovery::{RecoveryInventoryEntry, RecoveryRecord, RecoveryRecordDraft},
+    session::{
+        DestructiveTransition, DocumentSession, PendingSave, RecoveryCoverage, SessionIntegrity,
+        TransitionDecision, TransitionResolution,
+    },
     source::{
         AndroidRestorationResult, AndroidSaveAsReceipt, AndroidSourceSummary, DesktopSourceSummary,
-        ExternalRevision, SaveReceipt, SourceEvent,
+        ExternalRevision, OverwriteAuthorization, SaveOperationId, SaveReceipt, SourceEvent,
     },
 };
 
@@ -54,6 +58,17 @@ fn schemas_cover_source_detection_text_profile_and_session_contracts() {
         schemars::schema_for!(AndroidSourceSummary),
         schemars::schema_for!(AndroidRestorationResult),
         schemars::schema_for!(AndroidSaveAsReceipt),
+        schemars::schema_for!(SaveOperationId),
+        schemars::schema_for!(OverwriteAuthorization),
+        schemars::schema_for!(SessionIntegrity),
+        schemars::schema_for!(RecoveryCoverage),
+        schemars::schema_for!(DestructiveTransition),
+        schemars::schema_for!(TransitionDecision),
+        schemars::schema_for!(TransitionResolution),
+        schemars::schema_for!(PendingSave),
+        schemars::schema_for!(RecoveryRecord),
+        schemars::schema_for!(RecoveryRecordDraft),
+        schemars::schema_for!(RecoveryInventoryEntry),
     ];
 
     for schema in schemas {
@@ -62,7 +77,7 @@ fn schemas_cover_source_detection_text_profile_and_session_contracts() {
             value["$schema"],
             "https://json-schema.org/draft/2020-12/schema"
         );
-        assert!(value["type"] == "object" || value["$defs"].is_object());
+        assert!(value.get("type").is_some() || value["$defs"].is_object());
     }
 }
 

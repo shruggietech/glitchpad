@@ -669,7 +669,11 @@ impl DesktopSourceHost {
                 true,
             ));
         }
-        if record.state != SourceState::Available {
+        let replacing_reviewed_external_change =
+            request.expected_external_revision != record.summary.external_revision;
+        if record.state != SourceState::Available
+            && !(record.state == SourceState::Changed && replacing_reviewed_external_change)
+        {
             return Err(CoreError::new(
                 CoreErrorCategory::Conflict,
                 "The source must be revalidated before save",
@@ -678,9 +682,7 @@ impl DesktopSourceHost {
             ));
         }
         let (_, current) = observe_revision(&record.path)?;
-        if current != request.expected_external_revision
-            || current != record.summary.external_revision
-        {
+        if current != request.expected_external_revision {
             record.state = SourceState::Changed;
             return Err(CoreError::new(
                 CoreErrorCategory::Conflict,
@@ -690,6 +692,28 @@ impl DesktopSourceHost {
             ));
         }
         let guarantee = persistence::platform_guarantee();
+        if replacing_reviewed_external_change {
+            let authorization = request.overwrite_authorization.as_ref().ok_or_else(|| {
+                CoreError::new(
+                    CoreErrorCategory::AcknowledgementRequired,
+                    "Overwriting a reviewed external change requires a second confirmation",
+                    false,
+                    true,
+                )
+            })?;
+            if authorization.source_id != request.source_id
+                || authorization.reviewed_external_revision != current
+                || authorization.session_revision != request.expected_session_revision
+                || authorization.durability != guarantee
+            {
+                return Err(CoreError::new(
+                    CoreErrorCategory::StaleSession,
+                    "The overwrite confirmation no longer matches the reviewed source revision",
+                    true,
+                    true,
+                ));
+            }
+        }
         validate_durability_acknowledgement(&request, &current, guarantee)?;
         let actual_guarantee = match persistence::replace(&record.path, &request.bytes, &current) {
             Ok(guarantee) => guarantee,
@@ -700,7 +724,7 @@ impl DesktopSourceHost {
             Err(error) => return Err(error),
         };
         let (native_identity, new_revision) = observe_revision(&record.path)?;
-        let previous_external_revision = record.summary.external_revision.clone();
+        let previous_external_revision = current;
         record.native_identity = native_identity;
         record.summary.external_revision = new_revision.clone();
         record.summary.descriptor.identity = new_revision.identity.clone();
@@ -710,6 +734,7 @@ impl DesktopSourceHost {
             .map(|value| i64::try_from(value / 1_000_000).unwrap_or(i64::MAX));
         record.state = SourceState::Available;
         Ok(SaveReceipt {
+            operation_id: request.operation_id,
             source_id: request.source_id,
             accepted_session_revision: request.expected_session_revision,
             previous_external_revision,
@@ -1242,11 +1267,13 @@ pub(crate) mod tests {
         fs::write(source.path(), b"external edit").expect("external edit");
         let error = host
             .save(SaveRequest {
+                operation_id: glitchpad_core::source::SaveOperationId(1),
                 source_id: summary.source_id,
                 expected_external_revision: summary.external_revision,
                 expected_session_revision: 1,
                 bytes: b"local edit".to_vec(),
                 durability_acknowledgement: None,
+                overwrite_authorization: None,
             })
             .expect_err("stale save must fail");
         assert_eq!(error.category, CoreErrorCategory::Conflict);
@@ -1265,11 +1292,13 @@ pub(crate) mod tests {
             .expect("acquire source");
         let receipt = host
             .save(SaveRequest {
+                operation_id: glitchpad_core::source::SaveOperationId(2),
                 source_id: summary.source_id.clone(),
                 expected_external_revision: summary.external_revision,
                 expected_session_revision: 1,
                 bytes: b"saved".to_vec(),
                 durability_acknowledgement: None,
+                overwrite_authorization: None,
             })
             .expect("save source");
         assert_eq!(receipt.byte_count, 5);
@@ -1296,11 +1325,13 @@ pub(crate) mod tests {
         host.note_session_revision(&summary.source_id, 2)
             .expect("record session revision");
         let request = |expected_session_revision, bytes| SaveRequest {
+            operation_id: glitchpad_core::source::SaveOperationId(3),
             source_id: summary.source_id.clone(),
             expected_external_revision: summary.external_revision.clone(),
             expected_session_revision,
             bytes,
             durability_acknowledgement: None,
+            overwrite_authorization: None,
         };
         assert_eq!(
             host.save(request(1, b"stale edit".to_vec()))
@@ -1339,11 +1370,13 @@ pub(crate) mod tests {
             .write = false;
         let error = host
             .save(SaveRequest {
+                operation_id: glitchpad_core::source::SaveOperationId(4),
                 source_id: summary.source_id,
                 expected_external_revision: summary.external_revision,
                 expected_session_revision: 1,
                 bytes: b"replacement".to_vec(),
                 durability_acknowledgement: None,
+                overwrite_authorization: None,
             })
             .expect_err("read-only source must reject save");
         assert_eq!(error.category, CoreErrorCategory::CapabilityDenied);
@@ -1365,11 +1398,13 @@ pub(crate) mod tests {
             change_token: None,
         };
         let mut request = SaveRequest {
+            operation_id: glitchpad_core::source::SaveOperationId(5),
             source_id: source_id.clone(),
             expected_external_revision: revision.clone(),
             expected_session_revision: 1,
             bytes: b"replacement".to_vec(),
             durability_acknowledgement: None,
+            overwrite_authorization: None,
         };
         assert_eq!(
             validate_durability_acknowledgement(

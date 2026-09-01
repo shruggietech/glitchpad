@@ -52,7 +52,7 @@ pub(super) fn observe_revision(
         .and_then(|value| u64::try_from(value.as_nanos()).ok());
     let revision = ExternalRevision {
         identity: identity.contract.clone(),
-        byte_length: metadata.len(),
+        byte_length: Some(metadata.len()),
         modified_unix_nanos,
         change_token: platform_change_token(&metadata),
     };

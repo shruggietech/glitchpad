@@ -363,6 +363,10 @@ Desktop adapters accept dialog choices, dropped files, command-line arguments, a
 
 Android adapters accept system-delivered `ACTION_VIEW`, `ACTION_OPEN_DOCUMENT`, `ACTION_CREATE_DOCUMENT`, and `ACTION_SEND` intents. The Kotlin bridge uses `ContentResolver` for descriptors, streams, provider metadata, and persistable grants. It MUST NOT derive or require a desktop-style path. Temporary grants remain temporary; persistent grants are requested only when the intent and provider permit them.
 
+The unreleased S011 delta implements this boundary as a private Tauri mobile plugin. `ACTION_VIEW` and `ACTION_SEND` remain inbound deliveries, while Open and Create are application-initiated picker operations whose pending Tauri invoke is their one-use result authorization. Raw provider URIs remain native-private. Public source contracts carry opaque IDs, optional provider size and modification facts, explicit grant state, strong DocumentsContract identity only when authority and durable document ID are available, bounded read and Save As receipts, and stable redacted errors. Unknown provider replacement semantics always use Save As because Android exposes no portable atomic-replacement guarantee.
+
+Persisted restoration records are bounded application-private state and are written only after the platform confirms a persistable grant. Startup and activity reload reconcile those records against held URI permissions before rebuilding native-private handles. API 24 and API 36 headless x86_64 controlled-provider tests prove metadata omission, descriptor seek, verified writes, and process-boundary restoration independently from the retained ARM64 packaging job.
+
 The WebView receives source summaries and opaque IDs. It never receives a reusable native path, content URI grant, unrestricted filesystem scope, or generic read/write command.
 
 ## 13. File Identification, Format Detection, and Text Decoding

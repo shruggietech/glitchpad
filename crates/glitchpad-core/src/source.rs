@@ -64,7 +64,7 @@ pub struct LinkAuthorizationId(pub String);
 #[derive(Clone, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
 pub struct ExternalRevision {
     pub identity: DocumentIdentity,
-    pub byte_length: u64,
+    pub byte_length: Option<u64>,
     #[schemars(with = "Option<String>")]
     #[serde(with = "optional_u64_decimal")]
     pub modified_unix_nanos: Option<u64>,
@@ -137,7 +137,7 @@ pub struct RevalidationResult {
 #[derive(Clone, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
 pub struct SourceMetadata {
     pub display_name: String,
-    pub byte_length: u64,
+    pub byte_length: Option<u64>,
     #[schemars(with = "Option<String>")]
     #[serde(with = "optional_u64_decimal")]
     pub modified_unix_nanos: Option<u64>,
@@ -222,6 +222,88 @@ pub struct LinkAuthorization {
     pub normalized_target: String,
 }
 
+/// Android platform flow that supplied one provider-backed source.
+#[derive(Clone, Copy, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum AndroidDeliveryKind {
+    View,
+    Share,
+    OpenResult,
+    CreateResult,
+}
+
+/// Android URI authority actually held after acquisition.
+#[derive(Clone, Copy, Debug, Default, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[allow(clippy::struct_excessive_bools)]
+pub struct AndroidGrantState {
+    pub read: bool,
+    pub write: bool,
+    pub persisted_read: bool,
+    pub persisted_write: bool,
+    pub restorable: bool,
+}
+
+/// Safe Android acquisition result with no URI or native bridge token.
+#[derive(Clone, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
+pub struct AndroidSourceSummary {
+    pub source_id: SourceId,
+    pub descriptor: SourceDescriptor,
+    pub external_revision: ExternalRevision,
+    pub delivery_kind: AndroidDeliveryKind,
+    pub grant: AndroidGrantState,
+}
+
+/// Stable rejection returned while draining Android system deliveries.
+#[derive(Clone, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
+pub struct AndroidDeliveryRejection {
+    pub code: String,
+    pub retryable: bool,
+}
+
+/// Bounded Android delivery drain preserving accepted and rejected items.
+#[derive(Clone, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
+pub struct AndroidDeliveryDrain {
+    pub sources: Vec<AndroidSourceSummary>,
+    pub rejections: Vec<AndroidDeliveryRejection>,
+}
+
+/// Result of restoring one native-private Android source record.
+#[derive(Clone, Copy, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum AndroidRestorationStatus {
+    Restored,
+    NeedsRedelivery,
+    PermissionRevoked,
+    Unavailable,
+}
+
+/// Safe restoration outcome; restored sources receive new process-local IDs.
+#[derive(Clone, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
+pub struct AndroidRestorationResult {
+    pub source: Option<AndroidSourceSummary>,
+    pub status: AndroidRestorationStatus,
+    pub display_name: Option<String>,
+}
+
+/// Complete bounded payload staged before launching Android Save As.
+#[derive(Clone, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
+pub struct AndroidSaveAsRequest {
+    pub source_id: SourceId,
+    pub expected_external_revision: ExternalRevision,
+    pub suggested_name: String,
+    pub media_type: Option<String>,
+    pub bytes: Vec<u8>,
+}
+
+/// Verified result of writing a new provider destination.
+#[derive(Clone, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
+pub struct AndroidSaveAsReceipt {
+    pub previous_source_id: SourceId,
+    pub new_source: AndroidSourceSummary,
+    pub byte_count: u64,
+    pub durability: DurabilityGuarantee,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -235,7 +317,7 @@ mod tests {
                 token: token.into(),
                 strength: IdentityStrength::Strong,
             },
-            byte_length: length,
+            byte_length: Some(length),
             modified_unix_nanos: Some(42),
             change_token: None,
         }
@@ -247,6 +329,27 @@ mod tests {
         assert_eq!(original, original.clone());
         assert_ne!(original, revision("file-a", 13));
         assert_ne!(original, revision("file-b", 12));
+    }
+
+    #[test]
+    fn android_grants_do_not_infer_restoration() {
+        let temporary = AndroidGrantState {
+            read: true,
+            ..AndroidGrantState::default()
+        };
+        assert!(!temporary.restorable);
+        assert!(!temporary.persisted_read);
+    }
+
+    #[test]
+    fn provider_revision_preserves_unknown_length() {
+        let mut provider = revision("document", 12);
+        provider.byte_length = None;
+        let encoded = serde_json::to_value(&provider).expect("serialize provider revision");
+        assert!(encoded["byte_length"].is_null());
+        let decoded: ExternalRevision =
+            serde_json::from_value(encoded).expect("deserialize provider revision");
+        assert_eq!(decoded.byte_length, None);
     }
 
     #[test]

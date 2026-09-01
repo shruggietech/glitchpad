@@ -5,7 +5,10 @@ use glitchpad_core::{
     },
     detection::{DetectionOutcome, DetectionResult, TextProfile},
     session::DocumentSession,
-    source::{DesktopSourceSummary, ExternalRevision, SaveReceipt, SourceEvent},
+    source::{
+        AndroidRestorationResult, AndroidSaveAsReceipt, AndroidSourceSummary, DesktopSourceSummary,
+        ExternalRevision, SaveReceipt, SourceEvent,
+    },
 };
 
 #[test]
@@ -48,6 +51,9 @@ fn schemas_cover_source_detection_text_profile_and_session_contracts() {
         schemars::schema_for!(ExternalRevision),
         schemars::schema_for!(SourceEvent),
         schemars::schema_for!(SaveReceipt),
+        schemars::schema_for!(AndroidSourceSummary),
+        schemars::schema_for!(AndroidRestorationResult),
+        schemars::schema_for!(AndroidSaveAsReceipt),
     ];
 
     for schema in schemas {

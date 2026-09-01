@@ -56,7 +56,7 @@ export type LinkAuthorizationId = string;
 
 export interface ExternalRevision {
   identity: DocumentIdentity;
-  byte_length: number;
+  byte_length: number | null;
   modified_unix_nanos: string | null;
   change_token: string | null;
 }
@@ -116,6 +116,57 @@ export interface SaveReceipt {
 export interface LinkAuthorization {
   id: LinkAuthorizationId;
   normalized_target: string;
+}
+
+export type AndroidDeliveryKind =
+  | 'view'
+  | 'share'
+  | 'open_result'
+  | 'create_result';
+
+export interface AndroidGrantState {
+  read: boolean;
+  write: boolean;
+  persisted_read: boolean;
+  persisted_write: boolean;
+  restorable: boolean;
+}
+
+export interface AndroidSourceSummary {
+  source_id: SourceId;
+  descriptor: SourceDescriptor;
+  external_revision: ExternalRevision;
+  delivery_kind: AndroidDeliveryKind;
+  grant: AndroidGrantState;
+}
+
+export interface AndroidDeliveryRejection {
+  code: string;
+  retryable: boolean;
+}
+
+export interface AndroidDeliveryDrain {
+  sources: AndroidSourceSummary[];
+  rejections: AndroidDeliveryRejection[];
+}
+
+export type AndroidRestorationStatus =
+  | 'restored'
+  | 'needs_redelivery'
+  | 'permission_revoked'
+  | 'unavailable';
+
+export interface AndroidRestorationResult {
+  source: AndroidSourceSummary | null;
+  status: AndroidRestorationStatus;
+  display_name: string | null;
+}
+
+export interface AndroidSaveAsReceipt {
+  previous_source_id: SourceId;
+  new_source: AndroidSourceSummary;
+  byte_count: number;
+  durability: DurabilityGuarantee;
 }
 
 export interface RendererDescriptor {

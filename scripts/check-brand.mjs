@@ -38,11 +38,14 @@ async function collectFiles(directory) {
 
 function parseTagAttributes(tag) {
   const attributes = new Map();
+  const duplicates = new Set();
   const pattern = /([^\s=/>]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g;
   for (const match of tag.matchAll(pattern)) {
-    attributes.set(match[1], match[2] ?? match[3]);
+    const name = match[1].toLowerCase();
+    if (attributes.has(name)) duplicates.add(name);
+    else attributes.set(name, match[2] ?? match[3]);
   }
-  return attributes;
+  return { attributes, duplicates };
 }
 
 export function verifyReadmeBanner(readme) {
@@ -69,8 +72,22 @@ export function verifyReadmeBanner(readme) {
     return problems;
   }
 
-  const source = parseTagAttributes(children[1]);
-  const image = parseTagAttributes(children[2]);
+  const { attributes: source, duplicates: sourceDuplicates } =
+    parseTagAttributes(children[1]);
+  const { attributes: image, duplicates: imageDuplicates } =
+    parseTagAttributes(children[2]);
+  for (const [label, duplicates, governedAttributes] of [
+    ['dark source', sourceDuplicates, ['media', 'srcset']],
+    ['fallback image', imageDuplicates, ['src', 'alt', 'width']],
+  ]) {
+    for (const attribute of governedAttributes) {
+      if (duplicates.has(attribute)) {
+        problems.push(
+          `README banner ${label} must not repeat the "${attribute}" attribute`,
+        );
+      }
+    }
+  }
   for (const [label, actual, expected] of [
     ['dark source media', source.get('media'), '(prefers-color-scheme: dark)'],
     [

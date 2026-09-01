@@ -55,10 +55,10 @@
 - [x] T015 [US1] Run preview landing, documentation, nested-route, asset, metadata, and missing-page smoke checks and record results in `docs/operations/glitchpad-domain-cutover.md`
 - [x] T016 [US1] Create the pending `shruggietech` Pages-domain verification entry for `glitchpad.com` and record the issued challenge name and value in `docs/operations/glitchpad-domain-cutover.md`
 - [x] T017 [US1] Add the persistent challenge TXT record through Cloudflare, confirm authoritative and public resolution, and update `docs/operations/glitchpad-domain-cutover.md`
-- [ ] T018 [US1] Execute the GitHub organization Verify action only after T011-T017 pass, then confirm the personal claim release and organization verification in `docs/operations/glitchpad-domain-cutover.md`
-- [ ] T019 [US1] Attach `glitchpad.com` to `shruggietech/glitchpad` Pages with an expected-state guard and record the result in `docs/operations/glitchpad-domain-cutover.md`
-- [ ] T020 [US1] Replace the legacy apex and `www` website records with the complete DNS-only A, AAAA, and organization CNAME set while preserving all unrelated records, recording provider identifiers in `docs/operations/glitchpad-domain-cutover.md`
-- [ ] T021 [US1] Validate destination Pages ownership and authoritative plus public DNS convergence against the final record contract in `docs/operations/glitchpad-domain-cutover.md`
+- [x] T018 [US1] Execute the GitHub organization Verify action only after T011-T017 pass, then confirm the personal claim release and organization verification in `docs/operations/glitchpad-domain-cutover.md`
+- [x] T019 [US1] Attach `glitchpad.com` to `shruggietech/glitchpad` Pages with an expected-state guard and record the result in `docs/operations/glitchpad-domain-cutover.md`
+- [x] T020 [US1] Replace the legacy apex and `www` website records with the complete DNS-only A, AAAA, and organization CNAME set while preserving all unrelated records, recording provider identifiers in `docs/operations/glitchpad-domain-cutover.md`
+- [x] T021 [US1] Validate destination Pages ownership and authoritative plus public DNS convergence against the final record contract in `docs/operations/glitchpad-domain-cutover.md`
 
 **Checkpoint**: The verified organization repository owns the canonical domain and final DNS is active; the legacy Pages site has not been disabled.
 

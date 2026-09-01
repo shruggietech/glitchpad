@@ -17,7 +17,7 @@
 | Canonical production host | `https://glitchpad.com` |
 | Temporary preview host | `s009-preview.glitchpad.com` |
 | Pre-mutation commit | `4692625e1f22bf0fbe53ce890d8de7174d039b85` |
-| Run state | C01-C06 passed; Pages challenge is authoritative and public, preview is validated, and legacy production remains unchanged; C07 verification is pending final guard readback |
+| Run state | C01-C10 passed; verified organization repository owns the apex and final DNS is globally visible; legacy Pages remains enabled and certificate approval is pending |
 
 The branch was created from the reviewed `main` revision shown above. Direct GitHub administration and Cloudflare OAuth access were verified for the selected repositories, organization, account, and zone. The Cloudflare Email Routing read surface reported a newly timestamped, disabled, unconfigured settings object while returning the previously existing disabled catch-all rule; it changed no DNS record, route, destination, or enabled state and is retained exactly as observed.
 
@@ -40,9 +40,9 @@ The personal Pages site is built with `build_type: legacy`, source `master:/docs
 
 | ID | Provider object | Pre-cutover identity or value | Decision | Intended final state | Recovery source | Status |
 | --- | --- | --- | --- | --- | --- | --- |
-| D01 | Apex A | `1223d3bd28b734c27a72fb7e26e2fc46`, `192.30.252.153`, proxied, Auto TTL | Replace | Four DNS-only GitHub Pages A records | Snapshot record plus rollback R08 | Planned |
+| D01 | Apex A | `1223d3bd28b734c27a72fb7e26e2fc46`, `192.30.252.153`, proxied, Auto TTL | Replace | Four DNS-only GitHub Pages A records | Snapshot record plus rollback R08 | Verified at C09-C10 |
 | D02 | `_domainconnect` CNAME | `fd3b119c55c1865535eb2fe0090b831c`, `connect.domains.google.com`, proxied | Retain | Byte-equivalent | Snapshot | Planned |
-| D03 | `www` CNAME | `fd8ef00fb74b6dd3bb3f18d573e9f076`, `h8rt3rmin8r.github.io`, proxied | Replace | DNS-only `shruggietech.github.io` | Snapshot record plus rollback R08 | Planned |
+| D03 | `www` CNAME | `fd8ef00fb74b6dd3bb3f18d573e9f076`, `h8rt3rmin8r.github.io`, proxied | Replace | DNS-only `shruggietech.github.io` | Snapshot record plus rollback R08 | Verified at C09-C10 |
 | D04 | Google MX priority 5 | `8d1f3d123cd4b5cda23f7b75dc4c2458`, `gmr-smtp-in.l.google.com` | Retain | Byte-equivalent | Snapshot | Planned |
 | D05 | Google MX priority 10 | `a6bb8d777a8d6c83ce08016e0faf7219`, `alt1.gmr-smtp-in.l.google.com` | Retain | Byte-equivalent | Snapshot | Planned |
 | D06 | Google MX priority 20 | `e5e2aa3c21c84e7926baf7bb00d54034`, `alt2.gmr-smtp-in.l.google.com` | Retain | Byte-equivalent | Snapshot | Planned |
@@ -51,7 +51,7 @@ The personal Pages site is built with `build_type: legacy`, source `master:/docs
 | D09 | OpenAI apex TXT | `b8f860846036c0c4f1c7acedb5c9dc88`, existing public verification value | Retain | Byte-equivalent | Snapshot | Planned |
 | D10 | Organization challenge TXT | Absent | Add and retain | Public GitHub-issued TXT value | GitHub Pages UI; Cloudflare ID `a645502759838290ab31d2032149f686` | Verified at C06 |
 | D11 | Preview CNAME | Absent | Add temporarily, then retire | Absent after canonical production passes | Cloudflare ID `c512a433e329c81cf77415a7668a3cbd` | Applied at C03; retirement pending |
-| D12 | Apex AAAA set | Absent | Add | Four DNS-only GitHub Pages AAAA records | Created Cloudflare IDs | Planned |
+| D12 | Apex AAAA set | Absent | Add | Four DNS-only GitHub Pages AAAA records | Created Cloudflare IDs | Verified at C09-C10 |
 | D13 | DNSSEC | Disabled | Retain | Disabled | Snapshot | Planned |
 | D14 | Zone settings | 56 returned settings | Retain | Value-equivalent | Snapshot | Planned |
 | D15 | Page Rules | Empty | Retain | Empty | Snapshot | Planned |
@@ -64,7 +64,7 @@ The personal Pages site is built with `build_type: legacy`, source `master:/docs
 | D22 | Legacy Pages attachment | Personal repository, legacy `master:/docs`, apex CNAME | Retire last | Pages disabled after final smoke pass | Snapshot plus rollback R14 | Planned |
 | D23 | Destination Pages | Absent | Add | Workflow build on organization repository, apex CNAME, HTTPS enforced | GitHub API state and workflow run | Applied at C01; final attachment pending |
 | D24 | `github-pages` environment | Absent | Add | Main-only deployment policy | GitHub API state | Verified at C02 |
-| D25 | Organization domain verification | Absent | Add and retain | `glitchpad.com` verified for `shruggietech` | Challenge TXT plus GitHub owner state | Planned |
+| D25 | Organization domain verification | Absent | Add and retain | `glitchpad.com` verified for `shruggietech` | Challenge TXT plus GitHub owner state | Verified at C07 |
 
 ## Local replacement-artifact validation
 
@@ -142,7 +142,7 @@ Every checkpoint is fail-closed. A checkpoint starts only when its expected-befo
 - Expected after: `shruggietech` reports the domain verified and the personal Pages custom-domain claim is released.
 - Stop condition: Organization verification is ambiguous, challenge no longer resolves, or the personal claim remains in an unexplained partial state.
 - Rollback R07: Prefer continuing to C08 using the already validated organization origin. Exact personal restoration requires R09 followed by R14 and R08; do not remove verification merely to regain the old claim unless the destination cannot be restored.
-- Observation: Pending.
+- Observation: Pass at `2026-09-01T01:52Z`. Immediately before the action, the legacy site was built with its captured CNAME, the destination preview served the reviewed technical specification, destination state was `protected_domain_state: unverified`, all eleven expected DNS records matched, retained-record drift was zero, and the challenge resolved from all authoritative and public resolvers. GitHub displayed `Successfully verified glitchpad.com` and listed the domain as `Verified`. Immediate API readback showed the legacy Pages build retained but its `cname` released to `null`; destination state changed to `protected_domain_state: verified` while retaining the preview CNAME.
 
 ### C08 - Attach the apex to destination Pages
 
@@ -151,7 +151,7 @@ Every checkpoint is fail-closed. A checkpoint starts only when its expected-befo
 - Expected after: Destination Pages reports the apex CNAME and retains workflow publication.
 - Stop condition: GitHub rejects the verified apex, destination state changes unexpectedly, or the source claim reappears.
 - Rollback R08A: Restore the destination preview CNAME and keep the verified organization domain while diagnosing. If this cannot restore a validated organization serving state, execute the guarded exact-legacy recovery R09, R14, then R08.
-- Observation: Pending.
+- Observation: Pass at `2026-09-01T01:53Z`. The expected-before readback matched C07. GitHub accepted destination CNAME `glitchpad.com` and returned `build_type: workflow`, `protected_domain_state: verified`, `https_enforced: false`, and `html_url: http://glitchpad.com/`. The legacy Pages build remained available at its repository host with `cname: null`.
 
 ### C09 - Activate final website DNS
 
@@ -160,7 +160,7 @@ Every checkpoint is fail-closed. A checkpoint starts only when its expected-befo
 - Expected after: Exactly that website record set exists with Auto TTL and `proxied: false`; all D02 and D04-D10 retained records are unchanged.
 - Stop condition: Expected-before ID/value mismatch, partial write, unexpected record, wildcard, or retained-record drift.
 - Rollback R08: Delete the created website records by returned IDs, recreate apex A `192.30.252.153` and `www` CNAME `h8rt3rmin8r.github.io` with Auto TTL and `proxied: true`, then confirm retained records. The personal attachment must already be available through R14; if organization verification blocks it, execute R09 first.
-- Observation: Pending.
+- Observation: Pass at `2026-09-01T01:53Z`. A single guarded Cloudflare batch deleted only legacy apex ID `1223d3bd28b734c27a72fb7e26e2fc46` and legacy `www` ID `fd8ef00fb74b6dd3bb3f18d573e9f076`, then created: A IDs `14f6c43c0fefb41626b28901829a8c32`, `74c5462306c7fbf1bc206fa4135c54bb`, `38e705fe73ff654aba709cec7d92663f`, and `c7ced6bc92e8bf431e529f78498bfd1f`; AAAA IDs `19bca97611f31777a2a6d958f4d1081c`, `4afd9e357b4306fdcd3b61833cdc699b`, `9d2c0e8b76a4faf2fb5a3e7aafc8c98f`, and `79f4eb2ea4de99ef9c49d8fa9b4c5c17`; and `www` CNAME ID `8efff6a0ef1bdaa42c2b88a5be4521bb`. Every new website record is DNS-only with Auto TTL and the S009 comment. Readback contained exactly 18 records: the nine new production records, preview, challenge, and all seven unrelated baseline records.
 
 ### C10 - Validate provider ownership and DNS
 
@@ -169,7 +169,7 @@ Every checkpoint is fail-closed. A checkpoint starts only when its expected-befo
 - Expected after: Destination owns `glitchpad.com`; A, AAAA, CNAME, and challenge TXT values match the final contract; no legacy or wildcard website record remains.
 - Stop condition: Ownership mismatch, stale unsupported target beyond the bounded observation window, missing address family, wildcard, or unrelated drift.
 - Rollback R10: Restore the last validated organization preview state using R08A when possible; otherwise use R09, R14, and R08.
-- Observation: Pending.
+- Observation: Pass at `2026-09-01T01:54Z`. GitHub reports the organization repository owns verified `glitchpad.com`. Both authoritative nameservers and Cloudflare (`1.1.1.1`), Google (`8.8.8.8`), and Quad9 (`9.9.9.9`) return all four expected A records, all four expected AAAA records, `www` CNAME `shruggietech.github.io`, and the exact persistent challenge token. No wildcard exists and the Cloudflare API readback shows every unrelated record unchanged. Certificate state is not yet returned, so C11 remains blocked on approval.
 
 ### C11 - Approve and enforce HTTPS
 

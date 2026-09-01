@@ -207,6 +207,7 @@ fn report_environment(name: &str) {
 fn docs(repository: &Path) -> Result<(), String> {
     run(repository, "pnpm", ["run", "check:brand"])?;
     run(repository, "pnpm", ["run", "check:site"])?;
+    run(repository, "pnpm", ["run", "check:validation"])?;
     run(repository, "pnpm", ["run", "check:config"])?;
     run(repository, "pnpm", ["run", "docs:format"])?;
     run(repository, "pnpm", ["run", "docs:lint"])?;

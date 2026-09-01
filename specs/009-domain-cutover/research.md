@@ -14,7 +14,7 @@
 
 **Rationale**: The Cloudflare MCP returned successful reads for DNS, DNSSEC, all 56 zone settings, Page Rules, zone and account rulesets, Workers routes, Email Routing, and account lists. GitHub authentication has organization-owner and repository-administrator authority. No repository token or interactive terminal credential is required.
 
-**Alternatives considered**: The existing `CF_DNS_API_TOKEN` has incomplete read authority and failed several audit endpoints. A new broad token is unnecessary now that OAuth access is verified. Browser-only configuration is reserved for organization domain verification because GitHub exposes no documented public endpoint for that control.
+**Alternatives considered**: The existing `CF_DNS_API_TOKEN` has incomplete read authority and failed several audit endpoints. A new broad token is unnecessary now that OAuth access is verified. Browser-only configuration is reserved for Pages organization-domain verification because GitHub exposes no documented public endpoint for that specific control. GitHub GraphQL's documented `addVerifiableDomain` and `verifyVerifiableDomain` mutations were inspected during implementation and rejected because they operate the distinct organization identity/email-domain system, issue a `_gh-<owner>-o` challenge instead of the Pages `_github-pages-challenge-<owner>` challenge, and do not replace Pages claim protection.
 
 ## Decision 3: Treat managed rules as retained provider state
 

@@ -36,7 +36,7 @@
 - [x] T007 Classify every DNS object, zone setting, Page Rule surface, managed ruleset, redirect-list surface, Workers-route surface, email-routing surface, SSL state, and Pages attachment as retain, replace, or retire in `docs/operations/glitchpad-domain-cutover.md`
 - [x] T008 Define exact expected-before guards, expected-after results, stop conditions, and reverse-order rollback operations for all 14 checkpoints in `docs/operations/glitchpad-domain-cutover.md`
 - [x] T009 Validate the pre-cutover snapshot against `specs/009-domain-cutover/contracts/cutover-evidence.md`, scan it for credentials and unredacted email destinations, and record the pass in `docs/operations/glitchpad-domain-cutover.md`
-- [ ] T010 Commit the validated S009 specification, plan, evidence baseline, decision log, and rollback checkpoint before production mutation, recording the commit in `docs/operations/glitchpad-domain-cutover.md`
+- [x] T010 Commit the validated S009 specification, plan, evidence baseline, decision log, and rollback checkpoint before production mutation, recording the commit in `docs/operations/glitchpad-domain-cutover.md`
 
 **Checkpoint**: The replacement artifact, baseline, decisions, and rollback are reviewable before any provider mutation.
 

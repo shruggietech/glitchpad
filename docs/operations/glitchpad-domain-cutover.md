@@ -16,8 +16,8 @@
 | Destination Pages site | `shruggietech/glitchpad`, GitHub Actions build |
 | Canonical production host | `https://glitchpad.com` |
 | Temporary preview host | `s009-preview.glitchpad.com` |
-| Pre-mutation commit | Pending T010 |
-| Run state | Foundation validated at `2026-09-01T01:36:28.400Z`; no website DNS, Pages, domain-claim, or routing mutation has occurred |
+| Pre-mutation commit | `4692625e1f22bf0fbe53ce890d8de7174d039b85` |
+| Run state | Foundation committed and validated at `2026-09-01T01:36:28.400Z`; no website DNS, Pages, domain-claim, or routing mutation has occurred |
 
 The branch was created from the reviewed `main` revision shown above. Direct GitHub administration and Cloudflare OAuth access were verified for the selected repositories, organization, account, and zone. The Cloudflare Email Routing read surface reported a newly timestamped, disabled, unconfigured settings object while returning the previously existing disabled catch-all rule; it changed no DNS record, route, destination, or enabled state and is retained exactly as observed.
 

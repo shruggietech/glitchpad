@@ -10,6 +10,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import org.junit.After
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -19,11 +20,23 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class AndroidSourceInstrumentedTest {
-  private val resolver = InstrumentationRegistry.getInstrumentation().context.contentResolver
+  private val instrumentation = InstrumentationRegistry.getInstrumentation()
+  private val providerContext = instrumentation.context
+  private val clientContext = instrumentation.targetContext
+  private val resolver = clientContext.contentResolver
+  private val modes = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+  private val grantedUris = mutableSetOf<Uri>()
+
+  @After
+  fun revokeFixtureGrants() {
+    grantedUris.forEach { uri ->
+      providerContext.revokeUriPermission(clientContext.packageName, uri, modes)
+    }
+  }
 
   @Test
   fun controlledProviderSupportsMetadataSeekAndVerifiedWrite() {
-    val source = documentUri("seekable.txt")
+    val source = grant(documentUri("seekable.txt"))
     resolver.query(source, null, null, null, null).use { cursor ->
       requireNotNull(cursor)
       assertTrue(cursor.moveToFirst())
@@ -36,8 +49,8 @@ class AndroidSourceInstrumentedTest {
       assertTrue(FileInputStream(descriptor.fileDescriptor).channel.position(5).position() == 5L)
     }
 
-    val createdId = DocumentsContract.createDocument(resolver, rootUri(), "text/plain", "save-as.txt")
-    val created = requireNotNull(createdId)
+    val createdId = DocumentsContract.createDocument(resolver, grant(rootUri()), "text/plain", "save-as.txt")
+    val created = grant(requireNotNull(createdId))
     val payload = "verified save-as payload".toByteArray()
     resolver.openFileDescriptor(created, "rw").use { descriptor ->
       requireNotNull(descriptor)
@@ -53,7 +66,7 @@ class AndroidSourceInstrumentedTest {
 
   @Test
   fun controlledProviderPreservesOptionalSizeAndMutationEvidence() {
-    val source = documentUri("unknown-size.txt")
+    val source = grant(documentUri("unknown-size.txt"))
     resolver.query(source, arrayOf("_display_name", "_size", "last_modified"), null, null, null).use { cursor ->
       requireNotNull(cursor)
       assertTrue(cursor.moveToFirst())
@@ -62,7 +75,7 @@ class AndroidSourceInstrumentedTest {
     }
     assertEquals("text/plain", resolver.getType(source))
 
-    resolver.openFileDescriptor(documentUri("pipe.txt"), "r").use { descriptor ->
+    resolver.openFileDescriptor(grant(documentUri("pipe.txt")), "r").use { descriptor ->
       requireNotNull(descriptor)
       try {
         Os.lseek(descriptor.fileDescriptor, 0, OsConstants.SEEK_CUR)
@@ -75,20 +88,15 @@ class AndroidSourceInstrumentedTest {
 
   @Test
   fun controlledProviderExposesRenameFailureAndRevocationEvidence() {
-    val instrumentation = InstrumentationRegistry.getInstrumentation()
-    val testContext = instrumentation.context
-    val targetContext = instrumentation.targetContext
-    val source = documentUri("seekable.txt")
-    val modes = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-    val targetUid = targetContext.packageManager.getApplicationInfo(targetContext.packageName, 0).uid
-    testContext.grantUriPermission(targetContext.packageName, source, modes)
+    val source = grant(documentUri("seekable.txt"))
+    val targetUid = clientContext.packageManager.getApplicationInfo(clientContext.packageName, 0).uid
     assertEquals(
       PackageManager.PERMISSION_GRANTED,
-      targetContext.checkUriPermission(source, -1, targetUid, Intent.FLAG_GRANT_READ_URI_PERMISSION),
+      clientContext.checkUriPermission(source, -1, targetUid, Intent.FLAG_GRANT_READ_URI_PERMISSION),
     )
 
-    val mutable = requireNotNull(DocumentsContract.createDocument(resolver, rootUri(), "text/plain", "rename-me.txt"))
-    val renamed = requireNotNull(DocumentsContract.renameDocument(resolver, mutable, "renamed.txt"))
+    val mutable = grant(requireNotNull(DocumentsContract.createDocument(resolver, grant(rootUri()), "text/plain", "rename-me.txt")))
+    val renamed = grant(requireNotNull(DocumentsContract.renameDocument(resolver, mutable, "renamed.txt")))
     resolver.query(renamed, arrayOf("_display_name"), null, null, null).use { cursor ->
       requireNotNull(cursor)
       assertTrue(cursor.moveToFirst())
@@ -102,11 +110,18 @@ class AndroidSourceInstrumentedTest {
       // Expected controlled provider failure.
     }
 
-    testContext.revokeUriPermission(targetContext.packageName, source, modes)
+    providerContext.revokeUriPermission(clientContext.packageName, source, modes)
+    grantedUris.remove(source)
     assertEquals(
       PackageManager.PERMISSION_DENIED,
-      targetContext.checkUriPermission(source, -1, targetUid, Intent.FLAG_GRANT_READ_URI_PERMISSION),
+      clientContext.checkUriPermission(source, -1, targetUid, Intent.FLAG_GRANT_READ_URI_PERMISSION),
     )
+  }
+
+  private fun grant(uri: Uri): Uri {
+    providerContext.grantUriPermission(clientContext.packageName, uri, modes)
+    grantedUris.add(uri)
+    return uri
   }
 
   private fun rootUri(): Uri = DocumentsContract.buildDocumentUri(AUTHORITY, ROOT_ID)

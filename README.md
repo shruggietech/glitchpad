@@ -1,8 +1,13 @@
 <div align="center">
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="brand/logos/svg/glitchpad-horizontal-light.svg">
+  <img src="brand/logos/svg/glitchpad-horizontal-black.svg" alt="Glitchpad" width="480">
+</picture>
+
 # Glitchpad
 
-**A focused, cross-platform viewer and editor for the files you already have.**
+**A focused, cross-platform viewer and editor for your files.**
 
 [![CI](https://github.com/ShruggieTech/glitchpad/actions/workflows/ci.yml/badge.svg)](https://github.com/ShruggieTech/glitchpad/actions/workflows/ci.yml) [![CodeQL](https://github.com/ShruggieTech/glitchpad/actions/workflows/codeql.yml/badge.svg)](https://github.com/ShruggieTech/glitchpad/actions/workflows/codeql.yml) [![Version](https://img.shields.io/badge/version-0.0.0-6f42c1)](https://github.com/ShruggieTech/glitchpad/releases) [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE) [![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20Android-444)](#supported-platforms) [![Status](https://img.shields.io/badge/status-foundation-orange)](#status)
 
@@ -51,7 +56,7 @@ cargo xtask check
 pnpm tauri dev
 ```
 
-`cargo xtask check` is the local authority for native checks, frontend checks, documentation validation, version consistency, strict UTF-8, Mermaid direction, and public metadata.
+`cargo xtask check` is the local authority for native checks, frontend checks, documentation validation, brand-canon integrity, website export validation, version consistency, strict UTF-8, Mermaid direction, and public metadata. Run `pnpm check:brand` for the focused brand contract and `pnpm check:site` for the production-equivalent public site.
 
 ## Architecture
 
@@ -80,6 +85,8 @@ The repository is organized as follows:
 - `crates/glitchpad-host`: Tauri desktop and Android host boundary.
 - `crates/xtask`: cross-platform contributor and CI commands.
 - `docs`: normative technical documentation.
+- `brand`: approved brand canon, governed assets, and integration guidance.
+- `site`: the static-exported Glitchpad landing page and public documentation application.
 - `specs`: Spec Kit feature specifications, plans, contracts, and tasks.
 - `fixtures`: safe document fixtures for format, corruption, and hostile-input testing.
 

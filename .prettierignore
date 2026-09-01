@@ -3,3 +3,11 @@ pnpm-lock.yaml
 crates/glitchpad-host/gen/
 node_modules/
 target/
+brand/
+site/.source/
+site/content/docs/technical-specification.mdx
+site/lib/generated/
+site/out/
+site/next-env.d.ts
+site/playwright-report/
+site/test-results/

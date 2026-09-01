@@ -22,11 +22,17 @@ Do not add product features directly to the foundation shell without an approved
 
 Use a UTF-8 capable editor that honors `.editorconfig`. Markdown prose must remain one physical line per paragraph; do not configure an automatic prose wrapper. Project-authored Mermaid flowcharts must use top-to-bottom direction with `flowchart TB` or `flowchart TD`.
 
+The approved brand canon lives under `brand/`; read `brand/INTEGRATION.md` before consuming or replacing governed assets. Run `pnpm check:brand` for focused canon and integration validation. The Next.js and Fumadocs public site lives under `site/`, derives its technical documentation from the authoritative `docs/` tree, and is validated with `pnpm check:site`.
+
 ## Platform environments
 
 ### Windows
 
 Install the current Visual Studio Build Tools with the Desktop development with C++ workload and a Windows 10 or 11 SDK. WebView2 is supplied by supported Windows installations but must remain available for development and smoke testing.
+
+Repository commands on Windows must remain headless: no project-owned console child may become visible, flash, or steal desktop focus. This requirement does not prohibit the command runner, direct `git` or `gh`, builds, tests, or other commands that execute without a foreground window. If a specific launch path opens a visible console, stop that launcher, record the executable and parent command, and continue unrelated work through direct Git or another verified headless path rather than disabling terminal access.
+
+Documentation link and Mermaid validation run as direct Node.js processes. Link checks stay inside one validator process for the complete Markdown set, while Mermaid checks reuse one Puppeteer browser for every diagram. Do not add per-file or per-diagram `pnpm`, PowerShell, command-shell, or browser launches. `pnpm check:validation` enforces this topology before the aggregate gate reaches the real validators.
 
 ### macOS
 
@@ -61,6 +67,8 @@ cargo xtask check
 ```
 
 The aggregate gate runs Rust formatting, Clippy with warnings denied, native tests, ESLint, TypeScript, Vitest, the production frontend build, Markdown formatting and linting, link checks, version consistency, strict UTF-8 checks, Mermaid direction checks, and public-surface assertions.
+
+To diagnose documentation validation independently, run `pnpm check:validation`, `pnpm docs:links`, and `pnpm docs:mermaid` from an existing integrated terminal. On Windows, observe the desktop while running `cargo xtask docs`; any native console flash is a failure even when the command exits successfully.
 
 When platform behavior changes, also run the affected desktop or Android build and record the result in the pull request. A platform claim requires build, smoke-test, packaging, and documentation evidence.
 

@@ -3,6 +3,12 @@ use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode, Stdio};
 
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
+
+#[cfg(windows)]
+const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+
 fn main() -> ExitCode {
     let command = env::args().nth(1).unwrap_or_else(|| "help".to_owned());
     let repository = repository_root();
@@ -101,7 +107,7 @@ where
     S: AsRef<OsStr>,
 {
     let executable = platform_program(program);
-    let output = Command::new(&executable)
+    let output = headless_command(&executable)
         .args(arguments)
         .current_dir(repository)
         .output()
@@ -145,7 +151,7 @@ where
     S: AsRef<OsStr>,
 {
     let executable = platform_program(program);
-    let output = Command::new(&executable)
+    let output = headless_command(&executable)
         .args(arguments)
         .current_dir(repository)
         .output()
@@ -199,6 +205,9 @@ fn report_environment(name: &str) {
 }
 
 fn docs(repository: &Path) -> Result<(), String> {
+    run(repository, "pnpm", ["run", "check:brand"])?;
+    run(repository, "pnpm", ["run", "check:site"])?;
+    run(repository, "pnpm", ["run", "check:validation"])?;
     run(repository, "pnpm", ["run", "check:config"])?;
     run(repository, "pnpm", ["run", "docs:format"])?;
     run(repository, "pnpm", ["run", "docs:lint"])?;
@@ -256,7 +265,7 @@ where
 {
     println!("\n> {program}");
     let executable = platform_program(program);
-    let status = Command::new(&executable)
+    let status = headless_command(&executable)
         .args(arguments)
         .current_dir(repository)
         .stdin(Stdio::inherit())
@@ -278,6 +287,13 @@ fn platform_program(program: &str) -> String {
     } else {
         program.to_owned()
     }
+}
+
+fn headless_command(program: &str) -> Command {
+    let mut command = Command::new(program);
+    #[cfg(windows)]
+    command.creation_flags(CREATE_NO_WINDOW);
+    command
 }
 
 fn run_powershell(repository: &Path, script: &str) -> Result<(), String> {

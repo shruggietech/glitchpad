@@ -236,7 +236,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Apply path labels
-        uses: actions/labeler@v6
+        uses: actions/labeler@v7
 
   ci-ok:
     name: ci-ok

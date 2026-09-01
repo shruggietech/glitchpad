@@ -39,11 +39,12 @@ async function collectFiles(directory) {
 function parseTagAttributes(tag) {
   const attributes = new Map();
   const duplicates = new Set();
-  const pattern = /([^\s=/>]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g;
+  const pattern =
+    /([^\s=/>]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/g;
   for (const match of tag.matchAll(pattern)) {
     const name = match[1].toLowerCase();
     if (attributes.has(name)) duplicates.add(name);
-    else attributes.set(name, match[2] ?? match[3]);
+    else attributes.set(name, match[2] ?? match[3] ?? match[4]);
   }
   return { attributes, duplicates };
 }

@@ -115,6 +115,24 @@ test('README banner validation rejects duplicate governed attributes', () => {
   assert.ok(problems.some((problem) => problem.includes('light fallback src')));
 });
 
+test('README banner validation detects unquoted duplicate attributes', () => {
+  const problems = verifyReadmeBanner(`
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset=brand/logos/svg/glitchpad-horizontal-black.svg srcset="brand/logos/svg/glitchpad-horizontal-white.svg">
+  <img src=brand/logos/svg/glitchpad-horizontal-white.svg src="brand/logos/svg/glitchpad-horizontal-black.svg" alt="Glitchpad" width="480">
+</picture>
+# Glitchpad
+`);
+  assert.ok(
+    problems.some((problem) => problem.includes('must not repeat the "srcset"')),
+  );
+  assert.ok(
+    problems.some((problem) => problem.includes('must not repeat the "src"')),
+  );
+  assert.ok(problems.some((problem) => problem.includes('dark source srcset')));
+  assert.ok(problems.some((problem) => problem.includes('light fallback src')));
+});
+
 for (const [name, markup] of [
   [
     'missing',

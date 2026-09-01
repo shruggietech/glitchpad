@@ -235,7 +235,7 @@ This is the last-resort path when no validated organization deployment can be re
 
 | Surface | Preview result | Production result | Post-cleanup result |
 | --- | --- | --- | --- |
-| Reviewed deployed revision | Pass: `c93395edc16ec64900dbfc8cabbad9162a40c0d2`, run `33459610523`, deployment `6192857732` | Pending | Pending |
+| Reviewed deployed revision | Pass: `c93395edc16ec64900dbfc8cabbad9162a40c0d2`, run `33459610523`, deployment `6192857732` | Pass: the same reviewed `main` revision authorized C07-C14 | Pass: review-correction revision `0c4b9b77e0c0e908f7067d878c3cd3840071830f`, run `33462819066`, deployment `6193381435` |
 | Apex authoritative A and AAAA | Not applicable | Pass: both authoritative nameservers return four A and four AAAA targets | Pass |
 | Public DNS resolver 1 | Pass: preview CNAME plus four A and four AAAA targets | Pass: Cloudflare resolver matches final set | Pass |
 | Public DNS resolver 2 | Pending | Pass: Google and Quad9 match final set | Pass |
@@ -246,7 +246,7 @@ This is the last-resort path when no validated organization deployment can be re
 | `/` | Pass: 200, Glitchpad content | Pass: 200 | Pass: 200 |
 | `/docs` | Pass: 200, Glitchpad content | Pass: 200 | Pass: 200 |
 | Nested documentation route | Pass: `/docs/technical-specification`, 200 | Pass: 200 | Pass: 200 |
-| Static brand and application assets | Pass: deployed font asset 200; hosted browser suite passed | Pass: deployed font 200 | Pass |
+| Static brand and application assets | Pass: deployed font asset 200; hosted browser suite passed | Pass: font, manifest, favicon set, Apple icon, manifest icon set, and social preview all return 200 after review remediation | Pass: 10 inventoried assets return non-empty 200 responses |
 | Title, description, canonical URL, social metadata | Pass: hosted metadata retains `https://glitchpad.com` canonical and social fields | Pass on all inventoried routes | Pass |
 | Missing path | Pass: 404 | Pass: branded 404 | Pass: branded 404 |
 | IPv4 transport | Pass through resolved preview A set | Pass: direct 200 | Pass |
@@ -263,3 +263,11 @@ The reverse-order recovery was dry-run against the committed pre-cutover and fin
 ## Local convergence
 
 The final local convergence completed successfully on 2026-09-01. `cargo xtask check` passed the Rust workspace checks and tests, dependency policy, frontend linting, type checking, unit tests and build, brand validation, site build, unit and browser tests, deployment-topology validation, configuration checks, Markdown formatting and linting, link validation across 119 Markdown files, rendering of all 28 Mermaid diagrams, version-authority agreement, UTF-8-without-BOM and mojibake validation across 370 text files, and public-documentation metadata checks. A separate S009 evidence audit parsed both committed evidence snapshots and found no BOM, credential marker, authorization value, bearer token, or email address.
+
+## Pull request review remediation
+
+The first complete live asset inventory at `2026-09-01T02:20:11.216Z` found that `/android-chrome-192x192.png` and `/android-chrome-512x512.png`, both declared by the deployed manifest, returned 404 while the other eight inventoried assets returned non-empty 200 responses. Commit `0c4b9b77e0c0e908f7067d878c3cd3840071830f` copies the canonical brand-kit files into the public export and adds a unit contract that loads every manifest-declared icon from the export source. The same commit corrects exact personal recovery so R08B detaches the destination custom domain while organization verification still protects it, before R09 removes verification and R14 recreates the personal claim.
+
+After the complete hosted matrix passed on the correction commit, the exact branch `codex/009-domain-cutover` was temporarily added to the protected `github-pages` environment, workflow run `33462819066` deployed artifact `6193381435`, and temporary policy `58769246` was removed immediately. Final environment inspection shows only the original `main` policy `58765725`. At `2026-09-01T02:33:04.614Z`, the font, manifest, SVG favicon, 32px favicon, 16px favicon, ICO favicon, Apple touch icon, both manifest icons, and social preview each returned a non-empty 200 response from canonical production. The destination Pages API remained workflow-published with `cname: glitchpad.com`, verified protection, an approved apex-plus-`www` certificate, and HTTPS enforcement.
+
+The review assertion that pre-mutation commit `4692625e1f22bf0fbe53ce890d8de7174d039b85` was unreachable was checked and rejected. `git merge-base --is-ancestor 4692625e1f22bf0fbe53ce890d8de7174d039b85 HEAD` exits 0, the branch graph places it directly after reviewed base `c93395edc16ec64900dbfc8cabbad9162a40c0d2`, and GitHub lists it as the first commit in pull request #105. The runbook reference therefore already has durable branch and eventual merged-history reachability.

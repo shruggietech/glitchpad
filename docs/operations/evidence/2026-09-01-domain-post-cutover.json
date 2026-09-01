@@ -396,11 +396,79 @@
       "open_graph": true,
       "twitter": true
     },
-    "asset": {
-      "path": "/_next/static/media/GeistMono_Regular-s.p.08p89kvuvf-k1.woff2",
-      "status": 200,
-      "content_type": "font/woff2",
-      "bytes": 50196
+    "assets": {
+      "observed_at": "2026-09-01T02:33:04.614Z",
+      "deployment_run": 33462819066,
+      "deployment_id": 6193381435,
+      "source_revision": "0c4b9b77e0c0e908f7067d878c3cd3840071830f",
+      "environment_policy_after_deployment": {
+        "total_count": 1,
+        "name": "main",
+        "type": "branch",
+        "id": 58765725
+      },
+      "responses": [
+        {
+          "path": "/_next/static/media/GeistMono_Regular-s.p.08p89kvuvf-k1.woff2",
+          "status": 200,
+          "content_type": "font/woff2",
+          "bytes": 50196
+        },
+        {
+          "path": "/site.webmanifest",
+          "status": 200,
+          "content_type": "application/manifest+json; charset=utf-8",
+          "bytes": 378
+        },
+        {
+          "path": "/favicon.svg",
+          "status": 200,
+          "content_type": "image/svg+xml",
+          "bytes": 622
+        },
+        {
+          "path": "/favicon-32x32.png",
+          "status": 200,
+          "content_type": "image/png",
+          "bytes": 432
+        },
+        {
+          "path": "/favicon-16x16.png",
+          "status": 200,
+          "content_type": "image/png",
+          "bytes": 281
+        },
+        {
+          "path": "/favicon.ico",
+          "status": 200,
+          "content_type": "image/vnd.microsoft.icon",
+          "bytes": 104496
+        },
+        {
+          "path": "/apple-touch-icon.png",
+          "status": 200,
+          "content_type": "image/png",
+          "bytes": 2084
+        },
+        {
+          "path": "/android-chrome-192x192.png",
+          "status": 200,
+          "content_type": "image/png",
+          "bytes": 2327
+        },
+        {
+          "path": "/android-chrome-512x512.png",
+          "status": 200,
+          "content_type": "image/png",
+          "bytes": 7603
+        },
+        {
+          "path": "/social-preview.png",
+          "status": 200,
+          "content_type": "image/png",
+          "bytes": 28118
+        }
+      ]
     },
     "transport": {
       "ipv4": {

@@ -89,10 +89,10 @@
 
 - [x] T028 [US3] Capture the sanitized post-cutover Cloudflare, GitHub Pages, environment, DNS, TLS, and HTTP state in `docs/operations/evidence/2026-09-01-domain-post-cutover.json`
 - [x] T029 [US3] Diff pre-cutover and post-cutover evidence, reconcile every difference with one decision and checkpoint, and record zero unexplained changes in `docs/operations/glitchpad-domain-cutover.md`
-- [ ] T030 [US3] Disable the legacy `h8rt3rmin8r/glitchpad.com` Pages site only after all US2 smoke checks pass and record the retirement checkpoint in `docs/operations/glitchpad-domain-cutover.md`
-- [ ] T031 [US3] Confirm the legacy Pages endpoint is disabled while canonical production remains healthy, then refresh final evidence in `docs/operations/evidence/2026-09-01-domain-post-cutover.json`
-- [ ] T032 [US3] Dry-run the reverse-order recovery decisions against captured identifiers and values, documenting any provider constraint and the validated rollback stopping point in `docs/operations/glitchpad-domain-cutover.md`
-- [ ] T033 [US3] Mark all retain, replace, and retire decisions verified and close the migration run as complete in `docs/operations/glitchpad-domain-cutover.md`
+- [x] T030 [US3] Disable the legacy `h8rt3rmin8r/glitchpad.com` Pages site only after all US2 smoke checks pass and record the retirement checkpoint in `docs/operations/glitchpad-domain-cutover.md`
+- [x] T031 [US3] Confirm the legacy Pages endpoint is disabled while canonical production remains healthy, then refresh final evidence in `docs/operations/evidence/2026-09-01-domain-post-cutover.json`
+- [x] T032 [US3] Dry-run the reverse-order recovery decisions against captured identifiers and values, documenting any provider constraint and the validated rollback stopping point in `docs/operations/glitchpad-domain-cutover.md`
+- [x] T033 [US3] Mark all retain, replace, and retire decisions verified and close the migration run as complete in `docs/operations/glitchpad-domain-cutover.md`
 
 **Checkpoint**: The migration is fully attributable, legacy hosting is retired, and rollback remains executable from repository evidence.
 
@@ -102,11 +102,11 @@
 
 **Purpose**: Reconcile documentation, run all gates, publish the pull request, and converge review.
 
-- [ ] T034 [P] Update production publication, canonical-host, HTTPS, and rollback guidance in `site/README.md`
-- [ ] T035 [P] Complete the S009 unreleased delta and final operational outcome in `docs/glitchpad-technical-specification.md` and `changelog.d/102.fixed.md`
-- [ ] T036 Validate all S009 Markdown, JSON, links, Mermaid, UTF-8-without-BOM, mojibake, and secret-redaction requirements across `specs/009-domain-cutover/` and `docs/operations/`
-- [ ] T037 Run `cargo xtask check` and record complete local convergence in `docs/operations/glitchpad-domain-cutover.md`
-- [ ] T038 Mark completed tasks and set the S009 specification status to ready for review in `specs/009-domain-cutover/tasks.md` and `specs/009-domain-cutover/spec.md`
+- [x] T034 [P] Update production publication, canonical-host, HTTPS, and rollback guidance in `site/README.md`
+- [x] T035 [P] Complete the S009 unreleased delta and final operational outcome in `docs/glitchpad-technical-specification.md` and `changelog.d/102.fixed.md`
+- [x] T036 Validate all S009 Markdown, JSON, links, Mermaid, UTF-8-without-BOM, mojibake, and secret-redaction requirements across `specs/009-domain-cutover/` and `docs/operations/`
+- [x] T037 Run `cargo xtask check` and record complete local convergence in `docs/operations/glitchpad-domain-cutover.md`
+- [x] T038 Mark completed tasks and set the S009 specification status to ready for review in `specs/009-domain-cutover/tasks.md` and `specs/009-domain-cutover/spec.md`
 - [ ] T039 Commit final evidence and documentation, push `codex/009-domain-cutover`, and open a pull request that closes Issue #102 with validation and rollback summaries
 - [ ] T040 Watch hosted checks through completion, inspect all AI review threads, apply warranted fixes, reply under each addressed comment, and resolve each addressed thread before handoff
 

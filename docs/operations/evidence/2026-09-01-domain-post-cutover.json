@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "run_id": "20260901T013047Z",
-  "captured_at": "2026-09-01T02:01:19.834Z",
-  "source_revision": "40dedec403b3bd44a3c567c3718db05ba2fa90e1",
-  "state": "validated_before_legacy_retirement",
+  "captured_at": "2026-09-01T02:04:33Z",
+  "source_revision": "acd4af1ba88ba7844ff63708c8646ed3cc93ea94",
+  "state": "complete_after_legacy_retirement",
   "operator": "h8rt3rmin8r",
   "redactions": [
     "Cloudflare OAuth and GitHub authentication material are never requested or persisted.",
@@ -269,16 +269,30 @@
       "challenge_token": "20611fd6ae632e3e0f27d661236e5c"
     },
     "source_pages": {
-      "enabled": true,
-      "status": "built",
-      "cname": null,
-      "html_url": "http://h8rt3rmin8r.github.io/glitchpad.com/",
-      "build_type": "legacy",
-      "source": {
-        "branch": "master",
-        "path": "/docs"
+      "enabled": false,
+      "http_status": 404,
+      "retired_at": "2026-09-01T02:04:33Z",
+      "retired_configuration": {
+        "status": "built",
+        "cname": null,
+        "html_url": "http://h8rt3rmin8r.github.io/glitchpad.com/",
+        "build_type": "legacy",
+        "source": {
+          "branch": "master",
+          "path": "/docs"
+        },
+        "https_enforced": false
       },
-      "https_enforced": false
+      "repository_recovery_source": {
+        "repository": "h8rt3rmin8r/glitchpad.com",
+        "disabled": false,
+        "archived": false,
+        "visibility": "public",
+        "default_branch": "master",
+        "commit": "ff751363e3cb1408ed93e8568ec2b3ed85371390",
+        "tree": "9d3d336ea735db580d11cafa7b8c5a9f3a20b03b",
+        "docs_entry_count": 54
+      }
     },
     "destination_pages": {
       "enabled": true,
@@ -401,7 +415,21 @@
   },
   "legacy_retirement": {
     "authorized_by": "C11-C13",
-    "status": "pending",
-    "post_retirement_refresh_required": true
+    "status": "complete",
+    "completed_at": "2026-09-01T02:04:33Z",
+    "pages_http_status": 404,
+    "repository_content_preserved": true,
+    "canonical_post_retirement_smoke": {
+      "/": 200,
+      "/docs": 200,
+      "/docs/technical-specification": 200,
+      "/definitely-missing-s009": 404,
+      "tls_authorized": true,
+      "destination_pages_verified": true,
+      "destination_https_enforced": true,
+      "cloudflare_dns_record_count": 17,
+      "retained_dns_records_present": true
+    },
+    "post_retirement_refresh_required": false
   }
 }

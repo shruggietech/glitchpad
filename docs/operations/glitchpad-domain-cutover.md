@@ -17,7 +17,7 @@
 | Canonical production host | `https://glitchpad.com` |
 | Temporary preview host | `s009-preview.glitchpad.com` |
 | Pre-mutation commit | `4692625e1f22bf0fbe53ce890d8de7174d039b85` |
-| Run state | C01-C13 passed; canonical production is fully validated with HTTPS and the preview is retired; legacy Pages remains enabled pending final evidence capture |
+| Run state | C01-C14 passed; canonical production is fully validated, preview and legacy Pages are retired, and final evidence is captured |
 
 The branch was created from the reviewed `main` revision shown above. Direct GitHub administration and Cloudflare OAuth access were verified for the selected repositories, organization, account, and zone. The Cloudflare Email Routing read surface reported a newly timestamped, disabled, unconfigured settings object while returning the previously existing disabled catch-all rule; it changed no DNS record, route, destination, or enabled state and is retained exactly as observed.
 
@@ -61,7 +61,7 @@ The personal Pages site is built with `build_type: legacy`, source `master:/docs
 | D19 | Workers routes | Empty | Retain | Empty | Snapshot | Verified unchanged |
 | D20 | Email Routing | Disabled and unconfigured; one disabled drop rule | Retain | Semantically equivalent with no S009 mutation | Redacted snapshot | Verified unchanged |
 | D21 | Cloudflare SSL | Full mode, Universal SSL enabled | Retain | No S009 mutation; dormant for DNS-only website records | Snapshot | Configuration verified unchanged; provider-managed backup pack aged out |
-| D22 | Legacy Pages attachment | Personal repository, legacy `master:/docs`, apex CNAME | Retire last | Pages disabled after final smoke pass | Snapshot plus rollback R14 | Planned |
+| D22 | Legacy Pages attachment | Personal repository, legacy `master:/docs`, apex CNAME | Retire last | Pages disabled after final smoke pass | Snapshot plus rollback R14 | Verified retired at C14 |
 | D23 | Destination Pages | Absent | Add | Workflow build on organization repository, apex CNAME, HTTPS enforced | GitHub API state and workflow run | Verified at C08-C12 |
 | D24 | `github-pages` environment | Absent | Add | Main-only deployment policy | GitHub API state | Verified at C02 |
 | D25 | Organization domain verification | Absent | Add and retain | `glitchpad.com` verified for `shruggietech` | Challenge TXT plus GitHub owner state | Verified at C07 |
@@ -205,7 +205,7 @@ Every checkpoint is fail-closed. A checkpoint starts only when its expected-befo
 - Expected after: Legacy Pages API returns disabled/not found while canonical production remains healthy.
 - Stop condition: Any final smoke case regresses, evidence is incomplete, or legacy repository/source is unavailable for recovery.
 - Rollback R14: Recreate legacy Pages from `master:/docs`. Before C07 it may reclaim `glitchpad.com` directly. After C07, exact personal-domain restoration additionally requires R09 before attaching the apex.
-- Observation: Pass at `2026-09-01T01:59Z`. After preview removal, the TLS certificate remained authorized with the same SANs and fingerprint; `/`, `/docs`, `/docs/technical-specification`, `/security`, `/support`, and `/license` again returned 200 with canonical and social metadata; the missing path again returned the expected 404. Canonical production has no preview dependency.
+- Observation: Pass at `2026-09-01T02:04:33Z`. The committed pre-retirement evidence, C11-C13, and a final legacy-state guard authorized deletion of only the personal repository's Pages configuration. GitHub now returns 404 for `h8rt3rmin8r/glitchpad.com` Pages. The repository remains public, enabled, unarchived, and unchanged on `master` commit `ff751363e3cb1408ed93e8568ec2b3ed85371390`; its `/docs` recovery source contains 54 entries. Destination Pages remains workflow-published, verified, certificate-approved, and HTTPS-enforced. Post-retirement `/`, `/docs`, and `/docs/technical-specification` returned 200, the missing path returned 404, TLS retained the approved fingerprint, and Cloudflare retained the exact 17-record final state.
 
 ## Phase-specific rollback
 
@@ -252,4 +252,12 @@ This is the last-resort path when no validated organization deployment can be re
 
 ## Final reconciliation
 
-The pre-retirement snapshot at `2026-09-01T02:01:19.834Z` contains 17 live DNS records and reconciles every change to D01-D25 and C01-C13. Zone identity, DNSSEC, all 56 zone settings, empty Page Rules, three zone managed rulesets, one account managed ruleset view, empty Workers routes, empty account lists, redacted Email Routing state, and all seven unrelated DNS records compare equal to the baseline. Cloudflare no longer returns pre-cutover SSL.com backup certificate pack `12a59992-f3ed-4ffb-8e8f-b24ed30ca849`; this is explained provider-managed certificate lifecycle drift because S009 performed no Cloudflare SSL mutation, the active Google Universal SSL configuration is unchanged, and final website records are DNS-only. There are zero unexplained differences. Passing C11-C13 authorizes C14 legacy Pages retirement.
+The final snapshot refreshed at `2026-09-01T02:04:33Z` contains 17 live DNS records and reconciles every change to D01-D25 and C01-C14. Zone identity, DNSSEC, all 56 zone settings, empty Page Rules, three zone managed rulesets, one account managed ruleset view, empty Workers routes, empty account lists, redacted Email Routing state, and all seven unrelated DNS records compare equal to the baseline. Cloudflare no longer returns pre-cutover SSL.com backup certificate pack `12a59992-f3ed-4ffb-8e8f-b24ed30ca849`; this is explained provider-managed certificate lifecycle drift because S009 performed no Cloudflare SSL mutation, the active Google Universal SSL configuration is unchanged, and final website records are DNS-only. There are zero unexplained differences. Legacy Pages is disabled while its repository recovery source remains intact, and canonical production passes after retirement.
+
+## Recovery dry-run
+
+The reverse-order recovery was dry-run against the committed pre-cutover and final snapshots after C14. The check confirmed the exact legacy apex value and proxy flag, exact legacy `www` value and proxy flag, all nine live replacement-record IDs, the retained organization challenge, absence of the preview record, the preserved personal repository recovery commit and 54-entry `/docs` source, the organization-verification constraint, and the required R09 then R14 then R08 order for exact personal restoration. The validated stopping point is the healthy organization deployment. Exact personal restoration remains a guarded last resort because organization verification must be removed first; no provider state was changed during the dry-run. All D01-D25 decisions and C01-C14 checkpoints are verified, and the migration run is complete.
+
+## Local convergence
+
+The final local convergence completed successfully on 2026-09-01. `cargo xtask check` passed the Rust workspace checks and tests, dependency policy, frontend linting, type checking, unit tests and build, brand validation, site build, unit and browser tests, deployment-topology validation, configuration checks, Markdown formatting and linting, link validation across 119 Markdown files, rendering of all 28 Mermaid diagrams, version-authority agreement, UTF-8-without-BOM and mojibake validation across 370 text files, and public-documentation metadata checks. A separate S009 evidence audit parsed both committed evidence snapshots and found no BOM, credential marker, authorization value, bearer token, or email address.

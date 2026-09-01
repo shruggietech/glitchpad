@@ -124,4 +124,20 @@ describe('useRecovery', () => {
     expect(remove).toHaveBeenCalledTimes(2);
     expect(result.current.warning).toBeNull();
   });
+
+  it('keeps inventory notices after an unrelated snapshot succeeds', async () => {
+    vi.useFakeTimers();
+    const recoveryGateway = gateway({
+      inventory: vi.fn().mockResolvedValue([inventoryEntry('corrupted')]),
+    });
+    const { result } = renderHook(() =>
+      useRecovery([dirtySession()], recoveryGateway),
+    );
+    await act(async () => Promise.resolve());
+    expect(result.current.warning).toMatch(/corrupted recovery record/i);
+
+    await act(async () => vi.advanceTimersByTimeAsync(2_000));
+
+    expect(result.current.warning).toMatch(/corrupted recovery record/i);
+  });
 });

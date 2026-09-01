@@ -317,6 +317,16 @@ fn scan_records(
     now_unix_ms: u64,
     protected_id: Option<Uuid>,
 ) -> Result<ScanResult, CoreError> {
+    scan_records_with_reader(root, now_unix_ms, protected_id, read_exact_file)
+}
+
+#[allow(clippy::too_many_lines)]
+fn scan_records_with_reader(
+    root: &Path,
+    now_unix_ms: u64,
+    protected_id: Option<Uuid>,
+    read_record: impl Fn(&Path, u64) -> Result<Vec<u8>, CoreError>,
+) -> Result<ScanResult, CoreError> {
     let mut result = ScanResult {
         records: Vec::new(),
         entries: Vec::new(),
@@ -350,13 +360,7 @@ fn scan_records(
                 .push(invalid_entry(id, bytes, RecoveryInventoryStatus::Corrupted));
             continue;
         }
-        let Ok(payload) = read_exact_file(&path, bytes) else {
-            clean_invalid(&path, id, protected_id, bytes, &mut result);
-            result
-                .entries
-                .push(invalid_entry(id, bytes, RecoveryInventoryStatus::Corrupted));
-            continue;
-        };
+        let payload = read_record(&path, bytes)?;
         let value: Value = if let Ok(value) = serde_json::from_slice(&payload) {
             value
         } else {
@@ -650,6 +654,10 @@ mod tests {
         fn new(now: u64) -> Self {
             Self(AtomicU64::new(now))
         }
+
+        fn set(&self, now: u64) {
+            self.0.store(now, Ordering::SeqCst);
+        }
     }
 
     impl RecoveryClock for TestClock {
@@ -716,6 +724,49 @@ mod tests {
         assert_eq!(
             store.load(&original.record_id).expect("load original"),
             original
+        );
+    }
+
+    #[test]
+    fn transient_inventory_read_failure_preserves_the_committed_record() {
+        let directory = TestDirectory::new();
+        let store = RecoveryStore::open_with_clock(&directory.0, 1024 * 1024, TestClock::new(NOW))
+            .expect("open store");
+        let record = record(Uuid::new_v4(), "only recovery copy", NOW, false);
+        store.persist(&record).expect("persist record");
+        let path = directory.0.join(format!("{}.json", record.record_id));
+        let original = fs::read(&path).expect("read committed bytes");
+
+        let result = scan_records_with_reader(&directory.0, NOW, None, |_path, _length| {
+            Err(storage_error("recovery_injected_read_failure"))
+        });
+        let Err(error) = result else {
+            panic!("transient read failure must be surfaced");
+        };
+
+        assert_eq!(error.context["code"], "recovery_injected_read_failure");
+        assert_eq!(fs::read(path).expect("record remains present"), original);
+    }
+
+    #[test]
+    fn wall_clock_rollback_preserves_and_loads_a_valid_record() {
+        let directory = TestDirectory::new();
+        let store = RecoveryStore::open_with_clock(&directory.0, 1024 * 1024, TestClock::new(NOW))
+            .expect("open store");
+        let record = record(Uuid::new_v4(), "recovery after clock rollback", NOW, false);
+        store.persist(&record).expect("persist record");
+
+        store.clock.set(NOW.saturating_sub(60_000));
+
+        let inventory = store.inventory().expect("inventory after rollback");
+        assert_eq!(inventory.entries.len(), 1);
+        assert_eq!(
+            inventory.entries[0].status,
+            RecoveryInventoryStatus::Available
+        );
+        assert_eq!(
+            store.load(&record.record_id).expect("load after rollback"),
+            record
         );
     }
 

@@ -19,8 +19,8 @@ S012 satisfies Issue #50 with conflict-safe save transactions, guarded destructi
 - `cargo fmt --all` passed.
 - `cargo clippy --workspace --all-targets --locked -- -D warnings` passed.
 - Core validation passed with 44 unit tests and 3 contract-schema tests.
-- Host validation passed with 29 unit tests, 5 Android contract tests, 7 desktop source conformance tests, and 6 recovery-store conformance tests.
-- `pnpm --dir apps/glitchpad check` passed lint, type checking, 29 tests including accessibility assertions, and the production build.
+- Host validation passed with 31 unit tests, 5 Android contract tests, 7 desktop source conformance tests, and 6 recovery-store conformance tests.
+- `pnpm --dir apps/glitchpad check` passed lint, type checking, 30 tests including accessibility assertions, and the production build.
 - Android x86_64 debug application assembly passed after the final native gateway integration.
 - Android API 24 passed all 4 connected instrumentation tests and the explicit recovery seed, force-stop, and verify phases.
 - Android API 36 passed all 4 connected instrumentation tests and the explicit recovery seed, force-stop, and verify phases.

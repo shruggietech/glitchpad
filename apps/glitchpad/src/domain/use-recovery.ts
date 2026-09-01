@@ -41,7 +41,11 @@ export const useRecovery = (
   gateway: RecoveryGateway | null,
 ): RecoveryController => {
   const [candidates, setCandidates] = useState<RecoveryInventoryEntry[]>([]);
-  const [warning, setWarning] = useState<string | null>(null);
+  const [inventoryWarning, setInventoryWarning] = useState<string | null>(null);
+  const [cleanupWarning, setCleanupWarning] = useState<string | null>(null);
+  const [snapshotWarnings, setSnapshotWarnings] = useState(
+    new Map<string, string>(),
+  );
   const bindings = useRef(new Map<string, RecordBinding>());
   const pendingCleanups = useRef(new Set<string>());
   const cleanupInFlight = useRef(new Set<string>());
@@ -57,13 +61,13 @@ export const useRecovery = (
         if (!active) return;
         const projection = projectRecoveryInventory(entries);
         setCandidates(projection.available);
-        setWarning(
+        setInventoryWarning(
           projection.notices.length > 0 ? projection.notices.join(' ') : null,
         );
       })
       .catch(() => {
         if (active)
-          setWarning(
+          setInventoryWarning(
             'Recovery inventory is unavailable. Dirty content remains open.',
           );
       });
@@ -85,11 +89,9 @@ export const useRecovery = (
         .remove(recordId)
         .then(() => {
           pendingCleanups.current.delete(recordId);
-          setWarning((current) =>
-            current === CLEANUP_WARNING ? null : current,
-          );
+          if (pendingCleanups.current.size === 0) setCleanupWarning(null);
         })
-        .catch(() => setWarning(CLEANUP_WARNING))
+        .catch(() => setCleanupWarning(CLEANUP_WARNING))
         .finally(() => cleanupInFlight.current.delete(recordId));
     },
     [gateway],
@@ -140,11 +142,19 @@ export const useRecovery = (
         .persist(record)
         .then(() => {
           binding.lastSnapshotRevision = session.revision;
-          setWarning(null);
+          setSnapshotWarnings((current) => {
+            if (!current.has(session.id)) return current;
+            const next = new Map(current);
+            next.delete(session.id);
+            return next;
+          });
         })
         .catch(() => {
-          setWarning(
-            `Recovery coverage is at risk for ${session.source.display_name}. Keep the document open and free private storage before retrying.`,
+          setSnapshotWarnings((current) =>
+            new Map(current).set(
+              session.id,
+              `Recovery coverage is at risk for ${session.source.display_name}. Keep the document open and free private storage before retrying.`,
+            ),
           );
         });
     },
@@ -189,9 +199,17 @@ export const useRecovery = (
       entries.filter(({ record_id }) => record_id !== recordId),
     );
 
+  const warning = [
+    inventoryWarning,
+    cleanupWarning,
+    ...snapshotWarnings.values(),
+  ]
+    .filter((message): message is string => message !== null)
+    .join(' ');
+
   return {
     candidates,
-    warning,
+    warning: warning || null,
     async accept(entry) {
       const record = await gateway!.load(entry.record_id);
       bindings.current.set(`recovery-${entry.record_id}`, {

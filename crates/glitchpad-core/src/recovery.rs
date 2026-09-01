@@ -194,9 +194,6 @@ impl RecoveryRecord {
         if self.expires_unix_ms > maximum_expiry {
             return Err(RecoveryValidationError::LifetimeTooLong);
         }
-        if self.created_unix_ms > now_unix_ms || self.updated_unix_ms > now_unix_ms {
-            return Err(RecoveryValidationError::FutureTimestamp);
-        }
         if self.expires_unix_ms <= now_unix_ms {
             return Err(RecoveryValidationError::Expired);
         }
@@ -550,13 +547,13 @@ mod tests {
             Err(RecoveryValidationError::Expired)
         );
 
-        let mut future = valid.clone();
-        future.created_unix_ms = NOW + 1;
-        future.updated_unix_ms = NOW + 1;
+        let stored_expiry = valid.expires_unix_ms;
         assert_eq!(
-            future.validate_at(NOW),
-            Err(RecoveryValidationError::FutureTimestamp)
+            valid.validate_at(NOW.saturating_sub(10_000)),
+            Ok(()),
+            "wall-clock rollback must not invalidate a structurally valid record"
         );
+        assert_eq!(valid.expires_unix_ms, stored_expiry);
 
         let mut excessive = valid;
         excessive.expires_unix_ms += 1;

@@ -112,7 +112,7 @@
 - [x] T029 Add static repository checks for Android path derivation, raw URI disclosure, Kotlin policy creep, required test fixtures, and API matrix configuration in `crates/xtask/src/main.rs`
 - [x] T030 [P] Add issue-linked changelog and unreleased technical delta documentation in `changelog.d/47.added.md` and `docs/glitchpad-technical-specification.md`
 - [x] T031 [P] Update Android validation commands and environment guidance where necessary in `CONTRIBUTING.md` and `specs/011-android-source-lifecycle/quickstart.md`
-- [ ] T032 Run focused Rust, Kotlin JVM, Android debug build, available local instrumentation, formatting, lint, schema, documentation, dependency/license, encoding, mojibake, and `pnpm check` gates; record any hardware-only API evidence as a CI-required check in `specs/011-android-source-lifecycle/tasks.md`
+- [x] T032 Run focused Rust, Kotlin JVM, Android debug build, available local instrumentation, formatting, lint, schema, documentation, dependency/license, encoding, mojibake, and `pnpm check` gates; record any hardware-only API evidence as a CI-required check in `specs/011-android-source-lifecycle/tasks.md`
 
 Validation note: Rust workspace tests, clippy, Android Rust cross-compilation, frontend, site, dependency policy, Markdown, links, Mermaid, UTF-8, mojibake, and static Android architecture checks pass locally. This Windows host cannot start Gradle because both installed JDKs fail while establishing Gradle's loopback selector before project compilation; the official API 24/API 36 Linux emulator matrix is therefore the required Kotlin, APK, controlled-provider, and force-stop restoration evidence for T032.
 

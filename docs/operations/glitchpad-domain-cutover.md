@@ -17,7 +17,7 @@
 | Canonical production host | `https://glitchpad.com` |
 | Temporary preview host | `s009-preview.glitchpad.com` |
 | Pre-mutation commit | `4692625e1f22bf0fbe53ce890d8de7174d039b85` |
-| Run state | C01-C10 passed; verified organization repository owns the apex and final DNS is globally visible; legacy Pages remains enabled and certificate approval is pending |
+| Run state | C01-C13 passed; canonical production is fully validated with HTTPS and the preview is retired; legacy Pages remains enabled pending final evidence capture |
 
 The branch was created from the reviewed `main` revision shown above. Direct GitHub administration and Cloudflare OAuth access were verified for the selected repositories, organization, account, and zone. The Cloudflare Email Routing read surface reported a newly timestamped, disabled, unconfigured settings object while returning the previously existing disabled catch-all rule; it changed no DNS record, route, destination, or enabled state and is retained exactly as observed.
 
@@ -41,28 +41,28 @@ The personal Pages site is built with `build_type: legacy`, source `master:/docs
 | ID | Provider object | Pre-cutover identity or value | Decision | Intended final state | Recovery source | Status |
 | --- | --- | --- | --- | --- | --- | --- |
 | D01 | Apex A | `1223d3bd28b734c27a72fb7e26e2fc46`, `192.30.252.153`, proxied, Auto TTL | Replace | Four DNS-only GitHub Pages A records | Snapshot record plus rollback R08 | Verified at C09-C10 |
-| D02 | `_domainconnect` CNAME | `fd3b119c55c1865535eb2fe0090b831c`, `connect.domains.google.com`, proxied | Retain | Byte-equivalent | Snapshot | Planned |
+| D02 | `_domainconnect` CNAME | `fd3b119c55c1865535eb2fe0090b831c`, `connect.domains.google.com`, proxied | Retain | Byte-equivalent | Snapshot | Verified unchanged |
 | D03 | `www` CNAME | `fd8ef00fb74b6dd3bb3f18d573e9f076`, `h8rt3rmin8r.github.io`, proxied | Replace | DNS-only `shruggietech.github.io` | Snapshot record plus rollback R08 | Verified at C09-C10 |
-| D04 | Google MX priority 5 | `8d1f3d123cd4b5cda23f7b75dc4c2458`, `gmr-smtp-in.l.google.com` | Retain | Byte-equivalent | Snapshot | Planned |
-| D05 | Google MX priority 10 | `a6bb8d777a8d6c83ce08016e0faf7219`, `alt1.gmr-smtp-in.l.google.com` | Retain | Byte-equivalent | Snapshot | Planned |
-| D06 | Google MX priority 20 | `e5e2aa3c21c84e7926baf7bb00d54034`, `alt2.gmr-smtp-in.l.google.com` | Retain | Byte-equivalent | Snapshot | Planned |
-| D07 | Google MX priority 30 | `a5b9846cae72f323ea373b0d4983baf4`, `alt3.gmr-smtp-in.l.google.com` | Retain | Byte-equivalent | Snapshot | Planned |
-| D08 | Google MX priority 40 | `50e1878b24298808d334928291612821`, `alt4.gmr-smtp-in.l.google.com` | Retain | Byte-equivalent | Snapshot | Planned |
-| D09 | OpenAI apex TXT | `b8f860846036c0c4f1c7acedb5c9dc88`, existing public verification value | Retain | Byte-equivalent | Snapshot | Planned |
+| D04 | Google MX priority 5 | `8d1f3d123cd4b5cda23f7b75dc4c2458`, `gmr-smtp-in.l.google.com` | Retain | Byte-equivalent | Snapshot | Verified unchanged |
+| D05 | Google MX priority 10 | `a6bb8d777a8d6c83ce08016e0faf7219`, `alt1.gmr-smtp-in.l.google.com` | Retain | Byte-equivalent | Snapshot | Verified unchanged |
+| D06 | Google MX priority 20 | `e5e2aa3c21c84e7926baf7bb00d54034`, `alt2.gmr-smtp-in.l.google.com` | Retain | Byte-equivalent | Snapshot | Verified unchanged |
+| D07 | Google MX priority 30 | `a5b9846cae72f323ea373b0d4983baf4`, `alt3.gmr-smtp-in.l.google.com` | Retain | Byte-equivalent | Snapshot | Verified unchanged |
+| D08 | Google MX priority 40 | `50e1878b24298808d334928291612821`, `alt4.gmr-smtp-in.l.google.com` | Retain | Byte-equivalent | Snapshot | Verified unchanged |
+| D09 | OpenAI apex TXT | `b8f860846036c0c4f1c7acedb5c9dc88`, existing public verification value | Retain | Byte-equivalent | Snapshot | Verified unchanged |
 | D10 | Organization challenge TXT | Absent | Add and retain | Public GitHub-issued TXT value | GitHub Pages UI; Cloudflare ID `a645502759838290ab31d2032149f686` | Verified at C06 |
-| D11 | Preview CNAME | Absent | Add temporarily, then retire | Absent after canonical production passes | Cloudflare ID `c512a433e329c81cf77415a7668a3cbd` | Applied at C03; retirement pending |
+| D11 | Preview CNAME | Absent | Add temporarily, then retire | Absent after canonical production passes | Cloudflare ID `c512a433e329c81cf77415a7668a3cbd` | Verified retired at C13 |
 | D12 | Apex AAAA set | Absent | Add | Four DNS-only GitHub Pages AAAA records | Created Cloudflare IDs | Verified at C09-C10 |
-| D13 | DNSSEC | Disabled | Retain | Disabled | Snapshot | Planned |
-| D14 | Zone settings | 56 returned settings | Retain | Value-equivalent | Snapshot | Planned |
-| D15 | Page Rules | Empty | Retain | Empty | Snapshot | Planned |
-| D16 | Zone rulesets | Three Cloudflare-managed rulesets | Retain | Provider-managed; no S009 mutation | Snapshot summaries | Planned |
-| D17 | Account rulesets | One Cloudflare-managed ruleset view | Retain | Provider-managed; no S009 mutation | Snapshot summary | Planned |
-| D18 | Account lists | Empty | Retain | Empty | Snapshot | Planned |
-| D19 | Workers routes | Empty | Retain | Empty | Snapshot | Planned |
-| D20 | Email Routing | Disabled and unconfigured; one disabled drop rule | Retain | Semantically equivalent with no S009 mutation | Redacted snapshot | Planned |
-| D21 | Cloudflare SSL | Full mode, Universal SSL enabled | Retain | No S009 mutation; dormant for DNS-only website records | Snapshot | Planned |
+| D13 | DNSSEC | Disabled | Retain | Disabled | Snapshot | Verified unchanged |
+| D14 | Zone settings | 56 returned settings | Retain | Value-equivalent | Snapshot | Verified unchanged |
+| D15 | Page Rules | Empty | Retain | Empty | Snapshot | Verified unchanged |
+| D16 | Zone rulesets | Three Cloudflare-managed rulesets | Retain | Provider-managed; no S009 mutation | Snapshot summaries | Verified unchanged |
+| D17 | Account rulesets | One Cloudflare-managed ruleset view | Retain | Provider-managed; no S009 mutation | Snapshot summary | Verified unchanged |
+| D18 | Account lists | Empty | Retain | Empty | Snapshot | Verified unchanged |
+| D19 | Workers routes | Empty | Retain | Empty | Snapshot | Verified unchanged |
+| D20 | Email Routing | Disabled and unconfigured; one disabled drop rule | Retain | Semantically equivalent with no S009 mutation | Redacted snapshot | Verified unchanged |
+| D21 | Cloudflare SSL | Full mode, Universal SSL enabled | Retain | No S009 mutation; dormant for DNS-only website records | Snapshot | Configuration verified unchanged; provider-managed backup pack aged out |
 | D22 | Legacy Pages attachment | Personal repository, legacy `master:/docs`, apex CNAME | Retire last | Pages disabled after final smoke pass | Snapshot plus rollback R14 | Planned |
-| D23 | Destination Pages | Absent | Add | Workflow build on organization repository, apex CNAME, HTTPS enforced | GitHub API state and workflow run | Applied at C01; final attachment pending |
+| D23 | Destination Pages | Absent | Add | Workflow build on organization repository, apex CNAME, HTTPS enforced | GitHub API state and workflow run | Verified at C08-C12 |
 | D24 | `github-pages` environment | Absent | Add | Main-only deployment policy | GitHub API state | Verified at C02 |
 | D25 | Organization domain verification | Absent | Add and retain | `glitchpad.com` verified for `shruggietech` | Challenge TXT plus GitHub owner state | Verified at C07 |
 
@@ -178,7 +178,7 @@ Every checkpoint is fail-closed. A checkpoint starts only when its expected-befo
 - Expected after: `https_enforced: true`; apex and `www` complete valid TLS and converge on the canonical HTTPS apex.
 - Stop condition: Certificate remains unapproved after the bounded observation window, hostname coverage fails, or redirects loop.
 - Rollback R11: Disable HTTPS enforcement only when required to restore a validated serving state; do not bypass hostname or ownership failure.
-- Observation: Pending.
+- Observation: Pass at `2026-09-01T01:57Z`. The existing authenticated browser session observed `DNS check successful` and an enabled Enforce HTTPS control without launching polling processes. The Pages API then enabled enforcement and returned `https_enforced: true`, `html_url: https://glitchpad.com/`, `protected_domain_state: verified`, and an approved certificate covering `glitchpad.com` plus `www.glitchpad.com`, expiring `2026-11-29`.
 
 ### C12 - Run production smoke inventory
 
@@ -187,7 +187,7 @@ Every checkpoint is fail-closed. A checkpoint starts only when its expected-befo
 - Expected after: Every inventory case passes from the public canonical host and `www` redirects to it.
 - Stop condition: Any required case fails or depends on the personal site or preview hostname.
 - Rollback R12: Keep legacy Pages enabled and restore the last validated organization state; use exact-legacy recovery only if the organization state cannot be made safe.
-- Observation: Pending.
+- Observation: Pass at `2026-09-01T01:58Z`. Direct TLS verification authorized the Let's Encrypt YR1 certificate with subject `glitchpad.com`, SANs `glitchpad.com` and `www.glitchpad.com`, validity through `2026-11-30T00:57:08Z`, and SHA-256 fingerprint `5A:95:5B:FE:74:3D:02:71:49:7F:E7:5B:36:FA:E8:F4:B0:FB:37:E8:F1:20:BC:A6:D9:D6:A5:16:43:FD:E4:C0`. `http://glitchpad.com` redirects once to the HTTPS apex; HTTP `www` redirects through the apex to HTTPS; HTTPS `www` redirects once to the HTTPS apex; all terminate at 200 without loops. `/`, `/docs`, `/docs/technical-specification`, `/security`, `/support`, and `/license` returned 200 with Glitchpad content, canonical metadata, Open Graph, and Twitter metadata; the missing path returned 404 with branded metadata; a deployed 50,196-byte font returned 200 as `font/woff2`. Forced-family requests reached GitHub directly over IPv4 `185.199.111.153` and IPv6 `2606:50c0:8003::153`, both with 200.
 
 ### C13 - Remove the preview
 
@@ -196,7 +196,7 @@ Every checkpoint is fail-closed. A checkpoint starts only when its expected-befo
 - Expected after: Preview name does not resolve and canonical production remains healthy.
 - Stop condition: Canonical production changes, destination still depends on the preview, or the DNS ID differs.
 - Rollback R13: Recreate the DNS-only preview CNAME and reattach it only if needed for organization-origin recovery.
-- Observation: Pending.
+- Observation: Pass at `2026-09-01T01:58Z`. A guard proved all 18 expected records, the complete final A/AAAA/`www`/challenge set, and preview ID `c512a433e329c81cf77415a7668a3cbd`; Cloudflare deleted only that preview record. API readback and both authoritative nameservers plus Cloudflare, Google, and Quad9 resolvers report the preview absent. Destination Pages remains attached only to `glitchpad.com`.
 
 ### C14 - Retire legacy Pages
 
@@ -205,7 +205,7 @@ Every checkpoint is fail-closed. A checkpoint starts only when its expected-befo
 - Expected after: Legacy Pages API returns disabled/not found while canonical production remains healthy.
 - Stop condition: Any final smoke case regresses, evidence is incomplete, or legacy repository/source is unavailable for recovery.
 - Rollback R14: Recreate legacy Pages from `master:/docs`. Before C07 it may reclaim `glitchpad.com` directly. After C07, exact personal-domain restoration additionally requires R09 before attaching the apex.
-- Observation: Pending.
+- Observation: Pass at `2026-09-01T01:59Z`. After preview removal, the TLS certificate remained authorized with the same SANs and fingerprint; `/`, `/docs`, `/docs/technical-specification`, `/security`, `/support`, and `/license` again returned 200 with canonical and social metadata; the missing path again returned the expected 404. Canonical production has no preview dependency.
 
 ## Phase-specific rollback
 
@@ -234,22 +234,22 @@ This is the last-resort path when no validated organization deployment can be re
 | Surface | Preview result | Production result | Post-cleanup result |
 | --- | --- | --- | --- |
 | Reviewed deployed revision | Pass: `c93395edc16ec64900dbfc8cabbad9162a40c0d2`, run `33459610523`, deployment `6192857732` | Pending | Pending |
-| Apex authoritative A and AAAA | Not applicable | Pending | Pending |
-| Public DNS resolver 1 | Pass: preview CNAME plus four A and four AAAA targets | Pending | Pending |
-| Public DNS resolver 2 | Pending | Pending | Pending |
-| Organization challenge TXT | Pending | Pending | Pending |
-| TLS chain and hostname | Pending | Pending | Pending |
-| HTTP to HTTPS | Pending | Pending | Pending |
-| `www` to apex canonical redirect | Not applicable | Pending | Pending |
-| `/` | Pass: 200, Glitchpad content | Pending | Pending |
-| `/docs` | Pass: 200, Glitchpad content | Pending | Pending |
-| Nested documentation route | Pass: `/docs/technical-specification`, 200 | Pending | Pending |
-| Static brand and application assets | Pass: deployed font asset 200; hosted browser suite passed | Pending | Pending |
-| Title, description, canonical URL, social metadata | Pass: hosted metadata retains `https://glitchpad.com` canonical and social fields | Pending | Pending |
-| Missing path | Pass: 404 | Pending | Pending |
-| IPv4 transport | Pass through resolved preview A set | Pending | Pending |
-| IPv6 transport | DNS pass through resolved preview AAAA set; direct client transport is validated at production C12 | Pending | Pending |
+| Apex authoritative A and AAAA | Not applicable | Pass: both authoritative nameservers return four A and four AAAA targets | Pass |
+| Public DNS resolver 1 | Pass: preview CNAME plus four A and four AAAA targets | Pass: Cloudflare resolver matches final set | Pass |
+| Public DNS resolver 2 | Pending | Pass: Google and Quad9 match final set | Pass |
+| Organization challenge TXT | Pending | Pass on authoritative and three public resolvers | Pass |
+| TLS chain and hostname | Pending | Pass: authorized Let's Encrypt certificate covers apex and `www` | Pass |
+| HTTP to HTTPS | Pending | Pass: apex and `www` converge on HTTPS apex | Pass |
+| `www` to apex canonical redirect | Not applicable | Pass without loop | Pass |
+| `/` | Pass: 200, Glitchpad content | Pass: 200 | Pass: 200 |
+| `/docs` | Pass: 200, Glitchpad content | Pass: 200 | Pass: 200 |
+| Nested documentation route | Pass: `/docs/technical-specification`, 200 | Pass: 200 | Pass: 200 |
+| Static brand and application assets | Pass: deployed font asset 200; hosted browser suite passed | Pass: deployed font 200 | Pass |
+| Title, description, canonical URL, social metadata | Pass: hosted metadata retains `https://glitchpad.com` canonical and social fields | Pass on all inventoried routes | Pass |
+| Missing path | Pass: 404 | Pass: branded 404 | Pass: branded 404 |
+| IPv4 transport | Pass through resolved preview A set | Pass: direct 200 | Pass |
+| IPv6 transport | DNS pass through resolved preview AAAA set; direct client transport is validated at production C12 | Pass: direct 200 | Pass |
 
 ## Final reconciliation
 
-Pending completion. Every intended provider difference will be mapped to D01-D25 and C01-C14. Every retained surface must compare equal to the pre-cutover snapshot. The legacy Pages retirement is authorized only by a passing C12 and C13.
+The pre-retirement snapshot at `2026-09-01T02:01:19.834Z` contains 17 live DNS records and reconciles every change to D01-D25 and C01-C13. Zone identity, DNSSEC, all 56 zone settings, empty Page Rules, three zone managed rulesets, one account managed ruleset view, empty Workers routes, empty account lists, redacted Email Routing state, and all seven unrelated DNS records compare equal to the baseline. Cloudflare no longer returns pre-cutover SSL.com backup certificate pack `12a59992-f3ed-4ffb-8e8f-b24ed30ca849`; this is explained provider-managed certificate lifecycle drift because S009 performed no Cloudflare SSL mutation, the active Google Universal SSL configuration is unchanged, and final website records are DNS-only. There are zero unexplained differences. Passing C11-C13 authorizes C14 legacy Pages retirement.

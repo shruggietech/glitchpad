@@ -70,12 +70,12 @@
 
 **Independent Test**: Confirm valid certificate coverage for both hostnames, HTTP-to-HTTPS convergence on `https://glitchpad.com`, and passing smoke results for all required content, assets, metadata, address families, and error behavior.
 
-- [ ] T022 [US2] Wait through bounded provider-state checks for GitHub DNS validation and certificate approval without spawning a polling process per check, recording observations in `docs/operations/glitchpad-domain-cutover.md`
-- [ ] T023 [US2] Enable GitHub Pages HTTPS enforcement only after certificate approval and record the resulting Pages state in `docs/operations/glitchpad-domain-cutover.md`
-- [ ] T024 [US2] Validate apex and `www` DNS from authoritative and at least two public resolvers over A, AAAA, CNAME, and TXT record types in `docs/operations/glitchpad-domain-cutover.md`
-- [ ] T025 [US2] Validate TLS chains, hostname coverage, HTTP-to-HTTPS redirects, canonical-host behavior, `/`, `/docs`, nested documentation, static assets, metadata, and missing-page behavior in `docs/operations/glitchpad-domain-cutover.md`
-- [ ] T026 [US2] Remove the temporary preview Pages attachment and DNS record only after T023-T025 pass, then confirm no dangling preview hostname in `docs/operations/glitchpad-domain-cutover.md`
-- [ ] T027 [US2] Repeat the canonical production smoke inventory after preview cleanup and record the final passing results in `docs/operations/glitchpad-domain-cutover.md`
+- [x] T022 [US2] Wait through bounded provider-state checks for GitHub DNS validation and certificate approval without spawning a polling process per check, recording observations in `docs/operations/glitchpad-domain-cutover.md`
+- [x] T023 [US2] Enable GitHub Pages HTTPS enforcement only after certificate approval and record the resulting Pages state in `docs/operations/glitchpad-domain-cutover.md`
+- [x] T024 [US2] Validate apex and `www` DNS from authoritative and at least two public resolvers over A, AAAA, CNAME, and TXT record types in `docs/operations/glitchpad-domain-cutover.md`
+- [x] T025 [US2] Validate TLS chains, hostname coverage, HTTP-to-HTTPS redirects, canonical-host behavior, `/`, `/docs`, nested documentation, static assets, metadata, and missing-page behavior in `docs/operations/glitchpad-domain-cutover.md`
+- [x] T026 [US2] Remove the temporary preview Pages attachment and DNS record only after T023-T025 pass, then confirm no dangling preview hostname in `docs/operations/glitchpad-domain-cutover.md`
+- [x] T027 [US2] Repeat the canonical production smoke inventory after preview cleanup and record the final passing results in `docs/operations/glitchpad-domain-cutover.md`
 
 **Checkpoint**: Visitors securely reach the validated organization deployment through apex and `www`, with no temporary hostname dependency.
 
@@ -87,8 +87,8 @@
 
 **Independent Test**: Compare pre/post provider state, prove every difference is an applied decision, confirm all retained objects are unchanged, confirm legacy Pages retirement follows the successful smoke checkpoint, and dry-run every rollback action from committed evidence.
 
-- [ ] T028 [US3] Capture the sanitized post-cutover Cloudflare, GitHub Pages, environment, DNS, TLS, and HTTP state in `docs/operations/evidence/2026-09-01-domain-post-cutover.json`
-- [ ] T029 [US3] Diff pre-cutover and post-cutover evidence, reconcile every difference with one decision and checkpoint, and record zero unexplained changes in `docs/operations/glitchpad-domain-cutover.md`
+- [x] T028 [US3] Capture the sanitized post-cutover Cloudflare, GitHub Pages, environment, DNS, TLS, and HTTP state in `docs/operations/evidence/2026-09-01-domain-post-cutover.json`
+- [x] T029 [US3] Diff pre-cutover and post-cutover evidence, reconcile every difference with one decision and checkpoint, and record zero unexplained changes in `docs/operations/glitchpad-domain-cutover.md`
 - [ ] T030 [US3] Disable the legacy `h8rt3rmin8r/glitchpad.com` Pages site only after all US2 smoke checks pass and record the retirement checkpoint in `docs/operations/glitchpad-domain-cutover.md`
 - [ ] T031 [US3] Confirm the legacy Pages endpoint is disabled while canonical production remains healthy, then refresh final evidence in `docs/operations/evidence/2026-09-01-domain-post-cutover.json`
 - [ ] T032 [US3] Dry-run the reverse-order recovery decisions against captured identifiers and values, documenting any provider constraint and the validated rollback stopping point in `docs/operations/glitchpad-domain-cutover.md`

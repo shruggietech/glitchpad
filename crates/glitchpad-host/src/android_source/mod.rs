@@ -654,6 +654,18 @@ impl AndroidSourceHost {
 }
 
 fn summary_from_delivery(delivery: &BridgeDelivery) -> Result<AndroidSourceSummary, CoreError> {
+    if delivery.display_name.chars().count() > 256
+        || delivery
+            .media_type
+            .as_ref()
+            .is_some_and(|media_type| media_type.chars().count() > 128)
+    {
+        return Err(safe_error(
+            CoreErrorCategory::InvalidInput,
+            "Android bridge returned oversized metadata",
+            false,
+        ));
+    }
     let delivery_kind = match delivery.delivery_kind.as_str() {
         "view" => AndroidDeliveryKind::View,
         "share" => AndroidDeliveryKind::Share,
@@ -714,11 +726,22 @@ fn summary_from_delivery(delivery: &BridgeDelivery) -> Result<AndroidSourceSumma
                 .modified_unix_ms
                 .and_then(|milliseconds| u64::try_from(milliseconds).ok())
                 .and_then(|milliseconds| milliseconds.checked_mul(1_000_000)),
-            change_token: None,
+            change_token: Some(android_metadata_change_token(delivery)),
         },
         delivery_kind,
         grant,
     })
+}
+
+fn android_metadata_change_token(delivery: &BridgeDelivery) -> String {
+    let media_type = delivery.media_type.as_deref().unwrap_or_default();
+    format!(
+        "name:{}:{}|media:{}:{}",
+        delivery.display_name.len(),
+        delivery.display_name,
+        media_type.len(),
+        media_type,
+    )
 }
 
 fn safe_error(category: CoreErrorCategory, summary: &'static str, retryable: bool) -> CoreError {
@@ -804,5 +827,17 @@ mod tests {
         let source = summary_from_delivery(&delivery("unknown-size", "strong")).unwrap();
         assert_eq!(source.external_revision.byte_length, None);
         assert_eq!(source.descriptor.byte_length, None);
+    }
+
+    #[test]
+    fn provider_rename_changes_external_revision() {
+        let before = delivery("rename", "strong");
+        let mut after = before.clone();
+        after.display_name = "renamed.txt".into();
+
+        let before = summary_from_delivery(&before).unwrap();
+        let after = summary_from_delivery(&after).unwrap();
+
+        assert_ne!(before.external_revision, after.external_revision);
     }
 }

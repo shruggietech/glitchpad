@@ -20,6 +20,7 @@ import app.tauri.plugin.JSArray
 import app.tauri.plugin.JSObject
 import app.tauri.plugin.Plugin
 import java.io.FileInputStream
+import java.security.MessageDigest
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -34,6 +35,7 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
   private val sources = ConcurrentHashMap<String, NativeSource>()
   private val streams = ConcurrentHashMap<String, NativeStream>()
   private val restoration = RestorationStore(activity)
+  private val initialIntentConsumed = AtomicBoolean(false)
 
   override fun load(webView: WebView) {
     super.load(webView)
@@ -371,7 +373,7 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
       if (!DocumentsContract.isDocumentUri(activity, source.uri)) throw IllegalArgumentException()
       authority to documentId
     }.getOrNull()
-    val identityToken = documentIdentity?.second ?: source.token
+    val identityToken = documentIdentity?.second?.let(::boundedDocumentIdentity) ?: source.token
     val seekable = runCatching {
       activity.contentResolver.openFileDescriptor(source.uri, "r", CancellationSignal())?.use {
         Os.lseek(it.fileDescriptor, 0, OsConstants.SEEK_CUR)
@@ -381,8 +383,8 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
     JSObject()
       .put("bridgeToken", source.token)
       .put("deliveryKind", source.kind.wireName)
-      .put("identityScope", documentIdentity?.first?.take(MAX_IDENTITY_CHARS) ?: "temporary")
-      .put("identityToken", identityToken.take(MAX_IDENTITY_CHARS))
+      .put("identityScope", documentIdentity?.first?.take(MAX_IDENTITY_SCOPE_CHARS) ?: "temporary")
+      .put("identityToken", identityToken)
       .put("identityStrength", if (documentIdentity != null) "strong" else "weak")
       .put("displayName", metadata.displayName.take(MAX_NAME_CHARS))
       .put("mediaType", metadata.mimeType?.take(MAX_MEDIA_TYPE_CHARS))
@@ -442,8 +444,6 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
     private const val MAX_SAVE_BYTES = 16 * 1024 * 1024
     private const val MAX_NAME_CHARS = 256
     private const val MAX_MEDIA_TYPE_CHARS = 128
-    private const val MAX_IDENTITY_CHARS = 512
-    private val initialIntentConsumed = AtomicBoolean(false)
     private val SAFE_CODES = setOf(
       "missing_delivery", "unsupported_action", "invalid_source_shape", "read_authority_required",
       "missing_picker_source", "invalid_source_scheme", "directory_unsupported",
@@ -451,6 +451,24 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
     )
   }
 }
+
+internal fun boundedDocumentIdentity(documentId: String): String {
+  if (documentId.length <= MAX_DOCUMENT_ID_CHARS) return documentId
+  val digest = MessageDigest.getInstance("SHA-256").digest(documentId.toByteArray(Charsets.UTF_8))
+  return buildString(SHA_256_PREFIX.length + digest.size * 2) {
+    append(SHA_256_PREFIX)
+    digest.forEach { byte ->
+      val value = byte.toInt() and 0xff
+      append(HEX_DIGITS[value ushr 4])
+      append(HEX_DIGITS[value and 0x0f])
+    }
+  }
+}
+
+private const val MAX_DOCUMENT_ID_CHARS = 512
+private const val MAX_IDENTITY_SCOPE_CHARS = 512
+private const val SHA_256_PREFIX = "sha256:"
+private const val HEX_DIGITS = "0123456789abcdef"
 
 private inline fun <T, R> Result<T>.flatMap(transform: (T) -> Result<R>): Result<R> =
   fold(transform, Result.Companion::failure)

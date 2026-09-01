@@ -2,10 +2,23 @@ package com.shruggietech.glitchpad.source
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DeliveryPolicyTest {
+  @Test
+  fun oversizedDocumentIdentitiesRemainBoundedAndUnique() {
+    val sharedPrefix = "a".repeat(513)
+    val first = boundedDocumentIdentity("${sharedPrefix}first")
+    val second = boundedDocumentIdentity("${sharedPrefix}second")
+
+    assertTrue(first.startsWith("sha256:"))
+    assertEquals(71, first.length)
+    assertNotEquals(first, second)
+    assertEquals("short-id", boundedDocumentIdentity("short-id"))
+  }
+
   private val uri = "content://fixture/document/one"
 
   @Test

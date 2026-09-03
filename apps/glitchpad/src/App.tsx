@@ -207,6 +207,21 @@ export const initialSessions: ShellSession[] = [
   }),
 ];
 
+export const createPerformanceSessions = (): ShellSession[] => {
+  const bytes = 1024 * 1024;
+  const text = 'x'.repeat(bytes);
+  const markdownPrefix = '# Performance fixture\n\n';
+  const markdown = `${markdownPrefix}${'x'.repeat(bytes - new TextEncoder().encode(markdownPrefix).byteLength)}`;
+  const mermaidPrefix = 'flowchart TB\n  A --> B\n%%';
+  const mermaid = `${mermaidPrefix}${'x'.repeat(bytes - new TextEncoder().encode(mermaidPrefix).byteLength)}`;
+  return [
+    makeSession('welcome', 'performance.txt', 'Text', text, { search: true, edit: true }, { writable: true }),
+    makeSession('performance-markdown', 'performance.md', 'Markdown', markdown, { search: true }),
+    makeSession('performance-mermaid', 'performance.mmd', 'Mermaid', mermaid, { search: true, zoom: true, edit: true }, { writable: true }),
+    makeSession('performance-mermaid-edit', 'performance-edit.mmd', 'Mermaid', 'flowchart TB\n  A --> B\n', { search: true, zoom: true, edit: true }, { writable: true }),
+  ];
+};
+
 interface AppProps {
   sessions?: ShellSession[];
   recoveryGateway?: RecoveryGateway | null;
@@ -627,7 +642,7 @@ export function App({ sessions = initialSessions, recoveryGateway, externalLinkG
   };
 
   return (
-    <main className="app-shell" onKeyDown={handleShellKey}>
+    <main className="app-shell" data-performance-ready="true" onKeyDown={handleShellKey}>
       <TabStrip state={state} dispatch={dispatch} />
       <div className="toolbar-row">
         <CommandBar commands={commands} onInvoke={invoke} />

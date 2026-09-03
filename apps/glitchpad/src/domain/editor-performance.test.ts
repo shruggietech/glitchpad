@@ -8,5 +8,7 @@ describe('editor performance structure', () => {
     expect(measurement.samples_ms).toHaveLength(20);
     expect(measurement.samples_ms.every(Number.isFinite)).toBe(true);
     expect(measurement.p95_ms).toBeLessThan(50);
+    expect(measurement.classification).toBe('pass');
+    expect(measurement.repeated_hard_stall).toBe(false);
   });
 });

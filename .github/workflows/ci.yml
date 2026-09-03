@@ -94,6 +94,36 @@ jobs:
       - name: Frontend checks
         run: pnpm run check:frontend
 
+  performance:
+    name: Performance policy and hosted smoke
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.28.2
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install governed performance browser
+        run: pnpm exec puppeteer browsers install chrome-headless-shell
+
+      - name: Validate policy and run representative smoke
+        run: |
+          pnpm run check:performance
+          node scripts/run-performance.mjs --profile hosted_windows_smoke_v1 --build-id "pr-${{ github.event.pull_request.head.sha || github.sha }}"
+
   platform:
     name: Desktop host (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
@@ -329,6 +359,7 @@ jobs:
       [
         docs,
         shared,
+        performance,
         platform,
         android,
         android-instrumentation,
@@ -343,6 +374,7 @@ jobs:
         env:
           DOCS_RESULT: ${{ needs.docs.result }}
           SHARED_RESULT: ${{ needs.shared.result }}
+          PERFORMANCE_RESULT: ${{ needs.performance.result }}
           PLATFORM_RESULT: ${{ needs.platform.result }}
           ANDROID_RESULT: ${{ needs.android.result }}
           ANDROID_INSTRUMENTATION_RESULT: ${{ needs.android-instrumentation.result }}
@@ -350,7 +382,7 @@ jobs:
           SECURITY_RESULT: ${{ needs.security.result }}
           LABELER_RESULT: ${{ needs.labeler.result }}
         run: |
-          results="$DOCS_RESULT $SHARED_RESULT $PLATFORM_RESULT $ANDROID_RESULT $ANDROID_INSTRUMENTATION_RESULT $DEPENDENCY_RESULT $SECURITY_RESULT $LABELER_RESULT"
+          results="$DOCS_RESULT $SHARED_RESULT $PERFORMANCE_RESULT $PLATFORM_RESULT $ANDROID_RESULT $ANDROID_INSTRUMENTATION_RESULT $DEPENDENCY_RESULT $SECURITY_RESULT $LABELER_RESULT"
           echo "Job results: $results"
           for result in $results; do
             if [ "$result" = "failure" ] || [ "$result" = "cancelled" ]; then

@@ -147,3 +147,39 @@ sensitivity_review = "Synthetic configuration, session, and hostile diagnostic s
 format = "JSON"
 purpose = "Preference migration, future-schema preservation, bounded session projection, retention limits, and diagnostic redaction validation"
 expected_result = "Valid state restores deterministically while hostile strings never enter retained or exported diagnostics"
+
+[[fixture]]
+path = "fixtures/performance/budgets.json"
+source = "Original Glitchpad S018 performance budget catalog"
+author = "ShruggieTech contributors"
+license = "Apache-2.0"
+redistribution = true
+sha256 = "9dc31f4bab90c5cdc72ad7ad60026c092c70df1a8681348f4126ec13ad28eead"
+sensitivity_review = "Synthetic metric and profile declarations only; no production, personal, path, or document data"
+format = "JSON"
+purpose = "Versioned v0.1.0 thresholds, evidence applicability, scenarios, and reference-profile policy"
+expected_result = "Every required performance metric classifies exact targets, warnings, hard failures, and inactive package evidence deterministically"
+
+[[fixture]]
+path = "fixtures/performance/corpus.json"
+source = "Original Glitchpad S018 performance scenario corpus"
+author = "ShruggieTech contributors"
+license = "Apache-2.0"
+redistribution = true
+sha256 = "5260cba66a78f9f4753f8cf54ce47a45189040815a31fddb708bb7f8df6db530"
+sensitivity_review = "Synthetic recipes, boundaries, operation names, and forbidden key names only; no production or personal data"
+format = "JSON"
+purpose = "Deterministic generated workloads, exact renderer boundaries, cancellation coverage, and resource ownership kinds"
+expected_result = "Generated digests and all exact boundary, cancellation, privacy, and lifecycle declarations match the S018 contracts"
+
+[[fixture]]
+path = "fixtures/performance/evidence/policy-cases.json"
+source = "Original Glitchpad S018 performance evidence policy corpus"
+author = "ShruggieTech contributors"
+license = "Apache-2.0"
+redistribution = true
+sha256 = "aea64d03da5bf30a37d476175fa2b8e93225e7a5307f33f2be718f5a190c3e6e"
+sensitivity_review = "Synthetic numeric thresholds, classifications, and stable invalid-case identifiers only"
+format = "JSON"
+purpose = "Exact classification boundaries, consecutive-warning history, and malformed evidence validation"
+expected_result = "All policy consumers reject invalid evidence and agree on pass, warning, failure, and follow-up results"

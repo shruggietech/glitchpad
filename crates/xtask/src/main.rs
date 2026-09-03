@@ -211,6 +211,7 @@ fn docs(repository: &Path) -> Result<(), String> {
     run(repository, "pnpm", ["run", "check:mermaid-runtime"])?;
     run(repository, "pnpm", ["run", "check:metadata"])?;
     run(repository, "pnpm", ["run", "check:persistence"])?;
+    run(repository, "pnpm", ["run", "check:performance"])?;
     run(repository, "pnpm", ["run", "check:config"])?;
     run(repository, "pnpm", ["run", "docs:format"])?;
     run(repository, "pnpm", ["run", "docs:lint"])?;
@@ -269,6 +270,7 @@ fn verify_android_source_layout(repository: &Path) -> Result<(), String> {
         "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/FixtureDocumentsProvider.java",
         "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidSourceInstrumentedTest.kt",
         "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/RestorationInstrumentedTest.kt",
+        "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/performance/PerformanceInstrumentedTest.kt",
     ];
     for relative in required_files {
         if !repository.join(relative).is_file() {

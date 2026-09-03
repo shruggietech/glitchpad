@@ -416,7 +416,7 @@ export const TextEditorSurface = forwardRef<
           {session.text_document?.source_bytes.toLocaleString()} bytes
         </span>
       </div>
-      <div className="text-editor" ref={hostRef} />
+      <div className="text-editor" data-performance-ready="true" ref={hostRef} />
     </div>
   );
 });

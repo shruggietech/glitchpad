@@ -97,4 +97,16 @@ describe('Markdown renderer scheduling', () => {
     failure.dispose();
     vi.useRealTimers();
   });
+
+  it('publishes content-free measurements for current results only', async () => {
+    const measurements = vi.fn();
+    const client = new MarkdownRendererClient({ execute: (request) => Promise.resolve(resultFor(request)) }, 0, 1_000, undefined, measurements);
+    await client.render({ session_id: 'measured', source_revision: 2, source_text: 'private source' });
+    expect(measurements).toHaveBeenCalledWith({
+      renderer: 'markdown', owner_id: 'measured', source_revision: 2,
+      source_bytes: 0, duration_ms: 0, status: 'ready',
+    });
+    expect(JSON.stringify(measurements.mock.calls)).not.toContain('private source');
+    client.dispose();
+  });
 });

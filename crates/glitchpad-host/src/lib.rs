@@ -4,6 +4,7 @@ use tauri::Manager;
 
 pub mod app_state;
 pub mod external_link;
+pub mod performance;
 pub mod recovery;
 #[cfg(not(mobile))]
 pub mod source;

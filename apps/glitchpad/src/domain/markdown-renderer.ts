@@ -6,6 +6,8 @@ import {
   type MarkdownRenderResult,
 } from './markdown-contract';
 import { renderMarkdown } from './markdown-pipeline';
+import type { ResourceOwner } from './resource-ledger';
+import type { RendererPerformanceMeasurement } from './performance';
 
 export interface MarkdownExecutor {
   execute(
@@ -24,6 +26,8 @@ export const directMarkdownExecutor: MarkdownExecutor = {
 };
 
 export class WorkerMarkdownExecutor implements MarkdownExecutor {
+  constructor(private readonly resources?: ResourceOwner) {}
+
   execute(
     request: MarkdownRenderRequest,
     signal: AbortSignal,
@@ -33,9 +37,11 @@ export class WorkerMarkdownExecutor implements MarkdownExecutor {
         type: 'module',
         name: `markdown-${request.session_id}`,
       });
+      const releaseWorker = this.resources?.acquire('worker') ?? (() => undefined);
       const finish = () => {
         signal.removeEventListener('abort', cancel);
         worker.terminate();
+        releaseWorker();
       };
       const cancel = () => {
         finish();
@@ -55,16 +61,17 @@ export class WorkerMarkdownExecutor implements MarkdownExecutor {
   }
 }
 
-const defaultExecutor = (): MarkdownExecutor =>
+const defaultExecutor = (resources?: ResourceOwner): MarkdownExecutor =>
   typeof Worker === 'undefined'
     ? directMarkdownExecutor
-    : new WorkerMarkdownExecutor();
+    : new WorkerMarkdownExecutor(resources);
 
 interface ActiveRender {
   generation: number;
   abort: AbortController;
   timer: ReturnType<typeof setTimeout> | null;
   resolve: (result: MarkdownRenderResult | null) => void;
+  releaseResources: () => void;
 }
 
 export class MarkdownRendererClient {
@@ -72,11 +79,17 @@ export class MarkdownRendererClient {
   private active: ActiveRender | null = null;
   private disposed = false;
 
+  private readonly executor: MarkdownExecutor;
+
   constructor(
-    private readonly executor: MarkdownExecutor = defaultExecutor(),
+    executor?: MarkdownExecutor,
     private readonly debounceMs = MARKDOWN_PREVIEW_DEBOUNCE_MS,
     private readonly timeoutMs = MARKDOWN_RENDER_TIMEOUT_MS,
-  ) {}
+    private readonly resources?: ResourceOwner,
+    private readonly onMeasurement?: (measurement: RendererPerformanceMeasurement) => void,
+  ) {
+    this.executor = executor ?? defaultExecutor(resources);
+  }
 
   render(
     input: Omit<MarkdownRenderRequest, 'request_id' | 'sanitizer_version'>,
@@ -91,11 +104,22 @@ export class MarkdownRendererClient {
     };
     return new Promise((resolve) => {
       const abort = new AbortController();
+      const releases = [
+        this.resources?.acquire('callback') ?? (() => undefined),
+        this.resources?.acquire('timer') ?? (() => undefined),
+      ];
+      let released = false;
+      const releaseResources = () => {
+        if (released) return;
+        released = true;
+        releases.forEach((release) => release());
+      };
       const active: ActiveRender = {
         generation,
         abort,
         timer: null,
         resolve,
+        releaseResources,
       };
       active.timer = setTimeout(() => {
         active.timer = null;
@@ -104,12 +128,14 @@ export class MarkdownRendererClient {
           timedOut = true;
           abort.abort();
         }, this.timeoutMs);
+        releases.push(this.resources?.acquire('timer') ?? (() => undefined));
         void this.executor
           .execute(request, abort.signal)
           .then((result) => {
             clearTimeout(timeout);
             if (!this.isCurrentGeneration(active)) return;
             this.active = null;
+            releaseResources();
             if (timedOut) {
               resolve(this.timeoutResult(request));
               return;
@@ -119,21 +145,24 @@ export class MarkdownRendererClient {
               result.session_id === request.session_id &&
               result.source_revision === request.source_revision &&
               result.sanitizer_version === request.sanitizer_version;
-            resolve(matches ? result : null);
+            const current = matches ? result : null;
+            if (current) this.publishMeasurement(current);
+            resolve(current);
           })
           .catch(() => {
             clearTimeout(timeout);
             if (!this.isCurrentGeneration(active)) return;
             this.active = null;
-            resolve(
-              this.failureResult(
+            releaseResources();
+            const failure = this.failureResult(
                 request,
                 timedOut
                   ? 'Markdown preview timed out safely. Source remains available.'
                   : 'Markdown preview failed safely. Source remains available.',
                 timedOut ? this.timeoutMs : 0,
-              ),
-            );
+              );
+            this.publishMeasurement(failure);
+            resolve(failure);
           });
       }, this.debounceMs);
       this.active = active;
@@ -146,17 +175,20 @@ export class MarkdownRendererClient {
     if (active.timer) clearTimeout(active.timer);
     active.abort.abort();
     this.active = null;
+    active.releaseResources();
     active.resolve(null);
   }
 
   suspend(): void {
     this.cancel();
+    this.resources?.suspend();
   }
 
   dispose(): void {
     if (this.disposed) return;
     this.cancel();
     this.disposed = true;
+    this.resources?.dispose();
   }
 
   private isCurrent(active: ActiveRender): boolean {
@@ -203,5 +235,16 @@ export class MarkdownRendererClient {
       },
       sanitizer_version: MARKDOWN_SANITIZER_VERSION,
     };
+  }
+
+  private publishMeasurement(result: MarkdownRenderResult): void {
+    this.onMeasurement?.({
+      renderer: 'markdown',
+      owner_id: result.session_id,
+      source_revision: result.source_revision,
+      source_bytes: result.measurements.source_bytes,
+      duration_ms: result.measurements.parse_duration_ms,
+      status: result.status,
+    });
   }
 }

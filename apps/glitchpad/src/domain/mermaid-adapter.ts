@@ -9,6 +9,8 @@ import {
   type MermaidRenderRequest,
   type MermaidRenderResult,
 } from './mermaid-contract';
+import type { ResourceOwner } from './resource-ledger';
+import type { RendererPerformanceMeasurement } from './performance';
 
 export interface MermaidExecutor {
   execute(request: MermaidRenderRequest, signal: AbortSignal): Promise<MermaidRenderResult>;
@@ -95,6 +97,7 @@ interface ActiveRender {
   abort: AbortController;
   debounce: ReturnType<typeof setTimeout> | null;
   resolve: (result: MermaidRenderResult | null) => void;
+  releaseResources: () => void;
 }
 
 export class MermaidRendererClient {
@@ -107,6 +110,8 @@ export class MermaidRendererClient {
     private readonly debounceMs = MERMAID_PREVIEW_DEBOUNCE_MS,
     private readonly timeoutMs = MERMAID_RENDER_TIMEOUT_MS,
     private readonly scheduler = sharedScheduler,
+    private readonly resources?: ResourceOwner,
+    private readonly onMeasurement?: (measurement: RendererPerformanceMeasurement) => void,
   ) {}
 
   render(input: Omit<MermaidRenderRequest, 'request_id' | 'sanitizer_version'>): Promise<MermaidRenderResult | null> {
@@ -120,7 +125,17 @@ export class MermaidRendererClient {
     };
     return new Promise((resolve) => {
       const abort = new AbortController();
-      const active: ActiveRender = { generation, abort, debounce: null, resolve };
+      const releases = [
+        this.resources?.acquire('callback') ?? (() => undefined),
+        this.resources?.acquire('timer') ?? (() => undefined),
+      ];
+      let released = false;
+      const releaseResources = () => {
+        if (released) return;
+        released = true;
+        releases.forEach((release) => release());
+      };
+      const active: ActiveRender = { generation, abort, debounce: null, resolve, releaseResources };
       active.debounce = setTimeout(() => {
         active.debounce = null;
         let timedOut = false;
@@ -128,18 +143,29 @@ export class MermaidRendererClient {
           timedOut = true;
           abort.abort();
         }, this.timeoutMs);
+        releases.push(this.resources?.acquire('timer') ?? (() => undefined));
         void this.scheduler.schedule(abort.signal, () => this.executor.execute(request, abort.signal)).then((result) => {
           clearTimeout(timeout);
           if (!this.isCurrentGeneration(active)) return;
           this.active = null;
-          if (timedOut) return resolve(this.timeoutResult(request));
+          releaseResources();
+          if (timedOut) {
+            const timeoutResult = this.timeoutResult(request);
+            this.publishMeasurement(timeoutResult);
+            return resolve(timeoutResult);
+          }
           const matches = result.request_id === request.request_id && result.owner_id === request.owner_id && result.source_revision === request.source_revision && result.sanitizer_version === request.sanitizer_version;
-          resolve(matches ? result : null);
+          const current = matches ? result : null;
+          if (current) this.publishMeasurement(current);
+          resolve(current);
         }).catch(() => {
           clearTimeout(timeout);
           if (!this.isCurrentGeneration(active)) return;
           this.active = null;
-          resolve(timedOut ? this.timeoutResult(request) : this.failureResult(request));
+          releaseResources();
+          const failure = timedOut ? this.timeoutResult(request) : this.failureResult(request);
+          this.publishMeasurement(failure);
+          resolve(failure);
         });
       }, this.debounceMs);
       this.active = active;
@@ -152,17 +178,20 @@ export class MermaidRendererClient {
     if (active.debounce) clearTimeout(active.debounce);
     active.abort.abort();
     this.active = null;
+    active.releaseResources();
     active.resolve(null);
   }
 
   suspend(): void {
     this.cancel();
+    this.resources?.suspend();
   }
 
   dispose(): void {
     if (this.disposed) return;
     this.cancel();
     this.disposed = true;
+    this.resources?.dispose();
   }
 
   private isCurrentGeneration(active: ActiveRender): boolean {
@@ -195,5 +224,16 @@ export class MermaidRendererClient {
       sanitizer_version: MERMAID_SANITIZER_VERSION,
       parser_version: MERMAID_VERSION,
     };
+  }
+
+  private publishMeasurement(result: MermaidRenderResult): void {
+    this.onMeasurement?.({
+      renderer: 'mermaid',
+      owner_id: result.owner_id,
+      source_revision: result.source_revision,
+      source_bytes: result.measurements.source_bytes,
+      duration_ms: result.measurements.total_duration_ms,
+      status: result.status,
+    });
   }
 }

@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "catalog_version": "v0.1.0-performance-1",
+  "generated_fixtures": {
+    "text_1mib": { "bytes": 1048576, "recipe": "repeat ASCII x exactly 1048576 times" },
+    "markdown_1mib": { "bytes": 1048576, "recipe": "prefix '# Performance fixture\\n\\n' then pad with ASCII x to exactly 1048576 bytes" },
+    "mermaid_1mib": { "bytes": 1048576, "recipe": "prefix 'flowchart TB\\n  A --> B\\n%%' then pad the Mermaid comment with ASCII x to exactly 1048576 bytes" }
+  },
+  "boundaries": [
+    { "family": "text", "at_bytes": 33554432, "expected": "editable" },
+    { "family": "text", "at_bytes": 33554433, "expected": "large_read_only" },
+    { "family": "text", "at_bytes": 268435456, "expected": "large_read_only" },
+    { "family": "text", "at_bytes": 268435457, "expected": "refused" },
+    { "family": "markdown", "at_bytes": 16777216, "expected": "full" },
+    { "family": "markdown", "at_bytes": 16777217, "expected": "source_only" },
+    { "family": "mermaid", "at_bytes": 1048576, "expected": "renderable" },
+    { "family": "mermaid", "at_bytes": 1048577, "expected": "source_only" }
+  ],
+  "cancellation_operations": ["syntax", "markdown", "mermaid", "checksum", "large_text_search", "source_stream"],
+  "resource_kinds": ["worker", "object_url", "observer", "subscription", "timer", "callback", "lease", "surface"],
+  "forbidden_evidence_keys": ["content", "source_text", "filename", "file_name", "path", "uri", "provider", "environment", "command_line", "raw_log"]
+}

@@ -1,0 +1,442 @@
+{
+  "schema_version": 1,
+  "catalog_version": "v0.1.0-performance-1",
+  "metrics": [
+    {
+      "id": "cold_shell_desktop",
+      "unit": "milliseconds",
+      "aggregation": "p95",
+      "direction": "at_most",
+      "target": 1500,
+      "hard_limit": 2500,
+      "minimum_samples": 5,
+      "maximum_samples": 100,
+      "scenario_id": "cold_shell",
+      "platform_family": "desktop",
+      "pull_request": "smoke",
+      "release": "required",
+      "release_profiles": ["desktop_reference_v1"],
+      "failure_invariants": []
+    },
+    {
+      "id": "cold_shell_android",
+      "unit": "milliseconds",
+      "aggregation": "p95",
+      "direction": "at_most",
+      "target": 2500,
+      "hard_limit": 4000,
+      "minimum_samples": 5,
+      "maximum_samples": 100,
+      "scenario_id": "cold_shell",
+      "platform_family": "android",
+      "pull_request": "inactive",
+      "release": "required",
+      "release_profiles": [
+        "android_api24_reference_v1",
+        "android_api36_reference_v1"
+      ],
+      "failure_invariants": []
+    },
+    {
+      "id": "text_first_content",
+      "unit": "milliseconds",
+      "aggregation": "p95",
+      "direction": "at_most",
+      "target": 300,
+      "hard_limit": 750,
+      "minimum_samples": 20,
+      "maximum_samples": 100,
+      "scenario_id": "text_1mib",
+      "platform_family": "all",
+      "pull_request": "smoke",
+      "release": "required",
+      "release_profiles": [
+        "desktop_reference_v1",
+        "android_api24_reference_v1",
+        "android_api36_reference_v1"
+      ],
+      "failure_invariants": []
+    },
+    {
+      "id": "markdown_first_content",
+      "unit": "milliseconds",
+      "aggregation": "p95",
+      "direction": "at_most",
+      "target": 800,
+      "hard_limit": 1500,
+      "minimum_samples": 20,
+      "maximum_samples": 100,
+      "scenario_id": "markdown_1mib",
+      "platform_family": "all",
+      "pull_request": "smoke",
+      "release": "required",
+      "release_profiles": [
+        "desktop_reference_v1",
+        "android_api24_reference_v1",
+        "android_api36_reference_v1"
+      ],
+      "failure_invariants": []
+    },
+    {
+      "id": "mermaid_first_content_desktop",
+      "unit": "milliseconds",
+      "aggregation": "p95",
+      "direction": "at_most",
+      "target": 1500,
+      "hard_limit": 2500,
+      "minimum_samples": 20,
+      "maximum_samples": 100,
+      "scenario_id": "mermaid_1mib",
+      "platform_family": "desktop",
+      "pull_request": "smoke",
+      "release": "required",
+      "release_profiles": ["desktop_reference_v1"],
+      "failure_invariants": ["stale_commit"]
+    },
+    {
+      "id": "mermaid_first_content_android",
+      "unit": "milliseconds",
+      "aggregation": "p95",
+      "direction": "at_most",
+      "target": 2500,
+      "hard_limit": 4000,
+      "minimum_samples": 20,
+      "maximum_samples": 100,
+      "scenario_id": "mermaid_1mib",
+      "platform_family": "android",
+      "pull_request": "inactive",
+      "release": "required",
+      "release_profiles": [
+        "android_api24_reference_v1",
+        "android_api36_reference_v1"
+      ],
+      "failure_invariants": ["stale_commit"]
+    },
+    {
+      "id": "mermaid_current_preview",
+      "unit": "milliseconds",
+      "aggregation": "p95",
+      "direction": "at_most",
+      "target": 1000,
+      "hard_limit": 2000,
+      "minimum_samples": 20,
+      "maximum_samples": 100,
+      "scenario_id": "mermaid_normal_edit",
+      "platform_family": "all",
+      "pull_request": "smoke",
+      "release": "required",
+      "release_profiles": [
+        "desktop_reference_v1",
+        "android_api24_reference_v1",
+        "android_api36_reference_v1"
+      ],
+      "failure_invariants": ["stale_commit", "repeated_hard_stall"]
+    },
+    {
+      "id": "editor_input_paint",
+      "unit": "milliseconds",
+      "aggregation": "p95",
+      "direction": "at_most",
+      "target": 50,
+      "hard_limit": 100,
+      "minimum_samples": 40,
+      "maximum_samples": 200,
+      "scenario_id": "editor_normal_input",
+      "platform_family": "all",
+      "pull_request": "smoke",
+      "release": "required",
+      "release_profiles": [
+        "desktop_reference_v1",
+        "android_api24_reference_v1",
+        "android_api36_reference_v1"
+      ],
+      "failure_invariants": ["repeated_hard_stall"]
+    },
+    {
+      "id": "cancellation_acknowledgement",
+      "unit": "milliseconds",
+      "aggregation": "p95",
+      "direction": "at_most",
+      "target": 100,
+      "hard_limit": 250,
+      "minimum_samples": 20,
+      "maximum_samples": 200,
+      "scenario_id": "cancel_all_work",
+      "platform_family": "all",
+      "pull_request": "structural",
+      "release": "required",
+      "release_profiles": [
+        "desktop_reference_v1",
+        "android_api24_reference_v1",
+        "android_api36_reference_v1"
+      ],
+      "failure_invariants": ["post_cancel_publication"]
+    },
+    {
+      "id": "repeated_interaction_task",
+      "unit": "milliseconds",
+      "aggregation": "maximum",
+      "direction": "at_most",
+      "target": 16,
+      "hard_limit": 50,
+      "minimum_samples": 20,
+      "maximum_samples": 200,
+      "scenario_id": "interaction_slice",
+      "platform_family": "all",
+      "pull_request": "structural",
+      "release": "required",
+      "release_profiles": [
+        "desktop_reference_v1",
+        "android_api24_reference_v1",
+        "android_api36_reference_v1"
+      ],
+      "failure_invariants": ["repeated_hard_stall"]
+    },
+    {
+      "id": "idle_desktop_working_set",
+      "unit": "bytes",
+      "aggregation": "maximum",
+      "direction": "at_most",
+      "target": 167772160,
+      "hard_limit": 262144000,
+      "minimum_samples": 5,
+      "maximum_samples": 60,
+      "scenario_id": "idle_application",
+      "platform_family": "desktop",
+      "pull_request": "inactive",
+      "release": "required",
+      "release_profiles": ["desktop_reference_v1"],
+      "failure_invariants": []
+    },
+    {
+      "id": "idle_android_pss",
+      "unit": "bytes",
+      "aggregation": "maximum",
+      "direction": "at_most",
+      "target": 188743680,
+      "hard_limit": 268435456,
+      "minimum_samples": 5,
+      "maximum_samples": 60,
+      "scenario_id": "idle_application",
+      "platform_family": "android",
+      "pull_request": "inactive",
+      "release": "required",
+      "release_profiles": [
+        "android_api24_reference_v1",
+        "android_api36_reference_v1"
+      ],
+      "failure_invariants": []
+    },
+    {
+      "id": "suspended_text_tab_overhead",
+      "unit": "bytes",
+      "aggregation": "maximum",
+      "direction": "at_most",
+      "threshold_kind": "source_relative",
+      "target_multiplier": 2.5,
+      "target_constant": 10485760,
+      "hard_multiplier": 4,
+      "hard_constant": 20971520,
+      "minimum_samples": 5,
+      "maximum_samples": 60,
+      "scenario_id": "suspended_text_tab",
+      "platform_family": "all",
+      "pull_request": "structural",
+      "release": "required",
+      "release_profiles": [
+        "desktop_reference_v1",
+        "android_api24_reference_v1",
+        "android_api36_reference_v1"
+      ],
+      "failure_invariants": ["resource_growth"]
+    },
+    {
+      "id": "desktop_installer_size",
+      "unit": "bytes",
+      "aggregation": "maximum",
+      "direction": "at_most",
+      "target": 36700160,
+      "hard_limit": 62914560,
+      "minimum_samples": 1,
+      "maximum_samples": 1,
+      "scenario_id": "desktop_package",
+      "platform_family": "desktop",
+      "pull_request": "inactive",
+      "release": "inactive",
+      "release_profiles": [],
+      "failure_invariants": []
+    },
+    {
+      "id": "universal_android_apk_size",
+      "unit": "bytes",
+      "aggregation": "maximum",
+      "direction": "at_most",
+      "target": 41943040,
+      "hard_limit": 68157440,
+      "minimum_samples": 1,
+      "maximum_samples": 1,
+      "scenario_id": "android_package",
+      "platform_family": "android",
+      "pull_request": "inactive",
+      "release": "inactive",
+      "release_profiles": [],
+      "failure_invariants": []
+    },
+    {
+      "id": "renderer_resource_disposal",
+      "unit": "count",
+      "aggregation": "maximum",
+      "direction": "at_most",
+      "target": 0,
+      "hard_limit": 0,
+      "minimum_samples": 100,
+      "maximum_samples": 100,
+      "scenario_id": "resource_lifecycle",
+      "platform_family": "all",
+      "pull_request": "structural",
+      "release": "required",
+      "release_profiles": ["structural_v1"],
+      "failure_invariants": ["incomplete_cleanup", "resource_growth"]
+    }
+  ],
+  "profiles": [
+    {
+      "id": "hosted_windows_smoke_v1",
+      "platform": "windows",
+      "platform_family": "desktop",
+      "evidence_class": "hosted_smoke",
+      "hardware_class": "GitHub-hosted Windows runner",
+      "operating_system": "windows-latest",
+      "runtime": "pinned Chromium",
+      "minimum_memory_bytes": 17179869184
+    },
+    {
+      "id": "desktop_reference_v1",
+      "platform": "windows",
+      "platform_family": "desktop",
+      "evidence_class": "reference",
+      "hardware_class": "x86_64, 8 logical CPU cores, 16 GiB RAM",
+      "operating_system": "Windows 11",
+      "runtime": "installed WebView2 stable",
+      "minimum_memory_bytes": 17179869184
+    },
+    {
+      "id": "android_api24_reference_v1",
+      "platform": "android",
+      "platform_family": "android",
+      "evidence_class": "reference",
+      "hardware_class": "physical or hardware-accelerated ARM64/x86_64 device, 4 GiB RAM",
+      "operating_system": "Android API 24",
+      "runtime": "system WebView",
+      "minimum_memory_bytes": 4294967296
+    },
+    {
+      "id": "android_api36_reference_v1",
+      "platform": "android",
+      "platform_family": "android",
+      "evidence_class": "reference",
+      "hardware_class": "physical or hardware-accelerated ARM64/x86_64 device, 4 GiB RAM",
+      "operating_system": "Android API 36",
+      "runtime": "system WebView",
+      "minimum_memory_bytes": 4294967296
+    },
+    {
+      "id": "structural_v1",
+      "platform": "any",
+      "platform_family": "all",
+      "evidence_class": "structural",
+      "hardware_class": "not applicable",
+      "operating_system": "not applicable",
+      "runtime": "deterministic contract",
+      "minimum_memory_bytes": 1
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "cold_shell",
+      "kind": "interaction",
+      "state": "cold",
+      "description": "Fresh release-process launch to the first interactive document shell"
+    },
+    {
+      "id": "text_1mib",
+      "kind": "generated",
+      "state": "warm",
+      "generated_bytes": 1048576,
+      "sha256": "8f990ba0b577b51cf009ea049368c16bbda1b21e1b93be07a824758bb253c39b",
+      "description": "Deterministic 1 MiB UTF-8 text containing repeated ASCII x bytes"
+    },
+    {
+      "id": "markdown_1mib",
+      "kind": "generated",
+      "state": "warm",
+      "generated_bytes": 1048576,
+      "sha256": "d0440d73881766c7fe0c2d41eda462f4668c933c83471b7e34f8ac76ee434ad7",
+      "description": "Deterministic 1 MiB Markdown with one heading and ASCII paragraph padding"
+    },
+    {
+      "id": "mermaid_1mib",
+      "kind": "generated",
+      "state": "warm",
+      "generated_bytes": 1048576,
+      "sha256": "323805f784acb52ca81e3b789b0523b131a3205f87060f78f726ad17c379d6ea",
+      "description": "Deterministic 1 MiB Mermaid flowchart with bounded graph content and comment padding"
+    },
+    {
+      "id": "mermaid_normal_edit",
+      "kind": "interaction",
+      "state": "warm",
+      "description": "One normal Mermaid source edit through debounce to current preview"
+    },
+    {
+      "id": "editor_normal_input",
+      "kind": "interaction",
+      "state": "warm",
+      "description": "Single-character insertion and paint in a representative 1 MiB text document"
+    },
+    {
+      "id": "cancel_all_work",
+      "kind": "interaction",
+      "state": "either",
+      "description": "Cancel syntax, Markdown, Mermaid, checksum, search, and source work and reject later publication"
+    },
+    {
+      "id": "interaction_slice",
+      "kind": "interaction",
+      "state": "warm",
+      "description": "Repeated user interaction work scheduled in bounded event-loop slices"
+    },
+    {
+      "id": "idle_application",
+      "kind": "interaction",
+      "state": "warm",
+      "description": "Release application idle after startup and explicit garbage-collection settling where available"
+    },
+    {
+      "id": "suspended_text_tab",
+      "kind": "generated",
+      "state": "warm",
+      "generated_bytes": 1048576,
+      "sha256": "8f990ba0b577b51cf009ea049368c16bbda1b21e1b93be07a824758bb253c39b",
+      "description": "Suspend a representative text tab and measure retained overhead"
+    },
+    {
+      "id": "desktop_package",
+      "kind": "artifact",
+      "state": "either",
+      "description": "Actual compressed platform desktop installer"
+    },
+    {
+      "id": "android_package",
+      "kind": "artifact",
+      "state": "either",
+      "description": "Actual universal Android APK"
+    },
+    {
+      "id": "resource_lifecycle",
+      "kind": "interaction",
+      "state": "warm",
+      "description": "One hundred active, suspended, resumed, and disposed renderer cycles"
+    }
+  ]
+}

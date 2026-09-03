@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import { forwardRef, useEffect, useId, useImperativeHandle, useMemo, useRef, useState } from 'react';
 
 import { MermaidRendererClient } from '../domain/mermaid-adapter';
 import { MERMAID_STANDALONE_MAX_BYTES, initialMermaidViewport, type MermaidRenderResult } from '../domain/mermaid-contract';
@@ -7,6 +7,7 @@ import { DiagramViewport, type DiagramViewportHandle } from './DiagramViewport';
 import { TextEditorSurface, type TextEditorHandle } from './TextEditorSurface';
 import { useMermaidTheme } from './useMermaidTheme';
 import { rendererContribution, type MetadataContribution, type MetadataObservation } from '../domain/metadata';
+import { rendererResourceLedger } from '../domain/resource-ledger';
 
 interface MermaidSurfaceProps {
   session: ShellSession;
@@ -30,8 +31,17 @@ export const MermaidSurface = forwardRef<TextEditorHandle, MermaidSurfaceProps>(
   { session, onDocumentChange, onLanguageChange, onMermaidChange, rendererClient, onOpenMetadata, onMetadataContribution },
   handleRef,
 ) {
+  const performanceInstanceId = useId();
   const ownedClient = useRef<MermaidRendererClient | null>(null);
-  if (!ownedClient.current) ownedClient.current = rendererClient ?? new MermaidRendererClient();
+  const ownsClient = useRef(rendererClient === undefined);
+  const lifecycleGeneration = useRef(0);
+  if (!ownedClient.current) ownedClient.current = rendererClient ?? new MermaidRendererClient(
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    rendererResourceLedger.register(`mermaid:${session.id}:${performanceInstanceId}`, session.text_document?.source_bytes ?? 0),
+  );
   const client = ownedClient.current;
   const editorRef = useRef<TextEditorHandle>(null);
   const viewportRef = useRef<DiagramViewportHandle>(null);
@@ -119,6 +129,19 @@ export const MermaidSurface = forwardRef<TextEditorHandle, MermaidSurfaceProps>(
     return () => client.cancel();
   }, [client, eligible, session.id, session.lifecycle, session.revision, textDocument.normalized_text, theme]);
 
+  useEffect(
+    () => {
+      const generation = ++lifecycleGeneration.current;
+      return () => queueMicrotask(() => {
+        if (ownsClient.current && lifecycleGeneration.current === generation) {
+          ownedClient.current?.dispose();
+          ownedClient.current = null;
+        }
+      });
+    },
+    [],
+  );
+
   const matches = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase();
     return needle ? (visibleResult?.search_text.filter((text) => text.toLocaleLowerCase().includes(needle)) ?? []) : [];
@@ -190,7 +213,12 @@ export const MermaidSurface = forwardRef<TextEditorHandle, MermaidSurfaceProps>(
   ) : null;
 
   return (
-    <div className={`mermaid-surface mermaid-${mode}-mode`}>
+    <div
+      className={`mermaid-surface mermaid-${mode}-mode`}
+      data-performance-ready={visibleResult?.status === 'ready' ? 'true' : 'pending'}
+      data-performance-revision={visibleResult?.source_revision ?? ''}
+      data-performance-duration={visibleResult?.measurements.total_duration_ms ?? ''}
+    >
       <div className="mermaid-controls" aria-label="Mermaid controls">
         <button type="button" onClick={() => changeMode(mode === 'source' ? 'rendered' : 'source')} disabled={mode === 'source' && !visibleResult}>
           {mode === 'source' ? 'Preview' : session.renderer.capabilities.edit ? 'Edit source' : 'View source'}

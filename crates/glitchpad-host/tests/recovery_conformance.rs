@@ -280,6 +280,7 @@ fn symbolic_link_root_is_rejected() {
     fs::create_dir(&actual).expect("actual");
     symlink(&actual, &linked).expect("symlink");
     let error = RecoveryStore::open_with_clock(linked, 1024, TestClock::new(NOW))
-        .expect_err("symlink rejected");
+        .err()
+        .expect("symlink rejected");
     assert_eq!(error.category, CoreErrorCategory::InvalidInput);
 }

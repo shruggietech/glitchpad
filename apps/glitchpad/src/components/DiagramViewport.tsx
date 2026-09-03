@@ -1,6 +1,7 @@
 import { forwardRef, useCallback, useEffect, useId, useImperativeHandle, useMemo, useRef, useState } from 'react';
 
 import { clampMermaidPan, clampMermaidZoom, initialMermaidViewport, type MermaidViewportState } from '../domain/mermaid-contract';
+import { rendererResourceLedger, type ResourceOwner } from '../domain/resource-ledger';
 
 export interface DiagramViewportHandle {
   zoomIn(): void;
@@ -28,6 +29,8 @@ export const DiagramViewport = forwardRef<DiagramViewportHandle, DiagramViewport
   const canvasRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const descriptionId = useId();
+  const resourceOwner = useRef<ResourceOwner | null>(null);
+  if (!resourceOwner.current) resourceOwner.current = rendererResourceLedger.register(`viewport:${descriptionId}`);
   const source = useMemo(() => svg, [svg]);
 
   useEffect(() => {
@@ -36,8 +39,14 @@ export const DiagramViewport = forwardRef<DiagramViewportHandle, DiagramViewport
       return;
     }
     const url = URL.createObjectURL(new Blob([source], { type: 'image/svg+xml' }));
+    const releaseUrl = resourceOwner.current?.acquire('object_url', new TextEncoder().encode(source).byteLength) ?? (() => undefined);
+    const releaseSurface = resourceOwner.current?.acquire('surface', new TextEncoder().encode(source).byteLength) ?? (() => undefined);
     setObjectUrl(url);
-    return () => URL.revokeObjectURL(url);
+    return () => {
+      URL.revokeObjectURL(url);
+      releaseUrl();
+      releaseSurface();
+    };
   }, [source]);
 
   const measureExtents = useCallback(() => {
@@ -57,9 +66,18 @@ export const DiagramViewport = forwardRef<DiagramViewportHandle, DiagramViewport
     const canvas = canvasRef.current;
     if (!canvas || typeof ResizeObserver === 'undefined') return;
     const observer = new ResizeObserver(measureExtents);
+    const releaseObserver = resourceOwner.current?.acquire('observer') ?? (() => undefined);
     observer.observe(canvas);
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      releaseObserver();
+    };
   }, [measureExtents, objectUrl]);
+
+  useEffect(() => () => {
+    resourceOwner.current?.dispose();
+    resourceOwner.current = null;
+  }, []);
 
   const publish = (next: MermaidViewportState) => {
     setState(next);

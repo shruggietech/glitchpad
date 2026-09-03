@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "classification_cases": [
+    { "name": "target_is_pass", "target": 50, "hard_limit": 100, "value": 50, "expected": "pass" },
+    { "name": "above_target_is_warning", "target": 50, "hard_limit": 100, "value": 50.001, "expected": "warning" },
+    { "name": "hard_limit_is_warning", "target": 50, "hard_limit": 100, "value": 100, "expected": "warning" },
+    { "name": "above_hard_is_failure", "target": 50, "hard_limit": 100, "value": 100.001, "expected": "failure" }
+  ],
+  "history_cases": [
+    { "name": "pass_resets_warning", "classifications": ["warning", "pass", "warning"], "expected_follow_up": false },
+    { "name": "two_warnings_require_follow_up", "classifications": ["pass", "warning", "warning"], "expected_follow_up": true },
+    { "name": "failure_blocks", "classifications": ["pass", "failure"], "expected_failure": true },
+    { "name": "incomparable_breaks_warning", "classifications": ["warning", "incomparable", "warning"], "expected_follow_up": false }
+  ],
+  "invalid_cases": ["unknown_metric", "unknown_profile", "unknown_scenario", "stale_catalog", "too_few_samples", "too_many_samples", "negative_sample", "non_finite_sample", "wrong_percentile", "wrong_classification", "incomplete_cleanup", "forbidden_key", "invalid_timestamp"]
+}

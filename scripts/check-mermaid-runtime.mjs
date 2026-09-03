@@ -49,7 +49,12 @@ export const verifyMermaidRuntime = async () => {
   const origin = `http://127.0.0.1:${address.port}`;
   let browser;
   try {
-    browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-dev-shm-usage'] });
+    const executablePath = await puppeteer.executablePath({ headless: 'shell' });
+    browser = await puppeteer.launch({
+      executablePath,
+      headless: 'shell',
+      args: ['--no-sandbox', '--disable-dev-shm-usage'],
+    });
     const page = await browser.newPage();
     const externalRequests = [];
     const dialogs = [];

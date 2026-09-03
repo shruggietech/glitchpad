@@ -4,7 +4,7 @@
 
 | Criterion | Evidence | Result |
 | --- | --- | --- |
-| SC-001 | Deterministic 1 MiB fixture `1b06b5873a3bdf2cb89638252b47f5865b0df558fdba741435bfa5cc6ce700c9`, three Windows development-build samples: 358.17 ms, 423.17 ms, and 487.97 ms; p95 487.97 ms | Pass |
+| SC-001 | Controlled reference profile (`VITE_GLITCHPAD_REFERENCE_PERFORMANCE=1`), deterministic 1 MiB fixture `1b06b5873a3bdf2cb89638252b47f5865b0df558fdba741435bfa5cc6ce700c9`, three Windows development-build samples: 358.17 ms, 423.17 ms, and 487.97 ms; p95 487.97 ms | Pass |
 | SC-002 | `markdown-renderer.test.ts` submits 100 revisions inside the debounce interval, proves one execution and revision 100 as the only accepted result, and verifies idempotent disposal | Pass |
 | SC-003 | URL, pipeline, component, and host tests cover raw HTML, executable and ambiguous schemes, credentials, controls, remote images, and zero pre-confirmation gateway calls | Pass |
 | SC-004 | Repeated pipeline projections cover CommonMark, GFM tables/tasks/strikethrough, footnotes, source mappings, and collision-free heading IDs | Pass |

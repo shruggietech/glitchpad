@@ -125,7 +125,15 @@ export class MarkdownRendererClient {
             clearTimeout(timeout);
             if (!this.isCurrentGeneration(active)) return;
             this.active = null;
-            resolve(timedOut ? this.timeoutResult(request) : null);
+            resolve(
+              this.failureResult(
+                request,
+                timedOut
+                  ? 'Markdown preview timed out safely. Source remains available.'
+                  : 'Markdown preview failed safely. Source remains available.',
+                timedOut ? this.timeoutMs : 0,
+              ),
+            );
           });
       }, this.debounceMs);
       this.active = active;
@@ -165,6 +173,18 @@ export class MarkdownRendererClient {
   }
 
   private timeoutResult(request: MarkdownRenderRequest): MarkdownRenderResult {
+    return this.failureResult(
+      request,
+      'Markdown preview timed out safely. Source remains available.',
+      this.timeoutMs,
+    );
+  }
+
+  private failureResult(
+    request: MarkdownRenderRequest,
+    message: string,
+    durationMs: number,
+  ): MarkdownRenderResult {
     return {
       request_id: request.request_id,
       session_id: request.session_id,
@@ -173,10 +193,10 @@ export class MarkdownRendererClient {
       tree: null,
       outline: [],
       search_text: [],
-      diagnostics: [{ code: 'markdown_parse_failed', message: 'Markdown preview timed out safely. Source remains available.' }],
+      diagnostics: [{ code: 'markdown_parse_failed', message }],
       measurements: {
         source_bytes: new TextEncoder().encode(request.source_text).byteLength,
-        parse_duration_ms: this.timeoutMs,
+        parse_duration_ms: durationMs,
         node_count: 0,
         heading_count: 0,
         search_entry_count: 0,

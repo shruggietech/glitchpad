@@ -14,19 +14,43 @@ fn invalid_target() -> CoreError {
     )
 }
 
+fn decoded_target_for_policy(target: &str) -> Result<String, CoreError> {
+    let bytes = target.as_bytes();
+    let mut decoded = Vec::with_capacity(bytes.len());
+    let mut index = 0;
+    while index < bytes.len() {
+        if bytes[index] == b'%' {
+            let encoded = bytes.get(index + 1..index + 3).ok_or_else(invalid_target)?;
+            let digits = std::str::from_utf8(encoded).map_err(|_| invalid_target())?;
+            decoded.push(u8::from_str_radix(digits, 16).map_err(|_| invalid_target())?);
+            index += 3;
+        } else {
+            decoded.push(bytes[index]);
+            index += 1;
+        }
+    }
+    String::from_utf8(decoded).map_err(|_| invalid_target())
+}
+
+fn contains_disallowed_character(value: &str) -> bool {
+    value.chars().any(|character| {
+        character.is_control()
+            || character == '\\'
+            || matches!(
+                character,
+                '\u{202a}'..='\u{202e}' | '\u{2066}'..='\u{2069}'
+            )
+    })
+}
+
 fn normalize_target(target: &str) -> Result<String, CoreError> {
     let target = target.trim();
+    let decoded_target = decoded_target_for_policy(target)?;
     if target.is_empty()
         || target.chars().count() > MAX_TARGET_CHARS
         || target.starts_with("//")
-        || target.contains('\\')
-        || target.chars().any(|character| {
-            character.is_control()
-                || matches!(
-                    character,
-                    '\u{202a}'..='\u{202e}' | '\u{2066}'..='\u{2069}'
-                )
-        })
+        || contains_disallowed_character(target)
+        || contains_disallowed_character(&decoded_target)
     {
         return Err(invalid_target());
     }
@@ -87,6 +111,8 @@ mod tests {
             "//example.com/path",
             "https://example.com\\other",
             "https://example.com/\u{202e}other",
+            "https://example.com/%0Avalue",
+            "https://example.com/%E2%80%AEvalue",
         ] {
             assert_eq!(
                 normalize_target(target).unwrap_err().category,

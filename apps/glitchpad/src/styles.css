@@ -634,7 +634,8 @@ button:focus-visible,
   .markdown-controls,
   .markdown-search,
   .markdown-outline,
-  .integrity-banner {
+  .integrity-banner,
+  .resolution-backdrop {
     display: none !important;
   }
 

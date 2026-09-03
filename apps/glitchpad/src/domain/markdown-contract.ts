@@ -1,4 +1,4 @@
-export const MARKDOWN_SANITIZER_VERSION = 1 as const;
+export const MARKDOWN_SANITIZER_VERSION = 2 as const;
 export const MARKDOWN_RENDER_MAX_BYTES = 16 * 1024 * 1024;
 export const MARKDOWN_SEARCH_MAX_MATCHES = 1_000;
 export const MARKDOWN_OUTLINE_MAX_ENTRIES = 10_000;

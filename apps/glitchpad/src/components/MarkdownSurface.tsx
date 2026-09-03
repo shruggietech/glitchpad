@@ -91,21 +91,31 @@ function LocalMarkdownResource({
   session: ShellSession;
   gateway: MarkdownLocalAssetGateway;
 }) {
-  const [asset, setAsset] = useState<string | null>(null);
+  const [asset, setAsset] = useState<{
+    target: string;
+    value: string | null;
+  } | null>(null);
   useEffect(() => {
     if (resource.kind !== 'local' || !resource.normalized_target) return;
     const abort = new AbortController();
+    const target = resource.normalized_target;
     void gateway
-      .resolve(session.source, resource.normalized_target, abort.signal)
+      .resolve(session.source, target, abort.signal)
       .then((resolved) => {
-        if (!abort.signal.aborted) setAsset(resolved);
+        if (!abort.signal.aborted) setAsset({ target, value: resolved });
       })
       .catch(() => undefined);
     return () => abort.abort();
   }, [gateway, resource.kind, resource.normalized_target, session.source]);
-  const trustedAsset = asset && /^(?:blob:|asset:|https?:\/\/asset\.localhost\/)/u.test(asset);
+  const currentAsset =
+    resource.kind === 'local' && asset?.target === resource.normalized_target
+      ? asset.value
+      : null;
+  const trustedAsset =
+    currentAsset &&
+    /^(?:blob:|asset:|https?:\/\/asset\.localhost\/)/u.test(currentAsset);
   if (trustedAsset) {
-    return <img src={asset} alt={resource.alt} className="markdown-local-image" />;
+    return <img src={currentAsset} alt={resource.alt} className="markdown-local-image" />;
   }
   return (
     <span className="markdown-resource-unavailable" role="note">
@@ -192,10 +202,27 @@ function SafeTree({
       };
       return (
         <span
+          id={
+            typeof node.properties.id === 'string' &&
+            /^user-content-[a-z0-9_-]+$/iu.test(node.properties.id)
+              ? node.properties.id
+              : undefined
+          }
           className="markdown-link"
           role="link"
           tabIndex={0}
           title={candidate.display_target}
+          aria-describedby={
+            typeof node.properties.ariaDescribedBy === 'string'
+              ? node.properties.ariaDescribedBy
+              : undefined
+          }
+          data-footnote-ref={
+            Object.hasOwn(node.properties, 'dataFootnoteRef') ? '' : undefined
+          }
+          data-footnote-backref={
+            Object.hasOwn(node.properties, 'dataFootnoteBackref') ? '' : undefined
+          }
           onClick={activate}
           onKeyDown={(event) => activateOnKeyboard(event, activate)}
         >
@@ -428,7 +455,10 @@ export const MarkdownSurface = forwardRef<
     target?.scrollIntoView?.({ block: 'center' });
   }, [activeNodeId]);
 
-  const publishMode = (nextMode: 'rendered' | 'source') => {
+  const publishMode = (
+    nextMode: 'rendered' | 'source',
+    nextSelection = sourceSelection,
+  ) => {
     if (nextMode === 'rendered' && eligibility !== 'full') return;
     setMode(nextMode);
     onMarkdownChange(session.id, session.revision, {
@@ -436,10 +466,19 @@ export const MarkdownSurface = forwardRef<
       eligibility,
       render_revision: result?.source_revision ?? null,
       render_status: status,
-      source_selection: sourceSelection
-        ? { from: sourceSelection.start_offset, to: sourceSelection.end_offset }
+      source_selection: nextSelection
+        ? { from: nextSelection.start_offset, to: nextSelection.end_offset }
         : null,
     });
+  };
+
+  const enterSourceMode = () => {
+    const nextSelection =
+      activeMatch === null
+        ? sourceSelection
+        : (matches[activeMatch]?.source_range ?? sourceSelection);
+    setSourceSelection(nextSelection);
+    publishMode('source', nextSelection);
   };
 
   const moveMatch = (offset: -1 | 1): boolean => {
@@ -461,7 +500,7 @@ export const MarkdownSurface = forwardRef<
         return editorRef.current?.invoke(command) ?? false;
       }
       if (command === 'edit') {
-        publishMode('source');
+        enterSourceMode();
         return true;
       }
       if (command === 'search') {
@@ -570,7 +609,7 @@ export const MarkdownSurface = forwardRef<
   return (
     <div className="markdown-surface">
       <div className="markdown-controls" aria-label="Markdown controls">
-        <button type="button" onClick={() => publishMode('source')}>
+        <button type="button" onClick={enterSourceMode}>
           {canModify ? 'Edit' : 'View source'}
         </button>
         <button

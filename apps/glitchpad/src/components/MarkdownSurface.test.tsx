@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { EditorView } from '@codemirror/view';
 import axe from 'axe-core';
 import { describe, expect, it, vi } from 'vitest';
@@ -80,6 +80,43 @@ describe('Markdown surface', () => {
     render(<App sessions={[markdownSession('[destination](https://example.com/path)')]} />);
     const disclosure = await screen.findByText(/External destination https:\/\/example\.com\/path/u);
     expect(disclosure).toHaveClass('markdown-link-destination-disclosure');
+  });
+
+  it('clears a cached local image when the same node becomes blocked', async () => {
+    const resolve = vi.fn(() => Promise.resolve('https://asset.localhost/image'));
+    render(<App sessions={[markdownSession('![local](./image.png)')]} localAssetGateway={{ resolve }} />);
+    expect(await screen.findByRole('img', { name: 'local' })).toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole('button', { name: 'Edit' }).at(-1)!);
+    const textbox = screen.getByRole('textbox', { name: 'test.md text editor' });
+    const view = EditorView.findFromDOM(textbox)!;
+    act(() => view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: '![remote](https://example.com/image.png)' } }));
+    fireEvent.click(screen.getAllByRole('button', { name: 'Preview' }).at(-1)!);
+    await waitFor(() => expect(screen.getByRole('note')).toHaveTextContent('Image unavailable: remote'));
+    expect(screen.queryByRole('img')).not.toBeInTheDocument();
+  });
+
+  it('preserves generated footnote reference relationships', async () => {
+    const { container } = render(<App sessions={[markdownSession('Note[^1].\n\n[^1]: Detail')]} />);
+    await screen.findByText('Detail');
+    const reference = container.querySelector<HTMLElement>('[data-footnote-ref]');
+    const backReference = container.querySelector<HTMLElement>('[data-footnote-backref]');
+    expect(reference?.id).toMatch(/^user-content-fnref-/u);
+    expect(backReference).toHaveAttribute('title', `#${reference!.id}`);
+  });
+
+  it('selects the active rendered match when entering source mode', async () => {
+    render(<App sessions={[markdownSession('# Heading\n\nFind the needle here.')]} />);
+    await screen.findByRole('heading', { name: 'Heading' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Search' }).at(-1)!);
+    fireEvent.change(screen.getByRole('textbox', { name: 'Find rendered text' }), { target: { value: 'needle' } });
+    await screen.findByText('1 of 1');
+    fireEvent.click(screen.getAllByRole('button', { name: 'Edit' }).at(-1)!);
+    const textbox = screen.getByRole('textbox', { name: 'test.md text editor' });
+    const view = EditorView.findFromDOM(textbox)!;
+    await waitFor(() => {
+      const selection = view.state.selection.main;
+      expect(view.state.sliceDoc(selection.from, selection.to)).toContain('needle');
+    });
   });
 
   it('resets rendered UI and pending authorization when switching Markdown tabs', async () => {

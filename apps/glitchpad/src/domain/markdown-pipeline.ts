@@ -58,7 +58,10 @@ const allowedTags = [
 ] as const;
 
 const sanitationSchema = {
-  clobberPrefix: 'user-content-',
+  // Raw HTML is already inert, so only remark-rehype can author IDs here. Its
+  // footnote IDs already carry the user-content prefix and must remain aligned
+  // with their generated back-reference fragments.
+  clobberPrefix: '',
   tagNames: [...allowedTags],
   attributes: {
     '*': ['className', 'id'],

@@ -86,7 +86,14 @@ describe('Markdown renderer scheduling', () => {
     }, 0, 1_000);
     const failed = failure.render({ session_id: 's', source_revision: 1, source_text: 'secret source' });
     await vi.runAllTimersAsync();
-    expect(await failed).toBeNull();
+    await expect(failed).resolves.toMatchObject({
+      status: 'failed',
+      diagnostics: [{
+        code: 'markdown_parse_failed',
+        message: 'Markdown preview failed safely. Source remains available.',
+      }],
+    });
+    expect(JSON.stringify(await failed)).not.toContain('secret');
     failure.dispose();
     vi.useRealTimers();
   });

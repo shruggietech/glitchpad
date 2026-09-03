@@ -38,6 +38,17 @@ describe('safe Markdown projection', () => {
     expect(second.outline).toEqual(first.outline);
   });
 
+  it('retains a source range for searchable rendered text', async () => {
+    const result = await renderMarkdown(request('# Heading\n\nFind the needle here.'));
+    const match = findRenderedMatches(result.search_text, 'needle')[0];
+    expect(match?.source_range).toMatchObject({
+      start_offset: 11,
+      end_offset: 32,
+      start_line: 3,
+      end_line: 3,
+    });
+  });
+
   it('rejects policy mismatch and oversized previews without parsing', async () => {
     await expect(renderMarkdown(request('ok', 99))).resolves.toMatchObject({ status: 'failed' });
     await expect(renderMarkdown(request('x'.repeat(MARKDOWN_RENDER_MAX_BYTES + 1)))).resolves.toMatchObject({ status: 'limited' });

@@ -36,7 +36,7 @@ Expected: all forbidden targets remain inert, permitted navigation requires conf
 
 ## Boundaries and Performance
 
-Run the deterministic performance and size-boundary tests from the application suite. Record the fixture digest, production build profile, host, sample count, median, p95, and maximum in `verification.md`.
+Run the deterministic performance and size-boundary tests from the application suite. Set `VITE_GLITCHPAD_REFERENCE_PERFORMANCE=1` only on the controlled desktop reference profile to enforce the 800 ms target; ordinary shared CI runners retain a 2500 ms catastrophic-regression ceiling because their CPU allocation is not stable. Record the fixture digest, production build profile, host, sample count, median, p95, and maximum in `verification.md`.
 
 Expected: 1 MiB first rendered content is at most 800 ms p95 on the desktop reference profile; 16 MiB remains fully capable; above 16 MiB through 32 MiB uses source mode; existing larger-source and refusal modes remain unchanged.
 

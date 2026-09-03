@@ -282,12 +282,15 @@ export const mergeMetadataContribution = (
   snapshot: MetadataSnapshot,
   contribution: MetadataContribution,
 ): MetadataSnapshot | null => {
+  const expectedExternalRevision = contribution.producer === 'integrity'
+    ? snapshot.external_revision
+    : session.external_revision ?? null;
   if (
     contribution.session_id !== session.id ||
     contribution.expected_session_revision !== session.revision ||
     snapshot.session_id !== session.id ||
     (contribution.expected_external_revision !== undefined &&
-      !sameRevision(contribution.expected_external_revision, session.external_revision ?? null))
+      !sameRevision(contribution.expected_external_revision, expectedExternalRevision))
   ) return null;
   if (contribution.facts.length > MAX_FACTS) throw new Error('Metadata contribution exceeds fact limit');
   const updates = new Map<string, MetadataFact>();
@@ -311,7 +314,7 @@ export const mergeMetadataContribution = (
   return {
     ...snapshot,
     session_revision: session.revision,
-    external_revision: session.external_revision ?? null,
+    external_revision: snapshot.external_revision,
     facts: [...facts.values()],
   };
 };
@@ -377,7 +380,19 @@ export const mergeSourceMetadataSnapshot = (
     snapshot.session_id !== session.id ||
     snapshot.session_revision !== session.revision
   ) return null;
+  const revisionChanged = !sameRevision(snapshot.external_revision, source.external_revision);
   const facts = new Map(snapshot.facts.map((fact) => [fact.key, fact]));
+  if (revisionChanged) {
+    for (const [key, fact] of facts) {
+      if (fact.provenance === 'integrity') facts.set(key, {
+        key,
+        availability: 'not_provided',
+        provenance: 'integrity',
+        session_revision: session.revision,
+        external_revision: source.external_revision,
+      });
+    }
+  }
   for (const observation of contributionFromSourceSnapshot(session, source).facts) {
     const policy = metadataCatalogEntry(observation.key);
     validateObservation(observation, policy, 'host');

@@ -290,12 +290,21 @@ describe('tab state', () => {
   });
 
   it('refreshes source facts without advancing the document external revision', () => {
-    const original = { ...sessions(1)[0], source_id: 'source', external_revision: {
+    const base = { ...sessions(1)[0], source_id: 'source', external_revision: {
       identity: { authority: 'filesystem' as const, scope: 'volume', token: 'original', strength: 'strong' as const },
       byte_length: 3,
       modified_unix_nanos: '1',
       change_token: 'original',
     } };
+    const original = {
+      ...base,
+      metadata: {
+        ...projectSessionMetadata(base),
+        facts: projectSessionMetadata(base).facts.map((fact) => fact.key === 'derived.sha256'
+          ? { ...fact, availability: 'available' as const, value: { kind: 'text' as const, value: 'a'.repeat(64) } }
+          : fact),
+      },
+    };
     const observed = {
       ...original.external_revision,
       byte_length: 4,
@@ -323,6 +332,7 @@ describe('tab state', () => {
     expect(updated.sessions[0]?.external_revision).toEqual(original.external_revision);
     expect(updated.sessions[0]?.content).toBe(original.content);
     expect(updated.sessions[0]?.metadata?.external_revision).toEqual(observed);
+    expect(updated.sessions[0]?.metadata?.facts.find(({ key }) => key === 'derived.sha256')?.availability).toBe('not_provided');
     expect(updated.sessions[0]?.metadata?.facts.find(({ key }) => key === 'host.display_name')?.value).toEqual({ kind: 'text', value: 'renamed.txt' });
   });
 });

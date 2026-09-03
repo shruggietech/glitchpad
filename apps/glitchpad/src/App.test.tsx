@@ -271,6 +271,7 @@ describe('document foundation shell', () => {
   });
 
   it('refreshes metadata and publishes only a revision-bound checksum', async () => {
+    const observedRevision = { ...revision, byte_length: 4, modified_unix_nanos: '2', change_token: 'observed' };
     const source = {
       ...initialSessions[2],
       lifecycle: 'active' as const,
@@ -278,14 +279,15 @@ describe('document foundation shell', () => {
       external_revision: revision,
       renderer: { ...initialSessions[2].renderer, capabilities: { ...initialSessions[2].renderer.capabilities, inspect_metadata: true } },
     };
-    const advanceIntegrity = vi.fn((requestId: string) => Promise.resolve({ request_id: requestId, source_id: 'source', external_revision: revision, processed_bytes: '3', total_bytes: '3', state: 'ready' as const, sha256: 'a'.repeat(64) }));
+    const advanceIntegrity = vi.fn((requestId: string) => Promise.resolve({ request_id: requestId, source_id: 'source', external_revision: observedRevision, processed_bytes: '4', total_bytes: '4', state: 'ready' as const, sha256: 'a'.repeat(64) }));
+    const startIntegrity = vi.fn((request: IntegrityStartRequest) => Promise.resolve({ request_id: request.request_id, source_id: 'source', external_revision: request.expected_external_revision, processed_bytes: '0', total_bytes: '4', state: 'pending' as const, sha256: null }));
     const gateway: MetadataGateway = {
       query: vi.fn(() => Promise.resolve({
-        source_id: 'source', external_revision: revision, display_name: 'refreshed.txt', source_kind: 'file' as const,
-        byte_length: '3', modified_unix_nanos: '1', created_unix_nanos: null, accessed_unix_nanos: null,
+        source_id: 'source', external_revision: observedRevision, display_name: 'refreshed.txt', source_kind: 'file' as const,
+        byte_length: '4', modified_unix_nanos: '2', created_unix_nanos: null, accessed_unix_nanos: null,
         write_state: 'writable' as const, identity_confidence: 'strong' as const,
       })),
-      startIntegrity: vi.fn((request: IntegrityStartRequest) => Promise.resolve({ request_id: request.request_id, source_id: 'source', external_revision: revision, processed_bytes: '0', total_bytes: '3', state: 'pending' as const, sha256: null })),
+      startIntegrity,
       advanceIntegrity,
       cancelIntegrity: vi.fn(() => Promise.resolve()),
     };
@@ -295,6 +297,7 @@ describe('document foundation shell', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Calculate SHA-256' }));
     expect(await screen.findByText('a'.repeat(64))).toBeInTheDocument();
     expect(advanceIntegrity).toHaveBeenCalled();
+    expect(startIntegrity).toHaveBeenCalledWith(expect.objectContaining({ expected_external_revision: observedRevision }), expect.any(AbortSignal));
   });
 
   it('cancels native checksum work immediately when the inspector closes', async () => {

@@ -44,6 +44,7 @@ import {
 import { useRecovery } from './domain/use-recovery';
 import {
   browserClipboardGateway,
+  createIntegrityRequestId,
   createNativeMetadataGateway,
   nativeMetadataAvailable,
   runIntegrityRequest,
@@ -198,6 +199,7 @@ export function App({ sessions = initialSessions, recoveryGateway, externalLinkG
   const [state, dispatch] = useReducer(tabReducer, sessions, createTabState);
   const [commandStatus, setCommandStatus] = useState('');
   const [inspectorOpen, setInspectorOpen] = useState(false);
+  const [metadataReadySessionId, setMetadataReadySessionId] = useState<string | null>(null);
   const editorRef = useRef<TextEditorHandle>(null);
   const metadataOpenerRef = useRef<HTMLElement | null>(null);
   const integrityAbortRef = useRef<AbortController | null>(null);
@@ -233,14 +235,18 @@ export function App({ sessions = initialSessions, recoveryGateway, externalLinkG
   useEffect(() => setCommandStatus(''), [state.activeId]);
 
   useEffect(() => {
-    if (!inspectorOpen || !activeSession?.source_id || !selectedMetadataGateway) return;
+    if (!inspectorOpen || !activeSession?.source_id || !selectedMetadataGateway) {
+      setMetadataReadySessionId(null);
+      return;
+    }
+    setMetadataReadySessionId(null);
     const abort = new AbortController();
     let refreshTimer: ReturnType<typeof setTimeout> | null = null;
     const refresh = () => {
       void selectedMetadataGateway
         .query(activeSession.source_id!, abort.signal)
         .then((source) => {
-          if (!abort.signal.aborted)
+          if (!abort.signal.aborted) {
             dispatch({
               type: 'refresh_metadata',
               id: activeSession.id,
@@ -248,6 +254,8 @@ export function App({ sessions = initialSessions, recoveryGateway, externalLinkG
               expectedExternalRevision: activeSession.external_revision ?? null,
               source,
             });
+            setMetadataReadySessionId(activeSession.id);
+          }
         })
         .catch(() => {
           if (!abort.signal.aborted) setCommandStatus('File information could not be refreshed. Existing facts remain available.');
@@ -311,16 +319,21 @@ export function App({ sessions = initialSessions, recoveryGateway, externalLinkG
     dispatch({ type: 'update_metadata', contribution });
 
   const requestChecksum = () => {
-    if (!activeSession?.source_id || !activeSession.external_revision || !selectedMetadataGateway) return;
+    const inspectedRevision = activeSession?.metadata?.external_revision;
+    if (!activeSession?.source_id || !inspectedRevision || metadataReadySessionId !== activeSession.id || !selectedMetadataGateway) return;
     integrityAbortRef.current?.abort();
     const abort = new AbortController();
     integrityAbortRef.current = abort;
-    const requestId = globalThis.crypto?.randomUUID?.() ?? `integrity-${Date.now()}`;
+    const requestId = createIntegrityRequestId();
+    if (!requestId) {
+      setCommandStatus('SHA-256 is unavailable because secure request identifiers are not supported.');
+      return;
+    }
     integrityRequestIdRef.current = requestId;
     const base = {
       session_id: activeSession.id,
       expected_session_revision: activeSession.revision,
-      expected_external_revision: activeSession.external_revision,
+      expected_external_revision: inspectedRevision,
       producer: 'integrity' as const,
     };
     publishMetadata({ ...base, facts: [
@@ -330,7 +343,7 @@ export function App({ sessions = initialSessions, recoveryGateway, externalLinkG
     void runIntegrityRequest(
       selectedMetadataGateway,
       activeSession.source_id,
-      activeSession.external_revision,
+      inspectedRevision,
       requestId,
       abort.signal,
       (progress) => publishMetadata({
@@ -467,7 +480,7 @@ export function App({ sessions = initialSessions, recoveryGateway, externalLinkG
           session={activeSession}
           snapshot={projectSessionMetadata(activeSession)}
           onClose={closeMetadata}
-          onRequestChecksum={activeSession.source_id && activeSession.external_revision && selectedMetadataGateway ? requestChecksum : undefined}
+          onRequestChecksum={activeSession.source_id && activeSession.metadata?.external_revision && metadataReadySessionId === activeSession.id && selectedMetadataGateway ? requestChecksum : undefined}
           clipboardGateway={clipboardGateway}
         />
       )}

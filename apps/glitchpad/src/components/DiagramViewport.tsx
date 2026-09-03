@@ -30,6 +30,7 @@ export const DiagramViewport = forwardRef<DiagramViewportHandle, DiagramViewport
   const imageRef = useRef<HTMLImageElement>(null);
   const descriptionId = useId();
   const resourceOwner = useRef<ResourceOwner | null>(null);
+  const lifecycleGeneration = useRef(0);
   if (!resourceOwner.current) resourceOwner.current = rendererResourceLedger.register(`viewport:${descriptionId}`);
   const source = useMemo(() => svg, [svg]);
 
@@ -74,10 +75,18 @@ export const DiagramViewport = forwardRef<DiagramViewportHandle, DiagramViewport
     };
   }, [measureExtents, objectUrl]);
 
-  useEffect(() => () => {
-    resourceOwner.current?.dispose();
-    resourceOwner.current = null;
-  }, []);
+  useEffect(
+    () => {
+      const generation = ++lifecycleGeneration.current;
+      return () => queueMicrotask(() => {
+        if (lifecycleGeneration.current === generation) {
+          resourceOwner.current?.dispose();
+          resourceOwner.current = null;
+        }
+      });
+    },
+    [],
+  );
 
   const publish = (next: MermaidViewportState) => {
     setState(next);

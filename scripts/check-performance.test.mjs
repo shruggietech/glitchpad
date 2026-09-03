@@ -55,6 +55,24 @@ test('Android PSS instrumentation emits a complete evidence envelope', async () 
   ]) {
     assert.match(source, new RegExp(`\\.put\\("${field}"`, 'u'));
   }
+  assert.match(source, /ActivityScenario\.launch\(MainActivity::class\.java\)/u);
+  assert.match(source, /data-performance-ready/u);
+  assert.match(source, /if \(BuildConfig\.DEBUG\) "debug" else "release"/u);
+  assert.doesNotMatch(source, /\.put\("build_profile", "release"\)/u);
+});
+
+test('desktop memory receipt launches and samples a packaged process', async () => {
+  const source = await readFile(
+    new URL(
+      '../crates/glitchpad-host/tests/performance_conformance.rs',
+      import.meta.url,
+    ),
+    'utf8',
+  );
+  assert.match(source, /GLITCHPAD_REFERENCE_EXECUTABLE/u);
+  assert.match(source, /working_set_bytes_for_pid\(process_id\)/u);
+  assert.match(source, /desktop-packaged-process-v1/u);
+  assert.doesNotMatch(source, /idle_desktop_working_set_samples/u);
 });
 
 test('classification cases enforce inclusive target and hard boundaries', () => {
@@ -253,5 +271,26 @@ test('aggregate gates reject missing required release evidence and hard failures
   assert.equal(
     evaluateGate(catalog, [failed], 'pull_request').status,
     'failure',
+  );
+});
+
+test('aggregate gates reject every malformed supplied record before metric grouping', () => {
+  const gate = evaluateGate(
+    catalog,
+    [{ metric_id: 'typo_metric', path: 'C:/private.txt' }],
+    'pull_request',
+  );
+  assert.equal(gate.status, 'failure');
+  assert.ok(
+    gate.diagnostics.some(
+      ({ code, metric_id }) =>
+        code === 'evidence_metric_unknown' && metric_id === 'typo_metric',
+    ),
+  );
+  assert.ok(
+    gate.diagnostics.some(
+      ({ code, metric_id }) =>
+        code === 'evidence_key_forbidden:path' && metric_id === 'typo_metric',
+    ),
   );
 });

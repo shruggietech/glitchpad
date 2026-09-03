@@ -3,8 +3,15 @@ package com.shruggietech.glitchpad.performance
 import android.os.Build
 import android.os.Bundle
 import android.os.Debug
+import android.os.SystemClock
+import android.view.View
+import android.view.ViewGroup
+import android.webkit.WebView
+import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.shruggietech.glitchpad.BuildConfig
+import com.shruggietech.glitchpad.MainActivity
 import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert.assertTrue
@@ -14,13 +21,62 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 @RunWith(AndroidJUnit4::class)
 class PerformanceInstrumentedTest {
+    private fun findWebView(view: View): WebView? {
+        if (view is WebView) return view
+        if (view !is ViewGroup) return null
+        for (index in 0 until view.childCount) {
+            findWebView(view.getChildAt(index))?.let { return it }
+        }
+        return null
+    }
+
+    private fun waitForSettledShell(scenario: ActivityScenario<MainActivity>) {
+        val deadline = SystemClock.elapsedRealtime() + 15_000L
+        var ready = false
+        while (!ready && SystemClock.elapsedRealtime() < deadline) {
+            val evaluated = CountDownLatch(1)
+            scenario.onActivity { activity ->
+                val webView = findWebView(activity.window.decorView)
+                if (webView == null) {
+                    evaluated.countDown()
+                } else {
+                    webView.evaluateJavascript(
+                        "document.querySelector('.app-shell[data-performance-ready=\\\"true\\\"]') !== null",
+                    ) { result ->
+                        ready = result == "true"
+                        evaluated.countDown()
+                    }
+                }
+            }
+            evaluated.await(1, TimeUnit.SECONDS)
+            if (!ready) SystemClock.sleep(100L)
+        }
+        assertTrue("Glitchpad shell must become ready before PSS sampling", ready)
+
+        val painted = CountDownLatch(1)
+        scenario.onActivity { activity ->
+            activity.window.decorView.postOnAnimation {
+                activity.window.decorView.postOnAnimation { painted.countDown() }
+            }
+        }
+        assertTrue("Glitchpad shell must settle for two frames", painted.await(2, TimeUnit.SECONDS))
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync()
+    }
+
     @Test
     fun idlePssProducesContentFreeInstrumentationEvidence() {
         assertTrue("reference API must be governed", Build.VERSION.SDK_INT == 24 || Build.VERSION.SDK_INT == 36)
-        val samples = LongArray(5) { Debug.getPss().toLong() * 1024L }
+        val samples = ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            waitForSettledShell(scenario)
+            LongArray(5) {
+                (Debug.getPss().toLong() * 1024L).also { SystemClock.sleep(100L) }
+            }
+        }
         assertTrue("PSS samples must be positive", samples.all { it > 0L })
         val sorted = samples.sorted()
         val maximum = sorted.last()
@@ -39,8 +95,8 @@ class PerformanceInstrumentedTest {
             .put("scenario_id", "idle_application")
             .put("profile_id", "android_api${Build.VERSION.SDK_INT}_reference_v1")
             .put("evidence_class", "reference")
-            .put("build_profile", "release")
-            .put("build_id", "android-api${Build.VERSION.SDK_INT}-instrumented")
+            .put("build_profile", if (BuildConfig.DEBUG) "debug" else "release")
+            .put("build_id", "android-${BuildConfig.BUILD_TYPE}-${BuildConfig.VERSION_CODE}")
             .put("runtime_version", "android-api${Build.VERSION.SDK_INT}")
             .put("cold_state", false)
             .put("method", "android-debug-get-pss-v1")

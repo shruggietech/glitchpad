@@ -58,9 +58,24 @@ pub fn sample_working_set_with(
 ///
 /// Returns a stable unavailable error when the platform process API cannot sample.
 pub fn current_working_set_bytes() -> Result<u64, PerformanceSampleError> {
-    use sysinfo::{ProcessesToUpdate, System, get_current_pid};
+    use sysinfo::get_current_pid;
 
     let pid = get_current_pid().map_err(|_| PerformanceSampleError::WorkingSetUnavailable)?;
+    working_set_bytes_for_pid(pid.as_u32())
+}
+
+/// Returns the resident working set for a specific process identifier.
+///
+/// # Errors
+///
+/// Returns a stable unavailable error when the process is absent or cannot be sampled.
+pub fn working_set_bytes_for_pid(pid: u32) -> Result<u64, PerformanceSampleError> {
+    use sysinfo::{Pid, ProcessesToUpdate, System};
+
+    if pid == 0 {
+        return Err(PerformanceSampleError::WorkingSetUnavailable);
+    }
+    let pid = Pid::from_u32(pid);
     let mut system = System::new();
     system.refresh_processes(ProcessesToUpdate::Some(&[pid]), true);
     system
@@ -98,5 +113,13 @@ mod tests {
         if let Ok(bytes) = current_working_set_bytes() {
             assert!(bytes > 0);
         }
+    }
+
+    #[test]
+    fn zero_process_identifier_is_rejected() {
+        assert_eq!(
+            working_set_bytes_for_pid(0),
+            Err(PerformanceSampleError::WorkingSetUnavailable)
+        );
     }
 }

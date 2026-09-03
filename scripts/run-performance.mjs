@@ -92,16 +92,20 @@ const measureNavigation = async (browser, origin, selector, prepare = null, samp
     await page.evaluateOnNewDocument(() => {
       Object.defineProperty(window, '__TAURI_INTERNALS__', { configurable: false, value: { invoke: () => Promise.reject(new Error('native_unavailable')) } });
     });
-    const started = performance.now();
     try {
       await page.goto(origin, { waitUntil: 'domcontentloaded' });
       if (prepare) await prepare(page);
-      await page.waitForSelector(selector, { timeout: 10_000 });
+      const readyAt = await page.waitForFunction(
+        (readySelector) => document.querySelector(readySelector) ? performance.now() : false,
+        { timeout: 10_000 },
+        selector,
+      );
+      values.push(await readyAt.jsonValue());
+      await readyAt.dispose();
     } catch (error) {
       await context.close();
       throw new Error('performance_selector_failed', { cause: error });
     }
-    values.push(performance.now() - started);
     await context.close();
     if (external.length) throw new Error('performance_external_request');
   }
@@ -173,7 +177,7 @@ const interactionDefinitions = {
   },
 };
 
-const makeEvidence = (metric, profile, samples, runtimeVersion, buildId, method = 'chromium-navigation-v1') => {
+const makeEvidence = (metric, profile, samples, runtimeVersion, buildId, method = 'chromium-navigation-ready-v2') => {
   const scenario = catalog.scenarios.find(({ id }) => id === metric.scenario_id);
   const summary = summarizeSamples(samples, metric.minimum_samples, metric.maximum_samples);
   const observation = metric.aggregation === 'p95' ? summary.p95 : summary.maximum;

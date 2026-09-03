@@ -11,20 +11,20 @@
 | FR-001 through FR-010 | Canonical catalog and provenance validation, exact classification boundaries, hostile evidence rejection, warning-history and missing-receipt gates, production browser smoke | Pass |
 | FR-011 through FR-014 | Existing operation cancellation suites, cooperative-scheduler cancellation and slice tests, exact text/Markdown/Mermaid boundary corpus, stale-publication tests | Pass |
 | FR-015 through FR-016 | Closed resource ledger, content-free renderer measurements, 100 lifecycle cycles, strict-mode-safe disposal, native lease snapshots, suspended-tab relative classification | Pass |
-| FR-017 through FR-018 | Bounded cross-platform resident-memory sampler, Android instrumentation-only PSS receipt, actual artifact stat collector, inactive pre-packaging status | Pass |
+| FR-017 through FR-018 | Bounded packaged-process resident-memory receipt, settled-activity Android PSS receipt with truthful build identity, actual artifact stat collector, inactive pre-packaging status | Pass |
 | FR-019 through FR-021 | Bounded allowlisted evidence schema, local loopback/off-origin browser policy, xtask and CI integration, documented reference commands and applicability | Pass |
-| Frontend quality | `pnpm --filter @shruggietech/glitchpad check` (39 files, 216 tests, lint, typecheck, production build) | Pass |
-| Focused native quality | `cargo test -p glitchpad-host --test performance_conformance --locked` (2 tests) | Pass |
-| Containerized frontend quality | Pinned Node 24.11.0 and pnpm 10.28.2 validation image (39 files, 216 tests, lint, typecheck, production build) | Pass |
+| Frontend quality | `pnpm --filter @shruggietech/glitchpad check` (39 files, 217 tests, lint, typecheck, production build) | Pass |
+| Focused native quality | `cargo test -p glitchpad-host --test performance_conformance --locked` (2 automated tests plus one reference-profile-only packaged-process receipt) | Pass |
+| Containerized frontend quality | Pinned Node 24.11.0 and pnpm 10.28.2 validation image (39 files, 217 tests, lint, typecheck, production build) | Pass |
 | Containerized Rust quality | Pinned Rust 1.96.0 validation image, formatting, workspace Clippy with warnings denied, and complete workspace tests | Pass |
-| Hosted browser smoke | Cold desktop shell 275.36 ms p95; Mermaid current preview 423.91 ms p95; editor input paint 70.50 ms p95 warning; text first content 275.85 ms p95; Markdown first content 611.46 ms p95; desktop Mermaid first content 709.40 ms p95 | Pass with one non-blocking warning |
+| Hosted browser smoke | Cold desktop shell 321.80 ms p95; Mermaid current preview 407.90 ms p95; editor input paint 58.10 ms p95 warning; text first content 306.40 ms p95 warning; Markdown first content 606.40 ms p95; desktop Mermaid first content 757.90 ms p95 | Pass with two non-blocking warnings |
 | Aggregate repository quality | `cargo xtask check`, including Rust, frontend, fixture, documentation, encoding, and public-surface gates | Pass |
 
 ## Applicability and release activation
 
 Pull requests run deterministic catalog, fixture, policy, boundary, cancellation, disposal, and evidence tests plus production-build hosted Chromium smoke. Hosted results may block hard regressions but never satisfy desktop or Android reference-profile claims.
 
-Desktop and Android timing and memory metrics remain release-required receipts on their named reference profiles. A maintainer collects desktop resident-memory conformance with `cargo test -p glitchpad-host --release --test performance_conformance --locked -- --nocapture`; Android API 24 and API 36 instrumentation emits content-free `Debug.getPss()` samples through `PerformanceInstrumentedTest`.
+Desktop and Android timing and memory metrics remain release-required receipts on their named reference profiles. A maintainer supplies an actual packaged release executable and content-free build identifier to the ignored `desktop_reference_working_set_receipt` harness, which launches and samples that process before emitting the complete receipt. Android API 24 and API 36 instrumentation launches the real activity, waits for its WebView shell and two painted frames, and emits content-free `Debug.getPss()` samples through `PerformanceInstrumentedTest`; debug APK executions are labeled debug and cannot be accepted as release evidence.
 
 Desktop installer and universal Android APK size metrics remain inactive until the packaging slices produce real compressed artifacts. At that point the release workflow passes the actual artifact and matching metric to `node scripts/run-performance.mjs`; absence then becomes a blocking missing receipt rather than a fabricated value.
 

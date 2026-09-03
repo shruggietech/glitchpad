@@ -27,6 +27,9 @@ tauri-plugin-opener.workspace = true
 url.workspace = true
 uuid.workspace = true
 
+[dev-dependencies]
+chrono.workspace = true
+
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 file-id.workspace = true
 notify.workspace = true

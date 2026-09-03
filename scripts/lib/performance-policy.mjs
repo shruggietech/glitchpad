@@ -412,6 +412,23 @@ export const evaluateGate = (
   const accepted = [];
   const notApplicable = [];
   let status = 'pass';
+  const validationByRecord = new Map();
+  for (const record of evidenceRecords) {
+    const validation = validateEvidence(catalog, record);
+    validationByRecord.set(record, validation);
+    if (validation.problems.length) {
+      const suppliedMetricId = record?.metric_id;
+      const metricId = ID_PATTERN.test(suppliedMetricId ?? '')
+        ? suppliedMetricId
+        : 'unknown';
+      diagnostics.push(
+        ...validation.problems
+          .map((code) => ({ code, metric_id: metricId }))
+          .slice(0, 100 - diagnostics.length),
+      );
+      status = 'failure';
+    }
+  }
   for (const metric of catalog.metrics) {
     const activation = metric[stage];
     if (activation === 'inactive') {
@@ -419,7 +436,7 @@ export const evaluateGate = (
       continue;
     }
     const matching = evidenceRecords.filter(
-      ({ metric_id }) => metric_id === metric.id,
+      (record) => record?.metric_id === metric.id,
     );
     if (matching.length === 0) {
       if (activation === 'required') {
@@ -434,14 +451,9 @@ export const evaluateGate = (
     const eligibleProfiles = new Set();
     const eligibleMatching = [];
     for (const record of matching) {
-      const { problems } = validateEvidence(catalog, record);
+      const { problems } = validationByRecord.get(record);
       if (problems.length) {
-        diagnostics.push(
-          ...problems
-            .map((code) => ({ code, metric_id: metric.id }))
-            .slice(0, 100 - diagnostics.length),
-        );
-        status = 'failure';
+        continue;
       } else {
         if (stage === 'release' && record.evidence_class === 'hosted_smoke') {
           diagnostics.push({

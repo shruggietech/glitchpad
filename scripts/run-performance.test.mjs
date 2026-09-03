@@ -32,6 +32,13 @@ test('interaction timing starts at browser input rather than host automation', a
   assert.doesNotMatch(source, /const started = performance\.now\(\);\s*\n\s*await interact/u);
 });
 
+test('navigation timing records readiness on the browser navigation clock', async () => {
+  const source = await readFile(new URL('./run-performance.mjs', import.meta.url), 'utf8');
+  assert.match(source, /document\.querySelector\(readySelector\) \? performance\.now\(\) : false/u);
+  assert.match(source, /chromium-navigation-ready-v2/u);
+  assert.doesNotMatch(source, /values\.push\(performance\.now\(\) - started\)/u);
+});
+
 test('artifact collection measures an actual file and rejects absence', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'glitchpad-performance-'));
   const artifact = join(directory, 'fixture.exe');

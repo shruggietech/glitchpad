@@ -16,6 +16,7 @@ repository = "https://github.com/ShruggieTech/glitchpad"
 
 [workspace.dependencies]
 atomic-write-file = "0.3.1"
+chrono = { version = "0.4.45", default-features = false, features = ["clock", "std"] }
 file-id = "0.2.3"
 notify = "8.2.0"
 schemars = { version = "1.2.2", features = ["derive"] }

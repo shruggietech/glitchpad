@@ -410,6 +410,123 @@ button:focus-visible,
   color: #8f96a3;
 }
 
+.markdown-surface {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  grid-template-rows: auto auto minmax(0, 1fr);
+}
+
+.markdown-controls,
+.markdown-search {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 0.5rem;
+  overflow-x: auto;
+}
+
+.markdown-controls button,
+.markdown-search button,
+.markdown-outline button,
+.markdown-link {
+  min-height: 36px;
+  border: 1px solid #555c68;
+  border-radius: 0.3rem;
+  background: #272b33;
+  color: inherit;
+}
+
+.markdown-search label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+}
+
+.markdown-search input {
+  min-height: 36px;
+  border: 1px solid #555c68;
+  border-radius: 0.25rem;
+  background: #15171b;
+  color: inherit;
+}
+
+.markdown-document {
+  min-width: 0;
+  overflow: auto;
+  padding: 0.5rem clamp(0.25rem, 2vw, 2rem) 3rem;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+
+.markdown-document pre,
+.markdown-document table {
+  overflow: auto;
+}
+
+.markdown-document table {
+  border-collapse: collapse;
+}
+
+.markdown-document th,
+.markdown-document td {
+  padding: 0.35rem 0.6rem;
+  border: 1px solid #555c68;
+}
+
+.markdown-pending-source {
+  margin: 0;
+  color: #b8bec9;
+  white-space: pre-wrap;
+}
+
+.markdown-outline {
+  max-height: min(40vh, 24rem);
+  overflow: auto;
+  border-block: 1px solid #383e48;
+}
+
+.markdown-outline ol {
+  margin: 0;
+  padding: 0.5rem;
+  list-style: none;
+}
+
+.markdown-outline li[data-level='2'] { padding-left: 1rem; }
+.markdown-outline li[data-level='3'] { padding-left: 2rem; }
+.markdown-outline li[data-level='4'] { padding-left: 3rem; }
+.markdown-outline li[data-level='5'] { padding-left: 4rem; }
+.markdown-outline li[data-level='6'] { padding-left: 5rem; }
+
+.markdown-link {
+  display: inline;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #82b7ff;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.markdown-link-blocked,
+.markdown-resource-unavailable {
+  color: #d0a06c;
+  text-decoration: line-through;
+}
+
+.markdown-search-match {
+  border-radius: 0.15rem;
+  outline: 2px solid #f3b562;
+  outline-offset: 2px;
+}
+
+.markdown-link-destination {
+  overflow-wrap: anywhere;
+  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+}
+
 .visually-hidden {
   position: absolute;
   width: 1px;
@@ -431,7 +548,10 @@ button:focus-visible,
   .tab-action,
   .overflow-trigger,
   .command-button,
-  .overflow-menu button {
+  .overflow-menu button,
+  .markdown-controls button,
+  .markdown-search button,
+  .markdown-outline button {
     min-width: 44px;
     min-height: 44px;
   }
@@ -500,5 +620,26 @@ button:focus-visible,
   *::before,
   *::after {
     scroll-behavior: auto !important;
+  }
+}
+
+@media print {
+  .tab-strip-shell,
+  .command-bar,
+  .document-heading,
+  .markdown-controls,
+  .markdown-search,
+  .markdown-outline,
+  .integrity-banner {
+    display: none !important;
+  }
+
+  .app-shell,
+  .document-surface,
+  .markdown-document {
+    display: block;
+    overflow: visible;
+    color: #000;
+    background: #fff;
   }
 }

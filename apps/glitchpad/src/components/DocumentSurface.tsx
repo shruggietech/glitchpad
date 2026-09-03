@@ -1,6 +1,8 @@
 import { forwardRef } from 'react';
 
-import type { LanguageDecision, ShellSession, TextDocumentState } from '../domain/contracts';
+import type { LanguageDecision, MarkdownDocumentState, ShellSession, TextDocumentState } from '../domain/contracts';
+import type { MarkdownExternalLinkGateway, MarkdownLocalAssetGateway } from '../domain/markdown-gateway';
+import { MarkdownSurface } from './MarkdownSurface';
 import { TextEditorSurface, type TextEditorHandle } from './TextEditorSurface';
 import { LargeTextSurface } from './LargeTextSurface';
 
@@ -13,10 +15,13 @@ interface DocumentSurfaceProps {
     revision: number,
   ) => void;
   onLanguageChange: (id: string, expectedRevision: number, language: LanguageDecision) => void;
+  onMarkdownChange: (id: string, expectedRevision: number, markdown: MarkdownDocumentState) => void;
+  externalLinkGateway?: MarkdownExternalLinkGateway;
+  localAssetGateway?: MarkdownLocalAssetGateway;
 }
 
 export const DocumentSurface = forwardRef<TextEditorHandle, DocumentSurfaceProps>(function DocumentSurface(
-  { session, onDocumentChange, onLanguageChange },
+  { session, onDocumentChange, onLanguageChange, onMarkdownChange, externalLinkGateway, localAssetGateway },
   ref,
 ) {
   if (!session) {
@@ -51,6 +56,8 @@ export const DocumentSurface = forwardRef<TextEditorHandle, DocumentSurfaceProps
           <p className="document-limit" role="alert">This text source exceeds the 256 MiB viewing limit. Use a streaming log viewer or command-line pager for this file.</p>
         ) : session.text_document.mode === 'large_read_only' ? (
           <LargeTextSurface session={session} />
+        ) : session.renderer.id === 'markdown' ? (
+          <MarkdownSurface ref={ref} session={session} onDocumentChange={onDocumentChange} onLanguageChange={onLanguageChange} onMarkdownChange={onMarkdownChange} externalLinkGateway={externalLinkGateway} localAssetGateway={localAssetGateway} />
         ) : (
           <TextEditorSurface ref={ref} session={session} onDocumentChange={onDocumentChange} onLanguageChange={onLanguageChange} />
         )

@@ -42,6 +42,12 @@ export type TabAction =
       document: import('./contracts').TextDocumentState;
     }
   | {
+      type: 'update_markdown';
+      id: string;
+      expectedRevision: number;
+      markdown: import('./contracts').MarkdownDocumentState;
+    }
+  | {
       type: 'update_language';
       id: string;
       expectedRevision: number;
@@ -148,6 +154,15 @@ export const tabReducer = (state: TabState, action: TabAction): TabState => {
       return { ...state, overflowOpen: action.open ?? !state.overflowOpen };
     case 'update_text':
       return updateText(state, action);
+    case 'update_markdown':
+      return {
+        ...state,
+        sessions: state.sessions.map((session) =>
+          session.id === action.id && session.revision === action.expectedRevision
+            ? { ...session, markdown_document: action.markdown }
+            : session,
+        ),
+      };
     case 'update_language':
       return {
         ...state,

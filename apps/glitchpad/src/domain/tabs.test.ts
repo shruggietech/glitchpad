@@ -229,4 +229,29 @@ describe('tab state', () => {
     expect(state.sessions).toEqual([]);
     expect(state.activeId).toBeNull();
   });
+
+  it('persists Markdown mode only for the exact session revision', () => {
+    const initial = createTabState(sessions(1));
+    const markdown = {
+      mode: 'source' as const,
+      eligibility: 'full' as const,
+      render_revision: 1,
+      render_status: 'ready' as const,
+      source_selection: { from: 0, to: 4 },
+    };
+    const updated = tabReducer(initial, {
+      type: 'update_markdown',
+      id: 'session-1',
+      expectedRevision: 1,
+      markdown,
+    });
+    expect(updated.sessions[0]?.markdown_document).toEqual(markdown);
+    const stale = tabReducer(updated, {
+      type: 'update_markdown',
+      id: 'session-1',
+      expectedRevision: 0,
+      markdown: { ...markdown, mode: 'rendered' },
+    });
+    expect(stale.sessions[0]?.markdown_document?.mode).toBe('source');
+  });
 });

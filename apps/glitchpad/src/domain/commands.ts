@@ -39,20 +39,24 @@ export const commandSetFor = (
   if (!session) return [];
   const renderer = session.renderer.capabilities;
   const source = session.source.capabilities;
+  const canEditSource =
+    renderer.edit &&
+    (source.write || session.integrity === 'recovery_only');
+  const markdownMode = session.markdown_document?.mode;
   const definitions: Array<[boolean, CommandId, string, string?]> = [
     [renderer.copy, 'copy', 'Copy', 'Ctrl+C'],
     [renderer.search, 'search', 'Search', 'Ctrl+F'],
     [renderer.search, 'find_next', 'Find next', 'F3'],
     [renderer.search, 'find_previous', 'Find previous', 'Shift+F3'],
     [renderer.search, 'go_to_line', 'Go to line', 'Ctrl+G'],
-    [renderer.edit && source.write, 'undo', 'Undo', 'Ctrl+Z'],
-    [renderer.edit && source.write, 'redo', 'Redo', 'Ctrl+Shift+Z'],
-    [renderer.edit && source.write, 'indent', 'Indent', 'Tab'],
-    [renderer.edit && source.write, 'outdent', 'Outdent', 'Shift+Tab'],
+    [canEditSource, 'undo', 'Undo', 'Ctrl+Z'],
+    [canEditSource, 'redo', 'Redo', 'Ctrl+Shift+Z'],
+    [canEditSource, 'indent', 'Indent', 'Tab'],
+    [canEditSource, 'outdent', 'Outdent', 'Shift+Tab'],
     [Boolean(session.text_document && session.text_document.mode === 'editable'), 'toggle_wrap', 'Toggle wrap'],
     [renderer.zoom, 'zoom_out', 'Zoom out', 'Ctrl+-'],
     [renderer.zoom, 'zoom_in', 'Zoom in', 'Ctrl++'],
-    [renderer.edit && source.write, 'edit', 'Edit'],
+    [canEditSource && session.markdown_document?.eligibility !== 'source_only', 'edit', markdownMode === 'source' ? 'Preview' : 'Edit'],
     [renderer.save && source.write, 'save', 'Save', 'Ctrl+S'],
     [
       renderer.inspect_metadata && source.metadata,

@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "representative",
+      "source": "sources/kitchen-sink.md",
+      "expected": "ready"
+    },
+    {
+      "id": "hostile",
+      "source": "sources/hostile.md",
+      "expected": "ready_with_blocked_targets"
+    }
+  ],
+  "boundaries": {
+    "render_max_bytes": 16777216,
+    "source_only_max_bytes": 33554432,
+    "large_read_only_max_bytes": 268435456,
+    "duplicate_heading_ids": ["repeated-heading", "repeated-heading-2"]
+  }
+}

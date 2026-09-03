@@ -15,3 +15,39 @@ sensitivity_review = "Synthetic source snippets only; no production or personal 
 format = "JSON"
 purpose = "Text round-trip, language evidence, Unicode, and mixed-newline validation"
 expected_result = "Each case selects its declared language and preserves its declared newline sequence"
+
+[[fixture]]
+path = "fixtures/markdown/sources/kitchen-sink.md"
+source = "Original Glitchpad S014 representative Markdown fixture"
+author = "ShruggieTech contributors"
+license = "Apache-2.0"
+redistribution = true
+sha256 = "4e71dab9566f794d9e4ef961b55e2e63b19190f85f4989c7cd328fd59a5b0919"
+sensitivity_review = "Synthetic documentation only; no production or personal data"
+format = "Markdown"
+purpose = "CommonMark, GFM, footnote, duplicate-heading, local-resource, and raw-source validation"
+expected_result = "Renders supported semantics with stable repeated-heading identifiers while keeping Mermaid as code"
+
+[[fixture]]
+path = "fixtures/markdown/sources/hostile.md"
+source = "Original Glitchpad S014 hostile Markdown fixture"
+author = "ShruggieTech contributors"
+license = "Apache-2.0"
+redistribution = true
+sha256 = "11d3956957c45e7f757971d67cfd0d653756acde26f7c936f9b9ffb8477ba853"
+sensitivity_review = "Synthetic security strings only; no production or personal data"
+format = "Markdown"
+purpose = "Raw HTML, unsafe link, credential, ambiguity, bidirectional-control, and remote-resource denial validation"
+expected_result = "Raw HTML remains visible text and every unsafe destination or remote resource remains inert"
+
+[[fixture]]
+path = "fixtures/markdown/corpus.json"
+source = "Original Glitchpad S014 Markdown corpus descriptor"
+author = "ShruggieTech contributors"
+license = "Apache-2.0"
+redistribution = true
+sha256 = "394f75032fbe205415fb1772e0fdbac40868bbe5da0ccaa3be21b69924840e7c"
+sensitivity_review = "Synthetic fixture metadata only; no production or personal data"
+format = "JSON"
+purpose = "Fixture expectations, byte-boundary descriptors, and duplicate-heading assertions"
+expected_result = "All referenced sources and declared boundary decisions match the Markdown renderer contract"

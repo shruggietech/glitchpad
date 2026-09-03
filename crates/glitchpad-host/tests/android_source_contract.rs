@@ -6,6 +6,19 @@ use glitchpad_core::source::{
 use glitchpad_lib::android_source::AndroidSourceHost;
 use uuid::Uuid;
 
+#[test]
+fn android_api_24_keeps_tauri_json_runtime_compatible() {
+    let build_script = std::fs::read_to_string(
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("gen/android/app/build.gradle.kts"),
+    )
+    .expect("read Android application build script");
+
+    assert!(build_script.contains("minSdk = 24"));
+    assert!(build_script.contains(
+        "resolutionStrategy.force(\"com.fasterxml.jackson.core:jackson-databind:2.13.5\")"
+    ));
+}
+
 fn delivery(token: &str, strength: &str, length: Option<u64>) -> BridgeDelivery {
     BridgeDelivery {
         bridge_token: format!("bridge-{token}"),

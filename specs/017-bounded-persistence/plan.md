@@ -84,7 +84,7 @@ fixtures/persistence/
 - Future-schema files are preserved in place and make writes to that category fail safely until an explicit category reset. Silently replacing them with defaults would destroy downgrade/upgrade information.
 - Diagnostic events use enumerated fields and stable identifiers rather than a free-form message plus arbitrary context map. Redaction after collecting arbitrary strings is not a reliable privacy boundary.
 - Session persistence stores only safe interface projection plus native-owned restoration evidence. Dirty bytes remain exclusively in the recovery store.
-- The shared controller exposes the validated startup projection but does not reinterpret ephemeral runtime source IDs as durable evidence or bypass the existing native source-delivery adapters.
+- The shared controller exposes the validated startup projection and invokes Android's existing restoration adapter before matching sources. Cross-launch matching uses only opaque native or recovery references, never process-local session or source IDs.
 - UI persistence is routed through an injected gateway and degrades to defaults in browser tests or unavailable native contexts. A native-storage failure cannot block document interaction.
 
 ## Complexity Tracking

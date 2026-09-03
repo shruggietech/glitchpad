@@ -10,6 +10,7 @@ import type { IntegrityProgress, IntegrityStartRequest } from './domain/contract
 import { DESKTOP_CHROME_MAX_PX, REFERENCE_HEIGHT_PX } from './domain/tabs';
 import { defaultPreferences } from './domain/persistence';
 import type { PersistenceGateway } from './domain/persistence-gateway';
+import type { AndroidRestorationGateway } from './domain/android-restoration-gateway';
 
 const revision = {
   identity: initialSessions[2].source.identity,
@@ -443,6 +444,53 @@ describe('document foundation shell', () => {
     expect(screen.getByRole('complementary', { name: 'Preferences' }))
       .toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Preview' })).toBeInTheDocument();
+  });
+
+  it('invokes Android restoration before matching a loaded native projection', async () => {
+    const sourceReference = '70cbf05c-53f5-5442-9ace-9d576529714c';
+    const restoredSession = {
+      ...initialSessions[0],
+      id: 'restored-native-source',
+      lifecycle: 'background' as const,
+      source_id: 'native-source',
+      source: {
+        ...initialSessions[0].source,
+        restoration_reference: sourceReference,
+      },
+    };
+    const restore = vi.fn<AndroidRestorationGateway['restore']>()
+      .mockResolvedValue([restoredSession]);
+    const androidGateway: AndroidRestorationGateway = { restore };
+    const gateway = persistenceGateway({
+      loadSession: vi.fn().mockResolvedValue({
+        status: 'loaded',
+        value: {
+          schema_version: 1,
+          window: { active_session_index: 0, inspector: 'closed' },
+          sessions: [{
+            session_key: 'old-process-session-1',
+            display_hint: 'welcome.md',
+            renderer_id: 'markdown',
+            presentation_mode: 'rendered',
+            source_reference: sourceReference,
+            recovery_record_id: null,
+          }],
+        },
+        warning_code: null,
+      }),
+    });
+
+    render(<App
+      sessions={[]}
+      persistenceGateway={gateway}
+      androidRestorationGateway={androidGateway}
+    />);
+
+    expect(await screen.findByRole('tab', { name: /welcome\.md/iu }))
+      .toHaveAttribute('aria-selected', 'true');
+    expect(restore).toHaveBeenCalledWith([
+      expect.objectContaining({ source_reference: sourceReference }),
+    ]);
   });
 
   it('uses a minimal empty surface after all fixture sessions close', () => {

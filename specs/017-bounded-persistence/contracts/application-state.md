@@ -20,7 +20,9 @@
 - Native delivery derives a stable path-free UUID only from strong source identity; Android additionally requires a persisted URI grant.
 - The interface submits that explicit restoration UUID or a committed recovery-record UUID and never persists a process-local source ID.
 - A maximum of 32 valid projections is committed; unqualified entries are omitted.
-- On restart the shared shell matches loaded projections to sources independently re-delivered by the native owner, or to accepted recovery sessions, then restores the active session, inspector, and presentation mode without replacing document state.
+- On Android restart the shared shell invokes the native restoration adapter after loading the projection, materializes only bounded revalidated sources named by durable references, and then restores active-session, inspector, and presentation state. Accepted recovery sessions publish their already-committed recovery reference immediately.
+- Cross-launch matching never uses a process-local session key. Native source references and recovery record identifiers are the only matching authorities.
+- Pending preference and session-projection writes are flushed best-effort during application teardown.
 - Recovery record identifiers may cross the boundary; recovery content and native source evidence may not.
 
 ## Reset

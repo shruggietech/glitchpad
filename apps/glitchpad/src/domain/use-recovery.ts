@@ -49,6 +49,7 @@ export const useRecovery = (
   );
   const [recordIds, setRecordIds] = useState(new Map<string, string>());
   const bindings = useRef(new Map<string, RecordBinding>());
+  const pendingAcceptedSessions = useRef(new Set<string>());
   const pendingCleanups = useRef(new Set<string>());
   const cleanupInFlight = useRef(new Set<string>());
   const sessionsRef = useRef(sessions);
@@ -177,8 +178,11 @@ export const useRecovery = (
     const dirtyIds = new Set(
       sessions.filter(({ dirty }) => dirty).map(({ id }) => id),
     );
+    const sessionIds = new Set(sessions.map(({ id }) => id));
+    sessionIds.forEach((sessionId) => pendingAcceptedSessions.current.delete(sessionId));
     for (const [sessionId, binding] of bindings.current) {
       if (dirtyIds.has(sessionId)) continue;
+      if (pendingAcceptedSessions.current.has(sessionId)) continue;
       bindings.current.delete(sessionId);
       setRecordIds((current) => {
         if (!current.has(sessionId)) return current;
@@ -230,11 +234,14 @@ export const useRecovery = (
     warning: warning || null,
     async accept(entry) {
       const record = await gateway!.load(entry.record_id);
-      bindings.current.set(`recovery-${entry.record_id}`, {
+      const sessionId = `recovery-${entry.record_id}`;
+      bindings.current.set(sessionId, {
         recordId: entry.record_id,
         createdUnixMs: record.created_unix_ms,
         lastSnapshotRevision: record.snapshot_session_revision,
       });
+      pendingAcceptedSessions.current.add(sessionId);
+      setRecordIds((current) => new Map(current).set(sessionId, entry.record_id));
       dismiss(entry.record_id);
       return record;
     },

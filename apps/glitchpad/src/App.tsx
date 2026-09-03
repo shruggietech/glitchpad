@@ -68,6 +68,11 @@ import {
   type PersistenceGateway,
 } from './domain/persistence-gateway';
 import { usePersistence } from './domain/use-persistence';
+import {
+  nativeAndroidRestorationAvailable,
+  nativeAndroidRestorationGateway,
+  type AndroidRestorationGateway,
+} from './domain/android-restoration-gateway';
 
 const makeSession = (
   id: string,
@@ -211,9 +216,10 @@ interface AppProps {
   clipboardGateway?: ClipboardGateway;
   persistenceGateway?: PersistenceGateway | null;
   diagnosticExportGateway?: DiagnosticExportGateway;
+  androidRestorationGateway?: AndroidRestorationGateway | null;
 }
 
-export function App({ sessions = initialSessions, recoveryGateway, externalLinkGateway, localAssetGateway, metadataGateway, clipboardGateway = browserClipboardGateway, persistenceGateway, diagnosticExportGateway = browserDiagnosticExportGateway }: AppProps) {
+export function App({ sessions = initialSessions, recoveryGateway, externalLinkGateway, localAssetGateway, metadataGateway, clipboardGateway = browserClipboardGateway, persistenceGateway, diagnosticExportGateway = browserDiagnosticExportGateway, androidRestorationGateway }: AppProps) {
   const [state, dispatch] = useReducer(tabReducer, sessions, createTabState);
   const [commandStatus, setCommandStatus] = useState('');
   const [inspectorOpen, setInspectorOpen] = useState(false);
@@ -228,6 +234,11 @@ export function App({ sessions = initialSessions, recoveryGateway, externalLinkG
   const activeProjectionAppliedRef = useRef<SessionState | null>(null);
   const presentationProjectionAppliedRef = useRef(new Map<string, string>());
   const windowProjectionChangedRef = useRef(false);
+  const androidRestorationRef = useRef<{
+    projection: SessionState;
+    promise: Promise<ShellSession[]>;
+  } | null>(null);
+  const openedRestorationReferencesRef = useRef(new Set<string>());
   const selectedRecoveryGateway =
     recoveryGateway === undefined
       ? nativeRecoveryAvailable()
@@ -261,12 +272,39 @@ export function App({ sessions = initialSessions, recoveryGateway, externalLinkG
     selectedPersistenceGateway,
     recovery.recordIds,
   );
+  const selectedAndroidRestorationGateway = androidRestorationGateway === undefined
+    ? (nativeAndroidRestorationAvailable() ? nativeAndroidRestorationGateway : null)
+    : androidRestorationGateway;
+  useEffect(() => {
+    const restored = persistence.restoredSession;
+    if (!restored || !selectedAndroidRestorationGateway) return;
+    if (androidRestorationRef.current?.projection !== restored) {
+      androidRestorationRef.current = {
+        projection: restored,
+        promise: selectedAndroidRestorationGateway.restore(restored.sessions),
+      };
+    }
+    let active = true;
+    void androidRestorationRef.current.promise
+      .then((restoredSessions) => {
+        if (!active) return;
+        for (const session of restoredSessions) {
+          const reference = session.source.restoration_reference;
+          if (!reference || openedRestorationReferencesRef.current.has(reference)) continue;
+          openedRestorationReferencesRef.current.add(reference);
+          dispatch({ type: 'open', session });
+        }
+      })
+      .catch(() => {
+        if (active) setCommandStatus('Authorized Android sources could not be restored.');
+      });
+    return () => { active = false; };
+  }, [persistence.restoredSession, selectedAndroidRestorationGateway]);
   useEffect(() => {
     const restored = persistence.restoredSession;
     const projectionFor = (session: ShellSession): SessionProjection | undefined =>
       restored?.sessions.find((projection) =>
-        projection.session_key === session.id
-        || Boolean(
+        Boolean(
           projection.source_reference
           && projection.source_reference === session.source.restoration_reference,
         )

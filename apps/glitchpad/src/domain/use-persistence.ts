@@ -38,6 +38,7 @@ export const usePersistence = (
   const loaded = useRef(false);
   const userChangedPreferences = useRef(false);
   const preferencesRef = useRef(preferences);
+  const sessionSnapshotRef = useRef<import('./persistence').SessionState | null>(null);
   const preferenceWriteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sessionWriteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   preferencesRef.current = preferences;
@@ -69,13 +70,14 @@ export const usePersistence = (
           ? 'Some local application settings could not be restored. Safe defaults are active.'
           : null);
         loaded.current = true;
+        const loadWarning = preferenceResult.warning_code ?? sessionResult.warning_code;
         appendDiagnostic({
-          level: preferenceResult.warning_code ? 'warning' : 'info',
-          event_id: preferenceResult.warning_code ? 'state_load_failed' : 'app_started',
+          level: loadWarning ? 'warning' : 'info',
+          event_id: loadWarning ? 'state_load_failed' : 'app_started',
           component: 'application_state',
           duration_ms: null,
           byte_count: null,
-          error_code: preferenceResult.warning_code,
+          error_code: loadWarning,
         });
       })
       .catch(() => {
@@ -98,6 +100,14 @@ export const usePersistence = (
       void gateway.persistPreferences(preferencesRef.current).catch(() => undefined);
   }, [gateway]);
 
+  useEffect(() => () => {
+    if (!sessionWriteTimer.current) return;
+    clearTimeout(sessionWriteTimer.current);
+    sessionWriteTimer.current = null;
+    if (gateway && sessionSnapshotRef.current)
+      void gateway.persistSession(sessionSnapshotRef.current).catch(() => undefined);
+  }, [gateway]);
+
   useEffect(() => {
     const root = document.documentElement;
     root.dataset.theme = preferences.theme;
@@ -109,14 +119,16 @@ export const usePersistence = (
 
   useEffect(() => {
     if (!gateway || !loaded.current) return;
+    if (sessionWriteTimer.current) clearTimeout(sessionWriteTimer.current);
+    sessionSnapshotRef.current = projectSessionState(
+      sessions,
+      activeId,
+      inspector,
+      recoveryRecordIds,
+    );
     sessionWriteTimer.current = setTimeout(() => {
       sessionWriteTimer.current = null;
-      void gateway.persistSession(projectSessionState(
-        sessions,
-        activeId,
-        inspector,
-        recoveryRecordIds,
-      ))
+      void gateway.persistSession(sessionSnapshotRef.current!)
         .catch(() => {
           setWarning('Session context could not be saved. Open documents remain available.');
           appendDiagnostic({
@@ -125,10 +137,6 @@ export const usePersistence = (
           });
         });
     }, WRITE_DELAY_MS);
-    return () => {
-      if (sessionWriteTimer.current) clearTimeout(sessionWriteTimer.current);
-      sessionWriteTimer.current = null;
-    };
   }, [activeId, appendDiagnostic, gateway, inspector, recoveryRecordIds, sessions]);
 
   const updatePreferences = useCallback((next: PreferenceState) => {

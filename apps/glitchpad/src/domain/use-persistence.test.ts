@@ -63,6 +63,24 @@ describe('usePersistence', () => {
     await waitFor(() => expect(result.current.restoredSession).toEqual(restored));
   });
 
+  it('records a session-load warning as a diagnostic failure', async () => {
+    const persistence = gateway({
+      loadSession: vi.fn().mockResolvedValue({
+        status: 'corrupt', value: emptySession, warning_code: 'session_corrupt',
+      }),
+    });
+    renderHook(() => usePersistence([], null, 'closed', persistence));
+
+    await waitFor(() => expect(persistence.appendDiagnostic).toHaveBeenCalledWith(
+      expect.objectContaining({
+        level: 'warning',
+        event_id: 'state_load_failed',
+        error_code: 'session_corrupt',
+      }),
+      expect.any(Number),
+    ));
+  });
+
   it('cancels a pending preference write before category reset', async () => {
     vi.useFakeTimers();
     try {
@@ -95,6 +113,31 @@ describe('usePersistence', () => {
       expect(persistence.persistPreferences).toHaveBeenCalledWith(
         expect.objectContaining({ theme: 'dark' }),
       );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('flushes the latest pending session projection when the application unmounts', async () => {
+    vi.useFakeTimers();
+    try {
+      const snapshots: SessionState[] = [];
+      const persistSession: PersistenceGateway['persistSession'] = (session) => {
+        snapshots.push(session);
+        return Promise.resolve();
+      };
+      const persistence = gateway({ persistSession });
+      const { unmount, rerender } = renderHook<unknown, {
+        inspector: SessionState['window']['inspector'];
+      }>(
+        ({ inspector }) => usePersistence([], null, inspector, persistence),
+        { initialProps: { inspector: 'closed' } },
+      );
+      await act(async () => { await Promise.resolve(); });
+      rerender({ inspector: 'diagnostics' });
+      unmount();
+
+      expect(snapshots.at(-1)?.window.inspector).toBe('diagnostics');
     } finally {
       vi.useRealTimers();
     }

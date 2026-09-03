@@ -24,6 +24,12 @@ fn android_api_24_keeps_tauri_json_runtime_compatible() {
     )
     .expect("read frontend build configuration");
     assert!(vite_config.contains("target: 'chrome69'"));
+
+    let frontend_entry = std::fs::read_to_string(
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../apps/glitchpad/src/main.tsx"),
+    )
+    .expect("read frontend entrypoint");
+    assert!(frontend_entry.contains("import './runtime-polyfills';"));
 }
 
 fn delivery(token: &str, strength: &str, length: Option<u64>) -> BridgeDelivery {

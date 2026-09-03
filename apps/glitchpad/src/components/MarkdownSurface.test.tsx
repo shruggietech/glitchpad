@@ -62,6 +62,30 @@ describe('Markdown surface', () => {
     expect(open).toHaveBeenCalledWith('https://example.com/path');
   });
 
+  it('resets rendered UI and pending authorization when switching Markdown tabs', async () => {
+    const first = markdownSession('[first](https://first.example)');
+    const second = {
+      ...markdownSession('# Second document'),
+      id: 'markdown-second',
+      lifecycle: 'background' as const,
+      source: { ...markdownSession('').source, display_name: 'second.md' },
+    };
+    render(<App sessions={[first, second]} />);
+    fireEvent.click(await screen.findByRole('button', { name: /first/i }));
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('tab', { name: /second\.md/i }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Second document' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /first/i })).not.toBeInTheDocument();
+  });
+
+  it('uses only an explicitly supplied local-document authority', async () => {
+    const openDocument = vi.fn(() => Promise.resolve());
+    render(<App sessions={[markdownSession('[guide](./guide.md)')]} localAssetGateway={{ resolve: () => Promise.resolve(null), openDocument }} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'guide' }));
+    expect(openDocument).toHaveBeenCalledWith(expect.objectContaining({ display_name: 'test.md' }), './guide.md');
+  });
+
   it('keeps read-only source inert and invokes print only from its explicit control', async () => {
     const print = vi.spyOn(window, 'print').mockImplementation(() => undefined);
     const session = { ...markdownSession('# Read only'), renderer: { ...markdownSession('').renderer, capabilities: { ...markdownSession('').renderer.capabilities, edit: false } }, source: { ...markdownSession('').source, capabilities: { ...markdownSession('').source.capabilities, write: false } } };
@@ -71,6 +95,9 @@ describe('Markdown surface', () => {
     expect(print).toHaveBeenCalledOnce();
     fireEvent.click(screen.getByRole('button', { name: 'View source' }));
     expect(screen.getByRole('textbox', { name: 'test.md text editor' })).toHaveAttribute('aria-readonly', 'true');
+    fireEvent.click(screen.getByRole('button', { name: 'Print' }));
+    expect(print).toHaveBeenCalledTimes(2);
+    expect(document.querySelector('.markdown-print-document')).toHaveTextContent('Read only');
     print.mockRestore();
   });
 

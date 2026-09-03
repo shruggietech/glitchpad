@@ -12,6 +12,10 @@ export interface MarkdownLocalAssetGateway {
     normalizedTarget: string,
     signal?: AbortSignal,
   ): Promise<string | null>;
+  openDocument?(
+    source: SourceDescriptor,
+    normalizedTarget: string,
+  ): Promise<void>;
 }
 
 export const nativeExternalLinkAvailable = (): boolean =>

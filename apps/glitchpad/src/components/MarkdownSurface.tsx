@@ -66,6 +66,7 @@ interface SafeTreeProps {
   session: ShellSession;
   activeNodeId: string | null;
   onLink: (candidate: LinkCandidate, trigger: HTMLElement) => void;
+  onLocalLink: (candidate: LinkCandidate) => void;
   localAssetGateway: MarkdownLocalAssetGateway;
 }
 
@@ -127,6 +128,7 @@ function SafeTree({
   session,
   activeNodeId,
   onLink,
+  onLocalLink,
   localAssetGateway,
 }: SafeTreeProps): ReactNode {
   if (node.type === 'text') return node.value;
@@ -138,6 +140,7 @@ function SafeTree({
         session={session}
         activeNodeId={activeNodeId}
         onLink={onLink}
+        onLocalLink={onLocalLink}
         localAssetGateway={localAssetGateway}
       />
     ));
@@ -158,6 +161,7 @@ function SafeTree({
       session={session}
       activeNodeId={activeNodeId}
       onLink={onLink}
+      onLocalLink={onLocalLink}
       localAssetGateway={localAssetGateway}
     />
   ));
@@ -197,6 +201,22 @@ function SafeTree({
         >
           {children}
         </span>
+      );
+    }
+    if (
+      candidate.kind === 'local' &&
+      candidate.normalized_target &&
+      localAssetGateway.openDocument
+    ) {
+      return (
+        <button
+          type="button"
+          className="markdown-link"
+          title={candidate.display_target}
+          onClick={() => onLocalLink(candidate)}
+        >
+          {children}
+        </button>
       );
     }
     return (
@@ -302,6 +322,7 @@ export const MarkdownSurface = forwardRef<
   );
   const [pendingLink, setPendingLink] = useState<LinkCandidate | null>(null);
   const [linkError, setLinkError] = useState('');
+  const [localLinkError, setLocalLinkError] = useState('');
   const modeRef = useRef(mode);
   const sourceSelectionRef = useRef(sourceSelection);
   const onMarkdownChangeRef = useRef(onMarkdownChange);
@@ -498,6 +519,16 @@ export const MarkdownSurface = forwardRef<
     requestAnimationFrame(() => linkTriggerRef.current?.focus());
   };
 
+  const openLocalLink = (candidate: LinkCandidate) => {
+    if (!candidate.normalized_target || !localAssetGateway.openDocument) return;
+    setLocalLinkError('');
+    void localAssetGateway
+      .openDocument(session.source, candidate.normalized_target)
+      .catch(() =>
+        setLocalLinkError('The local document could not be opened.'),
+      );
+  };
+
   if (mode === 'source' || eligibility !== 'full') {
     return (
       <div className="markdown-surface markdown-source-mode">
@@ -509,16 +540,26 @@ export const MarkdownSurface = forwardRef<
           >
             Preview
           </button>
+          <button type="button" onClick={() => window.print()} disabled={!result?.tree}>
+            Print
+          </button>
           {eligibility !== 'full' && (
             <span role="status">Live preview is unavailable above 16 MiB.</span>
           )}
         </div>
-        <TextEditorSurface
-          ref={editorRef}
-          session={session}
-          onDocumentChange={onDocumentChange}
-          onLanguageChange={onLanguageChange}
-        />
+        <div className="markdown-source-editor">
+          <TextEditorSurface
+            ref={editorRef}
+            session={session}
+            onDocumentChange={onDocumentChange}
+            onLanguageChange={onLanguageChange}
+          />
+        </div>
+        {result?.tree && (
+          <article className="markdown-document markdown-print-document">
+            <SafeTree node={result.tree} session={session} activeNodeId={null} onLink={beginLink} onLocalLink={openLocalLink} localAssetGateway={localAssetGateway} />
+          </article>
+        )}
       </div>
     );
   }
@@ -604,6 +645,7 @@ export const MarkdownSurface = forwardRef<
             session={session}
             activeNodeId={activeNodeId}
             onLink={beginLink}
+            onLocalLink={openLocalLink}
             localAssetGateway={localAssetGateway}
           />
         ) : status === 'failed' ? (
@@ -614,6 +656,7 @@ export const MarkdownSurface = forwardRef<
           <pre className="markdown-pending-source" aria-label="Markdown source while preview renders">{textDocument.normalized_text}</pre>
         )}
       </article>
+      {localLinkError && <p role="alert">{localLinkError}</p>}
       {pendingLink?.normalized_target && (
         <div className="resolution-backdrop" role="presentation">
           <section

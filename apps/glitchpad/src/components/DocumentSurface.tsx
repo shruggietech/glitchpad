@@ -57,7 +57,7 @@ export const DocumentSurface = forwardRef<TextEditorHandle, DocumentSurfaceProps
         ) : session.text_document.mode === 'large_read_only' ? (
           <LargeTextSurface session={session} />
         ) : session.renderer.id === 'markdown' ? (
-          <MarkdownSurface ref={ref} session={session} onDocumentChange={onDocumentChange} onLanguageChange={onLanguageChange} onMarkdownChange={onMarkdownChange} externalLinkGateway={externalLinkGateway} localAssetGateway={localAssetGateway} />
+          <MarkdownSurface key={session.id} ref={ref} session={session} onDocumentChange={onDocumentChange} onLanguageChange={onLanguageChange} onMarkdownChange={onMarkdownChange} externalLinkGateway={externalLinkGateway} localAssetGateway={localAssetGateway} />
         ) : (
           <TextEditorSurface ref={ref} session={session} onDocumentChange={onDocumentChange} onLanguageChange={onLanguageChange} />
         )

@@ -481,6 +481,10 @@ button:focus-visible,
   white-space: pre-wrap;
 }
 
+.markdown-print-document {
+  display: none;
+}
+
 .markdown-outline {
   max-height: min(40vh, 24rem);
   overflow: auto;
@@ -632,6 +636,14 @@ button:focus-visible,
   .markdown-outline,
   .integrity-banner {
     display: none !important;
+  }
+
+  .markdown-source-editor {
+    display: none !important;
+  }
+
+  .markdown-print-document {
+    display: block !important;
   }
 
   .app-shell,

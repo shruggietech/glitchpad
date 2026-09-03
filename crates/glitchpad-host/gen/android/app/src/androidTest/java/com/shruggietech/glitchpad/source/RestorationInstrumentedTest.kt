@@ -115,11 +115,13 @@ class RestorationInstrumentedTest {
   }
 
   private fun grant(uri: Uri) {
-    instrumentation.context.grantUriPermission(
-      clientContext.packageName,
-      uri,
-      GRANT_MODES,
+    instrumentation.startActivitySync(
+      Intent(instrumentation.context, FixtureGrantActivity::class.java)
+        .setAction(FixtureGrantActivity.ACTION_GRANT)
+        .putExtra(FixtureGrantActivity.EXTRA_URI, uri.toString())
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
     )
+    instrumentation.waitForIdleSync()
     repeat(40) {
       try {
         resolver.query(uri, arrayOf(DocumentsContract.Document.COLUMN_DOCUMENT_ID), null, null, null).use { cursor ->
@@ -141,8 +143,6 @@ class RestorationInstrumentedTest {
     private const val AUTHORITY = "com.shruggietech.glitchpad.fixture.documents"
     private const val PERSISTED_MODES =
       Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-    private const val GRANT_MODES =
-      PERSISTED_MODES or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
     private val RECOVERY_EVIDENCE = "private recovery survives force-stop".toByteArray(Charsets.UTF_8)
   }
 

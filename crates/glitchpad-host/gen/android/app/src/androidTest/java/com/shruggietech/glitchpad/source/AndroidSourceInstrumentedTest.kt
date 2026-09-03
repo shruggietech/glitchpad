@@ -149,12 +149,13 @@ class AndroidSourceInstrumentedTest {
   }
 
   private fun grant(uri: Uri): Uri {
-    // The test package owns the fixture provider, so it can delegate authority without UiAutomation.
-    instrumentation.context.grantUriPermission(
-      clientContext.packageName,
-      uri,
-      GRANT_MODES,
+    instrumentation.startActivitySync(
+      Intent(instrumentation.context, FixtureGrantActivity::class.java)
+        .setAction(FixtureGrantActivity.ACTION_GRANT)
+        .putExtra(FixtureGrantActivity.EXTRA_URI, uri.toString())
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
     )
+    instrumentation.waitForIdleSync()
     var lastFailure = "provider returned no document row"
     repeat(40) {
       try {
@@ -202,9 +203,5 @@ class AndroidSourceInstrumentedTest {
   companion object {
     private const val AUTHORITY = "com.shruggietech.glitchpad.fixture.documents"
     private const val ROOT_ID = "fixture-root"
-    private const val GRANT_MODES =
-      Intent.FLAG_GRANT_READ_URI_PERMISSION or
-        Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
-        Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
   }
 }

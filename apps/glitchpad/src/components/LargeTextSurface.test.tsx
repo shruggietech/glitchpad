@@ -7,6 +7,7 @@ import {
   type ShellSession,
 } from '../domain/contracts';
 import { MemoryLargeTextGateway } from '../domain/large-text-gateway';
+import { LARGE_TEXT_WINDOW_BYTES } from '../domain/large-text';
 import { createTextDocument } from '../domain/text-document';
 import { LargeTextSurface } from './LargeTextSurface';
 
@@ -92,6 +93,41 @@ describe('LargeTextSurface', () => {
       expect(
         container.querySelector('.large-text-content')?.textContent,
       ).toMatch(/^first line/),
+    );
+  });
+
+  it('advances across large-source matches and wraps after the final match', async () => {
+    const repeatedBytes = new TextEncoder().encode(
+      `target${'x'.repeat(LARGE_TEXT_WINDOW_BYTES)}target`,
+    );
+    const repeatedSession: ShellSession = {
+      ...session,
+      source: { ...session.source, byte_length: repeatedBytes.byteLength },
+    };
+    render(
+      <LargeTextSurface
+        session={repeatedSession}
+        gateway={new MemoryLargeTextGateway('large-source', repeatedBytes)}
+      />,
+    );
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent(/read-only/i),
+    );
+    fireEvent.change(screen.getByLabelText('Find'), {
+      target: { value: 'target' },
+    });
+    const find = screen.getByRole('button', { name: 'Find next' });
+    fireEvent.click(find);
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('Match 1 of 2'),
+    );
+    fireEvent.click(find);
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('Match 2 of 2'),
+    );
+    fireEvent.click(find);
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('Match 1 of 2'),
     );
   });
 });

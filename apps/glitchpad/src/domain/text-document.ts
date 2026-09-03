@@ -101,10 +101,16 @@ export const applyTextTransaction = (
   let sourceBytes = document.source_bytes;
   let longestLine = document.longest_line_bytes;
   let requiresFullProfile = false;
+  let requiresLongestLineScan = false;
   const newlineCounts = { ...document.profile.newline_counts };
   for (const change of orderedChanges) {
     const from = rawPositionAtNormalized(rawText, change.from);
     const to = rawPositionAtNormalized(rawText, change.to);
+    const previousAffectedLine = affectedLineBytes(
+      normalizedText,
+      change.from,
+      change.to,
+    );
     const insertedNormalized = normalizeNewlines(change.insert);
     const inserted = useNewline(
       insertedNormalized,
@@ -125,20 +131,25 @@ export const applyTextTransaction = (
       encodedContentLength(removed, document.profile.encoding);
     rawText = `${rawText.slice(0, from)}${inserted}${rawText.slice(to)}`;
     normalizedText = `${normalizedText.slice(0, change.from)}${insertedNormalized}${normalizedText.slice(change.to)}`;
-    longestLine = Math.max(
-      longestLine,
-      affectedLineBytes(
-        normalizedText,
-        change.from,
-        change.from + insertedNormalized.length,
-      ),
+    const nextAffectedLine = affectedLineBytes(
+      normalizedText,
+      change.from,
+      change.from + insertedNormalized.length,
     );
+    if (
+      previousAffectedLine === longestLine &&
+      nextAffectedLine < previousAffectedLine
+    )
+      requiresLongestLineScan = true;
+    longestLine = Math.max(longestLine, nextAffectedLine);
   }
   if (requiresFullProfile) {
     normalizedText = normalizeNewlines(rawText);
     sourceBytes = encodedLength(rawText, document.profile.encoding);
     longestLine = longestLineBytes(rawText);
   }
+  if (requiresLongestLineScan && !requiresFullProfile)
+    longestLine = longestLineBytes(rawText);
   const profile = requiresFullProfile
     ? profileFor(
         rawText,
@@ -367,7 +378,7 @@ const affectedLineBytes = (text: string, from: number, to: number): number => {
   const start = text.lastIndexOf('\n', Math.max(0, from - 1)) + 1;
   const nextNewline = text.indexOf('\n', to);
   const end = nextNewline < 0 ? text.length : nextNewline;
-  return encoder.encode(text.slice(start, end)).byteLength;
+  return longestLineBytes(text.slice(start, end));
 };
 
 const useNewline = (text: string, newline: NewlineToken): string =>

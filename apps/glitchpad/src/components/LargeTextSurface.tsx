@@ -12,6 +12,12 @@ interface LargeTextSurfaceProps {
   gateway?: LargeTextGateway;
 }
 
+interface SearchCursor {
+  query: string;
+  matches: number[];
+  index: number;
+}
+
 export function LargeTextSurface({ session, gateway }: LargeTextSurfaceProps) {
   const selectedGateway = useMemo(
     () => gateway ?? createNativeLargeTextGateway(),
@@ -35,6 +41,7 @@ export function LargeTextSurface({ session, gateway }: LargeTextSurfaceProps) {
   const [window, setWindow] = useState<LargeTextWindow | null>(null);
   const [status, setStatus] = useState('Loading bounded text window');
   const [query, setQuery] = useState('');
+  const [searchCursor, setSearchCursor] = useState<SearchCursor | null>(null);
   const [line, setLine] = useState('1');
   const previousOffsets = useRef<number[]>([]);
   const byteLength =
@@ -65,7 +72,11 @@ export function LargeTextSurface({ session, gateway }: LargeTextSurfaceProps) {
     };
   }, [reader]);
 
-  const move = (offset: number, rememberCurrent = true) => {
+  const move = (
+    offset: number,
+    rememberCurrent = true,
+    loadedStatus?: string,
+  ) => {
     if (!reader) return;
     if (rememberCurrent && window) previousOffsets.current.push(window.offset);
     setStatus('Loading bounded text window');
@@ -74,13 +85,35 @@ export function LargeTextSurface({ session, gateway }: LargeTextSurfaceProps) {
       .then((value) => {
         setWindow(value);
         setStatus(
-          value.end_of_source ? 'End of source' : 'Read-only bounded window',
+          loadedStatus ??
+            (value.end_of_source
+              ? 'End of source'
+              : 'Read-only bounded window'),
         );
       })
       .catch((error: unknown) => {
         if (!(error instanceof DOMException && error.name === 'AbortError'))
           setStatus('Large text window could not be decoded safely');
       });
+  };
+
+  const findNextMatch = async () => {
+    if (!reader || !query) return;
+    const matches =
+      searchCursor?.query === query
+        ? searchCursor.matches
+        : await reader.search(query, byteLength);
+    if (matches.length === 0) {
+      setSearchCursor({ query, matches, index: -1 });
+      setStatus('No match');
+      return;
+    }
+    const index =
+      searchCursor?.query === query
+        ? (searchCursor.index + 1) % matches.length
+        : 0;
+    setSearchCursor({ query, matches, index });
+    move(matches[index], true, `Match ${index + 1} of ${matches.length}`);
   };
 
   return (
@@ -109,21 +142,16 @@ export function LargeTextSurface({ session, gateway }: LargeTextSurfaceProps) {
           Find{' '}
           <input
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={(event) => {
+              setQuery(event.target.value);
+              setSearchCursor(null);
+            }}
           />
         </label>
         <button
           type="button"
           disabled={!query || !reader}
-          onClick={() =>
-            void reader
-              ?.search(query, byteLength)
-              .then((matches) =>
-                matches[0] === undefined
-                  ? setStatus('No match')
-                  : move(matches[0]),
-              )
-          }
+          onClick={() => void findNextMatch()}
         >
           Find next
         </button>

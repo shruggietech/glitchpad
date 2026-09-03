@@ -102,6 +102,19 @@ describe('text document round trips', () => {
     }
   });
 
+  it('recomputes the longest line when an edit shortens the prior maximum', () => {
+    const document = createTextDocument({
+      rawText: `${'x'.repeat(100)}\nshort`,
+      displayName: 'lines.txt',
+    });
+    const result = applyTextTransaction(document, 1, 1, [
+      { from: 0, to: 100, insert: 'tiny' },
+    ]);
+
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.document.longest_line_bytes).toBe(5);
+  });
+
   it('rejects stale, overlapping, invalid, and read-only changes', () => {
     const document = createTextDocument({
       rawText: 'abcdef',

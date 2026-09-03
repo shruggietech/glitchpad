@@ -277,6 +277,11 @@ const collectSearchText = (
   entries: SearchTextEntry[],
 ): void => {
   if (node.type === 'text') return;
+  if (node.type === 'element' && node.mermaid) {
+    const text = node.mermaid.source.replace(/\s+/gu, ' ').trim();
+    if (text) entries.push({ node_id: node.id, text, source_range: node.source_range });
+    return;
+  }
   if (node.type === 'element' && searchableTags.has(node.tag_name)) {
     const text = textOf(node).replace(/\s+/gu, ' ').trim();
     if (text) entries.push({ node_id: node.id, text, source_range: node.source_range });

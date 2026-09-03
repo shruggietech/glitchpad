@@ -5,6 +5,7 @@ import { MERMAID_STANDALONE_MAX_BYTES, initialMermaidViewport, type MermaidRende
 import type { LanguageDecision, MermaidDocumentState, ShellSession, TextDocumentState } from '../domain/contracts';
 import { DiagramViewport, type DiagramViewportHandle } from './DiagramViewport';
 import { TextEditorSurface, type TextEditorHandle } from './TextEditorSurface';
+import { useMermaidTheme } from './useMermaidTheme';
 
 interface MermaidSurfaceProps {
   session: ShellSession;
@@ -41,6 +42,7 @@ export const MermaidSurface = forwardRef<TextEditorHandle, MermaidSurfaceProps>(
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [metadataOpen, setMetadataOpen] = useState(false);
+  const theme = useMermaidTheme();
   const textDocument = session.text_document!;
   const eligible = textDocument.source_bytes <= MERMAID_STANDALONE_MAX_BYTES;
   const visibleResult = result?.status === 'ready' ? result : lastValid;
@@ -79,7 +81,7 @@ export const MermaidSurface = forwardRef<TextEditorHandle, MermaidSurfaceProps>(
       source_revision: session.revision,
       source_text: textDocument.normalized_text,
       fallback_label: `${session.source.display_name} Mermaid diagram`,
-      theme: document.documentElement.classList.contains('dark') ? 'dark' : 'light',
+      theme,
     }).then((next) => {
       if (!next) return;
       setResult(next);
@@ -100,9 +102,7 @@ export const MermaidSurface = forwardRef<TextEditorHandle, MermaidSurfaceProps>(
       }
     });
     return () => client.cancel();
-  }, [client, eligible, session.id, session.lifecycle, session.revision, textDocument.normalized_text]);
-
-  useEffect(() => () => client.dispose(), [client]);
+  }, [client, eligible, session.id, session.lifecycle, session.revision, textDocument.normalized_text, theme]);
 
   const matches = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase();
@@ -120,6 +120,9 @@ export const MermaidSurface = forwardRef<TextEditorHandle, MermaidSurfaceProps>(
       if (command === 'edit') {
         changeMode(mode === 'source' ? 'rendered' : 'source');
         return true;
+      }
+      if (mode === 'source' && (command === 'search' || command === 'close_search' || command === 'go_to_line')) {
+        return editorRef.current?.invoke(command) ?? false;
       }
       if (command === 'search') {
         setSearchOpen(true);

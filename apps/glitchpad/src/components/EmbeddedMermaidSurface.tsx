@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { MermaidRendererClient } from '../domain/mermaid-adapter';
 import type { EmbeddedMermaidBlock, MermaidRenderResult } from '../domain/mermaid-contract';
 import { DiagramViewport } from './DiagramViewport';
+import { useMermaidTheme } from './useMermaidTheme';
 
 interface EmbeddedMermaidSurfaceProps {
   block: EmbeddedMermaidBlock;
@@ -16,6 +17,7 @@ export function EmbeddedMermaidSurface({ block, documentName, onViewSource, rend
   if (!ownedClient.current) ownedClient.current = rendererClient ?? new MermaidRendererClient();
   const client = ownedClient.current;
   const [result, setResult] = useState<MermaidRenderResult | null>(null);
+  const theme = useMermaidTheme();
 
   useEffect(() => {
     if (block.limit) return;
@@ -24,12 +26,10 @@ export function EmbeddedMermaidSurface({ block, documentName, onViewSource, rend
       source_revision: block.parent_revision,
       source_text: block.source,
       fallback_label: `${documentName} diagram ${block.ordinal}`,
-      theme: document.documentElement.classList.contains('dark') ? 'dark' : 'light',
+      theme,
     }).then(setResult);
     return () => client.cancel();
-  }, [block, client, documentName]);
-
-  useEffect(() => () => client.dispose(), [client]);
+  }, [block, client, documentName, theme]);
 
   const failure = block.limit
     ? `Diagram ${block.ordinal} exceeds the ${block.limit.replaceAll('_', ' ')} limit.`

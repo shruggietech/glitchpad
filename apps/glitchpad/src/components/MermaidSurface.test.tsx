@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { EditorView } from '@codemirror/view';
 import axe from 'axe-core';
+import { StrictMode } from 'react';
 import { describe, expect, it } from 'vitest';
 
 import { App, initialSessions } from '../App';
@@ -56,6 +57,21 @@ describe('Mermaid surface', () => {
   it('opens an empty Mermaid source directly in editable source mode', () => {
     render(<App sessions={[mermaidSession('')]} />);
     expect(screen.getByRole('textbox', { name: 'architecture.mmd text editor' })).toBeInTheDocument();
+  });
+
+  it('renders after StrictMode replays effect setup and cleanup', async () => {
+    render(<StrictMode><App sessions={[mermaidSession('flowchart TB\n  A --> B')]} /></StrictMode>);
+    expect(await screen.findByRole('img', {}, { timeout: 2_000 })).toBeInTheDocument();
+  });
+
+  it('routes the command-bar search to CodeMirror while source mode is active', async () => {
+    const { container } = render(<App sessions={[mermaidSession('flowchart TB\n  SearchableNode --> B')]} />);
+    await screen.findByRole('img');
+    fireEvent.click(screen.getByRole('button', { name: 'Edit source' }));
+    const commandSearch = screen.getAllByRole('button', { name: 'Search' }).find((button) => button.classList.contains('command-button'))!;
+    fireEvent.click(commandSearch);
+    await waitFor(() => expect(container.querySelector('.cm-search')).toBeInTheDocument());
+    expect(screen.queryByRole('textbox', { name: 'Find diagram text' })).not.toBeInTheDocument();
   });
 
   it('has no critical or serious accessibility violations', async () => {

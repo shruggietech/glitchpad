@@ -104,7 +104,7 @@ export const DiagramViewport = forwardRef<DiagramViewportHandle, DiagramViewport
       >
         {objectUrl && (
           <img
-            className="diagram-image"
+            className={`diagram-image diagram-image-${state.mode}`}
             src={objectUrl}
             alt={label}
             aria-describedby={description ? descriptionId : undefined}

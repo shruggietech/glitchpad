@@ -22,6 +22,7 @@ describe('DiagramViewport', () => {
   it('bounds zoom and supports touch-style pointer navigation', () => {
     render(<DiagramViewport svg='<svg xmlns="http://www.w3.org/2000/svg"/>' label="Architecture" description={null} />);
     const canvas = screen.getByRole('group');
+    expect(screen.getByRole('img')).toHaveClass('diagram-image-fit');
     for (let index = 0; index < 20; index += 1) fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }));
     expect(screen.getByText('800%')).toBeInTheDocument();
     for (let index = 0; index < 40; index += 1) fireEvent.click(screen.getByRole('button', { name: 'Zoom out' }));
@@ -32,5 +33,6 @@ describe('DiagramViewport', () => {
     expect(screen.getByRole('img')).toHaveStyle({ transform: 'translate(10px, 20px) scale(0.1)' });
     fireEvent.click(screen.getByRole('button', { name: 'Actual size' }));
     expect(screen.getByText('100%')).toBeInTheDocument();
+    expect(screen.getByRole('img')).toHaveClass('diagram-image-actual');
   });
 });

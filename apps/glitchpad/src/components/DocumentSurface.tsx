@@ -6,6 +6,7 @@ import { MarkdownSurface } from './MarkdownSurface';
 import { TextEditorSurface, type TextEditorHandle } from './TextEditorSurface';
 import { LargeTextSurface } from './LargeTextSurface';
 import { MermaidSurface } from './MermaidSurface';
+import type { MetadataContribution } from '../domain/metadata';
 
 interface DocumentSurfaceProps {
   session: ShellSession | null;
@@ -20,10 +21,12 @@ interface DocumentSurfaceProps {
   onMermaidChange?: (id: string, expectedRevision: number, mermaid: MermaidDocumentState) => void;
   externalLinkGateway?: MarkdownExternalLinkGateway;
   localAssetGateway?: MarkdownLocalAssetGateway;
+  onOpenMetadata?: (opener: HTMLElement) => void;
+  onMetadataContribution?: (contribution: MetadataContribution) => void;
 }
 
 export const DocumentSurface = forwardRef<TextEditorHandle, DocumentSurfaceProps>(function DocumentSurface(
-  { session, onDocumentChange, onLanguageChange, onMarkdownChange, onMermaidChange, externalLinkGateway, localAssetGateway },
+  { session, onDocumentChange, onLanguageChange, onMarkdownChange, onMermaidChange, externalLinkGateway, localAssetGateway, onOpenMetadata, onMetadataContribution },
   ref,
 ) {
   if (!session) {
@@ -59,9 +62,9 @@ export const DocumentSurface = forwardRef<TextEditorHandle, DocumentSurfaceProps
         ) : session.text_document.mode === 'large_read_only' ? (
           <LargeTextSurface session={session} />
         ) : session.renderer.id === 'markdown' ? (
-          <MarkdownSurface key={session.id} ref={ref} session={session} onDocumentChange={onDocumentChange} onLanguageChange={onLanguageChange} onMarkdownChange={onMarkdownChange} externalLinkGateway={externalLinkGateway} localAssetGateway={localAssetGateway} />
+          <MarkdownSurface key={session.id} ref={ref} session={session} onDocumentChange={onDocumentChange} onLanguageChange={onLanguageChange} onMarkdownChange={onMarkdownChange} externalLinkGateway={externalLinkGateway} localAssetGateway={localAssetGateway} onOpenMetadata={onOpenMetadata} onMetadataContribution={onMetadataContribution} />
         ) : session.renderer.id === 'mermaid' ? (
-          <MermaidSurface key={session.id} ref={ref} session={session} onDocumentChange={onDocumentChange} onLanguageChange={onLanguageChange} onMermaidChange={onMermaidChange ?? (() => undefined)} />
+          <MermaidSurface key={session.id} ref={ref} session={session} onDocumentChange={onDocumentChange} onLanguageChange={onLanguageChange} onMermaidChange={onMermaidChange ?? (() => undefined)} onOpenMetadata={onOpenMetadata} onMetadataContribution={onMetadataContribution} />
         ) : (
           <TextEditorSurface ref={ref} session={session} onDocumentChange={onDocumentChange} onLanguageChange={onLanguageChange} />
         )

@@ -2,7 +2,7 @@ import type { CommandDescriptor } from '../domain/commands';
 
 interface CommandBarProps {
   commands: CommandDescriptor[];
-  onInvoke: (command: CommandDescriptor) => void;
+  onInvoke: (command: CommandDescriptor, opener: HTMLButtonElement) => void;
 }
 
 export function CommandBar({ commands, onInvoke }: CommandBarProps) {
@@ -22,7 +22,7 @@ export function CommandBar({ commands, onInvoke }: CommandBarProps) {
               ? `${command.label} (${command.shortcut})`
               : command.label
           }
-          onClick={() => onInvoke(command)}
+          onClick={(event) => onInvoke(command, event.currentTarget)}
         >
           {command.label}
         </button>

@@ -63,6 +63,9 @@ pub fn run() {
         source::open_source_stream,
         source::read_source_stream,
         source::query_source_metadata,
+        source::start_source_integrity,
+        source::advance_source_integrity,
+        source::cancel_source_integrity,
         source::start_source_watch,
         source::drain_source_events,
         source::revalidate_source,
@@ -82,6 +85,9 @@ pub fn run() {
         open_android_stream,
         read_android_stream,
         query_android_metadata,
+        start_android_integrity,
+        advance_android_integrity,
+        cancel_android_integrity,
         revalidate_android_source,
         restore_android_sources,
         save_android_source_as,
@@ -254,8 +260,41 @@ fn read_android_stream(
 fn query_android_metadata(
     host: tauri::State<'_, android_source::AndroidSourceHost>,
     source_id: glitchpad_core::source::SourceId,
-) -> Result<glitchpad_core::source::SourceMetadata, glitchpad_core::contracts::CoreError> {
-    host.query_metadata(&source_id)
+) -> Result<glitchpad_core::source::SourceMetadataSnapshot, glitchpad_core::contracts::CoreError> {
+    host.query_metadata_snapshot(&source_id)
+}
+
+#[cfg(target_os = "android")]
+#[tauri::command]
+fn start_android_integrity(
+    host: tauri::State<'_, android_source::AndroidSourceHost>,
+    source_id: glitchpad_core::source::SourceId,
+    expected_revision: glitchpad_core::source::ExternalRevision,
+    request_id: String,
+) -> Result<glitchpad_core::source::IntegrityProgress, glitchpad_core::contracts::CoreError> {
+    host.start_integrity(glitchpad_core::source::IntegrityStartRequest {
+        request_id: glitchpad_core::source::IntegrityRequestId(request_id),
+        source_id,
+        expected_external_revision: expected_revision,
+    })
+}
+
+#[cfg(target_os = "android")]
+#[tauri::command]
+fn advance_android_integrity(
+    host: tauri::State<'_, android_source::AndroidSourceHost>,
+    request_id: String,
+) -> Result<glitchpad_core::source::IntegrityProgress, glitchpad_core::contracts::CoreError> {
+    host.advance_integrity(&glitchpad_core::source::IntegrityRequestId(request_id))
+}
+
+#[cfg(target_os = "android")]
+#[tauri::command]
+fn cancel_android_integrity(
+    host: tauri::State<'_, android_source::AndroidSourceHost>,
+    request_id: String,
+) -> Result<bool, glitchpad_core::contracts::CoreError> {
+    host.cancel_integrity(&glitchpad_core::source::IntegrityRequestId(request_id))
 }
 
 #[cfg(target_os = "android")]

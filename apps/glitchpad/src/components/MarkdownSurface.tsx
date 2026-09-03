@@ -34,6 +34,7 @@ import {
 } from '../domain/markdown-gateway';
 import { MarkdownRendererClient } from '../domain/markdown-renderer';
 import { EmbeddedMermaidSurface } from './EmbeddedMermaidSurface';
+import { rendererContribution, type MetadataContribution, type MetadataObservation } from '../domain/metadata';
 import {
   TextEditorSurface,
   type TextEditorHandle,
@@ -60,6 +61,8 @@ interface MarkdownSurfaceProps {
   rendererClient?: MarkdownRendererClient;
   externalLinkGateway?: MarkdownExternalLinkGateway;
   localAssetGateway?: MarkdownLocalAssetGateway;
+  onOpenMetadata?: (opener: HTMLElement) => void;
+  onMetadataContribution?: (contribution: MetadataContribution) => void;
 }
 
 interface SafeTreeProps {
@@ -338,6 +341,8 @@ export const MarkdownSurface = forwardRef<
     rendererClient,
     externalLinkGateway = unavailableMarkdownExternalLinkGateway,
     localAssetGateway = unavailableMarkdownLocalAssetGateway,
+    onOpenMetadata,
+    onMetadataContribution,
   },
   handleRef,
 ) {
@@ -421,6 +426,9 @@ export const MarkdownSurface = forwardRef<
             ? { from: selection.start_offset, to: selection.end_offset }
             : null,
         });
+        onMetadataContribution?.(
+          rendererContribution(session, markdownMetadataFacts(next), next.source_revision),
+        );
       });
     return () => client.cancel();
   }, [
@@ -604,6 +612,9 @@ export const MarkdownSurface = forwardRef<
           <button type="button" onClick={() => window.print()} disabled={!result?.tree}>
             Print
           </button>
+          {session.renderer.capabilities.inspect_metadata && session.source.capabilities.metadata && (
+            <button type="button" onClick={(event) => onOpenMetadata?.(event.currentTarget)}>File information</button>
+          )}
           {eligibility !== 'full' && (
             <span role="status">Live preview is unavailable above 16 MiB.</span>
           )}
@@ -645,6 +656,9 @@ export const MarkdownSurface = forwardRef<
         <button type="button" onClick={() => window.print()} disabled={!result?.tree}>
           Print
         </button>
+        {session.renderer.capabilities.inspect_metadata && session.source.capabilities.metadata && (
+          <button type="button" onClick={(event) => onOpenMetadata?.(event.currentTarget)}>File information</button>
+        )}
         <span className="markdown-render-status" aria-live="polite">
           {status === 'scheduled' || status === 'rendering'
             ? 'Rendering preview'
@@ -767,3 +781,13 @@ export const MarkdownSurface = forwardRef<
     </div>
   );
 });
+
+const markdownMetadataFacts = (result: MarkdownRenderResult): MetadataObservation[] => [
+  { key: 'renderer.status', availability: 'available', value: { kind: 'text', value: result.status } },
+  { key: 'markdown.sanitizer_version', availability: 'available', value: { kind: 'integer', value: String(result.sanitizer_version) } },
+  { key: 'markdown.source_bytes', availability: 'available', value: { kind: 'integer', value: String(result.measurements.source_bytes) }, unit: 'bytes' },
+  { key: 'markdown.node_count', availability: 'available', value: { kind: 'integer', value: String(result.measurements.node_count) } },
+  { key: 'markdown.heading_count', availability: 'available', value: { kind: 'integer', value: String(result.measurements.heading_count) } },
+  { key: 'markdown.search_entry_count', availability: 'available', value: { kind: 'integer', value: String(result.measurements.search_entry_count) } },
+  { key: 'markdown.parse_duration', availability: 'available', value: { kind: 'decimal', value: String(result.measurements.parse_duration_ms) }, unit: 'ms' },
+];

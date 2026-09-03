@@ -9,6 +9,13 @@ import {
   requestTransition,
   type ResolutionDecision,
 } from './recovery';
+import {
+  markSourceMetadataUnavailable,
+  mergeMetadataContribution,
+  mergeSourceMetadataSnapshot,
+  projectSessionMetadata,
+  type MetadataContribution,
+} from './metadata';
 
 export const DEFAULT_INLINE_TAB_CAPACITY = 5;
 export const DESKTOP_CHROME_MAX_PX = 80;
@@ -58,6 +65,20 @@ export type TabAction =
       id: string;
       expectedRevision: number;
       language: import('./contracts').LanguageDecision;
+    }
+  | { type: 'update_metadata'; contribution: MetadataContribution }
+  | {
+      type: 'refresh_metadata';
+      id: string;
+      expectedRevision: number;
+      expectedExternalRevision: import('./contracts').ExternalRevision | null;
+      source: import('./contracts').SourceMetadataSnapshot;
+    }
+  | {
+      type: 'metadata_unavailable';
+      id: string;
+      expectedRevision: number;
+      sourceId: string;
     };
 
 export interface TabProjection {
@@ -187,6 +208,59 @@ export const tabReducer = (state: TabState, action: TabAction): TabState => {
             : session,
         ),
       };
+    case 'update_metadata': {
+      const target = state.sessions.find(({ id }) => id === action.contribution.session_id);
+      if (!target) return state;
+      const metadata = mergeMetadataContribution(
+        target,
+        target.metadata ?? projectSessionMetadata(target),
+        action.contribution,
+      );
+      if (!metadata) return state;
+      return {
+        ...state,
+        sessions: state.sessions.map((session) =>
+          session.id === target.id ? { ...session, metadata } : session,
+        ),
+      };
+    }
+    case 'refresh_metadata': {
+      const target = state.sessions.find(
+        (session) => session.id === action.id && session.revision === action.expectedRevision,
+      );
+      if (
+        !target ||
+        target.source_id !== action.source.source_id ||
+        JSON.stringify(target.external_revision ?? null) !== JSON.stringify(action.expectedExternalRevision)
+      ) return state;
+      const metadata = mergeSourceMetadataSnapshot(
+        target,
+        target.metadata ?? projectSessionMetadata(target),
+        action.source,
+      );
+      if (!metadata) return state;
+      return {
+        ...state,
+        sessions: state.sessions.map((session) =>
+          session.id === target.id ? { ...target, metadata } : session,
+        ),
+      };
+    }
+    case 'metadata_unavailable': {
+      const target = state.sessions.find(
+        (session) => session.id === action.id && session.revision === action.expectedRevision,
+      );
+      if (!target || target.source_id !== action.sourceId) return state;
+      const snapshot = target.metadata ?? projectSessionMetadata(target);
+      return {
+        ...state,
+        sessions: state.sessions.map((session) =>
+          session.id === target.id
+            ? { ...target, metadata: markSourceMetadataUnavailable(target, snapshot) }
+            : session,
+        ),
+      };
+    }
   }
 };
 

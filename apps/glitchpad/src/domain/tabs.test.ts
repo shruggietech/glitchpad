@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { ShellSession } from './contracts';
 import { createTabState, projectTabs, tabReducer } from './tabs';
+import { projectSessionMetadata, type MetadataContribution } from './metadata';
 
 const sessions = (count: number): ShellSession[] =>
   Array.from({ length: count }, (_, index) => ({
@@ -268,5 +269,104 @@ describe('tab state', () => {
     expect(updated.sessions[0]?.mermaid_document).toEqual(mermaid);
     const stale = tabReducer(updated, { type: 'update_mermaid', id: 'session-1', expectedRevision: 0, mermaid: { ...mermaid, preview_stale: true } });
     expect(stale.sessions[0]?.mermaid_document?.preview_stale).toBe(false);
+  });
+
+  it('merges metadata without disturbing document state and rejects stale contributions', () => {
+    const first = sessions(1)[0];
+    const initial = createTabState([{ ...first, metadata: projectSessionMetadata(first) }]);
+    const contribution: MetadataContribution = {
+      session_id: first.id,
+      expected_session_revision: first.revision,
+      expected_external_revision: null,
+      producer: 'renderer',
+      renderer_revision: 1,
+      facts: [{ key: 'renderer.status', availability: 'available', value: { kind: 'text', value: 'ready' } }],
+    };
+    const updated = tabReducer(initial, { type: 'update_metadata', contribution });
+    expect(updated.sessions[0]).toMatchObject({ content: first.content, dirty: first.dirty, revision: first.revision });
+    expect(updated.sessions[0]?.metadata?.facts.find(({ key }) => key === 'renderer.status')?.value).toEqual({ kind: 'text', value: 'ready' });
+    const stale = tabReducer(updated, { type: 'update_metadata', contribution: { ...contribution, expected_session_revision: 0 } });
+    expect(stale).toBe(updated);
+  });
+
+  it('refreshes source facts without advancing the document external revision', () => {
+    const base = { ...sessions(1)[0], source_id: 'source', external_revision: {
+      identity: { authority: 'filesystem' as const, scope: 'volume', token: 'original', strength: 'strong' as const },
+      byte_length: 3,
+      modified_unix_nanos: '1',
+      change_token: 'original',
+    } };
+    const original = {
+      ...base,
+      metadata: {
+        ...projectSessionMetadata(base),
+        facts: projectSessionMetadata(base).facts.map((fact) => fact.key === 'derived.sha256'
+          ? { ...fact, availability: 'available' as const, value: { kind: 'text' as const, value: 'a'.repeat(64) } }
+          : fact),
+      },
+    };
+    const observed = {
+      ...original.external_revision,
+      byte_length: 4,
+      modified_unix_nanos: '2',
+      change_token: 'observed',
+    };
+    const updated = tabReducer(createTabState([original]), {
+      type: 'refresh_metadata',
+      id: original.id,
+      expectedRevision: original.revision,
+      expectedExternalRevision: original.external_revision,
+      source: {
+        source_id: 'source',
+        external_revision: observed,
+        display_name: 'renamed.txt',
+        source_kind: 'file',
+        byte_length: '4',
+        modified_unix_nanos: '2',
+        created_unix_nanos: null,
+        accessed_unix_nanos: null,
+        write_state: 'read_only',
+        identity_confidence: 'strong',
+      },
+    });
+    expect(updated.sessions[0]?.external_revision).toEqual(original.external_revision);
+    expect(updated.sessions[0]?.content).toBe(original.content);
+    expect(updated.sessions[0]?.metadata?.external_revision).toEqual(observed);
+    expect(updated.sessions[0]?.metadata?.facts.find(({ key }) => key === 'derived.sha256')?.availability).toBe('not_provided');
+    expect(updated.sessions[0]?.metadata?.facts.find(({ key }) => key === 'host.display_name')?.value).toEqual({ kind: 'text', value: 'renamed.txt' });
+  });
+
+  it('marks cached source and integrity facts unavailable after observation fails', () => {
+    const base = sessions(1)[0];
+    const source = {
+      ...base,
+      source_id: 'source',
+      external_revision: {
+        identity: base.source.identity,
+        byte_length: 10,
+        modified_unix_nanos: '1',
+        change_token: 'initial',
+      },
+    };
+    const snapshot = projectSessionMetadata(source);
+    const withDigest = {
+      ...source,
+      metadata: {
+        ...snapshot,
+        facts: snapshot.facts.map((fact) => fact.key === 'derived.sha256'
+          ? { ...fact, availability: 'available' as const, value: { kind: 'text' as const, value: 'a'.repeat(64) }, provenance: 'integrity' as const }
+          : fact),
+      },
+    };
+    const updated = tabReducer(createTabState([withDigest]), {
+      type: 'metadata_unavailable',
+      id: withDigest.id,
+      expectedRevision: withDigest.revision,
+      sourceId: 'source',
+    });
+    const facts = updated.sessions[0].metadata!.facts;
+    expect(facts.find(({ key }) => key === 'host.display_name')?.availability).toBe('errored');
+    expect(facts.find(({ key }) => key === 'derived.sha256')?.availability).toBe('errored');
+    expect(facts.find(({ key }) => key === 'renderer.name')?.availability).toBe('available');
   });
 });

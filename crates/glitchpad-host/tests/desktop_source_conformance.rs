@@ -7,8 +7,8 @@ use std::time::{Duration, Instant};
 
 use glitchpad_core::contracts::{CoreErrorCategory, IdentityStrength};
 use glitchpad_core::source::{
-    DurabilityGuarantee, OverwriteAuthorization, RevalidationStatus, SaveOperationId, SaveRequest,
-    SourceState,
+    DurabilityGuarantee, IntegrityRequestId, IntegrityStartRequest, IntegrityState,
+    OverwriteAuthorization, RevalidationStatus, SaveOperationId, SaveRequest, SourceState,
 };
 use glitchpad_lib::source::{DesktopDelivery, DesktopSourceHost};
 use uuid::Uuid;
@@ -253,6 +253,9 @@ fn native_watcher_emits_path_free_ordered_change_state() {
         .acquire(DesktopDelivery::dialog(source.path()))
         .expect("acquire source");
     host.start_watch(&summary.source_id).expect("start watcher");
+    let pending_integrity = integrity_request(&summary);
+    host.start_integrity(pending_integrity.clone())
+        .expect("start integrity operation");
     fs::write(source.path(), b"after watcher mutation").expect("mutate watched source");
 
     let deadline = Instant::now() + Duration::from_secs(5);
@@ -280,6 +283,201 @@ fn native_watcher_emits_path_free_ordered_change_state() {
             .expect("serialize event")
             .contains(&source.path().to_string_lossy().to_string())
     );
+    assert_eq!(host.active_integrity_operation_count().unwrap(), 0);
+    assert!(
+        host.advance_integrity(&pending_integrity.request_id)
+            .is_err()
+    );
+}
+
+fn integrity_request(
+    summary: &glitchpad_core::source::DesktopSourceSummary,
+) -> IntegrityStartRequest {
+    IntegrityStartRequest {
+        request_id: IntegrityRequestId(Uuid::new_v4().to_string()),
+        source_id: summary.source_id.clone(),
+        expected_external_revision: summary.external_revision.clone(),
+    }
+}
+
+#[test]
+fn metadata_snapshot_is_revision_bound_and_path_free() {
+    let source = TemporarySource::named("private-source-name.md", b"metadata");
+    let host = DesktopSourceHost::new();
+    let summary = host
+        .acquire(DesktopDelivery::dialog(source.path()))
+        .expect("acquire source");
+    let snapshot = host
+        .query_metadata_snapshot(&summary.source_id)
+        .expect("query metadata snapshot");
+    assert_eq!(snapshot.source_id, summary.source_id);
+    assert_ne!(snapshot.external_revision, summary.external_revision);
+    assert_eq!(
+        snapshot.external_revision.identity.token,
+        summary.source_id.0
+    );
+    assert_eq!(snapshot.byte_length, Some(8));
+    assert_eq!(snapshot.display_name, "private-source-name.md");
+    let serialized = serde_json::to_string(&snapshot).expect("serialize snapshot");
+    assert!(!serialized.contains(&source.directory.to_string_lossy().to_string()));
+    assert!(!serialized.contains(&summary.external_revision.identity.scope));
+    assert!(!serialized.contains(&summary.external_revision.identity.token));
+    let request = IntegrityStartRequest {
+        request_id: IntegrityRequestId(Uuid::new_v4().to_string()),
+        source_id: summary.source_id,
+        expected_external_revision: snapshot.external_revision,
+    };
+    assert_eq!(
+        host.start_integrity(request.clone()).unwrap().state,
+        IntegrityState::Pending
+    );
+    assert_eq!(
+        host.advance_integrity(&request.request_id).unwrap().state,
+        IntegrityState::Ready
+    );
+}
+
+#[test]
+fn metadata_snapshot_observes_external_changes_without_accepting_them_for_document_writes() {
+    let source = TemporarySource::named("source.md", b"old");
+    let host = DesktopSourceHost::new();
+    let summary = host
+        .acquire(DesktopDelivery::dialog(source.path()))
+        .expect("acquire source");
+    fs::write(source.path(), b"new metadata bytes").expect("mutate source");
+
+    let snapshot = host
+        .query_metadata_snapshot(&summary.source_id)
+        .expect("observe changed metadata");
+
+    assert_ne!(snapshot.external_revision, summary.external_revision);
+    assert_eq!(snapshot.byte_length, Some(18));
+    let integrity_request = IntegrityStartRequest {
+        request_id: IntegrityRequestId(Uuid::new_v4().to_string()),
+        source_id: summary.source_id.clone(),
+        expected_external_revision: snapshot.external_revision,
+    };
+    assert_eq!(
+        host.start_integrity(integrity_request.clone())
+            .expect("hash the inspected revision")
+            .state,
+        IntegrityState::Pending
+    );
+    assert_eq!(
+        host.advance_integrity(&integrity_request.request_id)
+            .expect("finish inspected revision integrity")
+            .state,
+        IntegrityState::Ready
+    );
+    assert_eq!(
+        host.start_integrity(IntegrityStartRequest {
+            request_id: IntegrityRequestId(Uuid::new_v4().to_string()),
+            source_id: summary.source_id,
+            expected_external_revision: summary.external_revision,
+        })
+        .expect_err("changed source remains unaccepted for document work")
+        .category,
+        CoreErrorCategory::Conflict
+    );
+}
+
+#[test]
+fn integrity_hashes_empty_and_multi_step_sources() {
+    let empty = TemporarySource::new(b"");
+    let host = DesktopSourceHost::new();
+    let empty_summary = host
+        .acquire(DesktopDelivery::dialog(empty.path()))
+        .expect("acquire empty source");
+    let empty_result = host
+        .start_integrity(integrity_request(&empty_summary))
+        .expect("hash empty source");
+    assert_eq!(empty_result.state, IntegrityState::Ready);
+    assert_eq!(
+        empty_result.sha256.as_deref(),
+        Some("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
+    );
+
+    let bytes = vec![b'a'; 1024 * 1024 + 7];
+    let source = TemporarySource::new(&bytes);
+    let summary = host
+        .acquire(DesktopDelivery::dialog(source.path()))
+        .expect("acquire multi-step source");
+    let request = integrity_request(&summary);
+    assert_eq!(
+        host.start_integrity(request.clone()).unwrap().state,
+        IntegrityState::Pending
+    );
+    let first = host.advance_integrity(&request.request_id).unwrap();
+    assert_eq!(first.state, IntegrityState::Pending);
+    assert_eq!(first.processed_bytes, 1024 * 1024);
+    let ready = host.advance_integrity(&request.request_id).unwrap();
+    assert_eq!(ready.state, IntegrityState::Ready);
+    assert_eq!(ready.processed_bytes, bytes.len() as u64);
+    assert_eq!(
+        ready.sha256.as_deref(),
+        Some("d068b86fa9718c9ef56229139facc172e9698d68c6248bd86a04857a262ae79e")
+    );
+}
+
+#[test]
+fn revised_source_never_publishes_an_integrity_digest() {
+    let source = TemporarySource::new(&vec![b'a'; 1024 * 1024 + 1]);
+    let host = DesktopSourceHost::new();
+    let summary = host
+        .acquire(DesktopDelivery::dialog(source.path()))
+        .expect("acquire source");
+    let request = integrity_request(&summary);
+    host.start_integrity(request.clone()).unwrap();
+    assert_eq!(
+        host.advance_integrity(&request.request_id).unwrap().state,
+        IntegrityState::Pending
+    );
+    fs::write(source.path(), b"revised").expect("revise source");
+    let stale = host.advance_integrity(&request.request_id).unwrap();
+    assert_eq!(stale.state, IntegrityState::Stale);
+    assert!(stale.sha256.is_none());
+    assert_eq!(host.active_integrity_operation_count().unwrap(), 0);
+}
+
+#[test]
+fn known_oversized_source_is_limited_before_reading() {
+    let source = TemporarySource::new(b"");
+    fs::OpenOptions::new()
+        .write(true)
+        .open(source.path())
+        .expect("open sparse fixture")
+        .set_len(glitchpad_core::source::MAX_INTEGRITY_SOURCE_BYTES + 1)
+        .expect("size sparse fixture");
+    let host = DesktopSourceHost::new();
+    let summary = host
+        .acquire(DesktopDelivery::dialog(source.path()))
+        .expect("acquire oversized source");
+    let limited = host
+        .start_integrity(integrity_request(&summary))
+        .expect("classify oversized source");
+    assert_eq!(limited.state, IntegrityState::Limited);
+    assert_eq!(limited.error_code.as_deref(), Some("source_too_large"));
+    assert!(limited.sha256.is_none());
+    assert_eq!(host.active_integrity_operation_count().unwrap(), 0);
+}
+
+#[test]
+fn cancel_and_close_retire_integrity_state_idempotently() {
+    let source = TemporarySource::new(b"pending integrity");
+    let host = DesktopSourceHost::new();
+    let summary = host
+        .acquire(DesktopDelivery::dialog(source.path()))
+        .expect("acquire source");
+    for _ in 0..100 {
+        let request = integrity_request(&summary);
+        host.start_integrity(request.clone()).unwrap();
+        assert!(host.cancel_integrity(&request.request_id).unwrap());
+        assert!(!host.cancel_integrity(&request.request_id).unwrap());
+    }
+    let request = integrity_request(&summary);
+    host.start_integrity(request).unwrap();
+    host.close(&summary.source_id).unwrap();
+    assert_eq!(host.active_integrity_operation_count().unwrap(), 0);
 }
 
 #[test]

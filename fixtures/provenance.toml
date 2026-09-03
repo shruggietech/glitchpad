@@ -123,3 +123,15 @@ sensitivity_review = "Synthetic documentation and diagrams only; no production o
 format = "Markdown source stored as text"
 purpose = "Independent embedded-block rendering and failure containment"
 expected_result = "The valid block renders, malformed block falls back, and surrounding Markdown remains readable"
+
+[[fixture]]
+path = "fixtures/metadata/catalog.json"
+source = "Original Glitchpad S016 metadata contract corpus"
+author = "ShruggieTech contributors"
+license = "Apache-2.0"
+redistribution = true
+sha256 = "ec44e9b16b105310bc3fde90dc4f1c0fe246ee500e1f98055b42b0d881cd0da8"
+sensitivity_review = "Synthetic metadata, hostile strings, and fake locator patterns only; no production or personal data"
+format = "JSON"
+purpose = "Metadata availability, provenance, copy policy, Unicode, precision, redaction, and integrity validation"
+expected_result = "All facts retain typed policy and state while hostile values remain inert and native locator patterns are never exposed"

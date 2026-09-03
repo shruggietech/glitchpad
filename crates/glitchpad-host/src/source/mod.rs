@@ -16,15 +16,18 @@ use glitchpad_core::contracts::{
     SourceDescriptor, SourceKind, compare_identity,
 };
 use glitchpad_core::source::{
-    DesktopSourceSummary, DurabilityGuarantee, ExternalRevision, LinkAuthorization,
-    LinkAuthorizationId, MAX_SAVE_BYTES, MAX_SOURCE_CHUNK_BYTES, ReadRangeResult,
-    RevalidationResult, RevalidationStatus, SaveReceipt, SaveRequest, SourceEvent, SourceId,
-    SourceMetadata, SourceState, StreamId, StreamLease, UserActivationId, UserActivationProof,
+    DesktopSourceSummary, DurabilityGuarantee, ExternalRevision, IntegrityHasher,
+    IntegrityProgress, IntegrityRequestId, IntegrityStartRequest, IntegrityState,
+    LinkAuthorization, LinkAuthorizationId, MAX_INTEGRITY_SOURCE_BYTES, MAX_INTEGRITY_STEP_BYTES,
+    MAX_SAVE_BYTES, MAX_SOURCE_CHUNK_BYTES, ReadRangeResult, RevalidationResult,
+    RevalidationStatus, SaveReceipt, SaveRequest, SourceEvent, SourceId, SourceMetadata,
+    SourceMetadataSnapshot, SourceState, SourceWriteState, StreamId, StreamLease, UserActivationId,
+    UserActivationProof,
 };
 use url::Url;
 use uuid::Uuid;
 
-use self::identity::{NativeIdentity, observe_revision};
+use self::identity::{NativeIdentity, observe_revision, observe_revision_from_metadata};
 use self::watch::WatchRegistration;
 
 const USER_ACTIVATION_LIFETIME: Duration = Duration::from_secs(1);
@@ -68,8 +71,43 @@ pub(crate) fn read_source_stream(
 pub(crate) fn query_source_metadata(
     host: tauri::State<'_, DesktopSourceHost>,
     source_id: SourceId,
-) -> Result<SourceMetadata, CoreError> {
-    host.query_metadata(&source_id)
+) -> Result<SourceMetadataSnapshot, CoreError> {
+    let _ = host.start_watch(&source_id);
+    let _ = host.drain_events(&source_id, 256);
+    host.query_metadata_snapshot(&source_id)
+}
+
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
+pub(crate) fn start_source_integrity(
+    host: tauri::State<'_, DesktopSourceHost>,
+    source_id: SourceId,
+    expected_revision: ExternalRevision,
+    request_id: String,
+) -> Result<IntegrityProgress, CoreError> {
+    host.start_integrity(IntegrityStartRequest {
+        request_id: IntegrityRequestId(request_id),
+        source_id,
+        expected_external_revision: expected_revision,
+    })
+}
+
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
+pub(crate) fn advance_source_integrity(
+    host: tauri::State<'_, DesktopSourceHost>,
+    request_id: String,
+) -> Result<IntegrityProgress, CoreError> {
+    host.advance_integrity(&IntegrityRequestId(request_id))
+}
+
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
+pub(crate) fn cancel_source_integrity(
+    host: tauri::State<'_, DesktopSourceHost>,
+    request_id: String,
+) -> Result<bool, CoreError> {
+    host.cancel_integrity(&IntegrityRequestId(request_id))
 }
 
 #[tauri::command]
@@ -185,10 +223,19 @@ struct StreamRecord {
     lease: StreamLease,
 }
 
+struct IntegrityOperation {
+    request: IntegrityStartRequest,
+    stream_id: StreamId,
+    hasher: IntegrityHasher,
+    processed_bytes: u64,
+    total_bytes: Option<u64>,
+}
+
 #[derive(Default)]
 struct HostState {
     sources: HashMap<SourceId, SourceRecord>,
     streams: HashMap<StreamId, StreamRecord>,
+    integrity_operations: HashMap<IntegrityRequestId, IntegrityOperation>,
     activations: HashMap<UserActivationId, Instant>,
     link_authorizations: HashMap<LinkAuthorizationId, String>,
 }
@@ -499,6 +546,254 @@ impl DesktopSourceHost {
         })
     }
 
+    /// Returns a revision-bound metadata snapshot without serializing the native path.
+    ///
+    /// # Errors
+    ///
+    /// Returns a safe source lookup, revision, or metadata observation error.
+    pub fn query_metadata_snapshot(
+        &self,
+        source_id: &SourceId,
+    ) -> Result<SourceMetadataSnapshot, CoreError> {
+        let state = self.lock_state()?;
+        let record = state.sources.get(source_id).ok_or_else(source_not_found)?;
+        let metadata =
+            fs::metadata(&record.path).map_err(|error| safe_io_error(&error, "query_metadata"))?;
+        let (_, current_revision) = observe_revision_from_metadata(&record.path, &metadata)?;
+        Ok(SourceMetadataSnapshot {
+            source_id: source_id.clone(),
+            external_revision: path_free_external_revision(source_id, &current_revision),
+            display_name: record.summary.descriptor.display_name.clone(),
+            source_kind: record.summary.descriptor.kind,
+            byte_length: Some(metadata.len()),
+            modified_unix_nanos: system_time_nanos(metadata.modified().ok()),
+            created_unix_nanos: system_time_nanos(metadata.created().ok()),
+            accessed_unix_nanos: system_time_nanos(metadata.accessed().ok()),
+            write_state: if record.summary.descriptor.capabilities.write
+                && !metadata.permissions().readonly()
+            {
+                SourceWriteState::Writable
+            } else {
+                SourceWriteState::ReadOnly
+            },
+            identity_confidence: record.summary.descriptor.identity.strength,
+        })
+    }
+
+    /// Starts one bounded, revision-bound SHA-256 operation.
+    ///
+    /// # Errors
+    ///
+    /// Returns a safe validation, source lookup, revision, or stream creation error.
+    pub fn start_integrity(
+        &self,
+        request: IntegrityStartRequest,
+    ) -> Result<IntegrityProgress, CoreError> {
+        let total_bytes = self.prepare_integrity_start(&request)?;
+        if total_bytes.is_some_and(|bytes| bytes > MAX_INTEGRITY_SOURCE_BYTES) {
+            return Ok(integrity_progress(
+                &request,
+                0,
+                total_bytes,
+                IntegrityState::Limited,
+                None,
+                Some("source_too_large"),
+            ));
+        }
+        if total_bytes == Some(0) {
+            return Ok(
+                if self.integrity_revision_matches(
+                    &request.source_id,
+                    &request.expected_external_revision,
+                )? {
+                    integrity_progress(
+                        &request,
+                        0,
+                        total_bytes,
+                        IntegrityState::Ready,
+                        Some(IntegrityHasher::default().finalize()),
+                        None,
+                    )
+                } else {
+                    integrity_progress(
+                        &request,
+                        0,
+                        total_bytes,
+                        IntegrityState::Stale,
+                        None,
+                        Some("source_revised"),
+                    )
+                },
+            );
+        }
+
+        let lease = self.open_integrity_stream(
+            &request.source_id,
+            0,
+            total_bytes.unwrap_or(MAX_INTEGRITY_SOURCE_BYTES),
+            &request.expected_external_revision,
+        )?;
+        let progress = integrity_progress(
+            &request,
+            0,
+            total_bytes,
+            IntegrityState::Pending,
+            None,
+            None,
+        );
+        let mut state = self.lock_state()?;
+        if state.integrity_operations.contains_key(&request.request_id) {
+            state.streams.remove(&lease.stream_id);
+            return Err(CoreError::new(
+                CoreErrorCategory::InvalidInput,
+                "The integrity request identifier is already active",
+                false,
+                false,
+            ));
+        }
+        state.integrity_operations.insert(
+            request.request_id.clone(),
+            IntegrityOperation {
+                request,
+                stream_id: lease.stream_id,
+                hasher: IntegrityHasher::default(),
+                processed_bytes: 0,
+                total_bytes,
+            },
+        );
+        Ok(progress)
+    }
+
+    /// Advances one integrity operation by at most one source chunk.
+    ///
+    /// # Errors
+    ///
+    /// Returns a safe lookup or registry error. Source read failures are terminal progress values.
+    pub fn advance_integrity(
+        &self,
+        request_id: &IntegrityRequestId,
+    ) -> Result<IntegrityProgress, CoreError> {
+        let mut operation = self
+            .lock_state()?
+            .integrity_operations
+            .remove(request_id)
+            .ok_or_else(integrity_not_found)?;
+        let remaining = operation
+            .total_bytes
+            .unwrap_or(MAX_INTEGRITY_SOURCE_BYTES)
+            .saturating_sub(operation.processed_bytes);
+        let step = remaining.min(MAX_INTEGRITY_STEP_BYTES);
+        if step == 0 {
+            self.retire_stream(&operation.stream_id);
+            return Ok(integrity_progress(
+                &operation.request,
+                operation.processed_bytes,
+                operation.total_bytes,
+                IntegrityState::Limited,
+                None,
+                Some("integrity_limit_reached"),
+            ));
+        }
+        let read = match self.read_stream(&operation.stream_id, step) {
+            Ok(read) => read,
+            Err(error) => {
+                self.retire_stream(&operation.stream_id);
+                return Ok(failed_integrity_read(&operation, &error));
+            }
+        };
+        operation.hasher.update(&read.bytes);
+        operation.processed_bytes = operation
+            .processed_bytes
+            .saturating_add(u64::try_from(read.bytes.len()).unwrap_or(u64::MAX));
+
+        if read.end_of_source {
+            let revision_matches = self.integrity_revision_matches(
+                &operation.request.source_id,
+                &operation.request.expected_external_revision,
+            )?;
+            return Ok(if revision_matches {
+                let digest = operation.hasher.finalize();
+                integrity_progress(
+                    &operation.request,
+                    operation.processed_bytes,
+                    operation.total_bytes,
+                    IntegrityState::Ready,
+                    Some(digest),
+                    None,
+                )
+            } else {
+                integrity_progress(
+                    &operation.request,
+                    operation.processed_bytes,
+                    operation.total_bytes,
+                    IntegrityState::Stale,
+                    None,
+                    Some("source_revised"),
+                )
+            });
+        }
+        if operation.processed_bytes >= MAX_INTEGRITY_SOURCE_BYTES {
+            self.retire_stream(&operation.stream_id);
+            return Ok(integrity_progress(
+                &operation.request,
+                operation.processed_bytes,
+                operation.total_bytes,
+                IntegrityState::Limited,
+                None,
+                Some("integrity_limit_reached"),
+            ));
+        }
+
+        let progress = integrity_progress(
+            &operation.request,
+            operation.processed_bytes,
+            operation.total_bytes,
+            IntegrityState::Pending,
+            None,
+            None,
+        );
+        let mut state = self.lock_state()?;
+        if !state.sources.contains_key(&operation.request.source_id)
+            || !state.streams.contains_key(&operation.stream_id)
+        {
+            return Ok(integrity_progress(
+                &operation.request,
+                operation.processed_bytes,
+                operation.total_bytes,
+                IntegrityState::Cancelled,
+                None,
+                Some("integrity_cancelled"),
+            ));
+        }
+        state
+            .integrity_operations
+            .insert(request_id.clone(), operation);
+        Ok(progress)
+    }
+
+    /// Cancels an integrity operation. Repeated cancellation is harmless.
+    ///
+    /// # Errors
+    ///
+    /// Returns an internal invariant error when the source registry is unavailable.
+    pub fn cancel_integrity(&self, request_id: &IntegrityRequestId) -> Result<bool, CoreError> {
+        let mut state = self.lock_state()?;
+        let Some(operation) = state.integrity_operations.remove(request_id) else {
+            return Ok(false);
+        };
+        state.streams.remove(&operation.stream_id);
+        Ok(true)
+    }
+
+    /// Returns the number of live operations for cleanup conformance tests.
+    ///
+    /// # Errors
+    ///
+    /// Returns an internal invariant error when the source registry is unavailable.
+    pub fn active_integrity_operation_count(&self) -> Result<usize, CoreError> {
+        Ok(self.lock_state()?.integrity_operations.len())
+    }
+
     /// Starts one parent-aware native watcher if it is not already active.
     ///
     /// # Errors
@@ -530,44 +825,51 @@ impl DesktopSourceHost {
                 false,
             ));
         }
-        let mut record = self.record_mut(source_id)?;
-        let Some(watcher) = record.watcher.as_ref() else {
-            return Ok(Vec::new());
-        };
-        let mut mapped = Vec::new();
-        while mapped.len() < maximum {
-            let Some(event) = watcher.try_next(&record.path) else {
-                break;
+        let events = {
+            let mut record = self.record_mut(source_id)?;
+            let Some(watcher) = record.watcher.as_ref() else {
+                return Ok(Vec::new());
             };
-            mapped.push(event);
-        }
+            let mut mapped = Vec::new();
+            while mapped.len() < maximum {
+                let Some(event) = watcher.try_next(&record.path) else {
+                    break;
+                };
+                mapped.push(event);
+            }
 
-        let mut events = Vec::with_capacity(mapped.len());
-        for event in mapped {
-            if let Some(candidate) = event.renamed_path
-                && is_regular_non_symlink(&candidate)
-                && identity::observe_identity(&candidate).file_id == record.native_identity.file_id
-            {
-                record.path = candidate;
-                record.summary.descriptor.display_name = safe_display_name(&record.path);
+            let mut events = Vec::with_capacity(mapped.len());
+            for event in mapped {
+                if let Some(candidate) = event.renamed_path
+                    && is_regular_non_symlink(&candidate)
+                    && identity::observe_identity(&candidate).file_id
+                        == record.native_identity.file_id
+                {
+                    record.path = candidate;
+                    record.summary.descriptor.display_name = safe_display_name(&record.path);
+                }
+                if event.state == SourceState::Changed
+                    && let Ok((_, current)) = observe_revision(&record.path)
+                    && current == record.summary.external_revision
+                {
+                    continue;
+                }
+                record.state = event.state;
+                let sequence = record.next_event_sequence;
+                record.next_event_sequence = record.next_event_sequence.saturating_add(1);
+                events.push(SourceEvent {
+                    source_id: source_id.clone(),
+                    sequence,
+                    state: event.state,
+                    display_name: (event.state == SourceState::Renamed)
+                        .then(|| record.summary.descriptor.display_name.clone()),
+                    revalidation_required: event.state.requires_revalidation(),
+                });
             }
-            if event.state == SourceState::Changed
-                && let Ok((_, current)) = observe_revision(&record.path)
-                && current == record.summary.external_revision
-            {
-                continue;
-            }
-            record.state = event.state;
-            let sequence = record.next_event_sequence;
-            record.next_event_sequence = record.next_event_sequence.saturating_add(1);
-            events.push(SourceEvent {
-                source_id: source_id.clone(),
-                sequence,
-                state: event.state,
-                display_name: (event.state == SourceState::Renamed)
-                    .then(|| record.summary.descriptor.display_name.clone()),
-                revalidation_required: event.state.requires_revalidation(),
-            });
+            events
+        };
+        if !events.is_empty() {
+            self.cancel_source_integrity(source_id)?;
         }
         Ok(events)
     }
@@ -754,6 +1056,14 @@ impl DesktopSourceHost {
         if state.sources.remove(source_id).is_none() {
             return Err(source_not_found());
         }
+        let retired_integrity_streams = state
+            .integrity_operations
+            .extract_if(|_, operation| &operation.request.source_id == source_id)
+            .map(|(_, operation)| operation.stream_id)
+            .collect::<Vec<_>>();
+        for stream_id in retired_integrity_streams {
+            state.streams.remove(&stream_id);
+        }
         state
             .streams
             .retain(|_, stream| &stream.lease.source_id != source_id);
@@ -865,6 +1175,113 @@ impl DesktopSourceHost {
             source_id: source_id.clone(),
         })
     }
+
+    fn retire_stream(&self, stream_id: &StreamId) {
+        if let Ok(mut state) = self.state.lock() {
+            state.streams.remove(stream_id);
+        }
+    }
+
+    fn cancel_source_integrity(&self, source_id: &SourceId) -> Result<(), CoreError> {
+        let mut state = self.lock_state()?;
+        let retired_streams = state
+            .integrity_operations
+            .extract_if(|_, operation| &operation.request.source_id == source_id)
+            .map(|(_, operation)| operation.stream_id)
+            .collect::<Vec<_>>();
+        for stream_id in retired_streams {
+            state.streams.remove(&stream_id);
+        }
+        Ok(())
+    }
+
+    fn integrity_revision_matches(
+        &self,
+        source_id: &SourceId,
+        expected: &ExternalRevision,
+    ) -> Result<bool, CoreError> {
+        let state = self.lock_state()?;
+        let record = state.sources.get(source_id).ok_or_else(source_not_found)?;
+        let (_, current) = observe_revision(&record.path)?;
+        Ok(integrity_expected_matches(source_id, expected, &current))
+    }
+
+    fn prepare_integrity_start(
+        &self,
+        request: &IntegrityStartRequest,
+    ) -> Result<Option<u64>, CoreError> {
+        if Uuid::parse_str(&request.request_id.0).is_err() {
+            return Err(CoreError::new(
+                CoreErrorCategory::InvalidInput,
+                "The integrity request identifier is invalid",
+                false,
+                false,
+            ));
+        }
+        let state = self.lock_state()?;
+        if state.integrity_operations.contains_key(&request.request_id) {
+            return Err(CoreError::new(
+                CoreErrorCategory::InvalidInput,
+                "The integrity request identifier is already active",
+                false,
+                false,
+            ));
+        }
+        let record = state
+            .sources
+            .get(&request.source_id)
+            .ok_or_else(source_not_found)?;
+        let (_, current_revision) = observe_revision(&record.path)?;
+        if !integrity_expected_matches(
+            &request.source_id,
+            &request.expected_external_revision,
+            &current_revision,
+        ) {
+            return Err(integrity_conflict());
+        }
+        Ok(current_revision.byte_length)
+    }
+
+    fn open_integrity_stream(
+        &self,
+        source_id: &SourceId,
+        offset: u64,
+        total_budget: u64,
+        expected_revision: &ExternalRevision,
+    ) -> Result<StreamLease, CoreError> {
+        let mut state = self.lock_state()?;
+        let active_streams = state
+            .streams
+            .values()
+            .filter(|stream| &stream.lease.source_id == source_id)
+            .count();
+        if active_streams >= MAX_ACTIVE_STREAMS_PER_SOURCE {
+            return Err(budget_error(
+                "The source has reached its active stream lease limit",
+            ));
+        }
+        let record = state.sources.get(source_id).ok_or_else(source_not_found)?;
+        let (_, current_revision) = observe_revision(&record.path)?;
+        if !integrity_expected_matches(source_id, expected_revision, &current_revision) {
+            return Err(integrity_conflict());
+        }
+        validate_source_offset(offset, current_revision.byte_length)?;
+        let lease = StreamLease {
+            stream_id: random_stream_id(),
+            source_id: source_id.clone(),
+            offset,
+            total_budget,
+            consumed: 0,
+            external_revision: current_revision,
+        };
+        state.streams.insert(
+            lease.stream_id.clone(),
+            StreamRecord {
+                lease: lease.clone(),
+            },
+        );
+        Ok(lease)
+    }
 }
 
 struct SourceRecordGuard<'a> {
@@ -973,6 +1390,107 @@ fn source_not_found() -> CoreError {
         false,
         false,
     )
+}
+
+fn integrity_not_found() -> CoreError {
+    CoreError::new(
+        CoreErrorCategory::NotFound,
+        "The integrity operation was not found",
+        false,
+        false,
+    )
+}
+
+fn integrity_conflict() -> CoreError {
+    CoreError::new(
+        CoreErrorCategory::Conflict,
+        "The source changed before integrity calculation",
+        true,
+        true,
+    )
+}
+
+fn integrity_progress(
+    request: &IntegrityStartRequest,
+    processed_bytes: u64,
+    total_bytes: Option<u64>,
+    state: IntegrityState,
+    sha256: Option<String>,
+    error_code: Option<&str>,
+) -> IntegrityProgress {
+    IntegrityProgress {
+        request_id: request.request_id.clone(),
+        source_id: request.source_id.clone(),
+        external_revision: request.expected_external_revision.clone(),
+        processed_bytes,
+        total_bytes,
+        state,
+        sha256,
+        error_code: error_code.map(str::to_owned),
+    }
+}
+
+fn failed_integrity_read(operation: &IntegrityOperation, error: &CoreError) -> IntegrityProgress {
+    let (state, code) = if error.category == CoreErrorCategory::Conflict {
+        (IntegrityState::Stale, "source_revised")
+    } else {
+        (IntegrityState::Failed, "source_read_failed")
+    };
+    integrity_progress(
+        &operation.request,
+        operation.processed_bytes,
+        operation.total_bytes,
+        state,
+        None,
+        Some(code),
+    )
+}
+
+fn integrity_expected_matches(
+    source_id: &SourceId,
+    expected: &ExternalRevision,
+    current: &ExternalRevision,
+) -> bool {
+    expected == current || expected == &path_free_external_revision(source_id, current)
+}
+
+fn path_free_external_revision(
+    source_id: &SourceId,
+    revision: &ExternalRevision,
+) -> ExternalRevision {
+    let mut evidence = IntegrityHasher::default();
+    for value in [
+        revision.identity.scope.as_str(),
+        revision.identity.token.as_str(),
+        revision.change_token.as_deref().unwrap_or_default(),
+    ] {
+        evidence.update(&value.len().to_le_bytes());
+        evidence.update(value.as_bytes());
+    }
+    evidence.update(&revision.byte_length.unwrap_or(u64::MAX).to_le_bytes());
+    evidence.update(
+        &revision
+            .modified_unix_nanos
+            .unwrap_or(u64::MAX)
+            .to_le_bytes(),
+    );
+    ExternalRevision {
+        identity: glitchpad_core::contracts::DocumentIdentity {
+            authority: glitchpad_core::contracts::IdentityAuthority::Filesystem,
+            scope: "desktop_source".into(),
+            token: source_id.0.clone(),
+            strength: revision.identity.strength,
+        },
+        byte_length: revision.byte_length,
+        modified_unix_nanos: revision.modified_unix_nanos,
+        change_token: Some(format!("sha256:{}", evidence.finalize())),
+    }
+}
+
+fn system_time_nanos(value: Option<std::time::SystemTime>) -> Option<u64> {
+    value
+        .and_then(|value| value.duration_since(UNIX_EPOCH).ok())
+        .and_then(|value| u64::try_from(value.as_nanos()).ok())
 }
 
 pub(super) fn safe_io_error(error: &std::io::Error, operation: &str) -> CoreError {

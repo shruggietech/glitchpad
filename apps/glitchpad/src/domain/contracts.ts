@@ -41,6 +41,7 @@ export interface RendererCapabilities {
 
 export interface SourceDescriptor {
   identity: DocumentIdentity;
+  restoration_reference?: string | null;
   display_name: string;
   claimed_media_type: string | null;
   byte_length: number | null;

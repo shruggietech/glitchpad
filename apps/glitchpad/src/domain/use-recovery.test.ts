@@ -90,6 +90,42 @@ const gateway = (
 afterEach(() => vi.useRealTimers());
 
 describe('useRecovery', () => {
+  it('publishes an accepted committed recovery binding without another edit', async () => {
+    const entry = inventoryEntry('available');
+    const recoveryGateway = gateway({
+      inventory: vi.fn().mockResolvedValue([entry]),
+      load: vi.fn().mockResolvedValue({
+        schema_version: 1,
+        record_id: entry.record_id,
+        display_hint: entry.display_hint,
+        source_identity_hash: 'a'.repeat(64),
+        base_revision_hash: 'b'.repeat(64),
+        saved_session_revision: 1,
+        snapshot_session_revision: 2,
+        text_profile: {
+          encoding: 'utf8',
+          bom: 'absent',
+          newlines: 'none',
+          terminal_newline: 'absent',
+          undecodable_bytes: 'none',
+        },
+        created_unix_ms: 5,
+        updated_unix_ms: 10,
+        expires_unix_ms: 20,
+        content: 'draft',
+        content_sha256: 'c'.repeat(64),
+        eviction_eligible: false,
+      }),
+    });
+    const { result } = renderHook(() => useRecovery([], recoveryGateway));
+    await waitFor(() => expect(result.current.candidates).toEqual([entry]));
+
+    await act(async () => { await result.current.accept(entry); });
+
+    expect(result.current.recordIds.get(`recovery-${entry.record_id}`))
+      .toBe(entry.record_id);
+  });
+
   it('surfaces safe notices for non-available startup inventory', async () => {
     const recoveryGateway = gateway({
       inventory: vi
@@ -157,7 +193,7 @@ describe('useRecovery', () => {
       displayName: 'draft.txt',
       encoding: 'utf16_be_bom',
     });
-    renderHook(() => useRecovery([session], recoveryGateway));
+    const { result } = renderHook(() => useRecovery([session], recoveryGateway));
 
     await act(async () => vi.advanceTimersByTimeAsync(2_000));
 
@@ -172,6 +208,9 @@ describe('useRecovery', () => {
           undecodable_bytes: 'none',
         },
       }),
+    );
+    expect(result.current.recordIds.get(session.id)).toMatch(
+      /^[0-9a-f-]{36}$/u,
     );
   });
 });

@@ -30,6 +30,7 @@ interface RecordBinding {
 
 export interface RecoveryController {
   candidates: RecoveryInventoryEntry[];
+  recordIds: ReadonlyMap<string, string>;
   warning: string | null;
   accept(entry: RecoveryInventoryEntry): Promise<RecoveryRecord>;
   refuse(entry: RecoveryInventoryEntry): Promise<void>;
@@ -46,7 +47,9 @@ export const useRecovery = (
   const [snapshotWarnings, setSnapshotWarnings] = useState(
     new Map<string, string>(),
   );
+  const [recordIds, setRecordIds] = useState(new Map<string, string>());
   const bindings = useRef(new Map<string, RecordBinding>());
+  const pendingAcceptedSessions = useRef(new Set<string>());
   const pendingCleanups = useRef(new Set<string>());
   const cleanupInFlight = useRef(new Set<string>());
   const sessionsRef = useRef(sessions);
@@ -147,6 +150,10 @@ export const useRecovery = (
         .persist(record)
         .then(() => {
           binding.lastSnapshotRevision = session.revision;
+          setRecordIds((current) => {
+            if (current.get(session.id) === binding.recordId) return current;
+            return new Map(current).set(session.id, binding.recordId);
+          });
           setSnapshotWarnings((current) => {
             if (!current.has(session.id)) return current;
             const next = new Map(current);
@@ -171,9 +178,18 @@ export const useRecovery = (
     const dirtyIds = new Set(
       sessions.filter(({ dirty }) => dirty).map(({ id }) => id),
     );
+    const sessionIds = new Set(sessions.map(({ id }) => id));
+    sessionIds.forEach((sessionId) => pendingAcceptedSessions.current.delete(sessionId));
     for (const [sessionId, binding] of bindings.current) {
       if (dirtyIds.has(sessionId)) continue;
+      if (pendingAcceptedSessions.current.has(sessionId)) continue;
       bindings.current.delete(sessionId);
+      setRecordIds((current) => {
+        if (!current.has(sessionId)) return current;
+        const next = new Map(current);
+        next.delete(sessionId);
+        return next;
+      });
       pendingCleanups.current.add(binding.recordId);
       attemptCleanup(binding.recordId);
     }
@@ -214,14 +230,18 @@ export const useRecovery = (
 
   return {
     candidates,
+    recordIds,
     warning: warning || null,
     async accept(entry) {
       const record = await gateway!.load(entry.record_id);
-      bindings.current.set(`recovery-${entry.record_id}`, {
+      const sessionId = `recovery-${entry.record_id}`;
+      bindings.current.set(sessionId, {
         recordId: entry.record_id,
         createdUnixMs: record.created_unix_ms,
         lastSnapshotRevision: record.snapshot_session_revision,
       });
+      pendingAcceptedSessions.current.add(sessionId);
+      setRecordIds((current) => new Map(current).set(sessionId, entry.record_id));
       dismiss(entry.record_id);
       return record;
     },

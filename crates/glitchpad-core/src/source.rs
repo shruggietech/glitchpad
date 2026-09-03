@@ -118,6 +118,55 @@ pub struct DesktopSourceSummary {
     pub external_revision: ExternalRevision,
 }
 
+/// Derives a path-free stable UUID used to match a source delivered again by its native owner.
+#[must_use]
+pub fn opaque_restoration_reference(identity: &DocumentIdentity) -> Option<String> {
+    if identity.strength != crate::contracts::IdentityStrength::Strong {
+        return None;
+    }
+    let authority = match identity.authority {
+        crate::contracts::IdentityAuthority::Filesystem => b"filesystem".as_slice(),
+        crate::contracts::IdentityAuthority::AndroidDocument => b"android_document".as_slice(),
+        crate::contracts::IdentityAuthority::Synthetic => b"synthetic".as_slice(),
+        crate::contracts::IdentityAuthority::Unknown => b"unknown".as_slice(),
+    };
+    let mut hasher = Sha256::new();
+    hasher.update(b"glitchpad-restoration-reference-v1");
+    for value in [
+        authority,
+        identity.scope.as_bytes(),
+        identity.token.as_bytes(),
+    ] {
+        let value_length = u64::try_from(value.len()).ok()?;
+        hasher.update(value_length.to_le_bytes());
+        hasher.update(value);
+    }
+    let digest = hasher.finalize();
+    let mut bytes = [0_u8; 16];
+    bytes.copy_from_slice(&digest[..16]);
+    bytes[6] = (bytes[6] & 0x0f) | 0x50;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    Some(format!(
+        "{:02x}{:02x}{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}",
+        bytes[0],
+        bytes[1],
+        bytes[2],
+        bytes[3],
+        bytes[4],
+        bytes[5],
+        bytes[6],
+        bytes[7],
+        bytes[8],
+        bytes[9],
+        bytes[10],
+        bytes[11],
+        bytes[12],
+        bytes[13],
+        bytes[14],
+        bytes[15]
+    ))
+}
+
 /// Stable source availability and observation state.
 #[derive(Clone, Copy, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -459,6 +508,26 @@ pub struct AndroidSaveAsReceipt {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn restoration_reference_is_stable_path_free_and_requires_strong_identity() {
+        let identity = DocumentIdentity {
+            authority: crate::contracts::IdentityAuthority::AndroidDocument,
+            scope: "provider-scope".into(),
+            token: "opaque-token".into(),
+            strength: crate::contracts::IdentityStrength::Strong,
+        };
+        let reference = opaque_restoration_reference(&identity).expect("strong reference");
+        assert_eq!(reference.len(), 36);
+        assert_eq!(opaque_restoration_reference(&identity), Some(reference));
+        assert_eq!(
+            opaque_restoration_reference(&DocumentIdentity {
+                strength: crate::contracts::IdentityStrength::Weak,
+                ..identity
+            }),
+            None
+        );
+    }
     use crate::contracts::{IdentityAuthority, IdentityStrength};
 
     fn revision(token: &str, length: u64) -> ExternalRevision {

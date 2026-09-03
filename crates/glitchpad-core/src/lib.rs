@@ -4,6 +4,7 @@ pub mod contracts;
 pub mod detection;
 pub mod editor;
 pub mod metadata;
+pub mod persistence;
 pub mod recovery;
 pub mod session;
 pub mod source;

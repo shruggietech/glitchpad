@@ -2,6 +2,7 @@
 
 use tauri::Manager;
 
+pub mod app_state;
 pub mod external_link;
 pub mod recovery;
 #[cfg(not(mobile))]
@@ -11,6 +12,33 @@ pub mod android_source;
 
 struct RecoveryHostState {
     store: Result<recovery::RecoveryStore, glitchpad_core::contracts::CoreError>,
+}
+
+struct ApplicationStateHost {
+    store: Result<app_state::ApplicationStateStore, glitchpad_core::contracts::CoreError>,
+}
+
+impl ApplicationStateHost {
+    fn store(
+        &self,
+    ) -> Result<&app_state::ApplicationStateStore, glitchpad_core::contracts::CoreError> {
+        self.store.as_ref().map_err(Clone::clone)
+    }
+}
+
+fn application_state_for(app: &tauri::App) -> ApplicationStateHost {
+    let store = app.path().app_config_dir().map_or_else(
+        |_| {
+            Err(glitchpad_core::contracts::CoreError::new(
+                glitchpad_core::contracts::CoreErrorCategory::Unavailable,
+                "Application state is unavailable",
+                true,
+                true,
+            ))
+        },
+        |root| app_state::ApplicationStateStore::open(root.join("state-v1")),
+    );
+    ApplicationStateHost { store }
 }
 
 impl RecoveryHostState {
@@ -55,6 +83,13 @@ pub fn run() {
     #[cfg(not(mobile))]
     let builder = builder.invoke_handler(tauri::generate_handler![
         inventory_recovery,
+        load_preferences,
+        persist_preferences,
+        load_session_state,
+        persist_session_state,
+        append_diagnostic,
+        preview_diagnostics,
+        reset_application_state,
         persist_recovery,
         load_recovery,
         remove_recovery,
@@ -75,6 +110,13 @@ pub fn run() {
     #[cfg(target_os = "android")]
     let builder = builder.invoke_handler(tauri::generate_handler![
         inventory_recovery,
+        load_preferences,
+        persist_preferences,
+        load_session_state,
+        persist_session_state,
+        append_diagnostic,
+        preview_diagnostics,
+        reset_application_state,
         persist_recovery,
         load_recovery,
         remove_recovery,
@@ -108,6 +150,7 @@ pub fn run() {
                 Err(_) => RecoveryHostState::unavailable(recovery_unavailable()),
             };
             app.manage(recovery_state);
+            app.manage(application_state_for(app));
             #[cfg(not(mobile))]
             app.manage(source::DesktopSourceHost::new());
             #[cfg(target_os = "android")]
@@ -121,6 +164,101 @@ pub fn run() {
         })
         .run(tauri::generate_context!())
         .expect("Glitchpad host failed while processing a runtime event");
+}
+
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
+fn load_preferences(
+    state: tauri::State<'_, ApplicationStateHost>,
+) -> Result<
+    glitchpad_core::persistence::StateLoad<glitchpad_core::persistence::PreferenceState>,
+    glitchpad_core::contracts::CoreError,
+> {
+    state.store()?.load_preferences()
+}
+
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
+fn persist_preferences(
+    state: tauri::State<'_, ApplicationStateHost>,
+    preferences: glitchpad_core::persistence::PreferenceState,
+) -> Result<(), glitchpad_core::contracts::CoreError> {
+    state.store()?.persist_preferences(&preferences)
+}
+
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
+fn load_session_state(
+    state: tauri::State<'_, ApplicationStateHost>,
+) -> Result<
+    glitchpad_core::persistence::StateLoad<glitchpad_core::persistence::SessionState>,
+    glitchpad_core::contracts::CoreError,
+> {
+    state.store()?.load_session()
+}
+
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
+fn persist_session_state(
+    state: tauri::State<'_, ApplicationStateHost>,
+    session: glitchpad_core::persistence::SessionState,
+) -> Result<(), glitchpad_core::contracts::CoreError> {
+    state.store()?.persist_session(session)
+}
+
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
+fn append_diagnostic(
+    state: tauri::State<'_, ApplicationStateHost>,
+    event: glitchpad_core::persistence::DiagnosticEvent,
+    now_unix_ms: u64,
+) -> Result<(), glitchpad_core::contracts::CoreError> {
+    state.store()?.append_diagnostic(event, now_unix_ms)
+}
+
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
+fn preview_diagnostics(
+    state: tauri::State<'_, ApplicationStateHost>,
+    now_unix_ms: u64,
+) -> Result<
+    glitchpad_core::persistence::StateLoad<glitchpad_core::persistence::DiagnosticBundle>,
+    glitchpad_core::contracts::CoreError,
+> {
+    state
+        .store()?
+        .preview_diagnostics(diagnostic_environment(), now_unix_ms)
+}
+
+fn diagnostic_environment() -> glitchpad_core::persistence::DiagnosticEnvironment {
+    glitchpad_core::persistence::DiagnosticEnvironment {
+        product_version: glitchpad_core::VERSION.into(),
+        specification_version: glitchpad_core::VERSION.into(),
+        platform: if cfg!(target_os = "windows") {
+            glitchpad_core::persistence::DiagnosticPlatform::Windows
+        } else if cfg!(target_os = "macos") {
+            glitchpad_core::persistence::DiagnosticPlatform::Macos
+        } else if cfg!(target_os = "linux") {
+            glitchpad_core::persistence::DiagnosticPlatform::Linux
+        } else if cfg!(target_os = "android") {
+            glitchpad_core::persistence::DiagnosticPlatform::Android
+        } else {
+            glitchpad_core::persistence::DiagnosticPlatform::Unknown
+        },
+        architecture: std::env::consts::ARCH.into(),
+        webview_version: None,
+        core_version: glitchpad_core::VERSION.into(),
+        build_commit: option_env!("GLITCHPAD_BUILD_COMMIT").map(str::to_owned),
+    }
+}
+
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
+fn reset_application_state(
+    state: tauri::State<'_, ApplicationStateHost>,
+    category: glitchpad_core::persistence::AppStateCategory,
+) -> Result<bool, glitchpad_core::contracts::CoreError> {
+    state.store()?.reset(category)
 }
 
 #[tauri::command]

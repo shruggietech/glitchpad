@@ -2,7 +2,6 @@ package com.shruggietech.glitchpad.source
 
 import android.content.Intent
 import android.net.Uri
-import android.os.ParcelFileDescriptor
 import android.os.SystemClock
 import android.provider.DocumentsContract
 import android.system.Os
@@ -150,14 +149,14 @@ class AndroidSourceInstrumentedTest {
   }
 
   private fun grant(uri: Uri): Uri {
-    // Shell opens the test-only provider UI; that foreground provider activity delegates URI authority.
-    val launchOutput = executeShellCommand(
-      "am start -a ${FixtureGrantActivity.ACTION_GRANT} " +
-        "--es ${FixtureGrantActivity.EXTRA_URI} $uri " +
-        "-n ${instrumentation.context.packageName}/${FixtureGrantActivity::class.java.name}",
+    instrumentation.context.startActivity(
+      Intent(instrumentation.context, FixtureGrantActivity::class.java)
+        .setAction(FixtureGrantActivity.ACTION_GRANT)
+        .putExtra(FixtureGrantActivity.EXTRA_URI, uri.toString())
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
     )
     var lastFailure = "provider returned no document row"
-    repeat(40) {
+    repeat(100) {
       try {
         resolver.query(uri, arrayOf(DocumentsContract.Document.COLUMN_DOCUMENT_ID), null, null, null).use { cursor ->
           if (cursor != null && cursor.moveToFirst()) {
@@ -169,20 +168,13 @@ class AndroidSourceInstrumentedTest {
         lastFailure = error.message ?: error.javaClass.name
         // The delegated activity grant can take a moment to become visible to the target process.
       }
-      if (it < 39) {
-        SystemClock.sleep(50)
+      if (it < 99) {
+        SystemClock.sleep(100)
       } else {
-        fail("fixture URI grant did not become usable ($lastFailure): $launchOutput")
+        fail("fixture URI grant did not become usable ($lastFailure)")
       }
     }
     error("fixture grant assertion returned unexpectedly")
-  }
-
-  private fun executeShellCommand(command: String): String {
-    val descriptor = instrumentation.uiAutomation.executeShellCommand(command)
-    return ParcelFileDescriptor.AutoCloseInputStream(descriptor).use { output ->
-      output.readBytes().toString(Charsets.UTF_8)
-    }
   }
 
   private fun revoke(uri: Uri) {

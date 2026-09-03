@@ -3,6 +3,8 @@ import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { CommandBar } from './components/CommandBar';
 import { DocumentSurface } from './components/DocumentSurface';
 import { MetadataInspector } from './components/MetadataInspector';
+import { PreferencesPanel } from './components/PreferencesPanel';
+import { DiagnosticsPanel } from './components/DiagnosticsPanel';
 import type { TextEditorHandle } from './components/TextEditorSurface';
 import {
   RecoveryCandidateResolution,
@@ -52,6 +54,25 @@ import {
   type MetadataGateway,
 } from './domain/metadata-gateway';
 import { projectSessionMetadata, type MetadataContribution } from './domain/metadata';
+import { PreferenceContext } from './domain/preference-context';
+import {
+  normalizeExtension,
+  type SessionProjection,
+  type SessionState,
+} from './domain/persistence';
+import {
+  browserDiagnosticExportGateway,
+  nativePersistenceAvailable,
+  nativePersistenceGateway,
+  type DiagnosticExportGateway,
+  type PersistenceGateway,
+} from './domain/persistence-gateway';
+import { usePersistence } from './domain/use-persistence';
+import {
+  nativeAndroidRestorationAvailable,
+  nativeAndroidRestorationGateway,
+  type AndroidRestorationGateway,
+} from './domain/android-restoration-gateway';
 
 const makeSession = (
   id: string,
@@ -193,17 +214,31 @@ interface AppProps {
   localAssetGateway?: MarkdownLocalAssetGateway;
   metadataGateway?: MetadataGateway | null;
   clipboardGateway?: ClipboardGateway;
+  persistenceGateway?: PersistenceGateway | null;
+  diagnosticExportGateway?: DiagnosticExportGateway;
+  androidRestorationGateway?: AndroidRestorationGateway | null;
 }
 
-export function App({ sessions = initialSessions, recoveryGateway, externalLinkGateway, localAssetGateway, metadataGateway, clipboardGateway = browserClipboardGateway }: AppProps) {
+export function App({ sessions = initialSessions, recoveryGateway, externalLinkGateway, localAssetGateway, metadataGateway, clipboardGateway = browserClipboardGateway, persistenceGateway, diagnosticExportGateway = browserDiagnosticExportGateway, androidRestorationGateway }: AppProps) {
   const [state, dispatch] = useReducer(tabReducer, sessions, createTabState);
   const [commandStatus, setCommandStatus] = useState('');
   const [inspectorOpen, setInspectorOpen] = useState(false);
+  const [applicationPanel, setApplicationPanel] = useState<'closed' | 'preferences' | 'diagnostics'>('closed');
   const [metadataReadySessionId, setMetadataReadySessionId] = useState<string | null>(null);
   const editorRef = useRef<TextEditorHandle>(null);
   const metadataOpenerRef = useRef<HTMLElement | null>(null);
+  const applicationOpenerRef = useRef<HTMLButtonElement | null>(null);
   const integrityAbortRef = useRef<AbortController | null>(null);
   const integrityRequestIdRef = useRef<string | null>(null);
+  const inspectorProjectionAppliedRef = useRef<SessionState | null>(null);
+  const activeProjectionAppliedRef = useRef<SessionState | null>(null);
+  const presentationProjectionAppliedRef = useRef(new Map<string, string>());
+  const windowProjectionChangedRef = useRef(false);
+  const androidRestorationRef = useRef<{
+    projection: SessionState;
+    promise: Promise<ShellSession[]>;
+  } | null>(null);
+  const openedRestorationReferencesRef = useRef(new Set<string>());
   const selectedRecoveryGateway =
     recoveryGateway === undefined
       ? nativeRecoveryAvailable()
@@ -222,6 +257,142 @@ export function App({ sessions = initialSessions, recoveryGateway, externalLinkG
       : metadataGateway,
     [metadataGateway],
   );
+  const selectedPersistenceGateway = useMemo(
+    () => persistenceGateway === undefined
+      ? nativePersistenceAvailable()
+        ? nativePersistenceGateway
+        : null
+      : persistenceGateway,
+    [persistenceGateway],
+  );
+  const persistence = usePersistence(
+    state.sessions,
+    state.activeId,
+    applicationPanel === 'closed' ? (inspectorOpen ? 'metadata' : 'closed') : applicationPanel,
+    selectedPersistenceGateway,
+    recovery.recordIds,
+  );
+  const selectedAndroidRestorationGateway = androidRestorationGateway === undefined
+    ? (nativeAndroidRestorationAvailable() ? nativeAndroidRestorationGateway : null)
+    : androidRestorationGateway;
+  useEffect(() => {
+    const restored = persistence.restoredSession;
+    if (!restored || !selectedAndroidRestorationGateway) return;
+    if (androidRestorationRef.current?.projection !== restored) {
+      androidRestorationRef.current = {
+        projection: restored,
+        promise: selectedAndroidRestorationGateway.restore(restored.sessions),
+      };
+    }
+    let active = true;
+    void androidRestorationRef.current.promise
+      .then((restoredSessions) => {
+        if (!active) return;
+        for (const session of restoredSessions) {
+          const reference = session.source.restoration_reference;
+          if (!reference || openedRestorationReferencesRef.current.has(reference)) continue;
+          openedRestorationReferencesRef.current.add(reference);
+          dispatch({ type: 'open', session });
+        }
+      })
+      .catch(() => {
+        if (active) setCommandStatus('Authorized Android sources could not be restored.');
+      });
+    return () => { active = false; };
+  }, [persistence.restoredSession, selectedAndroidRestorationGateway]);
+  useEffect(() => {
+    const restored = persistence.restoredSession;
+    const projectionFor = (session: ShellSession): SessionProjection | undefined =>
+      restored?.sessions.find((projection) =>
+        Boolean(
+          projection.source_reference
+          && projection.source_reference === session.source.restoration_reference,
+        )
+        || Boolean(
+          projection.recovery_record_id
+          && (session.id === `recovery-${projection.recovery_record_id}`
+            || recovery.recordIds.get(session.id) === projection.recovery_record_id),
+        ));
+
+    if (restored && inspectorProjectionAppliedRef.current !== restored) {
+      inspectorProjectionAppliedRef.current = restored;
+      if (!windowProjectionChangedRef.current) {
+        const inspector = restored.window.inspector;
+        setInspectorOpen(inspector === 'metadata');
+        setApplicationPanel(
+          inspector === 'preferences' || inspector === 'diagnostics'
+            ? inspector
+            : 'closed',
+        );
+      }
+    }
+
+    const activeProjection = !restored || restored.window.active_session_index === null
+      ? undefined
+      : restored.sessions[restored.window.active_session_index];
+    const restoredActive = activeProjection
+      ? state.sessions.find((session) => projectionFor(session) === activeProjection)
+      : undefined;
+    if (restored && restoredActive && activeProjectionAppliedRef.current !== restored) {
+      activeProjectionAppliedRef.current = restored;
+      if (state.activeId !== restoredActive.id)
+        dispatch({ type: 'activate', id: restoredActive.id });
+    }
+
+    for (const session of state.sessions) {
+      const projection = projectionFor(session);
+      const desiredMode = projection?.presentation_mode
+        ?? (session.markdown_document
+          ? persistence.preferences.markdown_default_mode
+          : null);
+      if (desiredMode !== 'rendered' && desiredMode !== 'source') continue;
+      const signature = `${projection?.session_key ?? 'default'}:${desiredMode}`;
+      if (presentationProjectionAppliedRef.current.get(session.id) === signature)
+        continue;
+      presentationProjectionAppliedRef.current.set(session.id, signature);
+      if (session.markdown_document && session.markdown_document.mode !== desiredMode)
+        dispatch({
+          type: 'update_markdown',
+          id: session.id,
+          expectedRevision: session.revision,
+          markdown: { ...session.markdown_document, mode: desiredMode },
+        });
+      if (session.mermaid_document && session.mermaid_document.mode !== desiredMode)
+        dispatch({
+          type: 'update_mermaid',
+          id: session.id,
+          expectedRevision: session.revision,
+          mermaid: { ...session.mermaid_document, mode: desiredMode },
+        });
+    }
+  }, [
+    persistence.preferences.markdown_default_mode,
+    persistence.restoredSession,
+    recovery.recordIds,
+    state.activeId,
+    state.sessions,
+  ]);
+  useEffect(() => {
+    for (const session of state.sessions) {
+      const decision = session.text_document?.language;
+      const extension = normalizeExtension(session.source.display_name.split('.').at(-1) ?? '');
+      const language = extension ? persistence.preferences.language_overrides[extension] : undefined;
+      if (!decision || !language || (decision.language === language && decision.origin === 'session_override')) continue;
+      dispatch({
+        type: 'update_language',
+        id: session.id,
+        expectedRevision: session.revision,
+        language: {
+          ...decision,
+          language,
+          origin: 'session_override',
+          status: language === 'plain_text' ? 'plain' : 'loading',
+          load_revision: decision.load_revision + 1,
+          fallback_code: null,
+        },
+      });
+    }
+  }, [persistence.preferences.language_overrides, state.sessions]);
   const commands = commandSetFor(activeSession).filter(
     ({ id }) =>
       id !== 'save' || (activeSession && canSaveInPlace(activeSession)),
@@ -290,7 +461,9 @@ export function App({ sessions = initialSessions, recoveryGateway, externalLinkG
   }, [activeSession?.id, inspectorOpen, selectedMetadataGateway]);
 
   const openMetadata = (opener: HTMLElement) => {
+    windowProjectionChangedRef.current = true;
     metadataOpenerRef.current = opener;
+    setApplicationPanel('closed');
     setInspectorOpen(true);
   };
 
@@ -306,6 +479,19 @@ export function App({ sessions = initialSessions, recoveryGateway, externalLinkG
       if (opener?.isConnected) opener.focus();
       else if (state.activeId) document.getElementById(`tab-${state.activeId}`)?.focus();
     });
+  };
+
+  const openApplicationPanel = (panel: 'preferences' | 'diagnostics', opener: HTMLButtonElement) => {
+    windowProjectionChangedRef.current = true;
+    applicationOpenerRef.current = opener;
+    setInspectorOpen(false);
+    setApplicationPanel(panel);
+  };
+
+  const closeApplicationPanel = () => {
+    windowProjectionChangedRef.current = true;
+    setApplicationPanel('closed');
+    requestAnimationFrame(() => applicationOpenerRef.current?.focus());
   };
 
   const invoke = (command: CommandDescriptor, opener: HTMLButtonElement) => {
@@ -443,7 +629,13 @@ export function App({ sessions = initialSessions, recoveryGateway, externalLinkG
   return (
     <main className="app-shell" onKeyDown={handleShellKey}>
       <TabStrip state={state} dispatch={dispatch} />
-      <CommandBar commands={commands} onInvoke={invoke} />
+      <div className="toolbar-row">
+        <CommandBar commands={commands} onInvoke={invoke} />
+        <nav className="application-actions" aria-label="Application commands">
+          <button type="button" onClick={(event) => openApplicationPanel('preferences', event.currentTarget)}>Preferences</button>
+          <button type="button" onClick={(event) => openApplicationPanel('diagnostics', event.currentTarget)}>Diagnostics</button>
+        </nav>
+      </div>
       {activeSession &&
         (integrityOf(activeSession) === 'conflicted' ||
           integrityOf(activeSession) === 'recovery_only') && (
@@ -458,9 +650,15 @@ export function App({ sessions = initialSessions, recoveryGateway, externalLinkG
           {recovery.warning}
         </aside>
       )}
-      <DocumentSurface
-        ref={editorRef}
-        session={activeSession}
+      {persistence.warning && (
+        <aside className="integrity-banner persistence-warning" role="status" aria-live="polite">
+          {persistence.warning}
+        </aside>
+      )}
+      <PreferenceContext.Provider value={persistence.preferences}>
+        <DocumentSurface
+          ref={editorRef}
+          session={activeSession}
         onDocumentChange={(id, expectedRevision, document, revision) =>
           dispatch({
             type: 'update_text',
@@ -470,9 +668,21 @@ export function App({ sessions = initialSessions, recoveryGateway, externalLinkG
             revision,
           })
         }
-        onLanguageChange={(id, expectedRevision, language) =>
-          dispatch({ type: 'update_language', id, expectedRevision, language })
-        }
+          onLanguageChange={(id, expectedRevision, language) => {
+            dispatch({ type: 'update_language', id, expectedRevision, language });
+            const target = state.sessions.find((session) => session.id === id);
+            const extension = target?.source.display_name.split('.').at(-1);
+            const normalized = extension ? normalizeExtension(extension) : null;
+            if (normalized && language.origin === 'session_override') {
+              persistence.updatePreferences({
+                ...persistence.preferences,
+                language_overrides: {
+                  ...persistence.preferences.language_overrides,
+                  [normalized]: language.language,
+                },
+              });
+            }
+          }}
         onMarkdownChange={(id, expectedRevision, markdown) =>
           dispatch({ type: 'update_markdown', id, expectedRevision, markdown })
         }
@@ -483,7 +693,8 @@ export function App({ sessions = initialSessions, recoveryGateway, externalLinkG
         localAssetGateway={localAssetGateway}
         onOpenMetadata={openMetadata}
         onMetadataContribution={publishMetadata}
-      />
+        />
+      </PreferenceContext.Provider>
       {inspectorOpen && activeSession && (
         <MetadataInspector
           key={activeSession.id}
@@ -492,6 +703,22 @@ export function App({ sessions = initialSessions, recoveryGateway, externalLinkG
           onClose={closeMetadata}
           onRequestChecksum={activeSession.source_id && activeSession.metadata?.external_revision && metadataReadySessionId === activeSession.id && selectedMetadataGateway ? requestChecksum : undefined}
           clipboardGateway={clipboardGateway}
+        />
+      )}
+      {applicationPanel === 'preferences' && (
+        <PreferencesPanel
+          value={persistence.preferences}
+          onChange={persistence.updatePreferences}
+          onReset={() => void persistence.reset('preferences')}
+          onClose={closeApplicationPanel}
+        />
+      )}
+      {applicationPanel === 'diagnostics' && (
+        <DiagnosticsPanel
+          load={persistence.previewDiagnostics}
+          exporter={diagnosticExportGateway}
+          onReset={() => persistence.reset('diagnostics')}
+          onClose={closeApplicationPanel}
         />
       )}
       {!recoveryCandidate && state.pendingTransition && resolutionSession && (

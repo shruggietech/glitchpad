@@ -210,6 +210,7 @@ fn docs(repository: &Path) -> Result<(), String> {
     run(repository, "pnpm", ["run", "check:validation"])?;
     run(repository, "pnpm", ["run", "check:mermaid-runtime"])?;
     run(repository, "pnpm", ["run", "check:metadata"])?;
+    run(repository, "pnpm", ["run", "check:persistence"])?;
     run(repository, "pnpm", ["run", "check:config"])?;
     run(repository, "pnpm", ["run", "docs:format"])?;
     run(repository, "pnpm", ["run", "docs:lint"])?;

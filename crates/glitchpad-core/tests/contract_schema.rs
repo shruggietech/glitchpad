@@ -5,6 +5,10 @@ use glitchpad_core::{
     },
     detection::{DetectionOutcome, DetectionResult, TextProfile},
     editor::{LanguageDecision, LanguageId, TextEditorMode, TextModeDecision},
+    persistence::{
+        DiagnosticBundle, DiagnosticEvent, DiagnosticLedger, PreferenceState, SessionState,
+        StateLoad,
+    },
     recovery::{RecoveryInventoryEntry, RecoveryRecord, RecoveryRecordDraft},
     session::{
         DestructiveTransition, DocumentSession, PendingSave, RecoveryCoverage, SessionIntegrity,
@@ -20,6 +24,7 @@ use glitchpad_core::{
 #[test]
 fn source_contract_serializes_with_version_and_independent_capabilities() {
     let source = SourceDescriptor {
+        restoration_reference: None,
         identity: DocumentIdentity {
             authority: IdentityAuthority::AndroidDocument,
             scope: "provider".into(),
@@ -78,6 +83,12 @@ fn schemas_cover_source_detection_text_profile_and_session_contracts() {
         schemars::schema_for!(LanguageId),
         schemars::schema_for!(TextEditorMode),
         schemars::schema_for!(TextModeDecision),
+        schemars::schema_for!(PreferenceState),
+        schemars::schema_for!(SessionState),
+        schemars::schema_for!(DiagnosticEvent),
+        schemars::schema_for!(DiagnosticLedger),
+        schemars::schema_for!(DiagnosticBundle),
+        schemars::schema_for!(StateLoad<PreferenceState>),
     ];
 
     for schema in schemas {

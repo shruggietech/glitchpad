@@ -37,6 +37,30 @@ fn android_source_contract_preserves_provider_facts_without_write_inference() {
     assert!(summary.descriptor.capabilities.seek);
     assert!(!summary.descriptor.capabilities.write);
     assert!(!summary.descriptor.capabilities.replace_atomically);
+    assert_eq!(summary.descriptor.restoration_reference, None);
+}
+
+#[test]
+fn persisted_android_authority_supplies_a_stable_path_free_reference() {
+    let host = AndroidSourceHost::new_for_tests();
+    let mut persisted = delivery("restorable", "strong", Some(4));
+    persisted.persisted_read = true;
+    let first = host
+        .accept_delivery(&persisted)
+        .expect("accept persisted grant");
+    let repeated = host
+        .accept_delivery(&persisted)
+        .expect("repeat persisted grant");
+    let reference = first
+        .descriptor
+        .restoration_reference
+        .expect("persisted grant reference");
+    assert_eq!(
+        repeated.descriptor.restoration_reference,
+        Some(reference.clone())
+    );
+    assert_eq!(reference.len(), 36);
+    assert!(!reference.contains("provider"));
 }
 
 #[test]

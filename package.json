@@ -16,6 +16,7 @@
     "check:validation": "node --test scripts/check-validation.test.mjs",
     "check:mermaid-runtime": "pnpm --filter @shruggietech/glitchpad build && node --test scripts/check-mermaid-runtime.test.mjs && node scripts/check-mermaid-runtime.mjs",
     "check:metadata": "node --test scripts/check-metadata-fixture.test.mjs && node scripts/check-metadata-fixture.mjs",
+    "check:persistence": "node --test scripts/check-persistence-fixture.test.mjs && node scripts/check-persistence-fixture.mjs",
     "check:frontend": "pnpm --filter @shruggietech/glitchpad check",
     "check:site": "pnpm --filter @shruggietech/glitchpad-site check",
     "check:config": "node scripts/check-config.mjs && taplo lint \"**/*.toml\"",

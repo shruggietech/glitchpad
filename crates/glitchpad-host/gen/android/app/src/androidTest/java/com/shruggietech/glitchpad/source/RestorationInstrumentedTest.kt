@@ -2,7 +2,6 @@ package com.shruggietech.glitchpad.source
 
 import android.content.Intent
 import android.net.Uri
-import android.os.ParcelFileDescriptor
 import android.os.SystemClock
 import android.provider.DocumentsContract
 import android.system.Os
@@ -116,33 +115,27 @@ class RestorationInstrumentedTest {
   }
 
   private fun grant(uri: Uri) {
-    val launchOutput = executeShellCommand(
-      "am start -a ${FixtureGrantActivity.ACTION_GRANT} " +
-        "--es ${FixtureGrantActivity.EXTRA_URI} $uri " +
-        "-n ${instrumentation.context.packageName}/${FixtureGrantActivity::class.java.name}",
+    instrumentation.context.startActivity(
+      Intent(instrumentation.context, FixtureGrantActivity::class.java)
+        .setAction(FixtureGrantActivity.ACTION_GRANT)
+        .putExtra(FixtureGrantActivity.EXTRA_URI, uri.toString())
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
     )
-    repeat(40) {
+    repeat(100) {
       try {
         resolver.query(uri, arrayOf(DocumentsContract.Document.COLUMN_DOCUMENT_ID), null, null, null).use { cursor ->
           if (cursor != null && cursor.moveToFirst()) return
         }
       } catch (_: SecurityException) {
-        // The delegated activity grant can take a moment to become visible to the target process.
+        // The delegated provider grant can take a moment to become visible to the target process.
       }
-      if (it < 39) SystemClock.sleep(50)
-      else fail("fixture URI grant did not become usable: $launchOutput")
+      if (it < 99) SystemClock.sleep(100)
+      else fail("fixture URI grant did not become usable")
     }
   }
 
   private fun revoke(uri: Uri) {
     instrumentation.context.revokeUriPermission(uri, PERSISTED_MODES)
-  }
-
-  private fun executeShellCommand(command: String): String {
-    val descriptor = instrumentation.uiAutomation.executeShellCommand(command)
-    return ParcelFileDescriptor.AutoCloseInputStream(descriptor).use { output ->
-      output.readBytes().toString(Charsets.UTF_8)
-    }
   }
 
   companion object {

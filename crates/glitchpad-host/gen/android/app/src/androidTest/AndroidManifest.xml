@@ -3,12 +3,7 @@
     <application>
         <activity
             android:name="com.shruggietech.glitchpad.source.FixtureGrantActivity"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="com.shruggietech.glitchpad.fixture.GRANT_URI" />
-                <action android:name="com.shruggietech.glitchpad.fixture.REVOKE_URI" />
-            </intent-filter>
-        </activity>
+            android:exported="true" />
         <provider
             android:name="com.shruggietech.glitchpad.source.FixtureDocumentsProvider"
             android:authorities="com.shruggietech.glitchpad.fixture.documents"

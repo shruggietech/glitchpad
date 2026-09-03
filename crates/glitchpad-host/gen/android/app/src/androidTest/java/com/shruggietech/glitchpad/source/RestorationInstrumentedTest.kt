@@ -2,7 +2,6 @@ package com.shruggietech.glitchpad.source
 
 import android.content.Intent
 import android.net.Uri
-import android.os.ParcelFileDescriptor
 import android.os.SystemClock
 import android.provider.DocumentsContract
 import android.system.Os
@@ -116,10 +115,10 @@ class RestorationInstrumentedTest {
   }
 
   private fun grant(uri: Uri) {
-    val launchOutput = executeShellCommand(
-      "am start -a ${FixtureGrantActivity.ACTION_GRANT} " +
-        "--es ${FixtureGrantActivity.EXTRA_URI} $uri " +
-        "-n ${instrumentation.context.packageName}/${FixtureGrantActivity::class.java.name}",
+    instrumentation.context.grantUriPermission(
+      clientContext.packageName,
+      uri,
+      GRANT_MODES,
     )
     repeat(40) {
       try {
@@ -127,10 +126,10 @@ class RestorationInstrumentedTest {
           if (cursor != null && cursor.moveToFirst()) return
         }
       } catch (_: SecurityException) {
-        // The delegated activity grant can take a moment to become visible to the target process.
+        // The delegated provider grant can take a moment to become visible to the target process.
       }
       if (it < 39) SystemClock.sleep(50)
-      else fail("fixture URI grant did not become usable: $launchOutput")
+      else fail("fixture URI grant did not become usable")
     }
   }
 
@@ -138,25 +137,12 @@ class RestorationInstrumentedTest {
     instrumentation.context.revokeUriPermission(uri, PERSISTED_MODES)
   }
 
-  private fun executeShellCommand(command: String): String {
-    repeat(20) { attempt ->
-      // API 36 can transiently return null while its UiAutomation bridge reconnects between tests.
-      val automation = InstrumentationRegistry.getInstrumentation().uiAutomation
-      if (automation != null) {
-        val descriptor = automation.executeShellCommand(command)
-        return ParcelFileDescriptor.AutoCloseInputStream(descriptor).use { output ->
-          output.readBytes().toString(Charsets.UTF_8)
-        }
-      }
-      if (attempt < 19) SystemClock.sleep(100)
-    }
-    error("UiAutomation remained unavailable while executing: $command")
-  }
-
   companion object {
     private const val AUTHORITY = "com.shruggietech.glitchpad.fixture.documents"
     private const val PERSISTED_MODES =
       Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+    private const val GRANT_MODES =
+      PERSISTED_MODES or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
     private val RECOVERY_EVIDENCE = "private recovery survives force-stop".toByteArray(Charsets.UTF_8)
   }
 

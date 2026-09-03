@@ -2,7 +2,6 @@ package com.shruggietech.glitchpad.source
 
 import android.content.Intent
 import android.net.Uri
-import android.os.ParcelFileDescriptor
 import android.os.SystemClock
 import android.provider.DocumentsContract
 import android.system.Os
@@ -150,11 +149,11 @@ class AndroidSourceInstrumentedTest {
   }
 
   private fun grant(uri: Uri): Uri {
-    // Shell opens the test-only provider UI; that foreground provider activity delegates URI authority.
-    val launchOutput = executeShellCommand(
-      "am start -a ${FixtureGrantActivity.ACTION_GRANT} " +
-        "--es ${FixtureGrantActivity.EXTRA_URI} $uri " +
-        "-n ${instrumentation.context.packageName}/${FixtureGrantActivity::class.java.name}",
+    // The test package owns the fixture provider, so it can delegate authority without UiAutomation.
+    instrumentation.context.grantUriPermission(
+      clientContext.packageName,
+      uri,
+      GRANT_MODES,
     )
     var lastFailure = "provider returned no document row"
     repeat(40) {
@@ -172,25 +171,10 @@ class AndroidSourceInstrumentedTest {
       if (it < 39) {
         SystemClock.sleep(50)
       } else {
-        fail("fixture URI grant did not become usable ($lastFailure): $launchOutput")
+        fail("fixture URI grant did not become usable ($lastFailure)")
       }
     }
     error("fixture grant assertion returned unexpectedly")
-  }
-
-  private fun executeShellCommand(command: String): String {
-    repeat(20) { attempt ->
-      // API 36 can transiently return null while its UiAutomation bridge reconnects between tests.
-      val automation = InstrumentationRegistry.getInstrumentation().uiAutomation
-      if (automation != null) {
-        val descriptor = automation.executeShellCommand(command)
-        return ParcelFileDescriptor.AutoCloseInputStream(descriptor).use { output ->
-          output.readBytes().toString(Charsets.UTF_8)
-        }
-      }
-      if (attempt < 19) SystemClock.sleep(100)
-    }
-    error("UiAutomation remained unavailable while executing: $command")
   }
 
   private fun revoke(uri: Uri) {
@@ -218,5 +202,9 @@ class AndroidSourceInstrumentedTest {
   companion object {
     private const val AUTHORITY = "com.shruggietech.glitchpad.fixture.documents"
     private const val ROOT_ID = "fixture-root"
+    private const val GRANT_MODES =
+      Intent.FLAG_GRANT_READ_URI_PERMISSION or
+        Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
+        Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
   }
 }

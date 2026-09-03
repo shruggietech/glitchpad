@@ -62,6 +62,26 @@ describe('Markdown surface', () => {
     expect(open).toHaveBeenCalledWith('https://example.com/path');
   });
 
+  it('latches an external open while the gateway request is pending', async () => {
+    let settle!: () => void;
+    const open = vi.fn(() => new Promise<void>((resolve) => { settle = resolve; }));
+    render(<App sessions={[markdownSession('[destination](https://example.com/path)')]} externalLinkGateway={{ open }} />);
+    fireEvent.click(await screen.findByRole('button', { name: /destination/i }));
+    const confirm = screen.getByRole('button', { name: 'Open destination' });
+    fireEvent.click(confirm);
+    fireEvent.click(confirm);
+    expect(open).toHaveBeenCalledOnce();
+    expect(screen.getByRole('button', { name: 'Opening destination' })).toBeDisabled();
+    settle();
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  });
+
+  it('includes disclosed external destinations in the printable tree', async () => {
+    render(<App sessions={[markdownSession('[destination](https://example.com/path)')]} />);
+    const disclosure = await screen.findByText(/External destination https:\/\/example\.com\/path/u);
+    expect(disclosure).toHaveClass('markdown-link-destination-disclosure');
+  });
+
   it('resets rendered UI and pending authorization when switching Markdown tabs', async () => {
     const first = markdownSession('[first](https://first.example)');
     const second = {

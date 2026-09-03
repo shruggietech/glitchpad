@@ -646,6 +646,18 @@ button:focus-visible,
     display: block !important;
   }
 
+  .markdown-link-destination-disclosure {
+    position: static;
+    display: inline;
+    width: auto;
+    height: auto;
+    padding: 0;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+  }
+
   .app-shell,
   .document-surface,
   .markdown-document {

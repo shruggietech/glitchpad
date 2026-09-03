@@ -176,7 +176,7 @@ function SafeTree({
           onClick={(event) => onLink(candidate, event.currentTarget)}
         >
           {children}
-          <span className="visually-hidden">
+          <span className="visually-hidden markdown-link-destination-disclosure">
             {` External destination ${candidate.display_target}`}
           </span>
         </button>
@@ -321,6 +321,7 @@ export const MarkdownSurface = forwardRef<
     null,
   );
   const [pendingLink, setPendingLink] = useState<LinkCandidate | null>(null);
+  const [linkOpening, setLinkOpening] = useState(false);
   const [linkError, setLinkError] = useState('');
   const [localLinkError, setLocalLinkError] = useState('');
   const modeRef = useRef(mode);
@@ -510,12 +511,14 @@ export const MarkdownSurface = forwardRef<
   const beginLink = (candidate: LinkCandidate, trigger: HTMLElement) => {
     linkTriggerRef.current = trigger;
     setLinkError('');
+    setLinkOpening(false);
     setPendingLink(candidate);
   };
 
   const closeLink = () => {
     setPendingLink(null);
     setLinkError('');
+    setLinkOpening(false);
     requestAnimationFrame(() => linkTriggerRef.current?.focus());
   };
 
@@ -677,19 +680,23 @@ export const MarkdownSurface = forwardRef<
             <div className="resolution-actions">
               <button
                 type="button"
+                disabled={linkOpening}
                 onClick={() => {
+                  if (linkOpening) return;
                   const target = pendingLink.normalized_target!;
+                  setLinkOpening(true);
                   void externalLinkGateway
                     .open(target)
                     .then(closeLink)
-                    .catch(() =>
+                    .catch(() => {
+                      setLinkOpening(false);
                       setLinkError(
                         'The destination could not be opened. The document remains available.',
-                      ),
-                    );
+                      );
+                    });
                 }}
               >
-                Open destination
+                {linkOpening ? 'Opening destination' : 'Open destination'}
               </button>
               <button type="button" onClick={closeLink} autoFocus>
                 Cancel

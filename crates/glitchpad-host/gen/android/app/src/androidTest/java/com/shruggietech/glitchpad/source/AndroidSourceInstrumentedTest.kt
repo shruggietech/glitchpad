@@ -149,13 +149,12 @@ class AndroidSourceInstrumentedTest {
   }
 
   private fun grant(uri: Uri): Uri {
-    instrumentation.startActivitySync(
+    instrumentation.context.startActivity(
       Intent(instrumentation.context, FixtureGrantActivity::class.java)
         .setAction(FixtureGrantActivity.ACTION_GRANT)
         .putExtra(FixtureGrantActivity.EXTRA_URI, uri.toString())
         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
     )
-    instrumentation.waitForIdleSync()
     var lastFailure = "provider returned no document row"
     repeat(40) {
       try {

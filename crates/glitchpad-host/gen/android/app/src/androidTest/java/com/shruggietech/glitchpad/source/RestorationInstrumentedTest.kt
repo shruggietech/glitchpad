@@ -115,13 +115,12 @@ class RestorationInstrumentedTest {
   }
 
   private fun grant(uri: Uri) {
-    instrumentation.startActivitySync(
+    instrumentation.context.startActivity(
       Intent(instrumentation.context, FixtureGrantActivity::class.java)
         .setAction(FixtureGrantActivity.ACTION_GRANT)
         .putExtra(FixtureGrantActivity.EXTRA_URI, uri.toString())
         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
     )
-    instrumentation.waitForIdleSync()
     repeat(40) {
       try {
         resolver.query(uri, arrayOf(DocumentsContract.Document.COLUMN_DOCUMENT_ID), null, null, null).use { cursor ->

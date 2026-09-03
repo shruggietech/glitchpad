@@ -19,6 +19,7 @@ describe('Mermaid contract', () => {
 
   it('counts bounded edge syntax and measures UTF-8 bytes', () => {
     expect(countMermaidEdges('A --> B\nB -.-> C\nC ==> D')).toBe(3);
+    expect(countMermaidEdges('A --- B\nB ~~> C\nC --x D\nD --o E\nE <-- F\nF <== G')).toBe(6);
     expect(mermaidSourceBytes('é')).toBe(2);
   });
 

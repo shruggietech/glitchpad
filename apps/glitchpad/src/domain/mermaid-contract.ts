@@ -118,8 +118,21 @@ export const clampMermaidPan = (
   return Math.min(maximum, Math.max(-maximum, offset));
 };
 
-export const countMermaidEdges = (source: string): number =>
-  source.match(/(?:-->|---|==>|-.->|~~>|--x|--o|<--|<==)/gu)?.length ?? 0;
+const mermaidEdgeTokens = ['-.->', '<==', '<--', '-->', '---', '==>', '~~>', '--x', '--o'] as const;
+
+export const countMermaidEdges = (source: string): number => {
+  let count = 0;
+  for (let index = 0; index < source.length;) {
+    const token = mermaidEdgeTokens.find((candidate) => source.startsWith(candidate, index));
+    if (!token) {
+      index += 1;
+      continue;
+    }
+    count += 1;
+    index += token.length;
+  }
+  return count;
+};
 
 export const detectMermaidType = (source: string): string | null => {
   const body = source

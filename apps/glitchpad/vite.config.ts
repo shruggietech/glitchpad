@@ -4,6 +4,11 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   plugins: [react()],
+  build: {
+    // The API 24 validation image ships Chromium 69. Keep application and
+    // dependency syntax executable on the oldest supported Android WebView.
+    target: 'chrome69',
+  },
   worker: {
     plugins: () => [{
       name: 'worker-safe-character-reference-decoder',

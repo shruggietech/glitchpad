@@ -17,6 +17,13 @@ fn android_api_24_keeps_tauri_json_runtime_compatible() {
     assert!(build_script.contains(
         "resolutionStrategy.force(\"com.fasterxml.jackson.core:jackson-databind:2.13.5\")"
     ));
+
+    let vite_config = std::fs::read_to_string(
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../apps/glitchpad/vite.config.ts"),
+    )
+    .expect("read frontend build configuration");
+    assert!(vite_config.contains("target: 'chrome69'"));
 }
 
 fn delivery(token: &str, strength: &str, length: Option<u64>) -> BridgeDelivery {

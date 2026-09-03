@@ -531,6 +531,122 @@ button:focus-visible,
   font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
 }
 
+.mermaid-surface,
+.mermaid-source-layout,
+.diagram-viewer,
+.diagram-canvas {
+  min-width: 0;
+  min-height: 0;
+}
+
+.mermaid-surface {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100%;
+  overflow: hidden;
+}
+
+.mermaid-controls,
+.diagram-controls,
+.mermaid-search,
+.embedded-mermaid figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.6rem;
+}
+
+.mermaid-controls,
+.mermaid-search,
+.diagram-controls {
+  border-bottom: 1px solid #343842;
+  background: #181a20;
+}
+
+.mermaid-controls button,
+.mermaid-search button,
+.diagram-controls button,
+.embedded-mermaid button {
+  min-height: 2rem;
+  border: 1px solid #4c5260;
+  border-radius: 0.3rem;
+  background: #262a33;
+  color: inherit;
+}
+
+.diagram-viewer {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100%;
+}
+
+.diagram-canvas {
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  touch-action: none;
+  background: #111318;
+}
+
+.diagram-image {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  transform-origin: center;
+  user-select: none;
+}
+
+.mermaid-source-layout {
+  display: grid;
+  grid-template-columns: minmax(16rem, 1fr) minmax(16rem, 1fr);
+  overflow: hidden;
+}
+
+.mermaid-source-editor,
+.mermaid-stale-preview {
+  min-height: 0;
+  overflow: auto;
+}
+
+.mermaid-stale-preview {
+  border-left: 1px solid #343842;
+}
+
+.mermaid-fallback,
+.embedded-mermaid-fallback {
+  padding: 1rem;
+}
+
+.mermaid-metadata {
+  position: absolute;
+  z-index: 3;
+  right: 0.75rem;
+  max-width: min(24rem, calc(100% - 1.5rem));
+  padding: 0.75rem;
+  border: 1px solid #4c5260;
+  border-radius: 0.4rem;
+  background: #181a20;
+}
+
+.mermaid-metadata div {
+  display: grid;
+  grid-template-columns: 8rem 1fr;
+  gap: 0.5rem;
+}
+
+.embedded-mermaid {
+  min-height: 12rem;
+  margin: 1rem 0;
+  border: 1px solid #343842;
+  border-radius: 0.4rem;
+  overflow: hidden;
+}
+
+.embedded-mermaid .diagram-viewer {
+  min-height: 18rem;
+}
+
 .visually-hidden {
   position: absolute;
   width: 1px;
@@ -558,6 +674,24 @@ button:focus-visible,
   .markdown-outline button {
     min-width: 44px;
     min-height: 44px;
+  }
+
+  .mermaid-controls button,
+  .mermaid-search button,
+  .diagram-controls button,
+  .embedded-mermaid button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .mermaid-source-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(12rem, 1fr) minmax(12rem, 1fr);
+  }
+
+  .mermaid-stale-preview {
+    border-top: 1px solid #343842;
+    border-left: 0;
   }
 
   .active-tab-actions .tab-action:not(.close-tab) {

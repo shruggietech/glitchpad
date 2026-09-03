@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "cases": [
+    { "path": "sources/flowchart.mmd", "expected": "ready", "direction": "LR" },
+    { "path": "sources/accessible.mermaid", "expected": "ready", "authored_accessibility": true },
+    { "path": "sources/malformed.mmd", "expected": "malformed" },
+    { "path": "sources/hostile.mmd", "expected": "unsupported" },
+    { "path": "sources/mixed-blocks.txt", "expected": "one-ready-one-malformed" }
+  ],
+  "limits": {
+    "standalone_bytes": 1048576,
+    "block_bytes": 262144,
+    "aggregate_block_bytes": 1048576,
+    "blocks": 64,
+    "edges": 2000,
+    "output_bytes": 8388608,
+    "cooperative_timeout_ms": 5000,
+    "active_requests": 2
+  }
+}

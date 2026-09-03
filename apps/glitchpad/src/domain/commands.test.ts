@@ -87,4 +87,19 @@ describe('renderer-driven commands', () => {
       });
     }
   });
+
+  it('labels the Mermaid mode command from its source projection', () => {
+    const mermaid = session({
+      renderer: { ...session().renderer, id: 'mermaid', label: 'Mermaid' },
+      markdown_document: null,
+      mermaid_document: {
+        mode: 'source',
+        render_revision: 4,
+        render_status: 'ready',
+        preview_stale: false,
+        viewport: { mode: 'fit', zoom: 1, pan_x: 0, pan_y: 0 },
+      },
+    });
+    expect(commandSetFor(mermaid).find(({ id }) => id === 'edit')?.label).toBe('Preview');
+  });
 });

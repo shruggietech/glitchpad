@@ -51,3 +51,75 @@ sensitivity_review = "Synthetic fixture metadata only; no production or personal
 format = "JSON"
 purpose = "Fixture expectations, byte-boundary descriptors, and duplicate-heading assertions"
 expected_result = "All referenced sources and declared boundary decisions match the Markdown renderer contract"
+
+[[fixture]]
+path = "fixtures/mermaid/corpus.json"
+source = "Original Glitchpad S015 Mermaid corpus descriptor"
+author = "ShruggieTech contributors"
+license = "Apache-2.0"
+redistribution = true
+sha256 = "d49d6c23697652b56ca5bc0c0f3a7006a99128c9a306b1981e54f67530aaa61f"
+sensitivity_review = "Synthetic fixture metadata only; no production or personal data"
+format = "JSON"
+purpose = "Mermaid fixture expectations and exact renderer boundary declarations"
+expected_result = "All referenced sources and declared limits match the S015 renderer contract"
+
+[[fixture]]
+path = "fixtures/mermaid/sources/accessible.mermaid"
+source = "Original Glitchpad S015 accessible Mermaid fixture"
+author = "ShruggieTech contributors"
+license = "Apache-2.0"
+redistribution = true
+sha256 = "dd23d95b066386e62d781a90e75803a1cc5f7ed737476ab3ab0c0961f5dd6631"
+sensitivity_review = "Synthetic diagram only; no production or personal data"
+format = "Mermaid"
+purpose = "Authored title, description, source preservation, and top-to-bottom layout validation"
+expected_result = "Renders locally with authored accessible title and description preserved"
+
+[[fixture]]
+path = "fixtures/mermaid/sources/flowchart.mmd"
+source = "Original Glitchpad S015 directional Mermaid fixture"
+author = "ShruggieTech contributors"
+license = "Apache-2.0"
+redistribution = true
+sha256 = "4d306acec6c7a94fdcc96ab71adad9d30d875811907aadcd5036e112824194eb"
+sensitivity_review = "Synthetic diagram only; no production or personal data"
+format = "Mermaid"
+purpose = "Standalone detection, rendering, and authored horizontal-direction preservation"
+expected_result = "Renders locally without rewriting the authored LR direction"
+
+[[fixture]]
+path = "fixtures/mermaid/sources/hostile.mmd"
+source = "Original Glitchpad S015 hostile Mermaid fixture"
+author = "ShruggieTech contributors"
+license = "Apache-2.0"
+redistribution = true
+sha256 = "28071877332dc1ede9f6fd3a0376d66d5ea5ddd797cf6af947e52fd983e4d82a"
+sensitivity_review = "Synthetic security strings only; no production or personal data"
+format = "Mermaid"
+purpose = "Configuration override, HTML execution, callback, navigation, and remote-resource denial"
+expected_result = "Rendering is refused without execution, navigation, native invocation, or network access"
+
+[[fixture]]
+path = "fixtures/mermaid/sources/malformed.mmd"
+source = "Original Glitchpad S015 malformed Mermaid fixture"
+author = "ShruggieTech contributors"
+license = "Apache-2.0"
+redistribution = true
+sha256 = "808310db6f18f7699de5191df8f2437f54852ad93e5a593f36c6aae9a789a92a"
+sensitivity_review = "Synthetic diagram only; no production or personal data"
+format = "Mermaid"
+purpose = "Non-destructive parser failure and diagnostic validation"
+expected_result = "Returns a bounded malformed result while source remains available"
+
+[[fixture]]
+path = "fixtures/mermaid/sources/mixed-blocks.txt"
+source = "Original Glitchpad S015 mixed embedded Mermaid fixture"
+author = "ShruggieTech contributors"
+license = "Apache-2.0"
+redistribution = true
+sha256 = "e0342fdbd12a4a178b646dbb8c5cd68b68cd3c64381b86114281271ed800b12c"
+sensitivity_review = "Synthetic documentation and diagrams only; no production or personal data"
+format = "Markdown source stored as text"
+purpose = "Independent embedded-block rendering and failure containment"
+expected_result = "The valid block renders, malformed block falls back, and surrounding Markdown remains readable"

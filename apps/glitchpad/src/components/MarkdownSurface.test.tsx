@@ -27,6 +27,18 @@ const markdownSession = (content: string) => ({
 });
 
 describe('Markdown surface', () => {
+  it('renders Mermaid fences independently and routes each fallback to parent source', async () => {
+    const content = '# Diagrams\n\n```mermaid\nflowchart TB\nA-->B\n```\n\nBetween\n\n```mermaid\nflowchart TB\nBroken-->\n```\n\nAfter';
+    render(<App sessions={[markdownSession(content)]} />);
+    expect(await screen.findByRole('img', { name: /test\.md diagram 1/iu }, { timeout: 2_000 })).toBeInTheDocument();
+    expect(screen.getByText('Between')).toBeInTheDocument();
+    expect(screen.getByText('After')).toBeInTheDocument();
+    expect(await screen.findByText('The Mermaid source is malformed. Source remains available.', {}, { timeout: 2_000 })).toBeInTheDocument();
+    const sourceButtons = screen.getAllByRole('button', { name: 'View source' });
+    fireEvent.click(sourceButtons[1]);
+    expect(screen.getByRole('textbox', { name: 'test.md text editor' })).toBeInTheDocument();
+  });
+
   it('renders safe structure, searches rendered text, exposes outline, and switches to exact source', async () => {
     const content = '# Heading\n\nA searchable **phrase**.\n\n<script>alert(1)</script>';
     render(<App sessions={[markdownSession(content)]} />);

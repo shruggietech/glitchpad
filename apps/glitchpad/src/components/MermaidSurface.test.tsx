@@ -1,0 +1,67 @@
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { EditorView } from '@codemirror/view';
+import axe from 'axe-core';
+import { describe, expect, it } from 'vitest';
+
+import { App, initialSessions } from '../App';
+
+const mermaidSession = (content: string) => ({
+  ...initialSessions[1],
+  id: 'mermaid-test',
+  lifecycle: 'active' as const,
+  content,
+  source: {
+    ...initialSessions[1].source,
+    display_name: 'architecture.mmd',
+    byte_length: new TextEncoder().encode(content).byteLength,
+    capabilities: { ...initialSessions[1].source.capabilities, write: true, replace_atomically: true },
+  },
+  renderer: {
+    ...initialSessions[1].renderer,
+    capabilities: { ...initialSessions[1].renderer.capabilities, edit: true, save: true, inspect_metadata: true },
+  },
+  text_document: {
+    ...initialSessions[1].text_document!,
+    raw_text: content,
+    normalized_text: content,
+    source_bytes: new TextEncoder().encode(content).byteLength,
+  },
+  mermaid_document: {
+    ...initialSessions[1].mermaid_document!,
+    mode: content.trim() ? 'rendered' as const : 'source' as const,
+  },
+});
+
+describe('Mermaid surface', () => {
+  it('renders standalone source locally and exposes navigation and metadata', async () => {
+    render(<App sessions={[mermaidSession('flowchart LR\n  Alpha --> Beta')]} />);
+    expect(await screen.findByRole('img', { name: /architecture\.mmd Mermaid diagram/iu })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Fit' })).toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole('button', { name: 'File information' }).at(-1)!);
+    expect(screen.getByText('flowchart')).toBeInTheDocument();
+    expect(screen.getByText('11.17.2')).toBeInTheDocument();
+  });
+
+  it('composes the exact source editor and labels the last valid preview stale', async () => {
+    render(<App sessions={[mermaidSession('flowchart TB\n  A --> B')]} />);
+    await screen.findByRole('img');
+    fireEvent.click(screen.getByRole('button', { name: 'Edit source' }));
+    const textbox = screen.getByRole('textbox', { name: 'architecture.mmd text editor' });
+    const view = EditorView.findFromDOM(textbox)!;
+    act(() => view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: 'flowchart TB\n  A -->' } }));
+    await waitFor(() => expect(screen.getByText('Preview is from an earlier source revision')).toBeInTheDocument(), { timeout: 2_000 });
+    expect(screen.getByLabelText('Earlier valid preview')).toBeInTheDocument();
+  });
+
+  it('opens an empty Mermaid source directly in editable source mode', () => {
+    render(<App sessions={[mermaidSession('')]} />);
+    expect(screen.getByRole('textbox', { name: 'architecture.mmd text editor' })).toBeInTheDocument();
+  });
+
+  it('has no critical or serious accessibility violations', async () => {
+    const { container } = render(<App sessions={[mermaidSession('flowchart TB\n  accTitle: Architecture\n  A --> B')]} />);
+    await screen.findByRole('img');
+    const results = await axe.run(container, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa'] } });
+    expect(results.violations.filter(({ impact }) => impact === 'critical' || impact === 'serious')).toEqual([]);
+  });
+});

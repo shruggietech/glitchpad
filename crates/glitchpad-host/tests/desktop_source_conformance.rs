@@ -20,15 +20,43 @@ struct TemporarySource {
 
 impl TemporarySource {
     fn new(bytes: &[u8]) -> Self {
+        Self::named("source.md", bytes)
+    }
+
+    fn named(name: &str, bytes: &[u8]) -> Self {
         let directory = std::env::temp_dir().join(format!("glitchpad-s006-{}", Uuid::new_v4()));
         fs::create_dir(&directory).expect("create temporary directory");
-        let path = directory.join("source.md");
+        let path = directory.join(name);
         fs::write(&path, bytes).expect("write temporary source");
         Self { directory, path }
     }
 
     fn path(&self) -> &Path {
         &self.path
+    }
+}
+
+#[test]
+fn mermaid_deliveries_preserve_source_bytes_and_claim_the_registered_media_type() {
+    for name in ["diagram.mmd", "diagram.mermaid"] {
+        let source = TemporarySource::named(name, b"flowchart LR\nA-->B\n");
+        let host = DesktopSourceHost::new();
+        let summary = host
+            .acquire(DesktopDelivery::association(source.path()))
+            .expect("acquire Mermaid source");
+        assert_eq!(
+            summary.descriptor.claimed_media_type.as_deref(),
+            Some("text/vnd.mermaid")
+        );
+        let lease = host
+            .open_stream(&summary.source_id, 0, 64)
+            .expect("open Mermaid stream");
+        assert_eq!(
+            host.read_stream(&lease.stream_id, 64)
+                .expect("read Mermaid source")
+                .bytes,
+            b"flowchart LR\nA-->B\n"
+        );
     }
 }
 

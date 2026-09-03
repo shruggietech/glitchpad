@@ -80,4 +80,21 @@ describe('text renderer conformance', () => {
       reason: 'lossy_decision_required',
     });
   });
+
+  it('preserves Mermaid encoding, newline style, and terminal newline through the text lifecycle', () => {
+    const source = 'flowchart TB\r\n  Alpha --> Beta\r\n';
+    const document = createTextDocument({
+      rawText: source,
+      displayName: 'architecture.mmd',
+      encoding: 'utf8_bom',
+    });
+    expect(document.normalized_text).toBe('flowchart TB\n  Alpha --> Beta\n');
+    expect(document.language.language).toBe('plain_text');
+    const serialized = serializeTextDocument(document, 5, 5);
+    expect(serialized.ok).toBe(true);
+    if (serialized.ok) {
+      expect([...serialized.payload.bytes.slice(0, 3)]).toEqual([0xef, 0xbb, 0xbf]);
+      expect(new TextDecoder().decode(serialized.payload.bytes.slice(3))).toBe(source);
+    }
+  });
 });

@@ -48,6 +48,12 @@ export type TabAction =
       markdown: import('./contracts').MarkdownDocumentState;
     }
   | {
+      type: 'update_mermaid';
+      id: string;
+      expectedRevision: number;
+      mermaid: import('./contracts').MermaidDocumentState;
+    }
+  | {
       type: 'update_language';
       id: string;
       expectedRevision: number;
@@ -160,6 +166,15 @@ export const tabReducer = (state: TabState, action: TabAction): TabState => {
         sessions: state.sessions.map((session) =>
           session.id === action.id && session.revision === action.expectedRevision
             ? { ...session, markdown_document: action.markdown }
+            : session,
+        ),
+      };
+    case 'update_mermaid':
+      return {
+        ...state,
+        sessions: state.sessions.map((session) =>
+          session.id === action.id && session.revision === action.expectedRevision
+            ? { ...session, mermaid_document: action.mermaid }
             : session,
         ),
       };

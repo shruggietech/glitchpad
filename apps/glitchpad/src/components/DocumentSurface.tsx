@@ -1,10 +1,11 @@
 import { forwardRef } from 'react';
 
-import type { LanguageDecision, MarkdownDocumentState, ShellSession, TextDocumentState } from '../domain/contracts';
+import type { LanguageDecision, MarkdownDocumentState, MermaidDocumentState, ShellSession, TextDocumentState } from '../domain/contracts';
 import type { MarkdownExternalLinkGateway, MarkdownLocalAssetGateway } from '../domain/markdown-gateway';
 import { MarkdownSurface } from './MarkdownSurface';
 import { TextEditorSurface, type TextEditorHandle } from './TextEditorSurface';
 import { LargeTextSurface } from './LargeTextSurface';
+import { MermaidSurface } from './MermaidSurface';
 
 interface DocumentSurfaceProps {
   session: ShellSession | null;
@@ -16,12 +17,13 @@ interface DocumentSurfaceProps {
   ) => void;
   onLanguageChange: (id: string, expectedRevision: number, language: LanguageDecision) => void;
   onMarkdownChange: (id: string, expectedRevision: number, markdown: MarkdownDocumentState) => void;
+  onMermaidChange?: (id: string, expectedRevision: number, mermaid: MermaidDocumentState) => void;
   externalLinkGateway?: MarkdownExternalLinkGateway;
   localAssetGateway?: MarkdownLocalAssetGateway;
 }
 
 export const DocumentSurface = forwardRef<TextEditorHandle, DocumentSurfaceProps>(function DocumentSurface(
-  { session, onDocumentChange, onLanguageChange, onMarkdownChange, externalLinkGateway, localAssetGateway },
+  { session, onDocumentChange, onLanguageChange, onMarkdownChange, onMermaidChange, externalLinkGateway, localAssetGateway },
   ref,
 ) {
   if (!session) {
@@ -58,6 +60,8 @@ export const DocumentSurface = forwardRef<TextEditorHandle, DocumentSurfaceProps
           <LargeTextSurface session={session} />
         ) : session.renderer.id === 'markdown' ? (
           <MarkdownSurface key={session.id} ref={ref} session={session} onDocumentChange={onDocumentChange} onLanguageChange={onLanguageChange} onMarkdownChange={onMarkdownChange} externalLinkGateway={externalLinkGateway} localAssetGateway={localAssetGateway} />
+        ) : session.renderer.id === 'mermaid' ? (
+          <MermaidSurface key={session.id} ref={ref} session={session} onDocumentChange={onDocumentChange} onLanguageChange={onLanguageChange} onMermaidChange={onMermaidChange ?? (() => undefined)} />
         ) : (
           <TextEditorSurface ref={ref} session={session} onDocumentChange={onDocumentChange} onLanguageChange={onLanguageChange} />
         )

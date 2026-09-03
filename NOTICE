@@ -9,3 +9,5 @@ Third-party components introduced for development and contract verification:
 - atomic-write-file, file-id, url, and uuid, Copyright their contributors, used under the Apache License 2.0 or MIT License.
 - notify, Copyright its contributors, used under the CC0 1.0 Universal license.
 - axe-core, Copyright Deque Systems, Inc., used under the Mozilla Public License 2.0 as a development-only accessibility test dependency.
+- Mermaid, Copyright Mermaid contributors, used under the MIT License.
+- DOMPurify, Copyright Mario Heiderich and contributors, used under the Apache License 2.0 option.

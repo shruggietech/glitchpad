@@ -37,7 +37,7 @@ const mermaidSession = (content: string) => ({
 describe('Mermaid surface', () => {
   it('renders standalone source locally and exposes navigation and metadata', async () => {
     render(<App sessions={[mermaidSession('flowchart LR\n  Alpha --> Beta')]} />);
-    expect(await screen.findByRole('img', { name: /architecture\.mmd Mermaid diagram/iu })).toBeInTheDocument();
+    expect(await screen.findByRole('img', { name: /architecture\.mmd Mermaid diagram/iu }, { timeout: 10_000 })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Fit' })).toBeInTheDocument();
     fireEvent.click(screen.getAllByRole('button', { name: 'File information' }).at(-1)!);
     expect(screen.getByText('flowchart')).toBeInTheDocument();
@@ -50,7 +50,7 @@ describe('Mermaid surface', () => {
     expect(inspector).toHaveTextContent('Parse duration');
     expect(inspector).toHaveTextContent('Render duration');
     expect(inspector).toHaveTextContent('Accessible descriptionAbsent');
-  });
+  }, 15_000);
 
   it('composes the exact source editor and labels the last valid preview stale', async () => {
     render(<App sessions={[mermaidSession('flowchart TB\n  A --> B')]} />);

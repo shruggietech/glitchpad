@@ -112,6 +112,7 @@ export const useRecovery = (
       const savedRevision =
         session.saved_revision ?? Math.max(0, session.revision - 1);
       const snapshotRevision = Math.max(session.revision, savedRevision + 1);
+      const document = session.text_document;
       const record: RecoveryRecordDraft = {
         record_id: binding.recordId,
         display_hint: session.source.display_name,
@@ -125,17 +126,21 @@ export const useRecovery = (
         saved_session_revision: savedRevision,
         snapshot_session_revision: snapshotRevision,
         text_profile: {
-          encoding: 'utf8',
-          bom: 'absent',
-          newlines: 'lf',
-          terminal_newline: session.content.endsWith('\n')
-            ? 'present'
-            : 'absent',
-          undecodable_bytes: 'none',
+          encoding: document?.profile.encoding ?? 'utf8',
+          bom: document?.profile.bom ?? 'absent',
+          newlines: document?.profile.newline_pattern ?? 'lf',
+          terminal_newline:
+            document?.profile.terminal_newline === null
+              ? 'unknown'
+              : (document?.profile.terminal_newline ??
+                  session.content.endsWith('\n'))
+                ? 'present'
+                : 'absent',
+          undecodable_bytes: document?.profile.undecodable_bytes ?? 'none',
         },
         created_unix_ms: binding.createdUnixMs,
         updated_unix_ms: now,
-        content: session.content,
+        content: document?.raw_text ?? session.content,
         eviction_eligible: false,
       };
       void gateway

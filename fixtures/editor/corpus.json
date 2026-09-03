@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "cases": [
+    {
+      "id": "mixed-newlines-unicode",
+      "name": "sample.rs",
+      "text": "fn main() {\r\n\tprintln!(\"héllo 👋\");\n}\r",
+      "expectedLanguage": "rust",
+      "expectedNewlines": ["crlf", "lf", "cr"]
+    },
+    {
+      "id": "python-shebang",
+      "name": "script",
+      "text": "#!/usr/bin/env python3\nprint(\"ready\")\n",
+      "expectedLanguage": "python",
+      "expectedNewlines": ["lf", "lf"]
+    },
+    {
+      "id": "typescript-modeline",
+      "name": "source.txt",
+      "text": "// -*- mode: typescript -*-\r\nconst ready: boolean = true;",
+      "expectedLanguage": "typescript",
+      "expectedNewlines": ["crlf"]
+    },
+    {
+      "id": "plain-bidirectional",
+      "name": "notes.txt",
+      "text": "English العربية é 😀\n",
+      "expectedLanguage": "plain_text",
+      "expectedNewlines": ["lf"]
+    }
+  ]
+}

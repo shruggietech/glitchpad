@@ -3,3 +3,15 @@ schema_version = 1
 # Every committed fixture adds a unique [[fixture]] table containing source,
 # author, license, redistribution permission, digest, sensitivity review,
 # format, purpose, and expected result. No fixtures are committed at v0.0.0.
+
+[[fixture]]
+path = "fixtures/editor/corpus.json"
+source = "Original Glitchpad S013 test corpus"
+author = "ShruggieTech contributors"
+license = "Apache-2.0"
+redistribution = true
+sha256 = "21acd6d9515448b973b582e184ee8dc644350d284bb03ad5dc9afa71d0ccd703"
+sensitivity_review = "Synthetic source snippets only; no production or personal data"
+format = "JSON"
+purpose = "Text round-trip, language evidence, Unicode, and mixed-newline validation"
+expected_result = "Each case selects its declared language and preserves its declared newline sequence"

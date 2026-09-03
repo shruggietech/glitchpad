@@ -60,6 +60,13 @@ describe('renderer-driven commands', () => {
     expect(commandSetFor(session()).map(({ id }) => id)).toEqual([
       'copy',
       'search',
+      'find_next',
+      'find_previous',
+      'go_to_line',
+      'undo',
+      'redo',
+      'indent',
+      'outdent',
       'zoom_out',
       'zoom_in',
       'edit',

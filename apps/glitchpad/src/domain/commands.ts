@@ -3,6 +3,15 @@ import type { ShellSession } from './contracts';
 export type CommandId =
   | 'copy'
   | 'search'
+  | 'find_next'
+  | 'find_previous'
+  | 'close_search'
+  | 'go_to_line'
+  | 'undo'
+  | 'redo'
+  | 'indent'
+  | 'outdent'
+  | 'toggle_wrap'
   | 'zoom_out'
   | 'zoom_in'
   | 'edit'
@@ -33,6 +42,14 @@ export const commandSetFor = (
   const definitions: Array<[boolean, CommandId, string, string?]> = [
     [renderer.copy, 'copy', 'Copy', 'Ctrl+C'],
     [renderer.search, 'search', 'Search', 'Ctrl+F'],
+    [renderer.search, 'find_next', 'Find next', 'F3'],
+    [renderer.search, 'find_previous', 'Find previous', 'Shift+F3'],
+    [renderer.search, 'go_to_line', 'Go to line', 'Ctrl+G'],
+    [renderer.edit && source.write, 'undo', 'Undo', 'Ctrl+Z'],
+    [renderer.edit && source.write, 'redo', 'Redo', 'Ctrl+Shift+Z'],
+    [renderer.edit && source.write, 'indent', 'Indent', 'Tab'],
+    [renderer.edit && source.write, 'outdent', 'Outdent', 'Shift+Tab'],
+    [Boolean(session.text_document && session.text_document.mode === 'editable'), 'toggle_wrap', 'Toggle wrap'],
     [renderer.zoom, 'zoom_out', 'Zoom out', 'Ctrl+-'],
     [renderer.zoom, 'zoom_in', 'Zoom in', 'Ctrl++'],
     [renderer.edit && source.write, 'edit', 'Edit'],

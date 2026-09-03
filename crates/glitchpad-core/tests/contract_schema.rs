@@ -4,6 +4,7 @@ use glitchpad_core::{
         SourceCapabilities, SourceDescriptor, SourceKind,
     },
     detection::{DetectionOutcome, DetectionResult, TextProfile},
+    editor::{LanguageDecision, LanguageId, TextEditorMode, TextModeDecision},
     recovery::{RecoveryInventoryEntry, RecoveryRecord, RecoveryRecordDraft},
     session::{
         DestructiveTransition, DocumentSession, PendingSave, RecoveryCoverage, SessionIntegrity,
@@ -69,6 +70,10 @@ fn schemas_cover_source_detection_text_profile_and_session_contracts() {
         schemars::schema_for!(RecoveryRecord),
         schemars::schema_for!(RecoveryRecordDraft),
         schemars::schema_for!(RecoveryInventoryEntry),
+        schemars::schema_for!(LanguageDecision),
+        schemars::schema_for!(LanguageId),
+        schemars::schema_for!(TextEditorMode),
+        schemars::schema_for!(TextModeDecision),
     ];
 
     for schema in schemas {

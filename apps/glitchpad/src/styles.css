@@ -271,11 +271,107 @@ button:focus-visible,
 }
 
 .document-surface {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
   min-width: 0;
   min-height: 0;
   overflow: auto;
   padding: clamp(1rem, 3vw, 2.5rem);
   background: #101114;
+}
+
+.text-editor-shell {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.editor-status {
+  display: flex;
+  min-height: 26px;
+  align-items: center;
+  gap: 0.75rem;
+  overflow-x: auto;
+  color: #9ba2ad;
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+
+.editor-status label {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.editor-status select {
+  min-height: 26px;
+  background: #1b1e24;
+  color: inherit;
+}
+
+.text-editor {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  color: #e8e9ed;
+}
+
+.text-editor .cm-editor,
+.text-editor .cm-scroller {
+  height: 100%;
+}
+
+.document-limit {
+  align-self: start;
+  padding: 1rem;
+  border: 1px solid #7d4b4b;
+  border-radius: 0.4rem;
+  background: #2a1717;
+  color: #ffc2c2;
+}
+
+.large-text {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.large-text-controls {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 0.5rem;
+  overflow-x: auto;
+}
+
+.large-text-controls button {
+  min-height: 44px;
+  border: 1px solid #555c68;
+  border-radius: 0.3rem;
+  background: #272b33;
+}
+
+.large-text-controls label {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  white-space: nowrap;
+}
+
+.large-text-controls input {
+  width: 8rem;
+  min-height: 36px;
+  border: 1px solid #555c68;
+  border-radius: 0.25rem;
+  background: #15171b;
+  color: inherit;
+}
+
+.large-text-content {
+  overflow: auto;
+  white-space: pre;
 }
 
 .document-heading {

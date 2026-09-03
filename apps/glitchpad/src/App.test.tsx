@@ -1,11 +1,20 @@
 import axe from 'axe-core';
 import { EditorView } from '@codemirror/view';
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 
 import { App, initialSessions } from './App';
 import { RecoveryCandidateResolution } from './components/RecoveryResolution';
 import type { RecoveryGateway } from './domain/recovery-gateway';
+import type { MetadataGateway } from './domain/metadata-gateway';
+import type { IntegrityProgress, IntegrityStartRequest } from './domain/contracts';
 import { DESKTOP_CHROME_MAX_PX, REFERENCE_HEIGHT_PX } from './domain/tabs';
+
+const revision = {
+  identity: initialSessions[2].source.identity,
+  byte_length: 3,
+  modified_unix_nanos: '1',
+  change_token: null,
+};
 
 describe('document foundation shell', () => {
   it('projects editor changes into dirty shell state before save is available', () => {
@@ -193,9 +202,9 @@ describe('document foundation shell', () => {
       'aria-selected',
       'true',
     );
-    expect(screen.getByRole('tabpanel')).toHaveTextContent(
+    await waitFor(() => expect(screen.getByRole('tabpanel')).toHaveTextContent(
       'Recovered exact content',
-    );
+    ));
     expect(remove).not.toHaveBeenCalled();
   });
 
@@ -246,6 +255,64 @@ describe('document foundation shell', () => {
     expect(screen.getByRole('button', { name: /save/i })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /save/i }));
     expect(screen.getByRole('status')).toHaveTextContent(/save.*draft\.md/i);
+  });
+
+  it('opens one shell-owned inspector, retargets it with the active tab, and restores opener focus', async () => {
+    render(<App />);
+    const opener = within(screen.getByRole('navigation', { name: 'Document commands' })).getByRole('button', { name: 'File information' });
+    fireEvent.click(opener);
+    expect(screen.getByRole('complementary', { name: 'File information' })).toHaveTextContent('welcome.md');
+    expect(screen.getByRole('tabpanel')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('tab', { name: /diagram\.mmd/iu }));
+    expect(screen.getByRole('complementary', { name: 'File information' })).toHaveTextContent('diagram.mmd');
+    fireEvent.click(screen.getByRole('button', { name: 'Close file information' }));
+    await waitFor(() => expect(opener).toHaveFocus());
+    expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
+  });
+
+  it('refreshes metadata and publishes only a revision-bound checksum', async () => {
+    const source = {
+      ...initialSessions[2],
+      lifecycle: 'active' as const,
+      source_id: 'source',
+      external_revision: revision,
+      renderer: { ...initialSessions[2].renderer, capabilities: { ...initialSessions[2].renderer.capabilities, inspect_metadata: true } },
+    };
+    const advanceIntegrity = vi.fn((requestId: string) => Promise.resolve({ request_id: requestId, source_id: 'source', external_revision: revision, processed_bytes: '3', total_bytes: '3', state: 'ready' as const, sha256: 'a'.repeat(64) }));
+    const gateway: MetadataGateway = {
+      query: vi.fn(() => Promise.resolve({
+        source_id: 'source', external_revision: revision, display_name: 'refreshed.txt', source_kind: 'file' as const,
+        byte_length: '3', modified_unix_nanos: '1', created_unix_nanos: null, accessed_unix_nanos: null,
+        write_state: 'writable' as const, identity_confidence: 'strong' as const,
+      })),
+      startIntegrity: vi.fn((request: IntegrityStartRequest) => Promise.resolve({ request_id: request.request_id, source_id: 'source', external_revision: revision, processed_bytes: '0', total_bytes: '3', state: 'pending' as const, sha256: null })),
+      advanceIntegrity,
+      cancelIntegrity: vi.fn(() => Promise.resolve()),
+    };
+    render(<App sessions={[source]} metadataGateway={gateway} />);
+    fireEvent.click(within(screen.getByRole('navigation', { name: 'Document commands' })).getByRole('button', { name: 'File information' }));
+    await waitFor(() => expect(screen.getByRole('complementary')).toHaveTextContent('refreshed.txt'));
+    fireEvent.click(screen.getByRole('button', { name: 'Calculate SHA-256' }));
+    expect(await screen.findByText('a'.repeat(64))).toBeInTheDocument();
+    expect(advanceIntegrity).toHaveBeenCalled();
+  });
+
+  it('cancels native checksum work immediately when the inspector closes', async () => {
+    const source = { ...initialSessions[2], lifecycle: 'active' as const, source_id: 'source', external_revision: revision };
+    const cancelIntegrity = vi.fn(() => Promise.resolve());
+    const advanceIntegrity = vi.fn(() => new Promise<IntegrityProgress>(() => undefined));
+    const gateway: MetadataGateway = {
+      query: vi.fn(() => Promise.resolve({ source_id: 'source', external_revision: revision, display_name: 'notes.txt', source_kind: 'file' as const, byte_length: '3', modified_unix_nanos: '1', created_unix_nanos: null, accessed_unix_nanos: null, write_state: 'writable' as const, identity_confidence: 'strong' as const })),
+      startIntegrity: vi.fn((request: IntegrityStartRequest) => Promise.resolve({ request_id: request.request_id, source_id: 'source', external_revision: revision, processed_bytes: '0', total_bytes: '3', state: 'pending' as const, sha256: null })),
+      advanceIntegrity,
+      cancelIntegrity,
+    };
+    render(<App sessions={[source]} metadataGateway={gateway} />);
+    fireEvent.click(within(screen.getByRole('navigation', { name: 'Document commands' })).getByRole('button', { name: 'File information' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Calculate SHA-256' }));
+    await waitFor(() => expect(advanceIntegrity).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole('button', { name: 'Close file information' }));
+    await waitFor(() => expect(cancelIntegrity).toHaveBeenCalledOnce());
   });
 
   it('keeps the reference document area at or above 90 percent', () => {

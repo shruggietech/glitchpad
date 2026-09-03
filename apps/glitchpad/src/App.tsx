@@ -1,7 +1,8 @@
-import { useEffect, useReducer, useRef, useState } from 'react';
+import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 
 import { CommandBar } from './components/CommandBar';
 import { DocumentSurface } from './components/DocumentSurface';
+import { MetadataInspector } from './components/MetadataInspector';
 import type { TextEditorHandle } from './components/TextEditorSurface';
 import {
   RecoveryCandidateResolution,
@@ -41,6 +42,15 @@ import {
   type MarkdownLocalAssetGateway,
 } from './domain/markdown-gateway';
 import { useRecovery } from './domain/use-recovery';
+import {
+  browserClipboardGateway,
+  createNativeMetadataGateway,
+  nativeMetadataAvailable,
+  runIntegrityRequest,
+  type ClipboardGateway,
+  type MetadataGateway,
+} from './domain/metadata-gateway';
+import { projectSessionMetadata, type MetadataContribution } from './domain/metadata';
 
 const makeSession = (
   id: string,
@@ -94,6 +104,7 @@ const makeSession = (
         ...noRendererCapabilities(),
         view: true,
         copy: true,
+        inspect_metadata: true,
         ...capabilities,
       },
     },
@@ -179,12 +190,18 @@ interface AppProps {
   recoveryGateway?: RecoveryGateway | null;
   externalLinkGateway?: MarkdownExternalLinkGateway;
   localAssetGateway?: MarkdownLocalAssetGateway;
+  metadataGateway?: MetadataGateway | null;
+  clipboardGateway?: ClipboardGateway;
 }
 
-export function App({ sessions = initialSessions, recoveryGateway, externalLinkGateway, localAssetGateway }: AppProps) {
+export function App({ sessions = initialSessions, recoveryGateway, externalLinkGateway, localAssetGateway, metadataGateway, clipboardGateway = browserClipboardGateway }: AppProps) {
   const [state, dispatch] = useReducer(tabReducer, sessions, createTabState);
   const [commandStatus, setCommandStatus] = useState('');
+  const [inspectorOpen, setInspectorOpen] = useState(false);
   const editorRef = useRef<TextEditorHandle>(null);
+  const metadataOpenerRef = useRef<HTMLElement | null>(null);
+  const integrityAbortRef = useRef<AbortController | null>(null);
+  const integrityRequestIdRef = useRef<string | null>(null);
   const selectedRecoveryGateway =
     recoveryGateway === undefined
       ? nativeRecoveryAvailable()
@@ -195,6 +212,14 @@ export function App({ sessions = initialSessions, recoveryGateway, externalLinkG
   const recoveryCandidate = recovery.candidates[0] ?? null;
   const activeSession =
     state.sessions.find(({ id }) => id === state.activeId) ?? null;
+  const selectedMetadataGateway = useMemo(
+    () => metadataGateway === undefined
+      ? nativeMetadataAvailable()
+        ? createNativeMetadataGateway()
+        : null
+      : metadataGateway,
+    [metadataGateway],
+  );
   const commands = commandSetFor(activeSession).filter(
     ({ id }) =>
       id !== 'save' || (activeSession && canSaveInPlace(activeSession)),
@@ -207,10 +232,70 @@ export function App({ sessions = initialSessions, recoveryGateway, externalLinkG
 
   useEffect(() => setCommandStatus(''), [state.activeId]);
 
-  const invoke = (command: CommandDescriptor) => {
+  useEffect(() => {
+    if (!inspectorOpen || !activeSession?.source_id || !selectedMetadataGateway) return;
+    const abort = new AbortController();
+    let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+    const refresh = () => {
+      void selectedMetadataGateway
+        .query(activeSession.source_id!, abort.signal)
+        .then((source) => {
+          if (!abort.signal.aborted)
+            dispatch({
+              type: 'refresh_metadata',
+              id: activeSession.id,
+              expectedRevision: activeSession.revision,
+              expectedExternalRevision: activeSession.external_revision ?? null,
+              source,
+            });
+        })
+        .catch(() => {
+          if (!abort.signal.aborted) setCommandStatus('File information could not be refreshed. Existing facts remain available.');
+        })
+        .finally(() => {
+          if (!abort.signal.aborted) refreshTimer = setTimeout(refresh, 750);
+        });
+    };
+    refresh();
+    return () => {
+      abort.abort();
+      if (refreshTimer !== null) clearTimeout(refreshTimer);
+    };
+  }, [activeSession?.id, activeSession?.revision, activeSession?.source_id, inspectorOpen, selectedMetadataGateway]);
+
+  useEffect(() => () => {
+    integrityAbortRef.current?.abort();
+    if (integrityRequestIdRef.current && selectedMetadataGateway)
+      void selectedMetadataGateway.cancelIntegrity(integrityRequestIdRef.current).catch(() => undefined);
+    integrityAbortRef.current = null;
+    integrityRequestIdRef.current = null;
+  }, [activeSession?.id, inspectorOpen, selectedMetadataGateway]);
+
+  const openMetadata = (opener: HTMLElement) => {
+    metadataOpenerRef.current = opener;
+    setInspectorOpen(true);
+  };
+
+  const closeMetadata = () => {
+    integrityAbortRef.current?.abort();
+    if (integrityRequestIdRef.current && selectedMetadataGateway)
+      void selectedMetadataGateway.cancelIntegrity(integrityRequestIdRef.current).catch(() => undefined);
+    integrityAbortRef.current = null;
+    integrityRequestIdRef.current = null;
+    setInspectorOpen(false);
+    const opener = metadataOpenerRef.current;
+    requestAnimationFrame(() => {
+      if (opener?.isConnected) opener.focus();
+      else if (state.activeId) document.getElementById(`tab-${state.activeId}`)?.focus();
+    });
+  };
+
+  const invoke = (command: CommandDescriptor, opener: HTMLButtonElement) => {
     const result = executeCommand(command, activeSession);
     const applied =
-      result.ok && (editorRef.current?.invoke(command.id) ?? false);
+      result.ok && (command.id === 'metadata'
+        ? (openMetadata(opener), true)
+        : (editorRef.current?.invoke(command.id) ?? false));
     setCommandStatus(
       result.ok
         ? command.id === 'save' && activeSession
@@ -220,6 +305,71 @@ export function App({ sessions = initialSessions, recoveryGateway, externalLinkG
             : result.message
         : 'Command cancelled because the active document changed',
     );
+  };
+
+  const publishMetadata = (contribution: MetadataContribution) =>
+    dispatch({ type: 'update_metadata', contribution });
+
+  const requestChecksum = () => {
+    if (!activeSession?.source_id || !activeSession.external_revision || !selectedMetadataGateway) return;
+    integrityAbortRef.current?.abort();
+    const abort = new AbortController();
+    integrityAbortRef.current = abort;
+    const requestId = globalThis.crypto?.randomUUID?.() ?? `integrity-${Date.now()}`;
+    integrityRequestIdRef.current = requestId;
+    const base = {
+      session_id: activeSession.id,
+      expected_session_revision: activeSession.revision,
+      expected_external_revision: activeSession.external_revision,
+      producer: 'integrity' as const,
+    };
+    publishMetadata({ ...base, facts: [
+      { key: 'derived.sha256', availability: 'pending' },
+      { key: 'derived.sha256_progress', availability: 'available', value: { kind: 'integer', value: '0' }, unit: 'bytes' },
+    ] });
+    void runIntegrityRequest(
+      selectedMetadataGateway,
+      activeSession.source_id,
+      activeSession.external_revision,
+      requestId,
+      abort.signal,
+      (progress) => publishMetadata({
+        ...base,
+        facts: [
+          { key: 'derived.sha256', availability: 'pending' },
+          { key: 'derived.sha256_progress', availability: 'available', value: { kind: 'integer', value: String(progress.processed_bytes) }, unit: 'bytes' },
+        ],
+      }),
+    )
+      .then((progress) => {
+        if (abort.signal.aborted) return;
+        integrityRequestIdRef.current = null;
+        publishMetadata({
+          ...base,
+          facts: progress.state === 'ready' && progress.sha256
+            ? [
+                { key: 'derived.sha256', availability: 'available', value: { kind: 'text', value: progress.sha256 } },
+                { key: 'derived.sha256_progress', availability: 'not_provided' },
+              ]
+            : progress.state === 'limited'
+              ? [
+                  { key: 'derived.sha256', availability: 'unsupported' },
+                  { key: 'derived.sha256_progress', availability: 'not_provided' },
+                ]
+              : [
+                  { key: 'derived.sha256', availability: 'errored', error_code: `integrity_${progress.state}` },
+                  { key: 'derived.sha256_progress', availability: 'not_provided' },
+                ],
+        });
+      })
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === 'AbortError') return;
+        integrityRequestIdRef.current = null;
+        publishMetadata({ ...base, facts: [
+          { key: 'derived.sha256', availability: 'errored', error_code: 'integrity_failed' },
+          { key: 'derived.sha256_progress', availability: 'not_provided' },
+        ] });
+      });
   };
 
   const resolveRecoveryCandidate = (decision: RecoveryCandidateDecision) => {
@@ -308,7 +458,19 @@ export function App({ sessions = initialSessions, recoveryGateway, externalLinkG
         }
         externalLinkGateway={externalLinkGateway ?? (nativeExternalLinkAvailable() ? nativeMarkdownExternalLinkGateway : undefined)}
         localAssetGateway={localAssetGateway}
+        onOpenMetadata={openMetadata}
+        onMetadataContribution={publishMetadata}
       />
+      {inspectorOpen && activeSession && (
+        <MetadataInspector
+          key={activeSession.id}
+          session={activeSession}
+          snapshot={projectSessionMetadata(activeSession)}
+          onClose={closeMetadata}
+          onRequestChecksum={activeSession.source_id && activeSession.external_revision && selectedMetadataGateway ? requestChecksum : undefined}
+          clipboardGateway={clipboardGateway}
+        />
+      )}
       {!recoveryCandidate && state.pendingTransition && resolutionSession && (
         <RecoveryResolution
           session={resolutionSession}

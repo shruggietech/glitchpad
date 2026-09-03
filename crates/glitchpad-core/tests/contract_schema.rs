@@ -12,7 +12,8 @@ use glitchpad_core::{
     },
     source::{
         AndroidRestorationResult, AndroidSaveAsReceipt, AndroidSourceSummary, DesktopSourceSummary,
-        ExternalRevision, OverwriteAuthorization, SaveOperationId, SaveReceipt, SourceEvent,
+        ExternalRevision, IntegrityProgress, IntegrityStartRequest, OverwriteAuthorization,
+        SaveOperationId, SaveReceipt, SourceEvent, SourceMetadataSnapshot,
     },
 };
 
@@ -55,6 +56,9 @@ fn schemas_cover_source_detection_text_profile_and_session_contracts() {
         schemars::schema_for!(DesktopSourceSummary),
         schemars::schema_for!(ExternalRevision),
         schemars::schema_for!(SourceEvent),
+        schemars::schema_for!(SourceMetadataSnapshot),
+        schemars::schema_for!(IntegrityStartRequest),
+        schemars::schema_for!(IntegrityProgress),
         schemars::schema_for!(SaveReceipt),
         schemars::schema_for!(AndroidSourceSummary),
         schemars::schema_for!(AndroidRestorationResult),

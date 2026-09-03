@@ -42,8 +42,8 @@ describe('Mermaid surface', () => {
     fireEvent.click(screen.getAllByRole('button', { name: 'File information' }).at(-1)!);
     expect(screen.getByText('flowchart')).toBeInTheDocument();
     expect(screen.getByText('11.17.2')).toBeInTheDocument();
-    const inspector = screen.getByLabelText('Diagram information');
-    expect(inspector).toHaveTextContent('Filenamearchitecture.mmd');
+    const inspector = screen.getByRole('complementary', { name: 'File information' });
+    expect(inspector).toHaveTextContent('File namearchitecture.mmd');
     expect(inspector).toHaveTextContent('Media typetext/vnd.mermaid');
     expect(inspector).toHaveTextContent('Encodingutf8');
     expect(inspector).toHaveTextContent('Output bytes');

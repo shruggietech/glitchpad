@@ -49,6 +49,50 @@ export interface SourceDescriptor {
   capabilities: SourceCapabilities;
 }
 
+export type SourceWriteState =
+  | 'writable'
+  | 'read_only'
+  | 'save_as_only'
+  | 'unavailable';
+
+export interface SourceMetadataSnapshot {
+  source_id: SourceId;
+  external_revision: ExternalRevision;
+  display_name: string;
+  source_kind: SourceDescriptor['kind'];
+  byte_length: string | number | null;
+  modified_unix_nanos: string | null;
+  created_unix_nanos: string | null;
+  accessed_unix_nanos: string | null;
+  write_state: SourceWriteState;
+  identity_confidence: IdentityStrength;
+}
+
+export type IntegrityState =
+  | 'pending'
+  | 'ready'
+  | 'stale'
+  | 'limited'
+  | 'cancelled'
+  | 'failed';
+
+export interface IntegrityStartRequest {
+  request_id: string;
+  source_id: SourceId;
+  expected_external_revision: ExternalRevision;
+}
+
+export interface IntegrityProgress {
+  request_id: string;
+  source_id: SourceId;
+  state: IntegrityState;
+  processed_bytes: string | number;
+  total_bytes: string | number | null;
+  sha256: string | null;
+  external_revision: ExternalRevision;
+  error_code?: string | null;
+}
+
 export type SourceId = string;
 export type StreamId = string;
 export type UserActivationId = string;
@@ -331,6 +375,7 @@ export interface ShellSession {
   text_document?: TextDocumentState | null;
   markdown_document?: MarkdownDocumentState | null;
   mermaid_document?: MermaidDocumentState | null;
+  metadata?: import('./metadata').MetadataSnapshot | null;
 }
 
 export interface ContractEnvelope<T> {

@@ -14,6 +14,7 @@ import java.io.FileOutputStream
 import org.junit.After
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Test
@@ -81,6 +82,34 @@ class AndroidSourceInstrumentedTest {
       } catch (_: android.system.ErrnoException) {
         // Expected stream-only provider behavior.
       }
+    }
+  }
+
+  @Test
+  fun controlledProviderPreservesMetadataOmissionsAndUnicodeVerbatim() {
+    val omitted = grant(documentUri("metadata-omitted.txt"))
+    resolver.query(omitted, arrayOf("_display_name", "_size", "last_modified"), null, null, null).use { cursor ->
+      requireNotNull(cursor)
+      assertTrue(cursor.moveToFirst())
+      assertTrue(cursor.isNull(cursor.getColumnIndexOrThrow("_display_name")))
+      assertTrue(cursor.isNull(cursor.getColumnIndexOrThrow("_size")))
+      assertTrue(cursor.isNull(cursor.getColumnIndexOrThrow("last_modified")))
+    }
+
+    val unicodeName = "\u05e9\u05dc\u05d5\u05dd-e\u0301-\ud83e\uddea.txt"
+    val unicode = grant(documentUri(unicodeName))
+    resolver.query(unicode, arrayOf("_display_name"), null, null, null).use { cursor ->
+      requireNotNull(cursor)
+      assertTrue(cursor.moveToFirst())
+      assertEquals(unicodeName, cursor.getString(0))
+    }
+  }
+
+  @Test
+  fun controlledProviderSurfacesUnavailableMetadataWithoutInventingARow() {
+    val unavailable = grant(documentUri("provider-unavailable.txt"))
+    resolver.query(unavailable, arrayOf("_display_name", "_size"), null, null, null).use { cursor ->
+      assertNull(cursor)
     }
   }
 

@@ -27,6 +27,16 @@ const markdownSession = (content: string) => ({
 });
 
 describe('Markdown surface', () => {
+  it('publishes renderer measurements to the shared inspector', async () => {
+    render(<App sessions={[markdownSession('# Metadata heading')]} />);
+    await screen.findByRole('heading', { name: 'Metadata heading' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'File information' }).at(-1)!);
+    const inspector = screen.getByRole('complementary', { name: 'File information' });
+    expect(inspector).toHaveTextContent('Sanitizer version2');
+    expect(inspector).toHaveTextContent('Headings1');
+    expect(inspector).toHaveTextContent('Parse duration');
+  });
+
   it('renders Mermaid fences independently and routes each fallback to parent source', async () => {
     const content = '# Diagrams\n\n```mermaid\nflowchart TB\nAlphaNode-->BetaNode\n```\n\nBetween\n\n```mermaid\nflowchart TB\nBroken-->\n```\n\nAfter';
     render(<App sessions={[markdownSession(content)]} />);

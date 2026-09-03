@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "known_sha256_text": "Glitchpad metadata integrity fixture\n",
+  "cases": [
+    {"key":"host.display_name","availability":"available","value":"notes-😀-é.txt","provenance":"host","sensitivity":"public","copy_policy":"direct"},
+    {"key":"host.external_revision","availability":"available","value":"42 · 1788044400000000123","provenance":"host","sensitivity":"sensitive","copy_policy":"explicit_confirmation"},
+    {"key":"host.created","availability":"not_provided","provenance":"host","sensitivity":"public","copy_policy":"direct"},
+    {"key":"derived.format_evidence","availability":"unsupported","provenance":"detection","sensitivity":"public","copy_policy":"direct"},
+    {"key":"derived.warnings","availability":"redacted","provenance":"detection","sensitivity":"protected","copy_policy":"denied"},
+    {"key":"derived.sha256","availability":"pending","provenance":"integrity","sensitivity":"public","copy_policy":"direct"},
+    {"key":"host.modified","availability":"errored","safe_error_code":"metadata_unavailable","provenance":"host","sensitivity":"public","copy_policy":"direct"}
+  ],
+  "hostile_values": [
+    "<img src=x onerror=alert(1)>",
+    "javascript:alert(1)",
+    "line one\nforged status",
+    "safe\u202Etxt.exe",
+    "C:\\private\\document.txt",
+    "content://secret.authority/private/42"
+  ],
+  "precision_values": ["0", "9007199254740993", "18446744073709551615"],
+  "expected": {
+    "availability_states": 6,
+    "copy_policies": ["direct", "explicit_confirmation", "denied"],
+    "hostile_values_render_as_text": true,
+    "native_locators_are_never_catalog_values": true
+  }
+}

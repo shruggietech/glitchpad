@@ -44,6 +44,8 @@ public final class FixtureDocumentsProvider extends DocumentsProvider {
     }
     writeFixture(directory, "seekable.txt", "seekable fixture payload");
     writeFixture(directory, "unknown-size.txt", "unknown size payload");
+    writeFixture(directory, "metadata-omitted.txt", "metadata omission payload");
+    writeFixture(directory, "\u05e9\u05dc\u05d5\u05dd-e\u0301-\ud83e\uddea.txt", "unicode metadata payload");
     writeFixture(directory, "pipe.txt", "pipe fixture payload");
     writeFixture(directory, "diagram.mmd", "flowchart LR\nSource --> Session\n");
     return true;
@@ -64,6 +66,16 @@ public final class FixtureDocumentsProvider extends DocumentsProvider {
 
   @Override
   public Cursor queryDocument(String documentId, String[] projection) throws FileNotFoundException {
+    if ("provider-unavailable.txt".equals(documentId)) {
+      if (projection != null
+          && projection.length == 1
+          && Document.COLUMN_DOCUMENT_ID.equals(projection[0])) {
+        MatrixCursor grantProbe = new MatrixCursor(projection);
+        grantProbe.newRow().add(Document.COLUMN_DOCUMENT_ID, documentId);
+        return grantProbe;
+      }
+      return null;
+    }
     MatrixCursor cursor = new MatrixCursor(projection == null ? DOCUMENT_COLUMNS : projection);
     includeDocument(cursor, documentId);
     return cursor;
@@ -196,17 +208,22 @@ public final class FixtureDocumentsProvider extends DocumentsProvider {
     }
     File file = documentFile(documentId);
     row.add(Document.COLUMN_DOCUMENT_ID, file.getName());
-    row.add(Document.COLUMN_DISPLAY_NAME, file.getName());
+    if (!"metadata-omitted.txt".equals(file.getName())) {
+      row.add(Document.COLUMN_DISPLAY_NAME, file.getName());
+    }
     row.add(Document.COLUMN_MIME_TYPE, mimeType(file.getName()));
     row.add(
         Document.COLUMN_FLAGS,
         Document.FLAG_SUPPORTS_WRITE
             | Document.FLAG_SUPPORTS_RENAME
             | Document.FLAG_SUPPORTS_DELETE);
-    if (!"unknown-size.txt".equals(file.getName())) {
+    if (!"unknown-size.txt".equals(file.getName())
+        && !"metadata-omitted.txt".equals(file.getName())) {
       row.add(Document.COLUMN_SIZE, file.length());
     }
-    row.add(Document.COLUMN_LAST_MODIFIED, file.lastModified());
+    if (!"metadata-omitted.txt".equals(file.getName())) {
+      row.add(Document.COLUMN_LAST_MODIFIED, file.lastModified());
+    }
   }
 
   private File fixtureDirectory() {

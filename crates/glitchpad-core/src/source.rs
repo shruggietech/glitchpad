@@ -2,6 +2,7 @@
 
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 
 use crate::contracts::{DocumentIdentity, SourceDescriptor};
 
@@ -10,6 +11,12 @@ pub const MAX_SOURCE_CHUNK_BYTES: u64 = 1024 * 1024;
 
 /// Largest in-memory save payload accepted by the initial desktop host.
 pub const MAX_SAVE_BYTES: u64 = 16 * 1024 * 1024;
+
+/// Largest source for which the host will calculate an integrity digest.
+pub const MAX_INTEGRITY_SOURCE_BYTES: u64 = 256 * 1024 * 1024;
+
+/// Maximum number of source bytes processed by one integrity advance.
+pub const MAX_INTEGRITY_STEP_BYTES: u64 = MAX_SOURCE_CHUNK_BYTES;
 
 mod optional_u64_decimal {
     use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -174,6 +181,105 @@ pub struct SourceMetadata {
     #[serde(with = "optional_u64_decimal")]
     pub modified_unix_nanos: Option<u64>,
     pub read_only: bool,
+}
+
+/// Safe write authority shown by the metadata inspector.
+#[derive(Clone, Copy, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SourceWriteState {
+    Writable,
+    ReadOnly,
+    SaveAsOnly,
+    Unavailable,
+}
+
+/// Path-free native metadata observation tied to one external revision.
+#[derive(Clone, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
+pub struct SourceMetadataSnapshot {
+    pub source_id: SourceId,
+    pub external_revision: ExternalRevision,
+    pub display_name: String,
+    pub source_kind: crate::contracts::SourceKind,
+    #[schemars(with = "Option<String>")]
+    #[serde(with = "optional_u64_decimal")]
+    pub byte_length: Option<u64>,
+    #[schemars(with = "Option<String>")]
+    #[serde(with = "optional_u64_decimal")]
+    pub modified_unix_nanos: Option<u64>,
+    #[schemars(with = "Option<String>")]
+    #[serde(with = "optional_u64_decimal")]
+    pub created_unix_nanos: Option<u64>,
+    #[schemars(with = "Option<String>")]
+    #[serde(with = "optional_u64_decimal")]
+    pub accessed_unix_nanos: Option<u64>,
+    pub write_state: SourceWriteState,
+    pub identity_confidence: crate::contracts::IdentityStrength,
+}
+
+/// Unguessable caller-supplied identifier for one integrity operation.
+#[derive(
+    Clone, Debug, Eq, Hash, JsonSchema, Ord, PartialEq, PartialOrd, Serialize, Deserialize,
+)]
+#[serde(transparent)]
+pub struct IntegrityRequestId(pub String);
+
+/// Starts SHA-256 work only for the exact expected external revision.
+#[derive(Clone, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
+pub struct IntegrityStartRequest {
+    pub request_id: IntegrityRequestId,
+    pub source_id: SourceId,
+    pub expected_external_revision: ExternalRevision,
+}
+
+/// Public state of one bounded integrity operation.
+#[derive(Clone, Copy, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum IntegrityState {
+    Pending,
+    Ready,
+    Cancelled,
+    Stale,
+    Limited,
+    Failed,
+}
+
+/// Bounded progress. Only `ready` may contain a digest.
+#[derive(Clone, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
+pub struct IntegrityProgress {
+    pub request_id: IntegrityRequestId,
+    pub source_id: SourceId,
+    pub external_revision: ExternalRevision,
+    #[schemars(with = "String")]
+    #[serde(with = "u64_decimal")]
+    pub processed_bytes: u64,
+    #[schemars(with = "Option<String>")]
+    #[serde(with = "optional_u64_decimal")]
+    pub total_bytes: Option<u64>,
+    pub state: IntegrityState,
+    pub sha256: Option<String>,
+    pub error_code: Option<String>,
+}
+
+/// Private incremental SHA-256 state shared by native adapters.
+#[derive(Clone, Debug)]
+pub struct IntegrityHasher(Sha256);
+
+impl Default for IntegrityHasher {
+    fn default() -> Self {
+        Self(Sha256::new())
+    }
+}
+
+impl IntegrityHasher {
+    /// Adds one already-bounded source chunk.
+    pub fn update(&mut self, bytes: &[u8]) {
+        self.0.update(bytes);
+    }
+
+    /// Returns the lowercase SHA-256 digest.
+    pub fn finalize(self) -> String {
+        format!("{:x}", self.0.finalize())
+    }
 }
 
 /// Result of one bounded random-access read.

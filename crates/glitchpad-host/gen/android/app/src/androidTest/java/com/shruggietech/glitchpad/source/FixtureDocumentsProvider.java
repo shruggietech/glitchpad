@@ -45,6 +45,7 @@ public final class FixtureDocumentsProvider extends DocumentsProvider {
     writeFixture(directory, "seekable.txt", "seekable fixture payload");
     writeFixture(directory, "unknown-size.txt", "unknown size payload");
     writeFixture(directory, "pipe.txt", "pipe fixture payload");
+    writeFixture(directory, "diagram.mmd", "flowchart LR\nSource --> Session\n");
     return true;
   }
 
@@ -56,7 +57,7 @@ public final class FixtureDocumentsProvider extends DocumentsProvider {
     row.add(Root.COLUMN_DOCUMENT_ID, ROOT_ID);
     row.add(Root.COLUMN_TITLE, "Glitchpad fixtures");
     row.add(Root.COLUMN_FLAGS, Root.FLAG_SUPPORTS_CREATE);
-    row.add(Root.COLUMN_MIME_TYPES, "text/plain");
+    row.add(Root.COLUMN_MIME_TYPES, "text/plain\ntext/vnd.mermaid");
     row.add(Root.COLUMN_AVAILABLE_BYTES, fixtureDirectory().getUsableSpace());
     return cursor;
   }
@@ -88,7 +89,7 @@ public final class FixtureDocumentsProvider extends DocumentsProvider {
 
   @Override
   public String getDocumentType(String documentId) {
-    return ROOT_ID.equals(documentId) ? Document.MIME_TYPE_DIR : "text/plain";
+    return ROOT_ID.equals(documentId) ? Document.MIME_TYPE_DIR : mimeType(documentId);
   }
 
   @Override
@@ -196,7 +197,7 @@ public final class FixtureDocumentsProvider extends DocumentsProvider {
     File file = documentFile(documentId);
     row.add(Document.COLUMN_DOCUMENT_ID, file.getName());
     row.add(Document.COLUMN_DISPLAY_NAME, file.getName());
-    row.add(Document.COLUMN_MIME_TYPE, "text/plain");
+    row.add(Document.COLUMN_MIME_TYPE, mimeType(file.getName()));
     row.add(
         Document.COLUMN_FLAGS,
         Document.FLAG_SUPPORTS_WRITE
@@ -214,6 +215,12 @@ public final class FixtureDocumentsProvider extends DocumentsProvider {
       throw new IllegalStateException("fixture_context_unavailable");
     }
     return new File(context.getFilesDir(), "document-provider-fixtures");
+  }
+
+  private static String mimeType(String name) {
+    return name.endsWith(".mmd") || name.endsWith(".mermaid")
+        ? "text/vnd.mermaid"
+        : "text/plain";
   }
 
   private File documentFile(String documentId) throws FileNotFoundException {

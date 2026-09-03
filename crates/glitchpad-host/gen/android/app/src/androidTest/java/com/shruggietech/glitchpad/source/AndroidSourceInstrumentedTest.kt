@@ -85,6 +85,15 @@ class AndroidSourceInstrumentedTest {
   }
 
   @Test
+  fun controlledProviderDeliversExactMermaidSourceAndMediaType() {
+    val source = grant(documentUri("diagram.mmd"))
+    assertEquals("text/vnd.mermaid", resolver.getType(source))
+    val expected = "flowchart LR\nSource --> Session\n".toByteArray()
+    val observed = resolver.openInputStream(source).use { requireNotNull(it).readBytes() }
+    assertArrayEquals(expected, observed)
+  }
+
+  @Test
   fun controlledProviderExposesRenameFailureAndRevocationEvidence() {
     val source = grant(documentUri("seekable.txt"))
     resolver.openInputStream(source).use { assertTrue(requireNotNull(it).read() >= 0) }

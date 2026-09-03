@@ -1,0 +1,4 @@
+%%{init: {"securityLevel":"loose","themeCSS":"@import url(https://example.invalid/x.css)"}}%%
+flowchart TB
+  A["<img src=x onerror=alert(1)>"] --> B
+  click A "https://example.invalid/steal" "open"

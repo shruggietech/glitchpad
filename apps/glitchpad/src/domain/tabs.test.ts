@@ -254,4 +254,19 @@ describe('tab state', () => {
     });
     expect(stale.sessions[0]?.markdown_document?.mode).toBe('source');
   });
+
+  it('persists Mermaid preview state only for the exact source revision', () => {
+    const initial = createTabState(sessions(1));
+    const mermaid = {
+      mode: 'rendered' as const,
+      render_revision: 1,
+      render_status: 'ready' as const,
+      preview_stale: false,
+      viewport: { mode: 'fit' as const, zoom: 1, pan_x: 0, pan_y: 0 },
+    };
+    const updated = tabReducer(initial, { type: 'update_mermaid', id: 'session-1', expectedRevision: 1, mermaid });
+    expect(updated.sessions[0]?.mermaid_document).toEqual(mermaid);
+    const stale = tabReducer(updated, { type: 'update_mermaid', id: 'session-1', expectedRevision: 0, mermaid: { ...mermaid, preview_stale: true } });
+    expect(stale.sessions[0]?.mermaid_document?.preview_stale).toBe(false);
+  });
 });

@@ -62,6 +62,7 @@ export interface SafeElementNode {
   source_range: SourceRange | null;
   link: LinkCandidate | null;
   resource: ResourceCandidate | null;
+  mermaid?: import('./mermaid-contract').EmbeddedMermaidBlock;
 }
 
 export interface SafeTextNode {

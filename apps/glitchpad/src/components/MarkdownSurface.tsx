@@ -33,6 +33,7 @@ import {
   type MarkdownLocalAssetGateway,
 } from '../domain/markdown-gateway';
 import { MarkdownRendererClient } from '../domain/markdown-renderer';
+import { EmbeddedMermaidSurface } from './EmbeddedMermaidSurface';
 import {
   TextEditorSurface,
   type TextEditorHandle,
@@ -68,6 +69,7 @@ interface SafeTreeProps {
   onLink: (candidate: LinkCandidate, trigger: HTMLElement) => void;
   onLocalLink: (candidate: LinkCandidate) => void;
   localAssetGateway: MarkdownLocalAssetGateway;
+  onMermaidSource: (range: SourceRange | null) => void;
 }
 
 const safeClassName = (value: unknown): string | undefined => {
@@ -140,6 +142,7 @@ function SafeTree({
   onLink,
   onLocalLink,
   localAssetGateway,
+  onMermaidSource,
 }: SafeTreeProps): ReactNode {
   if (node.type === 'text') return node.value;
   if (node.type === 'root') {
@@ -152,6 +155,7 @@ function SafeTree({
         onLink={onLink}
         onLocalLink={onLocalLink}
         localAssetGateway={localAssetGateway}
+        onMermaidSource={onMermaidSource}
       />
     ));
   }
@@ -164,6 +168,15 @@ function SafeTree({
       />
     );
   }
+  if (node.type === 'element' && node.mermaid) {
+    return (
+      <EmbeddedMermaidSurface
+        block={node.mermaid}
+        documentName={session.source.display_name}
+        onViewSource={() => onMermaidSource(node.source_range)}
+      />
+    );
+  }
   const children = node.children.map((child) => (
     <SafeTree
       key={child.id}
@@ -173,6 +186,7 @@ function SafeTree({
       onLink={onLink}
       onLocalLink={onLocalLink}
       localAssetGateway={localAssetGateway}
+      onMermaidSource={onMermaidSource}
     />
   ));
   if (node.link) {
@@ -481,6 +495,11 @@ export const MarkdownSurface = forwardRef<
     publishMode('source', nextSelection);
   };
 
+  const enterMermaidSource = (range: SourceRange | null) => {
+    setSourceSelection(range);
+    publishMode('source', range);
+  };
+
   const moveMatch = (offset: -1 | 1): boolean => {
     if (matches.length === 0) return false;
     setActiveMatch((current) => {
@@ -599,7 +618,7 @@ export const MarkdownSurface = forwardRef<
         </div>
         {result?.tree && (
           <article className="markdown-document markdown-print-document">
-            <SafeTree node={result.tree} session={session} activeNodeId={null} onLink={beginLink} onLocalLink={openLocalLink} localAssetGateway={localAssetGateway} />
+            <SafeTree node={result.tree} session={session} activeNodeId={null} onLink={beginLink} onLocalLink={openLocalLink} localAssetGateway={localAssetGateway} onMermaidSource={enterMermaidSource} />
           </article>
         )}
       </div>
@@ -689,6 +708,7 @@ export const MarkdownSurface = forwardRef<
             onLink={beginLink}
             onLocalLink={openLocalLink}
             localAssetGateway={localAssetGateway}
+            onMermaidSource={enterMermaidSource}
           />
         ) : status === 'failed' ? (
           <p role="alert">Markdown preview failed safely. Source remains available.</p>

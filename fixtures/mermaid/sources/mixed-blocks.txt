@@ -1,0 +1,15 @@
+# Mixed diagrams
+
+Before the diagrams.
+
+```mermaid
+flowchart TB
+  A --> B
+```
+
+```mermaid
+flowchart TB
+  Broken -->
+```
+
+After the diagrams.

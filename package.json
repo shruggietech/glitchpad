@@ -14,6 +14,7 @@
     "check": "cargo xtask check",
     "check:brand": "node --test scripts/check-brand.test.mjs && node scripts/check-brand.mjs",
     "check:validation": "node --test scripts/check-validation.test.mjs",
+    "check:mermaid-runtime": "pnpm --filter @shruggietech/glitchpad build && node --test scripts/check-mermaid-runtime.test.mjs && node scripts/check-mermaid-runtime.mjs",
     "check:frontend": "pnpm --filter @shruggietech/glitchpad check",
     "check:site": "pnpm --filter @shruggietech/glitchpad-site check",
     "check:config": "node scripts/check-config.mjs && taplo lint \"**/*.toml\"",

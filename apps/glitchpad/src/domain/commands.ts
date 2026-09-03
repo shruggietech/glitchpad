@@ -42,7 +42,7 @@ export const commandSetFor = (
   const canEditSource =
     renderer.edit &&
     (source.write || session.integrity === 'recovery_only');
-  const markdownMode = session.markdown_document?.mode;
+  const documentMode = session.markdown_document?.mode ?? session.mermaid_document?.mode;
   const definitions: Array<[boolean, CommandId, string, string?]> = [
     [renderer.copy, 'copy', 'Copy', 'Ctrl+C'],
     [renderer.search, 'search', 'Search', 'Ctrl+F'],
@@ -56,7 +56,7 @@ export const commandSetFor = (
     [Boolean(session.text_document && session.text_document.mode === 'editable'), 'toggle_wrap', 'Toggle wrap'],
     [renderer.zoom, 'zoom_out', 'Zoom out', 'Ctrl+-'],
     [renderer.zoom, 'zoom_in', 'Zoom in', 'Ctrl++'],
-    [canEditSource && session.markdown_document?.eligibility !== 'source_only', 'edit', markdownMode === 'source' ? 'Preview' : 'Edit'],
+    [canEditSource && session.markdown_document?.eligibility !== 'source_only', 'edit', documentMode === 'source' ? 'Preview' : 'Edit'],
     [renderer.save && source.write, 'save', 'Save', 'Ctrl+S'],
     [
       renderer.inspect_metadata && source.metadata,

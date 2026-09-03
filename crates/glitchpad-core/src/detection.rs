@@ -334,6 +334,24 @@ pub fn detect(input: &DetectionInput<'_>) -> DetectionResult {
         kind: EvidenceKind::Encoding,
         detail: encoding_detail,
     }];
+    let trimmed = text.trim_start_matches(['\u{feff}', ' ', '\t', '\r', '\n']);
+    if matches!(extension.as_str(), "mmd" | "mermaid") && mermaid_directive(trimmed).is_none() {
+        evidence.push(DetectionEvidence {
+            kind: EvidenceKind::Filename,
+            detail: format!(
+                "Mermaid filename extension .{extension} without a verified diagram declaration"
+            ),
+        });
+        return DetectionResult {
+            outcome: DetectionOutcome::Ambiguous,
+            candidate: Some(FormatCandidate::Mermaid),
+            confidence: Some(DetectionConfidence::Low),
+            evidence: bounded_evidence(evidence, limits.max_evidence),
+            text_profile: Some(profile),
+            bytes_examined: input.probe.len(),
+            truncated,
+        };
+    }
     if !media_type.is_empty() {
         evidence.push(DetectionEvidence {
             kind: EvidenceKind::MediaType,
@@ -341,7 +359,6 @@ pub fn detect(input: &DetectionInput<'_>) -> DetectionResult {
         });
     }
 
-    let trimmed = text.trim_start_matches(['\u{feff}', ' ', '\t', '\r', '\n']);
     let (candidate, confidence, structural_detail) = if mermaid_directive(trimmed).is_some() {
         (
             FormatCandidate::Mermaid,
@@ -545,8 +562,26 @@ fn extension(name: &str) -> &str {
 }
 
 fn mermaid_directive(text: &str) -> Option<&str> {
-    let directive = text.lines().next()?.split_whitespace().next()?;
-    MERMAID_DIRECTIVES.contains(&directive).then_some(directive)
+    let mut lines = text.lines().map(str::trim);
+    let first = lines.next()?;
+    if first == "---" {
+        for line in lines.by_ref() {
+            if line == "---" {
+                break;
+            }
+        }
+    } else if !first.is_empty() && !first.starts_with("%%") {
+        let directive = first.split_whitespace().next()?;
+        return MERMAID_DIRECTIVES.contains(&directive).then_some(directive);
+    }
+    for line in lines {
+        if line.is_empty() || line.starts_with("%%") {
+            continue;
+        }
+        let directive = line.split_whitespace().next()?;
+        return MERMAID_DIRECTIVES.contains(&directive).then_some(directive);
+    }
+    None
 }
 
 fn markdown_structure(text: &str) -> bool {
@@ -639,6 +674,18 @@ mod tests {
             detected("diagram.txt", b"flowchart TB\n A --> B\n", None).candidate,
             Some(FormatCandidate::Mermaid)
         );
+        assert_eq!(
+            detected(
+                "diagram.mermaid",
+                b"---\ntitle: Example\n---\nflowchart LR\nA-->B\n",
+                None
+            )
+            .candidate,
+            Some(FormatCandidate::Mermaid)
+        );
+        let ambiguous_mermaid = detected("empty.mmd", b"", None);
+        assert_eq!(ambiguous_mermaid.outcome, DetectionOutcome::Ambiguous);
+        assert_eq!(ambiguous_mermaid.candidate, Some(FormatCandidate::Mermaid));
         assert_eq!(
             detected("notes.txt", b"ordinary notes", None).candidate,
             Some(FormatCandidate::PlainText)

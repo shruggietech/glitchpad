@@ -33,6 +33,7 @@ import { createTabState, tabReducer } from './domain/tabs';
 import { createTextDocument } from './domain/text-document';
 import { detectLanguage } from './domain/language';
 import { markdownEligibility } from './domain/markdown-contract';
+import { initialMermaidViewport } from './domain/mermaid-contract';
 import {
   nativeExternalLinkAvailable,
   nativeMarkdownExternalLinkGateway,
@@ -68,8 +69,12 @@ const makeSession = (
         strength: 'strong',
       },
       display_name: name,
-      claimed_media_type: name.endsWith('.md') ? 'text/markdown' : 'text/plain',
-      byte_length: content.length,
+      claimed_media_type: name.endsWith('.md')
+        ? 'text/markdown'
+        : /\.(?:mmd|mermaid)$/iu.test(name)
+          ? 'text/vnd.mermaid'
+          : 'text/plain',
+      byte_length: textDocument?.source_bytes ?? content.length,
       modified_unix_ms: 1_788_044_400_000,
       kind: 'memory',
       capabilities: {
@@ -104,6 +109,15 @@ const makeSession = (
           render_revision: null,
           render_status: eligibility === 'full' ? 'idle' : 'limited',
           source_selection: null,
+        }
+      : null,
+    mermaid_document: renderer === 'Mermaid'
+      ? {
+          mode: content.trim() ? 'rendered' : 'source',
+          render_revision: null,
+          render_status: 'idle',
+          preview_stale: false,
+          viewport: initialMermaidViewport(),
         }
       : null,
   };
@@ -288,6 +302,9 @@ export function App({ sessions = initialSessions, recoveryGateway, externalLinkG
         }
         onMarkdownChange={(id, expectedRevision, markdown) =>
           dispatch({ type: 'update_markdown', id, expectedRevision, markdown })
+        }
+        onMermaidChange={(id, expectedRevision, mermaid) =>
+          dispatch({ type: 'update_mermaid', id, expectedRevision, mermaid })
         }
         externalLinkGateway={externalLinkGateway ?? (nativeExternalLinkAvailable() ? nativeMarkdownExternalLinkGateway : undefined)}
         localAssetGateway={localAssetGateway}

@@ -270,6 +270,14 @@ export interface MarkdownDocumentState {
   source_selection: { from: number; to: number } | null;
 }
 
+export interface MermaidDocumentState {
+  mode: 'rendered' | 'source';
+  render_revision: number | null;
+  render_status: import('./mermaid-contract').MermaidRenderStatus | 'idle' | 'scheduled' | 'stale';
+  preview_stale: boolean;
+  viewport: import('./mermaid-contract').MermaidViewportState;
+}
+
 export interface SaveOperation {
   operation_id: string;
   source_id: SourceId;
@@ -322,6 +330,7 @@ export interface ShellSession {
   source_id?: SourceId | null;
   text_document?: TextDocumentState | null;
   markdown_document?: MarkdownDocumentState | null;
+  mermaid_document?: MermaidDocumentState | null;
 }
 
 export interface ContractEnvelope<T> {

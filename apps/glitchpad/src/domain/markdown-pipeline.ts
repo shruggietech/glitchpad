@@ -24,6 +24,8 @@ import {
   type SourceRange,
 } from './markdown-contract';
 import { classifyMarkdownResource, classifyMarkdownTarget } from './markdown-url';
+import { extractMermaidBlocks } from './mermaid-markdown';
+import type { EmbeddedMermaidBlock } from './mermaid-contract';
 
 const allowedTags = [
   'a',
@@ -113,6 +115,7 @@ interface ProjectionContext {
   nextId: number;
   slugCounts: Map<string, number>;
   outline: HeadingEntry[];
+  mermaidBlocks: EmbeddedMermaidBlock[];
 }
 
 const toSourceRange = (
@@ -196,6 +199,22 @@ const projectNode = (
       .filter((child): child is SafeRenderedNode => child !== null);
     return { type: 'root', id, children, source_range: sourceRange };
   }
+  const mermaid = node.tagName === 'pre'
+    ? context.mermaidBlocks.find((block) => block.source_range?.start_offset === sourceRange?.start_offset) ?? null
+    : null;
+  if (mermaid) {
+    return {
+      type: 'element',
+      id,
+      tag_name: 'div',
+      properties: { className: ['markdown-mermaid-block'] },
+      children: [],
+      source_range: sourceRange,
+      link: null,
+      resource: null,
+      mermaid,
+    };
+  }
   if (!allowedTags.includes(node.tagName as (typeof allowedTags)[number])) return null;
   const target = typeof node.properties.dataMarkdownTarget === 'string' ? node.properties.dataMarkdownTarget : '';
   const alt = typeof node.properties.alt === 'string' ? node.properties.alt : '';
@@ -258,6 +277,11 @@ const collectSearchText = (
   entries: SearchTextEntry[],
 ): void => {
   if (node.type === 'text') return;
+  if (node.type === 'element' && node.mermaid) {
+    const text = node.mermaid.source.replace(/\s+/gu, ' ').trim();
+    if (text) entries.push({ node_id: node.id, text, source_range: node.source_range });
+    return;
+  }
   if (node.type === 'element' && searchableTags.has(node.tag_name)) {
     const text = textOf(node).replace(/\s+/gu, ' ').trim();
     if (text) entries.push({ node_id: node.id, text, source_range: node.source_range });
@@ -316,6 +340,7 @@ export const renderMarkdown = async (
       nextId: 1,
       slugCounts: new Map(),
       outline: [],
+      mermaidBlocks: extractMermaidBlocks(request.source_text, request.session_id, request.source_revision),
     };
     const tree = projectNode(transformed, context);
     if (!tree || tree.type !== 'root') throw new Error('invalid root');

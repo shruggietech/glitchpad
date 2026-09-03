@@ -151,6 +151,35 @@ describe('recovery projection', () => {
     });
   });
 
+  it('recovers Mermaid source losslessly without inventing source authority', () => {
+    const recovered = projectRecoveredSession({
+      inventory: {
+        record_id: '3dc180ca-c88a-4693-8b1b-e17428a23e0e',
+        display_hint: 'architecture.mmd',
+        updated_unix_ms: 10,
+        expires_unix_ms: 20,
+        committed_bytes: 40,
+        status: 'available',
+      },
+      content: 'flowchart TB\r\n  Alpha --> Beta\r\n',
+      snapshot_session_revision: 11,
+      text_profile: {
+        encoding: 'utf8',
+        bom: 'absent',
+        newlines: 'crlf',
+        terminal_newline: 'present',
+        undecodable_bytes: 'none',
+      },
+    });
+    expect(recovered).toMatchObject({ integrity: 'recovery_only', source_state: 'unavailable' });
+    expect(recovered.text_document).toMatchObject({
+      raw_text: 'flowchart TB\r\n  Alpha --> Beta\r\n',
+      normalized_text: 'flowchart TB\n  Alpha --> Beta\n',
+      language: { language: 'plain_text' },
+    });
+    expect(recovered.source.capabilities.write).toBe(false);
+  });
+
   it('presents only recoverable inventory while keeping safe aggregate notices', () => {
     const entry = (
       status: 'available' | 'corrupted' | 'unsupported',

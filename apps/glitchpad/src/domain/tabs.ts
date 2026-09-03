@@ -33,7 +33,20 @@ export type TabAction =
   | { type: 'previous' }
   | { type: 'first' }
   | { type: 'last' }
-  | { type: 'toggle_overflow'; open?: boolean };
+  | { type: 'toggle_overflow'; open?: boolean }
+  | {
+      type: 'update_text';
+      id: string;
+      expectedRevision: number;
+      revision: number;
+      document: import('./contracts').TextDocumentState;
+    }
+  | {
+      type: 'update_language';
+      id: string;
+      expectedRevision: number;
+      language: import('./contracts').LanguageDecision;
+    };
 
 export interface TabProjection {
   inline: ShellSession[];
@@ -133,8 +146,40 @@ export const tabReducer = (state: TabState, action: TabAction): TabState => {
     }
     case 'toggle_overflow':
       return { ...state, overflowOpen: action.open ?? !state.overflowOpen };
+    case 'update_text':
+      return updateText(state, action);
+    case 'update_language':
+      return {
+        ...state,
+        sessions: state.sessions.map((session) =>
+          session.id === action.id && session.revision === action.expectedRevision && session.text_document
+            ? { ...session, text_document: { ...session.text_document, language: action.language } }
+            : session,
+        ),
+      };
   }
 };
+
+const updateText = (
+  state: TabState,
+  action: Extract<TabAction, { type: 'update_text' }>,
+): TabState => ({
+  ...state,
+  sessions: state.sessions.map((session) =>
+    session.id === action.id && session.revision === action.expectedRevision
+      ? {
+          ...session,
+          content: action.document.normalized_text,
+          text_document: action.document,
+          revision: action.revision,
+          dirty: true,
+          integrity: 'dirty',
+          pending_save: null,
+          recovery_coverage: 'stale',
+        }
+      : session,
+  ),
+});
 
 const activate = (state: TabState, id: string): TabState => {
   const target = state.sessions.find((session) => session.id === id);

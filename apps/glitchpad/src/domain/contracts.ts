@@ -86,11 +86,7 @@ export interface SourceEvent {
 }
 
 export type RevalidationStatus =
-  | 'match'
-  | 'changed'
-  | 'deleted'
-  | 'permission_revoked'
-  | 'unavailable';
+  'match' | 'changed' | 'deleted' | 'permission_revoked' | 'unavailable';
 
 export interface RevalidationResult {
   source_id: SourceId;
@@ -100,9 +96,7 @@ export interface RevalidationResult {
 }
 
 export type DurabilityGuarantee =
-  | 'atomic_file_and_directory'
-  | 'atomic_file'
-  | 'recoverable_non_atomic';
+  'atomic_file_and_directory' | 'atomic_file' | 'recoverable_non_atomic';
 
 export interface SaveReceipt {
   operation_id: string;
@@ -120,10 +114,7 @@ export interface LinkAuthorization {
 }
 
 export type AndroidDeliveryKind =
-  | 'view'
-  | 'share'
-  | 'open_result'
-  | 'create_result';
+  'view' | 'share' | 'open_result' | 'create_result';
 
 export interface AndroidGrantState {
   read: boolean;
@@ -152,10 +143,7 @@ export interface AndroidDeliveryDrain {
 }
 
 export type AndroidRestorationStatus =
-  | 'restored'
-  | 'needs_redelivery'
-  | 'permission_revoked'
-  | 'unavailable';
+  'restored' | 'needs_redelivery' | 'permission_revoked' | 'unavailable';
 
 export interface AndroidRestorationResult {
   source: AndroidSourceSummary | null;
@@ -188,19 +176,74 @@ export type SessionLifecycle =
 
 export type SessionFocus = 'active' | 'background';
 export type SessionIntegrity =
-  | 'clean'
-  | 'dirty'
-  | 'saving'
-  | 'conflicted'
-  | 'recovery_only';
+  'clean' | 'dirty' | 'saving' | 'conflicted' | 'recovery_only';
 export type RecoveryCoverage = 'none' | 'current' | 'stale' | 'unavailable';
 export type DestructiveTransitionKind = 'close' | 'reload' | 'exit';
 export type DestructiveTransitionStatus =
-  | 'awaiting_decision'
-  | 'saving'
-  | 'cancelled'
-  | 'resolved';
+  'awaiting_decision' | 'saving' | 'cancelled' | 'resolved';
 export type SaveMode = 'ordinary' | 'save_as' | 'confirmed_overwrite';
+
+export type TextEncoding =
+  'utf8' | 'utf8_bom' | 'utf16_le_bom' | 'utf16_be_bom' | 'unknown';
+export type NewlineToken = 'lf' | 'crlf' | 'cr';
+export type TextEditorMode = 'editable' | 'large_read_only' | 'refused';
+export type LanguageId =
+  | 'plain_text'
+  | 'rust'
+  | 'typescript'
+  | 'javascript'
+  | 'python'
+  | 'json'
+  | 'toml'
+  | 'yaml'
+  | 'css'
+  | 'html';
+export type LanguageEvidenceKind =
+  'exact_filename' | 'extension' | 'shebang' | 'modeline' | 'content';
+
+export interface LanguageEvidence {
+  kind: LanguageEvidenceKind;
+  language: LanguageId;
+  detail: string;
+}
+
+export interface LanguageDecision {
+  language: LanguageId;
+  confidence: 'low' | 'medium' | 'high';
+  evidence: LanguageEvidence[];
+  conflicts: LanguageEvidence[];
+  origin: 'automatic' | 'session_override';
+  status:
+    | 'plain'
+    | 'loading'
+    | 'highlighted'
+    | 'unavailable'
+    | 'cancelled'
+    | 'failed';
+  load_revision: number;
+  fallback_code: string | null;
+}
+
+export interface TextProfileState {
+  encoding: TextEncoding;
+  bom: 'present' | 'absent' | 'unknown';
+  newline_counts: Record<NewlineToken, number>;
+  insertion_newline: NewlineToken;
+  newline_pattern: NewlineToken | 'mixed' | 'none';
+  terminal_newline: boolean | null;
+  undecodable_bytes: 'none' | 'requires_user_decision' | 'unsupported';
+  round_trip_safe: boolean;
+}
+
+export interface TextDocumentState {
+  mode: TextEditorMode;
+  normalized_text: string;
+  raw_text: string;
+  profile: TextProfileState;
+  language: LanguageDecision;
+  source_bytes: number;
+  longest_line_bytes: number;
+}
 
 export interface SaveOperation {
   operation_id: string;
@@ -222,11 +265,7 @@ export interface DestructiveTransition {
 }
 
 export type RecoveryInventoryStatus =
-  | 'available'
-  | 'expired'
-  | 'corrupted'
-  | 'unsupported'
-  | 'coverage_at_risk';
+  'available' | 'expired' | 'corrupted' | 'unsupported' | 'coverage_at_risk';
 
 export interface RecoveryInventoryEntry {
   record_id: string;
@@ -255,6 +294,8 @@ export interface ShellSession {
   dirty: boolean;
   revision: number;
   content: string;
+  source_id?: SourceId | null;
+  text_document?: TextDocumentState | null;
 }
 
 export interface ContractEnvelope<T> {

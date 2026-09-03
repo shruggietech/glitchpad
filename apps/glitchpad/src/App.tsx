@@ -1,7 +1,8 @@
-import { useEffect, useReducer, useState } from 'react';
+import { useEffect, useReducer, useRef, useState } from 'react';
 
 import { CommandBar } from './components/CommandBar';
 import { DocumentSurface } from './components/DocumentSurface';
+import type { TextEditorHandle } from './components/TextEditorSurface';
 import {
   RecoveryCandidateResolution,
   RecoveryResolution,
@@ -29,6 +30,8 @@ import {
   type RecoveryGateway,
 } from './domain/recovery-gateway';
 import { createTabState, tabReducer } from './domain/tabs';
+import { createTextDocument } from './domain/text-document';
+import { detectLanguage } from './domain/language';
 import { useRecovery } from './domain/use-recovery';
 
 const makeSession = (
@@ -38,45 +41,55 @@ const makeSession = (
   content: string,
   capabilities: Partial<ShellSession['renderer']['capabilities']>,
   options: { dirty?: boolean; writable?: boolean; metadata?: boolean } = {},
-): ShellSession => ({
-  id,
-  source: {
-    identity: {
-      authority: 'synthetic',
-      scope: 'foundation-fixtures',
-      token: id,
-      strength: 'strong',
+): ShellSession => {
+  const isText = renderer !== 'Image';
+  return {
+    id,
+    source: {
+      identity: {
+        authority: 'synthetic',
+        scope: 'foundation-fixtures',
+        token: id,
+        strength: 'strong',
+      },
+      display_name: name,
+      claimed_media_type: name.endsWith('.md') ? 'text/markdown' : 'text/plain',
+      byte_length: content.length,
+      modified_unix_ms: 1_788_044_400_000,
+      kind: 'memory',
+      capabilities: {
+        ...noSourceCapabilities(),
+        read: true,
+        metadata: options.metadata ?? true,
+        write: options.writable ?? false,
+        observe_revision: options.writable ?? false,
+        revalidate: options.writable ?? false,
+        replace_atomically: options.writable ?? false,
+      },
     },
-    display_name: name,
-    claimed_media_type: name.endsWith('.md') ? 'text/markdown' : 'text/plain',
-    byte_length: content.length,
-    modified_unix_ms: 1_788_044_400_000,
-    kind: 'memory',
-    capabilities: {
-      ...noSourceCapabilities(),
-      read: true,
-      metadata: options.metadata ?? true,
-      write: options.writable ?? false,
-      observe_revision: options.writable ?? false,
-      revalidate: options.writable ?? false,
-      replace_atomically: options.writable ?? false,
+    renderer: {
+      id: renderer.toLowerCase(),
+      label: renderer,
+      capabilities: {
+        ...noRendererCapabilities(),
+        view: true,
+        copy: true,
+        ...capabilities,
+      },
     },
-  },
-  renderer: {
-    id: renderer.toLowerCase(),
-    label: renderer,
-    capabilities: {
-      ...noRendererCapabilities(),
-      view: true,
-      copy: true,
-      ...capabilities,
-    },
-  },
-  lifecycle: id === 'welcome' ? 'active' : 'background',
-  dirty: options.dirty ?? false,
-  revision: 1,
-  content,
-});
+    lifecycle: id === 'welcome' ? 'active' : 'background',
+    dirty: options.dirty ?? false,
+    revision: 1,
+    content,
+    text_document: isText
+      ? createTextDocument({
+          rawText: content,
+          displayName: name,
+          language: detectLanguage(name, content),
+        })
+      : null,
+  };
+};
 
 export const initialSessions: ShellSession[] = [
   makeSession(
@@ -134,12 +147,10 @@ interface AppProps {
   recoveryGateway?: RecoveryGateway | null;
 }
 
-export function App({
-  sessions = initialSessions,
-  recoveryGateway,
-}: AppProps) {
+export function App({ sessions = initialSessions, recoveryGateway }: AppProps) {
   const [state, dispatch] = useReducer(tabReducer, sessions, createTabState);
   const [commandStatus, setCommandStatus] = useState('');
+  const editorRef = useRef<TextEditorHandle>(null);
   const selectedRecoveryGateway =
     recoveryGateway === undefined
       ? nativeRecoveryAvailable()
@@ -151,7 +162,8 @@ export function App({
   const activeSession =
     state.sessions.find(({ id }) => id === state.activeId) ?? null;
   const commands = commandSetFor(activeSession).filter(
-    ({ id }) => id !== 'save' || (activeSession && canSaveInPlace(activeSession)),
+    ({ id }) =>
+      id !== 'save' || (activeSession && canSaveInPlace(activeSession)),
   );
   const resolutionSession = state.pendingTransition
     ? (state.sessions.find(
@@ -163,18 +175,20 @@ export function App({
 
   const invoke = (command: CommandDescriptor) => {
     const result = executeCommand(command, activeSession);
+    const applied =
+      result.ok && (editorRef.current?.invoke(command.id) ?? false);
     setCommandStatus(
       result.ok
         ? command.id === 'save' && activeSession
           ? `Save requested for ${activeSession.source.display_name}. Waiting for a durable save receipt.`
-          : result.message
+          : applied
+            ? `${command.label} applied to ${activeSession?.source.display_name ?? 'document'}`
+            : result.message
         : 'Command cancelled because the active document changed',
     );
   };
 
-  const resolveRecoveryCandidate = (
-    decision: RecoveryCandidateDecision,
-  ) => {
+  const resolveRecoveryCandidate = (decision: RecoveryCandidateDecision) => {
     if (!recoveryCandidate) return;
     if (decision === 'cancel') {
       recovery.defer(recoveryCandidate);
@@ -201,7 +215,9 @@ export function App({
         });
       })
       .catch(() => {
-        setCommandStatus('Recovery could not be opened. The record was preserved.');
+        setCommandStatus(
+          'Recovery could not be opened. The record was preserved.',
+        );
       });
   };
 
@@ -234,7 +250,22 @@ export function App({
           {recovery.warning}
         </aside>
       )}
-      <DocumentSurface session={activeSession} />
+      <DocumentSurface
+        ref={editorRef}
+        session={activeSession}
+        onDocumentChange={(id, expectedRevision, document, revision) =>
+          dispatch({
+            type: 'update_text',
+            id,
+            expectedRevision,
+            document,
+            revision,
+          })
+        }
+        onLanguageChange={(id, expectedRevision, language) =>
+          dispatch({ type: 'update_language', id, expectedRevision, language })
+        }
+      />
       {!recoveryCandidate && state.pendingTransition && resolutionSession && (
         <RecoveryResolution
           session={resolutionSession}

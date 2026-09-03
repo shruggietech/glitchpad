@@ -1,4 +1,5 @@
 import axe from 'axe-core';
+import { EditorView } from '@codemirror/view';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 
 import { App, initialSessions } from './App';
@@ -7,6 +8,17 @@ import type { RecoveryGateway } from './domain/recovery-gateway';
 import { DESKTOP_CHROME_MAX_PX, REFERENCE_HEIGHT_PX } from './domain/tabs';
 
 describe('document foundation shell', () => {
+  it('projects editor changes into dirty shell state before save is available', () => {
+    render(<App sessions={[initialSessions[2]]} />);
+    const textbox = screen.getByRole('textbox', { name: 'notes.txt text editor' });
+    const view = EditorView.findFromDOM(textbox);
+    expect(view).not.toBeNull();
+    act(() => view?.dispatch({ changes: { from: 0, to: 1, insert: 'a' } }));
+    expect(screen.getByRole('tab', { name: /unsaved changes/i })).toBeInTheDocument();
+    expect(screen.getByRole('tabpanel')).toHaveTextContent('a small text fixture');
+    expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
+  });
+
   it('renders semantic compact tabs and an active document surface', () => {
     render(<App />);
 

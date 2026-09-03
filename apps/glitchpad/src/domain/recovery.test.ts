@@ -100,6 +100,13 @@ describe('recovery projection', () => {
       },
       content: 'local edits',
       snapshot_session_revision: 7,
+      text_profile: {
+        encoding: 'utf8',
+        bom: 'absent',
+        newlines: 'lf',
+        terminal_newline: 'absent',
+        undecodable_bytes: 'none',
+      },
     });
     expect(recovered).toMatchObject({
       dirty: true,
@@ -108,10 +115,47 @@ describe('recovery projection', () => {
       content: 'local edits',
     });
     expect(recovered.source.capabilities.write).toBe(false);
+    expect(recovered.text_document?.normalized_text).toBe('local edits');
+  });
+
+  it('restores a lossless text document from raw recovery content and profile', () => {
+    const recovered = projectRecoveredSession({
+      inventory: {
+        record_id: '33fa36e2-4d36-4e76-887e-d861b5b53073',
+        display_hint: 'recovered.ts',
+        updated_unix_ms: 10,
+        expires_unix_ms: 20,
+        committed_bytes: 100,
+        status: 'available',
+      },
+      content: 'first\r\nsecond\n',
+      snapshot_session_revision: 9,
+      text_profile: {
+        encoding: 'utf16_le_bom',
+        bom: 'present',
+        newlines: 'mixed',
+        terminal_newline: 'present',
+        undecodable_bytes: 'none',
+      },
+    });
+    expect(recovered.content).toBe('first\nsecond\n');
+    expect(recovered.text_document).toMatchObject({
+      raw_text: 'first\r\nsecond\n',
+      normalized_text: 'first\nsecond\n',
+      profile: {
+        encoding: 'utf16_le_bom',
+        bom: 'present',
+        newline_pattern: 'mixed',
+      },
+      language: { language: 'typescript' },
+    });
   });
 
   it('presents only recoverable inventory while keeping safe aggregate notices', () => {
-    const entry = (status: 'available' | 'corrupted' | 'unsupported', updated: number) => ({
+    const entry = (
+      status: 'available' | 'corrupted' | 'unsupported',
+      updated: number,
+    ) => ({
       record_id: `${status}-${updated}`,
       display_hint: 'draft.txt',
       updated_unix_ms: updated,
@@ -125,9 +169,9 @@ describe('recovery projection', () => {
       entry('available', 3),
       entry('unsupported', 4),
     ]);
-    expect(projection.available.map(({ updated_unix_ms }) => updated_unix_ms)).toEqual([
-      3, 1,
-    ]);
+    expect(
+      projection.available.map(({ updated_unix_ms }) => updated_unix_ms),
+    ).toEqual([3, 1]);
     expect(projection.notices).toEqual([
       '1 corrupted recovery record isolated.',
       '1 newer recovery record preserved but not opened.',

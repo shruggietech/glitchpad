@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { RecoveryInventoryEntry, ShellSession } from './contracts';
 import type { RecoveryGateway } from './recovery-gateway';
+import { createTextDocument } from './text-document';
 import { useRecovery } from './use-recovery';
 
 const inventoryEntry = (
@@ -70,6 +71,10 @@ const dirtySession = (): ShellSession => ({
   saved_revision: 0,
   recovery_coverage: 'stale',
   content: 'draft',
+  text_document: createTextDocument({
+    rawText: 'draft',
+    displayName: 'draft.txt',
+  }),
 });
 
 const gateway = (
@@ -139,5 +144,34 @@ describe('useRecovery', () => {
     await act(async () => vi.advanceTimersByTimeAsync(2_000));
 
     expect(result.current.warning).toMatch(/corrupted recovery record/i);
+  });
+
+  it('persists raw text and its lossless profile', async () => {
+    vi.useFakeTimers();
+    const persist = vi.fn().mockResolvedValue(inventoryEntry('available'));
+    const recoveryGateway = gateway({ persist });
+    const session = dirtySession();
+    session.content = 'first\nsecond\n';
+    session.text_document = createTextDocument({
+      rawText: 'first\r\nsecond\n',
+      displayName: 'draft.txt',
+      encoding: 'utf16_be_bom',
+    });
+    renderHook(() => useRecovery([session], recoveryGateway));
+
+    await act(async () => vi.advanceTimersByTimeAsync(2_000));
+
+    expect(persist).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: 'first\r\nsecond\n',
+        text_profile: {
+          encoding: 'utf16_be_bom',
+          bom: 'present',
+          newlines: 'mixed',
+          terminal_newline: 'present',
+          undecodable_bytes: 'none',
+        },
+      }),
+    );
   });
 });

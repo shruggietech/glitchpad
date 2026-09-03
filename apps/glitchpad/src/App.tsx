@@ -211,6 +211,7 @@ export function App({ sessions = initialSessions, recoveryGateway }: AppProps) {
             inventory: recoveryCandidate,
             content: record.content,
             snapshot_session_revision: record.snapshot_session_revision,
+            text_profile: record.text_profile,
           }),
         });
       })

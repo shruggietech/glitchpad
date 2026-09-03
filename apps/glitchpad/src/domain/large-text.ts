@@ -1,4 +1,4 @@
-import type { SourceId } from './contracts';
+import type { SourceId, TextEncoding } from './contracts';
 import {
   LARGE_TEXT_READ_BYTES,
   type LargeTextGateway,
@@ -21,6 +21,7 @@ export class LargeTextReader {
   constructor(
     private readonly gateway: LargeTextGateway,
     private readonly sourceId: SourceId,
+    private readonly encoding: TextEncoding = 'utf8',
   ) {}
 
   cancel(): void {
@@ -32,9 +33,10 @@ export class LargeTextReader {
     requested = LARGE_TEXT_WINDOW_BYTES,
   ): Promise<LargeTextWindow> {
     const operation = ++this.operation;
+    const alignedOffset = alignOffset(offset, this.encoding);
     const budget = Math.min(Math.max(0, requested), LARGE_TEXT_WINDOW_BYTES);
     const chunks: Uint8Array[] = [];
-    let cursor = offset;
+    let cursor = alignedOffset;
     let remaining = budget;
     let end = false;
     while (remaining > 0 && !end) {
@@ -48,9 +50,9 @@ export class LargeTextReader {
       end = result.end_of_source || result.bytes.byteLength === 0;
     }
     const bytes = concatenate(chunks);
-    const decoded = decodeCompletePrefix(bytes, end);
+    const decoded = decodeCompletePrefix(bytes, end, this.encoding);
     return {
-      offset,
+      offset: alignedOffset,
       text: decoded.text,
       byte_count: decoded.bytes,
       end_of_source: end,
@@ -60,7 +62,8 @@ export class LargeTextReader {
   async search(query: string, byteLength: number): Promise<number[]> {
     if (!query) return [];
     const operation = ++this.operation;
-    const needle = new TextEncoder().encode(query);
+    const needle = encodeQuery(query, this.encoding);
+    const step = isUtf16(this.encoding) ? 2 : 1;
     const matches: number[] = [];
     let offset = 0;
     let carry = new Uint8Array();
@@ -77,7 +80,7 @@ export class LargeTextReader {
       for (
         let index = 0;
         index <= haystack.byteLength - needle.byteLength;
-        index += 1
+        index += step
       ) {
         if (
           needle.every(
@@ -88,7 +91,10 @@ export class LargeTextReader {
         if (matches.length === LARGE_TEXT_MATCH_LIMIT) break;
       }
       carry = haystack.slice(
-        Math.max(0, haystack.byteLength - Math.max(0, needle.byteLength - 1)),
+        Math.max(
+          0,
+          haystack.byteLength - Math.max(0, needle.byteLength - step),
+        ),
       );
       offset += result.bytes.byteLength;
       if (result.end_of_source || result.bytes.byteLength === 0) break;
@@ -103,6 +109,8 @@ export class LargeTextReader {
   ): Promise<number | null> {
     if (!Number.isSafeInteger(targetLine) || targetLine < 1) return null;
     if (targetLine === 1) return 0;
+    if (isUtf16(this.encoding))
+      return this.utf16LineOffset(targetLine, byteLength);
     const operation = ++this.operation;
     let line = 1;
     let offset = 0;
@@ -138,6 +146,50 @@ export class LargeTextReader {
     if (pendingCr && line + 1 === targetLine) return offset;
     return null;
   }
+
+  private async utf16LineOffset(
+    targetLine: number,
+    byteLength: number,
+  ): Promise<number | null> {
+    const operation = ++this.operation;
+    const littleEndian = this.encoding === 'utf16_le_bom';
+    let line = 1;
+    let offset = 0;
+    let pendingCr = false;
+    while (offset < byteLength) {
+      const result = await this.gateway.read(
+        this.sourceId,
+        offset,
+        Math.min(LARGE_TEXT_READ_BYTES, byteLength - offset),
+      );
+      if (operation !== this.operation)
+        throw new DOMException('Operation cancelled', 'AbortError');
+      for (let index = 0; index + 1 < result.bytes.byteLength; index += 2) {
+        const absolute = offset + index;
+        if (absolute === 0) continue;
+        const unit = littleEndian
+          ? result.bytes[index] | (result.bytes[index + 1] << 8)
+          : (result.bytes[index] << 8) | result.bytes[index + 1];
+        if (pendingCr) {
+          line += 1;
+          if (line === targetLine)
+            return unit === 0x0a ? absolute + 2 : absolute;
+          pendingCr = false;
+          if (unit === 0x0a) continue;
+        }
+        if (unit === 0x0d) pendingCr = true;
+        else if (unit === 0x0a) {
+          line += 1;
+          if (line === targetLine) return absolute + 2;
+        }
+      }
+      offset += result.bytes.byteLength;
+      if (result.end_of_source || result.bytes.byteLength === 0) break;
+      await Promise.resolve();
+    }
+    if (pendingCr && line + 1 === targetLine) return offset;
+    return null;
+  }
 }
 
 const concatenate = (chunks: readonly Uint8Array[]): Uint8Array => {
@@ -154,17 +206,46 @@ const concatenate = (chunks: readonly Uint8Array[]): Uint8Array => {
 const decodeCompletePrefix = (
   bytes: Uint8Array,
   endOfSource: boolean,
+  encoding: TextEncoding,
 ): { text: string; bytes: number } => {
   for (let trailing = 0; trailing <= (endOfSource ? 0 : 3); trailing += 1) {
     try {
       const length = bytes.byteLength - trailing;
-      const decoder = new TextDecoder('utf-8', { fatal: true });
+      if (length < 0 || (isUtf16(encoding) && length % 2 !== 0)) continue;
+      const decoder = new TextDecoder(decoderLabel(encoding), { fatal: true });
       return { text: decoder.decode(bytes.slice(0, length)), bytes: length };
     } catch {
       continue;
     }
   }
   throw new TypeError(
-    'Large-text window is not valid UTF-8 at its current boundary',
+    'Large-text window cannot be decoded safely at its current boundary',
   );
+};
+
+const isUtf16 = (encoding: TextEncoding): boolean =>
+  encoding === 'utf16_le_bom' || encoding === 'utf16_be_bom';
+
+const alignOffset = (offset: number, encoding: TextEncoding): number => {
+  const safeOffset = Math.max(0, offset);
+  return isUtf16(encoding) ? safeOffset - (safeOffset % 2) : safeOffset;
+};
+
+const decoderLabel = (encoding: TextEncoding): string =>
+  encoding === 'utf16_le_bom'
+    ? 'utf-16le'
+    : encoding === 'utf16_be_bom'
+      ? 'utf-16be'
+      : 'utf-8';
+
+const encodeQuery = (query: string, encoding: TextEncoding): Uint8Array => {
+  if (!isUtf16(encoding)) return new TextEncoder().encode(query);
+  const littleEndian = encoding === 'utf16_le_bom';
+  const bytes = new Uint8Array(query.length * 2);
+  for (let index = 0; index < query.length; index += 1) {
+    const unit = query.charCodeAt(index);
+    bytes[index * 2] = littleEndian ? unit & 0xff : unit >> 8;
+    bytes[index * 2 + 1] = littleEndian ? unit >> 8 : unit & 0xff;
+  }
+  return bytes;
 };

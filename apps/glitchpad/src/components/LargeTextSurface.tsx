@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import type { ShellSession } from '../domain/contracts';
 import {
@@ -20,14 +20,23 @@ export function LargeTextSurface({ session, gateway }: LargeTextSurfaceProps) {
   const reader = useMemo(
     () =>
       session.source_id
-        ? new LargeTextReader(selectedGateway, session.source_id)
+        ? new LargeTextReader(
+            selectedGateway,
+            session.source_id,
+            session.text_document?.profile.encoding,
+          )
         : null,
-    [selectedGateway, session.source_id],
+    [
+      selectedGateway,
+      session.source_id,
+      session.text_document?.profile.encoding,
+    ],
   );
   const [window, setWindow] = useState<LargeTextWindow | null>(null);
   const [status, setStatus] = useState('Loading bounded text window');
   const [query, setQuery] = useState('');
   const [line, setLine] = useState('1');
+  const previousOffsets = useRef<number[]>([]);
   const byteLength =
     session.source.byte_length ?? session.text_document?.source_bytes ?? 0;
 
@@ -37,6 +46,7 @@ export function LargeTextSurface({ session, gateway }: LargeTextSurfaceProps) {
       return;
     }
     let live = true;
+    previousOffsets.current = [];
     void reader
       .window(0)
       .then((value) => {
@@ -55,8 +65,9 @@ export function LargeTextSurface({ session, gateway }: LargeTextSurfaceProps) {
     };
   }, [reader]);
 
-  const move = (offset: number) => {
+  const move = (offset: number, rememberCurrent = true) => {
     if (!reader) return;
+    if (rememberCurrent && window) previousOffsets.current.push(window.offset);
     setStatus('Loading bounded text window');
     void reader
       .window(Math.max(0, offset))
@@ -81,9 +92,7 @@ export function LargeTextSurface({ session, gateway }: LargeTextSurfaceProps) {
         <button
           type="button"
           disabled={!window || window.offset === 0}
-          onClick={() =>
-            move(Math.max(0, (window?.offset ?? 0) - (window?.byte_count ?? 0)))
-          }
+          onClick={() => move(previousOffsets.current.pop() ?? 0, false)}
         >
           Previous window
         </button>

@@ -124,6 +124,17 @@ describe('text document round trips', () => {
     ).toEqual({ ok: false, reason: 'read_only' });
   });
 
+  it('rejects an edit whose projected bytes cross the editable ceiling', () => {
+    const document = createTextDocument({
+      rawText: 'x',
+      displayName: 'threshold.txt',
+      sourceBytes: EDITABLE_TEXT_MAX_BYTES,
+    });
+    expect(
+      applyTextTransaction(document, 1, 1, [{ from: 1, to: 1, insert: 'y' }]),
+    ).toEqual({ ok: false, reason: 'size_limit' });
+  });
+
   it.each([
     ['utf8', new Uint8Array([0x68, 0xc3, 0xa9])],
     ['utf8_bom', new Uint8Array([0xef, 0xbb, 0xbf, 0x68, 0xc3, 0xa9])],

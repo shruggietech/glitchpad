@@ -7,6 +7,9 @@ import {
   type SessionIntegrity,
   type ShellSession,
 } from './contracts';
+import type { RecoveryTextProfile } from './recovery-gateway';
+import { detectLanguage } from './language';
+import { createTextDocument } from './text-document';
 
 export type ResolutionDecision = 'save' | 'save_as' | 'discard' | 'cancel';
 
@@ -14,6 +17,7 @@ export interface RecoveryPayload {
   inventory: RecoveryInventoryEntry;
   content: string;
   snapshot_session_revision: number;
+  text_profile: RecoveryTextProfile;
 }
 
 export interface RecoveryInventoryProjection {
@@ -38,7 +42,9 @@ export const projectRecoveryInventory = (
     notices.push(`${corrupted} corrupted recovery record isolated.`);
   if (expired > 0) notices.push(`${expired} expired recovery record removed.`);
   if (unsupported > 0)
-    notices.push(`${unsupported} newer recovery record preserved but not opened.`);
+    notices.push(
+      `${unsupported} newer recovery record preserved but not opened.`,
+    );
   if (atRisk > 0)
     notices.push(`${atRisk} dirty session has recovery coverage at risk.`);
   return { available, notices };
@@ -78,40 +84,51 @@ export const projectRecoveredSession = ({
   inventory,
   content,
   snapshot_session_revision,
-}: RecoveryPayload): ShellSession => ({
-  id: `recovery-${inventory.record_id}`,
-  source: {
-    identity: {
-      authority: 'synthetic',
-      scope: 'recovery',
-      token: inventory.record_id,
-      strength: 'unavailable',
+  text_profile,
+}: RecoveryPayload): ShellSession => {
+  const document = createTextDocument({
+    rawText: content,
+    displayName: inventory.display_hint,
+    encoding: text_profile.encoding,
+    undecodableBytes: text_profile.undecodable_bytes,
+    language: detectLanguage(inventory.display_hint, content),
+  });
+  return {
+    id: `recovery-${inventory.record_id}`,
+    source: {
+      identity: {
+        authority: 'synthetic',
+        scope: 'recovery',
+        token: inventory.record_id,
+        strength: 'unavailable',
+      },
+      display_name: inventory.display_hint,
+      claimed_media_type: 'text/plain',
+      byte_length: document.source_bytes,
+      modified_unix_ms: inventory.updated_unix_ms,
+      kind: 'memory',
+      capabilities: { ...noSourceCapabilities(), read: true },
     },
-    display_name: inventory.display_hint,
-    claimed_media_type: 'text/plain',
-    byte_length: new TextEncoder().encode(content).byteLength,
-    modified_unix_ms: inventory.updated_unix_ms,
-    kind: 'memory',
-    capabilities: { ...noSourceCapabilities(), read: true },
-  },
-  renderer: {
-    id: 'recovered-text',
-    label: 'Recovered text',
-    capabilities: {
-      ...noRendererCapabilities(),
-      view: true,
-      edit: true,
-      copy: true,
-      save: true,
+    renderer: {
+      id: 'recovered-text',
+      label: 'Recovered text',
+      capabilities: {
+        ...noRendererCapabilities(),
+        view: true,
+        edit: true,
+        copy: true,
+        save: true,
+      },
     },
-  },
-  lifecycle: 'background',
-  focus: 'background',
-  integrity: 'recovery_only',
-  source_state: 'unavailable',
-  dirty: true,
-  revision: snapshot_session_revision,
-  recovery_coverage: 'current',
-  recovery_warning_code: null,
-  content,
-});
+    lifecycle: 'background',
+    focus: 'background',
+    integrity: 'recovery_only',
+    source_state: 'unavailable',
+    dirty: true,
+    revision: snapshot_session_revision,
+    recovery_coverage: 'current',
+    recovery_warning_code: null,
+    content: document.normalized_text,
+    text_document: document,
+  };
+};

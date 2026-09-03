@@ -26,7 +26,10 @@ export interface SerializedText {
 
 export type TextTransactionResult =
   | { ok: true; document: TextDocumentState; revision: number }
-  | { ok: false; reason: 'stale_revision' | 'read_only' | 'invalid_change' };
+  | {
+      ok: false;
+      reason: 'stale_revision' | 'read_only' | 'invalid_change' | 'size_limit';
+    };
 
 export type TextSerializationResult =
   | { ok: true; payload: SerializedText }
@@ -86,15 +89,20 @@ export const applyTextTransaction = (
   if (changes.length === 0)
     return { ok: true, document, revision: currentRevision };
 
+  const orderedChanges = [...changes].sort(
+    (left, right) => right.from - left.from,
+  );
+  const projectedBytes = projectedSourceBytes(document, orderedChanges);
+  if (projectedBytes > EDITABLE_TEXT_MAX_BYTES)
+    return { ok: false, reason: 'size_limit' };
+
   let rawText = document.raw_text;
   let normalizedText = document.normalized_text;
   let sourceBytes = document.source_bytes;
   let longestLine = document.longest_line_bytes;
   let requiresFullProfile = false;
   const newlineCounts = { ...document.profile.newline_counts };
-  for (const change of [...changes].sort(
-    (left, right) => right.from - left.from,
-  )) {
+  for (const change of orderedChanges) {
     const from = rawPositionAtNormalized(rawText, change.from);
     const to = rawPositionAtNormalized(rawText, change.to);
     const insertedNormalized = normalizeNewlines(change.insert);
@@ -157,6 +165,34 @@ export const applyTextTransaction = (
     revision: currentRevision + 1,
   };
 };
+
+export const textChangesFitEditableLimit = (
+  document: TextDocumentState,
+  changes: readonly TextChange[],
+): boolean =>
+  validChanges(changes, document.normalized_text.length) &&
+  projectedSourceBytes(document, changes) <= EDITABLE_TEXT_MAX_BYTES;
+
+const projectedSourceBytes = (
+  document: TextDocumentState,
+  changes: readonly TextChange[],
+): number =>
+  changes.reduce((bytes, change) => {
+    const from = rawPositionAtNormalized(document.raw_text, change.from);
+    const to = rawPositionAtNormalized(document.raw_text, change.to);
+    const inserted = useNewline(
+      normalizeNewlines(change.insert),
+      document.profile.insertion_newline,
+    );
+    return (
+      bytes +
+      encodedContentLength(inserted, document.profile.encoding) -
+      encodedContentLength(
+        document.raw_text.slice(from, to),
+        document.profile.encoding,
+      )
+    );
+  }, document.source_bytes);
 
 export const serializeTextDocument = (
   document: TextDocumentState,

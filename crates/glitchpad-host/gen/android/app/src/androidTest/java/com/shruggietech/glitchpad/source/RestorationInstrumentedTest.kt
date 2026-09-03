@@ -139,10 +139,18 @@ class RestorationInstrumentedTest {
   }
 
   private fun executeShellCommand(command: String): String {
-    val descriptor = instrumentation.uiAutomation.executeShellCommand(command)
-    return ParcelFileDescriptor.AutoCloseInputStream(descriptor).use { output ->
-      output.readBytes().toString(Charsets.UTF_8)
+    repeat(20) { attempt ->
+      // API 36 can transiently return null while its UiAutomation bridge reconnects between tests.
+      val automation = InstrumentationRegistry.getInstrumentation().uiAutomation
+      if (automation != null) {
+        val descriptor = automation.executeShellCommand(command)
+        return ParcelFileDescriptor.AutoCloseInputStream(descriptor).use { output ->
+          output.readBytes().toString(Charsets.UTF_8)
+        }
+      }
+      if (attempt < 19) SystemClock.sleep(100)
     }
+    error("UiAutomation remained unavailable while executing: $command")
   }
 
   companion object {

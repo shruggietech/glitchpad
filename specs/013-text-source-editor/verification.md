@@ -10,7 +10,7 @@
 ## Automated evidence
 
 - Focused Rust editor policy: 8 passed, covering exact 32 MiB and 256 MiB boundaries, extreme lines, evidence conflicts, session overrides, extensionless shebangs, bounded evidence, and plain-text fallback.
-- Frontend package gate: lint, strict typecheck, 12 test files with 74 tests, and the production Vite build passed.
+- Frontend package gate: lint, strict typecheck, 12 test files with 75 tests, and the production Vite build passed.
 - Editor component evidence mounts editable and read-only CodeMirror instances, projects a real CodeMirror transaction through the revision-bound raw-shadow model, disposes the instance, invokes editor commands, and publishes a session language override.
 - Round-trip evidence covers UTF-8, UTF-8 BOM, UTF-16 LE BOM, UTF-16 BE BOM, CRLF/LF/CR mixtures, terminal newlines, dominant insertion newlines, stale serialization, invalid/overlapping edits, read-only denial, and 1,000 generated transactions.
 - Large-text evidence caps host reads at 256 KiB, caps rendered windows at 512 KiB, decodes a multibyte character split at a chunk boundary, finds a match across a chunk boundary, retains at most 10,000 matches, navigates LF/CRLF/CR lines, and mounts a source-backed read-only component with search and navigation.
@@ -28,7 +28,7 @@ The aarch64 Android build completed the frontend production build and compiled t
 
 The first external review round identified five integration gaps. Recovery snapshots now preserve raw text and the verified profile, recovered buffers initialize the editor model, over-limit CodeMirror transactions are filtered before display, UTF-16 large sources use encoding-aware decoding/search/navigation, and previous-window navigation retains the actual visited offset. Dedicated regressions cover each correction.
 
-The authorized final review round identified three remaining behavior gaps. Shortening a prior maximum line now invalidates and recomputes the global line bound, repeated large-source searches advance through every match with wraparound, and the runtime language detector evaluates bounded JSON, Rust, Python, and HTML content evidence consistently with the core contract. Focused regressions cover each correction, and no further automated review round is requested.
+The authorized final review round identified four remaining behavior gaps. Recovery-only buffers now retain in-memory edit authority for the Save As workflow without claiming original-source write authority, shortening a prior maximum line invalidates and recomputes the global line bound, repeated large-source searches advance through every match with wraparound, and the runtime language detector evaluates bounded JSON, Rust, Python, and HTML content evidence consistently with the core contract. Focused regressions cover each correction, and no further automated review round is requested.
 
 ## Convergence notes
 

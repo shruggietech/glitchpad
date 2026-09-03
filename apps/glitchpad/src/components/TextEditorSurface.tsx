@@ -140,7 +140,8 @@ export const TextEditorSurface = forwardRef<
     const canEdit =
       textDocument.mode === 'editable' &&
       session.renderer.capabilities.edit &&
-      session.source.capabilities.write;
+      (session.source.capabilities.write ||
+        session.integrity === 'recovery_only');
     documentRef.current = textDocument;
     revisionRef.current = session.revision;
     const view = new EditorView({

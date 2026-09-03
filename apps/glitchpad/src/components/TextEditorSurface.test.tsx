@@ -95,6 +95,33 @@ describe('TextEditorSurface', () => {
     );
   });
 
+  it('keeps recovery-only buffers editable without original source authority', () => {
+    const onDocumentChange = vi.fn();
+    const session = makeSession(false);
+    session.integrity = 'recovery_only';
+    session.renderer.capabilities.edit = true;
+    render(
+      <TextEditorSurface
+        session={session}
+        onDocumentChange={onDocumentChange}
+        onLanguageChange={vi.fn()}
+      />,
+    );
+    const textbox = screen.getByRole('textbox', {
+      name: 'editor.ts text editor',
+    });
+    expect(textbox).toHaveAttribute('contenteditable', 'true');
+    EditorView.findFromDOM(textbox)?.dispatch({
+      changes: { from: 0, to: 5, insert: 'let' },
+    });
+    expect(onDocumentChange).toHaveBeenCalledWith(
+      'editor',
+      1,
+      expect.objectContaining({ normalized_text: 'let value = 1;\n' }),
+      2,
+    );
+  });
+
   it('projects CodeMirror changes through the revision-bound text model', () => {
     const onDocumentChange = vi.fn();
     render(

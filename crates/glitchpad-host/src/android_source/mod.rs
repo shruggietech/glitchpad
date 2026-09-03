@@ -1162,6 +1162,10 @@ fn summary_from_delivery(delivery: &BridgeDelivery) -> Result<AndroidSourceSumma
     };
     let descriptor = SourceDescriptor {
         identity: identity.clone(),
+        restoration_reference: grant
+            .restorable
+            .then(|| glitchpad_core::source::opaque_restoration_reference(&identity))
+            .flatten(),
         display_name: delivery.display_name.clone(),
         claimed_media_type: delivery.media_type.clone(),
         byte_length: delivery.byte_length,

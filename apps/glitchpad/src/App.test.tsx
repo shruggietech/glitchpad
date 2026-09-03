@@ -404,6 +404,47 @@ describe('document foundation shell', () => {
     expect(exporter.export).toHaveBeenCalledWith(expect.objectContaining({ generated_unix_ms: 42 }));
   });
 
+  it('applies loaded window, active-session, native-reference, and presentation projections', async () => {
+    const restorable = initialSessions.slice(0, 2).map((session, index) => ({
+      ...session,
+      source: {
+        ...session.source,
+        restoration_reference: `00000000-0000-4000-8000-00000000000${index}`,
+      },
+    }));
+    const gateway = persistenceGateway({
+      loadPreferences: vi.fn().mockResolvedValue({
+        status: 'loaded',
+        value: { ...defaultPreferences(), markdown_default_mode: 'source' },
+        warning_code: null,
+      }),
+      loadSession: vi.fn().mockResolvedValue({
+        status: 'loaded',
+        value: {
+          schema_version: 1,
+          window: { active_session_index: 1, inspector: 'preferences' },
+          sessions: restorable.map((session, index) => ({
+            session_key: `previous-${index}`,
+            display_hint: session.source.display_name,
+            renderer_id: session.renderer.id,
+            presentation_mode: 'source',
+            source_reference: session.source.restoration_reference,
+            recovery_record_id: null,
+          })),
+        },
+        warning_code: null,
+      }),
+    });
+    render(<App sessions={restorable} persistenceGateway={gateway} />);
+
+    await waitFor(() =>
+      expect(screen.getByRole('tab', { name: /diagram\.mmd/iu }))
+        .toHaveAttribute('aria-selected', 'true'));
+    expect(screen.getByRole('complementary', { name: 'Preferences' }))
+      .toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Preview' })).toBeInTheDocument();
+  });
+
   it('uses a minimal empty surface after all fixture sessions close', () => {
     render(<App sessions={initialSessions.slice(0, 1)} />);
     fireEvent.click(screen.getByRole('button', { name: /close welcome\.md/i }));

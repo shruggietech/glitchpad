@@ -41,6 +41,7 @@ export interface RendererCapabilities {
 
 export interface SourceDescriptor {
   identity: DocumentIdentity;
+  restoration_reference?: string | null;
   display_name: string;
   claimed_media_type: string | null;
   byte_length: number | null;
@@ -372,8 +373,6 @@ export interface ShellSession {
   revision: number;
   content: string;
   source_id?: SourceId | null;
-  /** Opaque native-owned token that remains valid across application launches. */
-  restoration_reference?: string | null;
   text_document?: TextDocumentState | null;
   markdown_document?: MarkdownDocumentState | null;
   mermaid_document?: MermaidDocumentState | null;

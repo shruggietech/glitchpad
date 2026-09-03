@@ -24,6 +24,7 @@ use glitchpad_core::{
 #[test]
 fn source_contract_serializes_with_version_and_independent_capabilities() {
     let source = SourceDescriptor {
+        restoration_reference: None,
         identity: DocumentIdentity {
             authority: IdentityAuthority::AndroidDocument,
             scope: "provider".into(),

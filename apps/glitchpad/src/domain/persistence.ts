@@ -172,7 +172,7 @@ export const projectSessionState = (
 ): SessionState => {
   const eligible = sessions.filter(
     (session) => Boolean(
-      session.restoration_reference || recoveryRecordIds.get(session.id),
+      session.source.restoration_reference || recoveryRecordIds.get(session.id),
     ),
   ).slice(0, MAX_SESSION_PROJECTIONS);
   const activeIndex = eligible.findIndex(({ id }) => id === activeId);
@@ -184,7 +184,7 @@ export const projectSessionState = (
       display_hint: [...session.source.display_name].slice(0, 255).join(''),
       renderer_id: session.renderer.id.slice(0, 64),
       presentation_mode: presentationMode(session)?.slice(0, 64) ?? null,
-      source_reference: session.restoration_reference ?? null,
+      source_reference: session.source.restoration_reference ?? null,
       recovery_record_id: recoveryRecordIds.get(session.id) ?? null,
     })),
   };

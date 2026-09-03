@@ -29,6 +29,18 @@ impl Drop for TestRoot {
     }
 }
 
+fn valid_environment() -> DiagnosticEnvironment {
+    DiagnosticEnvironment {
+        product_version: "0.0.0".into(),
+        specification_version: "0.0.0".into(),
+        platform: DiagnosticPlatform::Windows,
+        architecture: "x86_64".into(),
+        webview_version: None,
+        core_version: "0.0.0".into(),
+        build_commit: None,
+    }
+}
+
 #[test]
 fn preferences_round_trip_and_invalid_fields_default_independently() {
     let root = TestRoot::new();
@@ -83,6 +95,60 @@ fn corrupt_and_future_preferences_do_not_block_startup_or_destroy_bytes() {
     assert_eq!(
         fs::read(root.0.join("preferences.json")).expect("read future fixture"),
         future
+    );
+}
+
+#[test]
+fn corrupt_categories_self_heal_on_the_next_valid_write() {
+    let root = TestRoot::new();
+    let store = root.store();
+    for filename in ["preferences.json", "session.json", "diagnostics.json"] {
+        fs::write(root.0.join(filename), b"{truncated").expect("write corrupt category");
+    }
+    let preferences = PreferenceState {
+        theme: ThemePreference::Dark,
+        ..PreferenceState::default()
+    };
+    store
+        .persist_preferences(&preferences)
+        .expect("replace corrupt preferences");
+    store
+        .persist_session(SessionState::default())
+        .expect("replace corrupt session");
+    store
+        .append_diagnostic(
+            DiagnosticEvent {
+                occurred_unix_ms: 10,
+                level: DiagnosticLevel::Info,
+                event_id: DiagnosticEventId::AppStarted,
+                platform: DiagnosticPlatform::Android,
+                component: DiagnosticComponent::ApplicationState,
+                duration_ms: None,
+                byte_count: None,
+                error_code: None,
+            },
+            10,
+        )
+        .expect("replace corrupt diagnostics");
+    assert_eq!(
+        store
+            .load_preferences()
+            .expect("load healed preferences")
+            .value,
+        preferences
+    );
+    assert_eq!(
+        store.load_session().expect("load healed session").status,
+        StateLoadStatus::Loaded
+    );
+    assert_eq!(
+        store
+            .preview_diagnostics(valid_environment(), 10)
+            .expect("load healed diagnostics")
+            .value
+            .events
+            .len(),
+        1
     );
 }
 
@@ -252,18 +318,7 @@ fn diagnostics_are_allowlisted_retained_and_previewed_without_hostile_strings() 
     assert!(store.append_diagnostic(hostile, now).is_err());
 
     let preview = store
-        .preview_diagnostics(
-            DiagnosticEnvironment {
-                product_version: "0.0.0".into(),
-                specification_version: "0.0.0".into(),
-                platform: DiagnosticPlatform::Windows,
-                architecture: "x86_64".into(),
-                webview_version: None,
-                core_version: "0.0.0".into(),
-                build_commit: None,
-            },
-            now,
-        )
+        .preview_diagnostics(valid_environment(), now)
         .expect("preview diagnostics");
     let encoded = serde_json::to_string(&preview.value).expect("serialize preview");
     assert_eq!(preview.value.events.len(), 1);

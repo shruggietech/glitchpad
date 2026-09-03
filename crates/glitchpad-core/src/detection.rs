@@ -637,6 +637,7 @@ mod tests {
 
     fn source(name: &str) -> SourceDescriptor {
         SourceDescriptor {
+            restoration_reference: None,
             identity: DocumentIdentity {
                 authority: IdentityAuthority::Synthetic,
                 scope: "tests".into(),

@@ -371,8 +371,9 @@ fn refuse_future_overwrite(path: &Path, maximum_bytes: usize) -> Result<(), Core
     else {
         return Ok(());
     };
-    let value: Value =
-        serde_json::from_slice(&bytes).map_err(|_| storage_error("state_existing_corrupt"))?;
+    let Ok(value) = serde_json::from_slice::<Value>(&bytes) else {
+        return Ok(());
+    };
     if value
         .get("schema_version")
         .and_then(Value::as_u64)

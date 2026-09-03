@@ -48,6 +48,7 @@ fn mermaid_deliveries_preserve_source_bytes_and_claim_the_registered_media_type(
             summary.descriptor.claimed_media_type.as_deref(),
             Some("text/vnd.mermaid")
         );
+        assert!(summary.descriptor.restoration_reference.is_some());
         let lease = host
             .open_stream(&summary.source_id, 0, 64)
             .expect("open Mermaid stream");

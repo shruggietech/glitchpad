@@ -134,6 +134,9 @@ pub struct SourceCapabilities {
 #[derive(Clone, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
 pub struct SourceDescriptor {
     pub identity: DocumentIdentity,
+    /// Path-free stable reference used only to match a native-restored source.
+    #[serde(default)]
+    pub restoration_reference: Option<String>,
     pub display_name: String,
     pub claimed_media_type: Option<String>,
     pub byte_length: Option<u64>,

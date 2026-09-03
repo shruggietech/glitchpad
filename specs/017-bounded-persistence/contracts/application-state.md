@@ -6,7 +6,7 @@
 - File metadata is checked before allocation and category byte limits are enforced.
 - Missing state returns current defaults with `defaulted` status.
 - Valid current state returns `loaded`; supported legacy state returns deterministically migrated current state.
-- Corrupt state returns defaults and a stable safe warning. Future state returns defaults with `unsupported`, preserves original bytes, and blocks ordinary writes to that category.
+- Corrupt state returns defaults and a stable safe warning, then self-heals on the next valid atomic write. Future state returns defaults with `unsupported`, preserves original bytes, and blocks ordinary writes to that category.
 
 ## Preference write
 
@@ -17,10 +17,10 @@
 
 ## Session write and restore
 
-- The interface submits safe presentation projections and live opaque source handles.
-- The native host resolves handles to durable restoration evidence only where the platform confirms authority.
+- Native delivery derives a stable path-free UUID only from strong source identity; Android additionally requires a persisted URI grant.
+- The interface submits that explicit restoration UUID or a committed recovery-record UUID and never persists a process-local source ID.
 - A maximum of 32 valid projections is committed; unqualified entries are omitted.
-- On restart the native host revalidates every restoration reference independently and returns new runtime source handles or stable safe failures.
+- On restart the shared shell matches loaded projections to sources independently re-delivered by the native owner, or to accepted recovery sessions, then restores the active session, inspector, and presentation mode without replacing document state.
 - Recovery record identifiers may cross the boundary; recovery content and native source evidence may not.
 
 ## Reset

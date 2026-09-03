@@ -149,7 +149,7 @@ A user can inspect bounded environment facts and diagnostic events before explic
 
 - The existing recovery store remains the sole authority permitted to persist dirty document text.
 - Session restoration references are not a general recent-file feature and are never exposed as a preference or unbounded history.
-- Desktop native restoration may retain an application-private source locator; Android restoration uses only platform-granted durable URI authority. Neither form crosses into diagnostics or the shared renderer as a raw locator.
+- Desktop source delivery derives a path-free reference from strong native identity for safe re-delivery matching; Android restoration uses only strong identity plus platform-granted durable URI authority. Neither form crosses into diagnostics or the shared renderer as a raw locator.
 - S017 persists and loads the bounded startup projection but does not invent a second source-opening path. Platform adapters consume the projection when their existing source-delivery flows can revalidate the opaque native reference.
 - The maximum persisted session projection contains 32 sessions. The maximum language override set contains 128 entries, and each extension key contains at most 32 Unicode scalar values after normalization.
 - Diagnostic retention is capped at 2,000 events, 2 MiB, and seven days, with the oldest event removed first when any limit is exceeded.

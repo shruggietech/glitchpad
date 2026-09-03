@@ -55,7 +55,11 @@ import {
 } from './domain/metadata-gateway';
 import { projectSessionMetadata, type MetadataContribution } from './domain/metadata';
 import { PreferenceContext } from './domain/preference-context';
-import { normalizeExtension } from './domain/persistence';
+import {
+  normalizeExtension,
+  type SessionProjection,
+  type SessionState,
+} from './domain/persistence';
 import {
   browserDiagnosticExportGateway,
   nativePersistenceAvailable,
@@ -220,6 +224,10 @@ export function App({ sessions = initialSessions, recoveryGateway, externalLinkG
   const applicationOpenerRef = useRef<HTMLButtonElement | null>(null);
   const integrityAbortRef = useRef<AbortController | null>(null);
   const integrityRequestIdRef = useRef<string | null>(null);
+  const inspectorProjectionAppliedRef = useRef<SessionState | null>(null);
+  const activeProjectionAppliedRef = useRef<SessionState | null>(null);
+  const presentationProjectionAppliedRef = useRef(new Map<string, string>());
+  const windowProjectionChangedRef = useRef(false);
   const selectedRecoveryGateway =
     recoveryGateway === undefined
       ? nativeRecoveryAvailable()
@@ -253,6 +261,79 @@ export function App({ sessions = initialSessions, recoveryGateway, externalLinkG
     selectedPersistenceGateway,
     recovery.recordIds,
   );
+  useEffect(() => {
+    const restored = persistence.restoredSession;
+    const projectionFor = (session: ShellSession): SessionProjection | undefined =>
+      restored?.sessions.find((projection) =>
+        projection.session_key === session.id
+        || Boolean(
+          projection.source_reference
+          && projection.source_reference === session.source.restoration_reference,
+        )
+        || Boolean(
+          projection.recovery_record_id
+          && (session.id === `recovery-${projection.recovery_record_id}`
+            || recovery.recordIds.get(session.id) === projection.recovery_record_id),
+        ));
+
+    if (restored && inspectorProjectionAppliedRef.current !== restored) {
+      inspectorProjectionAppliedRef.current = restored;
+      if (!windowProjectionChangedRef.current) {
+        const inspector = restored.window.inspector;
+        setInspectorOpen(inspector === 'metadata');
+        setApplicationPanel(
+          inspector === 'preferences' || inspector === 'diagnostics'
+            ? inspector
+            : 'closed',
+        );
+      }
+    }
+
+    const activeProjection = !restored || restored.window.active_session_index === null
+      ? undefined
+      : restored.sessions[restored.window.active_session_index];
+    const restoredActive = activeProjection
+      ? state.sessions.find((session) => projectionFor(session) === activeProjection)
+      : undefined;
+    if (restored && restoredActive && activeProjectionAppliedRef.current !== restored) {
+      activeProjectionAppliedRef.current = restored;
+      if (state.activeId !== restoredActive.id)
+        dispatch({ type: 'activate', id: restoredActive.id });
+    }
+
+    for (const session of state.sessions) {
+      const projection = projectionFor(session);
+      const desiredMode = projection?.presentation_mode
+        ?? (session.markdown_document
+          ? persistence.preferences.markdown_default_mode
+          : null);
+      if (desiredMode !== 'rendered' && desiredMode !== 'source') continue;
+      const signature = `${projection?.session_key ?? 'default'}:${desiredMode}`;
+      if (presentationProjectionAppliedRef.current.get(session.id) === signature)
+        continue;
+      presentationProjectionAppliedRef.current.set(session.id, signature);
+      if (session.markdown_document && session.markdown_document.mode !== desiredMode)
+        dispatch({
+          type: 'update_markdown',
+          id: session.id,
+          expectedRevision: session.revision,
+          markdown: { ...session.markdown_document, mode: desiredMode },
+        });
+      if (session.mermaid_document && session.mermaid_document.mode !== desiredMode)
+        dispatch({
+          type: 'update_mermaid',
+          id: session.id,
+          expectedRevision: session.revision,
+          mermaid: { ...session.mermaid_document, mode: desiredMode },
+        });
+    }
+  }, [
+    persistence.preferences.markdown_default_mode,
+    persistence.restoredSession,
+    recovery.recordIds,
+    state.activeId,
+    state.sessions,
+  ]);
   useEffect(() => {
     for (const session of state.sessions) {
       const decision = session.text_document?.language;
@@ -342,6 +423,7 @@ export function App({ sessions = initialSessions, recoveryGateway, externalLinkG
   }, [activeSession?.id, inspectorOpen, selectedMetadataGateway]);
 
   const openMetadata = (opener: HTMLElement) => {
+    windowProjectionChangedRef.current = true;
     metadataOpenerRef.current = opener;
     setApplicationPanel('closed');
     setInspectorOpen(true);
@@ -362,12 +444,14 @@ export function App({ sessions = initialSessions, recoveryGateway, externalLinkG
   };
 
   const openApplicationPanel = (panel: 'preferences' | 'diagnostics', opener: HTMLButtonElement) => {
+    windowProjectionChangedRef.current = true;
     applicationOpenerRef.current = opener;
     setInspectorOpen(false);
     setApplicationPanel(panel);
   };
 
   const closeApplicationPanel = () => {
+    windowProjectionChangedRef.current = true;
     setApplicationPanel('closed');
     requestAnimationFrame(() => applicationOpenerRef.current?.focus());
   };

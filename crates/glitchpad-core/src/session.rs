@@ -844,6 +844,7 @@ mod tests {
 
     fn source(token: &str, strength: IdentityStrength) -> SourceDescriptor {
         SourceDescriptor {
+            restoration_reference: None,
             identity: DocumentIdentity {
                 authority: IdentityAuthority::Synthetic,
                 scope: "tests".into(),

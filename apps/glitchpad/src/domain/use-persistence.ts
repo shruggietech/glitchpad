@@ -91,7 +91,11 @@ export const usePersistence = (
   }, [appendDiagnostic, gateway]);
 
   useEffect(() => () => {
-    if (preferenceWriteTimer.current) clearTimeout(preferenceWriteTimer.current);
+    if (!preferenceWriteTimer.current) return;
+    clearTimeout(preferenceWriteTimer.current);
+    preferenceWriteTimer.current = null;
+    if (gateway)
+      void gateway.persistPreferences(preferencesRef.current).catch(() => undefined);
   }, [gateway]);
 
   useEffect(() => {

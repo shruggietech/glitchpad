@@ -301,6 +301,9 @@ impl DesktopSourceHost {
         let source_id = random_source_id();
         let descriptor = SourceDescriptor {
             identity: native_identity.contract.clone(),
+            restoration_reference: glitchpad_core::source::opaque_restoration_reference(
+                &native_identity.contract,
+            ),
             display_name: display_name.clone(),
             claimed_media_type: claimed_media_type(&path),
             byte_length: Some(metadata.len()),

@@ -80,6 +80,26 @@ describe('usePersistence', () => {
     }
   });
 
+  it('flushes a pending preference write when the application unmounts', async () => {
+    vi.useFakeTimers();
+    try {
+      const persistence = gateway();
+      const { result, unmount } = renderHook(() =>
+        usePersistence([], null, 'closed', persistence));
+      await act(async () => { await Promise.resolve(); });
+      act(() => result.current.updatePreferences({
+        ...result.current.preferences,
+        theme: 'dark',
+      }));
+      unmount();
+      expect(persistence.persistPreferences).toHaveBeenCalledWith(
+        expect.objectContaining({ theme: 'dark' }),
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('falls back without blocking when storage is unavailable', async () => {
     const persistence = gateway({ loadPreferences: vi.fn().mockRejectedValue(new Error('private path')) });
     const { result } = renderHook(() => usePersistence([], null, 'closed', persistence));

@@ -33,16 +33,16 @@ describe('bounded persistence policy', () => {
     const source = {
       ...initialSessions[0],
       source_id: '37d21d4b-674d-41fa-b792-29b7c2012ed3',
-      restoration_reference: '70cbf05c-53f5-4442-9ace-9d576529714c',
       source: {
         ...initialSessions[0].source,
+        restoration_reference: '70cbf05c-53f5-4442-9ace-9d576529714c',
         capabilities: { ...initialSessions[0].source.capabilities, reopen: true },
       },
     };
     const projected = projectSessionState([source, initialSessions[1]], source.id, 'closed');
     expect(projected.sessions).toHaveLength(1);
     expect(projected.window.active_session_index).toBe(0);
-    expect(projected.sessions[0].source_reference).toBe(source.restoration_reference);
+    expect(projected.sessions[0].source_reference).toBe(source.source.restoration_reference);
     expect(JSON.stringify(projected)).not.toContain(source.content);
     expect(JSON.stringify(projected)).not.toContain('normalized_text');
   });

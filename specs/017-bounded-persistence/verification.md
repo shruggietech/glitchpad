@@ -9,10 +9,10 @@
 | Requirement group | Evidence | Result |
 | --- | --- | --- |
 | FR-001 through FR-008 | Preference normalization tests, unavailable-store hook tests, host corruption/oversize tests, 100-cycle legacy migration and future-schema preservation tests | Pass |
-| FR-009 through FR-014 | Core session validation, frontend projection tests, successful recovery-write reference integration, 32-entry host bound, category reset and unrelated recovery sentinel tests | Pass |
+| FR-009 through FR-014 | Core session validation, stable path-free desktop/Android native references, loaded active-session/inspector/presentation application, successful recovery-write reference integration, 32-entry host bound, category reset and unrelated recovery sentinel tests | Pass |
 | FR-015 through FR-021 | Closed diagnostic enums, hostile-code rejection, environment validation, seven-day and 2,000-entry deterministic retention, exact preview/export component tests | Pass |
 | FR-022 through FR-023 | Desktop and Android lifecycle corpus, aggregate desktop/Android source suites, fixture provenance gate, dependency audit | Pass |
-| UI behavior | Preference and diagnostic component accessibility tests, shell integration tests, editor configuration tests, theme propagation tests | Pass |
+| UI behavior | Preference and diagnostic component accessibility tests, shell integration tests, editor configuration tests, theme propagation tests, Markdown default-mode application, shutdown preference flush | Pass |
 | Repository quality | `pnpm check`, `git diff --check`, UTF-8/no-BOM and mojibake audit | Pass |
 
 ## Boundary decisions verified

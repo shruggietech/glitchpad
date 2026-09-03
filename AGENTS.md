@@ -32,7 +32,8 @@
 
 ## Mandatory hidden virtualized execution
 
-- All non-Git repository commands on Windows MUST run inside a Linux container through `scripts/invoke-docker-hidden.ps1`. This includes Node.js, pnpm, Rust, test, build, lint, formatting, browser, and performance commands.
+- This section governs commands launched from an interactive Windows desktop. A non-interactive hosted CI runner may execute platform-native commands when platform fidelity is the purpose of the job, but it MUST disable prompts and MUST NOT introduce a user-session console launcher.
+- All non-Git repository commands launched from an interactive Windows desktop MUST run inside a Linux container through `scripts/invoke-docker-hidden.ps1`. This includes Node.js, pnpm, Rust, test, build, lint, formatting, browser, and performance commands.
 - The Docker launcher is the primary approved Windows-to-Linux process boundary. It MUST keep `UseShellExecute` disabled, set `CreateNoWindow`, request a hidden window style, redirect standard output and standard error, and invoke Docker non-interactively.
 - `scripts/invoke-wsl-hidden.ps1` is an approved fallback only when Docker is unavailable and the WSL distribution has the complete required toolchain and working networking. Never mix Windows development binaries into a WSL command through `/mnt/c`.
 - Direct Windows execution of PowerShell, `cmd.exe`, Node.js, pnpm, Cargo, browsers, test runners, build tools, or project scripts is prohibited, even when a command previously appeared harmless.

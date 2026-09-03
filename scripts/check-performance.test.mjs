@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 import catalog from '../fixtures/performance/budgets.json' with { type: 'json' };
@@ -27,6 +28,33 @@ const metric = {
 
 test('repository performance catalog and provenance pass', async () => {
   assert.deepEqual(await verifyPerformanceFixtures(), []);
+});
+
+test('Android PSS instrumentation emits a complete evidence envelope', async () => {
+  const source = await readFile(
+    new URL(
+      '../crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/performance/PerformanceInstrumentedTest.kt',
+      import.meta.url,
+    ),
+    'utf8',
+  );
+  for (const field of [
+    'catalog_version',
+    'scenario_id',
+    'evidence_class',
+    'build_profile',
+    'build_id',
+    'runtime_version',
+    'cold_state',
+    'median',
+    'p95',
+    'maximum',
+    'invariants',
+    'classification',
+    'measured_at',
+  ]) {
+    assert.match(source, new RegExp(`\\.put\\("${field}"`, 'u'));
+  }
 });
 
 test('classification cases enforce inclusive target and hard boundaries', () => {

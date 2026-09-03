@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { createRef } from 'react';
 import { EditorView } from '@codemirror/view';
 import { describe, expect, it, vi } from 'vitest';
@@ -58,9 +58,9 @@ const makeSession = (editable = true): ShellSession => {
 };
 
 describe('TextEditorSurface', () => {
-  it('mounts an accessible editable CodeMirror instance and exposes commands', () => {
+  it('mounts an accessible editable CodeMirror instance and exposes commands', async () => {
     const ref = createRef<TextEditorHandle>();
-    const { unmount } = render(
+    const { container, unmount } = render(
       <TextEditorSurface
         ref={ref}
         session={makeSession()}
@@ -71,6 +71,11 @@ describe('TextEditorSurface', () => {
     expect(
       screen.getByRole('textbox', { name: 'editor.ts text editor' }),
     ).toHaveAttribute('contenteditable', 'true');
+    const host = container.querySelector('.text-editor');
+    expect(host).toHaveAttribute('data-performance-ready', 'pending');
+    await waitFor(() =>
+      expect(host).toHaveAttribute('data-performance-ready', 'true'),
+    );
     expect(screen.getByLabelText('Text document status')).toHaveTextContent(
       'Round-trip safe',
     );

@@ -1,15 +1,25 @@
 import { describe, expect, it } from 'vitest';
 
-import { ResourceLedger, ResourceOwner, suspendedTextTabClassification } from './resource-ledger';
+import {
+  ResourceLedger,
+  ResourceOwner,
+  suspendedTextTabClassification,
+} from './resource-ledger';
 
 describe('resource ownership ledger', () => {
   it('tracks only closed resource kinds and releases idempotently', () => {
     const owner = new ResourceOwner('document:1', 1024);
     const release = owner.acquire('worker', 4096);
-    expect(owner.snapshot()).toMatchObject({ estimated_bytes: 4096, counts: { worker: 1 } });
+    expect(owner.snapshot()).toMatchObject({
+      estimated_bytes: 4096,
+      counts: { worker: 1 },
+    });
     release();
     release();
-    expect(owner.snapshot()).toMatchObject({ estimated_bytes: 0, counts: { worker: 0 } });
+    expect(owner.snapshot()).toMatchObject({
+      estimated_bytes: 0,
+      counts: { worker: 0 },
+    });
   });
 
   it('suspends to zero and disposal is terminal and idempotent', () => {
@@ -18,7 +28,9 @@ describe('resource ownership ledger', () => {
     owner.acquire('timer');
     owner.acquire('callback');
     owner.suspend();
-    expect(Object.values(owner.snapshot()!.counts).every((count) => count === 0)).toBe(true);
+    expect(
+      Object.values(owner.snapshot()!.counts).every((count) => count === 0),
+    ).toBe(true);
     owner.dispose();
     owner.dispose();
     expect(owner.snapshot()).toBeNull();
@@ -39,14 +51,38 @@ describe('resource ownership ledger', () => {
       owner.acquire('lease');
       owner.acquire('surface', 2048);
       owner.suspend();
-      expect(Object.values(owner.snapshot()!.counts).every((count) => count === 0)).toBe(true);
+      expect(
+        Object.values(owner.snapshot()!.counts).every((count) => count === 0),
+      ).toBe(true);
     }
+  });
+
+  it('covers one Markdown owner and both owners for every supported embedded diagram', () => {
+    const ledger = new ResourceLedger();
+    const owners = Array.from({ length: 1 + 2 * 64 }, (_, index) =>
+      ledger.register(`supported:${index}`),
+    );
+    expect(ledger.snapshots()).toHaveLength(129);
+    expect(() => ledger.register('unsupported:overflow')).toThrow(
+      'resource_owner_limit',
+    );
+    owners.forEach((owner) => owner.dispose());
+    expect(ledger.snapshots()).toEqual([]);
   });
 
   it('classifies exact suspended byte boundaries', () => {
     const source = 1024;
-    expect(suspendedTextTabClassification(source, source * 2.5 + 10 * 1024 * 1024)).toBe('pass');
-    expect(suspendedTextTabClassification(source, source * 2.5 + 10 * 1024 * 1024 + 1)).toBe('warning');
-    expect(suspendedTextTabClassification(source, source * 4 + 20 * 1024 * 1024 + 1)).toBe('failure');
+    expect(
+      suspendedTextTabClassification(source, source * 2.5 + 10 * 1024 * 1024),
+    ).toBe('pass');
+    expect(
+      suspendedTextTabClassification(
+        source,
+        source * 2.5 + 10 * 1024 * 1024 + 1,
+      ),
+    ).toBe('warning');
+    expect(
+      suspendedTextTabClassification(source, source * 4 + 20 * 1024 * 1024 + 1),
+    ).toBe('failure');
   });
 });

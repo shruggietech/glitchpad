@@ -35,6 +35,13 @@ pub(super) fn observe_revision(
     path: &Path,
 ) -> Result<(NativeIdentity, ExternalRevision), glitchpad_core::contracts::CoreError> {
     let metadata = fs::metadata(path).map_err(|error| safe_io_error(&error, "observe_revision"))?;
+    observe_revision_from_metadata(path, &metadata)
+}
+
+pub(super) fn observe_revision_from_metadata(
+    path: &Path,
+    metadata: &fs::Metadata,
+) -> Result<(NativeIdentity, ExternalRevision), glitchpad_core::contracts::CoreError> {
     if !metadata.is_file() {
         return Err(glitchpad_core::contracts::CoreError::new(
             glitchpad_core::contracts::CoreErrorCategory::UnsupportedInput,
@@ -54,7 +61,7 @@ pub(super) fn observe_revision(
         identity: identity.contract.clone(),
         byte_length: Some(metadata.len()),
         modified_unix_nanos,
-        change_token: platform_change_token(&metadata),
+        change_token: platform_change_token(metadata),
     };
     Ok((identity, revision))
 }

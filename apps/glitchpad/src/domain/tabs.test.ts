@@ -335,4 +335,38 @@ describe('tab state', () => {
     expect(updated.sessions[0]?.metadata?.facts.find(({ key }) => key === 'derived.sha256')?.availability).toBe('not_provided');
     expect(updated.sessions[0]?.metadata?.facts.find(({ key }) => key === 'host.display_name')?.value).toEqual({ kind: 'text', value: 'renamed.txt' });
   });
+
+  it('marks cached source and integrity facts unavailable after observation fails', () => {
+    const base = sessions(1)[0];
+    const source = {
+      ...base,
+      source_id: 'source',
+      external_revision: {
+        identity: base.source.identity,
+        byte_length: 10,
+        modified_unix_nanos: '1',
+        change_token: 'initial',
+      },
+    };
+    const snapshot = projectSessionMetadata(source);
+    const withDigest = {
+      ...source,
+      metadata: {
+        ...snapshot,
+        facts: snapshot.facts.map((fact) => fact.key === 'derived.sha256'
+          ? { ...fact, availability: 'available' as const, value: { kind: 'text' as const, value: 'a'.repeat(64) }, provenance: 'integrity' as const }
+          : fact),
+      },
+    };
+    const updated = tabReducer(createTabState([withDigest]), {
+      type: 'metadata_unavailable',
+      id: withDigest.id,
+      expectedRevision: withDigest.revision,
+      sourceId: 'source',
+    });
+    const facts = updated.sessions[0].metadata!.facts;
+    expect(facts.find(({ key }) => key === 'host.display_name')?.availability).toBe('errored');
+    expect(facts.find(({ key }) => key === 'derived.sha256')?.availability).toBe('errored');
+    expect(facts.find(({ key }) => key === 'renderer.name')?.availability).toBe('available');
+  });
 });

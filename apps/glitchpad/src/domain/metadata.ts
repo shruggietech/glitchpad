@@ -269,6 +269,26 @@ const producerFor = (key: string): MetadataProducer =>
           ? 'detection'
           : 'renderer';
 
+export const markSourceMetadataUnavailable = (
+  session: ShellSession,
+  snapshot: MetadataSnapshot,
+  errorCode = 'metadata_unavailable',
+): MetadataSnapshot => ({
+  ...snapshot,
+  facts: snapshot.facts.map((fact) =>
+    fact.provenance === 'host' || fact.provenance === 'integrity'
+      ? {
+          key: fact.key,
+          availability: 'errored',
+          provenance: fact.provenance,
+          error_code: errorCode,
+          session_revision: session.revision,
+          external_revision: snapshot.external_revision,
+        }
+      : fact,
+  ),
+});
+
 const mergeSnapshots = (base: MetadataSnapshot, cached: MetadataSnapshot): MetadataSnapshot => {
   if (cached.session_id !== base.session_id || cached.session_revision !== base.session_revision)
     return base;

@@ -258,7 +258,17 @@ export function App({ sessions = initialSessions, recoveryGateway, externalLinkG
           }
         })
         .catch(() => {
-          if (!abort.signal.aborted) setCommandStatus('File information could not be refreshed. Existing facts remain available.');
+          if (!abort.signal.aborted) {
+            setMetadataReadySessionId(null);
+            integrityAbortRef.current?.abort();
+            dispatch({
+              type: 'metadata_unavailable',
+              id: activeSession.id,
+              expectedRevision: activeSession.revision,
+              sourceId: activeSession.source_id!,
+            });
+            setCommandStatus('File information could not be refreshed. Source facts are unavailable.');
+          }
         })
         .finally(() => {
           if (!abort.signal.aborted) refreshTimer = setTimeout(refresh, 750);

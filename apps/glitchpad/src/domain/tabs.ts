@@ -10,6 +10,7 @@ import {
   type ResolutionDecision,
 } from './recovery';
 import {
+  markSourceMetadataUnavailable,
   mergeMetadataContribution,
   mergeSourceMetadataSnapshot,
   projectSessionMetadata,
@@ -72,6 +73,12 @@ export type TabAction =
       expectedRevision: number;
       expectedExternalRevision: import('./contracts').ExternalRevision | null;
       source: import('./contracts').SourceMetadataSnapshot;
+    }
+  | {
+      type: 'metadata_unavailable';
+      id: string;
+      expectedRevision: number;
+      sourceId: string;
     };
 
 export interface TabProjection {
@@ -236,6 +243,21 @@ export const tabReducer = (state: TabState, action: TabAction): TabState => {
         ...state,
         sessions: state.sessions.map((session) =>
           session.id === target.id ? { ...target, metadata } : session,
+        ),
+      };
+    }
+    case 'metadata_unavailable': {
+      const target = state.sessions.find(
+        (session) => session.id === action.id && session.revision === action.expectedRevision,
+      );
+      if (!target || target.source_id !== action.sourceId) return state;
+      const snapshot = target.metadata ?? projectSessionMetadata(target);
+      return {
+        ...state,
+        sessions: state.sessions.map((session) =>
+          session.id === target.id
+            ? { ...target, metadata: markSourceMetadataUnavailable(target, snapshot) }
+            : session,
         ),
       };
     }

@@ -300,6 +300,35 @@ describe('document foundation shell', () => {
     expect(startIntegrity).toHaveBeenCalledWith(expect.objectContaining({ expected_external_revision: observedRevision }), expect.any(AbortSignal));
   });
 
+  it('withdraws cached source facts and checksum actions when metadata polling fails', async () => {
+    const source = {
+      ...initialSessions[2],
+      lifecycle: 'active' as const,
+      source_id: 'source',
+      external_revision: revision,
+    };
+    const query = vi.fn()
+      .mockResolvedValueOnce({
+        source_id: 'source', external_revision: revision, display_name: 'observed.txt', source_kind: 'file' as const,
+        byte_length: '3', modified_unix_nanos: '1', created_unix_nanos: null, accessed_unix_nanos: null,
+        write_state: 'writable' as const, identity_confidence: 'strong' as const,
+      })
+      .mockRejectedValue(new Error('source unavailable'));
+    const gateway: MetadataGateway = {
+      query,
+      startIntegrity: vi.fn(),
+      advanceIntegrity: vi.fn(),
+      cancelIntegrity: vi.fn(() => Promise.resolve()),
+    };
+    render(<App sessions={[source]} metadataGateway={gateway} />);
+    fireEvent.click(within(screen.getByRole('navigation', { name: 'Document commands' })).getByRole('button', { name: 'File information' }));
+    expect(await screen.findByRole('button', { name: 'Calculate SHA-256' })).toBeInTheDocument();
+    await waitFor(() => expect(query).toHaveBeenCalledTimes(2), { timeout: 2_000 });
+    await waitFor(() => expect(screen.getAllByRole('status').some((status) => status.textContent?.includes('Source facts are unavailable'))).toBe(true));
+    expect(screen.queryByRole('button', { name: 'Calculate SHA-256' })).not.toBeInTheDocument();
+    expect(screen.getAllByText('Unavailable (metadata_unavailable)').length).toBeGreaterThan(0);
+  });
+
   it('cancels native checksum work immediately when the inspector closes', async () => {
     const source = { ...initialSessions[2], lifecycle: 'active' as const, source_id: 'source', external_revision: revision };
     const cancelIntegrity = vi.fn(() => Promise.resolve());

@@ -352,6 +352,23 @@ fn metadata_snapshot_observes_external_changes_without_accepting_them_for_docume
 
     assert_ne!(snapshot.external_revision, summary.external_revision);
     assert_eq!(snapshot.byte_length, Some(18));
+    let integrity_request = IntegrityStartRequest {
+        request_id: IntegrityRequestId(Uuid::new_v4().to_string()),
+        source_id: summary.source_id.clone(),
+        expected_external_revision: snapshot.external_revision,
+    };
+    assert_eq!(
+        host.start_integrity(integrity_request.clone())
+            .expect("hash the inspected revision")
+            .state,
+        IntegrityState::Pending
+    );
+    assert_eq!(
+        host.advance_integrity(&integrity_request.request_id)
+            .expect("finish inspected revision integrity")
+            .state,
+        IntegrityState::Ready
+    );
     assert_eq!(
         host.start_integrity(IntegrityStartRequest {
             request_id: IntegrityRequestId(Uuid::new_v4().to_string()),

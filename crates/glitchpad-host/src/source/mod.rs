@@ -27,7 +27,7 @@ use glitchpad_core::source::{
 use url::Url;
 use uuid::Uuid;
 
-use self::identity::{NativeIdentity, observe_revision};
+use self::identity::{NativeIdentity, observe_revision, observe_revision_from_metadata};
 use self::watch::WatchRegistration;
 
 const USER_ACTIVATION_LIFETIME: Duration = Duration::from_secs(1);
@@ -559,7 +559,7 @@ impl DesktopSourceHost {
         let record = state.sources.get(source_id).ok_or_else(source_not_found)?;
         let metadata =
             fs::metadata(&record.path).map_err(|error| safe_io_error(&error, "query_metadata"))?;
-        let (_, current_revision) = observe_revision(&record.path)?;
+        let (_, current_revision) = observe_revision_from_metadata(&record.path, &metadata)?;
         Ok(SourceMetadataSnapshot {
             source_id: source_id.clone(),
             external_revision: path_free_external_revision(source_id, &current_revision),
@@ -627,10 +627,11 @@ impl DesktopSourceHost {
             );
         }
 
-        let lease = self.open_stream(
+        let lease = self.open_integrity_stream(
             &request.source_id,
             0,
             total_bytes.unwrap_or(MAX_INTEGRITY_SOURCE_BYTES),
+            &request.expected_external_revision,
         )?;
         let progress = integrity_progress(
             &request,
@@ -1230,15 +1231,56 @@ impl DesktopSourceHost {
             .sources
             .get(&request.source_id)
             .ok_or_else(source_not_found)?;
-        ensure_available_revision(record)?;
+        let (_, current_revision) = observe_revision(&record.path)?;
         if !integrity_expected_matches(
             &request.source_id,
             &request.expected_external_revision,
-            &record.summary.external_revision,
+            &current_revision,
         ) {
             return Err(integrity_conflict());
         }
-        Ok(record.summary.external_revision.byte_length)
+        Ok(current_revision.byte_length)
+    }
+
+    fn open_integrity_stream(
+        &self,
+        source_id: &SourceId,
+        offset: u64,
+        total_budget: u64,
+        expected_revision: &ExternalRevision,
+    ) -> Result<StreamLease, CoreError> {
+        let mut state = self.lock_state()?;
+        let active_streams = state
+            .streams
+            .values()
+            .filter(|stream| &stream.lease.source_id == source_id)
+            .count();
+        if active_streams >= MAX_ACTIVE_STREAMS_PER_SOURCE {
+            return Err(budget_error(
+                "The source has reached its active stream lease limit",
+            ));
+        }
+        let record = state.sources.get(source_id).ok_or_else(source_not_found)?;
+        let (_, current_revision) = observe_revision(&record.path)?;
+        if !integrity_expected_matches(source_id, expected_revision, &current_revision) {
+            return Err(integrity_conflict());
+        }
+        validate_source_offset(offset, current_revision.byte_length)?;
+        let lease = StreamLease {
+            stream_id: random_stream_id(),
+            source_id: source_id.clone(),
+            offset,
+            total_budget,
+            consumed: 0,
+            external_revision: current_revision,
+        };
+        state.streams.insert(
+            lease.stream_id.clone(),
+            StreamRecord {
+                lease: lease.clone(),
+            },
+        );
+        Ok(lease)
     }
 }
 

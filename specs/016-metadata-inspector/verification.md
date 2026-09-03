@@ -14,7 +14,7 @@
 
 ## Local gate receipt
 
-`pnpm check` completed successfully on 2026-09-03. The gate included strict Rust formatting and Clippy, the complete locked Rust workspace suite, dependency policy, 31 frontend test files with 178 passing tests, production builds, runtime isolation, metadata fixture and provenance validation, configuration validation, documentation formatting/lint/link checks, 40 Mermaid renders, version consistency, and UTF-8/no-BOM/mojibake checks across 569 text files.
+`pnpm check` completed successfully on 2026-09-03. The gate included strict Rust formatting and Clippy, the complete locked Rust workspace suite, dependency policy, 31 frontend test files with 180 passing tests, production builds, runtime isolation, metadata fixture and provenance validation, configuration validation, documentation formatting/lint/link checks, 40 Mermaid renders, version consistency, and UTF-8/no-BOM/mojibake checks across 569 text files.
 
 Focused host evidence included 55 core unit tests, 3 schema tests, 33 host unit tests, 9 Android contract tests, 14 desktop source conformance tests, 6 recovery conformance tests, and 4 xtask tests. The changed-source metadata test proves the inspector may observe current external facts without silently accepting that revision for document writes.
 

@@ -22,12 +22,13 @@ atomic-write-file.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 tauri.workspace = true
+tauri-plugin-opener.workspace = true
+url.workspace = true
 uuid.workspace = true
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 file-id.workspace = true
 notify.workspace = true
-url.workspace = true
 
 [lints]
 workspace = true

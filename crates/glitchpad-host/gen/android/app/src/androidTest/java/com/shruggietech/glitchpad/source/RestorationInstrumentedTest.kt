@@ -135,11 +135,7 @@ class RestorationInstrumentedTest {
   }
 
   private fun revoke(uri: Uri) {
-    executeShellCommand(
-      "am start -a ${FixtureGrantActivity.ACTION_REVOKE} " +
-        "--es ${FixtureGrantActivity.EXTRA_URI} $uri " +
-        "-n ${instrumentation.context.packageName}/${FixtureGrantActivity::class.java.name}",
-    )
+    instrumentation.context.revokeUriPermission(uri, PERSISTED_MODES)
   }
 
   private fun executeShellCommand(command: String): String {

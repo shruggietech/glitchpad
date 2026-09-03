@@ -1,5 +1,6 @@
 package com.shruggietech.glitchpad.source
 
+import android.content.Intent
 import android.net.Uri
 import android.os.ParcelFileDescriptor
 import android.os.SystemClock
@@ -147,10 +148,9 @@ class AndroidSourceInstrumentedTest {
   }
 
   private fun revoke(uri: Uri) {
-    executeShellCommand(
-      "am start -a ${FixtureGrantActivity.ACTION_REVOKE} " +
-        "--es ${FixtureGrantActivity.EXTRA_URI} $uri " +
-        "-n ${instrumentation.context.packageName}/${FixtureGrantActivity::class.java.name}",
+    instrumentation.context.revokeUriPermission(
+      uri,
+      Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
     )
   }
 

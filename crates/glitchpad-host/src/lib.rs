@@ -2,6 +2,7 @@
 
 use tauri::Manager;
 
+pub mod external_link;
 pub mod recovery;
 #[cfg(not(mobile))]
 pub mod source;
@@ -44,7 +45,11 @@ fn recovery_unavailable() -> glitchpad_core::contracts::CoreError {
 pub fn run() {
     let product = glitchpad_core::product_info();
 
-    let builder = tauri::Builder::default();
+    let builder = tauri::Builder::default().plugin(
+        tauri_plugin_opener::Builder::new()
+            .open_js_links_on_click(false)
+            .build(),
+    );
     #[cfg(target_os = "android")]
     let builder = builder.plugin(glitchpad_android_source::init());
     #[cfg(not(mobile))]
@@ -53,6 +58,7 @@ pub fn run() {
         persist_recovery,
         load_recovery,
         remove_recovery,
+        external_link::open_external_link,
         source::read_source_range,
         source::open_source_stream,
         source::read_source_stream,
@@ -69,6 +75,7 @@ pub fn run() {
         persist_recovery,
         load_recovery,
         remove_recovery,
+        external_link::open_external_link,
         drain_android_deliveries,
         open_android_document,
         read_android_range,

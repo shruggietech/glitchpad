@@ -54,6 +54,7 @@ import {
 
 export interface TextEditorHandle {
   invoke(command: CommandId): boolean;
+  selectRange(from: number, to: number): boolean;
 }
 
 interface TextEditorSurfaceProps {
@@ -130,6 +131,21 @@ export const TextEditorSurface = forwardRef<
         return true;
       }
       return false;
+    },
+    selectRange(from, to) {
+      const view = viewRef.current;
+      if (!view) return false;
+      const boundedFrom = Math.max(0, Math.min(from, view.state.doc.length));
+      const boundedTo = Math.max(
+        boundedFrom,
+        Math.min(to, view.state.doc.length),
+      );
+      view.dispatch({
+        selection: { anchor: boundedFrom, head: boundedTo },
+        scrollIntoView: true,
+      });
+      view.focus();
+      return true;
     },
   }));
 
@@ -296,7 +312,8 @@ export const TextEditorSurface = forwardRef<
         <span>
           {session.text_document?.mode === 'editable' &&
           session.renderer.capabilities.edit &&
-          session.source.capabilities.write
+          (session.source.capabilities.write ||
+            session.integrity === 'recovery_only')
             ? 'Editable'
             : 'Read only'}
         </span>

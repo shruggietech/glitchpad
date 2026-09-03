@@ -245,6 +245,31 @@ export interface TextDocumentState {
   longest_line_bytes: number;
 }
 
+export type MarkdownViewMode = 'rendered' | 'source';
+export type MarkdownEligibility =
+  | 'full'
+  | 'source_only'
+  | 'large_read_only'
+  | 'refused';
+export type MarkdownProjectionStatus =
+  | 'idle'
+  | 'scheduled'
+  | 'rendering'
+  | 'ready'
+  | 'empty'
+  | 'limited'
+  | 'cancelled'
+  | 'stale'
+  | 'failed';
+
+export interface MarkdownDocumentState {
+  mode: MarkdownViewMode;
+  eligibility: MarkdownEligibility;
+  render_revision: number | null;
+  render_status: MarkdownProjectionStatus;
+  source_selection: { from: number; to: number } | null;
+}
+
 export interface SaveOperation {
   operation_id: string;
   source_id: SourceId;
@@ -296,6 +321,7 @@ export interface ShellSession {
   content: string;
   source_id?: SourceId | null;
   text_document?: TextDocumentState | null;
+  markdown_document?: MarkdownDocumentState | null;
 }
 
 export interface ContractEnvelope<T> {

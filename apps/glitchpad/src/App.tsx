@@ -32,6 +32,13 @@ import {
 import { createTabState, tabReducer } from './domain/tabs';
 import { createTextDocument } from './domain/text-document';
 import { detectLanguage } from './domain/language';
+import { markdownEligibility } from './domain/markdown-contract';
+import {
+  nativeExternalLinkAvailable,
+  nativeMarkdownExternalLinkGateway,
+  type MarkdownExternalLinkGateway,
+  type MarkdownLocalAssetGateway,
+} from './domain/markdown-gateway';
 import { useRecovery } from './domain/use-recovery';
 
 const makeSession = (
@@ -43,6 +50,14 @@ const makeSession = (
   options: { dirty?: boolean; writable?: boolean; metadata?: boolean } = {},
 ): ShellSession => {
   const isText = renderer !== 'Image';
+  const textDocument = isText
+    ? createTextDocument({
+        rawText: content,
+        displayName: name,
+        language: detectLanguage(name, content),
+      })
+    : null;
+  const eligibility = markdownEligibility(textDocument?.source_bytes ?? 0);
   return {
     id,
     source: {
@@ -81,12 +96,15 @@ const makeSession = (
     dirty: options.dirty ?? false,
     revision: 1,
     content,
-    text_document: isText
-      ? createTextDocument({
-          rawText: content,
-          displayName: name,
-          language: detectLanguage(name, content),
-        })
+    text_document: textDocument,
+    markdown_document: renderer === 'Markdown'
+      ? {
+          mode: eligibility === 'full' ? 'rendered' : 'source',
+          eligibility,
+          render_revision: null,
+          render_status: eligibility === 'full' ? 'idle' : 'limited',
+          source_selection: null,
+        }
       : null,
   };
 };
@@ -145,9 +163,11 @@ export const initialSessions: ShellSession[] = [
 interface AppProps {
   sessions?: ShellSession[];
   recoveryGateway?: RecoveryGateway | null;
+  externalLinkGateway?: MarkdownExternalLinkGateway;
+  localAssetGateway?: MarkdownLocalAssetGateway;
 }
 
-export function App({ sessions = initialSessions, recoveryGateway }: AppProps) {
+export function App({ sessions = initialSessions, recoveryGateway, externalLinkGateway, localAssetGateway }: AppProps) {
   const [state, dispatch] = useReducer(tabReducer, sessions, createTabState);
   const [commandStatus, setCommandStatus] = useState('');
   const editorRef = useRef<TextEditorHandle>(null);
@@ -266,6 +286,11 @@ export function App({ sessions = initialSessions, recoveryGateway }: AppProps) {
         onLanguageChange={(id, expectedRevision, language) =>
           dispatch({ type: 'update_language', id, expectedRevision, language })
         }
+        onMarkdownChange={(id, expectedRevision, markdown) =>
+          dispatch({ type: 'update_markdown', id, expectedRevision, markdown })
+        }
+        externalLinkGateway={externalLinkGateway ?? (nativeExternalLinkAvailable() ? nativeMarkdownExternalLinkGateway : undefined)}
+        localAssetGateway={localAssetGateway}
       />
       {!recoveryCandidate && state.pendingTransition && resolutionSession && (
         <RecoveryResolution

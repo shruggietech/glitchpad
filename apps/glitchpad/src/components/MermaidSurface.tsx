@@ -46,6 +46,8 @@ export const MermaidSurface = forwardRef<TextEditorHandle, MermaidSurfaceProps>(
   const textDocument = session.text_document!;
   const eligible = textDocument.source_bytes <= MERMAID_STANDALONE_MAX_BYTES;
   const visibleResult = result?.status === 'ready' ? result : lastValid;
+  const metadataResult = result ?? lastValid;
+  const activeLimit = !eligible ? 'source_bytes' : metadataResult?.limit;
   const projectionRef = useRef({ mode, result, lastValid, status, stale, viewport });
   projectionRef.current = { mode, result, lastValid, status, stale, viewport };
 
@@ -70,8 +72,18 @@ export const MermaidSurface = forwardRef<TextEditorHandle, MermaidSurfaceProps>(
     if (!eligible || session.lifecycle === 'background') {
       client.suspend();
       if (!eligible) {
+        const previous = projectionRef.current.lastValid;
+        const hasPrevious = previous !== null;
         setStatus('limited');
         setMode('source');
+        setStale(hasPrevious);
+        projectionRef.current = { ...projectionRef.current, mode: 'source', status: 'limited', stale: hasPrevious };
+        publish({
+          mode: 'source',
+          render_revision: previous?.source_revision ?? null,
+          render_status: 'limited',
+          preview_stale: hasPrevious,
+        });
       }
       return;
     }
@@ -196,12 +208,25 @@ export const MermaidSurface = forwardRef<TextEditorHandle, MermaidSurfaceProps>(
       )}
       {metadataOpen && (
         <dl className="mermaid-metadata" aria-label="Diagram information">
-          <div><dt>Type</dt><dd>{visibleResult?.diagram_type ?? 'Unavailable'}</dd></div>
-          <div><dt>Parser</dt><dd>{visibleResult?.parser_version ?? 'Unavailable'}</dd></div>
-          <div><dt>Status</dt><dd>{status}</dd></div>
+          <div><dt>Filename</dt><dd>{session.source.display_name}</dd></div>
+          <div><dt>Media type</dt><dd>{session.source.claimed_media_type ?? 'Unavailable'}</dd></div>
+          <div><dt>Modified</dt><dd>{session.source.modified_unix_ms === null ? 'Unavailable' : new Date(session.source.modified_unix_ms).toISOString()}</dd></div>
+          <div><dt>Encoding</dt><dd>{textDocument.profile.encoding}</dd></div>
+          <div><dt>Type</dt><dd>{metadataResult?.diagram_type ?? 'Unavailable'}</dd></div>
+          <div><dt>Parser</dt><dd>{metadataResult?.parser_version ?? 'Unavailable'}</dd></div>
+          <div><dt>Parse status</dt><dd>{status}</dd></div>
+          <div><dt>Preview revision</dt><dd>{visibleResult?.source_revision ?? 'Unavailable'}</dd></div>
+          <div><dt>Current revision</dt><dd>{session.revision}</dd></div>
+          <div><dt>Preview stale</dt><dd>{stale ? 'Yes' : 'No'}</dd></div>
           <div><dt>Source bytes</dt><dd>{textDocument.source_bytes}</dd></div>
-          <div><dt>Edges</dt><dd>{visibleResult?.measurements.edge_count ?? 'Unavailable'}</dd></div>
-          <div><dt>Accessible title</dt><dd>{visibleResult?.accessibility.authored_title ? 'Authored' : 'Fallback'}</dd></div>
+          <div><dt>Edges</dt><dd>{metadataResult?.measurements.edge_count ?? 'Unavailable'}</dd></div>
+          <div><dt>Output bytes</dt><dd>{metadataResult?.measurements.output_bytes ?? 'Unavailable'}</dd></div>
+          <div><dt>Parse duration</dt><dd>{metadataResult ? `${metadataResult.measurements.parse_duration_ms.toFixed(1)} ms` : 'Unavailable'}</dd></div>
+          <div><dt>Render duration</dt><dd>{metadataResult ? `${metadataResult.measurements.render_duration_ms.toFixed(1)} ms` : 'Unavailable'}</dd></div>
+          <div><dt>Total duration</dt><dd>{metadataResult ? `${metadataResult.measurements.total_duration_ms.toFixed(1)} ms` : 'Unavailable'}</dd></div>
+          <div><dt>Active limit</dt><dd>{activeLimit?.replaceAll('_', ' ') ?? 'None'}</dd></div>
+          <div><dt>Accessible title</dt><dd>{metadataResult?.accessibility.authored_title ? 'Authored' : 'Fallback'}</dd></div>
+          <div><dt>Accessible description</dt><dd>{metadataResult?.accessibility.authored_description ? 'Authored' : 'Absent'}</dd></div>
         </dl>
       )}
       {mode === 'source' ? (

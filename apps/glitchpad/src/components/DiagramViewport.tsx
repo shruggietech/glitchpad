@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useId, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useId, useImperativeHandle, useMemo, useRef, useState } from 'react';
 
 import { clampMermaidPan, clampMermaidZoom, initialMermaidViewport, type MermaidViewportState } from '../domain/mermaid-contract';
 
@@ -17,16 +17,16 @@ interface DiagramViewportProps {
   onChange?: (state: MermaidViewportState) => void;
 }
 
-const panExtent = 4_096;
-const viewportExtent = 1_024;
-
 export const DiagramViewport = forwardRef<DiagramViewportHandle, DiagramViewportProps>(function DiagramViewport(
   { svg, label, description, initialState = initialMermaidViewport(), onChange },
   ref,
 ) {
   const [state, setState] = useState(initialState);
   const [objectUrl, setObjectUrl] = useState('');
+  const [extents, setExtents] = useState({ content_width: 0, content_height: 0, viewport_width: 0, viewport_height: 0 });
   const drag = useRef<{ x: number; y: number } | null>(null);
+  const canvasRef = useRef<HTMLDivElement>(null);
+  const imageRef = useRef<HTMLImageElement>(null);
   const descriptionId = useId();
   const source = useMemo(() => svg, [svg]);
 
@@ -40,18 +40,48 @@ export const DiagramViewport = forwardRef<DiagramViewportHandle, DiagramViewport
     return () => URL.revokeObjectURL(url);
   }, [source]);
 
+  const measureExtents = useCallback(() => {
+    const image = imageRef.current;
+    const canvas = canvasRef.current;
+    if (!image || !canvas) return;
+    setExtents({
+      content_width: image.naturalWidth || image.clientWidth,
+      content_height: image.naturalHeight || image.clientHeight,
+      viewport_width: canvas.clientWidth,
+      viewport_height: canvas.clientHeight,
+    });
+  }, []);
+
+  useEffect(() => {
+    measureExtents();
+    const canvas = canvasRef.current;
+    if (!canvas || typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(measureExtents);
+    observer.observe(canvas);
+    return () => observer.disconnect();
+  }, [measureExtents, objectUrl]);
+
   const publish = (next: MermaidViewportState) => {
     setState(next);
     onChange?.(next);
   };
-  const zoom = (factor: number) => publish({ ...state, mode: 'custom', zoom: clampMermaidZoom(state.zoom * factor) });
+  const zoom = (factor: number) => {
+    const nextZoom = clampMermaidZoom(state.zoom * factor);
+    publish({
+      ...state,
+      mode: 'custom',
+      zoom: nextZoom,
+      pan_x: clampMermaidPan(state.pan_x, extents.content_width * nextZoom, extents.viewport_width),
+      pan_y: clampMermaidPan(state.pan_y, extents.content_height * nextZoom, extents.viewport_height),
+    });
+  };
   const fit = () => publish(initialMermaidViewport());
   const actual = () => publish({ mode: 'actual', zoom: 1, pan_x: 0, pan_y: 0 });
   const pan = (x: number, y: number) => publish({
     ...state,
     mode: 'custom',
-    pan_x: clampMermaidPan(state.pan_x + x, panExtent, viewportExtent),
-    pan_y: clampMermaidPan(state.pan_y + y, panExtent, viewportExtent),
+    pan_x: clampMermaidPan(state.pan_x + x, extents.content_width * state.zoom, extents.viewport_width),
+    pan_y: clampMermaidPan(state.pan_y + y, extents.content_height * state.zoom, extents.viewport_height),
   });
 
   useImperativeHandle(ref, () => ({ zoomIn: () => zoom(1.25), zoomOut: () => zoom(0.8), fit, actual }));
@@ -70,6 +100,7 @@ export const DiagramViewport = forwardRef<DiagramViewportHandle, DiagramViewport
         <button type="button" onClick={() => pan(0, 80)} aria-label="Pan down">↓</button>
       </div>
       <div
+        ref={canvasRef}
         className="diagram-canvas"
         tabIndex={0}
         role="group"
@@ -104,11 +135,13 @@ export const DiagramViewport = forwardRef<DiagramViewportHandle, DiagramViewport
       >
         {objectUrl && (
           <img
+            ref={imageRef}
             className={`diagram-image diagram-image-${state.mode}`}
             src={objectUrl}
             alt={label}
             aria-describedby={description ? descriptionId : undefined}
             draggable={false}
+            onLoad={measureExtents}
             style={{ transform: `translate(${state.pan_x}px, ${state.pan_y}px) scale(${state.zoom})` }}
           />
         )}

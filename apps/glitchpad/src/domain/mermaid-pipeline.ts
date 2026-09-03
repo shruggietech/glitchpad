@@ -16,7 +16,14 @@ import {
 } from './mermaid-contract';
 import { sanitizeMermaidSvg } from './mermaid-sanitizer';
 
-const forbiddenConfiguration = /(?:%%\{\s*(?:init|config)|^---\s*[\s\S]*?\bconfig\s*:)/imu;
+const directiveConfiguration = /%%\{\s*(?:init|config)\b/iu;
+const frontmatterConfiguration = /^\s*config\s*:/imu;
+
+const hasForbiddenConfiguration = (source: string): boolean => {
+  if (directiveConfiguration.test(source)) return true;
+  const frontmatter = /^---[\t ]*(?:\r\n|\r|\n)([\s\S]*?)(?:\r\n|\r|\n)---[\t ]*(?=\r\n|\r|\n|$)/u.exec(source)?.[1];
+  return frontmatter ? frontmatterConfiguration.test(frontmatter) : false;
+};
 let renderTail: Promise<void> = Promise.resolve();
 
 const accessibilityFromSource = (source: string, fallback: string) => {
@@ -98,7 +105,7 @@ const renderLocked = async (request: MermaidRenderRequest): Promise<MermaidRende
     return failed(base, 'limited', diagnostic('limited', 'mermaid_edges_limited', 'Diagram preview exceeds the 2,000-edge limit. Source remains available.'), 'edge_count');
   if (!diagramType)
     return failed(base, 'unsupported', diagnostic('unsupported', 'mermaid_unsupported', 'The diagram declaration is not supported by this Mermaid version.'));
-  if (forbiddenConfiguration.test(request.source_text))
+  if (hasForbiddenConfiguration(request.source_text))
     return failed(base, 'unsupported', diagnostic('unsupported', 'mermaid_configuration_blocked', 'Document configuration directives are not rendered because they can alter application security. Source remains unchanged.'));
 
   mermaid.initialize({

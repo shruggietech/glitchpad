@@ -6,9 +6,6 @@ import {
   type EmbeddedMermaidBlock,
 } from './mermaid-contract';
 
-const lineAt = (source: string, offset: number): number =>
-  source.slice(0, offset).split(/\r\n|\r|\n/u).length;
-
 export const extractMermaidBlocks = (
   source: string,
   parentId: string,
@@ -17,6 +14,17 @@ export const extractMermaidBlocks = (
   const opener = /^( {0,3})(`{3,}|~{3,})[\t ]*mermaid(?:[\t ]+[^\r\n]*)?[\t ]*(?:\r\n|\r|\n)/gimu;
   const blocks: EmbeddedMermaidBlock[] = [];
   let aggregateBytes = 0;
+  let lineCursor = 0;
+  let currentLine = 1;
+  const lineAt = (offset: number): number => {
+    while (lineCursor < offset) {
+      const character = source.charCodeAt(lineCursor);
+      lineCursor += 1;
+      if (character === 13 && source.charCodeAt(lineCursor) === 10 && lineCursor < offset) lineCursor += 1;
+      if (character === 10 || character === 13) currentLine += 1;
+    }
+    return currentLine;
+  };
   let match: RegExpExecArray | null;
   while ((match = opener.exec(source)) !== null) {
     const fence = match[2] ?? '```';
@@ -46,8 +54,8 @@ export const extractMermaidBlocks = (
       source_range: {
         start_offset: match.index,
         end_offset: closing.index + closing[0].length,
-        start_line: lineAt(source, match.index),
-        end_line: lineAt(source, closing.index),
+        start_line: lineAt(match.index),
+        end_line: lineAt(closing.index),
       },
       limit,
     });

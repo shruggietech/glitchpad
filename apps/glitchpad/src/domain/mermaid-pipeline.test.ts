@@ -34,4 +34,11 @@ describe('Mermaid pipeline', () => {
     expect(result.status).toBe('unsupported');
     expect(result.diagnostic?.code).toBe('mermaid_configuration_blocked');
   });
+
+  it('limits YAML config detection to the frontmatter block', async () => {
+    const valid = await renderMermaid(request('---\ntitle: Configuration flow\n---\nflowchart TB\nA["config: file"] --> B'));
+    expect(valid.status).toBe('ready');
+    const blocked = await renderMermaid(request('---\nconfig:\n  theme: dark\n---\nflowchart TB\nA --> B'));
+    expect(blocked.diagnostic?.code).toBe('mermaid_configuration_blocked');
+  });
 });

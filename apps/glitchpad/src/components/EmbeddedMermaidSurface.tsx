@@ -20,7 +20,11 @@ export function EmbeddedMermaidSurface({ block, documentName, onViewSource, rend
   const theme = useMermaidTheme();
 
   useEffect(() => {
-    if (block.limit) return;
+    if (block.limit) {
+      client.cancel();
+      setResult(null);
+      return;
+    }
     void client.render({
       owner_id: block.owner_id,
       source_revision: block.parent_revision,
@@ -36,7 +40,7 @@ export function EmbeddedMermaidSurface({ block, documentName, onViewSource, rend
     : result?.diagnostic?.message;
   return (
     <figure className="embedded-mermaid" data-mermaid-block={block.ordinal}>
-      {result?.status === 'ready' && result.svg ? (
+      {!block.limit && result?.status === 'ready' && result.svg ? (
         <DiagramViewport svg={result.svg} label={result.accessibility.label} description={result.accessibility.description} />
       ) : (
         <div className="embedded-mermaid-fallback" role={failure ? 'alert' : 'status'}>

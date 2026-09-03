@@ -5,6 +5,7 @@ import { StrictMode } from 'react';
 import { describe, expect, it } from 'vitest';
 
 import { App, initialSessions } from '../App';
+import { MERMAID_STANDALONE_MAX_BYTES } from '../domain/mermaid-contract';
 
 const mermaidSession = (content: string) => ({
   ...initialSessions[1],
@@ -41,6 +42,14 @@ describe('Mermaid surface', () => {
     fireEvent.click(screen.getAllByRole('button', { name: 'File information' }).at(-1)!);
     expect(screen.getByText('flowchart')).toBeInTheDocument();
     expect(screen.getByText('11.17.2')).toBeInTheDocument();
+    const inspector = screen.getByLabelText('Diagram information');
+    expect(inspector).toHaveTextContent('Filenamearchitecture.mmd');
+    expect(inspector).toHaveTextContent('Media typetext/vnd.mermaid');
+    expect(inspector).toHaveTextContent('Encodingutf8');
+    expect(inspector).toHaveTextContent('Output bytes');
+    expect(inspector).toHaveTextContent('Parse duration');
+    expect(inspector).toHaveTextContent('Render duration');
+    expect(inspector).toHaveTextContent('Accessible descriptionAbsent');
   });
 
   it('composes the exact source editor and labels the last valid preview stale', async () => {
@@ -57,6 +66,18 @@ describe('Mermaid surface', () => {
   it('opens an empty Mermaid source directly in editable source mode', () => {
     render(<App sessions={[mermaidSession('')]} />);
     expect(screen.getByRole('textbox', { name: 'architecture.mmd text editor' })).toBeInTheDocument();
+  });
+
+  it('marks a retained preview stale and publishes the limited state above 1 MiB', async () => {
+    render(<App sessions={[mermaidSession('flowchart TB\n  A --> B')]} />);
+    await screen.findByRole('img');
+    fireEvent.click(screen.getByRole('button', { name: 'Edit source' }));
+    const textbox = screen.getByRole('textbox', { name: 'architecture.mmd text editor' });
+    const view = EditorView.findFromDOM(textbox)!;
+    const oversized = `flowchart TB\nA --> B\n%%${'x'.repeat(MERMAID_STANDALONE_MAX_BYTES)}`;
+    act(() => view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: oversized } }));
+    await waitFor(() => expect(screen.getByText('Preview is from an earlier source revision')).toBeInTheDocument());
+    expect(screen.getByLabelText('Earlier valid preview')).toBeInTheDocument();
   });
 
   it('renders after StrictMode replays effect setup and cleanup', async () => {

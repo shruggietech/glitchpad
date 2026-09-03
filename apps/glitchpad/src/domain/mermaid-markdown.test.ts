@@ -9,6 +9,7 @@ describe('embedded Mermaid extraction', () => {
     const [block] = extractMermaidBlocks(source, 'doc', 7);
     expect(block).toMatchObject({ owner_id: 'doc:mermaid:1', ordinal: 1, parent_revision: 7, source: 'flowchart TB\nA-->B', limit: null });
     expect(source.slice(block.source_range!.start_offset, block.source_range!.end_offset)).toContain('```mermaid');
+    expect(block.source_range).toMatchObject({ start_line: 3, end_line: 6 });
   });
 
   it('recognizes tilde fences and ignores other languages', () => {
@@ -33,5 +34,13 @@ describe('embedded Mermaid extraction', () => {
     expect(atLimit.every(({ limit }) => limit === null)).toBe(true);
     const overLimit = extractMermaidBlocks(`${atLimitSource}\n${block(1)}`, 'doc', 1);
     expect(overLimit.at(-1)?.limit).toBe('document_bytes');
+  });
+
+  it('tracks lines incrementally across many mixed-newline fences', () => {
+    const source = Array.from({ length: 2_000 }, (_, index) => `before ${index}\r\n\`\`\`mermaid\nflowchart TB\rA-->B\r\n\`\`\``).join('\n');
+    const blocks = extractMermaidBlocks(source, 'doc', 1);
+    expect(blocks).toHaveLength(2_000);
+    expect(blocks[0]?.source_range?.start_line).toBe(2);
+    expect(blocks.at(-1)?.source_range?.start_line).toBe(9_997);
   });
 });

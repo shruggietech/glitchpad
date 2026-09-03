@@ -120,11 +120,22 @@ const measureInteraction = async (browser, origin, setup, interact, ready, sampl
     try {
       await page.goto(origin, { waitUntil: 'domcontentloaded' });
       await setup(page);
-      const started = performance.now();
+      await page.evaluate(() => {
+        delete window.__glitchpadPerformanceInputStarted;
+        document.addEventListener('beforeinput', () => {
+          window.__glitchpadPerformanceInputStarted = performance.now();
+        }, { capture: true, once: true });
+      });
       await interact(page);
       await ready(page);
-      await page.evaluate(() => new Promise((resolvePromise) => requestAnimationFrame(() => requestAnimationFrame(resolvePromise))));
-      values.push(performance.now() - started);
+      const elapsed = await page.evaluate(() => new Promise((resolvePromise) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          const started = window.__glitchpadPerformanceInputStarted;
+          resolvePromise(typeof started === 'number' ? performance.now() - started : null);
+        }));
+      }));
+      if (!Number.isFinite(elapsed) || elapsed < 0) throw new Error('performance_input_timing_failed');
+      values.push(elapsed);
       if (external.length) throw new Error('performance_external_request');
     } finally {
       await page.close();
@@ -254,7 +265,7 @@ export const collectPerformance = async (options) => {
     for (const [metricId, definition] of selectedInteractions) {
       const metric = catalog.metrics.find(({ id }) => id === metricId);
       const samples = await measureInteraction(browser, origin, definition.setup, definition.interact, definition.ready, metric.minimum_samples);
-      const record = makeEvidence(metric, profile, samples, runtime, options.buildId, 'chromium-interaction-paint-v1');
+      const record = makeEvidence(metric, profile, samples, runtime, options.buildId, 'chromium-beforeinput-paint-v2');
       const { problems } = validateEvidence(catalog, record);
       if (problems.length) throw new Error(problems.join(','));
       if (record.classification === 'failure') throw new Error(`performance_hard_limit:${record.metric_id}`);

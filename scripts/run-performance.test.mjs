@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import test from 'node:test';
@@ -23,6 +23,13 @@ test('collector request policy remains loopback-origin and inert-resource only',
   assert.equal(isAllowedRequest('data:image/svg+xml,x', origin), true);
   assert.equal(isAllowedRequest('https://example.com', origin), false);
   assert.equal(isAllowedRequest('file:///private', origin), false);
+});
+
+test('interaction timing starts at browser input rather than host automation', async () => {
+  const source = await readFile(new URL('./run-performance.mjs', import.meta.url), 'utf8');
+  assert.match(source, /addEventListener\(\s*'beforeinput'/u);
+  assert.match(source, /chromium-beforeinput-paint-v2/u);
+  assert.doesNotMatch(source, /const started = performance\.now\(\);\s*\n\s*await interact/u);
 });
 
 test('artifact collection measures an actual file and rejects absence', async () => {

@@ -157,7 +157,7 @@ describe('useRecovery', () => {
       displayName: 'draft.txt',
       encoding: 'utf16_be_bom',
     });
-    renderHook(() => useRecovery([session], recoveryGateway));
+    const { result } = renderHook(() => useRecovery([session], recoveryGateway));
 
     await act(async () => vi.advanceTimersByTimeAsync(2_000));
 
@@ -172,6 +172,9 @@ describe('useRecovery', () => {
           undecodable_bytes: 'none',
         },
       }),
+    );
+    expect(result.current.recordIds.get(session.id)).toMatch(
+      /^[0-9a-f-]{36}$/u,
     );
   });
 });

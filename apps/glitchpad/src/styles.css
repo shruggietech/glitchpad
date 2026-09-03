@@ -14,6 +14,10 @@
   --tab-row-height: 40px;
   --command-row-height: 32px;
   --focus-color: #8ab4ff;
+  --editor-font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  --editor-font-size: 14px;
+  --editor-tab-width: 4;
+  --editor-white-space: pre-wrap;
 }
 
 * {
@@ -258,6 +262,43 @@ button:focus-visible,
   scrollbar-width: thin;
 }
 
+.toolbar-row {
+  z-index: 2;
+  display: flex;
+  min-width: 0;
+  border-bottom: 1px solid #292c33;
+  background: #14161a;
+}
+
+.toolbar-row .command-bar {
+  min-width: 0;
+  flex: 1;
+  border-bottom: 0;
+}
+
+.application-actions {
+  display: flex;
+  flex: 0 0 auto;
+  border-left: 1px solid #292c33;
+}
+
+.application-actions button,
+.application-sheet button,
+.application-sheet input,
+.application-sheet select {
+  min-height: 32px;
+  border: 1px solid #4c5260;
+  border-radius: 0.25rem;
+  background: #262a33;
+  color: inherit;
+}
+
+.application-actions button {
+  border-width: 0 0 0 1px;
+  border-radius: 0;
+  cursor: pointer;
+}
+
 .command-button {
   min-width: max-content;
   padding: 0 0.7rem;
@@ -320,6 +361,12 @@ button:focus-visible,
 .text-editor .cm-editor,
 .text-editor .cm-scroller {
   height: 100%;
+}
+
+.text-editor .cm-scroller {
+  font-family: var(--editor-font-family);
+  font-size: var(--editor-font-size);
+  tab-size: var(--editor-tab-width);
 }
 
 .document-limit {
@@ -400,7 +447,7 @@ button:focus-visible,
     'SFMono-Regular',
     Consolas,
     monospace;
-  white-space: pre-wrap;
+  white-space: var(--editor-white-space);
   overflow-wrap: anywhere;
 }
 
@@ -643,6 +690,71 @@ button:focus-visible,
   box-shadow: -0.75rem 0 2rem #0008;
 }
 
+.application-sheet {
+  position: absolute;
+  z-index: 6;
+  top: calc(var(--tab-row-height) + var(--command-row-height));
+  right: 0;
+  bottom: 0;
+  width: min(420px, 46vw);
+  padding: 1rem;
+  overflow: auto;
+  border-left: 1px solid #4c5260;
+  background: #181a20;
+  box-shadow: -0.75rem 0 2rem #0008;
+}
+
+.application-sheet-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.application-sheet h2,
+.application-sheet p {
+  margin: 0 0 0.75rem;
+}
+
+.preference-fields {
+  display: grid;
+  gap: 0.85rem;
+  margin: 1rem 0;
+}
+
+.preference-fields label {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.preference-fields label:has(input[type='checkbox']) {
+  display: flex;
+  align-items: center;
+}
+
+.application-sheet input,
+.application-sheet select,
+.application-sheet button {
+  padding: 0.35rem 0.55rem;
+}
+
+.application-sheet-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.diagnostic-preview {
+  max-height: 60vh;
+  padding: 0.75rem;
+  overflow: auto;
+  border: 1px solid #343842;
+  background: #101114;
+  font-size: 0.7rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .metadata-inspector-header,
 .metadata-inspector-actions,
 .metadata-fact dd,
@@ -777,7 +889,11 @@ button:focus-visible,
   .mermaid-search button,
   .diagram-controls button,
   .embedded-mermaid button,
-  .metadata-inspector button {
+  .metadata-inspector button,
+  .application-actions button,
+  .application-sheet button,
+  .application-sheet input,
+  .application-sheet select {
     min-width: 44px;
     min-height: 44px;
   }
@@ -808,6 +924,13 @@ button:focus-visible,
     max-height: 40vh;
     border-width: 1px 0 0;
     box-shadow: 0 -0.75rem 2rem #0008;
+  }
+
+  .application-sheet {
+    top: auto;
+    width: 100%;
+    max-height: 80vh;
+    border-width: 1px 0 0;
   }
 
   .metadata-inspector[data-phone-expanded="true"] {
@@ -877,6 +1000,116 @@ button:focus-visible,
   .metadata-group {
     border-color: #d9dce1;
   }
+
+  .application-sheet {
+    border-color: #cfd2d8;
+    background: #f7f7f5;
+    box-shadow: -0.75rem 0 2rem #0003;
+  }
+
+  .diagnostic-preview {
+    border-color: #cfd2d8;
+    background: #fff;
+  }
+}
+
+:root[data-theme='light'] {
+  color: #17181c;
+  background: #f5f5f3;
+}
+
+:root[data-theme='light'] .app-shell,
+:root[data-theme='light'] .document-surface {
+  background: #f5f5f3;
+}
+
+:root[data-theme='light'] .tab-strip-shell,
+:root[data-theme='light'] .toolbar-row,
+:root[data-theme='light'] .command-bar {
+  border-color: #cfd2d8;
+  background: #e7e8e9;
+}
+
+:root[data-theme='light'] .tab-button {
+  border-color: #cfd2d8;
+  background: #dedfe2;
+}
+
+:root[data-theme='light'] .tab-button.active,
+:root[data-theme='light'] .overflow-menu,
+:root[data-theme='light'] .resolution-dialog,
+:root[data-theme='light'] .metadata-inspector,
+:root[data-theme='light'] .application-sheet {
+  border-color: #b9bdc5;
+  background: #f5f5f3;
+  box-shadow: 0 0.75rem 2rem #0003;
+}
+
+:root[data-theme='light'] .document-content {
+  color: #17181c;
+}
+
+:root[data-theme='light'] .integrity-banner {
+  border-color: #9a6a22;
+  background: #fff3dc;
+  color: #5d3b07;
+}
+
+:root[data-theme='light'] .resolution-actions button,
+:root[data-theme='light'] .application-actions button,
+:root[data-theme='light'] .application-sheet button,
+:root[data-theme='light'] .application-sheet input,
+:root[data-theme='light'] .application-sheet select {
+  border-color: #aeb3bc;
+  background: #e5e7ea;
+}
+
+:root[data-theme='light'] .diagnostic-preview {
+  border-color: #cfd2d8;
+  background: #fff;
+}
+
+:root[data-theme='dark'] {
+  color: #e8e9ed;
+  background: #101114;
+}
+
+:root[data-theme='dark'] .app-shell,
+:root[data-theme='dark'] .document-surface,
+:root[data-theme='dark'] .diagnostic-preview {
+  color: #e8e9ed;
+  background: #101114;
+}
+
+:root[data-theme='dark'] .tab-strip-shell,
+:root[data-theme='dark'] .toolbar-row,
+:root[data-theme='dark'] .command-bar {
+  border-color: #2c2f36;
+  background: #17191e;
+}
+
+:root[data-theme='dark'] .tab-button {
+  border-color: #2c2f36;
+  background: #1c1f25;
+}
+
+:root[data-theme='dark'] .tab-button.active {
+  background: #101114;
+}
+
+:root[data-theme='dark'] .overflow-menu,
+:root[data-theme='dark'] .resolution-dialog,
+:root[data-theme='dark'] .metadata-inspector,
+:root[data-theme='dark'] .application-sheet {
+  border-color: #4c5260;
+  background: #181a20;
+  box-shadow: -0.75rem 0 2rem #0008;
+}
+
+:root[data-theme='dark'] .integrity-banner {
+  border-color: #a7752b;
+  background: #2a2115;
+  color: #ffd99d;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -892,6 +1125,8 @@ button:focus-visible,
   .command-bar,
   .document-heading,
   .metadata-inspector,
+  .application-sheet,
+  .application-actions,
   .markdown-controls,
   .markdown-search,
   .markdown-outline,

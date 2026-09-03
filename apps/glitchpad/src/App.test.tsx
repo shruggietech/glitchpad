@@ -8,6 +8,8 @@ import type { RecoveryGateway } from './domain/recovery-gateway';
 import type { MetadataGateway } from './domain/metadata-gateway';
 import type { IntegrityProgress, IntegrityStartRequest } from './domain/contracts';
 import { DESKTOP_CHROME_MAX_PX, REFERENCE_HEIGHT_PX } from './domain/tabs';
+import { defaultPreferences } from './domain/persistence';
+import type { PersistenceGateway } from './domain/persistence-gateway';
 
 const revision = {
   identity: initialSessions[2].source.identity,
@@ -17,6 +19,17 @@ const revision = {
 };
 
 describe('document foundation shell', () => {
+  const persistenceGateway = (overrides: Partial<PersistenceGateway> = {}): PersistenceGateway => ({
+    loadPreferences: vi.fn().mockResolvedValue({ status: 'loaded', value: defaultPreferences(), warning_code: null }),
+    persistPreferences: vi.fn().mockResolvedValue(undefined),
+    loadSession: vi.fn().mockResolvedValue({ status: 'defaulted', value: { schema_version: 1, window: { active_session_index: null, inspector: 'closed' }, sessions: [] }, warning_code: null }),
+    persistSession: vi.fn().mockResolvedValue(undefined),
+    appendDiagnostic: vi.fn().mockResolvedValue(undefined),
+    previewDiagnostics: vi.fn().mockResolvedValue({ status: 'loaded', value: { schema_version: 1, generated_unix_ms: 42, environment: { product_version: '0.0.0', specification_version: '0.0.0', platform: 'unknown', architecture: 'unknown', webview_version: null, core_version: '0.0.0', build_commit: null }, events: [] }, warning_code: null }),
+    reset: vi.fn().mockResolvedValue(false),
+    ...overrides,
+  });
+
   it('projects editor changes into dirty shell state before save is available', () => {
     render(<App sessions={[initialSessions[2]]} />);
     const textbox = screen.getByRole('textbox', { name: 'notes.txt text editor' });
@@ -366,6 +379,29 @@ describe('document foundation shell', () => {
         ({ impact }) => impact === 'critical' || impact === 'serious',
       ),
     ).toEqual([]);
+  });
+
+  it('loads, edits, persists, and resets bounded preferences without replacing the document', async () => {
+    const gateway = persistenceGateway();
+    render(<App persistenceGateway={gateway} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Preferences' }));
+    expect(screen.getByRole('complementary', { name: 'Preferences' })).toBeInTheDocument();
+    expect(screen.getByRole('tabpanel')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Theme'), { target: { value: 'dark' } });
+    await waitFor(() => expect(gateway.persistPreferences).toHaveBeenCalledWith(expect.objectContaining({ theme: 'dark' })), { timeout: 1_000 });
+    fireEvent.click(screen.getByRole('button', { name: 'Reset preferences' }));
+    await waitFor(() => expect(gateway.reset).toHaveBeenCalledWith('preferences'));
+  });
+
+  it('previews the exact redacted diagnostic bundle before explicit export', async () => {
+    const gateway = persistenceGateway();
+    const exporter = { export: vi.fn().mockResolvedValue(undefined) };
+    render(<App persistenceGateway={gateway} diagnosticExportGateway={exporter} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Diagnostics' }));
+    expect(await screen.findByText(/"generated_unix_ms": 42/u)).toBeInTheDocument();
+    expect(exporter.export).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Export previewed bundle' }));
+    expect(exporter.export).toHaveBeenCalledWith(expect.objectContaining({ generated_unix_ms: 42 }));
   });
 
   it('uses a minimal empty surface after all fixture sessions close', () => {

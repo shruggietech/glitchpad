@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "preference_cases": [
+    {
+      "name": "current",
+      "input": {
+        "schema_version": 1,
+        "theme": "dark",
+        "editor_font_family": "system-ui",
+        "editor_font_size": 16,
+        "line_wrap": true,
+        "tab_width": 4,
+        "markdown_default_mode": "rendered",
+        "language_overrides": { "rs": "rust" }
+      },
+      "expected_status": "loaded"
+    },
+    {
+      "name": "legacy",
+      "input": {
+        "schema_version": 0,
+        "theme": "light",
+        "editor_font_family": "system-ui",
+        "editor_font_size": 14,
+        "line_wrap": false,
+        "tab_width": 2,
+        "markdown_default_mode": "source",
+        "language_overrides": {}
+      },
+      "expected_status": "migrated"
+    },
+    {
+      "name": "future",
+      "input": { "schema_version": 99, "future_value": "preserve-byte-for-byte" },
+      "expected_status": "unsupported"
+    }
+  ],
+  "failure_cases": [
+    {
+      "name": "corrupt",
+      "encoded_prefix": "{broken",
+      "expected_status": "corrupt"
+    },
+    {
+      "name": "oversized",
+      "encoded_byte_count": 65537,
+      "expected_status": "corrupt"
+    },
+    {
+      "name": "unavailable",
+      "expected_status": "unavailable"
+    }
+  ],
+  "session_case": {
+    "schema_version": 1,
+    "window": { "active_session_index": 0, "inspector": "closed" },
+    "sessions": [
+      {
+        "session_key": "fixture-session",
+        "display_hint": "notes.md",
+        "renderer_id": "markdown",
+        "presentation_mode": "rendered",
+        "source_reference": "37d21d4b-674d-41fa-b792-29b7c2012ed3",
+        "recovery_record_id": null
+      }
+    ]
+  },
+  "hostile_diagnostic_sentinels": [
+    "C:\\Users\\private\\notes.txt",
+    "content://private.provider/document/42",
+    "password=hunter2",
+    "secret document excerpt",
+    "Exif.GPSLatitude=41.0000",
+    "recovery payload bytes",
+    "stack backtrace"
+  ],
+  "platform_lifecycle_cases": [
+    {
+      "platform": "desktop",
+      "authority": "native_private_reference",
+      "restorable": true,
+      "expected": "revalidate"
+    },
+    {
+      "platform": "android",
+      "authority": "persisted_uri_permission",
+      "restorable": true,
+      "expected": "revalidate"
+    },
+    {
+      "platform": "android",
+      "authority": "revoked_uri_permission",
+      "restorable": false,
+      "expected": "skip_independently"
+    }
+  ],
+  "limits": {
+    "sessions": 32,
+    "language_overrides": 128,
+    "diagnostic_events": 2000,
+    "diagnostic_bytes": 2097152,
+    "diagnostic_age_ms": 604800000
+  }
+}

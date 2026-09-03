@@ -135,3 +135,15 @@ sensitivity_review = "Synthetic metadata, hostile strings, and fake locator patt
 format = "JSON"
 purpose = "Metadata availability, provenance, copy policy, Unicode, precision, redaction, and integrity validation"
 expected_result = "All facts retain typed policy and state while hostile values remain inert and native locator patterns are never exposed"
+
+[[fixture]]
+path = "fixtures/persistence/corpus.json"
+source = "Original Glitchpad S017 bounded persistence contract corpus"
+author = "ShruggieTech contributors"
+license = "Apache-2.0"
+redistribution = true
+sha256 = "2da12c0b3e15438935afe11a4e93153510ec2d382747978cf1112a48e1d14f44"
+sensitivity_review = "Synthetic configuration, session, and hostile diagnostic strings only; no production or personal data"
+format = "JSON"
+purpose = "Preference migration, future-schema preservation, bounded session projection, retention limits, and diagnostic redaction validation"
+expected_result = "Valid state restores deterministically while hostile strings never enter retained or exported diagnostics"

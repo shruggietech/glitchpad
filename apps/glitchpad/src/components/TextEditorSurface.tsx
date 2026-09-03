@@ -47,6 +47,7 @@ import type {
   TextDocumentState,
 } from '../domain/contracts';
 import { detectLanguage, LanguageLoader } from '../domain/language';
+import { usePreferences } from '../domain/preference-context';
 import {
   applyTextTransaction,
   textChangesFitEditableLimit,
@@ -87,7 +88,9 @@ export const TextEditorSurface = forwardRef<
   const languageCompartment = useRef(new Compartment());
   const wrappingCompartment = useRef(new Compartment());
   const editableCompartment = useRef(new Compartment());
-  const wrappedRef = useRef(true);
+  const settingsCompartment = useRef(new Compartment());
+  const preferences = usePreferences();
+  const wrappedRef = useRef(preferences.line_wrap);
   const [languageStatus, setLanguageStatus] = useState(
     session.text_document?.language.status ?? 'plain',
   );
@@ -179,10 +182,19 @@ export const TextEditorSurface = forwardRef<
             ...historyKeymap,
             ...searchKeymap,
           ]),
-          indentUnit.of('  '),
+          settingsCompartment.current.of([
+            indentUnit.of(' '.repeat(preferences.tab_width)),
+            EditorState.tabSize.of(preferences.tab_width),
+            EditorView.theme({
+              '.cm-scroller': {
+                fontFamily: 'var(--editor-font-family)',
+                fontSize: 'var(--editor-font-size)',
+              },
+            }),
+          ]),
           EditorState.allowMultipleSelections.of(true),
           languageCompartment.current.of([]),
-          wrappingCompartment.current.of(EditorView.lineWrapping),
+          wrappingCompartment.current.of(preferences.line_wrap ? EditorView.lineWrapping : []),
           editableCompartment.current.of(EditorView.editable.of(canEdit)),
           EditorState.readOnly.of(!canEdit),
           EditorState.changeFilter.of((transaction) => {
@@ -243,9 +255,6 @@ export const TextEditorSurface = forwardRef<
           }),
           EditorView.theme({
             '&': { height: '100%', backgroundColor: 'transparent' },
-            '.cm-scroller': {
-              fontFamily: 'ui-monospace, Cascadia Code, Consolas, monospace',
-            },
             '.cm-content': { caretColor: 'var(--focus-color)' },
             '.cm-gutters': {
               backgroundColor: 'transparent',
@@ -263,6 +272,27 @@ export const TextEditorSurface = forwardRef<
       view.destroy();
     };
   }, [session.id]);
+
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) return;
+    wrappedRef.current = preferences.line_wrap;
+    view.dispatch({
+      effects: [
+        wrappingCompartment.current.reconfigure(preferences.line_wrap ? EditorView.lineWrapping : []),
+        settingsCompartment.current.reconfigure([
+          indentUnit.of(' '.repeat(preferences.tab_width)),
+          EditorState.tabSize.of(preferences.tab_width),
+          EditorView.theme({
+            '.cm-scroller': {
+              fontFamily: 'var(--editor-font-family)',
+              fontSize: 'var(--editor-font-size)',
+            },
+          }),
+        ]),
+      ],
+    });
+  }, [preferences.editor_font_family, preferences.editor_font_size, preferences.line_wrap, preferences.tab_width]);
 
   useEffect(() => {
     const view = viewRef.current;

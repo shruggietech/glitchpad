@@ -121,7 +121,7 @@ class RestorationInstrumentedTest {
         .putExtra(FixtureGrantActivity.EXTRA_URI, uri.toString())
         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
     )
-    repeat(40) {
+    repeat(100) {
       try {
         resolver.query(uri, arrayOf(DocumentsContract.Document.COLUMN_DOCUMENT_ID), null, null, null).use { cursor ->
           if (cursor != null && cursor.moveToFirst()) return
@@ -129,7 +129,7 @@ class RestorationInstrumentedTest {
       } catch (_: SecurityException) {
         // The delegated provider grant can take a moment to become visible to the target process.
       }
-      if (it < 39) SystemClock.sleep(50)
+      if (it < 99) SystemClock.sleep(100)
       else fail("fixture URI grant did not become usable")
     }
   }

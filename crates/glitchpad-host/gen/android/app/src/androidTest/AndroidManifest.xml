@@ -3,7 +3,7 @@
     <application>
         <activity
             android:name="com.shruggietech.glitchpad.source.FixtureGrantActivity"
-            android:exported="false" />
+            android:exported="true" />
         <provider
             android:name="com.shruggietech.glitchpad.source.FixtureDocumentsProvider"
             android:authorities="com.shruggietech.glitchpad.fixture.documents"

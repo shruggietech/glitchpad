@@ -5,7 +5,7 @@ use glitchpad_lib::performance::{
 };
 use std::process::{Child, Command, Stdio};
 use std::time::Duration;
-use std::{env, thread};
+use std::{env, fs, thread};
 
 use chrono::{SecondsFormat, Utc};
 use serde_json::json;
@@ -131,4 +131,20 @@ fn empty_native_registries_report_no_retained_leases() {
             NativeLeaseSnapshot::default()
         );
     }
+}
+
+#[test]
+fn android_emulator_uses_supported_software_rendering() {
+    let workspace = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let workflow = fs::read_to_string(workspace.join(".github/workflows/ci.yml"))
+        .expect("CI workflow should be readable");
+
+    assert!(
+        workflow.contains("-gpu swiftshader -feature -Vulkan"),
+        "Android instrumentation must use the supported software renderer with Vulkan disabled"
+    );
+    assert!(
+        !workflow.contains("swiftshader_indirect"),
+        "deprecated indirect rendering reintroduces emulator teardown crashes"
+    );
 }

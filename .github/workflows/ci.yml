@@ -281,7 +281,10 @@ jobs:
           arch: x86_64
           target: google_apis
           disable-animations: true
-          emulator-options: -no-window -no-audio -no-snapshot -no-boot-anim -gpu swiftshader_indirect
+          # The deprecated indirect renderer crashed during WebView teardown on both
+          # governed API levels. Use Android's supported software renderer and keep
+          # Vulkan disabled for this headless GLES test workload.
+          emulator-options: -no-window -no-audio -no-snapshot -no-boot-anim -gpu swiftshader -feature -Vulkan
           script: |
             export NDK_HOME="${ANDROID_SDK_ROOT}/ndk/28.2.13676358"
             pnpm tauri android build --debug --apk --target x86_64 --ci --config '{"version":"0.0.1"}'

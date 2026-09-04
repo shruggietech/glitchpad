@@ -149,31 +149,14 @@ class AndroidSourceInstrumentedTest {
   }
 
   private fun grant(uri: Uri): Uri {
-    instrumentation.context.startActivity(
-      Intent(instrumentation.context, FixtureGrantActivity::class.java)
-        .setAction(FixtureGrantActivity.ACTION_GRANT)
-        .putExtra(FixtureGrantActivity.EXTRA_URI, uri.toString())
-        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-    )
-    var lastFailure = "provider returned no document row"
-    repeat(100) {
-      try {
-        resolver.query(uri, arrayOf(DocumentsContract.Document.COLUMN_DOCUMENT_ID), null, null, null).use { cursor ->
-          if (cursor != null && cursor.moveToFirst()) {
-            grantedUris.add(uri)
-            return uri
-          }
-        }
-      } catch (error: SecurityException) {
-        lastFailure = error.message ?: error.javaClass.name
-        // The delegated activity grant can take a moment to become visible to the target process.
-      }
-      if (it < 99) {
-        SystemClock.sleep(100)
-      } else {
-        fail("fixture URI grant did not become usable ($lastFailure)")
+    resolver.call(FixtureGrantProvider.COMMAND_URI, FixtureGrantProvider.METHOD_GRANT, uri.toString(), null)
+    resolver.query(uri, arrayOf(DocumentsContract.Document.COLUMN_DOCUMENT_ID), null, null, null).use { cursor ->
+      if (cursor != null && cursor.moveToFirst()) {
+        grantedUris.add(uri)
+        return uri
       }
     }
+    fail("fixture provider returned no document row after a synchronous URI grant")
     error("fixture grant assertion returned unexpectedly")
   }
 

@@ -24,8 +24,21 @@
 ## Headless command execution on Windows
 
 - Foreground, flashing, or focus-stealing console windows are prohibited. Do not interpret this as a blanket ban on command execution that remains headless.
-- Direct `git` and `gh` commands are allowed through the Codex command runner for status inspection, review, commit, fetch, push, pull-request publication, and related repository work. Invoke them directly without a PowerShell or `cmd.exe` wrapper.
+- Direct `git` and `gh` operations are allowed for status inspection, review, commit, fetch, push, pull-request publication, and related repository work. On Windows, automated agents MUST invoke them through `scripts/invoke-vcs-hidden.ps1`; it applies `CREATE_NO_WINDOW`, redirected non-interactive I/O, and disables credential and CLI prompts.
 - Do not launch a fresh PowerShell process for each file read, check, or polling iteration. Prefer direct file tools, batch compatible checks, reuse one verified process host, or invoke the underlying tool directly.
 - If a launch pattern produces visible windows, stop that specific executable and pattern immediately. Record what caused the behavior and continue unrelated direct Git or verified headless operations.
 - Non-Git console tools that have not been verified headless MUST use an integrated terminal, repository-aware API, or a launcher with a `CREATE_NO_WINDOW` guarantee, redirected output, and non-interactive arguments.
 - Project-owned Windows process launchers MUST apply the `CREATE_NO_WINDOW` creation flag to console child processes. A successful build or test does not justify visible desktop console windows.
+
+## Mandatory hidden virtualized execution
+
+- This section governs commands launched from an interactive Windows desktop. A non-interactive hosted CI runner may execute platform-native commands when platform fidelity is the purpose of the job, but it MUST disable prompts and MUST NOT introduce a user-session console launcher.
+- All non-Git repository commands launched from an interactive Windows desktop MUST run inside a Linux container through `scripts/invoke-docker-hidden.ps1`. This includes Node.js, pnpm, Rust, test, build, lint, formatting, browser, and performance commands.
+- The Docker launcher is the primary approved Windows-to-Linux process boundary. It MUST keep `UseShellExecute` disabled, set `CreateNoWindow`, request a hidden window style, redirect standard output and standard error, and invoke Docker non-interactively.
+- `scripts/invoke-wsl-hidden.ps1` is an approved fallback only when Docker is unavailable and the WSL distribution has the complete required toolchain and working networking. Never mix Windows development binaries into a WSL command through `/mnt/c`.
+- Direct Windows execution of PowerShell, `cmd.exe`, Node.js, pnpm, Cargo, browsers, test runners, build tools, or project scripts is prohibited, even when a command previously appeared harmless.
+- Do not fall back to Windows tooling when the Linux environment lacks a dependency. Add the dependency to the container invocation or image, or stop and report the missing dependency.
+- Build the repository validation environment from `scripts/docker/validation.Dockerfile`; do not repeatedly install its toolchain or system packages in disposable command containers.
+- Reuse one running launcher session for long operations and polling. Never implement a polling loop that repeatedly starts `docker.exe` or `wsl.exe`.
+- Git and GitHub CLI may run directly only through a verified headless Codex runner path. Otherwise, run them through an approved hidden launcher with credentials supplied through the existing credential mechanism, never copied into an image or repository.
+- The validated visibility probes are `scripts/invoke-docker-hidden.ps1 -DockerArguments @('run', '--rm', 'alpine:3.22', 'sleep', '180')` and `scripts/invoke-wsl-hidden.ps1 -Command 'sleep 180'`. Any visible window, taskbar activation, flash, or focus change is a hard failure. Stop the launcher immediately and do not continue repository commands.

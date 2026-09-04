@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 
 import { MermaidRendererClient } from '../domain/mermaid-adapter';
 import type { EmbeddedMermaidBlock, MermaidRenderResult } from '../domain/mermaid-contract';
 import { DiagramViewport } from './DiagramViewport';
 import { useMermaidTheme } from './useMermaidTheme';
+import { rendererResourceLedger } from '../domain/resource-ledger';
 
 interface EmbeddedMermaidSurfaceProps {
   block: EmbeddedMermaidBlock;
@@ -13,8 +14,17 @@ interface EmbeddedMermaidSurfaceProps {
 }
 
 export function EmbeddedMermaidSurface({ block, documentName, onViewSource, rendererClient }: EmbeddedMermaidSurfaceProps) {
+  const performanceInstanceId = useId();
   const ownedClient = useRef<MermaidRendererClient | null>(null);
-  if (!ownedClient.current) ownedClient.current = rendererClient ?? new MermaidRendererClient();
+  const ownsClient = useRef(rendererClient === undefined);
+  const lifecycleGeneration = useRef(0);
+  if (!ownedClient.current) ownedClient.current = rendererClient ?? new MermaidRendererClient(
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    rendererResourceLedger.register(`embedded-mermaid:${block.owner_id}:${performanceInstanceId}`, new TextEncoder().encode(block.source).byteLength),
+  );
   const client = ownedClient.current;
   const [result, setResult] = useState<MermaidRenderResult | null>(null);
   const theme = useMermaidTheme();
@@ -34,6 +44,19 @@ export function EmbeddedMermaidSurface({ block, documentName, onViewSource, rend
     }).then(setResult);
     return () => client.cancel();
   }, [block, client, documentName, theme]);
+
+  useEffect(
+    () => {
+      const generation = ++lifecycleGeneration.current;
+      return () => queueMicrotask(() => {
+        if (ownsClient.current && lifecycleGeneration.current === generation) {
+          ownedClient.current?.dispose();
+          ownedClient.current = null;
+        }
+      });
+    },
+    [],
+  );
 
   const failure = block.limit
     ? `Diagram ${block.ordinal} exceeds the ${block.limit.replaceAll('_', ' ')} limit.`

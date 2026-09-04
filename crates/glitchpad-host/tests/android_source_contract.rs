@@ -6,6 +6,51 @@ use glitchpad_core::source::{
 use glitchpad_lib::android_source::AndroidSourceHost;
 use uuid::Uuid;
 
+#[test]
+fn android_fixture_grants_are_synchronous() {
+    let android_tests = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source");
+    for source in [
+        "AndroidSourceInstrumentedTest.kt",
+        "RestorationInstrumentedTest.kt",
+    ] {
+        let source = std::fs::read_to_string(android_tests.join(source))
+            .expect("read Android instrumentation source");
+        assert!(source.contains("resolver.call(FixtureGrantProvider.COMMAND_URI"));
+        assert!(!source.contains("startActivity("));
+    }
+    let grant_provider = std::fs::read_to_string(android_tests.join("FixtureGrantProvider.java"))
+        .expect("read synchronous fixture grant provider");
+    assert!(grant_provider.contains("context.grantUriPermission(TARGET_PACKAGE, uri, MODES)"));
+    assert!(grant_provider.contains("DOCUMENT_AUTHORITY.equals(uri.getAuthority())"));
+}
+
+#[test]
+fn android_api_24_keeps_tauri_json_runtime_compatible() {
+    let build_script = std::fs::read_to_string(
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("gen/android/app/build.gradle.kts"),
+    )
+    .expect("read Android application build script");
+
+    assert!(build_script.contains("minSdk = 24"));
+    assert!(build_script.contains(
+        "resolutionStrategy.force(\"com.fasterxml.jackson.core:jackson-databind:2.13.5\")"
+    ));
+
+    let vite_config = std::fs::read_to_string(
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../apps/glitchpad/vite.config.ts"),
+    )
+    .expect("read frontend build configuration");
+    assert!(vite_config.contains("target: 'chrome69'"));
+
+    let frontend_entry = std::fs::read_to_string(
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../apps/glitchpad/src/main.tsx"),
+    )
+    .expect("read frontend entrypoint");
+    assert!(frontend_entry.contains("import './runtime-polyfills';"));
+}
+
 fn delivery(token: &str, strength: &str, length: Option<u64>) -> BridgeDelivery {
     BridgeDelivery {
         bridge_token: format!("bridge-{token}"),

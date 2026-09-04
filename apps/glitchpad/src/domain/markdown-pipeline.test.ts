@@ -54,6 +54,15 @@ describe('safe Markdown projection', () => {
     await expect(renderMarkdown(request('x'.repeat(MARKDOWN_RENDER_MAX_BYTES + 1)))).resolves.toMatchObject({ status: 'limited' });
   });
 
+  it('renders the canonical 1 MiB performance fixture within the client timeout', async () => {
+    const prefix = '# Performance fixture\n\n';
+    const source = `${prefix}${'x'.repeat(1024 * 1024 - new TextEncoder().encode(prefix).byteLength)}`;
+    const result = await renderMarkdown(request(source));
+    expect(result).toMatchObject({ status: 'ready' });
+    expect(result.measurements.source_bytes).toBe(1024 * 1024);
+    expect(result.measurements.parse_duration_ms).toBeLessThan(5_000);
+  });
+
   it('caps rendered search results deterministically', () => {
     const matches = findRenderedMatches([{ node_id: 'n1', text: 'x'.repeat(2_000), source_range: null }], 'x');
     expect(matches).toHaveLength(1_000);

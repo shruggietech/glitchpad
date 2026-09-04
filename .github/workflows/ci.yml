@@ -94,6 +94,36 @@ jobs:
       - name: Frontend checks
         run: pnpm run check:frontend
 
+  performance:
+    name: Performance policy and hosted smoke
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.28.2
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install governed performance browser
+        run: pnpm exec puppeteer browsers install chrome-headless-shell
+
+      - name: Validate policy and run representative smoke
+        run: |
+          pnpm run check:performance
+          node scripts/run-performance.mjs --profile hosted_windows_smoke_v1 --build-id "pr-${{ github.event.pull_request.head.sha || github.sha }}"
+
   platform:
     name: Desktop host (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
@@ -251,12 +281,15 @@ jobs:
           arch: x86_64
           target: google_apis
           disable-animations: true
-          emulator-options: -no-window -no-audio -no-snapshot -no-boot-anim -gpu swiftshader_indirect
+          # The deprecated indirect renderer crashed during WebView teardown on both
+          # governed API levels. Use Android's supported software renderer and keep
+          # Vulkan disabled for this headless GLES test workload.
+          emulator-options: -no-window -no-audio -no-snapshot -no-boot-anim -gpu swiftshader -feature -Vulkan
           script: |
             export NDK_HOME="${ANDROID_SDK_ROOT}/ndk/28.2.13676358"
             pnpm tauri android build --debug --apk --target x86_64 --ci --config '{"version":"0.0.1"}'
             ./crates/glitchpad-host/gen/android/gradlew --project-dir crates/glitchpad-host/gen/android :glitchpad-android-source:testDebugUnitTest --no-daemon
-            ./crates/glitchpad-host/gen/android/gradlew --project-dir crates/glitchpad-host/gen/android :app:connectedUniversalDebugAndroidTest -PabiList=x86_64 -ParchList=x86_64 -PtargetList=x86_64 -x :app:rustBuildUniversalDebug -x :app:rustBuildX86_64Debug --no-daemon
+            ./crates/glitchpad-host/gen/android/gradlew --project-dir crates/glitchpad-host/gen/android :app:connectedUniversalDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.notClass=com.shruggietech.glitchpad.performance.PerformanceInstrumentedTest -PabiList=x86_64 -ParchList=x86_64 -PtargetList=x86_64 -x :app:rustBuildUniversalDebug -x :app:rustBuildX86_64Debug --no-daemon
             adb install -r crates/glitchpad-host/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk
             adb install -r crates/glitchpad-host/gen/android/app/build/outputs/apk/androidTest/universal/debug/app-universal-debug-androidTest.apk
             adb shell am instrument -w -e class com.shruggietech.glitchpad.source.RestorationInstrumentedTest#privateRestorationRecordSurvivesProcessBoundary -e restorationPhase seed com.shruggietech.glitchpad.test/androidx.test.runner.AndroidJUnitRunner > "$RUNNER_TEMP/restoration-seed.txt"
@@ -266,6 +299,10 @@ jobs:
             adb shell am instrument -w -e class com.shruggietech.glitchpad.source.RestorationInstrumentedTest#privateRestorationRecordSurvivesProcessBoundary -e restorationPhase verify com.shruggietech.glitchpad.test/androidx.test.runner.AndroidJUnitRunner > "$RUNNER_TEMP/restoration-verify.txt"
             cat "$RUNNER_TEMP/restoration-verify.txt"
             grep -Fq 'OK (1 test)' "$RUNNER_TEMP/restoration-verify.txt"
+            adb shell am force-stop com.shruggietech.glitchpad
+            adb shell am instrument -w -e class com.shruggietech.glitchpad.performance.PerformanceInstrumentedTest com.shruggietech.glitchpad.test/androidx.test.runner.AndroidJUnitRunner > "$RUNNER_TEMP/performance-evidence.txt"
+            cat "$RUNNER_TEMP/performance-evidence.txt"
+            node scripts/check-performance.mjs --android-instrumentation-output "$RUNNER_TEMP/performance-evidence.txt" --api-level "${{ matrix.api-level }}"
 
       - name: Upload Android instrumentation reports
         if: always()
@@ -329,6 +366,7 @@ jobs:
       [
         docs,
         shared,
+        performance,
         platform,
         android,
         android-instrumentation,
@@ -343,6 +381,7 @@ jobs:
         env:
           DOCS_RESULT: ${{ needs.docs.result }}
           SHARED_RESULT: ${{ needs.shared.result }}
+          PERFORMANCE_RESULT: ${{ needs.performance.result }}
           PLATFORM_RESULT: ${{ needs.platform.result }}
           ANDROID_RESULT: ${{ needs.android.result }}
           ANDROID_INSTRUMENTATION_RESULT: ${{ needs.android-instrumentation.result }}
@@ -350,7 +389,7 @@ jobs:
           SECURITY_RESULT: ${{ needs.security.result }}
           LABELER_RESULT: ${{ needs.labeler.result }}
         run: |
-          results="$DOCS_RESULT $SHARED_RESULT $PLATFORM_RESULT $ANDROID_RESULT $ANDROID_INSTRUMENTATION_RESULT $DEPENDENCY_RESULT $SECURITY_RESULT $LABELER_RESULT"
+          results="$DOCS_RESULT $SHARED_RESULT $PERFORMANCE_RESULT $PLATFORM_RESULT $ANDROID_RESULT $ANDROID_INSTRUMENTATION_RESULT $DEPENDENCY_RESULT $SECURITY_RESULT $LABELER_RESULT"
           echo "Job results: $results"
           for result in $results; do
             if [ "$result" = "failure" ] || [ "$result" = "cancelled" ]; then

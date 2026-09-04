@@ -1,7 +1,9 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { StrictMode } from 'react';
 import { describe, expect, it } from 'vitest';
 
 import { DiagramViewport } from './DiagramViewport';
+import { rendererResourceLedger } from '../domain/resource-ledger';
 
 const setViewportDimensions = (contentWidth = 4_096, contentHeight = 4_096, viewportWidth = 1_024, viewportHeight = 1_024) => {
   const image = screen.getByRole('img');
@@ -18,6 +20,19 @@ const setViewportDimensions = (contentWidth = 4_096, contentHeight = 4_096, view
 };
 
 describe('DiagramViewport', () => {
+  it('preserves and then disposes its resource owner through StrictMode replay', async () => {
+    const view = render(
+      <StrictMode>
+        <DiagramViewport svg='<svg xmlns="http://www.w3.org/2000/svg"/>' label="Strict viewport" description={null} />
+      </StrictMode>,
+    );
+    expect(rendererResourceLedger.snapshots().some(({ owner_id }) => owner_id.startsWith('viewport:'))).toBe(true);
+    view.unmount();
+    await waitFor(() => {
+      expect(rendererResourceLedger.snapshots().some(({ owner_id }) => owner_id.startsWith('viewport:'))).toBe(false);
+    });
+  });
+
   it('provides fit, actual, zoom, and keyboard pan controls', () => {
     render(<DiagramViewport svg='<svg xmlns="http://www.w3.org/2000/svg"/>' label="Architecture" description="System flow" />);
     expect(screen.getByRole('img', { name: 'Architecture' })).toBeInTheDocument();

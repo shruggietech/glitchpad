@@ -5,6 +5,7 @@ use glitchpad_core::{
     },
     detection::{DetectionOutcome, DetectionResult, TextProfile},
     editor::{LanguageDecision, LanguageId, TextEditorMode, TextModeDecision},
+    performance::{PerformanceHistoryEntry, PerformanceMetric, PerformanceSummary},
     persistence::{
         DiagnosticBundle, DiagnosticEvent, DiagnosticLedger, PreferenceState, SessionState,
         StateLoad,
@@ -89,6 +90,9 @@ fn schemas_cover_source_detection_text_profile_and_session_contracts() {
         schemars::schema_for!(DiagnosticLedger),
         schemars::schema_for!(DiagnosticBundle),
         schemars::schema_for!(StateLoad<PreferenceState>),
+        schemars::schema_for!(PerformanceMetric),
+        schemars::schema_for!(PerformanceSummary),
+        schemars::schema_for!(PerformanceHistoryEntry),
     ];
 
     for schema in schemas {

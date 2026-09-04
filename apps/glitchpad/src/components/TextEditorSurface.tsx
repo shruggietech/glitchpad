@@ -94,6 +94,7 @@ export const TextEditorSurface = forwardRef<
   const [languageStatus, setLanguageStatus] = useState(
     session.text_document?.language.status ?? 'plain',
   );
+  const [performanceReady, setPerformanceReady] = useState(false);
   const loaderRef = useRef(new LanguageLoader());
 
   callbackRef.current = onDocumentChange;
@@ -163,6 +164,7 @@ export const TextEditorSurface = forwardRef<
         session.integrity === 'recovery_only');
     documentRef.current = textDocument;
     revisionRef.current = session.revision;
+    setPerformanceReady(false);
     const view = new EditorView({
       parent: host,
       state: EditorState.create({
@@ -194,7 +196,9 @@ export const TextEditorSurface = forwardRef<
           ]),
           EditorState.allowMultipleSelections.of(true),
           languageCompartment.current.of([]),
-          wrappingCompartment.current.of(preferences.line_wrap ? EditorView.lineWrapping : []),
+          wrappingCompartment.current.of(
+            preferences.line_wrap ? EditorView.lineWrapping : [],
+          ),
           editableCompartment.current.of(EditorView.editable.of(canEdit)),
           EditorState.readOnly.of(!canEdit),
           EditorState.changeFilter.of((transaction) => {
@@ -265,8 +269,16 @@ export const TextEditorSurface = forwardRef<
       }),
     });
     viewRef.current = view;
+    let secondPaint = 0;
+    const firstPaint = requestAnimationFrame(() => {
+      secondPaint = requestAnimationFrame(() => {
+        if (viewRef.current === view) setPerformanceReady(true);
+      });
+    });
 
     return () => {
+      cancelAnimationFrame(firstPaint);
+      if (secondPaint !== 0) cancelAnimationFrame(secondPaint);
       loaderRef.current.cancel();
       viewRef.current = null;
       view.destroy();
@@ -279,7 +291,9 @@ export const TextEditorSurface = forwardRef<
     wrappedRef.current = preferences.line_wrap;
     view.dispatch({
       effects: [
-        wrappingCompartment.current.reconfigure(preferences.line_wrap ? EditorView.lineWrapping : []),
+        wrappingCompartment.current.reconfigure(
+          preferences.line_wrap ? EditorView.lineWrapping : [],
+        ),
         settingsCompartment.current.reconfigure([
           indentUnit.of(' '.repeat(preferences.tab_width)),
           EditorState.tabSize.of(preferences.tab_width),
@@ -292,7 +306,12 @@ export const TextEditorSurface = forwardRef<
         ]),
       ],
     });
-  }, [preferences.editor_font_family, preferences.editor_font_size, preferences.line_wrap, preferences.tab_width]);
+  }, [
+    preferences.editor_font_family,
+    preferences.editor_font_size,
+    preferences.line_wrap,
+    preferences.tab_width,
+  ]);
 
   useEffect(() => {
     const view = viewRef.current;
@@ -416,7 +435,11 @@ export const TextEditorSurface = forwardRef<
           {session.text_document?.source_bytes.toLocaleString()} bytes
         </span>
       </div>
-      <div className="text-editor" ref={hostRef} />
+      <div
+        className="text-editor"
+        data-performance-ready={performanceReady ? 'true' : 'pending'}
+        ref={hostRef}
+      />
     </div>
   );
 });

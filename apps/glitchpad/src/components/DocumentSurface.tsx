@@ -43,6 +43,8 @@ export const DocumentSurface = forwardRef<TextEditorHandle, DocumentSurfaceProps
   return (
     <section
       className="document-surface"
+      data-performance-renderer={session.renderer.id}
+      data-performance-revision={session.revision}
       id={`panel-${session.id}`}
       role="tabpanel"
       aria-labelledby={`tab-${session.id}`}

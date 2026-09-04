@@ -252,6 +252,20 @@ impl DesktopSourceHost {
         Self::default()
     }
 
+    /// Returns content-free native ownership totals for lifecycle conformance.
+    ///
+    /// # Errors
+    ///
+    /// Returns a safe unavailable error if the process-local registry is poisoned.
+    pub fn resource_snapshot(&self) -> Result<crate::performance::NativeLeaseSnapshot, CoreError> {
+        let state = self.lock_state()?;
+        Ok(crate::performance::NativeLeaseSnapshot {
+            sources: state.sources.len(),
+            streams: state.streams.len(),
+            integrity_operations: state.integrity_operations.len(),
+        })
+    }
+
     /// Acquires or returns an existing strongly identified regular file.
     ///
     /// # Errors

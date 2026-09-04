@@ -16,6 +16,7 @@ repository = "https://github.com/ShruggieTech/glitchpad"
 
 [workspace.dependencies]
 atomic-write-file = "0.3.1"
+chrono = { version = "0.4.45", default-features = false, features = ["clock", "std"] }
 file-id = "0.2.3"
 notify = "8.2.0"
 schemars = { version = "1.2.2", features = ["derive"] }
@@ -28,6 +29,7 @@ tauri-plugin = "2.6.3"
 tauri-plugin-opener = "2.5.5"
 url = "2.5.8"
 uuid = { version = "1.26.0", features = ["serde", "v4"] }
+sysinfo = { version = "0.36.1", default-features = false, features = ["system"] }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

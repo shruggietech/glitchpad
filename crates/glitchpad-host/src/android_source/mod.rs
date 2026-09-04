@@ -86,6 +86,23 @@ impl AndroidSourceHost {
         }
     }
 
+    /// Returns content-free native ownership totals for lifecycle conformance.
+    ///
+    /// # Errors
+    ///
+    /// Returns a safe unavailable error if the process-local registry is poisoned.
+    pub fn resource_snapshot(&self) -> Result<crate::performance::NativeLeaseSnapshot, CoreError> {
+        let registry = self.lock_registry()?;
+        Ok(crate::performance::NativeLeaseSnapshot {
+            sources: registry.sources.len(),
+            #[cfg(target_os = "android")]
+            streams: registry.streams.len(),
+            #[cfg(not(target_os = "android"))]
+            streams: 0,
+            integrity_operations: registry.integrity_operations.len(),
+        })
+    }
+
     /// Registers one URI-free delivery from the private bridge.
     ///
     /// # Errors

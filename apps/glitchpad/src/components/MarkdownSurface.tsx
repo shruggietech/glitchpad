@@ -2,6 +2,7 @@ import {
   createElement,
   forwardRef,
   useEffect,
+  useId,
   useImperativeHandle,
   useMemo,
   useRef,
@@ -33,6 +34,7 @@ import {
   type MarkdownLocalAssetGateway,
 } from '../domain/markdown-gateway';
 import { MarkdownRendererClient } from '../domain/markdown-renderer';
+import { rendererResourceLedger } from '../domain/resource-ledger';
 import { EmbeddedMermaidSurface } from './EmbeddedMermaidSurface';
 import { rendererContribution, type MetadataContribution, type MetadataObservation } from '../domain/metadata';
 import {
@@ -346,9 +348,17 @@ export const MarkdownSurface = forwardRef<
   },
   handleRef,
 ) {
+  const performanceInstanceId = useId();
   const ownedClient = useRef<MarkdownRendererClient | null>(null);
+  const ownsClient = useRef(rendererClient === undefined);
+  const lifecycleGeneration = useRef(0);
   if (!ownedClient.current)
-    ownedClient.current = rendererClient ?? new MarkdownRendererClient();
+    ownedClient.current = rendererClient ?? new MarkdownRendererClient(
+      undefined,
+      undefined,
+      undefined,
+      rendererResourceLedger.register(`markdown:${session.id}:${performanceInstanceId}`, textDocumentBytes(session)),
+    );
   const client = ownedClient.current;
   const editorRef = useRef<TextEditorHandle>(null);
   const linkTriggerRef = useRef<HTMLElement | null>(null);
@@ -440,9 +450,14 @@ export const MarkdownSurface = forwardRef<
   ]);
 
   useEffect(
-    () => () => {
-      ownedClient.current?.dispose();
-      ownedClient.current = null;
+    () => {
+      const generation = ++lifecycleGeneration.current;
+      return () => queueMicrotask(() => {
+        if (ownsClient.current && lifecycleGeneration.current === generation) {
+          ownedClient.current?.dispose();
+          ownedClient.current = null;
+        }
+      });
     },
     [],
   );
@@ -713,7 +728,14 @@ export const MarkdownSurface = forwardRef<
           </button>
         </div>
       )}
-      <article className="markdown-document" aria-busy={status === 'scheduled'}>
+      <article
+        className="markdown-document"
+        aria-busy={status === 'scheduled'}
+        data-performance-ready={result?.tree ? 'true' : 'pending'}
+        data-performance-status={result?.status ?? status}
+        data-performance-duration={result?.measurements.parse_duration_ms ?? ''}
+        data-performance-diagnostic={result?.diagnostics[0]?.code ?? ''}
+      >
         {result?.tree ? (
           <SafeTree
             node={result.tree}
@@ -791,3 +813,5 @@ const markdownMetadataFacts = (result: MarkdownRenderResult): MetadataObservatio
   { key: 'markdown.search_entry_count', availability: 'available', value: { kind: 'integer', value: String(result.measurements.search_entry_count) } },
   { key: 'markdown.parse_duration', availability: 'available', value: { kind: 'decimal', value: String(result.measurements.parse_duration_ms) }, unit: 'ms' },
 ];
+
+const textDocumentBytes = (session: ShellSession): number => session.text_document?.source_bytes ?? 0;

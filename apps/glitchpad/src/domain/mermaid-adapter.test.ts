@@ -68,4 +68,17 @@ describe('Mermaid renderer client', () => {
     expect(queuedRun).not.toHaveBeenCalled();
     await vi.waitFor(() => expect(scheduler.activeCount).toBe(0));
   });
+
+  it('publishes content-free measurements for current results only', async () => {
+    const measurements = vi.fn();
+    const executor: MermaidExecutor = { execute: (request) => Promise.resolve(ready(request)) };
+    const client = new MermaidRendererClient(executor, 0, 5_000, new MermaidScheduler(1), undefined, measurements);
+    await client.render(input(3));
+    expect(measurements).toHaveBeenCalledWith({
+      renderer: 'mermaid', owner_id: 'owner', source_revision: 3,
+      source_bytes: 1, duration_ms: 0, status: 'ready',
+    });
+    expect(JSON.stringify(measurements.mock.calls)).not.toContain('flowchart');
+    client.dispose();
+  });
 });

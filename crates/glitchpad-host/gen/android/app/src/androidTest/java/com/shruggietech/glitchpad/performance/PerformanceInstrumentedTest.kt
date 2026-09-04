@@ -71,11 +71,10 @@ class PerformanceInstrumentedTest {
     @Test
     fun idlePssProducesContentFreeInstrumentationEvidence() {
         assertTrue("reference API must be governed", Build.VERSION.SDK_INT == 24 || Build.VERSION.SDK_INT == 36)
-        val samples = ActivityScenario.launch(MainActivity::class.java).use { scenario ->
-            waitForSettledShell(scenario)
-            LongArray(5) {
-                (Debug.getPss().toLong() * 1024L).also { SystemClock.sleep(100L) }
-            }
+        val scenario = ActivityScenario.launch(MainActivity::class.java)
+        waitForSettledShell(scenario)
+        val samples = LongArray(5) {
+            (Debug.getPss().toLong() * 1024L).also { SystemClock.sleep(100L) }
         }
         assertTrue("PSS samples must be positive", samples.all { it > 0L })
         val sorted = samples.sorted()
@@ -113,5 +112,8 @@ class PerformanceInstrumentedTest {
             0,
             Bundle().apply { putString("performance_evidence", evidence.toString()) },
         )
+        // MainActivity owns the Tauri process. Closing its ActivityScenario here invokes
+        // onDestroy before JUnit records success, so the instrumentation process disappears.
+        // The ephemeral emulator tears the activity down after the runner has published its result.
     }
 }

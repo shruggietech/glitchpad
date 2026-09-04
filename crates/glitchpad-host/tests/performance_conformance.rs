@@ -148,3 +148,23 @@ fn android_emulator_uses_supported_software_rendering() {
         "deprecated indirect rendering reintroduces emulator teardown crashes"
     );
 }
+
+#[test]
+fn android_performance_evidence_precedes_process_teardown() {
+    let workspace = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let instrumentation = fs::read_to_string(workspace.join(
+        "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/performance/PerformanceInstrumentedTest.kt",
+    ))
+    .expect("Android performance instrumentation should be readable");
+
+    assert!(
+        instrumentation
+            .contains("val scenario = ActivityScenario.launch(MainActivity::class.java)"),
+        "the Tauri activity must remain alive while instrumentation publishes its result"
+    );
+    assert!(
+        !instrumentation.contains(".use { scenario ->")
+            && !instrumentation.contains("scenario.close()"),
+        "explicit ActivityScenario teardown kills the Tauri process before JUnit records success"
+    );
+}

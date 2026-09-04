@@ -149,31 +149,18 @@ class AndroidSourceInstrumentedTest {
   }
 
   private fun grant(uri: Uri): Uri {
-    instrumentation.context.startActivity(
-      Intent(instrumentation.context, FixtureGrantActivity::class.java)
-        .setAction(FixtureGrantActivity.ACTION_GRANT)
-        .putExtra(FixtureGrantActivity.EXTRA_URI, uri.toString())
-        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+    instrumentation.context.grantUriPermission(
+      clientContext.packageName,
+      uri,
+      FIXTURE_GRANT_MODES,
     )
-    var lastFailure = "provider returned no document row"
-    repeat(100) {
-      try {
-        resolver.query(uri, arrayOf(DocumentsContract.Document.COLUMN_DOCUMENT_ID), null, null, null).use { cursor ->
-          if (cursor != null && cursor.moveToFirst()) {
-            grantedUris.add(uri)
-            return uri
-          }
-        }
-      } catch (error: SecurityException) {
-        lastFailure = error.message ?: error.javaClass.name
-        // The delegated activity grant can take a moment to become visible to the target process.
-      }
-      if (it < 99) {
-        SystemClock.sleep(100)
-      } else {
-        fail("fixture URI grant did not become usable ($lastFailure)")
+    resolver.query(uri, arrayOf(DocumentsContract.Document.COLUMN_DOCUMENT_ID), null, null, null).use { cursor ->
+      if (cursor != null && cursor.moveToFirst()) {
+        grantedUris.add(uri)
+        return uri
       }
     }
+    fail("fixture provider returned no document row after a synchronous URI grant")
     error("fixture grant assertion returned unexpectedly")
   }
 
@@ -202,5 +189,9 @@ class AndroidSourceInstrumentedTest {
   companion object {
     private const val AUTHORITY = "com.shruggietech.glitchpad.fixture.documents"
     private const val ROOT_ID = "fixture-root"
+    private const val FIXTURE_GRANT_MODES =
+      Intent.FLAG_GRANT_READ_URI_PERMISSION or
+        Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
+        Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
   }
 }

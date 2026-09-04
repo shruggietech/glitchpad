@@ -2,7 +2,6 @@ package com.shruggietech.glitchpad.source
 
 import android.content.Intent
 import android.net.Uri
-import android.os.SystemClock
 import android.provider.DocumentsContract
 import android.system.Os
 import android.system.OsConstants
@@ -115,22 +114,13 @@ class RestorationInstrumentedTest {
   }
 
   private fun grant(uri: Uri) {
-    instrumentation.context.startActivity(
-      Intent(instrumentation.context, FixtureGrantActivity::class.java)
-        .setAction(FixtureGrantActivity.ACTION_GRANT)
-        .putExtra(FixtureGrantActivity.EXTRA_URI, uri.toString())
-        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+    instrumentation.context.grantUriPermission(
+      clientContext.packageName,
+      uri,
+      PERSISTED_MODES or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION,
     )
-    repeat(100) {
-      try {
-        resolver.query(uri, arrayOf(DocumentsContract.Document.COLUMN_DOCUMENT_ID), null, null, null).use { cursor ->
-          if (cursor != null && cursor.moveToFirst()) return
-        }
-      } catch (_: SecurityException) {
-        // The delegated provider grant can take a moment to become visible to the target process.
-      }
-      if (it < 99) SystemClock.sleep(100)
-      else fail("fixture URI grant did not become usable")
+    resolver.query(uri, arrayOf(DocumentsContract.Document.COLUMN_DOCUMENT_ID), null, null, null).use { cursor ->
+      assertTrue("fixture provider must expose its synchronously granted document", cursor != null && cursor.moveToFirst())
     }
   }
 

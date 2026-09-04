@@ -7,6 +7,22 @@ use glitchpad_lib::android_source::AndroidSourceHost;
 use uuid::Uuid;
 
 #[test]
+fn android_fixture_grants_are_synchronous() {
+    let android_tests = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source");
+    for source in [
+        "AndroidSourceInstrumentedTest.kt",
+        "RestorationInstrumentedTest.kt",
+    ] {
+        let source = std::fs::read_to_string(android_tests.join(source))
+            .expect("read Android instrumentation source");
+        assert!(source.contains("instrumentation.context.grantUriPermission("));
+        assert!(source.contains("clientContext.packageName"));
+        assert!(!source.contains("startActivity("));
+    }
+}
+
+#[test]
 fn android_api_24_keeps_tauri_json_runtime_compatible() {
     let build_script = std::fs::read_to_string(
         std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("gen/android/app/build.gradle.kts"),

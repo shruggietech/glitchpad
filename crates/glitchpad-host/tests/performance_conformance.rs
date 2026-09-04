@@ -147,6 +147,22 @@ fn android_emulator_uses_supported_software_rendering() {
         !workflow.contains("swiftshader_indirect"),
         "deprecated indirect rendering reintroduces emulator teardown crashes"
     );
+    assert!(
+        workflow.contains(
+            "-Pandroid.testInstrumentationRunnerArguments.notClass=com.shruggietech.glitchpad.performance.PerformanceInstrumentedTest",
+        ),
+        "provider tests must not share a process with the legacy WebView performance test"
+    );
+    let restoration = workflow
+        .rfind("restoration-verify.txt")
+        .expect("restoration verification should be present");
+    let performance = workflow
+        .rfind("-e class com.shruggietech.glitchpad.performance.PerformanceInstrumentedTest")
+        .expect("isolated performance instrumentation should be present");
+    assert!(
+        performance > restoration,
+        "legacy WebView performance instrumentation must run last"
+    );
 }
 
 #[test]

@@ -114,11 +114,7 @@ class RestorationInstrumentedTest {
   }
 
   private fun grant(uri: Uri) {
-    instrumentation.context.grantUriPermission(
-      clientContext.packageName,
-      uri,
-      PERSISTED_MODES or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION,
-    )
+    resolver.call(FixtureGrantProvider.COMMAND_URI, FixtureGrantProvider.METHOD_GRANT, uri.toString(), null)
     resolver.query(uri, arrayOf(DocumentsContract.Document.COLUMN_DOCUMENT_ID), null, null, null).use { cursor ->
       assertTrue("fixture provider must expose its synchronously granted document", cursor != null && cursor.moveToFirst())
     }

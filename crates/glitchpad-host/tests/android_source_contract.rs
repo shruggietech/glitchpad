@@ -16,10 +16,13 @@ fn android_fixture_grants_are_synchronous() {
     ] {
         let source = std::fs::read_to_string(android_tests.join(source))
             .expect("read Android instrumentation source");
-        assert!(source.contains("instrumentation.context.grantUriPermission("));
-        assert!(source.contains("clientContext.packageName"));
+        assert!(source.contains("resolver.call(FixtureGrantProvider.COMMAND_URI"));
         assert!(!source.contains("startActivity("));
     }
+    let grant_provider = std::fs::read_to_string(android_tests.join("FixtureGrantProvider.java"))
+        .expect("read synchronous fixture grant provider");
+    assert!(grant_provider.contains("context.grantUriPermission(TARGET_PACKAGE, uri, MODES)"));
+    assert!(grant_provider.contains("DOCUMENT_AUTHORITY.equals(uri.getAuthority())"));
 }
 
 #[test]

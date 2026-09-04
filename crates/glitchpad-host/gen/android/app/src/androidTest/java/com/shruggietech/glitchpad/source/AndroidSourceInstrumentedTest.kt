@@ -149,11 +149,7 @@ class AndroidSourceInstrumentedTest {
   }
 
   private fun grant(uri: Uri): Uri {
-    instrumentation.context.grantUriPermission(
-      clientContext.packageName,
-      uri,
-      FIXTURE_GRANT_MODES,
-    )
+    resolver.call(FixtureGrantProvider.COMMAND_URI, FixtureGrantProvider.METHOD_GRANT, uri.toString(), null)
     resolver.query(uri, arrayOf(DocumentsContract.Document.COLUMN_DOCUMENT_ID), null, null, null).use { cursor ->
       if (cursor != null && cursor.moveToFirst()) {
         grantedUris.add(uri)
@@ -189,9 +185,5 @@ class AndroidSourceInstrumentedTest {
   companion object {
     private const val AUTHORITY = "com.shruggietech.glitchpad.fixture.documents"
     private const val ROOT_ID = "fixture-root"
-    private const val FIXTURE_GRANT_MODES =
-      Intent.FLAG_GRANT_READ_URI_PERMISSION or
-        Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
-        Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
   }
 }

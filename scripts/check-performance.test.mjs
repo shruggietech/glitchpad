@@ -1,11 +1,14 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import test from 'node:test';
 
 import catalog from '../fixtures/performance/budgets.json' with { type: 'json' };
 import policyCases from '../fixtures/performance/evidence/policy-cases.json' with { type: 'json' };
 import {
   generatePerformanceFixture,
+  verifyAndroidInstrumentationOutput,
   verifyPerformanceFixtures,
 } from './check-performance.mjs';
 import {
@@ -59,6 +62,88 @@ test('Android PSS instrumentation emits a complete evidence envelope', async () 
   assert.match(source, /data-performance-ready/u);
   assert.match(source, /if \(BuildConfig\.DEBUG\) "debug" else "release"/u);
   assert.doesNotMatch(source, /\.put\("build_profile", "release"\)/u);
+});
+
+const androidInstrumentationReceipt = (overrides = {}) => {
+  const samples = [95_800_320, 95_477_760, 95_514_624, 96_374_784, 97_984_512];
+  return {
+    schema_version: 1,
+    catalog_version: catalog.catalog_version,
+    metric_id: 'idle_android_pss',
+    scenario_id: 'idle_application',
+    profile_id: 'android_api24_reference_v1',
+    evidence_class: 'reference',
+    build_profile: 'debug',
+    build_id: 'android-debug-1',
+    runtime_version: 'android-api24',
+    cold_state: false,
+    method: 'android-debug-get-pss-v1',
+    samples,
+    median: 95_800_320,
+    p95: 97_984_512,
+    maximum: 97_984_512,
+    peak_memory_bytes: 97_984_512,
+    invariants: {},
+    classification: 'pass',
+    cleanup_complete: true,
+    measured_at: '2026-09-04T04:28:32.381Z',
+    ...overrides,
+  };
+};
+
+const withInstrumentationOutput = async (receipt, callback) => {
+  const directory = await mkdtemp(
+    join(tmpdir(), 'glitchpad-performance-output-'),
+  );
+  const path = join(directory, 'instrumentation.txt');
+  try {
+    await writeFile(
+      path,
+      `com.shruggietech.glitchpad.performance.PerformanceInstrumentedTest:INSTRUMENTATION_STATUS: performance_evidence=${JSON.stringify(receipt)}\nINSTRUMENTATION_RESULT: shortMsg=Process crashed.\n`,
+    );
+    await callback(path);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+};
+
+test('Android instrumentation accepts valid debug evidence before legacy WebView teardown', async () => {
+  await withInstrumentationOutput(
+    androidInstrumentationReceipt(),
+    async (path) => {
+      const receipt = await verifyAndroidInstrumentationOutput(path, 24);
+      assert.equal(receipt.classification, 'pass');
+    },
+  );
+});
+
+test('Android instrumentation rejects the wrong API identity and hard failures', async () => {
+  await withInstrumentationOutput(
+    androidInstrumentationReceipt(),
+    async (path) => {
+      await assert.rejects(
+        verifyAndroidInstrumentationOutput(path, 36),
+        /android_instrumentation_identity_invalid/u,
+      );
+    },
+  );
+  const samples = Array.from({ length: 5 }, () => 300_000_000);
+  await withInstrumentationOutput(
+    androidInstrumentationReceipt({
+      samples,
+      median: 300_000_000,
+      p95: 300_000_000,
+      maximum: 300_000_000,
+      peak_memory_bytes: 300_000_000,
+      classification: 'failure',
+    }),
+    async (path) => {
+      await assert.rejects(
+        verifyAndroidInstrumentationOutput(path, 24),
+        /android_instrumentation_hard_limit_exceeded/u,
+      );
+    },
+  );
 });
 
 test('desktop memory receipt launches and samples a packaged process', async () => {

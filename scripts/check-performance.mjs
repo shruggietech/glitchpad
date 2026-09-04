@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { evaluateGate, validateCatalog } from './lib/performance-policy.mjs';
+import { evaluateGate, validateCatalog, validateEvidence } from './lib/performance-policy.mjs';
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const governed = [
@@ -72,16 +72,50 @@ export const verifyEvidenceGate = async (evidencePath, stage = 'release', root =
   return evaluateGate(catalog, records, stage);
 };
 
+export const verifyAndroidInstrumentationOutput = async (outputPath, apiLevel, root = repositoryRoot) => {
+  if (!['24', '36'].includes(String(apiLevel))) throw new Error('android_instrumentation_api_invalid');
+  const [catalogBytes, output] = await Promise.all([
+    readFile(resolve(root, governed[0])),
+    readFile(resolve(outputPath), 'utf8'),
+  ]);
+  const prefix = 'INSTRUMENTATION_STATUS: performance_evidence=';
+  const receipts = output
+    .split(/\r?\n/u)
+    .filter((line) => line.includes(prefix))
+    .map((line) => JSON.parse(line.slice(line.indexOf(prefix) + prefix.length)));
+  if (receipts.length !== 1) throw new Error('android_instrumentation_receipt_count_invalid');
+
+  const catalog = JSON.parse(catalogBytes.toString('utf8'));
+  const receipt = receipts[0];
+  const expectedApi = String(apiLevel);
+  if (
+    receipt.metric_id !== 'idle_android_pss' ||
+    receipt.profile_id !== `android_api${expectedApi}_reference_v1` ||
+    receipt.runtime_version !== `android-api${expectedApi}` ||
+    receipt.build_profile !== 'debug'
+  ) throw new Error('android_instrumentation_identity_invalid');
+
+  const { problems } = validateEvidence(catalog, receipt);
+  if (problems.length !== 1 || problems[0] !== 'evidence_reference_build_invalid') throw new Error('android_instrumentation_evidence_invalid');
+  if (receipt.classification === 'failure') throw new Error('android_instrumentation_hard_limit_exceeded');
+  return receipt;
+};
+
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
     const arguments_ = process.argv.slice(2);
     let evidencePath = null;
+    let androidInstrumentationOutput = null;
+    let apiLevel = null;
     let stage = 'release';
     for (let index = 0; index < arguments_.length; index += 1) {
       if (arguments_[index] === '--evidence') evidencePath = arguments_[++index] ?? null;
+      else if (arguments_[index] === '--android-instrumentation-output') androidInstrumentationOutput = arguments_[++index] ?? null;
+      else if (arguments_[index] === '--api-level') apiLevel = arguments_[++index] ?? null;
       else if (arguments_[index] === '--stage') stage = arguments_[++index] ?? '';
       else throw new Error('argument_unknown');
     }
+    if ((androidInstrumentationOutput === null) !== (apiLevel === null) || (evidencePath !== null && androidInstrumentationOutput !== null)) throw new Error('argument_combination_invalid');
     const problems = await verifyPerformanceFixtures();
     if (problems.length) {
       process.stderr.write(`${problems.join('\n')}\n`);
@@ -92,6 +126,10 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
         const gate = await verifyEvidenceGate(evidencePath, stage);
         process.stdout.write(`${JSON.stringify(gate)}\n`);
         if (gate.status === 'failure') process.exitCode = 1;
+      }
+      if (androidInstrumentationOutput) {
+        const receipt = await verifyAndroidInstrumentationOutput(androidInstrumentationOutput, apiLevel);
+        process.stdout.write(`Android API ${apiLevel} instrumentation evidence is valid (${receipt.classification}).\n`);
       }
     }
   } catch {

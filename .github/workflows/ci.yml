@@ -302,7 +302,7 @@ jobs:
             adb shell am force-stop com.shruggietech.glitchpad
             adb shell am instrument -w -e class com.shruggietech.glitchpad.performance.PerformanceInstrumentedTest com.shruggietech.glitchpad.test/androidx.test.runner.AndroidJUnitRunner > "$RUNNER_TEMP/performance-evidence.txt"
             cat "$RUNNER_TEMP/performance-evidence.txt"
-            grep -Fq 'OK (1 test)' "$RUNNER_TEMP/performance-evidence.txt"
+            node scripts/check-performance.mjs --android-instrumentation-output "$RUNNER_TEMP/performance-evidence.txt" --api-level "${{ matrix.api-level }}"
 
       - name: Upload Android instrumentation reports
         if: always()

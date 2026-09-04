@@ -163,6 +163,16 @@ fn android_emulator_uses_supported_software_rendering() {
         performance > restoration,
         "legacy WebView performance instrumentation must run last"
     );
+    assert!(
+        workflow.contains(
+            "node scripts/check-performance.mjs --android-instrumentation-output \"$RUNNER_TEMP/performance-evidence.txt\"",
+        ),
+        "CI must validate the emitted performance receipt even if legacy WebView teardown crashes"
+    );
+    assert!(
+        !workflow.contains("grep -Fq 'OK (1 test)' \"$RUNNER_TEMP/performance-evidence.txt\""),
+        "legacy WebView process teardown must not replace receipt validation"
+    );
 }
 
 #[test]

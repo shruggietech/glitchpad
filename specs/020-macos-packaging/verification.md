@@ -27,7 +27,8 @@
 - Site validation: passed (7 unit tests and 29 Chromium browser tests).
 - Complete repository formatting, lint, unit, security, documentation, encoding, mojibake, and public-surface validation: passed through `cargo xtask check` in the hidden, self-contained validation container on 2026-09-05.
 - The second Spec Kit convergence pass found no remaining coverage gaps and left the 42-task plan byte-for-byte unchanged.
-- Universal DMG construction and native arm64/Intel lifecycle evidence are required from the exact branch commit before pull-request publication.
+- Exact-commit branch validation passed for commit `a08bc76c141c114124a04d860d6d5766caa1bc37`: [macOS package run 33977544863](https://github.com/shruggietech/glitchpad/actions/runs/33977544863) built the universal DMG and passed both native arm64 and Intel lifecycle jobs, and [Windows package run 33977544886](https://github.com/shruggietech/glitchpad/actions/runs/33977544886) passed the shared-capability regression gate.
+- Official pull request [#121](https://github.com/shruggietech/glitchpad/pull/121) was published only after both exact-commit platform gates passed.
 
 ## Documentation Impact
 

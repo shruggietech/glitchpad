@@ -106,7 +106,7 @@
 - [x] T032 [P] Add issue #63 traceability and documentation-impact decisions in changelog.d/63.added.md and specs/020-macos-packaging/verification.md
 - [x] T033 Reconcile every FR/SC, acceptance scenario, edge case, and contract against specs/020-macos-packaging/tasks.md through a Spec Kit convergence pass
 - [x] T034 Run formatting, lint, unit, security, documentation, encoding, mojibake, and aggregate gates exposed by package.json and crates/xtask/src/main.rs in the hidden validation container
-- [ ] T035 Commit and push the branch, require .github/workflows/macos-package.yml for the exact commit to pass, and open the official pull request
+- [x] T035 Commit and push the branch, require .github/workflows/macos-package.yml for the exact commit to pass, and open the official pull request
 - [ ] T036 Monitor the pull request checks defined by .github/workflows/ci.yml and .github/workflows/macos-package.yml and address every review thread individually, with no more than two Codex review rounds total
 
 ---

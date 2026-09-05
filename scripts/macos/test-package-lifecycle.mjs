@@ -31,11 +31,6 @@ const deliveryProbePattern = /^delivery-[1-9]\d*\.marker$/u;
 const delay = (milliseconds) =>
   new Promise((resolvePromise) => setTimeout(resolvePromise, milliseconds));
 
-export const lifecycleLaunchEnvironment = (environment, probeRoot) => ({
-  ...environment,
-  GLITCHPAD_LIFECYCLE_PROBE_DIR: probeRoot,
-});
-
 export const initialLaunchArguments = (installedApplication, fixture) => [
   '-n',
   '-a',
@@ -227,6 +222,7 @@ async function main() {
     await cp(dmgPath, join(root, basename(dmgPath)));
     await writeFile(fixture, fixtureBytes);
     await mkdir(probeRoot);
+    await writeFile(join(probeRoot, 'enabled.marker'), 'enabled\n');
     await command('mkdir', ['-p', mountPoint, installedRoot]);
     await command('hdiutil', [
       'attach',
@@ -297,7 +293,6 @@ async function main() {
         initialLaunchArguments(installedApplication, fixture),
         {
           detached: false,
-          env: lifecycleLaunchEnvironment(process.env, probeRoot),
           stdio: 'ignore',
           shell: false,
         },

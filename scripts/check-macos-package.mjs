@@ -218,6 +218,7 @@ export async function checkMacosConfiguration(
   if (
     !hostSource.includes('tauri::RunEvent::Opened') ||
     !hostSource.includes('enqueue_opened_urls') ||
+    !hostSource.includes('configure_from_opened_urls') ||
     !hostSource.includes('record_desktop_lifecycle_probe')
   )
     fail('native host omits macOS open-event delivery');
@@ -294,10 +295,9 @@ export async function checkMacosConfiguration(
     'waitForLifecycleReadiness',
     'waitForShellReadiness',
     'waitForSingleNewDelivery',
-    'lifecycleLaunchEnvironment(',
     'initialLaunchArguments(',
     'const child = spawn(',
-    'env: lifecycleLaunchEnvironment(',
+    "'enabled.marker'",
     "command('open'",
   ])
     if (!lifecycleScript.includes(marker))

@@ -218,7 +218,9 @@ export async function checkMacosConfiguration(
   if (
     !hostSource.includes('tauri::RunEvent::Opened') ||
     !hostSource.includes('enqueue_opened_urls') ||
-    !hostSource.includes('LifecycleProbeState::for_application') ||
+    !hostSource.includes(
+      'LifecycleProbeState::from_environment_or_arguments',
+    ) ||
     !hostSource.includes('record_desktop_lifecycle_probe')
   )
     fail('native host omits macOS open-event delivery');
@@ -293,13 +295,13 @@ export async function checkMacosConfiguration(
     fail('macOS package workflow does not cover every branch push');
   for (const marker of [
     'waitForLifecycleReadiness',
-    'waitForHostProbeRoot',
     'waitForShellReadiness',
     'waitForSingleNewDelivery',
+    'lifecycleProbeArgument(',
     'initialLaunchArguments(',
     'const child = spawn(',
-    "'host-ready.marker'",
     "'enabled.marker'",
+    "'--args'",
     "command('open'",
   ])
     if (!lifecycleScript.includes(marker))

@@ -12,7 +12,7 @@ import {
   stat,
   writeFile,
 } from 'node:fs/promises';
-import { homedir, tmpdir } from 'node:os';
+import { tmpdir } from 'node:os';
 import { basename, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { isDeepStrictEqual, promisify } from 'node:util';
@@ -31,10 +31,18 @@ const deliveryProbePattern = /^delivery-[1-9]\d*\.marker$/u;
 const delay = (milliseconds) =>
   new Promise((resolvePromise) => setTimeout(resolvePromise, milliseconds));
 
-export const initialLaunchArguments = (installedApplication, fixture) => [
-  '-n',
-  '-a',
+export const lifecycleProbeArgument = (probeRoot) =>
+  `--glitchpad-lifecycle-probe=${probeRoot}`;
+
+export const initialLaunchArguments = (
   installedApplication,
+  fixture,
+  probeRoot,
+) => [
+  '-n',
+  installedApplication,
+  '--args',
+  lifecycleProbeArgument(probeRoot),
   fixture,
 ];
 
@@ -105,36 +113,6 @@ async function waitForProcess(executable, timeoutMilliseconds = 30_000) {
   throw new Error('application_launch_timeout');
 }
 
-export const lifecycleProbeRoots = (home, bundleIdentifier) => [
-  join('/tmp', `${bundleIdentifier}-lifecycle-probes`),
-  join(
-    home,
-    'Library',
-    'Application Support',
-    bundleIdentifier,
-    'lifecycle-probes',
-  ),
-  join('/Users/Shared', `${bundleIdentifier}-lifecycle-probes`),
-];
-
-export async function waitForHostProbeRoot(
-  probeRoots,
-  timeoutMilliseconds = 30_000,
-) {
-  const started = performance.now();
-  while (performance.now() - started < timeoutMilliseconds) {
-    for (const probeRoot of probeRoots) {
-      const ready = await stat(join(probeRoot, 'host-ready.marker')).then(
-        () => true,
-        () => false,
-      );
-      if (ready) return probeRoot;
-    }
-    await delay(25);
-  }
-  throw new Error('lifecycle_probe_discovery_timeout');
-}
-
 export async function waitForShellReadiness(
   probeRoot,
   timeoutMilliseconds = 10_000,
@@ -159,18 +137,10 @@ async function deliveryProbes(probeRoot) {
   );
 }
 
-export async function clearLifecycleProbes(probeRoots) {
-  for (const probeRoot of Array.isArray(probeRoots)
-    ? probeRoots
-    : [probeRoots]) {
-    for (const name of await readdir(probeRoot)) {
-      if (
-        name === 'host-ready.marker' ||
-        name === 'shell-ready.marker' ||
-        deliveryProbePattern.test(name)
-      )
-        await rm(join(probeRoot, name), { force: true });
-    }
+export async function clearLifecycleProbes(probeRoot) {
+  for (const name of await readdir(probeRoot)) {
+    if (name === 'shell-ready.marker' || deliveryProbePattern.test(name))
+      await rm(join(probeRoot, name), { force: true });
   }
 }
 
@@ -250,7 +220,7 @@ async function main() {
   const installedRoot = join(root, 'Applications');
   const installedApplication = join(installedRoot, contract.bundle.name);
   const fixture = join(root, 'document.md');
-  const probeRoots = lifecycleProbeRoots(homedir(), contract.bundle.identifier);
+  const probeRoot = join(root, 'lifecycle-probes');
   const fixtureBytes = Buffer.from(
     '# Glitchpad lifecycle\n\nSafe native package fixture.\n',
   );
@@ -259,11 +229,8 @@ async function main() {
   try {
     await cp(dmgPath, join(root, basename(dmgPath)));
     await writeFile(fixture, fixtureBytes);
-    for (const probeRoot of probeRoots) {
-      await rm(probeRoot, { recursive: true, force: true });
-      await mkdir(probeRoot, { recursive: true });
-      await writeFile(join(probeRoot, 'enabled.marker'), 'enabled\n');
-    }
+    await mkdir(probeRoot);
+    await writeFile(join(probeRoot, 'enabled.marker'), 'enabled\n');
     await command('mkdir', ['-p', mountPoint, installedRoot]);
     await command('hdiutil', [
       'attach',
@@ -327,11 +294,11 @@ async function main() {
 
     const startupSamples = [];
     for (let sample = 0; sample < 5; sample += 1) {
-      await clearLifecycleProbes(probeRoots);
+      await clearLifecycleProbes(probeRoot);
       const launchedAt = performance.now();
       const child = spawn(
         'open',
-        initialLaunchArguments(installedApplication, fixture),
+        initialLaunchArguments(installedApplication, fixture, probeRoot),
         {
           detached: false,
           stdio: 'ignore',
@@ -347,7 +314,6 @@ async function main() {
         );
       });
       const observed = await waitForProcess(executable);
-      const probeRoot = await waitForHostProbeRoot(probeRoots);
       await waitForShellReadiness(probeRoot);
       const acknowledgedDeliveries = await waitForLifecycleReadiness(probeRoot);
       await delay(500);
@@ -503,8 +469,6 @@ async function main() {
       await command('hdiutil', ['detach', mountPoint, '-force']).catch(
         () => undefined,
       );
-    for (const probeRoot of probeRoots)
-      await rm(probeRoot, { recursive: true, force: true });
     await rm(root, { recursive: true, force: true });
   }
 }

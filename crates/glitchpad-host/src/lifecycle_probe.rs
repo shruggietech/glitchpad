@@ -68,15 +68,7 @@ fn record_fixed_marker(root: &Path, name: &str) -> Result<bool, CoreError> {
     }
 }
 
-#[cfg(any(test, target_os = "macos"))]
-fn guarded_probe_roots(identifier: &str, application_config_root: Option<PathBuf>) -> Vec<PathBuf> {
-    let mut roots = vec![PathBuf::from("/tmp").join(format!("{identifier}-lifecycle-probes"))];
-    if let Some(root) = application_config_root {
-        roots.push(root.join("lifecycle-probes"));
-    }
-    roots.push(PathBuf::from("/Users/Shared").join(format!("{identifier}-lifecycle-probes")));
-    roots
-}
+const PROBE_ARGUMENT_PREFIX: &str = "--glitchpad-lifecycle-probe=";
 
 /// Process-local lifecycle acknowledgement state for native package validation.
 #[derive(Default)]
@@ -87,30 +79,27 @@ pub struct LifecycleProbeState {
 impl LifecycleProbeState {
     fn configured(
         environment: Option<OsString>,
-        guarded_roots: impl IntoIterator<Item = PathBuf>,
+        arguments: impl IntoIterator<Item = OsString>,
     ) -> Self {
-        let root = environment
-            .map(PathBuf::from)
-            .into_iter()
-            .chain(guarded_roots)
-            .find(|candidate| {
-                probe_root_enabled(candidate)
-                    && record_fixed_marker(candidate, "host-ready.marker").unwrap_or(false)
-            });
+        let root = environment.map(PathBuf::from).or_else(|| {
+            arguments.into_iter().find_map(|argument| {
+                argument
+                    .to_str()?
+                    .strip_prefix(PROBE_ARGUMENT_PREFIX)
+                    .filter(|value| !value.is_empty())
+                    .map(PathBuf::from)
+            })
+        });
         Self { root }
     }
 
-    /// Creates lifecycle state from an explicit environment or the guarded macOS validation root.
+    /// Creates lifecycle state from the explicit validation environment or launch argument.
     #[must_use]
-    pub fn for_application(identifier: &str, application_config_root: Option<PathBuf>) -> Self {
-        #[cfg(target_os = "macos")]
-        let guarded_roots = guarded_probe_roots(identifier, application_config_root);
-        #[cfg(not(target_os = "macos"))]
-        let guarded_roots = {
-            let _ = (identifier, application_config_root);
-            Vec::new()
-        };
-        Self::configured(std::env::var_os(PROBE_DIRECTORY_ENVIRONMENT), guarded_roots)
+    pub fn from_environment_or_arguments() -> Self {
+        Self::configured(
+            std::env::var_os(PROBE_DIRECTORY_ENVIRONMENT),
+            std::env::args_os(),
+        )
     }
 
     fn record(&self, event: &str, sequence: Option<u64>) -> Result<bool, CoreError> {
@@ -176,58 +165,35 @@ mod tests {
     }
 
     #[test]
-    fn resolves_the_explicit_environment_before_a_guarded_root() {
+    fn resolves_environment_before_the_single_validation_argument() {
         let environment_root = temporary_root();
-        let guarded_root = temporary_root().with_extension("guarded");
-        for root in [&environment_root, &guarded_root] {
-            fs::create_dir(root).expect("temporary probe root must be created");
-            fs::write(root.join("enabled.marker"), PROBE_ENABLE_MARKER)
-                .expect("probe root must be explicitly enabled");
-        }
         let state = LifecycleProbeState::configured(
             Some(environment_root.clone().into_os_string()),
-            [guarded_root.clone()],
+            [OsString::from(
+                "--glitchpad-lifecycle-probe=/private/tmp/argument-probes",
+            )],
         );
-        assert_eq!(state.root, Some(environment_root.clone()));
-        assert!(environment_root.join("host-ready.marker").is_file());
-        assert!(!guarded_root.join("host-ready.marker").exists());
-
-        fs::remove_dir_all(environment_root).expect("environment root must be removed");
-        fs::remove_dir_all(guarded_root).expect("guarded root must be removed");
-    }
-
-    #[test]
-    fn guarded_roots_are_exact_and_require_opt_in() {
-        let probe_root = temporary_root();
-        fs::create_dir(&probe_root).expect("temporary probe root must be created");
+        assert_eq!(state.root, Some(environment_root));
         assert_eq!(
-            guarded_probe_roots(
-                "com.example.app",
-                Some(PathBuf::from(
-                    "/Users/runner/Library/Application Support/com.example.app"
-                )),
-            ),
-            vec![
-                PathBuf::from("/tmp/com.example.app-lifecycle-probes"),
-                PathBuf::from(
-                    "/Users/runner/Library/Application Support/com.example.app/lifecycle-probes",
-                ),
-                PathBuf::from("/Users/Shared/com.example.app-lifecycle-probes"),
-            ]
+            LifecycleProbeState::configured(
+                None,
+                [OsString::from(
+                    "--glitchpad-lifecycle-probe=/private/tmp/argument-probes",
+                )],
+            )
+            .root,
+            Some(PathBuf::from("/private/tmp/argument-probes"))
         );
         assert!(
-            LifecycleProbeState::configured(None, [probe_root.clone()])
-                .root
-                .is_none()
+            LifecycleProbeState::configured(
+                None,
+                [
+                    OsString::from("--unrelated=value"),
+                    OsString::from(PROBE_ARGUMENT_PREFIX),
+                ],
+            )
+            .root
+            .is_none()
         );
-        fs::write(probe_root.join("enabled.marker"), PROBE_ENABLE_MARKER)
-            .expect("probe root must be explicitly enabled");
-        assert_eq!(
-            LifecycleProbeState::configured(None, [probe_root.clone()]).root,
-            Some(probe_root.clone())
-        );
-        assert!(probe_root.join("host-ready.marker").is_file());
-
-        fs::remove_dir_all(probe_root).expect("temporary probe root must be removed");
     }
 }

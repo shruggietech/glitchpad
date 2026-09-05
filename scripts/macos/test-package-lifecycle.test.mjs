@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdir, mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -8,53 +8,32 @@ import {
   classifyStartupSamples,
   clearLifecycleProbes,
   initialLaunchArguments,
-  lifecycleProbeRoots,
+  lifecycleProbeArgument,
   parseArguments,
-  waitForHostProbeRoot,
   waitForLifecycleReadiness,
   waitForShellReadiness,
   waitForSingleNewDelivery,
 } from './test-package-lifecycle.mjs';
 
-test('native launch preserves the Finder document event without process arguments', () => {
+test('native startup passes the guarded probe and fixture through application arguments', () => {
+  assert.equal(
+    lifecycleProbeArgument('/private/tmp/probes'),
+    '--glitchpad-lifecycle-probe=/private/tmp/probes',
+  );
   assert.deepEqual(
     initialLaunchArguments(
       '/tmp/Applications/Glitchpad.app',
       '/private/tmp/document.md',
+      '/private/tmp/probes',
     ),
     [
       '-n',
-      '-a',
       '/tmp/Applications/Glitchpad.app',
+      '--args',
+      '--glitchpad-lifecycle-probe=/private/tmp/probes',
       '/private/tmp/document.md',
     ],
   );
-});
-
-test('host discovery selects an accessible guarded root without exposing paths in markers', async () => {
-  assert.deepEqual(
-    lifecycleProbeRoots('/Users/runner', 'com.example.app'),
-    [
-      '/tmp/com.example.app-lifecycle-probes',
-      '/Users/runner/Library/Application Support/com.example.app/lifecycle-probes',
-      '/Users/Shared/com.example.app-lifecycle-probes',
-    ],
-  );
-  const root = await mkdtemp(join(tmpdir(), 'glitchpad-host-probes-'));
-  const first = join(root, 'first');
-  const second = join(root, 'second');
-  try {
-    await Promise.all([mkdir(first), mkdir(second)]);
-    await writeFile(join(second, 'host-ready.marker'), 'ready\n');
-    assert.equal(await waitForHostProbeRoot([first, second]), second);
-    await clearLifecycleProbes([first, second]);
-    assert.deepEqual(await Promise.all([readdir(first), readdir(second)]), [
-      [],
-      [],
-    ]);
-  } finally {
-    await rm(root, { recursive: true, force: true });
-  }
 });
 
 test('lifecycle arguments require explicit artifact, manifest, receipt, and architecture', () => {
@@ -115,6 +94,7 @@ test('startup evidence uses five samples and the S018 hard limit', () => {
 test('interactive readiness requires both shell and document acknowledgements', async () => {
   const root = await mkdtemp(join(tmpdir(), 'glitchpad-lifecycle-probes-'));
   try {
+    await writeFile(join(root, 'enabled.marker'), 'enabled\n');
     await writeFile(join(root, 'shell-ready.marker'), 'ready\n');
     await waitForShellReadiness(root);
     await writeFile(join(root, 'delivery-1.marker'), 'ready\n');
@@ -128,7 +108,7 @@ test('interactive readiness requires both shell and document acknowledgements', 
       /delivery_acknowledgement_duplicate/u,
     );
     await clearLifecycleProbes(root);
-    assert.deepEqual(await readdir(root), []);
+    assert.deepEqual(await readdir(root), ['enabled.marker']);
   } finally {
     await rm(root, { recursive: true, force: true });
   }

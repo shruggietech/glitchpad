@@ -2,9 +2,6 @@ name: ci
 
 on:
   pull_request:
-  push:
-    branches:
-      - 'codex/**'
   schedule:
     - cron: '17 7 * * *'
   workflow_dispatch:
@@ -293,10 +290,6 @@ jobs:
             pnpm tauri android build --debug --apk --target x86_64 --ci --config '{"version":"0.0.1"}'
             ./crates/glitchpad-host/gen/android/gradlew --project-dir crates/glitchpad-host/gen/android :glitchpad-android-source:testDebugUnitTest --no-daemon
             ./crates/glitchpad-host/gen/android/gradlew --project-dir crates/glitchpad-host/gen/android :app:connectedUniversalDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.notClass=com.shruggietech.glitchpad.performance.PerformanceInstrumentedTest -PabiList=x86_64 -ParchList=x86_64 -PtargetList=x86_64 -x :app:rustBuildUniversalDebug -x :app:rustBuildX86_64Debug --no-daemon
-            adb reboot
-            adb wait-for-device
-            until [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = "1" ]; do sleep 2; done
-            adb shell input keyevent 82
             adb install -r crates/glitchpad-host/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk
             adb install -r crates/glitchpad-host/gen/android/app/build/outputs/apk/androidTest/universal/debug/app-universal-debug-androidTest.apk
             adb shell am instrument -w -e class com.shruggietech.glitchpad.source.RestorationInstrumentedTest#privateRestorationRecordSurvivesProcessBoundary -e restorationPhase seed com.shruggietech.glitchpad.test/androidx.test.runner.AndroidJUnitRunner > "$RUNNER_TEMP/restoration-seed.txt"
@@ -307,6 +300,12 @@ jobs:
             cat "$RUNNER_TEMP/restoration-verify.txt"
             grep -Fq 'OK (1 test)' "$RUNNER_TEMP/restoration-verify.txt"
             adb shell am force-stop com.shruggietech.glitchpad
+            adb reboot
+            adb wait-for-device
+            until [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = "1" ]; do sleep 2; done
+            adb shell input keyevent 82
+            adb install -r crates/glitchpad-host/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk
+            adb install -r crates/glitchpad-host/gen/android/app/build/outputs/apk/androidTest/universal/debug/app-universal-debug-androidTest.apk
             adb shell am instrument -w -e class com.shruggietech.glitchpad.performance.PerformanceInstrumentedTest com.shruggietech.glitchpad.test/androidx.test.runner.AndroidJUnitRunner > "$RUNNER_TEMP/performance-evidence.txt"
             cat "$RUNNER_TEMP/performance-evidence.txt"
             node scripts/check-performance.mjs --android-instrumentation-output "$RUNNER_TEMP/performance-evidence.txt" --api-level "${{ matrix.api-level }}"

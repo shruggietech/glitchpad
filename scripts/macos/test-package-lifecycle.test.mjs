@@ -8,29 +8,32 @@ import {
   classifyStartupSamples,
   clearLifecycleProbes,
   initialLaunchArguments,
-  lifecycleProbeRoot,
+  lifecycleProbeEnvironment,
   parseArguments,
   waitForLifecycleReadiness,
   waitForShellReadiness,
   waitForSingleNewDelivery,
 } from './test-package-lifecycle.mjs';
 
-test('native launch preserves the Finder document event and uses guarded app support probes', () => {
+test('native launch passes a private environment while preserving the Finder document event', () => {
+  assert.equal(
+    lifecycleProbeEnvironment('/private/tmp/probes'),
+    'GLITCHPAD_LIFECYCLE_PROBE_DIR=/private/tmp/probes',
+  );
   assert.deepEqual(
     initialLaunchArguments(
       '/tmp/Applications/Glitchpad.app',
       '/private/tmp/document.md',
+      '/private/tmp/probes',
     ),
     [
+      '--env',
+      'GLITCHPAD_LIFECYCLE_PROBE_DIR=/private/tmp/probes',
       '-n',
       '-a',
       '/tmp/Applications/Glitchpad.app',
       '/private/tmp/document.md',
     ],
-  );
-  assert.equal(
-    lifecycleProbeRoot('/Users/runner', 'com.shruggietech.glitchpad'),
-    '/Users/runner/Library/Application Support/com.shruggietech.glitchpad/lifecycle-probes',
   );
 });
 

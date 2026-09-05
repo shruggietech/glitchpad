@@ -12,7 +12,7 @@ import {
   stat,
   writeFile,
 } from 'node:fs/promises';
-import { homedir, tmpdir } from 'node:os';
+import { tmpdir } from 'node:os';
 import { basename, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { isDeepStrictEqual, promisify } from 'node:util';
@@ -31,21 +31,21 @@ const deliveryProbePattern = /^delivery-[1-9]\d*\.marker$/u;
 const delay = (milliseconds) =>
   new Promise((resolvePromise) => setTimeout(resolvePromise, milliseconds));
 
-export const initialLaunchArguments = (installedApplication, fixture) => [
+export const lifecycleProbeEnvironment = (probeRoot) =>
+  `GLITCHPAD_LIFECYCLE_PROBE_DIR=${probeRoot}`;
+
+export const initialLaunchArguments = (
+  installedApplication,
+  fixture,
+  probeRoot,
+) => [
+  '--env',
+  lifecycleProbeEnvironment(probeRoot),
   '-n',
   '-a',
   installedApplication,
   fixture,
 ];
-
-export const lifecycleProbeRoot = (home, bundleIdentifier) =>
-  join(
-    home,
-    'Library',
-    'Application Support',
-    bundleIdentifier,
-    'lifecycle-probes',
-  );
 
 export function parseArguments(arguments_) {
   const result = {};
@@ -221,7 +221,7 @@ async function main() {
   const installedRoot = join(root, 'Applications');
   const installedApplication = join(installedRoot, contract.bundle.name);
   const fixture = join(root, 'document.md');
-  const probeRoot = lifecycleProbeRoot(homedir(), contract.bundle.identifier);
+  const probeRoot = join(root, 'lifecycle-probes');
   const fixtureBytes = Buffer.from(
     '# Glitchpad lifecycle\n\nSafe native package fixture.\n',
   );
@@ -230,8 +230,7 @@ async function main() {
   try {
     await cp(dmgPath, join(root, basename(dmgPath)));
     await writeFile(fixture, fixtureBytes);
-    await mkdir(probeRoot, { recursive: true });
-    await writeFile(join(probeRoot, 'enabled.marker'), 'enabled\n');
+    await mkdir(probeRoot);
     await command('mkdir', ['-p', mountPoint, installedRoot]);
     await command('hdiutil', [
       'attach',
@@ -299,7 +298,7 @@ async function main() {
       const launchedAt = performance.now();
       const child = spawn(
         'open',
-        initialLaunchArguments(installedApplication, fixture),
+        initialLaunchArguments(installedApplication, fixture, probeRoot),
         {
           detached: false,
           stdio: 'ignore',

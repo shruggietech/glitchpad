@@ -280,6 +280,8 @@ jobs:
           api-level: ${{ matrix.api-level }}
           arch: x86_64
           target: google_apis
+          cores: 4
+          emulator-boot-timeout: 900
           disable-animations: true
           # The deprecated indirect renderer crashed during WebView teardown on both
           # governed API levels. Use Android's supported software renderer and keep
@@ -290,29 +292,11 @@ jobs:
             pnpm tauri android build --debug --apk --target x86_64 --ci --config '{"version":"0.0.1"}'
             ./crates/glitchpad-host/gen/android/gradlew --project-dir crates/glitchpad-host/gen/android :glitchpad-android-source:testDebugUnitTest --no-daemon
             ./crates/glitchpad-host/gen/android/gradlew --project-dir crates/glitchpad-host/gen/android :app:connectedUniversalDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.notClass=com.shruggietech.glitchpad.performance.PerformanceInstrumentedTest -PabiList=x86_64 -ParchList=x86_64 -PtargetList=x86_64 -x :app:rustBuildUniversalDebug -x :app:rustBuildX86_64Debug --no-daemon
-            run_instrumentation() {
-              output="$1"
-              marker="$2"
-              shift 2
-              for attempt in 1 2; do
-                adb shell am force-stop com.shruggietech.glitchpad || true
-                adb shell am force-stop com.shruggietech.glitchpad.test || true
-                adb logcat -c || true
-                adb shell am instrument -w "$@" com.shruggietech.glitchpad.test/androidx.test.runner.AndroidJUnitRunner > "$output"
-                cat "$output"
-                if grep -Fq "$marker" "$output"; then
-                  return 0
-                fi
-                adb logcat -d -t 2000 > "${output%.txt}-attempt-${attempt}-logcat.txt" || true
-                sleep 2
-              done
-              return 1
-            }
             adb install -r crates/glitchpad-host/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk
             adb install -r crates/glitchpad-host/gen/android/app/build/outputs/apk/androidTest/universal/debug/app-universal-debug-androidTest.apk
-            run_instrumentation "$RUNNER_TEMP/restoration-seed.txt" 'OK (1 test)' -e class com.shruggietech.glitchpad.source.RestorationInstrumentedTest#privateRestorationRecordSurvivesProcessBoundary -e restorationPhase seed
-            run_instrumentation "$RUNNER_TEMP/restoration-verify.txt" 'OK (1 test)' -e class com.shruggietech.glitchpad.source.RestorationInstrumentedTest#privateRestorationRecordSurvivesProcessBoundary -e restorationPhase verify
-            run_instrumentation "$RUNNER_TEMP/performance-evidence.txt" 'performance_evidence=' -e class com.shruggietech.glitchpad.performance.PerformanceInstrumentedTest
+            bash scripts/run-android-instrumentation.sh "$RUNNER_TEMP/restoration-seed.txt" 'OK (1 test)' -e class com.shruggietech.glitchpad.source.RestorationInstrumentedTest#privateRestorationRecordSurvivesProcessBoundary -e restorationPhase seed
+            bash scripts/run-android-instrumentation.sh "$RUNNER_TEMP/restoration-verify.txt" 'OK (1 test)' -e class com.shruggietech.glitchpad.source.RestorationInstrumentedTest#privateRestorationRecordSurvivesProcessBoundary -e restorationPhase verify
+            bash scripts/run-android-instrumentation.sh "$RUNNER_TEMP/performance-evidence.txt" 'performance_evidence=' -e class com.shruggietech.glitchpad.performance.PerformanceInstrumentedTest
             node scripts/check-performance.mjs --android-instrumentation-output "$RUNNER_TEMP/performance-evidence.txt" --api-level "${{ matrix.api-level }}"
 
       - name: Upload Android instrumentation reports

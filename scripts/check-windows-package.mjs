@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 const defaultRepositoryRoot = fileURLToPath(new URL('../', import.meta.url));
 const sha256Pattern = /^[a-f0-9]{64}$/u;
+const sourceCommitPattern = /^(?:[a-f0-9]{40}|[a-f0-9]{64})$/u;
 const semanticVersionPattern = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/u;
 
 function fail(message) {
@@ -135,7 +136,7 @@ export function validateWindowsEvidence(evidence, contract, { official = false }
     fail('evidence version is invalid');
   if (evidence.platform !== 'windows' || evidence.architecture !== 'x86_64')
     fail('evidence platform identity is invalid');
-  if (!sha256Pattern.test(evidence.source_commit)) fail('source commit is invalid');
+  if (!sourceCommitPattern.test(evidence.source_commit)) fail('source commit is invalid');
   if (!Array.isArray(evidence.artifacts) || evidence.artifacts.length !== 2)
     fail('evidence must contain both Windows artifacts');
 

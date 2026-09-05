@@ -73,7 +73,7 @@ jobs:
         run: |
           node scripts/check-windows-package.mjs --evidence artifacts/windows/windows-package-manifest.json
           node scripts/run-performance.mjs --profile desktop_reference_v1 --build-id "windows-${{ github.sha }}" --metric desktop_installer_size --artifact artifacts/windows/glitchpad-0.1.0-windows-x86_64-setup.exe --output artifacts/windows/installer-size-evidence.json
-          node scripts/run-performance.mjs --profile desktop_reference_v1 --build-id "windows-${{ github.sha }}" --metric desktop_installer_size --artifact artifacts/windows/glitchpad-0.1.0-windows-x86_64-portable.zip --output artifacts/windows/portable-size-evidence.json
+          node scripts/run-performance.mjs --profile desktop_reference_v1 --build-id "windows-${{ github.sha }}" --metric desktop_installer_size --artifact artifacts/windows/glitchpad-0.1.0-windows-x86_64.zip --output artifacts/windows/portable-size-evidence.json
 
       - name: Upload unsigned review candidate
         uses: actions/upload-artifact@v7

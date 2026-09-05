@@ -12,6 +12,7 @@ import {
 const repositoryRoot = new URL('../', import.meta.url).pathname.replace(/^\/(?:[A-Za-z]:)/u, (value) => value.slice(1));
 const contract = JSON.parse(await readFile(join(repositoryRoot, 'packaging', 'windows', 'package-contract.json'), 'utf8'));
 const digest = 'a'.repeat(64);
+const sourceCommit = 'b'.repeat(40);
 
 function candidate() {
   return {
@@ -19,7 +20,7 @@ function candidate() {
     version: '0.1.0',
     platform: 'windows',
     architecture: 'x86_64',
-    source_commit: digest,
+    source_commit: sourceCommit,
     official: false,
     gate_status: 'candidate_valid',
     artifacts: contract.artifacts.map((artifact) => ({
@@ -89,6 +90,9 @@ test('portable inventory rejects traversal, case collisions, and extra executabl
 });
 
 test('missing notices, bad size results, and secret-shaped evidence fail closed', () => {
+  const badCommit = candidate();
+  badCommit.source_commit = 'c'.repeat(39);
+  assert.throws(() => validateWindowsEvidence(badCommit, contract), /source commit is invalid/u);
   const missing = candidate();
   missing.portable_inventory.pop();
   assert.throws(() => validateWindowsEvidence(missing, contract), /portable inventory omits/u);

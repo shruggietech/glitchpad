@@ -4,6 +4,7 @@ import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import {
   noRendererCapabilities,
   type DesktopSourceSummary,
+  type SaveReceipt,
   type ShellSession,
   type TextEncoding,
 } from './contracts';
@@ -40,6 +41,7 @@ export interface DesktopDeliveryGateway {
   choose(): Promise<DesktopDeliveryResult[]>;
   drain(): Promise<DesktopDeliveryResult[]>;
   close(sourceId: string): Promise<void>;
+  save(session: ShellSession): Promise<SaveReceipt>;
   materialize(result: DesktopDeliveryResult): Promise<ShellSession | null>;
   saveAs(session: ShellSession): Promise<boolean>;
   subscribe(handler: () => void): Promise<UnlistenFn>;
@@ -54,13 +56,7 @@ export const nativeDesktopDeliveryAvailable = (): boolean => {
 };
 
 const decode = (bytes: Uint8Array): { text: string; encoding: TextEncoding } => {
-  const encoding: TextEncoding = bytes[0] === 0xff && bytes[1] === 0xfe
-    ? 'utf16_le_bom'
-    : bytes[0] === 0xfe && bytes[1] === 0xff
-      ? 'utf16_be_bom'
-      : bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf
-        ? 'utf8_bom'
-        : 'utf8';
+  const encoding = detectEncoding(bytes);
   const decoder = encoding === 'utf16_le_bom'
     ? new TextDecoder('utf-16le', { fatal: true })
     : encoding === 'utf16_be_bom'
@@ -68,6 +64,15 @@ const decode = (bytes: Uint8Array): { text: string; encoding: TextEncoding } => 
       : new TextDecoder('utf-8', { fatal: true });
   return { text: decoder.decode(bytes), encoding };
 };
+
+const detectEncoding = (bytes: Uint8Array): TextEncoding =>
+  bytes[0] === 0xff && bytes[1] === 0xfe
+    ? 'utf16_le_bom'
+    : bytes[0] === 0xfe && bytes[1] === 0xff
+      ? 'utf16_be_bom'
+      : bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf
+        ? 'utf8_bom'
+        : 'utf8';
 
 const readSource = async (
   call: NativeInvoke,
@@ -78,8 +83,17 @@ const readSource = async (
     throw new RangeError('Desktop source length is unavailable or invalid');
   if (declared > LARGE_TEXT_MAX_BYTES)
     throw new RangeError('Desktop source exceeds the supported viewing limit');
-  if (declared > EDITABLE_TEXT_MAX_BYTES)
-    return { text: '', sourceBytes: declared, encoding: 'utf8' };
+  if (declared > EDITABLE_TEXT_MAX_BYTES) {
+    const prefix = await call('read_source_range', {
+      sourceId: source.source_id,
+      offset: 0,
+      length: Math.min(3, declared),
+      operationBudget: Math.min(3, declared),
+    }) as RangeReadResult;
+    if (prefix.source_id !== source.source_id || prefix.offset !== 0 || prefix.bytes.length > 3)
+      throw new Error('Desktop delivery returned an invalid encoding prefix');
+    return { text: '', sourceBytes: declared, encoding: detectEncoding(Uint8Array.from(prefix.bytes)) };
+  }
   const bytes = new Uint8Array(declared);
   let offset = 0;
   while (offset < declared) {
@@ -111,6 +125,11 @@ const rendererFor = (displayName: string): 'markdown' | 'mermaid' | 'text' | 'so
   return 'source';
 };
 
+const saveOperationId = (): string => {
+  const words = crypto.getRandomValues(new Uint32Array(2));
+  return ((BigInt(words[0]) << 32n) | BigInt(words[1])).toString();
+};
+
 export const createDesktopDeliveryGateway = (
   call: NativeInvoke = invoke,
   subscribeEvent: (handler: () => void) => Promise<UnlistenFn> = (handler) =>
@@ -127,6 +146,23 @@ export const createDesktopDeliveryGateway = (
   },
   async close(sourceId) {
     await call('close_desktop_source', { sourceId });
+  },
+  async save(session) {
+    if (!session.source_id || !session.external_revision || !session.text_document)
+      throw new Error('Desktop Save requires an open writable source');
+    const serialized = serializeTextDocument(session.text_document, session.revision, session.revision);
+    if (!serialized.ok) throw new Error(`Desktop Save serialization failed: ${serialized.reason}`);
+    return call('save_source', {
+      request: {
+        operation_id: saveOperationId(),
+        source_id: session.source_id,
+        expected_external_revision: session.external_revision,
+        expected_session_revision: session.revision,
+        bytes: [...serialized.payload.bytes],
+        durability_acknowledgement: null,
+        overwrite_authorization: null,
+      },
+    }) as Promise<SaveReceipt>;
   },
   subscribe: subscribeEvent,
   async saveAs(session) {

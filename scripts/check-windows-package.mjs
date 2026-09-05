@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { promisify } from 'node:util';
+import { isDeepStrictEqual, promisify } from 'node:util';
 
 const defaultRepositoryRoot = fileURLToPath(new URL('../', import.meta.url));
 const sha256Pattern = /^[a-f0-9]{64}$/u;
@@ -38,6 +38,12 @@ function sourceExtensions(source) {
     .sort();
 }
 
+function rustDeliveryExtensions(source) {
+  const block = source.match(/const GOVERNED_EXTENSIONS: &\[&str\] = &\[([\s\S]*?)\];/u)?.[1];
+  if (!block) fail('could not locate the native delivery extension inventory');
+  return [...block.matchAll(/"([a-z0-9]+)"/gu)].map((match) => match[1]).sort();
+}
+
 function same(left, right) {
   return JSON.stringify([...left].sort()) === JSON.stringify([...right].sort());
 }
@@ -63,11 +69,12 @@ function validateRelativeInventoryPath(path) {
 
 export async function checkWindowsConfiguration(repositoryRoot = defaultRepositoryRoot) {
   const packagingRoot = join(repositoryRoot, 'packaging', 'windows');
-  const [capabilities, contract, tauri, languageSource, installerHooks] = await Promise.all([
+  const [capabilities, contract, tauri, languageSource, deliverySource, installerHooks] = await Promise.all([
     json(join(packagingRoot, 'capabilities.json')),
     json(join(packagingRoot, 'package-contract.json')),
     json(join(repositoryRoot, 'crates', 'glitchpad-host', 'tauri.s019-windows.conf.json')),
     readFile(join(repositoryRoot, 'apps', 'glitchpad', 'src', 'domain', 'language.ts'), 'utf8'),
+    readFile(join(repositoryRoot, 'crates', 'glitchpad-host', 'src', 'desktop_delivery.rs'), 'utf8'),
     readFile(join(repositoryRoot, 'crates', 'glitchpad-host', 'windows', 'installer-hooks.nsh'), 'utf8'),
   ]);
 
@@ -80,6 +87,8 @@ export async function checkWindowsConfiguration(repositoryRoot = defaultReposito
   const sourceFamily = capabilities.families.find(({ id }) => id === 'source');
   if (!sourceFamily || !same(sourceFamily.extensions, sourceExtensions(languageSource)))
     fail('source associations drift from the stable editor extension inventory');
+  if (!same(configured, rustDeliveryExtensions(deliverySource)))
+    fail('native delivery extensions drift from capabilities.json');
   const forbidden = new Set(capabilities.forbidden_extensions);
   for (const extension of configured)
     if (forbidden.has(extension)) fail(`forbidden extension ${extension} is associated`);
@@ -143,6 +152,8 @@ function validateWindowsEvidenceShape(evidence, contract, official) {
   if (evidence.platform !== 'windows' || evidence.architecture !== 'x86_64')
     fail('evidence platform identity is invalid');
   if (!sourceCommitPattern.test(evidence.source_commit)) fail('source commit is invalid');
+  if (typeof evidence.workflow_identity !== 'string' || evidence.workflow_identity.length === 0)
+    fail('workflow identity is invalid');
   if (!Array.isArray(evidence.artifacts) || evidence.artifacts.length !== 2)
     fail('evidence must contain both Windows artifacts');
 
@@ -187,8 +198,8 @@ function validateWindowsEvidenceShape(evidence, contract, official) {
     fail('official evidence is not explicitly authorized');
   if (evidence.event !== contract.official.authorized_event || evidence.tag !== contract.official.tag_pattern)
     fail('official evidence came from an unauthorized context');
-  for (const name of contract.official.required_evidence)
-    if (!evidence.evidence_files?.includes(name)) fail(`official evidence omits ${name}`);
+  if (!Array.isArray(evidence.evidence_files) || !same(evidence.evidence_files, contract.official.required_evidence))
+    fail('official evidence file inventory is incomplete or unexpected');
   for (const artifact of evidence.artifacts) {
     if (
       artifact.signature_status !== contract.official.required_signature_status
@@ -202,10 +213,6 @@ function validateWindowsEvidenceShape(evidence, contract, official) {
 export function validateWindowsEvidence(evidence, contract, { official = false } = {}) {
   if (official) fail('official mode requires live final-byte and Authenticode verification');
   return validateWindowsEvidenceShape(evidence, contract, false);
-}
-
-async function sha256(path) {
-  return createHash('sha256').update(await readFile(path)).digest('hex');
 }
 
 async function inspectAuthenticode(path) {
@@ -227,24 +234,85 @@ export async function validateOfficialWindowsEvidence(
   if (!artifactRoot) fail('official mode requires the final artifact root');
   validateWindowsEvidenceShape(evidence, contract, true);
   const root = resolve(artifactRoot);
-  for (const name of contract.official.required_evidence) {
-    await readFile(join(root, name));
-  }
+  const manifestPath = join(root, 'windows-package-manifest.json');
+  const [manifestBytes, checksums, sbom, provenance, cleanReceipt] = await Promise.all([
+    readFile(manifestPath),
+    readFile(join(root, 'SHA256SUMS'), 'utf8'),
+    json(join(root, 'glitchpad-windows.cdx.json')),
+    json(join(root, 'provenance.json')),
+    json(join(root, 'clean-machine-receipt.json')),
+  ]);
+  if (!isDeepStrictEqual(JSON.parse(manifestBytes.toString('utf8')), evidence))
+    fail('manifest evidence does not match the validated document');
+
+  const checksumEntries = checksums.trim().split(/\r?\n/u).map((line) => line.match(/^([a-f0-9]{64})  ([^/\\]+)$/u));
+  if (checksumEntries.some((entry) => !entry) || checksumEntries.length !== evidence.artifacts.length)
+    fail('SHA256SUMS is malformed or incomplete');
+  const checksumMap = new Map(checksumEntries.map((entry) => [entry[2], entry[1]]));
+  for (const artifact of evidence.artifacts)
+    if (checksumMap.get(artifact.name) !== artifact.sha256) fail(`SHA256SUMS does not bind ${artifact.kind}`);
+
+  const sbomCommit = sbom.metadata?.properties?.find(({ name }) => name === 'glitchpad:source_commit')?.value;
+  const references = Array.isArray(sbom.components) ? sbom.components.map((component) => component['bom-ref']) : [];
+  if (
+    sbom.bomFormat !== 'CycloneDX'
+    || sbom.specVersion !== '1.6'
+    || sbom.metadata?.component?.name !== 'Glitchpad for Windows'
+    || sbom.metadata?.component?.version !== evidence.version
+    || sbomCommit !== evidence.source_commit
+    || references.length === 0
+    || new Set(references).size !== references.length
+    || !references.some((reference) => reference.startsWith('pkg:cargo/'))
+    || !references.some((reference) => reference.startsWith('pkg:npm/'))
+  ) fail('CycloneDX evidence is incomplete or stale');
+
+  const provenanceSubjects = new Map((provenance.subjects ?? []).map(({ name, sha256: digest }) => [name, digest]));
+  if (
+    provenance.schema_version !== 1
+    || provenance.predicate_type !== 'https://slsa.dev/provenance/v1'
+    || provenance.candidate_only !== false
+    || provenance.repository !== 'shruggietech/glitchpad'
+    || provenance.source_commit !== evidence.source_commit
+    || provenance.workflow_identity !== evidence.workflow_identity
+    || provenanceSubjects.size !== evidence.artifacts.length
+    || evidence.artifacts.some((artifact) => provenanceSubjects.get(artifact.name) !== artifact.sha256)
+  ) fail('official provenance is incomplete or stale');
+
+  const requiredAutomated = ['install', 'launch', 'command_line', 'association', 'read', 'edit', 'save', 'metadata', 'recovery', 'uninstall', 'portable', 'cleanup', 'performance'];
+  const requiredManual = ['dialog', 'drag_drop', 'save_as', 'print', 'keyboard', 'focus', 'text_scale', 'forced_colors', 'screen_reader'];
+  const completed = Date.parse(cleanReceipt.completed_utc);
+  const age = Date.now() - completed;
+  if (
+    cleanReceipt.schema_version !== 1
+    || cleanReceipt.candidate_manifest_sha256 !== createHash('sha256').update(manifestBytes).digest('hex')
+    || cleanReceipt.windows?.architecture !== 'x86_64'
+    || ['edition', 'build', 'webview2_version'].some((key) => typeof cleanReceipt.windows?.[key] !== 'string' || cleanReceipt.windows[key].length === 0 || cleanReceipt.windows[key] === 'REQUIRED')
+    || requiredAutomated.some((key) => cleanReceipt.automated?.[key] !== 'pass')
+    || requiredManual.some((key) => cleanReceipt.manual?.[key] !== 'pass')
+    || cleanReceipt.content_free !== true
+    || !Number.isFinite(completed)
+    || age < -5 * 60_000
+    || age > 24 * 60 * 60_000
+  ) fail('clean-machine evidence is incomplete or stale');
 
   const actualArtifactDigests = new Map();
   for (const artifact of evidence.artifacts) {
     const artifactPath = join(root, artifact.name);
-    const digest = await sha256(artifactPath);
+    const bytes = await readFile(artifactPath);
+    const digest = createHash('sha256').update(bytes).digest('hex');
     actualArtifactDigests.set(artifact.kind, digest);
-    if (digest !== artifact.sha256) fail(`final bytes do not match ${artifact.kind}`);
+    if (digest !== artifact.sha256 || bytes.length !== artifact.bytes)
+      fail(`final bytes do not match ${artifact.kind}`);
   }
   for (const entry of evidence.portable_inventory) {
-    const digest = await sha256(join(root, 'portable', entry.relative_path));
-    if (digest !== entry.sha256) fail(`portable bytes do not match ${entry.relative_path}`);
+    const bytes = await readFile(join(root, 'portable', entry.relative_path));
+    const digest = createHash('sha256').update(bytes).digest('hex');
+    if (digest !== entry.sha256 || bytes.length !== entry.bytes)
+      fail(`portable bytes do not match ${entry.relative_path}`);
   }
 
   const signatureEvidence = await json(join(root, 'signature-evidence.json'));
-  if (signatureEvidence.schema_version !== 1 || !Array.isArray(signatureEvidence.artifacts))
+  if (signatureEvidence.schema_version !== 1 || !Array.isArray(signatureEvidence.artifacts) || signatureEvidence.artifacts.length !== 2)
     fail('signature evidence is invalid');
   const expectedTargets = [
     {

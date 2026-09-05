@@ -15,6 +15,10 @@ use crate::source::{DesktopDelivery, DesktopDeliveryKind, DesktopSourceHost};
 
 const MAX_QUEUED_DELIVERIES: usize = 128;
 const MAX_DELIVERY_DRAIN: usize = 64;
+const GOVERNED_EXTENSIONS: &[&str] = &[
+    "cjs", "css", "htm", "html", "js", "json", "jsonc", "jsx", "markdown", "md", "mermaid", "mjs",
+    "mmd", "py", "rs", "toml", "ts", "tsx", "txt", "yaml", "yml",
+];
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -76,13 +80,20 @@ impl DesktopDeliveryQueue {
         }
         let mut accepted = 0;
         for path in paths {
-            let delivery = match kind {
-                DesktopDeliveryKind::Dialog => DesktopDelivery::dialog(path),
-                DesktopDeliveryKind::Drop => DesktopDelivery::dropped(path),
-                DesktopDeliveryKind::CommandLine => DesktopDelivery::command_line(path),
-                DesktopDeliveryKind::Association => DesktopDelivery::association(path),
+            let acquired = if governed_extension(&path) {
+                let delivery = match kind {
+                    DesktopDeliveryKind::Dialog => DesktopDelivery::dialog(path),
+                    DesktopDeliveryKind::Drop => DesktopDelivery::dropped(path),
+                    DesktopDeliveryKind::CommandLine => DesktopDelivery::command_line(path),
+                    DesktopDeliveryKind::Association => DesktopDelivery::association(path),
+                };
+                host.acquire(delivery)
+            } else {
+                Err(safe_error(
+                    CoreErrorCategory::UnsupportedInput,
+                    "The delivered file type is not supported",
+                ))
             };
-            let acquired = host.acquire(delivery);
             let mut state = self.lock()?;
             state.reserved = state.reserved.saturating_sub(1);
             state.next_sequence = state.next_sequence.saturating_add(1);
@@ -183,6 +194,13 @@ impl DesktopDeliveryQueue {
             )
         })
     }
+}
+
+fn governed_extension(path: &Path) -> bool {
+    path.extension()
+        .and_then(|extension| extension.to_str())
+        .map(str::to_ascii_lowercase)
+        .is_some_and(|extension| GOVERNED_EXTENSIONS.contains(&extension.as_str()))
 }
 
 fn looks_like_url(path: &Path) -> bool {
@@ -426,5 +444,22 @@ mod tests {
             queue.drain(1).expect("second drain")[0].status,
             DesktopDeliveryStatus::Opened
         );
+    }
+
+    #[test]
+    fn unsupported_extension_is_a_path_free_rejection() {
+        let (_root, path) = fixture("rejected.csv");
+        let queue = DesktopDeliveryQueue::new();
+        let host = DesktopSourceHost::new();
+        assert_eq!(
+            queue
+                .enqueue_paths(&host, DesktopDeliveryKind::Drop, [path])
+                .expect("enqueue"),
+            0
+        );
+        let result = queue.drain(1).expect("drain").pop().expect("result");
+        assert_eq!(result.status, DesktopDeliveryStatus::Rejected);
+        let encoded = serde_json::to_string(&result).expect("serialize");
+        assert!(!encoded.contains("rejected.csv"));
     }
 }

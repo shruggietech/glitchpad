@@ -20,6 +20,7 @@ import {
 import {
   noRendererCapabilities,
   noSourceCapabilities,
+  type SaveReceipt,
   type ShellSession,
 } from './domain/contracts';
 import {
@@ -575,6 +576,16 @@ export function App({ sessions = initialSessions, recoveryGateway, externalLinkG
 
   const invoke = (command: CommandDescriptor, opener: HTMLButtonElement) => {
     const result = executeCommand(command, activeSession);
+    if (result.ok && command.id === 'save' && activeSession && selectedDesktopDeliveryGateway) {
+      void selectedDesktopDeliveryGateway.save(activeSession)
+        .then((receipt) => {
+          dispatch({ type: 'save_completed', id: activeSession.id, receipt });
+          setCommandStatus(`${activeSession.source.display_name} saved durably.`);
+        })
+        .catch(() => setCommandStatus(`Save failed for ${activeSession.source.display_name}. The document remains open with its edits.`));
+      setCommandStatus(`Saving ${activeSession.source.display_name}. Waiting for a durable save receipt.`);
+      return;
+    }
     const applied =
       result.ok && (command.id === 'metadata'
         ? (openMetadata(opener), true)
@@ -702,16 +713,25 @@ export function App({ sessions = initialSessions, recoveryGateway, externalLinkG
   };
 
   const resolveDestructiveTransition = (decision: 'save' | 'save_as' | 'discard' | 'cancel') => {
-    if (decision !== 'save_as' || !resolutionSession || !selectedDesktopDeliveryGateway) {
+    if (!resolutionSession || !selectedDesktopDeliveryGateway || (decision !== 'save' && decision !== 'save_as')) {
       dispatch({ type: 'resolve_transition', decision });
       return;
     }
     dispatch({ type: 'resolve_transition', decision });
-    void selectedDesktopDeliveryGateway.saveAs(resolutionSession)
-      .then((saved) => dispatch({ type: 'resolve_transition', decision: saved ? 'discard' : 'cancel' }))
+    const operation: Promise<SaveReceipt | boolean> = decision === 'save'
+      ? selectedDesktopDeliveryGateway.save(resolutionSession)
+      : selectedDesktopDeliveryGateway.saveAs(resolutionSession);
+    void operation
+      .then((receipt) => {
+        if (decision === 'save') {
+          dispatch({ type: 'save_completed', id: resolutionSession.id, receipt: receipt as SaveReceipt });
+        } else {
+          dispatch({ type: 'resolve_transition', decision: receipt ? 'discard' : 'cancel' });
+        }
+      })
       .catch(() => {
         dispatch({ type: 'resolve_transition', decision: 'cancel' });
-        setCommandStatus('Save As did not complete. The document remains open with its edits.');
+        setCommandStatus(`${decision === 'save' ? 'Save' : 'Save As'} did not complete. The document remains open with its edits.`);
       });
   };
 

@@ -25,6 +25,7 @@ function candidate() {
     platform: 'windows',
     architecture: 'x86_64',
     source_commit: sourceCommit,
+    workflow_identity: 'shruggietech/glitchpad/.github/workflows/windows-package.yml@refs/tags/v0.1.0',
     official: false,
     gate_status: 'candidate_valid',
     artifacts: contract.artifacts.map((artifact) => ({
@@ -126,9 +127,49 @@ test('official mode binds final bytes to live Authenticode and recorded evidence
         { kind: 'portable_executable', sha256: portableExecutable.sha256, ...observed },
       ],
     };
-    for (const name of contract.official.required_evidence) {
-      await writeFile(join(root, name), name === 'signature-evidence.json' ? JSON.stringify(signatures) : '{}');
-    }
+    const manifestBytes = Buffer.from(JSON.stringify(evidence));
+    await writeFile(join(root, 'windows-package-manifest.json'), manifestBytes);
+    await writeFile(
+      join(root, 'SHA256SUMS'),
+      `${evidence.artifacts.map(({ sha256, name }) => `${sha256}  ${name}`).join('\n')}\n`,
+    );
+    await writeFile(join(root, 'glitchpad-windows.cdx.json'), JSON.stringify({
+      bomFormat: 'CycloneDX',
+      specVersion: '1.6',
+      metadata: {
+        component: { name: 'Glitchpad for Windows', version: evidence.version },
+        properties: [{ name: 'glitchpad:source_commit', value: evidence.source_commit }],
+      },
+      components: [
+        { 'bom-ref': 'pkg:cargo/glitchpad-core@0.1.0' },
+        { 'bom-ref': 'pkg:npm/react@19.2.8' },
+      ],
+    }));
+    await writeFile(join(root, 'provenance.json'), JSON.stringify({
+      schema_version: 1,
+      predicate_type: 'https://slsa.dev/provenance/v1',
+      candidate_only: false,
+      repository: 'shruggietech/glitchpad',
+      source_commit: evidence.source_commit,
+      workflow_identity: evidence.workflow_identity,
+      subjects: evidence.artifacts.map(({ name, sha256 }) => ({ name, sha256 })),
+    }));
+    const passed = Object.fromEntries([
+      'install', 'launch', 'command_line', 'association', 'read', 'edit', 'save', 'metadata', 'recovery', 'uninstall', 'portable', 'cleanup', 'performance',
+    ].map((key) => [key, 'pass']));
+    const manualPassed = Object.fromEntries([
+      'dialog', 'drag_drop', 'save_as', 'print', 'keyboard', 'focus', 'text_scale', 'forced_colors', 'screen_reader',
+    ].map((key) => [key, 'pass']));
+    await writeFile(join(root, 'clean-machine-receipt.json'), JSON.stringify({
+      schema_version: 1,
+      candidate_manifest_sha256: createHash('sha256').update(manifestBytes).digest('hex'),
+      windows: { edition: 'Windows 11 Pro', build: '26100', architecture: 'x86_64', webview2_version: '1.0.0' },
+      automated: passed,
+      manual: manualPassed,
+      content_free: true,
+      completed_utc: new Date().toISOString(),
+    }));
+    await writeFile(join(root, 'signature-evidence.json'), JSON.stringify(signatures));
     assert.equal(await validateOfficialWindowsEvidence(evidence, contract, {
       artifactRoot: root,
       authenticodeInspector: async () => observed,
@@ -177,10 +218,12 @@ test('Windows SBOM combines Cargo and transitive production JavaScript dependenc
   const bom = generateWindowsSbom(
     { packages: [{ name: 'glitchpad-core', version: '0.1.0', source: null, license: 'Apache-2.0' }] },
     [{ dependencies: { react: { version: '19.2.4', dependencies: { scheduler: { version: '0.27.0' } } } } }],
+    sourceCommit,
   );
   assert.deepEqual(
     bom.components.map(({ name }) => name).sort(),
     ['glitchpad-core', 'react', 'scheduler'],
   );
   assert.ok(bom.components.find(({ name }) => name === 'react')?.purl.startsWith('pkg:npm/'));
+  assert.deepEqual(bom.metadata.properties, [{ name: 'glitchpad:source_commit', value: sourceCommit }]);
 });

@@ -78,6 +78,29 @@ test('materializes a bounded path-free native summary', async () => {
   expect(call).toHaveBeenCalledWith('read_source_range', expect.objectContaining({ operationBudget: bytes.length }));
 });
 
+test('detects a large desktop source BOM from a bounded prefix', async () => {
+  const largeSource = {
+    ...source,
+    descriptor: { ...source.descriptor, byte_length: 32 * 1024 * 1024 + 2 },
+  };
+  const call = vi.fn().mockResolvedValue({
+    source_id: source.source_id,
+    offset: 0,
+    bytes: [0xff, 0xfe, 0x41],
+    end_of_source: false,
+  });
+  const gateway = createDesktopDeliveryGateway(call, () => Promise.resolve(() => undefined));
+  const session = await gateway.materialize({ ...result, source: largeSource });
+  expect(session?.text_document?.mode).toBe('large_read_only');
+  expect(session?.text_document?.profile.encoding).toBe('utf16_le_bom');
+  expect(call).toHaveBeenCalledWith('read_source_range', {
+    sourceId: source.source_id,
+    offset: 0,
+    length: 3,
+    operationBudget: 3,
+  });
+});
+
 test('duplicates and rejections never create sessions', async () => {
   const gateway = createDesktopDeliveryGateway(vi.fn(), () => Promise.resolve(() => undefined));
   await expect(gateway.materialize({ ...result, status: 'duplicate' })).resolves.toBeNull();
@@ -126,4 +149,48 @@ test('Save As serializes exact text bytes and reports native cancellation', asyn
     suggestedName: 'delivered.md',
     bytes: [...bytes],
   });
+});
+
+test('Save sends exact bytes and revision guards to the native source command', async () => {
+  const sourceGateway = createDesktopDeliveryGateway((command, args) => {
+    if (command !== 'read_source_range') throw new Error('unexpected command');
+    const offset = args?.offset as number;
+    return Promise.resolve({
+      source_id: source.source_id,
+      offset,
+      bytes: [...bytes],
+      end_of_source: true,
+    });
+  }, () => Promise.resolve(() => undefined));
+  const session = await sourceGateway.materialize(result);
+  const call = vi.fn((command: string, args?: Record<string, unknown>) => {
+    void command;
+    void args;
+    return Promise.resolve({
+      operation_id: '1',
+      source_id: source.source_id,
+      accepted_session_revision: 1,
+      previous_external_revision: source.external_revision,
+      new_external_revision: source.external_revision,
+      byte_count: bytes.length,
+      durability: 'atomic_file_and_directory',
+    });
+  });
+  const gateway = createDesktopDeliveryGateway(call, () => Promise.resolve(() => undefined));
+  await gateway.save(session!);
+  expect(call).toHaveBeenCalledOnce();
+  const [command, args] = call.mock.calls[0];
+  const request = args?.request as {
+    operation_id: string;
+    source_id: string;
+    expected_external_revision: typeof source.external_revision;
+    expected_session_revision: number;
+    bytes: number[];
+  };
+  expect(command).toBe('save_source');
+  expect(request.operation_id).toMatch(/^\d+$/u);
+  expect(request.source_id).toBe(source.source_id);
+  expect(request.expected_external_revision).toEqual(source.external_revision);
+  expect(request.expected_session_revision).toBe(1);
+  expect(request.bytes).toEqual([...bytes]);
 });

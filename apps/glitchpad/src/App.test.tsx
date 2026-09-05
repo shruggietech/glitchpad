@@ -19,6 +19,15 @@ const revision = {
   modified_unix_nanos: '1',
   change_token: null,
 };
+const saveReceipt = {
+  operation_id: '1',
+  source_id: 'source',
+  accepted_session_revision: 2,
+  previous_external_revision: revision,
+  new_external_revision: revision,
+  byte_count: 1,
+  durability: 'atomic_file_and_directory' as const,
+};
 
 describe('document foundation shell', () => {
   const persistenceGateway = (overrides: Partial<PersistenceGateway> = {}): PersistenceGateway => ({
@@ -33,14 +42,16 @@ describe('document foundation shell', () => {
   });
 
   it('opens native desktop deliveries through the compact application commands', async () => {
-    const delivered = { ...initialSessions[2], id: 'desktop-source', source_id: 'source' };
+    const delivered = { ...initialSessions[2], id: 'desktop-source', source_id: 'source', external_revision: revision };
     const choose = vi.fn().mockResolvedValue([{ sequence: 1, kind: 'dialog', status: 'opened', source: { source_id: 'source', descriptor: delivered.source, external_revision: revision }, error: null }]);
     const materialize = vi.fn().mockResolvedValue(delivered);
     const close = vi.fn().mockResolvedValue(undefined);
+    const save = vi.fn().mockResolvedValue(saveReceipt);
     const gateway: DesktopDeliveryGateway = {
       choose,
       drain: vi.fn().mockResolvedValue([]),
       close,
+      save,
       materialize,
       saveAs: vi.fn().mockResolvedValue(true),
       subscribe: vi.fn().mockResolvedValue(() => undefined),
@@ -50,6 +61,11 @@ describe('document foundation shell', () => {
     await screen.findByRole('tab', { name: /notes\.txt/i });
     expect(choose).toHaveBeenCalledOnce();
     expect(materialize).toHaveBeenCalledOnce();
+    const textbox = screen.getByRole('textbox', { name: 'notes.txt text editor' });
+    act(() => EditorView.findFromDOM(textbox)?.dispatch({ changes: { from: 0, insert: 'x' } }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(save).toHaveBeenCalledWith(expect.objectContaining({ source_id: 'source', revision: 2 })));
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(/saved durably/i));
     fireEvent.click(screen.getByRole('button', { name: /close notes\.txt/i }));
     await waitFor(() => expect(close).toHaveBeenCalledWith('source'));
   });
@@ -161,6 +177,7 @@ describe('document foundation shell', () => {
       choose: vi.fn().mockResolvedValue([]),
       drain: vi.fn().mockResolvedValue([]),
       close: vi.fn().mockResolvedValue(undefined),
+      save: vi.fn().mockResolvedValue(saveReceipt),
       materialize: vi.fn().mockResolvedValue(null),
       saveAs,
       subscribe: vi.fn().mockResolvedValue(() => undefined),
@@ -171,6 +188,28 @@ describe('document foundation shell', () => {
     expect(screen.getByRole('dialog')).toHaveTextContent(/until a durable receipt arrives/i);
     await waitFor(() => expect(screen.queryByRole('tab', { name: /draft\.md/i })).not.toBeInTheDocument());
     expect(saveAs).toHaveBeenCalledWith(expect.objectContaining({ id: 'draft' }));
+  });
+
+  it('completes a close only after native in-place Save returns a durable receipt', async () => {
+    const session = { ...initialSessions[3], source_id: 'source', external_revision: revision };
+    const save = vi.fn().mockResolvedValue({
+      ...saveReceipt,
+      accepted_session_revision: session.revision,
+    });
+    const gateway: DesktopDeliveryGateway = {
+      choose: vi.fn().mockResolvedValue([]),
+      drain: vi.fn().mockResolvedValue([]),
+      close: vi.fn().mockResolvedValue(undefined),
+      save,
+      materialize: vi.fn().mockResolvedValue(null),
+      saveAs: vi.fn().mockResolvedValue(true),
+      subscribe: vi.fn().mockResolvedValue(() => undefined),
+    };
+    render(<App sessions={[session]} desktopDeliveryGateway={gateway} />);
+    fireEvent.click(screen.getByRole('button', { name: /close draft\.md/i }));
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(save).toHaveBeenCalledWith(expect.objectContaining({ id: 'draft' })));
+    await waitFor(() => expect(screen.queryByRole('tab', { name: /draft\.md/i })).not.toBeInTheDocument());
   });
 
   it('projects conflict messaging and removes unsafe in-place save', () => {

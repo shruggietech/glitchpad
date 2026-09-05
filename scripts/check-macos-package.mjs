@@ -294,10 +294,10 @@ export async function checkMacosConfiguration(
     'waitForLifecycleReadiness',
     'waitForShellReadiness',
     'waitForSingleNewDelivery',
-    'lifecycleProbeArgument(probeRoot)',
+    'lifecycleProbeRoot(',
     'initialLaunchArguments(',
     'const child = spawn(',
-    "'--args'",
+    "'enabled.marker'",
     "command('open'",
   ])
     if (!lifecycleScript.includes(marker))

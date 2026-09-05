@@ -58,11 +58,12 @@ function validateRelativeInventoryPath(path) {
 
 export async function checkWindowsConfiguration(repositoryRoot = defaultRepositoryRoot) {
   const packagingRoot = join(repositoryRoot, 'packaging', 'windows');
-  const [capabilities, contract, tauri, languageSource] = await Promise.all([
+  const [capabilities, contract, tauri, languageSource, installerHooks] = await Promise.all([
     json(join(packagingRoot, 'capabilities.json')),
     json(join(packagingRoot, 'package-contract.json')),
     json(join(repositoryRoot, 'crates', 'glitchpad-host', 'tauri.s019-windows.conf.json')),
     readFile(join(repositoryRoot, 'apps', 'glitchpad', 'src', 'domain', 'language.ts'), 'utf8'),
+    readFile(join(repositoryRoot, 'crates', 'glitchpad-host', 'windows', 'installer-hooks.nsh'), 'utf8'),
   ]);
 
   if (capabilities.schema_version !== 1 || capabilities.release !== '0.1.0')
@@ -105,10 +106,19 @@ export async function checkWindowsConfiguration(repositoryRoot = defaultReposito
     || tauri.bundle.active !== true
     || !same(tauri.bundle.targets, ['nsis'])
     || tauri.bundle.windows?.nsis?.installMode !== 'currentUser'
+    || tauri.bundle.windows?.nsis?.installerHooks !== 'windows/installer-hooks.nsh'
     || tauri.bundle.windows?.webviewInstallMode?.type !== 'skip'
   ) fail('Tauri overlay is not the governed current-user NSIS configuration');
   const associated = tauri.bundle.fileAssociations.flatMap(({ ext }) => ext).sort();
   if (!same(associated, configured)) fail('Tauri associations drift from capabilities.json');
+  for (const association of tauri.bundle.fileAssociations) {
+    for (const extension of association.ext) {
+      for (const operation of ['BACKUP', 'RESTORE']) {
+        const invocation = `!insertmacro GLITCHPAD_${operation}_ASSOCIATION "${extension}" "${association.name}"`;
+        if (!installerHooks.includes(invocation)) fail(`installer hooks omit ${operation.toLowerCase()} for ${extension}`);
+      }
+    }
+  }
   for (const required of ['LICENSE', 'NOTICE', 'THIRD_PARTY_NOTICES.txt']) {
     if (!Object.values(tauri.bundle.resources ?? {}).includes(required))
       fail(`Tauri bundle omits ${required}`);

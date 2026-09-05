@@ -4,16 +4,42 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import test from 'node:test';
 
-import { collectPerformance, isAllowedRequest, parseArguments } from './run-performance.mjs';
+import { collectPerformance, collectWithHardFailureConfirmation, isAllowedRequest, parseArguments } from './run-performance.mjs';
 
 test('collector arguments are explicit and bounded', () => {
   assert.deepEqual(parseArguments(['--profile', 'hosted_windows_smoke_v1', '--build-id', 'abc', '--skip-build']), {
-    profile: 'hosted_windows_smoke_v1', buildId: 'abc', output: null, metric: null, artifact: null, skipBuild: true,
+    profile: 'hosted_windows_smoke_v1', buildId: 'abc', output: null, metric: null, artifact: null, skipBuild: true, confirmHardFailure: false,
   });
   assert.throws(() => parseArguments(['--profile', 'p', '--build-id', '../secret']), /build_id_invalid/u);
   assert.throws(() => parseArguments(['--profile', 'p', '--build-id', 'b', '--artifact', 'x']), /artifact_metric_pair_required/u);
   assert.equal(parseArguments(['--profile', 'p', '--build-id', 'b', '--metric', 'editor_input_paint']).metric, 'editor_input_paint');
+  assert.equal(parseArguments(['--profile', 'p', '--build-id', 'b', '--confirm-hard-failure']).confirmHardFailure, true);
   assert.throws(() => parseArguments(['--unknown']), /argument_unknown/u);
+});
+test('hosted collection confirms only hard-limit failures once', async () => {
+  const options = { confirmHardFailure: true };
+  let attempts = 0;
+  const evidence = await collectWithHardFailureConfirmation(options, async () => {
+    attempts += 1;
+    if (attempts === 1) throw new Error('performance_hard_limit:markdown_first_content');
+    return ['confirmed'];
+  });
+  assert.deepEqual(evidence, ['confirmed']);
+  assert.equal(attempts, 2);
+
+  attempts = 0;
+  await assert.rejects(collectWithHardFailureConfirmation(options, async () => {
+    attempts += 1;
+    throw new Error('performance_selector_failed');
+  }), /performance_selector_failed/u);
+  assert.equal(attempts, 1);
+
+  attempts = 0;
+  await assert.rejects(collectWithHardFailureConfirmation(options, async () => {
+    attempts += 1;
+    throw new Error('performance_hard_limit:cold_shell_desktop');
+  }), /performance_hard_limit:cold_shell_desktop/u);
+  assert.equal(attempts, 2);
 });
 
 test('collector request policy remains loopback-origin and inert-resource only', () => {

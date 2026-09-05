@@ -148,6 +148,18 @@ fn android_emulator_uses_supported_software_rendering() {
         "deprecated indirect rendering reintroduces emulator teardown crashes"
     );
     assert!(
+        workflow.contains("for attempt in 1 2; do"),
+        "standalone instrumentation may be confirmed once, but must not retry without a strict bound"
+    );
+    assert!(
+        workflow.contains("if grep -Fq \"$marker\" \"$output\"; then"),
+        "standalone instrumentation retries must depend on required semantic evidence"
+    );
+    assert!(
+        workflow.contains("adb logcat -d -t 2000"),
+        "failed standalone instrumentation attempts must preserve bounded logcat evidence"
+    );
+    assert!(
         workflow.contains(
             "-Pandroid.testInstrumentationRunnerArguments.notClass=com.shruggietech.glitchpad.performance.PerformanceInstrumentedTest",
         ),

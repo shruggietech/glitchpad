@@ -24,4 +24,6 @@
           - 'packaging/**'
           - 'crates/glitchpad-host/tauri*.json'
           - 'scripts/windows/**'
+          - 'scripts/macos/**'
+          - '.github/workflows/macos-package.yml'
           - '.github/workflows/windows-package.yml'

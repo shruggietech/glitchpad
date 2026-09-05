@@ -212,6 +212,7 @@ fn docs(repository: &Path) -> Result<(), String> {
     run(repository, "pnpm", ["run", "check:metadata"])?;
     run(repository, "pnpm", ["run", "check:persistence"])?;
     run(repository, "pnpm", ["run", "check:performance"])?;
+    run(repository, "pnpm", ["run", "check:macos-package"])?;
     run(repository, "pnpm", ["run", "check:windows-package"])?;
     run(repository, "pnpm", ["run", "check:config"])?;
     run(repository, "pnpm", ["run", "docs:format"])?;

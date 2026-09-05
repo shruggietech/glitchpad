@@ -173,7 +173,7 @@ pub fn run() {
         }
     });
 
-    builder
+    let application = builder
         .setup(move |app| {
             app.manage(product);
             let recovery_quota = if cfg!(target_os = "android") {
@@ -212,8 +212,16 @@ pub fn run() {
             }
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("Glitchpad host failed while processing a runtime event");
+        .build(tauri::generate_context!())
+        .expect("Glitchpad host failed to initialize");
+    application.run(|app, event| {
+        #[cfg(target_os = "macos")]
+        if let tauri::RunEvent::Opened { urls } = event {
+            desktop_delivery::enqueue_opened_urls(app, urls);
+        }
+        #[cfg(not(target_os = "macos"))]
+        let _ = (app, event);
+    });
 }
 
 #[tauri::command]

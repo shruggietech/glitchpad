@@ -57,3 +57,30 @@ jobs:
             throw 'Official Windows artifacts require provisioned signing authority. Unsigned candidates cannot be promoted.'
           }
           Write-Host 'Signing authority is provisioned. A separately reviewed publication workflow must bind signatures and attestations to final bytes.'
+
+  macos-authority:
+    name: Enforce the macOS signing and notarization authority contract
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: readiness
+    runs-on: macos-15
+    env:
+      APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+      APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+      APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+      APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+      APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+      APPLE_API_KEY_PATH: ${{ runner.temp }}/AuthKey.p8
+      MACOS_REQUIRED_EVIDENCE: SHA256SUMS,macos-package-manifest.json,glitchpad-macos.cdx.json,provenance.json,clean-host-arm64.json,clean-host-x86_64.json,apple-trust-evidence.json,notarization-log.json
+    steps:
+      - name: Verify macOS publication authority is provisioned
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$APPLE_CERTIFICATE"
+          test -n "$APPLE_CERTIFICATE_PASSWORD"
+          test -n "$APPLE_SIGNING_IDENTITY"
+          test -n "$APPLE_API_ISSUER"
+          test -n "$APPLE_API_KEY"
+          test -n "$APPLE_API_KEY_PATH"
+          test -n "$MACOS_REQUIRED_EVIDENCE"
+          echo 'macOS authority is provisioned. Publication remains separately authorized.'

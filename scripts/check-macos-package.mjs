@@ -293,10 +293,12 @@ export async function checkMacosConfiguration(
     fail('macOS package workflow does not cover every branch push');
   for (const marker of [
     'waitForLifecycleReadiness',
+    'waitForHostProbeRoot',
     'waitForShellReadiness',
     'waitForSingleNewDelivery',
     'initialLaunchArguments(',
     'const child = spawn(',
+    "'host-ready.marker'",
     "'enabled.marker'",
     "command('open'",
   ])

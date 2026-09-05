@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -8,7 +8,9 @@ import {
   classifyStartupSamples,
   clearLifecycleProbes,
   initialLaunchArguments,
+  lifecycleProbeRoots,
   parseArguments,
+  waitForHostProbeRoot,
   waitForLifecycleReadiness,
   waitForShellReadiness,
   waitForSingleNewDelivery,
@@ -27,6 +29,32 @@ test('native launch preserves the Finder document event without process argument
       '/private/tmp/document.md',
     ],
   );
+});
+
+test('host discovery selects an accessible guarded root without exposing paths in markers', async () => {
+  assert.deepEqual(
+    lifecycleProbeRoots('/Users/runner', 'com.example.app'),
+    [
+      '/tmp/com.example.app-lifecycle-probes',
+      '/Users/runner/Library/Application Support/com.example.app/lifecycle-probes',
+      '/Users/Shared/com.example.app-lifecycle-probes',
+    ],
+  );
+  const root = await mkdtemp(join(tmpdir(), 'glitchpad-host-probes-'));
+  const first = join(root, 'first');
+  const second = join(root, 'second');
+  try {
+    await Promise.all([mkdir(first), mkdir(second)]);
+    await writeFile(join(second, 'host-ready.marker'), 'ready\n');
+    assert.equal(await waitForHostProbeRoot([first, second]), second);
+    await clearLifecycleProbes([first, second]);
+    assert.deepEqual(await Promise.all([readdir(first), readdir(second)]), [
+      [],
+      [],
+    ]);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });
 
 test('lifecycle arguments require explicit artifact, manifest, receipt, and architecture', () => {

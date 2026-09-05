@@ -195,6 +195,7 @@ pub fn run() {
             {
                 app.manage(lifecycle_probe::LifecycleProbeState::for_application(
                     &app.config().identifier,
+                    app.path().app_config_dir().ok(),
                 ));
                 let host = source::DesktopSourceHost::new();
                 let queue = desktop_delivery::DesktopDeliveryQueue::new();

@@ -39,7 +39,11 @@ fn record_marker(root: &Path, event: &str, sequence: Option<u64>) -> Result<bool
             "Lifecycle acknowledgement storage is unavailable",
         ));
     }
-    let path = root.join(marker_name(event, sequence)?);
+    record_fixed_marker(root, &marker_name(event, sequence)?)
+}
+
+fn record_fixed_marker(root: &Path, name: &str) -> Result<bool, CoreError> {
+    let path = root.join(name);
     match OpenOptions::new().write(true).create_new(true).open(path) {
         Ok(mut marker) => {
             marker.write_all(b"ready\n").map_err(|_| {
@@ -65,17 +69,13 @@ fn record_marker(root: &Path, event: &str, sequence: Option<u64>) -> Result<bool
 }
 
 #[cfg(any(test, target_os = "macos"))]
-fn guarded_probe_root(identifier: &str, architecture: &str) -> PathBuf {
-    PathBuf::from("/tmp").join(format!("{identifier}-lifecycle-probes-{architecture}"))
-}
-
-#[cfg(any(test, target_os = "macos"))]
-fn runtime_architecture() -> &'static str {
-    if cfg!(target_arch = "aarch64") {
-        "arm64"
-    } else {
-        std::env::consts::ARCH
+fn guarded_probe_roots(identifier: &str, application_config_root: Option<PathBuf>) -> Vec<PathBuf> {
+    let mut roots = vec![PathBuf::from("/tmp").join(format!("{identifier}-lifecycle-probes"))];
+    if let Some(root) = application_config_root {
+        roots.push(root.join("lifecycle-probes"));
     }
+    roots.push(PathBuf::from("/Users/Shared").join(format!("{identifier}-lifecycle-probes")));
+    roots
 }
 
 /// Process-local lifecycle acknowledgement state for native package validation.
@@ -85,24 +85,32 @@ pub struct LifecycleProbeState {
 }
 
 impl LifecycleProbeState {
-    fn configured(environment: Option<OsString>, guarded_root: Option<PathBuf>) -> Self {
+    fn configured(
+        environment: Option<OsString>,
+        guarded_roots: impl IntoIterator<Item = PathBuf>,
+    ) -> Self {
         let root = environment
             .map(PathBuf::from)
-            .or_else(|| guarded_root.filter(|candidate| probe_root_enabled(candidate)));
+            .into_iter()
+            .chain(guarded_roots)
+            .find(|candidate| {
+                probe_root_enabled(candidate)
+                    && record_fixed_marker(candidate, "host-ready.marker").unwrap_or(false)
+            });
         Self { root }
     }
 
     /// Creates lifecycle state from an explicit environment or the guarded macOS validation root.
     #[must_use]
-    pub fn for_application(identifier: &str) -> Self {
+    pub fn for_application(identifier: &str, application_config_root: Option<PathBuf>) -> Self {
         #[cfg(target_os = "macos")]
-        let guarded_root = Some(guarded_probe_root(identifier, runtime_architecture()));
+        let guarded_roots = guarded_probe_roots(identifier, application_config_root);
         #[cfg(not(target_os = "macos"))]
-        let guarded_root = {
-            let _ = identifier;
-            None
+        let guarded_roots = {
+            let _ = (identifier, application_config_root);
+            Vec::new()
         };
-        Self::configured(std::env::var_os(PROBE_DIRECTORY_ENVIRONMENT), guarded_root)
+        Self::configured(std::env::var_os(PROBE_DIRECTORY_ENVIRONMENT), guarded_roots)
     }
 
     fn record(&self, event: &str, sequence: Option<u64>) -> Result<bool, CoreError> {
@@ -169,37 +177,56 @@ mod tests {
 
     #[test]
     fn resolves_the_explicit_environment_before_a_guarded_root() {
-        let environment_root = PathBuf::from("/private/tmp/environment-probes");
+        let environment_root = temporary_root();
+        let guarded_root = temporary_root().with_extension("guarded");
+        for root in [&environment_root, &guarded_root] {
+            fs::create_dir(root).expect("temporary probe root must be created");
+            fs::write(root.join("enabled.marker"), PROBE_ENABLE_MARKER)
+                .expect("probe root must be explicitly enabled");
+        }
         let state = LifecycleProbeState::configured(
             Some(environment_root.clone().into_os_string()),
-            Some(PathBuf::from("/tmp/guarded-probes")),
+            [guarded_root.clone()],
         );
-        assert_eq!(state.root, Some(environment_root));
+        assert_eq!(state.root, Some(environment_root.clone()));
+        assert!(environment_root.join("host-ready.marker").is_file());
+        assert!(!guarded_root.join("host-ready.marker").exists());
+
+        fs::remove_dir_all(environment_root).expect("environment root must be removed");
+        fs::remove_dir_all(guarded_root).expect("guarded root must be removed");
     }
 
     #[test]
-    fn guarded_root_requires_exact_opt_in_and_normalizes_apple_silicon() {
+    fn guarded_roots_are_exact_and_require_opt_in() {
         let probe_root = temporary_root();
         fs::create_dir(&probe_root).expect("temporary probe root must be created");
         assert_eq!(
-            guarded_probe_root("com.example.app", "arm64"),
-            PathBuf::from("/tmp/com.example.app-lifecycle-probes-arm64")
+            guarded_probe_roots(
+                "com.example.app",
+                Some(PathBuf::from(
+                    "/Users/runner/Library/Application Support/com.example.app"
+                )),
+            ),
+            vec![
+                PathBuf::from("/tmp/com.example.app-lifecycle-probes"),
+                PathBuf::from(
+                    "/Users/runner/Library/Application Support/com.example.app/lifecycle-probes",
+                ),
+                PathBuf::from("/Users/Shared/com.example.app-lifecycle-probes"),
+            ]
         );
-        #[cfg(target_arch = "aarch64")]
-        assert_eq!(runtime_architecture(), "arm64");
-        #[cfg(not(target_arch = "aarch64"))]
-        assert_eq!(runtime_architecture(), std::env::consts::ARCH);
         assert!(
-            LifecycleProbeState::configured(None, Some(probe_root.clone()))
+            LifecycleProbeState::configured(None, [probe_root.clone()])
                 .root
                 .is_none()
         );
         fs::write(probe_root.join("enabled.marker"), PROBE_ENABLE_MARKER)
             .expect("probe root must be explicitly enabled");
         assert_eq!(
-            LifecycleProbeState::configured(None, Some(probe_root.clone())).root,
+            LifecycleProbeState::configured(None, [probe_root.clone()]).root,
             Some(probe_root.clone())
         );
+        assert!(probe_root.join("host-ready.marker").is_file());
 
         fs::remove_dir_all(probe_root).expect("temporary probe root must be removed");
     }

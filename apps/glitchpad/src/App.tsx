@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 
 import { CommandBar } from './components/CommandBar';
 import { DocumentSurface } from './components/DocumentSurface';
@@ -73,6 +73,12 @@ import {
   nativeAndroidRestorationGateway,
   type AndroidRestorationGateway,
 } from './domain/android-restoration-gateway';
+import {
+  nativeDesktopDeliveryAvailable,
+  nativeDesktopDeliveryGateway,
+  type DesktopDeliveryGateway,
+  type DesktopDeliveryResult,
+} from './domain/desktop-delivery-gateway';
 
 const makeSession = (
   id: string,
@@ -232,9 +238,10 @@ interface AppProps {
   persistenceGateway?: PersistenceGateway | null;
   diagnosticExportGateway?: DiagnosticExportGateway;
   androidRestorationGateway?: AndroidRestorationGateway | null;
+  desktopDeliveryGateway?: DesktopDeliveryGateway | null;
 }
 
-export function App({ sessions = initialSessions, recoveryGateway, externalLinkGateway, localAssetGateway, metadataGateway, clipboardGateway = browserClipboardGateway, persistenceGateway, diagnosticExportGateway = browserDiagnosticExportGateway, androidRestorationGateway }: AppProps) {
+export function App({ sessions = initialSessions, recoveryGateway, externalLinkGateway, localAssetGateway, metadataGateway, clipboardGateway = browserClipboardGateway, persistenceGateway, diagnosticExportGateway = browserDiagnosticExportGateway, androidRestorationGateway, desktopDeliveryGateway }: AppProps) {
   const [state, dispatch] = useReducer(tabReducer, sessions, createTabState);
   const [commandStatus, setCommandStatus] = useState('');
   const [inspectorOpen, setInspectorOpen] = useState(false);
@@ -290,6 +297,49 @@ export function App({ sessions = initialSessions, recoveryGateway, externalLinkG
   const selectedAndroidRestorationGateway = androidRestorationGateway === undefined
     ? (nativeAndroidRestorationAvailable() ? nativeAndroidRestorationGateway : null)
     : androidRestorationGateway;
+  const selectedDesktopDeliveryGateway = desktopDeliveryGateway === undefined
+    ? (nativeDesktopDeliveryAvailable() ? nativeDesktopDeliveryGateway : null)
+    : desktopDeliveryGateway;
+  const applyDesktopDeliveries = useCallback(async (results: readonly DesktopDeliveryResult[]) => {
+    if (!selectedDesktopDeliveryGateway) return;
+    for (const result of results) {
+      if (result.status === 'rejected') {
+        setCommandStatus(result.error?.summary ?? 'The delivered file could not be opened.');
+        continue;
+      }
+      if (result.status === 'duplicate' && result.source) {
+        dispatch({ type: 'activate', id: `desktop-${result.source.source_id}` });
+        continue;
+      }
+      try {
+        const session = await selectedDesktopDeliveryGateway.materialize(result);
+        if (session) dispatch({ type: 'open', session });
+      } catch {
+        setCommandStatus('The delivered file could not be decoded safely.');
+      }
+    }
+  }, [selectedDesktopDeliveryGateway]);
+  useEffect(() => {
+    if (!selectedDesktopDeliveryGateway) return;
+    let active = true;
+    const drain = () => {
+      void selectedDesktopDeliveryGateway.drain().then((results) => {
+        if (active) void applyDesktopDeliveries(results);
+      }).catch(() => {
+        if (active) setCommandStatus('Desktop delivery is temporarily unavailable.');
+      });
+    };
+    drain();
+    let unlisten: (() => void) | undefined;
+    void selectedDesktopDeliveryGateway.subscribe(drain).then((dispose) => {
+      if (active) unlisten = dispose;
+      else dispose();
+    });
+    return () => {
+      active = false;
+      unlisten?.();
+    };
+  }, [applyDesktopDeliveries, selectedDesktopDeliveryGateway]);
   useEffect(() => {
     const restored = persistence.restoredSession;
     if (!restored || !selectedAndroidRestorationGateway) return;
@@ -526,6 +576,13 @@ export function App({ sessions = initialSessions, recoveryGateway, externalLinkG
     );
   };
 
+  const chooseDesktopSources = () => {
+    if (!selectedDesktopDeliveryGateway) return;
+    void selectedDesktopDeliveryGateway.choose()
+      .then(applyDesktopDeliveries)
+      .catch(() => setCommandStatus('The native Open dialog is unavailable.'));
+  };
+
   const publishMetadata = (contribution: MetadataContribution) =>
     dispatch({ type: 'update_metadata', contribution });
 
@@ -630,6 +687,20 @@ export function App({ sessions = initialSessions, recoveryGateway, externalLinkG
       });
   };
 
+  const resolveDestructiveTransition = (decision: 'save' | 'save_as' | 'discard' | 'cancel') => {
+    if (decision !== 'save_as' || !resolutionSession || !selectedDesktopDeliveryGateway) {
+      dispatch({ type: 'resolve_transition', decision });
+      return;
+    }
+    dispatch({ type: 'resolve_transition', decision });
+    void selectedDesktopDeliveryGateway.saveAs(resolutionSession)
+      .then((saved) => dispatch({ type: 'resolve_transition', decision: saved ? 'discard' : 'cancel' }))
+      .catch(() => {
+        dispatch({ type: 'resolve_transition', decision: 'cancel' });
+        setCommandStatus('Save As did not complete. The document remains open with its edits.');
+      });
+  };
+
   const handleShellKey = (event: React.KeyboardEvent<HTMLElement>) => {
     if (!event.ctrlKey) return;
     if (event.key === 'Tab') {
@@ -647,6 +718,7 @@ export function App({ sessions = initialSessions, recoveryGateway, externalLinkG
       <div className="toolbar-row">
         <CommandBar commands={commands} onInvoke={invoke} />
         <nav className="application-actions" aria-label="Application commands">
+          {selectedDesktopDeliveryGateway && <button type="button" onClick={chooseDesktopSources}>Open</button>}
           <button type="button" onClick={(event) => openApplicationPanel('preferences', event.currentTarget)}>Preferences</button>
           <button type="button" onClick={(event) => openApplicationPanel('diagnostics', event.currentTarget)}>Diagnostics</button>
         </nav>
@@ -740,9 +812,7 @@ export function App({ sessions = initialSessions, recoveryGateway, externalLinkG
         <RecoveryResolution
           session={resolutionSession}
           transition={state.pendingTransition}
-          onDecision={(decision) =>
-            dispatch({ type: 'resolve_transition', decision })
-          }
+          onDecision={resolveDestructiveTransition}
         />
       )}
       {recoveryCandidate && (

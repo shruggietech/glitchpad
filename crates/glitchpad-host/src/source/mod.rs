@@ -24,6 +24,7 @@ use glitchpad_core::source::{
     SourceMetadataSnapshot, SourceState, SourceWriteState, StreamId, StreamLease, UserActivationId,
     UserActivationProof,
 };
+use serde::{Deserialize, Serialize};
 use url::Url;
 use uuid::Uuid;
 
@@ -158,7 +159,8 @@ pub(crate) fn close_source(
 }
 
 /// Trusted native channel that delivered one desktop path.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
 pub enum DesktopDeliveryKind {
     Dialog,
     Drop,
@@ -1061,6 +1063,22 @@ impl DesktopSourceHost {
             byte_count,
             durability: actual_guarantee,
         })
+    }
+
+    /// Commits a bounded payload to a user-selected desktop destination.
+    ///
+    /// # Errors
+    ///
+    /// Returns a safe budget or persistence error without exposing the destination path.
+    pub fn save_as(&self, path: &Path, bytes: &[u8]) -> Result<DurabilityGuarantee, CoreError> {
+        let byte_count = u64::try_from(bytes.len())
+            .map_err(|_| budget_error("The Save As payload does not fit this platform"))?;
+        if byte_count > MAX_SAVE_BYTES {
+            return Err(budget_error(
+                "The Save As payload exceeds the 16 MiB host budget",
+            ));
+        }
+        persistence::save_as(path, bytes)
     }
 
     /// Invalidates a source and all leases derived from it.

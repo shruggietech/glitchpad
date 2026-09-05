@@ -1,0 +1,12 @@
+.git/
+.env*
+*.log*
+coverage/
+node_modules/
+**/node_modules/
+target/
+**/dist/
+**/build/
+site/.next/
+site/out/
+crates/glitchpad-host/gen/

@@ -11,6 +11,7 @@ import { DESKTOP_CHROME_MAX_PX, REFERENCE_HEIGHT_PX } from './domain/tabs';
 import { defaultPreferences } from './domain/persistence';
 import type { PersistenceGateway } from './domain/persistence-gateway';
 import type { AndroidRestorationGateway } from './domain/android-restoration-gateway';
+import type { DesktopDeliveryGateway } from './domain/desktop-delivery-gateway';
 
 const revision = {
   identity: initialSessions[2].source.identity,
@@ -29,6 +30,24 @@ describe('document foundation shell', () => {
     previewDiagnostics: vi.fn().mockResolvedValue({ status: 'loaded', value: { schema_version: 1, generated_unix_ms: 42, environment: { product_version: '0.0.0', specification_version: '0.0.0', platform: 'unknown', architecture: 'unknown', webview_version: null, core_version: '0.0.0', build_commit: null }, events: [] }, warning_code: null }),
     reset: vi.fn().mockResolvedValue(false),
     ...overrides,
+  });
+
+  it('opens native desktop deliveries through the compact application commands', async () => {
+    const delivered = { ...initialSessions[2], id: 'desktop-source', source_id: 'source' };
+    const choose = vi.fn().mockResolvedValue([{ sequence: 1, kind: 'dialog', status: 'opened', source: { source_id: 'source', descriptor: delivered.source, external_revision: revision }, error: null }]);
+    const materialize = vi.fn().mockResolvedValue(delivered);
+    const gateway: DesktopDeliveryGateway = {
+      choose,
+      drain: vi.fn().mockResolvedValue([]),
+      materialize,
+      saveAs: vi.fn().mockResolvedValue(true),
+      subscribe: vi.fn().mockResolvedValue(() => undefined),
+    };
+    render(<App sessions={[]} desktopDeliveryGateway={gateway} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Open' }));
+    await screen.findByRole('tab', { name: /notes\.txt/i });
+    expect(choose).toHaveBeenCalledOnce();
+    expect(materialize).toHaveBeenCalledOnce();
   });
 
   it('projects editor changes into dirty shell state before save is available', () => {
@@ -130,6 +149,23 @@ describe('document foundation shell', () => {
       'Unsaved fixture content.',
     );
     expect(screen.getByRole('tab', { name: /unsaved changes/i })).toBeVisible();
+  });
+
+  it('completes a destructive transition only after native Save As succeeds', async () => {
+    const saveAs = vi.fn().mockResolvedValue(true);
+    const gateway: DesktopDeliveryGateway = {
+      choose: vi.fn().mockResolvedValue([]),
+      drain: vi.fn().mockResolvedValue([]),
+      materialize: vi.fn().mockResolvedValue(null),
+      saveAs,
+      subscribe: vi.fn().mockResolvedValue(() => undefined),
+    };
+    render(<App sessions={[initialSessions[3]]} desktopDeliveryGateway={gateway} />);
+    fireEvent.click(screen.getByRole('button', { name: /close draft\.md/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save As' }));
+    expect(screen.getByRole('dialog')).toHaveTextContent(/until a durable receipt arrives/i);
+    await waitFor(() => expect(screen.queryByRole('tab', { name: /draft\.md/i })).not.toBeInTheDocument());
+    expect(saveAs).toHaveBeenCalledWith(expect.objectContaining({ id: 'draft' }));
   });
 
   it('projects conflict messaging and removes unsafe in-place save', () => {

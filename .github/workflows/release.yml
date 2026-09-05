@@ -8,6 +8,8 @@ on:
 
 permissions:
   contents: read
+  attestations: write
+  id-token: write
 
 jobs:
   readiness:
@@ -42,4 +44,16 @@ jobs:
         run: ./scripts/check-release-readiness.ps1 -Tag '${{ github.ref_name }}'
 
       - name: Publication remains separately authorized
-        run: Write-Host 'Readiness passed. Artifact signing and publication require a reviewed release workflow change.'
+        run: Write-Host 'Readiness passed. Publication remains separately authorized.'
+
+      - name: Enforce the Windows signing authority contract
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: pwsh
+        env:
+          WINDOWS_SIGNING_CERTIFICATE: ${{ secrets.WINDOWS_SIGNING_CERTIFICATE }}
+          WINDOWS_SIGNING_PASSWORD: ${{ secrets.WINDOWS_SIGNING_PASSWORD }}
+        run: |
+          if (-not $env:WINDOWS_SIGNING_CERTIFICATE -or -not $env:WINDOWS_SIGNING_PASSWORD) {
+            throw 'Official Windows artifacts require provisioned signing authority. Unsigned candidates cannot be promoted.'
+          }
+          Write-Host 'Signing authority is provisioned. A separately reviewed publication workflow must bind signatures and attestations to final bytes.'

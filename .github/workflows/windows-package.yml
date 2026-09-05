@@ -1,0 +1,84 @@
+name: windows-package
+
+on:
+  pull_request:
+  push:
+    branches:
+      - 'codex/**'
+  workflow_dispatch:
+
+concurrency:
+  group: windows-package-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  candidate:
+    name: Windows 11 x86_64 candidate
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.28.2
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: windows-package
+
+      - name: Validate package policy and assembly contracts
+        shell: pwsh
+        run: |
+          pnpm run check:windows-package
+          ./scripts/windows/test-assemble-package.ps1
+
+      - name: Build governed NSIS candidate
+        run: pnpm tauri build --bundles nsis --config tauri.s019-windows.conf.json
+
+      - name: Assemble final-byte candidate and evidence
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path artifacts -Force | Out-Null
+          $installer = Get-ChildItem -LiteralPath target/release/bundle/nsis -Filter '*-setup.exe' -File | Select-Object -First 1
+          if (-not $installer) { throw 'The governed NSIS installer was not produced.' }
+          ./scripts/windows/assemble-package.ps1 -Version '0.1.0' -Executable 'target/release/glitchpad-host.exe' -Installer $installer.FullName -OutputRoot 'artifacts/windows' -SourceCommit '${{ github.sha }}' -WorkflowIdentity '${{ github.workflow_ref }}'
+          cargo metadata --locked --format-version 1 | Set-Content -LiteralPath artifacts/windows/cargo-metadata.json -Encoding utf8
+          node scripts/generate-windows-sbom.mjs artifacts/windows/cargo-metadata.json artifacts/windows/glitchpad-windows.cdx.json
+
+      - name: Exercise installed and portable lifecycles
+        shell: pwsh
+        run: |
+          $fixture = 'fixtures/documents/README.md'
+          ./scripts/windows/test-installer-lifecycle.ps1 -Installer artifacts/windows/glitchpad-0.1.0-windows-x86_64-setup.exe -Fixture $fixture -Receipt artifacts/windows/installer-lifecycle-receipt.json
+          ./scripts/windows/test-portable-lifecycle.ps1 -PortableRoot artifacts/windows/portable -Fixture $fixture -Receipt artifacts/windows/portable-lifecycle-receipt.json
+
+      - name: Validate final bytes and size policy
+        run: |
+          node scripts/check-windows-package.mjs --evidence artifacts/windows/windows-package-manifest.json
+          node scripts/run-performance.mjs --profile desktop_reference_v1 --build-id "windows-${{ github.sha }}" --metric desktop_installer_size --artifact artifacts/windows/glitchpad-0.1.0-windows-x86_64-setup.exe --output artifacts/windows/installer-size-evidence.json
+          node scripts/run-performance.mjs --profile desktop_reference_v1 --build-id "windows-${{ github.sha }}" --metric desktop_installer_size --artifact artifacts/windows/glitchpad-0.1.0-windows-x86_64-portable.zip --output artifacts/windows/portable-size-evidence.json
+
+      - name: Upload unsigned review candidate
+        uses: actions/upload-artifact@v7
+        with:
+          name: glitchpad-0.1.0-windows-x86_64-unsigned-candidate
+          path: artifacts/windows/**
+          if-no-files-found: error
+          retention-days: 14

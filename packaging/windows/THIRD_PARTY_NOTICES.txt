@@ -1,0 +1,16 @@
+Glitchpad third-party notices
+
+The distributed application includes components under Apache-2.0, MIT, BSD-2-Clause, BSD-3-Clause, ISC, Zlib, Unicode-3.0, CC0-1.0, MPL-2.0, and SIL Open Font License 1.1 terms. The exact component inventory, versions, package URLs, and concluded license expressions are provided in the accompanying CycloneDX software bill of materials.
+
+Material attribution notices:
+
+- Tauri and official Tauri plugins, Copyright The Tauri Programme within The Commons Conservancy, Apache-2.0 or MIT.
+- React and React DOM, Copyright Meta Platforms, Inc. and affiliates, MIT.
+- CodeMirror packages, Copyright Marijn Haverbeke and contributors, MIT.
+- Mermaid, Copyright Mermaid contributors, MIT.
+- DOMPurify, Copyright Mario Heiderich and contributors, Apache-2.0 or MPL-2.0.
+- unified, remark, rehype, and unist utilities, Copyright their contributors, MIT.
+- Geist and Geist Mono fonts, Copyright Vercel, Inc., SIL Open Font License 1.1.
+- Space Grotesk font, Copyright Florian Karsten, SIL Open Font License 1.1.
+
+The full license texts for Glitchpad and redistributed fonts are included in the source distribution. This notice is informational and does not replace the terms shipped with each component or the machine-readable software bill of materials.

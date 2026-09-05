@@ -34,6 +34,14 @@ const delay = (milliseconds) =>
 export const lifecycleProbeArgument = (probeRoot) =>
   `--glitchpad-lifecycle-probe=${probeRoot}`;
 
+export const initialLaunchArguments = (installedApplication, probeRoot) => [
+  '-n',
+  '-a',
+  installedApplication,
+  '--args',
+  lifecycleProbeArgument(probeRoot),
+];
+
 export function parseArguments(arguments_) {
   const result = {};
   const names = new Map([
@@ -99,6 +107,22 @@ async function waitForProcess(executable, timeoutMilliseconds = 10_000) {
     await delay(50);
   }
   throw new Error('application_launch_timeout');
+}
+
+export async function waitForShellReadiness(
+  probeRoot,
+  timeoutMilliseconds = 10_000,
+) {
+  const started = performance.now();
+  while (performance.now() - started < timeoutMilliseconds) {
+    const shellReady = await stat(join(probeRoot, 'shell-ready.marker')).then(
+      () => true,
+      () => false,
+    );
+    if (shellReady) return;
+    await delay(25);
+  }
+  throw new Error('application_shell_ready_timeout');
 }
 
 async function deliveryProbes(probeRoot) {
@@ -267,18 +291,15 @@ async function main() {
     for (let sample = 0; sample < 5; sample += 1) {
       await clearLifecycleProbes(probeRoot);
       const launchedAt = performance.now();
-      const child = spawn('open', [
-        '-n',
-        '-a',
-        installedApplication,
-        fixture,
-        '--args',
-        lifecycleProbeArgument(probeRoot),
-      ], {
-        detached: false,
-        stdio: 'ignore',
-        shell: false,
-      });
+      const child = spawn(
+        'open',
+        initialLaunchArguments(installedApplication, probeRoot),
+        {
+          detached: false,
+          stdio: 'ignore',
+          shell: false,
+        },
+      );
       await new Promise((resolvePromise, reject) => {
         child.once('error', reject);
         child.once('exit', (code) =>
@@ -288,6 +309,8 @@ async function main() {
         );
       });
       const observed = await waitForProcess(executable);
+      await waitForShellReadiness(probeRoot);
+      await command('open', ['-a', installedApplication, fixture]);
       const acknowledgedDeliveries = await waitForLifecycleReadiness(probeRoot);
       await delay(500);
       const settledStartupDeliveries = await deliveryProbes(probeRoot);

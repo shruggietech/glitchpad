@@ -299,9 +299,6 @@ jobs:
             adb shell input keyevent 82
             adb install -r crates/glitchpad-host/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk
             adb install -r crates/glitchpad-host/gen/android/app/build/outputs/apk/androidTest/universal/debug/app-universal-debug-androidTest.apk
-            adb shell am instrument -w -e class com.shruggietech.glitchpad.performance.PerformanceInstrumentedTest com.shruggietech.glitchpad.test/androidx.test.runner.AndroidJUnitRunner > "$RUNNER_TEMP/performance-evidence.txt"
-            cat "$RUNNER_TEMP/performance-evidence.txt"
-            node scripts/check-performance.mjs --android-instrumentation-output "$RUNNER_TEMP/performance-evidence.txt" --api-level "${{ matrix.api-level }}"
             adb shell am instrument -w -e class com.shruggietech.glitchpad.source.RestorationInstrumentedTest#privateRestorationRecordSurvivesProcessBoundary -e restorationPhase seed com.shruggietech.glitchpad.test/androidx.test.runner.AndroidJUnitRunner > "$RUNNER_TEMP/restoration-seed.txt"
             cat "$RUNNER_TEMP/restoration-seed.txt"
             grep -Fq 'OK (1 test)' "$RUNNER_TEMP/restoration-seed.txt"
@@ -309,6 +306,10 @@ jobs:
             adb shell am instrument -w -e class com.shruggietech.glitchpad.source.RestorationInstrumentedTest#privateRestorationRecordSurvivesProcessBoundary -e restorationPhase verify com.shruggietech.glitchpad.test/androidx.test.runner.AndroidJUnitRunner > "$RUNNER_TEMP/restoration-verify.txt"
             cat "$RUNNER_TEMP/restoration-verify.txt"
             grep -Fq 'OK (1 test)' "$RUNNER_TEMP/restoration-verify.txt"
+            adb shell am force-stop com.shruggietech.glitchpad
+            adb shell am instrument -w -e class com.shruggietech.glitchpad.performance.PerformanceInstrumentedTest com.shruggietech.glitchpad.test/androidx.test.runner.AndroidJUnitRunner > "$RUNNER_TEMP/performance-evidence.txt"
+            cat "$RUNNER_TEMP/performance-evidence.txt"
+            node scripts/check-performance.mjs --android-instrumentation-output "$RUNNER_TEMP/performance-evidence.txt" --api-level "${{ matrix.api-level }}"
 
       - name: Upload Android instrumentation reports
         if: always()
@@ -319,8 +320,6 @@ jobs:
             crates/glitchpad-host/gen/android/app/build/reports/androidTests/**
             crates/glitchpad-host/gen/android/app/build/outputs/androidTest-results/**
             ${{ runner.temp }}/performance-evidence.txt
-            ${{ runner.temp }}/restoration-seed.txt
-            ${{ runner.temp }}/restoration-verify.txt
           if-no-files-found: warn
           retention-days: 7
 

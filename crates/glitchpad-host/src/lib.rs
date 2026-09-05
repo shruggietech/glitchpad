@@ -6,6 +6,8 @@ pub mod app_state;
 #[cfg(not(mobile))]
 pub mod desktop_delivery;
 pub mod external_link;
+#[cfg(not(mobile))]
+pub mod lifecycle_probe;
 pub mod performance;
 pub mod recovery;
 #[cfg(not(mobile))]
@@ -133,6 +135,7 @@ pub fn run() {
         desktop_delivery::choose_desktop_sources,
         desktop_delivery::drain_desktop_deliveries,
         desktop_delivery::save_desktop_source_as,
+        lifecycle_probe::record_desktop_lifecycle_probe,
     ]);
     #[cfg(target_os = "android")]
     let builder = builder.invoke_handler(tauri::generate_handler![

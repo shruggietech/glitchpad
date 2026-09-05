@@ -142,6 +142,7 @@ export async function checkMacosConfiguration(
     languageSource,
     deliverySource,
     hostSource,
+    lifecycleScript,
     releaseWorkflow,
     packageWorkflow,
   ] = await Promise.all([
@@ -171,6 +172,10 @@ export async function checkMacosConfiguration(
     ),
     readFile(
       join(repositoryRoot, 'crates', 'glitchpad-host', 'src', 'lib.rs'),
+      'utf8',
+    ),
+    readFile(
+      join(repositoryRoot, 'scripts', 'macos', 'test-package-lifecycle.mjs'),
       'utf8',
     ),
     readFile(
@@ -212,7 +217,8 @@ export async function checkMacosConfiguration(
     fail('native delivery omits safe macOS file URL conversion');
   if (
     !hostSource.includes('tauri::RunEvent::Opened') ||
-    !hostSource.includes('enqueue_opened_urls')
+    !hostSource.includes('enqueue_opened_urls') ||
+    !hostSource.includes('record_desktop_lifecycle_probe')
   )
     fail('native host omits macOS open-event delivery');
   const forbidden = new Set(capabilities.forbidden_extensions);
@@ -282,6 +288,16 @@ export async function checkMacosConfiguration(
   ])
     if (!packageWorkflow.includes(marker))
       fail(`macOS package workflow omits ${marker}`);
+  if (!/branches:\r?\n\s+- '\*\*'/u.test(packageWorkflow))
+    fail('macOS package workflow does not cover every branch push');
+  for (const marker of [
+    'GLITCHPAD_LIFECYCLE_PROBE_DIR',
+    'waitForLifecycleReadiness',
+    'waitForSingleNewDelivery',
+    "command('launchctl'",
+  ])
+    if (!lifecycleScript.includes(marker))
+      fail(`macOS lifecycle omits interactive acknowledgement ${marker}`);
   if (
     /(?:softprops\/action-gh-release|actions\/upload-release-asset|\bgh\s+release\b|contents:\s*write)/iu.test(
       packageWorkflow,

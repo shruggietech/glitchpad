@@ -3,8 +3,10 @@ import { execFile, spawn } from 'node:child_process';
 import {
   cp,
   lstat,
+  mkdir,
   mkdtemp,
   readFile,
+  readdir,
   readlink,
   rm,
   stat,
@@ -25,6 +27,8 @@ import {
 } from '../lib/macos-artifact.mjs';
 
 const execFileAsync = promisify(execFile);
+const lifecycleProbeEnvironment = 'GLITCHPAD_LIFECYCLE_PROBE_DIR';
+const deliveryProbePattern = /^delivery-[1-9]\d*\.marker$/u;
 const delay = (milliseconds) =>
   new Promise((resolvePromise) => setTimeout(resolvePromise, milliseconds));
 
@@ -95,6 +99,54 @@ async function waitForProcess(executable, timeoutMilliseconds = 10_000) {
   throw new Error('application_launch_timeout');
 }
 
+async function deliveryProbes(probeRoot) {
+  return new Set(
+    (await readdir(probeRoot)).filter((name) =>
+      deliveryProbePattern.test(name),
+    ),
+  );
+}
+
+export async function clearLifecycleProbes(probeRoot) {
+  for (const name of await readdir(probeRoot)) {
+    if (name === 'shell-ready.marker' || deliveryProbePattern.test(name))
+      await rm(join(probeRoot, name), { force: true });
+  }
+}
+
+export async function waitForLifecycleReadiness(
+  probeRoot,
+  timeoutMilliseconds = 10_000,
+) {
+  const started = performance.now();
+  while (performance.now() - started < timeoutMilliseconds) {
+    const shellReady = await stat(join(probeRoot, 'shell-ready.marker')).then(
+      () => true,
+      () => false,
+    );
+    const deliveries = await deliveryProbes(probeRoot);
+    if (shellReady && deliveries.size > 0) return deliveries;
+    await delay(25);
+  }
+  throw new Error('application_interactive_ready_timeout');
+}
+
+export async function waitForSingleNewDelivery(
+  probeRoot,
+  previous,
+  timeoutMilliseconds = 10_000,
+) {
+  const started = performance.now();
+  while (performance.now() - started < timeoutMilliseconds) {
+    const current = await deliveryProbes(probeRoot);
+    const added = [...current].filter((name) => !previous.has(name));
+    if (added.length > 1) throw new Error('delivery_acknowledgement_duplicate');
+    if (added.length === 1) return current;
+    await delay(25);
+  }
+  throw new Error('delivery_acknowledgement_timeout');
+}
+
 async function stopProcess(pid) {
   try {
     process.kill(pid, 'SIGTERM');
@@ -136,14 +188,23 @@ async function main() {
   const installedRoot = join(root, 'Applications');
   const installedApplication = join(installedRoot, contract.bundle.name);
   const fixture = join(root, 'document.md');
+  const probeRoot = join(root, 'lifecycle-probes');
   const fixtureBytes = Buffer.from(
     '# Glitchpad lifecycle\n\nSafe native package fixture.\n',
   );
   let mounted = false;
   let activePid = null;
+  let probeEnvironmentConfigured = false;
   try {
     await cp(dmgPath, join(root, basename(dmgPath)));
     await writeFile(fixture, fixtureBytes);
+    await mkdir(probeRoot);
+    await command('launchctl', [
+      'setenv',
+      lifecycleProbeEnvironment,
+      probeRoot,
+    ]);
+    probeEnvironmentConfigured = true;
     await command('mkdir', ['-p', mountPoint, installedRoot]);
     await command('hdiutil', [
       'attach',
@@ -207,16 +268,13 @@ async function main() {
 
     const startupSamples = [];
     for (let sample = 0; sample < 5; sample += 1) {
+      await clearLifecycleProbes(probeRoot);
       const launchedAt = performance.now();
-      const child = spawn(
-        'open',
-        ['-n', installedApplication, '--args', fixture],
-        {
-          detached: false,
-          stdio: 'ignore',
-          shell: false,
-        },
-      );
+      const child = spawn('open', ['-n', '-a', installedApplication, fixture], {
+        detached: false,
+        stdio: 'ignore',
+        shell: false,
+      });
       await new Promise((resolvePromise, reject) => {
         child.once('error', reject);
         child.once('exit', (code) =>
@@ -226,11 +284,25 @@ async function main() {
         );
       });
       const observed = await waitForProcess(executable);
+      const acknowledgedDeliveries = await waitForLifecycleReadiness(probeRoot);
       startupSamples.push(performance.now() - launchedAt);
       activePid = observed.pid;
       if (sample === 0) {
         await command('open', ['-a', installedApplication, fixture]);
+        const deliveriesAfterOpen = await waitForSingleNewDelivery(
+          probeRoot,
+          acknowledgedDeliveries,
+        );
         await delay(500);
+        const settledDeliveries = await deliveryProbes(probeRoot);
+        const added = [...settledDeliveries].filter(
+          (name) => !acknowledgedDeliveries.has(name),
+        );
+        if (
+          added.length !== 1 ||
+          settledDeliveries.size !== deliveriesAfterOpen.size
+        )
+          throw new Error('delivery_acknowledgement_duplicate');
         process.kill(activePid, 0);
       }
       await stopProcess(activePid);
@@ -355,6 +427,10 @@ async function main() {
     );
   } finally {
     if (activePid) await stopProcess(activePid);
+    if (probeEnvironmentConfigured)
+      await command('launchctl', ['unsetenv', lifecycleProbeEnvironment]).catch(
+        () => undefined,
+      );
     if (mounted)
       await command('hdiutil', ['detach', mountPoint, '-force']).catch(
         () => undefined,

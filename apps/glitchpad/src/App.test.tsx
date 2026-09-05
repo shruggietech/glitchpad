@@ -61,7 +61,7 @@ describe('document foundation shell', () => {
     await screen.findByRole('tab', { name: /notes\.txt/i });
     expect(choose).toHaveBeenCalledOnce();
     expect(materialize).toHaveBeenCalledOnce();
-    const textbox = screen.getByRole('textbox', { name: 'notes.txt text editor' });
+    const textbox = await screen.findByRole('textbox', { name: 'notes.txt text editor' });
     act(() => EditorView.findFromDOM(textbox)?.dispatch({ changes: { from: 0, insert: 'x' } }));
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
     await waitFor(() => expect(save).toHaveBeenCalledWith(expect.objectContaining({ source_id: 'source', revision: 2 })));

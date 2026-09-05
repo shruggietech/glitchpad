@@ -1,9 +1,15 @@
 import assert from 'node:assert/strict';
+import { mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import test from 'node:test';
 
 import {
   classifyStartupSamples,
+  clearLifecycleProbes,
   parseArguments,
+  waitForLifecycleReadiness,
+  waitForSingleNewDelivery,
 } from './test-package-lifecycle.mjs';
 
 test('lifecycle arguments require explicit artifact, manifest, receipt, and architecture', () => {
@@ -59,4 +65,40 @@ test('startup evidence uses five samples and the S018 hard limit', () => {
     /startup_hard_limit/u,
   );
   assert.throws(() => classifyStartupSamples([500]), /startup_sample_count/u);
+});
+
+test('interactive readiness requires both shell and document acknowledgements', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'glitchpad-lifecycle-probes-'));
+  try {
+    await writeFile(join(root, 'shell-ready.marker'), 'ready\n');
+    await writeFile(join(root, 'delivery-1.marker'), 'ready\n');
+    assert.deepEqual(
+      await waitForLifecycleReadiness(root),
+      new Set(['delivery-1.marker']),
+    );
+    await clearLifecycleProbes(root);
+    assert.deepEqual(await readdir(root), []);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test('running-instance delivery requires exactly one new acknowledgement', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'glitchpad-lifecycle-delivery-'));
+  try {
+    const previous = new Set(['delivery-1.marker']);
+    await writeFile(join(root, 'delivery-1.marker'), 'ready\n');
+    await writeFile(join(root, 'delivery-2.marker'), 'ready\n');
+    assert.deepEqual(
+      await waitForSingleNewDelivery(root, previous),
+      new Set(['delivery-1.marker', 'delivery-2.marker']),
+    );
+    await writeFile(join(root, 'delivery-3.marker'), 'ready\n');
+    await assert.rejects(
+      waitForSingleNewDelivery(root, previous),
+      /delivery_acknowledgement_duplicate/u,
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });

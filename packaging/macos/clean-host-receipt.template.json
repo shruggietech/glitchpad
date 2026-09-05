@@ -50,6 +50,13 @@
     "markdown_wkwebview": "REQUIRED",
     "mermaid_wkwebview": "REQUIRED"
   },
+  "performance": {
+    "cold_startup_evidence_class": "REQUIRED",
+    "cold_startup_samples_ms": "REQUIRED",
+    "cold_startup_p95_ms": "REQUIRED",
+    "cold_startup_classification": "REQUIRED",
+    "dmg_size_classification": "REQUIRED"
+  },
   "content_free": true,
   "completed_utc": "REQUIRED"
 }

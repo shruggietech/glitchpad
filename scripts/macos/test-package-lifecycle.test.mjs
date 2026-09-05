@@ -75,7 +75,7 @@ test('lifecycle arguments require explicit artifact, manifest, receipt, and arch
   );
 });
 
-test('startup evidence uses five samples and the S018 hard limit', () => {
+test('startup evidence uses five samples and preserves S018 classifications', () => {
   assert.deepEqual(classifyStartupSamples([500, 600, 700, 800, 900]), {
     p95: 900,
     classification: 'pass',
@@ -84,9 +84,13 @@ test('startup evidence uses five samples and the S018 hard limit', () => {
     p95: 2000,
     classification: 'warning',
   });
+  assert.deepEqual(classifyStartupSamples([2600, 2600, 2600, 2600, 2600]), {
+    p95: 2600,
+    classification: 'failure',
+  });
   assert.throws(
-    () => classifyStartupSamples([2600, 2600, 2600, 2600, 2600]),
-    /startup_hard_limit/u,
+    () => classifyStartupSamples([10_001, 10_001, 10_001, 10_001, 10_001]),
+    /startup_smoke_hard_limit/u,
   );
   assert.throws(() => classifyStartupSamples([500]), /startup_sample_count/u);
 });

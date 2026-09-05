@@ -244,6 +244,8 @@ export async function checkMacosConfiguration(
     contract.size_budget.hard_limit_bytes !== 60 * 1024 * 1024
   )
     fail('S018 desktop package limits drifted');
+  if (contract.performance?.hosted_smoke_startup_hard_limit_ms !== 10_000)
+    fail('macOS hosted startup smoke limit drifted');
   if (
     contract.candidate_trust.application_signature_status !== 'ad_hoc' ||
     contract.candidate_trust.dmg_signature_status !== 'not_signed_candidate' ||
@@ -747,6 +749,7 @@ export function validateCleanHostReceipt(
   exactKeys(
     receipt.performance,
     [
+      'cold_startup_evidence_class',
       'cold_startup_samples_ms',
       'cold_startup_p95_ms',
       'cold_startup_classification',
@@ -794,7 +797,13 @@ export function validateCleanHostReceipt(
     )
   )
     fail('clean-host macOS facts are incomplete');
-  if (automatedReceiptKeys.some((key) => receipt.automated?.[key] !== 'pass'))
+  if (
+    automatedReceiptKeys
+      .filter((key) => key !== 'performance')
+      .some((key) => receipt.automated?.[key] !== 'pass') ||
+    receipt.automated?.performance !==
+      (official ? 'pass' : 'measured_hosted_smoke')
+  )
     fail('clean-host automated evidence is incomplete');
   const requiredManualState = official ? 'pass' : 'not_run_candidate';
   if (
@@ -817,6 +826,12 @@ export function validateCleanHostReceipt(
   )
     fail('clean-host receipt is stale');
   const samples = receipt.performance?.cold_startup_samples_ms;
+  const expectedStartupEvidenceClass = official ? 'reference' : 'hosted_smoke';
+  if (
+    receipt.performance?.cold_startup_evidence_class !==
+    expectedStartupEvidenceClass
+  )
+    fail('cold startup evidence class is invalid');
   if (
     !Array.isArray(samples) ||
     samples.length < 5 ||
@@ -831,7 +846,9 @@ export function validateCleanHostReceipt(
   if (
     receipt.performance.cold_startup_p95_ms !== p95 ||
     receipt.performance.cold_startup_classification !== classification ||
-    classification === 'failure' ||
+    (official && classification === 'failure') ||
+    (!official &&
+      p95 > contract.performance.hosted_smoke_startup_hard_limit_ms) ||
     !['pass', 'warning'].includes(receipt.performance.dmg_size_classification)
   )
     fail('cold startup evidence exceeds or misstates the S018 budget');

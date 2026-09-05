@@ -22,7 +22,7 @@ Deliver issue #63 as a distinct native-platform slice. S020 promotes the stable 
 
 **Project Type**: Cross-platform Tauri desktop/mobile application with shared React interface, Rust native host, narrow platform packaging, repository tooling, and CI workflows
 
-**Performance Goals**: DMG target at most 35 MiB and hard failure above 60 MiB; cold startup stays within the S018 desktop reference hard limit; open-document delivery reaches one active session exactly once
+**Performance Goals**: DMG target at most 35 MiB and hard failure above 60 MiB; candidate cold startup is retained as hosted-smoke evidence and official reference-profile startup stays within the S018 desktop hard limit; open-document delivery reaches one active session exactly once
 
 **Constraints**: No native path reaches interface state; only local file URLs enter native acquisition; no planned-format declaration; no publication from branch or pull-request contexts; ad-hoc candidates cannot satisfy official readiness; release credentials never enter repository artifacts or logs; local Windows execution stays inside the hidden Linux validation container
 

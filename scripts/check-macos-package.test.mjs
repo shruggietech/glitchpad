@@ -100,7 +100,12 @@ function candidate() {
   };
 }
 
-function receipt(manifestBytes, architecture, manual = 'not_run_candidate') {
+function receipt(
+  manifestBytes,
+  architecture,
+  manual = 'not_run_candidate',
+  startupEvidenceClass = manual === 'pass' ? 'reference' : 'hosted_smoke',
+) {
   const manifest = JSON.parse(manifestBytes.toString('utf8'));
   const automatedKeys = [
     'mount',
@@ -156,9 +161,17 @@ function receipt(manifestBytes, architecture, manual = 'not_run_candidate') {
       application_architectures: ['arm64', 'x86_64'],
       wkwebview_version: '619.4.7',
     },
-    automated: Object.fromEntries(automatedKeys.map((key) => [key, 'pass'])),
+    automated: Object.fromEntries(
+      automatedKeys.map((key) => [
+        key,
+        key === 'performance' && startupEvidenceClass === 'hosted_smoke'
+          ? 'measured_hosted_smoke'
+          : 'pass',
+      ]),
+    ),
     manual: Object.fromEntries(manualKeys.map((key) => [key, manual])),
     performance: {
+      cold_startup_evidence_class: startupEvidenceClass,
       cold_startup_samples_ms: [600, 620, 640, 660, 680],
       cold_startup_p95_ms: 680,
       cold_startup_classification: 'pass',
@@ -401,7 +414,7 @@ test('candidate receipts require exact binding, native architecture, truthful ma
     ),
     true,
   );
-  const falseManual = receipt(manifestBytes, 'arm64', 'pass');
+  const falseManual = receipt(manifestBytes, 'arm64', 'pass', 'hosted_smoke');
   assert.throws(
     () =>
       validateCleanHostReceipt(falseManual, manifestBytes, contract, {
@@ -430,10 +443,45 @@ test('candidate receipts require exact binding, native architecture, truthful ma
   slow.performance.cold_startup_samples_ms = [2600, 2600, 2600, 2600, 2600];
   slow.performance.cold_startup_p95_ms = 2600;
   slow.performance.cold_startup_classification = 'failure';
+  assert.equal(
+    validateCleanHostReceipt(slow, manifestBytes, contract, {
+      expectedArchitecture: 'arm64',
+    }),
+    true,
+  );
+  const unresponsive = receipt(manifestBytes, 'arm64');
+  unresponsive.performance.cold_startup_samples_ms = [
+    10_001, 10_001, 10_001, 10_001, 10_001,
+  ];
+  unresponsive.performance.cold_startup_p95_ms = 10_001;
+  unresponsive.performance.cold_startup_classification = 'failure';
   assert.throws(
     () =>
-      validateCleanHostReceipt(slow, manifestBytes, contract, {
+      validateCleanHostReceipt(unresponsive, manifestBytes, contract, {
         expectedArchitecture: 'arm64',
+      }),
+    /cold startup evidence/u,
+  );
+  const falseReference = receipt(manifestBytes, 'arm64');
+  falseReference.performance.cold_startup_evidence_class = 'reference';
+  assert.throws(
+    () =>
+      validateCleanHostReceipt(falseReference, manifestBytes, contract, {
+        expectedArchitecture: 'arm64',
+      }),
+    /startup evidence class/u,
+  );
+  const slowReference = receipt(manifestBytes, 'arm64', 'pass');
+  slowReference.performance.cold_startup_samples_ms = [
+    2600, 2600, 2600, 2600, 2600,
+  ];
+  slowReference.performance.cold_startup_p95_ms = 2600;
+  slowReference.performance.cold_startup_classification = 'failure';
+  assert.throws(
+    () =>
+      validateCleanHostReceipt(slowReference, manifestBytes, contract, {
+        expectedArchitecture: 'arm64',
+        official: true,
       }),
     /cold startup evidence/u,
   );

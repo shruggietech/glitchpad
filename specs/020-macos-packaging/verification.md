@@ -16,6 +16,7 @@
 - Native arm64 and Intel jobs mount the same DMG, verify the Applications link, copy and launch the application, deliver a file to the running instance, preserve the fixture, remove the application, and emit content-free receipts.
 - The package validator reads and binds the staged DMG, mounted and staged application inventories, exact notices, checksums, SBOM, provenance, native receipt authority, and Apple trust evidence. It rejects capability drift, forbidden formats, undeclared evidence fields, traversal, case collisions, unexpected executables, oversized packages, incomplete official evidence, stale bindings, and secret-shaped data.
 - Candidate evidence records that manual accessibility checks, notarization, stapling, hardened runtime, and trusted timestamps were not performed. It cannot satisfy official mode.
+- Candidate startup samples are retained as hosted-smoke evidence with their truthful S018 classification; only official reference-profile receipts can satisfy the strict desktop startup budget.
 - Official validation requires an authorized tag, Developer ID authority, hardened runtime, timestamp, notarization, stapling, Gatekeeper, native receipts, final-byte checksums, CycloneDX SBOM, provenance, and live digest agreement. Publication remains separately authorized.
 
 ## Local Pre-Publication Results

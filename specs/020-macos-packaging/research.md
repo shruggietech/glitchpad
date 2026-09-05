@@ -56,6 +56,14 @@
 
 **Alternatives considered**: Marking unexecuted manual checks as passing was rejected as false evidence. Requiring release secrets on pull requests was rejected as unsafe and incompatible with fork review.
 
+## Hosted startup evidence
+
+**Decision**: Native candidate jobs record their startup samples and reference-budget classification as `hosted_smoke` evidence. A candidate classification above the reference hard limit remains visible but does not become reference evidence or fail an otherwise valid lifecycle run. Official receipts must identify `reference` evidence and remain blocked above the S018 desktop hard limit.
+
+**Rationale**: S018 explicitly prohibits treating variable GitHub-hosted timings as defensible reference claims. The native candidate jobs still fail when the interactive shell does not appear within ten seconds, while official acceptance retains the strict reference-profile threshold.
+
+**Alternatives considered**: Treating GitHub-hosted Intel timing as reference evidence was rejected because it contradicts S018 and creates architecture-specific CI noise. Raising the official hard limit was rejected because it would weaken the governed release budget.
+
 ## Primary references
 
 - [Tauri DMG distribution](https://v2.tauri.app/distribute/dmg/)

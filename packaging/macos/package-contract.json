@@ -49,6 +49,9 @@
     "target_bytes": 36700160,
     "hard_limit_bytes": 62914560
   },
+  "performance": {
+    "hosted_smoke_startup_hard_limit_ms": 10000
+  },
   "candidate_trust": {
     "application_signature_status": "ad_hoc",
     "dmg_signature_status": "not_signed_candidate",

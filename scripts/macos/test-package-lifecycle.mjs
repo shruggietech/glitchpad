@@ -68,7 +68,10 @@ export function parseArguments(arguments_) {
   return result;
 }
 
-export function classifyStartupSamples(samples) {
+export function classifyStartupSamples(
+  samples,
+  hostedSmokeHardLimitMilliseconds = 10_000,
+) {
   if (
     !Array.isArray(samples) ||
     samples.length < 5 ||
@@ -77,8 +80,11 @@ export function classifyStartupSamples(samples) {
     throw new Error('startup_sample_count');
   const ordered = [...samples].sort((left, right) => left - right);
   const p95 = ordered[Math.ceil(ordered.length * 0.95) - 1];
-  if (p95 > 2500) throw new Error('startup_hard_limit');
-  return { p95, classification: p95 <= 1500 ? 'pass' : 'warning' };
+  if (p95 > hostedSmokeHardLimitMilliseconds)
+    throw new Error('startup_smoke_hard_limit');
+  const classification =
+    p95 <= 1500 ? 'pass' : p95 <= 2500 ? 'warning' : 'failure';
+  return { p95, classification };
 }
 
 async function command(program, arguments_, options = {}) {
@@ -350,7 +356,10 @@ async function main() {
     const roundedStartupSamples = startupSamples.map((value) =>
       Math.round(value),
     );
-    const startup = classifyStartupSamples(roundedStartupSamples);
+    const startup = classifyStartupSamples(
+      roundedStartupSamples,
+      contract.performance.hosted_smoke_startup_hard_limit_ms,
+    );
     if (
       createHash('sha256')
         .update(await readFile(fixture))
@@ -443,10 +452,14 @@ async function main() {
           'cleanup',
           'universal_architecture',
           'performance',
-        ].map((key) => [key, 'pass']),
+        ].map((key) => [
+          key,
+          key === 'performance' ? 'measured_hosted_smoke' : 'pass',
+        ]),
       ),
       manual,
       performance: {
+        cold_startup_evidence_class: 'hosted_smoke',
         cold_startup_samples_ms: roundedStartupSamples,
         cold_startup_p95_ms: startup.p95,
         cold_startup_classification: startup.classification,

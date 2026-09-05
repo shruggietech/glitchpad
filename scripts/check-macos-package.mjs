@@ -294,7 +294,9 @@ export async function checkMacosConfiguration(
     'GLITCHPAD_LIFECYCLE_PROBE_DIR',
     'waitForLifecycleReadiness',
     'waitForSingleNewDelivery',
-    "command('launchctl'",
+    'spawn(executable',
+    'lifecycleEnvironment(probeRoot)',
+    "command('open'",
   ])
     if (!lifecycleScript.includes(marker))
       fail(`macOS lifecycle omits interactive acknowledgement ${marker}`);

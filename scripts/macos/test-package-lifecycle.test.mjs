@@ -7,10 +7,22 @@ import test from 'node:test';
 import {
   classifyStartupSamples,
   clearLifecycleProbes,
+  lifecycleEnvironment,
   parseArguments,
   waitForLifecycleReadiness,
+  waitForShellReadiness,
   waitForSingleNewDelivery,
 } from './test-package-lifecycle.mjs';
+
+test('native launch receives the probe directory without losing its environment', () => {
+  assert.deepEqual(
+    lifecycleEnvironment('/private/tmp/probes', { PATH: '/usr/bin' }),
+    {
+      PATH: '/usr/bin',
+      GLITCHPAD_LIFECYCLE_PROBE_DIR: '/private/tmp/probes',
+    },
+  );
+});
 
 test('lifecycle arguments require explicit artifact, manifest, receipt, and architecture', () => {
   assert.deepEqual(
@@ -71,6 +83,7 @@ test('interactive readiness requires both shell and document acknowledgements', 
   const root = await mkdtemp(join(tmpdir(), 'glitchpad-lifecycle-probes-'));
   try {
     await writeFile(join(root, 'shell-ready.marker'), 'ready\n');
+    await waitForShellReadiness(root);
     await writeFile(join(root, 'delivery-1.marker'), 'ready\n');
     assert.deepEqual(
       await waitForLifecycleReadiness(root),

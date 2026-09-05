@@ -32,6 +32,13 @@ const deliveryProbePattern = /^delivery-[1-9]\d*\.marker$/u;
 const delay = (milliseconds) =>
   new Promise((resolvePromise) => setTimeout(resolvePromise, milliseconds));
 
+export function lifecycleEnvironment(probeRoot, environment = process.env) {
+  return {
+    ...environment,
+    [lifecycleProbeEnvironment]: probeRoot,
+  };
+}
+
 export function parseArguments(arguments_) {
   const result = {};
   const names = new Map([
@@ -83,20 +90,20 @@ async function command(program, arguments_, options = {}) {
   }
 }
 
-async function waitForProcess(executable, timeoutMilliseconds = 10_000) {
+export async function waitForShellReadiness(
+  probeRoot,
+  timeoutMilliseconds = 10_000,
+) {
   const started = performance.now();
   while (performance.now() - started < timeoutMilliseconds) {
-    try {
-      const { stdout } = await command('pgrep', ['-f', executable]);
-      const pid = Number.parseInt(stdout.trim().split(/\s+/u)[0], 10);
-      if (Number.isSafeInteger(pid) && pid > 0)
-        return { pid, elapsed: performance.now() - started };
-    } catch {
-      // The application has not reached the process table yet.
-    }
-    await delay(50);
+    const shellReady = await stat(join(probeRoot, 'shell-ready.marker')).then(
+      () => true,
+      () => false,
+    );
+    if (shellReady) return;
+    await delay(25);
   }
-  throw new Error('application_launch_timeout');
+  throw new Error('application_shell_ready_timeout');
 }
 
 async function deliveryProbes(probeRoot) {
@@ -196,17 +203,10 @@ async function main() {
   );
   let mounted = false;
   let activePid = null;
-  let probeEnvironmentConfigured = false;
   try {
     await cp(dmgPath, join(root, basename(dmgPath)));
     await writeFile(fixture, fixtureBytes);
     await mkdir(probeRoot);
-    await command('launchctl', [
-      'setenv',
-      lifecycleProbeEnvironment,
-      probeRoot,
-    ]);
-    probeEnvironmentConfigured = true;
     await command('mkdir', ['-p', mountPoint, installedRoot]);
     await command('hdiutil', [
       'attach',
@@ -272,20 +272,26 @@ async function main() {
     for (let sample = 0; sample < 5; sample += 1) {
       await clearLifecycleProbes(probeRoot);
       const launchedAt = performance.now();
-      const child = spawn('open', ['-n', '-a', installedApplication, fixture], {
+      const child = spawn(executable, [], {
         detached: false,
+        env: lifecycleEnvironment(probeRoot),
         stdio: 'ignore',
         shell: false,
       });
-      await new Promise((resolvePromise, reject) => {
+      if (!Number.isSafeInteger(child.pid) || child.pid <= 0)
+        throw new Error('application_launch_failed');
+      activePid = child.pid;
+      const unexpectedExit = new Promise((_, reject) => {
         child.once('error', reject);
-        child.once('exit', (code) =>
-          code === 0
-            ? resolvePromise()
-            : reject(new Error(`open_failed:${code}`)),
+        child.once('exit', (code, signal) =>
+          reject(new Error(`application_exited:${code ?? signal ?? 'unknown'}`)),
         );
       });
-      const observed = await waitForProcess(executable);
+      await Promise.race([
+        waitForShellReadiness(probeRoot),
+        unexpectedExit,
+      ]);
+      await command('open', ['-a', installedApplication, fixture]);
       const acknowledgedDeliveries = await waitForLifecycleReadiness(probeRoot);
       await delay(500);
       const settledStartupDeliveries = await deliveryProbes(probeRoot);
@@ -295,7 +301,6 @@ async function main() {
       )
         throw new Error('delivery_acknowledgement_duplicate');
       startupSamples.push(performance.now() - launchedAt);
-      activePid = observed.pid;
       if (sample === 0) {
         await command('open', ['-a', installedApplication, fixture]);
         const deliveriesAfterOpen = await waitForSingleNewDelivery(
@@ -436,10 +441,6 @@ async function main() {
     );
   } finally {
     if (activePid) await stopProcess(activePid);
-    if (probeEnvironmentConfigured)
-      await command('launchctl', ['unsetenv', lifecycleProbeEnvironment]).catch(
-        () => undefined,
-      );
     if (mounted)
       await command('hdiutil', ['detach', mountPoint, '-force']).catch(
         () => undefined,

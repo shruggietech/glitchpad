@@ -76,6 +76,11 @@ test('interactive readiness requires both shell and document acknowledgements', 
       await waitForLifecycleReadiness(root),
       new Set(['delivery-1.marker']),
     );
+    await writeFile(join(root, 'delivery-2.marker'), 'ready\n');
+    await assert.rejects(
+      waitForLifecycleReadiness(root),
+      /delivery_acknowledgement_duplicate/u,
+    );
     await clearLifecycleProbes(root);
     assert.deepEqual(await readdir(root), []);
   } finally {

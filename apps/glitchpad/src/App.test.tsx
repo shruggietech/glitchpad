@@ -42,6 +42,7 @@ describe('document foundation shell', () => {
   });
 
   it('opens native desktop deliveries through the compact application commands', async () => {
+    const subscriptionOrder: string[] = [];
     const delivered = { ...initialSessions[2], id: 'desktop-source', source_id: 'source', external_revision: revision };
     const choose = vi.fn().mockResolvedValue([{ sequence: 1, kind: 'dialog', status: 'opened', source: { source_id: 'source', descriptor: delivered.source, external_revision: revision }, error: null }]);
     const materialize = vi.fn().mockResolvedValue(delivered);
@@ -49,14 +50,21 @@ describe('document foundation shell', () => {
     const save = vi.fn().mockResolvedValue(saveReceipt);
     const gateway: DesktopDeliveryGateway = {
       choose,
-      drain: vi.fn().mockResolvedValue([]),
+      drain: vi.fn().mockImplementation(() => {
+        subscriptionOrder.push('drain');
+        return Promise.resolve([]);
+      }),
       close,
       save,
       materialize,
       saveAs: vi.fn().mockResolvedValue(true),
-      subscribe: vi.fn().mockResolvedValue(() => undefined),
+      subscribe: vi.fn().mockImplementation(() => {
+        subscriptionOrder.push('subscribe');
+        return Promise.resolve(() => undefined);
+      }),
     };
     render(<App sessions={[]} desktopDeliveryGateway={gateway} />);
+    await waitFor(() => expect(subscriptionOrder).toEqual(['subscribe', 'drain']));
     fireEvent.click(screen.getByRole('button', { name: 'Open' }));
     await screen.findByRole('tab', { name: /notes\.txt/i });
     expect(choose).toHaveBeenCalledOnce();

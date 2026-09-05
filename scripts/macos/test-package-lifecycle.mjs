@@ -125,7 +125,9 @@ export async function waitForLifecycleReadiness(
       () => false,
     );
     const deliveries = await deliveryProbes(probeRoot);
-    if (shellReady && deliveries.size > 0) return deliveries;
+    if (deliveries.size > 1)
+      throw new Error('delivery_acknowledgement_duplicate');
+    if (shellReady && deliveries.size === 1) return deliveries;
     await delay(25);
   }
   throw new Error('application_interactive_ready_timeout');
@@ -285,6 +287,13 @@ async function main() {
       });
       const observed = await waitForProcess(executable);
       const acknowledgedDeliveries = await waitForLifecycleReadiness(probeRoot);
+      await delay(500);
+      const settledStartupDeliveries = await deliveryProbes(probeRoot);
+      if (
+        settledStartupDeliveries.size !== 1 ||
+        [...settledStartupDeliveries][0] !== [...acknowledgedDeliveries][0]
+      )
+        throw new Error('delivery_acknowledgement_duplicate');
       startupSamples.push(performance.now() - launchedAt);
       activePid = observed.pid;
       if (sample === 0) {

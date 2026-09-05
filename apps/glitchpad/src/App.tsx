@@ -345,11 +345,14 @@ export function App({ sessions = initialSessions, recoveryGateway, externalLinkG
         if (active) setCommandStatus('Desktop delivery is temporarily unavailable.');
       });
     };
-    drain();
     let unlisten: (() => void) | undefined;
     void selectedDesktopDeliveryGateway.subscribe(drain).then((dispose) => {
-      if (active) unlisten = dispose;
-      else dispose();
+      if (active) {
+        unlisten = dispose;
+        drain();
+      } else dispose();
+    }).catch(() => {
+      if (active) setCommandStatus('Desktop delivery is temporarily unavailable.');
     });
     return () => {
       active = false;

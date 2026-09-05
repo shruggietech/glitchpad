@@ -300,6 +300,7 @@ export function App({ sessions = initialSessions, recoveryGateway, externalLinkG
   const selectedDesktopDeliveryGateway = desktopDeliveryGateway === undefined
     ? (nativeDesktopDeliveryAvailable() ? nativeDesktopDeliveryGateway : null)
     : desktopDeliveryGateway;
+  const openDesktopSourceIdsRef = useRef(new Set<string>());
   const applyDesktopDeliveries = useCallback(async (results: readonly DesktopDeliveryResult[]) => {
     if (!selectedDesktopDeliveryGateway) return;
     for (const result of results) {
@@ -315,6 +316,7 @@ export function App({ sessions = initialSessions, recoveryGateway, externalLinkG
         const session = await selectedDesktopDeliveryGateway.materialize(result);
         if (session) dispatch({ type: 'open', session });
       } catch {
+        if (result.source) void selectedDesktopDeliveryGateway.close(result.source.source_id);
         setCommandStatus('The delivered file could not be decoded safely.');
       }
     }
@@ -340,6 +342,18 @@ export function App({ sessions = initialSessions, recoveryGateway, externalLinkG
       unlisten?.();
     };
   }, [applyDesktopDeliveries, selectedDesktopDeliveryGateway]);
+  useEffect(() => {
+    if (!selectedDesktopDeliveryGateway) return;
+    const current = new Set(
+      state.sessions
+        .filter((session) => session.source_id && session.id === `desktop-${session.source_id}`)
+        .map((session) => session.source_id as string),
+    );
+    for (const sourceId of openDesktopSourceIdsRef.current) {
+      if (!current.has(sourceId)) void selectedDesktopDeliveryGateway.close(sourceId);
+    }
+    openDesktopSourceIdsRef.current = current;
+  }, [selectedDesktopDeliveryGateway, state.sessions]);
   useEffect(() => {
     const restored = persistence.restoredSession;
     if (!restored || !selectedAndroidRestorationGateway) return;

@@ -27,6 +27,7 @@
   "official": {
     "authorized_event": "push_tag",
     "tag_pattern": "v0.1.0",
+    "publisher_subject": "CN=ShruggieTech",
     "required_signature_status": "valid",
     "required_timestamp_status": "valid",
     "required_evidence": [

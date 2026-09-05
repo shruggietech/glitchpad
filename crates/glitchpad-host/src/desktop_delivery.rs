@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{Mutex, MutexGuard};
 
 use glitchpad_core::contracts::{CoreError, CoreErrorCategory};
-use glitchpad_core::source::DesktopSourceSummary;
+use glitchpad_core::source::{DesktopSourceSummary, SourceId};
 use serde::Serialize;
 use tauri::Manager;
 use tauri_plugin_dialog::DialogExt;
@@ -37,6 +37,7 @@ pub struct DesktopDeliveryResult {
 struct DeliveryState {
     queued: VecDeque<DesktopDeliveryResult>,
     delivered_sources: HashSet<String>,
+    reserved: usize,
     next_sequence: u64,
 }
 
@@ -61,6 +62,18 @@ impl DesktopDeliveryQueue {
         kind: DesktopDeliveryKind,
         paths: impl IntoIterator<Item = PathBuf>,
     ) -> Result<usize, CoreError> {
+        let paths = paths.into_iter().collect::<Vec<_>>();
+        {
+            let mut state = self.lock()?;
+            let occupied = state.queued.len().saturating_add(state.reserved);
+            if paths.len() > MAX_QUEUED_DELIVERIES.saturating_sub(occupied) {
+                return Err(safe_error(
+                    CoreErrorCategory::ResourceLimit,
+                    "The desktop delivery queue reached its limit",
+                ));
+            }
+            state.reserved = state.reserved.saturating_add(paths.len());
+        }
         let mut accepted = 0;
         for path in paths {
             let delivery = match kind {
@@ -71,12 +84,7 @@ impl DesktopDeliveryQueue {
             };
             let acquired = host.acquire(delivery);
             let mut state = self.lock()?;
-            if state.queued.len() >= MAX_QUEUED_DELIVERIES {
-                return Err(safe_error(
-                    CoreErrorCategory::ResourceLimit,
-                    "The desktop delivery queue reached its limit",
-                ));
-            }
+            state.reserved = state.reserved.saturating_sub(1);
             state.next_sequence = state.next_sequence.saturating_add(1);
             let sequence = state.next_sequence;
             let result = match acquired {
@@ -108,6 +116,16 @@ impl DesktopDeliveryQueue {
             state.queued.push_back(result);
         }
         Ok(accepted)
+    }
+
+    /// Releases duplicate tracking after its native source is closed.
+    ///
+    /// # Errors
+    ///
+    /// Returns unavailable if synchronization fails.
+    pub fn release(&self, source_id: &str) -> Result<(), CoreError> {
+        self.lock()?.delivered_sources.remove(source_id);
+        Ok(())
     }
 
     /// Resolves secondary-process arguments without reparsing command strings.
@@ -222,7 +240,20 @@ pub(crate) async fn choose_desktop_sources(
     let host = app.state::<DesktopSourceHost>();
     let queue = app.state::<DesktopDeliveryQueue>();
     queue.enqueue_paths(&host, DesktopDeliveryKind::Dialog, paths)?;
-    queue.drain(MAX_DELIVERY_DRAIN)
+    let mut results = queue.drain(MAX_DELIVERY_DRAIN)?;
+    results.extend(queue.drain(MAX_DELIVERY_DRAIN)?);
+    Ok(results)
+}
+
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
+pub(crate) fn close_desktop_source(
+    host: tauri::State<'_, DesktopSourceHost>,
+    queue: tauri::State<'_, DesktopDeliveryQueue>,
+    source_id: SourceId,
+) -> Result<(), CoreError> {
+    host.close(&source_id)?;
+    queue.release(&source_id.0)
 }
 
 #[tauri::command]
@@ -354,5 +385,46 @@ mod tests {
         let queue = DesktopDeliveryQueue::new();
         assert!(queue.drain(0).is_err());
         assert!(queue.drain(65).is_err());
+    }
+
+    #[test]
+    fn capacity_failure_is_atomic() {
+        let (root, path) = fixture("bounded.txt");
+        let queue = DesktopDeliveryQueue::new();
+        let host = DesktopSourceHost::new();
+        let paths = (0..=MAX_QUEUED_DELIVERIES).map(|_| path.clone());
+        assert!(
+            queue
+                .enqueue_paths(&host, DesktopDeliveryKind::Dialog, paths)
+                .is_err()
+        );
+        assert!(queue.drain(MAX_DELIVERY_DRAIN).expect("drain").is_empty());
+        drop(root);
+    }
+
+    #[test]
+    fn released_source_can_be_delivered_again() {
+        let (_root, path) = fixture("reopen.txt");
+        let queue = DesktopDeliveryQueue::new();
+        let host = DesktopSourceHost::new();
+        queue
+            .enqueue_paths(&host, DesktopDeliveryKind::Dialog, [path.clone()])
+            .expect("first");
+        let first = queue.drain(1).expect("first drain");
+        let source_id = first[0]
+            .source
+            .as_ref()
+            .expect("source")
+            .source_id
+            .0
+            .clone();
+        queue.release(&source_id).expect("release");
+        queue
+            .enqueue_paths(&host, DesktopDeliveryKind::Dialog, [path])
+            .expect("second");
+        assert_eq!(
+            queue.drain(1).expect("second drain")[0].status,
+            DesktopDeliveryStatus::Opened
+        );
     }
 }

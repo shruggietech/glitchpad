@@ -39,6 +39,7 @@ type NativeInvoke = (command: string, args?: Record<string, unknown>) => Promise
 export interface DesktopDeliveryGateway {
   choose(): Promise<DesktopDeliveryResult[]>;
   drain(): Promise<DesktopDeliveryResult[]>;
+  close(sourceId: string): Promise<void>;
   materialize(result: DesktopDeliveryResult): Promise<ShellSession | null>;
   saveAs(session: ShellSession): Promise<boolean>;
   subscribe(handler: () => void): Promise<UnlistenFn>;
@@ -116,7 +117,17 @@ export const createDesktopDeliveryGateway = (
     listen('desktop-deliveries-ready', handler),
 ): DesktopDeliveryGateway => ({
   choose: () => call('choose_desktop_sources') as Promise<DesktopDeliveryResult[]>,
-  drain: () => call('drain_desktop_deliveries', { maximum: 64 }) as Promise<DesktopDeliveryResult[]>,
+  async drain() {
+    const results: DesktopDeliveryResult[] = [];
+    for (;;) {
+      const batch = await call('drain_desktop_deliveries', { maximum: 64 }) as DesktopDeliveryResult[];
+      results.push(...batch);
+      if (batch.length < 64) return results;
+    }
+  },
+  async close(sourceId) {
+    await call('close_desktop_source', { sourceId });
+  },
   subscribe: subscribeEvent,
   async saveAs(session) {
     if (!session.text_document) throw new Error('Desktop Save As requires a text document');

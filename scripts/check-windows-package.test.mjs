@@ -1,13 +1,17 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 import test from 'node:test';
 
 import {
   checkWindowsConfiguration,
   classifyPackageSize,
+  validateOfficialWindowsEvidence,
   validateWindowsEvidence,
 } from './check-windows-package.mjs';
+import { generateWindowsSbom } from './generate-windows-sbom.mjs';
 
 const repositoryRoot = new URL('../', import.meta.url).pathname.replace(/^\/(?:[A-Za-z]:)/u, (value) => value.slice(1));
 const contract = JSON.parse(await readFile(join(repositoryRoot, 'packaging', 'windows', 'package-contract.json'), 'utf8'));
@@ -57,10 +61,10 @@ test('a complete unsigned candidate passes candidate mode', () => {
 });
 
 test('an unsigned candidate can never pass official mode', () => {
-  assert.throws(() => validateWindowsEvidence(candidate(), contract, { official: true }), /official evidence is not explicitly authorized/u);
+  assert.throws(() => validateWindowsEvidence(candidate(), contract, { official: true }), /live final-byte and Authenticode verification/u);
 });
 
-test('official mode requires final-byte signatures and every evidence file', () => {
+test('a self-asserted official manifest cannot bypass live verification', () => {
   const evidence = candidate();
   evidence.official = true;
   evidence.gate_status = 'official_valid';
@@ -73,9 +77,73 @@ test('official mode requires final-byte signatures and every evidence file', () 
     timestamp_status: 'valid',
     signature_sha256: artifact.sha256,
   }));
-  assert.equal(validateWindowsEvidence(evidence, contract, { official: true }), true);
-  evidence.artifacts[0].signature_sha256 = 'b'.repeat(64);
-  assert.throws(() => validateWindowsEvidence(evidence, contract, { official: true }), /does not bind nsis/u);
+  assert.throws(
+    () => validateWindowsEvidence(evidence, contract, { official: true }),
+    /live final-byte and Authenticode verification/u,
+  );
+});
+
+test('official mode binds final bytes to live Authenticode and recorded evidence', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'glitchpad-signature-'));
+  try {
+    await mkdir(join(root, 'portable'));
+    const evidence = candidate();
+    evidence.official = true;
+    evidence.gate_status = 'official_valid';
+    evidence.event = 'push_tag';
+    evidence.tag = 'v0.1.0';
+    evidence.evidence_files = [...contract.official.required_evidence];
+    for (const artifact of evidence.artifacts) {
+      const bytes = Buffer.from(artifact.kind);
+      await writeFile(join(root, artifact.name), bytes);
+      artifact.sha256 = createHash('sha256').update(bytes).digest('hex');
+      artifact.bytes = bytes.length;
+      artifact.signature_status = 'valid';
+      artifact.timestamp_status = 'valid';
+    }
+    for (const entry of evidence.portable_inventory) {
+      const bytes = Buffer.from(entry.relative_path);
+      await writeFile(join(root, 'portable', entry.relative_path), bytes);
+      entry.sha256 = createHash('sha256').update(bytes).digest('hex');
+      entry.bytes = bytes.length;
+    }
+    const observed = {
+      status: 'Valid',
+      signer_subject: contract.official.publisher_subject,
+      signer_thumbprint: 'a'.repeat(40),
+      timestamp_subject: 'CN=Timestamp Authority',
+      timestamp_thumbprint: 'b'.repeat(40),
+    };
+    const installer = evidence.artifacts.find(({ kind }) => kind === 'nsis');
+    const portable = evidence.artifacts.find(({ kind }) => kind === 'portable_zip');
+    const portableExecutable = evidence.portable_inventory.find(({ relative_path }) => relative_path === 'Glitchpad.exe');
+    installer.signature_sha256 = installer.sha256;
+    portable.signature_sha256 = portableExecutable.sha256;
+    const signatures = {
+      schema_version: 1,
+      artifacts: [
+        { kind: 'nsis', sha256: installer.sha256, ...observed },
+        { kind: 'portable_executable', sha256: portableExecutable.sha256, ...observed },
+      ],
+    };
+    for (const name of contract.official.required_evidence) {
+      await writeFile(join(root, name), name === 'signature-evidence.json' ? JSON.stringify(signatures) : '{}');
+    }
+    assert.equal(await validateOfficialWindowsEvidence(evidence, contract, {
+      artifactRoot: root,
+      authenticodeInspector: async () => observed,
+    }), true);
+    await writeFile(join(root, installer.name), 'tampered');
+    await assert.rejects(
+      validateOfficialWindowsEvidence(evidence, contract, {
+        artifactRoot: root,
+        authenticodeInspector: async () => observed,
+      }),
+      /final bytes do not match nsis/u,
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });
 
 test('portable inventory rejects traversal, case collisions, and extra executables', () => {
@@ -103,4 +171,16 @@ test('missing notices, bad size results, and secret-shaped evidence fail closed'
   const secret = candidate();
   secret.note = 'client_secret';
   assert.throws(() => validateWindowsEvidence(secret, contract), /secret-shaped/u);
+});
+
+test('Windows SBOM combines Cargo and transitive production JavaScript dependencies', () => {
+  const bom = generateWindowsSbom(
+    { packages: [{ name: 'glitchpad-core', version: '0.1.0', source: null, license: 'Apache-2.0' }] },
+    [{ dependencies: { react: { version: '19.2.4', dependencies: { scheduler: { version: '0.27.0' } } } } }],
+  );
+  assert.deepEqual(
+    bom.components.map(({ name }) => name).sort(),
+    ['glitchpad-core', 'react', 'scheduler'],
+  );
+  assert.ok(bom.components.find(({ name }) => name === 'react')?.purl.startsWith('pkg:npm/'));
 });

@@ -129,6 +129,7 @@ pub fn run() {
         source::revalidate_source,
         source::save_source,
         source::close_source,
+        desktop_delivery::close_desktop_source,
         desktop_delivery::choose_desktop_sources,
         desktop_delivery::drain_desktop_deliveries,
         desktop_delivery::save_desktop_source_as,

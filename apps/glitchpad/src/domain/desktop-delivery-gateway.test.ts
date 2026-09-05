@@ -85,7 +85,10 @@ test('duplicates and rejections never create sessions', async () => {
 });
 
 test('drain is bounded and subscription uses the injected event boundary', async () => {
-  const call = vi.fn().mockResolvedValue([]);
+  const full = Array.from({ length: 64 }, (_, index) => ({ ...result, sequence: index + 1 }));
+  const call = vi.fn()
+    .mockResolvedValueOnce(full)
+    .mockResolvedValueOnce([]);
   const handler = vi.fn();
   const subscribe = vi.fn((callback: () => void) => {
     callback();
@@ -95,7 +98,16 @@ test('drain is bounded and subscription uses the injected event boundary', async
   await gateway.subscribe(handler);
   expect(handler).toHaveBeenCalledOnce();
   await gateway.drain();
-  expect(call).toHaveBeenCalledWith('drain_desktop_deliveries', { maximum: 64 });
+  expect(call).toHaveBeenCalledTimes(2);
+  expect(call).toHaveBeenNthCalledWith(1, 'drain_desktop_deliveries', { maximum: 64 });
+  expect(call).toHaveBeenNthCalledWith(2, 'drain_desktop_deliveries', { maximum: 64 });
+});
+
+test('close releases the native source and duplicate-delivery tracking', async () => {
+  const call = vi.fn().mockResolvedValue(undefined);
+  const gateway = createDesktopDeliveryGateway(call, () => Promise.resolve(() => undefined));
+  await gateway.close('native-source');
+  expect(call).toHaveBeenCalledWith('close_desktop_source', { sourceId: 'native-source' });
 });
 
 test('Save As serializes exact text bytes and reports native cancellation', async () => {

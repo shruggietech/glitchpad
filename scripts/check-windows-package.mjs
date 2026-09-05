@@ -1,11 +1,15 @@
 import { readFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { execFile } from 'node:child_process';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { promisify } from 'node:util';
 
 const defaultRepositoryRoot = fileURLToPath(new URL('../', import.meta.url));
 const sha256Pattern = /^[a-f0-9]{64}$/u;
 const sourceCommitPattern = /^(?:[a-f0-9]{40}|[a-f0-9]{64})$/u;
 const semanticVersionPattern = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/u;
+const execFileAsync = promisify(execFile);
 
 function fail(message) {
   throw new Error(`Invalid Windows package contract: ${message}`);
@@ -101,6 +105,8 @@ export async function checkWindowsConfiguration(repositoryRoot = defaultReposito
     fail('unsigned candidate signature state is not explicit');
   if (!contract.official.required_evidence.includes('signature-evidence.json'))
     fail('official gate does not require signature evidence');
+  if (typeof contract.official.publisher_subject !== 'string' || contract.official.publisher_subject.length < 4)
+    fail('official publisher subject is not governed');
 
   if (
     tauri.version !== contract.candidate_version
@@ -128,7 +134,7 @@ export async function checkWindowsConfiguration(repositoryRoot = defaultReposito
   return { capabilityCount: configured.length, artifactCount: contract.artifacts.length };
 }
 
-export function validateWindowsEvidence(evidence, contract, { official = false } = {}) {
+function validateWindowsEvidenceShape(evidence, contract, official) {
   const serialized = JSON.stringify(evidence);
   if (/PRIVATE KEY|client[_-]?secret|certificate[_-]?password/iu.test(serialized))
     fail('evidence contains a secret-shaped value');
@@ -187,8 +193,94 @@ export function validateWindowsEvidence(evidence, contract, { official = false }
     if (
       artifact.signature_status !== contract.official.required_signature_status
       || artifact.timestamp_status !== contract.official.required_timestamp_status
-      || artifact.signature_sha256 !== artifact.sha256
+      || !sha256Pattern.test(artifact.signature_sha256)
     ) fail(`official signature evidence does not bind ${artifact.kind}`);
+  }
+  return true;
+}
+
+export function validateWindowsEvidence(evidence, contract, { official = false } = {}) {
+  if (official) fail('official mode requires live final-byte and Authenticode verification');
+  return validateWindowsEvidenceShape(evidence, contract, false);
+}
+
+async function sha256(path) {
+  return createHash('sha256').update(await readFile(path)).digest('hex');
+}
+
+async function inspectAuthenticode(path) {
+  if (process.platform !== 'win32') fail('official Authenticode verification requires Windows');
+  const script = fileURLToPath(new URL('./windows/read-authenticode-evidence.ps1', import.meta.url));
+  const { stdout } = await execFileAsync(
+    'pwsh.exe',
+    ['-NoLogo', '-NoProfile', '-NonInteractive', '-File', script, '-Artifact', path],
+    { windowsHide: true, timeout: 30_000 },
+  );
+  return JSON.parse(stdout);
+}
+
+export async function validateOfficialWindowsEvidence(
+  evidence,
+  contract,
+  { artifactRoot, authenticodeInspector = inspectAuthenticode } = {},
+) {
+  if (!artifactRoot) fail('official mode requires the final artifact root');
+  validateWindowsEvidenceShape(evidence, contract, true);
+  const root = resolve(artifactRoot);
+  for (const name of contract.official.required_evidence) {
+    await readFile(join(root, name));
+  }
+
+  const actualArtifactDigests = new Map();
+  for (const artifact of evidence.artifacts) {
+    const artifactPath = join(root, artifact.name);
+    const digest = await sha256(artifactPath);
+    actualArtifactDigests.set(artifact.kind, digest);
+    if (digest !== artifact.sha256) fail(`final bytes do not match ${artifact.kind}`);
+  }
+  for (const entry of evidence.portable_inventory) {
+    const digest = await sha256(join(root, 'portable', entry.relative_path));
+    if (digest !== entry.sha256) fail(`portable bytes do not match ${entry.relative_path}`);
+  }
+
+  const signatureEvidence = await json(join(root, 'signature-evidence.json'));
+  if (signatureEvidence.schema_version !== 1 || !Array.isArray(signatureEvidence.artifacts))
+    fail('signature evidence is invalid');
+  const expectedTargets = [
+    {
+      kind: 'nsis',
+      path: join(root, evidence.artifacts.find(({ kind }) => kind === 'nsis').name),
+      digest: actualArtifactDigests.get('nsis'),
+    },
+    {
+      kind: 'portable_executable',
+      path: join(root, 'portable', 'Glitchpad.exe'),
+      digest: evidence.portable_inventory.find(({ relative_path }) => relative_path === 'Glitchpad.exe').sha256,
+    },
+  ];
+  for (const target of expectedTargets) {
+    const observed = await authenticodeInspector(target.path);
+    if (
+      observed.status !== 'Valid'
+      || observed.signer_subject !== contract.official.publisher_subject
+      || typeof observed.signer_thumbprint !== 'string'
+      || typeof observed.timestamp_subject !== 'string'
+      || typeof observed.timestamp_thumbprint !== 'string'
+    ) fail(`Authenticode trust, publisher, or timestamp is invalid for ${target.kind}`);
+    const recorded = signatureEvidence.artifacts.find(({ kind }) => kind === target.kind);
+    if (
+      !recorded
+      || recorded.sha256 !== target.digest
+      || recorded.status !== observed.status
+      || recorded.signer_subject !== observed.signer_subject
+      || recorded.signer_thumbprint !== observed.signer_thumbprint
+      || recorded.timestamp_subject !== observed.timestamp_subject
+      || recorded.timestamp_thumbprint !== observed.timestamp_thumbprint
+    ) fail(`signature evidence does not match live verification for ${target.kind}`);
+    const manifestArtifact = evidence.artifacts.find(({ kind }) =>
+      target.kind === 'nsis' ? kind === 'nsis' : kind === 'portable_zip');
+    if (manifestArtifact.signature_sha256 !== target.digest)
+      fail(`official signature evidence does not bind ${manifestArtifact.kind}`);
   }
   return true;
 }
@@ -200,9 +292,14 @@ async function main() {
     const evidencePath = process.argv[evidenceIndex + 1];
     if (!evidencePath) fail('--evidence requires a path');
     const contract = await json(join(defaultRepositoryRoot, 'packaging', 'windows', 'package-contract.json'));
-    validateWindowsEvidence(await json(resolve(evidencePath)), contract, {
-      official: process.argv.includes('--official'),
-    });
+    const evidence = await json(resolve(evidencePath));
+    if (process.argv.includes('--official')) {
+      const artifactRootIndex = process.argv.indexOf('--artifact-root');
+      const artifactRoot = process.argv[artifactRootIndex + 1];
+      await validateOfficialWindowsEvidence(evidence, contract, { artifactRoot });
+    } else {
+      validateWindowsEvidence(evidence, contract);
+    }
   }
   console.log(`Validated ${result.capabilityCount} Windows extensions and ${result.artifactCount} artifact contracts.`);
 }

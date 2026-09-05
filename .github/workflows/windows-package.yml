@@ -60,7 +60,8 @@ jobs:
           if (-not $installer) { throw 'The governed NSIS installer was not produced.' }
           ./scripts/windows/assemble-package.ps1 -Version '0.1.0' -Executable 'target/release/glitchpad-host.exe' -Installer $installer.FullName -OutputRoot 'artifacts/windows' -SourceCommit '${{ github.sha }}' -WorkflowIdentity '${{ github.workflow_ref }}'
           cargo metadata --locked --format-version 1 | Set-Content -LiteralPath artifacts/windows/cargo-metadata.json -Encoding utf8
-          node scripts/generate-windows-sbom.mjs artifacts/windows/cargo-metadata.json artifacts/windows/glitchpad-windows.cdx.json
+          pnpm list --prod --recursive --json --depth Infinity | Set-Content -LiteralPath artifacts/windows/pnpm-list.json -Encoding utf8
+          node scripts/generate-windows-sbom.mjs artifacts/windows/cargo-metadata.json artifacts/windows/pnpm-list.json artifacts/windows/glitchpad-windows.cdx.json
 
       - name: Exercise installed and portable lifecycles
         shell: pwsh

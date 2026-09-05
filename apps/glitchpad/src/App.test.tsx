@@ -36,9 +36,11 @@ describe('document foundation shell', () => {
     const delivered = { ...initialSessions[2], id: 'desktop-source', source_id: 'source' };
     const choose = vi.fn().mockResolvedValue([{ sequence: 1, kind: 'dialog', status: 'opened', source: { source_id: 'source', descriptor: delivered.source, external_revision: revision }, error: null }]);
     const materialize = vi.fn().mockResolvedValue(delivered);
+    const close = vi.fn().mockResolvedValue(undefined);
     const gateway: DesktopDeliveryGateway = {
       choose,
       drain: vi.fn().mockResolvedValue([]),
+      close,
       materialize,
       saveAs: vi.fn().mockResolvedValue(true),
       subscribe: vi.fn().mockResolvedValue(() => undefined),
@@ -48,6 +50,8 @@ describe('document foundation shell', () => {
     await screen.findByRole('tab', { name: /notes\.txt/i });
     expect(choose).toHaveBeenCalledOnce();
     expect(materialize).toHaveBeenCalledOnce();
+    fireEvent.click(screen.getByRole('button', { name: /close notes\.txt/i }));
+    await waitFor(() => expect(close).toHaveBeenCalledWith('source'));
   });
 
   it('projects editor changes into dirty shell state before save is available', () => {
@@ -156,6 +160,7 @@ describe('document foundation shell', () => {
     const gateway: DesktopDeliveryGateway = {
       choose: vi.fn().mockResolvedValue([]),
       drain: vi.fn().mockResolvedValue([]),
+      close: vi.fn().mockResolvedValue(undefined),
       materialize: vi.fn().mockResolvedValue(null),
       saveAs,
       subscribe: vi.fn().mockResolvedValue(() => undefined),

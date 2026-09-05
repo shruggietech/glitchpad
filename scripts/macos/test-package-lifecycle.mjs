@@ -31,16 +31,12 @@ const deliveryProbePattern = /^delivery-[1-9]\d*\.marker$/u;
 const delay = (milliseconds) =>
   new Promise((resolvePromise) => setTimeout(resolvePromise, milliseconds));
 
-export const lifecycleProbeEnvironment = (probeRoot) =>
-  `GLITCHPAD_LIFECYCLE_PROBE_DIR=${probeRoot}`;
+export const lifecycleLaunchEnvironment = (environment, probeRoot) => ({
+  ...environment,
+  GLITCHPAD_LIFECYCLE_PROBE_DIR: probeRoot,
+});
 
-export const initialLaunchArguments = (
-  installedApplication,
-  fixture,
-  probeRoot,
-) => [
-  '--env',
-  lifecycleProbeEnvironment(probeRoot),
+export const initialLaunchArguments = (installedApplication, fixture) => [
   '-n',
   '-a',
   installedApplication,
@@ -298,9 +294,10 @@ async function main() {
       const launchedAt = performance.now();
       const child = spawn(
         'open',
-        initialLaunchArguments(installedApplication, fixture, probeRoot),
+        initialLaunchArguments(installedApplication, fixture),
         {
           detached: false,
+          env: lifecycleLaunchEnvironment(process.env, probeRoot),
           stdio: 'ignore',
           shell: false,
         },

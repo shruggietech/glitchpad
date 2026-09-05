@@ -8,27 +8,31 @@ import {
   classifyStartupSamples,
   clearLifecycleProbes,
   initialLaunchArguments,
-  lifecycleProbeEnvironment,
+  lifecycleLaunchEnvironment,
   parseArguments,
   waitForLifecycleReadiness,
   waitForShellReadiness,
   waitForSingleNewDelivery,
 } from './test-package-lifecycle.mjs';
 
-test('native launch passes a private environment while preserving the Finder document event', () => {
-  assert.equal(
-    lifecycleProbeEnvironment('/private/tmp/probes'),
-    'GLITCHPAD_LIFECYCLE_PROBE_DIR=/private/tmp/probes',
+test('native launch inherits a private probe environment while preserving the Finder document event', () => {
+  assert.deepEqual(
+    lifecycleLaunchEnvironment(
+      { HOME: '/Users/runner', PATH: '/usr/bin' },
+      '/private/tmp/probes',
+    ),
+    {
+      HOME: '/Users/runner',
+      PATH: '/usr/bin',
+      GLITCHPAD_LIFECYCLE_PROBE_DIR: '/private/tmp/probes',
+    },
   );
   assert.deepEqual(
     initialLaunchArguments(
       '/tmp/Applications/Glitchpad.app',
       '/private/tmp/document.md',
-      '/private/tmp/probes',
     ),
     [
-      '--env',
-      'GLITCHPAD_LIFECYCLE_PROBE_DIR=/private/tmp/probes',
       '-n',
       '-a',
       '/tmp/Applications/Glitchpad.app',

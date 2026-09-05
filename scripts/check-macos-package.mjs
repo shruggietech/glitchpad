@@ -294,10 +294,10 @@ export async function checkMacosConfiguration(
     'waitForLifecycleReadiness',
     'waitForShellReadiness',
     'waitForSingleNewDelivery',
-    'lifecycleProbeEnvironment(',
+    'lifecycleLaunchEnvironment(',
     'initialLaunchArguments(',
     'const child = spawn(',
-    "'--env'",
+    'env: lifecycleLaunchEnvironment(',
     "command('open'",
   ])
     if (!lifecycleScript.includes(marker))

@@ -63,8 +63,17 @@ if ((Get-FileHash -LiteralPath $fixturePath -Algorithm SHA256).Hash -ne $fixture
     throw 'Installer lifecycle modified the user document fixture.'
 }
 $associationAfter = Get-AssociationSnapshot
-if (($associationAfter | ConvertTo-Json -Compress) -ne ($associationBefore | ConvertTo-Json -Compress)) {
-    throw 'Uninstall did not restore the governed file association state.'
+for ($index = 0; $index -lt $extensions.Count; $index += 1) {
+    $before = $associationBefore[$index]
+    $installed = $associationInstalled[$index]
+    $after = $associationAfter[$index]
+    if ($after.program_id -ne $before.program_id -or $after.command -ne $before.command) {
+        throw 'Uninstall did not restore the governed file association mapping.'
+    }
+    if ($installed.program_id -and $installed.program_id -ne $before.program_id) {
+        $installedProgramKey = "Registry::HKEY_CURRENT_USER\Software\Classes\$($installed.program_id)"
+        if (Test-Path -LiteralPath $installedProgramKey) { throw 'Uninstall left an installer-created program association.' }
+    }
 }
 
 [ordered]@{

@@ -13,7 +13,9 @@ $fixtureDigest = (Get-FileHash -LiteralPath $fixturePath -Algorithm SHA256).Hash
 $installRoot = Join-Path $env:LOCALAPPDATA 'Glitchpad'
 $application = Join-Path $installRoot 'glitchpad-host.exe'
 $uninstaller = Join-Path $installRoot 'uninstall.exe'
-$extensions = @((Get-Content -LiteralPath 'packaging/windows/capabilities.json' -Raw | ConvertFrom-Json).stable_extensions)
+$capabilities = Get-Content -LiteralPath 'packaging/windows/capabilities.json' -Raw | ConvertFrom-Json
+$extensions = @($capabilities.families | ForEach-Object { $_.extensions } | Sort-Object -Unique)
+if ($extensions.Count -eq 0) { throw 'The governed file association inventory is empty.' }
 
 function Get-AssociationSnapshot {
     @($extensions | ForEach-Object {

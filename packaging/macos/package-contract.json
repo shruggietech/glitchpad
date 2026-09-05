@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "platform": "macos",
+  "architecture": "universal",
+  "candidate_version": "0.1.0",
+  "artifact": {
+    "kind": "dmg",
+    "name": "glitchpad-0.1.0-macos-universal.dmg"
+  },
+  "document_extensions": [
+    "cjs",
+    "css",
+    "htm",
+    "html",
+    "js",
+    "json",
+    "jsonc",
+    "jsx",
+    "markdown",
+    "md",
+    "mermaid",
+    "mjs",
+    "mmd",
+    "py",
+    "rs",
+    "toml",
+    "ts",
+    "tsx",
+    "txt",
+    "yaml",
+    "yml"
+  ],
+  "bundle": {
+    "name": "Glitchpad.app",
+    "identifier": "com.shruggietech.glitchpad",
+    "minimum_system_version": "13.0",
+    "executable": "Contents/MacOS/glitchpad-host",
+    "required_architectures": ["arm64", "x86_64"],
+    "required_files": [
+      "Contents/Info.plist",
+      "Contents/MacOS/glitchpad-host",
+      "Contents/Resources/icon.icns",
+      "Contents/Resources/LICENSE",
+      "Contents/Resources/NOTICE",
+      "Contents/Resources/THIRD_PARTY_NOTICES.txt"
+    ]
+  },
+  "size_budget": {
+    "target_bytes": 36700160,
+    "hard_limit_bytes": 62914560
+  },
+  "performance": {
+    "hosted_smoke_startup_hard_limit_ms": 10000
+  },
+  "candidate_trust": {
+    "application_signature_status": "ad_hoc",
+    "dmg_signature_status": "not_signed_candidate",
+    "notarization_status": "not_submitted_candidate",
+    "staple_status": "not_applicable_candidate"
+  },
+  "official": {
+    "authorized_event": "push_tag",
+    "tag_pattern": "v0.1.0",
+    "signer_authority_prefix": "Developer ID Application:",
+    "required_signature_status": "valid_developer_id",
+    "required_hardened_runtime_status": "enabled",
+    "required_timestamp_status": "valid",
+    "required_notarization_status": "accepted",
+    "required_staple_status": "valid",
+    "required_gatekeeper_status": "accepted",
+    "maximum_evidence_age_seconds": 86400,
+    "required_evidence": [
+      "SHA256SUMS",
+      "macos-package-manifest.json",
+      "glitchpad-macos.cdx.json",
+      "provenance.json",
+      "clean-host-arm64.json",
+      "clean-host-x86_64.json",
+      "apple-trust-evidence.json",
+      "notarization-log.json"
+    ]
+  }
+}

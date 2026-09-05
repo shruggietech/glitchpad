@@ -18,6 +18,7 @@
     "check:metadata": "node --test scripts/check-metadata-fixture.test.mjs && node scripts/check-metadata-fixture.mjs",
     "check:persistence": "node --test scripts/check-persistence-fixture.test.mjs && node scripts/check-persistence-fixture.mjs",
     "check:performance": "node --test scripts/check-performance.test.mjs scripts/run-performance.test.mjs && node scripts/check-performance.mjs",
+    "check:macos-package": "node --test scripts/check-macos-package.test.mjs scripts/macos/assemble-package.test.mjs scripts/macos/test-package-lifecycle.test.mjs && node scripts/check-macos-package.mjs",
     "check:windows-package": "node --test scripts/check-windows-package.test.mjs && node scripts/check-windows-package.mjs",
     "check:frontend": "pnpm --filter @shruggietech/glitchpad check",
     "check:site": "pnpm --filter @shruggietech/glitchpad-site check",

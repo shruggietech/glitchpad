@@ -6,6 +6,8 @@ pub mod app_state;
 #[cfg(not(mobile))]
 pub mod desktop_delivery;
 pub mod external_link;
+#[cfg(not(mobile))]
+pub mod lifecycle_probe;
 pub mod performance;
 pub mod recovery;
 #[cfg(not(mobile))]
@@ -133,6 +135,7 @@ pub fn run() {
         desktop_delivery::choose_desktop_sources,
         desktop_delivery::drain_desktop_deliveries,
         desktop_delivery::save_desktop_source_as,
+        lifecycle_probe::record_desktop_lifecycle_probe,
     ]);
     #[cfg(target_os = "android")]
     let builder = builder.invoke_handler(tauri::generate_handler![
@@ -173,7 +176,7 @@ pub fn run() {
         }
     });
 
-    builder
+    let application = builder
         .setup(move |app| {
             app.manage(product);
             let recovery_quota = if cfg!(target_os = "android") {
@@ -190,6 +193,7 @@ pub fn run() {
             app.manage(application_state_for(app));
             #[cfg(not(mobile))]
             {
+                app.manage(lifecycle_probe::LifecycleProbeState::from_environment_or_arguments());
                 let host = source::DesktopSourceHost::new();
                 let queue = desktop_delivery::DesktopDeliveryQueue::new();
                 if let Ok(working_directory) = std::env::current_dir() {
@@ -212,8 +216,16 @@ pub fn run() {
             }
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("Glitchpad host failed while processing a runtime event");
+        .build(tauri::generate_context!())
+        .expect("Glitchpad host failed to initialize");
+    application.run(|app, event| {
+        #[cfg(target_os = "macos")]
+        if let tauri::RunEvent::Opened { urls } = event {
+            desktop_delivery::enqueue_opened_urls(app, urls);
+        }
+        #[cfg(not(target_os = "macos"))]
+        let _ = (app, event);
+    });
 }
 
 #[tauri::command]

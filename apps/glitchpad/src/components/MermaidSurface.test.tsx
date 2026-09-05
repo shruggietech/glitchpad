@@ -2,10 +2,15 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { EditorView } from '@codemirror/view';
 import axe from 'axe-core';
 import { StrictMode } from 'react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { App, initialSessions } from '../App';
 import { MERMAID_STANDALONE_MAX_BYTES } from '../domain/mermaid-contract';
+
+vi.mock('../domain/mermaid-adapter', async () => {
+  const { DeterministicMermaidRendererClient } = await import('../test/mermaid-renderer-double');
+  return { MermaidRendererClient: DeterministicMermaidRendererClient };
+});
 
 const mermaidSession = (content: string) => ({
   ...initialSessions[1],

@@ -64,7 +64,7 @@ describe('metadata inspector', () => {
 
     rerender(<MetadataInspector session={session} snapshot={snapshot} onClose={vi.fn()} clipboardGateway={{ write: () => Promise.reject(new Error('path C:\\private')) }} />);
     fireEvent.click(screen.getByRole('button', { name: 'Copy File name' }));
-    expect(await screen.findByRole('status')).toHaveTextContent('Copy failed');
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Copy failed'));
     expect(screen.getByRole('status')).not.toHaveTextContent('private');
   });
 

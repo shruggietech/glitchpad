@@ -288,6 +288,12 @@ export async function checkMacosConfiguration(
     )
   )
     fail('branch and pull-request package workflow must not publish');
+  if (
+    /^ {6}APPLE_API_KEY_PATH:\s*\$\{\{\s*runner\.temp\s*\}\}/mu.test(
+      releaseWorkflow,
+    )
+  )
+    fail('release workflow uses the step-only runner context at job scope');
   for (const marker of [
     'APPLE_CERTIFICATE',
     'APPLE_CERTIFICATE_PASSWORD',

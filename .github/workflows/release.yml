@@ -69,11 +69,12 @@ jobs:
       APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
       APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
       APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
-      APPLE_API_KEY_PATH: ${{ runner.temp }}/AuthKey.p8
       MACOS_REQUIRED_EVIDENCE: SHA256SUMS,macos-package-manifest.json,glitchpad-macos.cdx.json,provenance.json,clean-host-arm64.json,clean-host-x86_64.json,apple-trust-evidence.json,notarization-log.json
     steps:
       - name: Verify macOS publication authority is provisioned
         shell: bash
+        env:
+          APPLE_API_KEY_PATH: ${{ runner.temp }}/AuthKey.p8
         run: |
           set -euo pipefail
           test -n "$APPLE_CERTIFICATE"

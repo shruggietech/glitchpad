@@ -229,7 +229,7 @@ jobs:
     # on Linux-hosted runners. The Intel macOS image provides accelerated x86_64
     # emulation for the required API 24 and API 36 lifecycle evidence.
     runs-on: macos-15-intel
-    timeout-minutes: 45
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:

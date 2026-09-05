@@ -141,6 +141,10 @@ fn android_emulator_uses_supported_software_rendering() {
     let instrumentation =
         fs::read_to_string(workspace.join("scripts/run-android-instrumentation.sh"))
             .expect("Android instrumentation wrapper should be readable");
+    let performance_test = fs::read_to_string(workspace.join(
+        "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/performance/PerformanceInstrumentedTest.kt",
+    ))
+    .expect("Android performance test should be readable");
 
     assert!(
         workflow.contains("-gpu swiftshader -feature -Vulkan"),
@@ -165,6 +169,10 @@ fn android_emulator_uses_supported_software_rendering() {
     assert!(
         workflow.contains("bash scripts/run-android-instrumentation.sh"),
         "the emulator runner must invoke the multiline retry logic through one shell command"
+    );
+    assert!(
+        performance_test.contains("SystemClock.elapsedRealtime() + 60_000L"),
+        "settled-memory sampling must allow a cold hosted API 36 WebView to initialize"
     );
     assert!(
         workflow.contains(

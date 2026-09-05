@@ -79,6 +79,11 @@ export type TabAction =
       id: string;
       expectedRevision: number;
       sourceId: string;
+    }
+  | {
+      type: 'save_completed';
+      id: string;
+      receipt: import('./contracts').SaveReceipt;
     };
 
 export interface TabProjection {
@@ -260,6 +265,39 @@ export const tabReducer = (state: TabState, action: TabAction): TabState => {
             : session,
         ),
       };
+    }
+    case 'save_completed': {
+      const target = state.sessions.find(({ id }) => id === action.id);
+      if (
+        !target
+        || target.source_id !== action.receipt.source_id
+        || target.revision !== action.receipt.accepted_session_revision
+      ) return state;
+      const saved: TabState = {
+        ...state,
+        sessions: state.sessions.map((session) => session.id === target.id
+          ? {
+              ...session,
+              dirty: false,
+              integrity: 'clean',
+              saved_revision: session.revision,
+              pending_save: null,
+              recovery_coverage: 'none',
+              external_revision: action.receipt.new_external_revision,
+              source: {
+                ...session.source,
+                byte_length: action.receipt.new_external_revision.byte_length,
+              },
+            }
+          : session),
+        announcement: `${target.source.display_name} saved durably`,
+      };
+      const transition = saved.pendingTransition;
+      return transition?.target_session_id === target.id
+        && transition.status === 'saving'
+        && transition.save_intent === 'save'
+        ? completeTransition(saved, target.id, transition.kind)
+        : saved;
     }
   }
 };

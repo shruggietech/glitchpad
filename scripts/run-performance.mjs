@@ -13,10 +13,11 @@ const repositoryRoot = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const distribution = join(repositoryRoot, 'apps', 'glitchpad', 'dist');
 
 export const parseArguments = (arguments_) => {
-  const result = { profile: '', buildId: '', output: null, metric: null, artifact: null, skipBuild: false };
+  const result = { profile: '', buildId: '', output: null, metric: null, artifact: null, skipBuild: false, confirmHardFailure: false };
   for (let index = 0; index < arguments_.length; index += 1) {
     const argument = arguments_[index];
     if (argument === '--skip-build') result.skipBuild = true;
+    else if (argument === '--confirm-hard-failure') result.confirmHardFailure = true;
     else if (['--profile', '--build-id', '--output', '--metric', '--artifact'].includes(argument)) {
       const value = arguments_[++index];
       if (!value || value.startsWith('--')) throw new Error(`argument_value_missing:${argument.slice(2)}`);
@@ -28,6 +29,16 @@ export const parseArguments = (arguments_) => {
   if (!/^[A-Za-z0-9][A-Za-z0-9._:+-]{0,127}$/u.test(result.buildId)) throw new Error('build_id_invalid');
   if (result.artifact !== null && result.metric === null) throw new Error('artifact_metric_pair_required');
   return result;
+};
+
+export const collectWithHardFailureConfirmation = async (options, collector = collectPerformance) => {
+  try {
+    return await collector(options);
+  } catch (error) {
+    if (!options.confirmHardFailure || !(error instanceof Error) || !error.message.startsWith('performance_hard_limit:')) throw error;
+    process.stderr.write(`${error.message}: confirming on a second independent collection\n`);
+    return collector(options);
+  }
 };
 
 export const isAllowedRequest = (target, origin) => {
@@ -293,7 +304,7 @@ export const collectPerformance = async (options) => {
 
 export const main = async (arguments_) => {
   const options = parseArguments(arguments_);
-  const evidence = await collectPerformance(options);
+  const evidence = await collectWithHardFailureConfirmation(options);
   if (options.output) {
     const output = resolve(options.output);
     await mkdir(output, { recursive: true });

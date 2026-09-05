@@ -36,7 +36,9 @@ class PerformanceInstrumentedTest {
     }
 
     private fun waitForSettledShell(scenario: ActivityScenario<MainActivity>) {
-        val deadline = SystemClock.elapsedRealtime() + 15_000L
+        // This test measures settled memory, not startup latency. A cold API 36
+        // WebView can spend tens of seconds initializing on hosted emulators.
+        val deadline = SystemClock.elapsedRealtime() + 60_000L
         var ready = false
         while (!ready && SystemClock.elapsedRealtime() < deadline) {
             val evaluated = CountDownLatch(1)

@@ -28,6 +28,42 @@ pub(super) fn replace(
     })
 }
 
+pub(super) fn save_as(path: &Path, bytes: &[u8]) -> Result<DurabilityGuarantee, CoreError> {
+    let existing_permissions = fs::metadata(path)
+        .ok()
+        .map(|metadata| metadata.permissions());
+    let mut pending = AtomicWriteFile::options()
+        .open(path)
+        .map_err(|error| safe_io_error(&error, "save_as_open_temporary"))?;
+    if let Some(permissions) = existing_permissions {
+        pending
+            .set_permissions(permissions)
+            .map_err(|error| safe_io_error(&error, "save_as_preserve_permissions"))?;
+    }
+    pending
+        .write_all(bytes)
+        .map_err(|error| safe_io_error(&error, "save_as_write"))?;
+    pending
+        .flush()
+        .map_err(|error| safe_io_error(&error, "save_as_flush"))?;
+    pending
+        .sync_all()
+        .map_err(|error| safe_io_error(&error, "save_as_sync_file"))?;
+    pending.commit().map_err(|error| {
+        CoreError::new(
+            CoreErrorCategory::PartialWritePrevented,
+            "Save As did not complete; no partial destination was exposed",
+            true,
+            true,
+        )
+        .with_context("operation", "save_as_commit")
+        .with_context("error_kind", format!("{:?}", error.kind()))
+    })?;
+    #[cfg(unix)]
+    sync_parent_after_commit(path)?;
+    Ok(platform_guarantee())
+}
+
 fn replace_with_revision_check<F>(
     path: &Path,
     bytes: &[u8],
@@ -142,6 +178,19 @@ mod tests {
             b"complete replacement"
         );
         assert_eq!(guarantee, platform_guarantee());
+    }
+
+    #[test]
+    fn save_as_commits_complete_content_to_a_new_destination() {
+        let source = TemporarySource::new(b"placeholder");
+        let destination = source.path().with_extension("saved.txt");
+        let guarantee = save_as(&destination, b"complete save as").expect("save as");
+        assert_eq!(
+            fs::read(&destination).expect("read destination"),
+            b"complete save as"
+        );
+        assert_eq!(guarantee, platform_guarantee());
+        fs::remove_file(destination).expect("remove destination");
     }
 
     #[test]

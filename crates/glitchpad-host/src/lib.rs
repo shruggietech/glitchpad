@@ -1,8 +1,10 @@
 //! Tauri host boundary for desktop and Android builds.
 
-use tauri::Manager;
+use tauri::{Emitter, Manager};
 
 pub mod app_state;
+#[cfg(not(mobile))]
+pub mod desktop_delivery;
 pub mod external_link;
 pub mod performance;
 pub mod recovery;
@@ -71,10 +73,30 @@ fn recovery_unavailable() -> glitchpad_core::contracts::CoreError {
 ///
 /// Panics when the host cannot initialize or process a runtime event.
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
+#[allow(clippy::too_many_lines)]
 pub fn run() {
     let product = glitchpad_core::product_info();
 
-    let builder = tauri::Builder::default().plugin(
+    let builder = tauri::Builder::default();
+    #[cfg(not(mobile))]
+    let builder = builder.plugin(tauri_plugin_single_instance::init(|app, arguments, cwd| {
+        let host = app.state::<source::DesktopSourceHost>();
+        let queue = app.state::<desktop_delivery::DesktopDeliveryQueue>();
+        let _ = queue.enqueue_arguments(
+            &host,
+            source::DesktopDeliveryKind::CommandLine,
+            arguments.into_iter().map(std::ffi::OsString::from),
+            std::path::Path::new(&cwd),
+        );
+        let _ = app.emit("desktop-deliveries-ready", ());
+        if let Some(window) = app.get_webview_window("main") {
+            let _ = window.show();
+            let _ = window.set_focus();
+        }
+    }));
+    #[cfg(not(mobile))]
+    let builder = builder.plugin(tauri_plugin_dialog::init());
+    let builder = builder.plugin(
         tauri_plugin_opener::Builder::new()
             .open_js_links_on_click(false)
             .build(),
@@ -107,6 +129,10 @@ pub fn run() {
         source::revalidate_source,
         source::save_source,
         source::close_source,
+        desktop_delivery::close_desktop_source,
+        desktop_delivery::choose_desktop_sources,
+        desktop_delivery::drain_desktop_deliveries,
+        desktop_delivery::save_desktop_source_as,
     ]);
     #[cfg(target_os = "android")]
     let builder = builder.invoke_handler(tauri::generate_handler![
@@ -137,6 +163,16 @@ pub fn run() {
         close_android_source,
     ]);
 
+    #[cfg(not(mobile))]
+    let builder = builder.on_window_event(|window, event| {
+        if let tauri::WindowEvent::DragDrop(tauri::DragDropEvent::Drop { paths, .. }) = event {
+            let host = window.state::<source::DesktopSourceHost>();
+            let queue = window.state::<desktop_delivery::DesktopDeliveryQueue>();
+            let _ = queue.enqueue_paths(&host, source::DesktopDeliveryKind::Drop, paths.clone());
+            let _ = window.emit("desktop-deliveries-ready", ());
+        }
+    });
+
     builder
         .setup(move |app| {
             app.manage(product);
@@ -153,7 +189,20 @@ pub fn run() {
             app.manage(recovery_state);
             app.manage(application_state_for(app));
             #[cfg(not(mobile))]
-            app.manage(source::DesktopSourceHost::new());
+            {
+                let host = source::DesktopSourceHost::new();
+                let queue = desktop_delivery::DesktopDeliveryQueue::new();
+                if let Ok(working_directory) = std::env::current_dir() {
+                    let _ = queue.enqueue_arguments(
+                        &host,
+                        source::DesktopDeliveryKind::CommandLine,
+                        std::env::args_os(),
+                        &working_directory,
+                    );
+                }
+                app.manage(host);
+                app.manage(queue);
+            }
             #[cfg(target_os = "android")]
             {
                 use glitchpad_android_source::AndroidSourceExt;

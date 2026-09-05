@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "release": "0.1.0",
+  "families": [
+    {
+      "id": "markdown",
+      "description": "Markdown document",
+      "extensions": ["md", "markdown"],
+      "media_types": ["text/markdown"],
+      "renderer": "markdown",
+      "association": true,
+      "dialog": true
+    },
+    {
+      "id": "mermaid",
+      "description": "Mermaid diagram",
+      "extensions": ["mmd", "mermaid"],
+      "media_types": ["text/vnd.mermaid"],
+      "renderer": "mermaid",
+      "association": true,
+      "dialog": true
+    },
+    {
+      "id": "plain-text",
+      "description": "Plain text document",
+      "extensions": ["txt"],
+      "media_types": ["text/plain"],
+      "renderer": "text",
+      "association": true,
+      "dialog": true
+    },
+    {
+      "id": "source",
+      "description": "Source text document",
+      "extensions": [
+        "cjs",
+        "css",
+        "htm",
+        "html",
+        "js",
+        "json",
+        "jsonc",
+        "jsx",
+        "mjs",
+        "py",
+        "rs",
+        "toml",
+        "ts",
+        "tsx",
+        "yaml",
+        "yml"
+      ],
+      "media_types": ["text/plain"],
+      "renderer": "source",
+      "association": true,
+      "dialog": true
+    }
+  ],
+  "forbidden_extensions": [
+    "7z",
+    "aab",
+    "apk",
+    "bmp",
+    "dll",
+    "docx",
+    "exe",
+    "gif",
+    "ico",
+    "jpeg",
+    "jpg",
+    "msi",
+    "odp",
+    "ods",
+    "odt",
+    "pdf",
+    "png",
+    "pptx",
+    "rar",
+    "svg",
+    "tif",
+    "tiff",
+    "webp",
+    "xlsx",
+    "zip"
+  ]
+}

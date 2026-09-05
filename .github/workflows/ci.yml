@@ -122,7 +122,7 @@ jobs:
       - name: Validate policy and run representative smoke
         run: |
           pnpm run check:performance
-          node scripts/run-performance.mjs --profile hosted_windows_smoke_v1 --build-id "pr-${{ github.event.pull_request.head.sha || github.sha }}"
+          node scripts/run-performance.mjs --profile hosted_windows_smoke_v1 --build-id "pr-${{ github.event.pull_request.head.sha || github.sha }}" --confirm-hard-failure
 
   platform:
     name: Desktop host (${{ matrix.os }})
@@ -229,7 +229,7 @@ jobs:
     # on Linux-hosted runners. The Intel macOS image provides accelerated x86_64
     # emulation for the required API 24 and API 36 lifecycle evidence.
     runs-on: macos-15-intel
-    timeout-minutes: 45
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -280,6 +280,8 @@ jobs:
           api-level: ${{ matrix.api-level }}
           arch: x86_64
           target: google_apis
+          cores: 4
+          emulator-boot-timeout: 900
           disable-animations: true
           # The deprecated indirect renderer crashed during WebView teardown on both
           # governed API levels. Use Android's supported software renderer and keep
@@ -292,16 +294,9 @@ jobs:
             ./crates/glitchpad-host/gen/android/gradlew --project-dir crates/glitchpad-host/gen/android :app:connectedUniversalDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.notClass=com.shruggietech.glitchpad.performance.PerformanceInstrumentedTest -PabiList=x86_64 -ParchList=x86_64 -PtargetList=x86_64 -x :app:rustBuildUniversalDebug -x :app:rustBuildX86_64Debug --no-daemon
             adb install -r crates/glitchpad-host/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk
             adb install -r crates/glitchpad-host/gen/android/app/build/outputs/apk/androidTest/universal/debug/app-universal-debug-androidTest.apk
-            adb shell am instrument -w -e class com.shruggietech.glitchpad.source.RestorationInstrumentedTest#privateRestorationRecordSurvivesProcessBoundary -e restorationPhase seed com.shruggietech.glitchpad.test/androidx.test.runner.AndroidJUnitRunner > "$RUNNER_TEMP/restoration-seed.txt"
-            cat "$RUNNER_TEMP/restoration-seed.txt"
-            grep -Fq 'OK (1 test)' "$RUNNER_TEMP/restoration-seed.txt"
-            adb shell am force-stop com.shruggietech.glitchpad
-            adb shell am instrument -w -e class com.shruggietech.glitchpad.source.RestorationInstrumentedTest#privateRestorationRecordSurvivesProcessBoundary -e restorationPhase verify com.shruggietech.glitchpad.test/androidx.test.runner.AndroidJUnitRunner > "$RUNNER_TEMP/restoration-verify.txt"
-            cat "$RUNNER_TEMP/restoration-verify.txt"
-            grep -Fq 'OK (1 test)' "$RUNNER_TEMP/restoration-verify.txt"
-            adb shell am force-stop com.shruggietech.glitchpad
-            adb shell am instrument -w -e class com.shruggietech.glitchpad.performance.PerformanceInstrumentedTest com.shruggietech.glitchpad.test/androidx.test.runner.AndroidJUnitRunner > "$RUNNER_TEMP/performance-evidence.txt"
-            cat "$RUNNER_TEMP/performance-evidence.txt"
+            bash scripts/run-android-instrumentation.sh "$RUNNER_TEMP/restoration-seed.txt" 'OK (1 test)' -e class com.shruggietech.glitchpad.source.RestorationInstrumentedTest#privateRestorationRecordSurvivesProcessBoundary -e restorationPhase seed
+            bash scripts/run-android-instrumentation.sh "$RUNNER_TEMP/restoration-verify.txt" 'OK (1 test)' -e class com.shruggietech.glitchpad.source.RestorationInstrumentedTest#privateRestorationRecordSurvivesProcessBoundary -e restorationPhase verify
+            bash scripts/run-android-instrumentation.sh "$RUNNER_TEMP/performance-evidence.txt" 'performance_evidence=' -e class com.shruggietech.glitchpad.performance.PerformanceInstrumentedTest
             node scripts/check-performance.mjs --android-instrumentation-output "$RUNNER_TEMP/performance-evidence.txt" --api-level "${{ matrix.api-level }}"
 
       - name: Upload Android instrumentation reports
@@ -312,6 +307,7 @@ jobs:
           path: |
             crates/glitchpad-host/gen/android/app/build/reports/androidTests/**
             crates/glitchpad-host/gen/android/app/build/outputs/androidTest-results/**
+            ${{ runner.temp }}/*.txt
           if-no-files-found: warn
           retention-days: 7
 

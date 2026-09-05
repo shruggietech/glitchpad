@@ -1,0 +1,66 @@
+{
+  "version": "0.1.0",
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "icon": ["icons/icon.ico"],
+    "resources": {
+      "../../LICENSE": "LICENSE",
+      "../../NOTICE": "NOTICE",
+      "../../packaging/windows/THIRD_PARTY_NOTICES.txt": "THIRD_PARTY_NOTICES.txt"
+    },
+    "fileAssociations": [
+      {
+        "name": "Glitchpad Markdown",
+        "description": "Markdown document",
+        "ext": ["md", "markdown"],
+        "mimeType": "text/markdown"
+      },
+      {
+        "name": "Glitchpad Mermaid",
+        "description": "Mermaid diagram",
+        "ext": ["mmd", "mermaid"],
+        "mimeType": "text/vnd.mermaid"
+      },
+      {
+        "name": "Glitchpad Text",
+        "description": "Plain text document",
+        "ext": ["txt"],
+        "mimeType": "text/plain"
+      },
+      {
+        "name": "Glitchpad Source",
+        "description": "Source text document",
+        "ext": [
+          "cjs",
+          "css",
+          "htm",
+          "html",
+          "js",
+          "json",
+          "jsonc",
+          "jsx",
+          "mjs",
+          "py",
+          "rs",
+          "toml",
+          "ts",
+          "tsx",
+          "yaml",
+          "yml"
+        ],
+        "mimeType": "text/plain"
+      }
+    ],
+    "windows": {
+      "allowDowngrades": false,
+      "webviewInstallMode": {
+        "type": "skip"
+      },
+      "nsis": {
+        "installMode": "currentUser",
+        "installerHooks": "windows/installer-hooks.nsh"
+      }
+    }
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "candidate_manifest_sha256": "REQUIRED",
+  "windows": {
+    "edition": "REQUIRED",
+    "build": "REQUIRED",
+    "architecture": "x86_64",
+    "webview2_version": "REQUIRED"
+  },
+  "automated": {
+    "install": "REQUIRED",
+    "launch": "REQUIRED",
+    "command_line": "REQUIRED",
+    "association": "REQUIRED",
+    "read": "REQUIRED",
+    "edit": "REQUIRED",
+    "save": "REQUIRED",
+    "metadata": "REQUIRED",
+    "recovery": "REQUIRED",
+    "uninstall": "REQUIRED",
+    "portable": "REQUIRED",
+    "cleanup": "REQUIRED",
+    "performance": "REQUIRED"
+  },
+  "manual": {
+    "dialog": "REQUIRED",
+    "drag_drop": "REQUIRED",
+    "save_as": "REQUIRED",
+    "print": "REQUIRED",
+    "keyboard": "REQUIRED",
+    "focus": "REQUIRED",
+    "text_scale": "REQUIRED",
+    "forced_colors": "REQUIRED",
+    "screen_reader": "REQUIRED"
+  },
+  "content_free": true,
+  "completed_utc": "REQUIRED"
+}

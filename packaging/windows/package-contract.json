@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "platform": "windows",
+  "architecture": "x86_64",
+  "candidate_version": "0.1.0",
+  "artifacts": [
+    {
+      "kind": "nsis",
+      "name": "glitchpad-0.1.0-windows-x86_64-setup.exe"
+    },
+    {
+      "kind": "portable_zip",
+      "name": "glitchpad-0.1.0-windows-x86_64.zip"
+    }
+  ],
+  "portable_required_files": [
+    "Glitchpad.exe",
+    "LICENSE",
+    "NOTICE",
+    "THIRD_PARTY_NOTICES.txt"
+  ],
+  "size_budget": {
+    "target_bytes": 36700160,
+    "hard_limit_bytes": 62914560
+  },
+  "candidate_signature_status": "not_applicable_unsigned_candidate",
+  "official": {
+    "authorized_event": "push_tag",
+    "tag_pattern": "v0.1.0",
+    "publisher_subject": "CN=ShruggieTech",
+    "required_signature_status": "valid",
+    "required_timestamp_status": "valid",
+    "required_evidence": [
+      "SHA256SUMS",
+      "windows-package-manifest.json",
+      "glitchpad-windows.cdx.json",
+      "provenance.json",
+      "clean-machine-receipt.json",
+      "signature-evidence.json"
+    ]
+  }
+}

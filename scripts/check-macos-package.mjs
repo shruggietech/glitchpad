@@ -218,7 +218,7 @@ export async function checkMacosConfiguration(
   if (
     !hostSource.includes('tauri::RunEvent::Opened') ||
     !hostSource.includes('enqueue_opened_urls') ||
-    !hostSource.includes('configure_from_opened_urls') ||
+    !hostSource.includes('LifecycleProbeState::for_application') ||
     !hostSource.includes('record_desktop_lifecycle_probe')
   )
     fail('native host omits macOS open-event delivery');

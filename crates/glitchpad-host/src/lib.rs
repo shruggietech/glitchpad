@@ -193,7 +193,9 @@ pub fn run() {
             app.manage(application_state_for(app));
             #[cfg(not(mobile))]
             {
-                app.manage(lifecycle_probe::LifecycleProbeState::from_environment());
+                app.manage(lifecycle_probe::LifecycleProbeState::for_application(
+                    &app.config().identifier,
+                ));
                 let host = source::DesktopSourceHost::new();
                 let queue = desktop_delivery::DesktopDeliveryQueue::new();
                 if let Ok(working_directory) = std::env::current_dir() {
@@ -221,7 +223,6 @@ pub fn run() {
     application.run(|app, event| {
         #[cfg(target_os = "macos")]
         if let tauri::RunEvent::Opened { urls } = event {
-            lifecycle_probe::configure_from_opened_urls(app, &urls);
             desktop_delivery::enqueue_opened_urls(app, urls);
         }
         #[cfg(not(target_os = "macos"))]

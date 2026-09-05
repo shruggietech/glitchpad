@@ -4,15 +4,10 @@ use std::ffi::OsString;
 use std::fs::{self, OpenOptions};
 use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::sync::Mutex;
 
 use glitchpad_core::contracts::{CoreError, CoreErrorCategory};
-#[cfg(target_os = "macos")]
-use tauri::Manager;
 
 const PROBE_DIRECTORY_ENVIRONMENT: &str = "GLITCHPAD_LIFECYCLE_PROBE_DIR";
-#[cfg(any(test, target_os = "macos"))]
-const PROBE_DIRECTORY_NAME: &str = "lifecycle-probes";
 const PROBE_ENABLE_MARKER: &[u8] = b"enabled\n";
 
 fn probe_error(category: CoreErrorCategory, summary: &str) -> CoreError {
@@ -69,91 +64,53 @@ fn record_marker(root: &Path, event: &str, sequence: Option<u64>) -> Result<bool
     }
 }
 
-#[derive(Default)]
-struct ProbeConfiguration {
-    root: Option<PathBuf>,
-    shell_ready_pending: bool,
+#[cfg(any(test, target_os = "macos"))]
+fn guarded_probe_root(identifier: &str, architecture: &str) -> PathBuf {
+    PathBuf::from("/tmp").join(format!("{identifier}-lifecycle-probes-{architecture}"))
+}
+
+#[cfg(any(test, target_os = "macos"))]
+fn runtime_architecture() -> &'static str {
+    if cfg!(target_arch = "aarch64") {
+        "arm64"
+    } else {
+        std::env::consts::ARCH
+    }
 }
 
 /// Process-local lifecycle acknowledgement state for native package validation.
 #[derive(Default)]
 pub struct LifecycleProbeState {
-    configuration: Mutex<ProbeConfiguration>,
+    root: Option<PathBuf>,
 }
 
 impl LifecycleProbeState {
-    fn with_environment(environment: Option<OsString>) -> Self {
-        Self {
-            configuration: Mutex::new(ProbeConfiguration {
-                root: environment.map(PathBuf::from),
-                shell_ready_pending: false,
-            }),
-        }
+    fn configured(environment: Option<OsString>, guarded_root: Option<PathBuf>) -> Self {
+        let root = environment
+            .map(PathBuf::from)
+            .or_else(|| guarded_root.filter(|candidate| probe_root_enabled(candidate)));
+        Self { root }
     }
 
-    /// Creates lifecycle state from the explicitly inherited validation environment, when present.
+    /// Creates lifecycle state from an explicit environment or the guarded macOS validation root.
     #[must_use]
-    pub fn from_environment() -> Self {
-        Self::with_environment(std::env::var_os(PROBE_DIRECTORY_ENVIRONMENT))
+    pub fn for_application(identifier: &str) -> Self {
+        #[cfg(target_os = "macos")]
+        let guarded_root = Some(guarded_probe_root(identifier, runtime_architecture()));
+        #[cfg(not(target_os = "macos"))]
+        let guarded_root = {
+            let _ = identifier;
+            None
+        };
+        Self::configured(std::env::var_os(PROBE_DIRECTORY_ENVIRONMENT), guarded_root)
     }
 
     fn record(&self, event: &str, sequence: Option<u64>) -> Result<bool, CoreError> {
         marker_name(event, sequence)?;
-        let root = {
-            let mut configuration = self.configuration.lock().map_err(|_| {
-                probe_error(
-                    CoreErrorCategory::Unavailable,
-                    "Lifecycle acknowledgement state is unavailable",
-                )
-            })?;
-            let Some(root) = configuration.root.clone() else {
-                if event == "shell-ready" {
-                    configuration.shell_ready_pending = true;
-                }
-                return Ok(false);
-            };
-            root
-        };
-        record_marker(&root, event, sequence)
-    }
-
-    #[cfg(any(test, target_os = "macos"))]
-    fn configure_from_document(&self, document: &Path) -> Result<bool, CoreError> {
-        let Some(parent) = document.parent() else {
+        let Some(root) = self.root.as_deref() else {
             return Ok(false);
         };
-        let root = parent.join(PROBE_DIRECTORY_NAME);
-        if !probe_root_enabled(&root) {
-            return Ok(false);
-        }
-        let shell_ready_pending = {
-            let mut configuration = self.configuration.lock().map_err(|_| {
-                probe_error(
-                    CoreErrorCategory::Unavailable,
-                    "Lifecycle acknowledgement state is unavailable",
-                )
-            })?;
-            configuration.root = Some(root.clone());
-            std::mem::take(&mut configuration.shell_ready_pending)
-        };
-        if shell_ready_pending {
-            record_marker(&root, "shell-ready", None)?;
-        }
-        Ok(true)
-    }
-}
-
-/// Enables the guarded lifecycle probe associated with a native macOS document-open event.
-#[cfg(target_os = "macos")]
-pub(crate) fn configure_from_opened_urls(app: &tauri::AppHandle, urls: &[tauri::Url]) {
-    let state = app.state::<LifecycleProbeState>();
-    for url in urls {
-        let Ok(document) = url.to_file_path() else {
-            continue;
-        };
-        if state.configure_from_document(&document).unwrap_or(false) {
-            break;
-        }
+        record_marker(root, event, sequence)
     }
 }
 
@@ -211,50 +168,39 @@ mod tests {
     }
 
     #[test]
-    fn resolves_the_explicit_validation_environment() {
+    fn resolves_the_explicit_environment_before_a_guarded_root() {
         let environment_root = PathBuf::from("/private/tmp/environment-probes");
-        let state =
-            LifecycleProbeState::with_environment(Some(environment_root.clone().into_os_string()));
-        assert_eq!(
-            state
-                .configuration
-                .lock()
-                .expect("probe configuration must be readable")
-                .root,
-            Some(environment_root)
+        let state = LifecycleProbeState::configured(
+            Some(environment_root.clone().into_os_string()),
+            Some(PathBuf::from("/tmp/guarded-probes")),
         );
+        assert_eq!(state.root, Some(environment_root));
     }
 
     #[test]
-    fn document_delivery_activates_guarded_probe_and_flushes_early_shell_readiness() {
-        let root = temporary_root();
-        let probe_root = root.join(PROBE_DIRECTORY_NAME);
-        fs::create_dir_all(&probe_root).expect("temporary probe root must be created");
+    fn guarded_root_requires_exact_opt_in_and_normalizes_apple_silicon() {
+        let probe_root = temporary_root();
+        fs::create_dir(&probe_root).expect("temporary probe root must be created");
+        assert_eq!(
+            guarded_probe_root("com.example.app", "arm64"),
+            PathBuf::from("/tmp/com.example.app-lifecycle-probes-arm64")
+        );
+        #[cfg(target_arch = "aarch64")]
+        assert_eq!(runtime_architecture(), "arm64");
+        #[cfg(not(target_arch = "aarch64"))]
+        assert_eq!(runtime_architecture(), std::env::consts::ARCH);
+        assert!(
+            LifecycleProbeState::configured(None, Some(probe_root.clone()))
+                .root
+                .is_none()
+        );
         fs::write(probe_root.join("enabled.marker"), PROBE_ENABLE_MARKER)
             .expect("probe root must be explicitly enabled");
-        let state = LifecycleProbeState::default();
-
-        assert!(
-            !state
-                .record("shell-ready", None)
-                .expect("early shell readiness must be buffered")
-        );
-        assert!(
-            state
-                .configure_from_document(&root.join("document.md"))
-                .expect("document must activate its sibling probe")
-        );
         assert_eq!(
-            fs::read(probe_root.join("shell-ready.marker"))
-                .expect("buffered shell readiness must be flushed"),
-            b"ready\n"
-        );
-        assert!(
-            state
-                .record("delivery-ready", Some(9))
-                .expect("delivery readiness must record")
+            LifecycleProbeState::configured(None, Some(probe_root.clone())).root,
+            Some(probe_root.clone())
         );
 
-        fs::remove_dir_all(root).expect("temporary probe root must be removed");
+        fs::remove_dir_all(probe_root).expect("temporary probe root must be removed");
     }
 }

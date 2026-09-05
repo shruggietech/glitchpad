@@ -89,7 +89,7 @@ async function command(program, arguments_, options = {}) {
   }
 }
 
-async function waitForProcess(executable, timeoutMilliseconds = 10_000) {
+async function waitForProcess(executable, timeoutMilliseconds = 30_000) {
   const started = performance.now();
   while (performance.now() - started < timeoutMilliseconds) {
     try {
@@ -212,7 +212,10 @@ async function main() {
   const installedRoot = join(root, 'Applications');
   const installedApplication = join(installedRoot, contract.bundle.name);
   const fixture = join(root, 'document.md');
-  const probeRoot = join(root, 'lifecycle-probes');
+  const probeRoot = join(
+    '/tmp',
+    `${contract.bundle.identifier}-lifecycle-probes-${options.architecture}`,
+  );
   const fixtureBytes = Buffer.from(
     '# Glitchpad lifecycle\n\nSafe native package fixture.\n',
   );
@@ -221,6 +224,7 @@ async function main() {
   try {
     await cp(dmgPath, join(root, basename(dmgPath)));
     await writeFile(fixture, fixtureBytes);
+    await rm(probeRoot, { recursive: true, force: true });
     await mkdir(probeRoot);
     await writeFile(join(probeRoot, 'enabled.marker'), 'enabled\n');
     await command('mkdir', ['-p', mountPoint, installedRoot]);

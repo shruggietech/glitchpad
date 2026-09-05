@@ -315,6 +315,7 @@ async function main() {
       });
       const observed = await waitForProcess(executable);
       await waitForShellReadiness(probeRoot);
+      startupSamples.push(performance.now() - launchedAt);
       const acknowledgedDeliveries = await waitForLifecycleReadiness(probeRoot);
       await delay(500);
       const settledStartupDeliveries = await deliveryProbes(probeRoot);
@@ -323,7 +324,6 @@ async function main() {
         [...settledStartupDeliveries][0] !== [...acknowledgedDeliveries][0]
       )
         throw new Error('delivery_acknowledgement_duplicate');
-      startupSamples.push(performance.now() - launchedAt);
       activePid = observed.pid;
       if (sample === 0) {
         await command('open', ['-a', installedApplication, fixture]);

@@ -291,11 +291,11 @@ export async function checkMacosConfiguration(
   if (!/branches:\r?\n\s+- '\*\*'/u.test(packageWorkflow))
     fail('macOS package workflow does not cover every branch push');
   for (const marker of [
-    'GLITCHPAD_LIFECYCLE_PROBE_DIR',
     'waitForLifecycleReadiness',
     'waitForSingleNewDelivery',
-    'spawn(executable',
-    'lifecycleEnvironment(probeRoot)',
+    'lifecycleProbeArgument(probeRoot)',
+    "spawn('open'",
+    "'--args'",
     "command('open'",
   ])
     if (!lifecycleScript.includes(marker))

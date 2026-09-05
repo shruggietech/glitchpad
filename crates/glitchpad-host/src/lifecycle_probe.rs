@@ -1,5 +1,6 @@
 //! Content-free lifecycle acknowledgements for native package validation.
 
+use std::ffi::OsString;
 use std::fs::{self, OpenOptions};
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -7,6 +8,7 @@ use std::path::{Path, PathBuf};
 use glitchpad_core::contracts::{CoreError, CoreErrorCategory};
 
 const PROBE_DIRECTORY_ENVIRONMENT: &str = "GLITCHPAD_LIFECYCLE_PROBE_DIR";
+const PROBE_ARGUMENT_PREFIX: &str = "--glitchpad-lifecycle-probe=";
 
 fn probe_error(category: CoreErrorCategory, summary: &str) -> CoreError {
     CoreError::new(category, summary, false, true)
@@ -57,6 +59,21 @@ fn record_marker(root: &Path, event: &str, sequence: Option<u64>) -> Result<bool
     }
 }
 
+fn configured_probe_root(
+    environment: Option<OsString>,
+    arguments: impl IntoIterator<Item = OsString>,
+) -> Option<PathBuf> {
+    environment.map(PathBuf::from).or_else(|| {
+        arguments.into_iter().find_map(|argument| {
+            argument
+                .to_str()?
+                .strip_prefix(PROBE_ARGUMENT_PREFIX)
+                .filter(|value| !value.is_empty())
+                .map(PathBuf::from)
+        })
+    })
+}
+
 /// Records a path-private, content-free lifecycle acknowledgement when native package validation opts in.
 ///
 /// # Errors
@@ -68,7 +85,10 @@ pub fn record_desktop_lifecycle_probe(
     event: String,
     sequence: Option<u64>,
 ) -> Result<bool, CoreError> {
-    let Some(root) = std::env::var_os(PROBE_DIRECTORY_ENVIRONMENT).map(PathBuf::from) else {
+    let Some(root) = configured_probe_root(
+        std::env::var_os(PROBE_DIRECTORY_ENVIRONMENT),
+        std::env::args_os(),
+    ) else {
         return Ok(false);
     };
     record_marker(&root, &event, sequence)
@@ -108,5 +128,28 @@ mod tests {
         assert!(record_marker(&root, "delivery-ready", None).is_err());
 
         fs::remove_dir_all(root).expect("temporary probe root must be removed");
+    }
+
+    #[test]
+    fn resolves_environment_before_the_single_validation_argument() {
+        let argument_root = PathBuf::from("/private/tmp/argument-probes");
+        let environment_root = PathBuf::from("/private/tmp/environment-probes");
+        let arguments = [
+            OsString::from("glitchpad"),
+            OsString::from("--glitchpad-lifecycle-probe=/private/tmp/argument-probes"),
+        ];
+
+        assert_eq!(
+            configured_probe_root(None, arguments.clone()),
+            Some(argument_root)
+        );
+        assert_eq!(
+            configured_probe_root(Some(environment_root.clone().into_os_string()), arguments),
+            Some(environment_root)
+        );
+        assert_eq!(
+            configured_probe_root(None, [OsString::from("--glitchpad-lifecycle-probe=")]),
+            None
+        );
     }
 }

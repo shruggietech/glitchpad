@@ -27,17 +27,12 @@ import {
 } from '../lib/macos-artifact.mjs';
 
 const execFileAsync = promisify(execFile);
-const lifecycleProbeEnvironment = 'GLITCHPAD_LIFECYCLE_PROBE_DIR';
 const deliveryProbePattern = /^delivery-[1-9]\d*\.marker$/u;
 const delay = (milliseconds) =>
   new Promise((resolvePromise) => setTimeout(resolvePromise, milliseconds));
 
-export function lifecycleEnvironment(probeRoot, environment = process.env) {
-  return {
-    ...environment,
-    [lifecycleProbeEnvironment]: probeRoot,
-  };
-}
+export const lifecycleProbeArgument = (probeRoot) =>
+  `--glitchpad-lifecycle-probe=${probeRoot}`;
 
 export function parseArguments(arguments_) {
   const result = {};
@@ -90,20 +85,20 @@ async function command(program, arguments_, options = {}) {
   }
 }
 
-export async function waitForShellReadiness(
-  probeRoot,
-  timeoutMilliseconds = 10_000,
-) {
+async function waitForProcess(executable, timeoutMilliseconds = 10_000) {
   const started = performance.now();
   while (performance.now() - started < timeoutMilliseconds) {
-    const shellReady = await stat(join(probeRoot, 'shell-ready.marker')).then(
-      () => true,
-      () => false,
-    );
-    if (shellReady) return;
-    await delay(25);
+    try {
+      const { stdout } = await command('pgrep', ['-f', executable]);
+      const pid = Number.parseInt(stdout.trim().split(/\s+/u)[0], 10);
+      if (Number.isSafeInteger(pid) && pid > 0)
+        return { pid, elapsed: performance.now() - started };
+    } catch {
+      // The application has not reached the process table yet.
+    }
+    await delay(50);
   }
-  throw new Error('application_shell_ready_timeout');
+  throw new Error('application_launch_timeout');
 }
 
 async function deliveryProbes(probeRoot) {
@@ -272,26 +267,27 @@ async function main() {
     for (let sample = 0; sample < 5; sample += 1) {
       await clearLifecycleProbes(probeRoot);
       const launchedAt = performance.now();
-      const child = spawn(executable, [], {
+      const child = spawn('open', [
+        '-n',
+        '-a',
+        installedApplication,
+        fixture,
+        '--args',
+        lifecycleProbeArgument(probeRoot),
+      ], {
         detached: false,
-        env: lifecycleEnvironment(probeRoot),
         stdio: 'ignore',
         shell: false,
       });
-      if (!Number.isSafeInteger(child.pid) || child.pid <= 0)
-        throw new Error('application_launch_failed');
-      activePid = child.pid;
-      const unexpectedExit = new Promise((_, reject) => {
+      await new Promise((resolvePromise, reject) => {
         child.once('error', reject);
-        child.once('exit', (code, signal) =>
-          reject(new Error(`application_exited:${code ?? signal ?? 'unknown'}`)),
+        child.once('exit', (code) =>
+          code === 0
+            ? resolvePromise()
+            : reject(new Error(`open_failed:${code}`)),
         );
       });
-      await Promise.race([
-        waitForShellReadiness(probeRoot),
-        unexpectedExit,
-      ]);
-      await command('open', ['-a', installedApplication, fixture]);
+      const observed = await waitForProcess(executable);
       const acknowledgedDeliveries = await waitForLifecycleReadiness(probeRoot);
       await delay(500);
       const settledStartupDeliveries = await deliveryProbes(probeRoot);
@@ -301,6 +297,7 @@ async function main() {
       )
         throw new Error('delivery_acknowledgement_duplicate');
       startupSamples.push(performance.now() - launchedAt);
+      activePid = observed.pid;
       if (sample === 0) {
         await command('open', ['-a', installedApplication, fixture]);
         const deliveriesAfterOpen = await waitForSingleNewDelivery(

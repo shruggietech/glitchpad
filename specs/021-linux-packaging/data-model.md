@@ -43,11 +43,10 @@ The manifest transitions from `candidate_valid` to `official_valid` only after l
 
 ## Build-baseline evidence
 
-- `schema_version`: Evidence contract revision.
-- `container_target`, `base_image`: Governed build-environment identity.
-- `distribution`, `release`, `architecture`: Normalized operating-system identity.
-- `rust`, `node`, `pnpm`, `compiler`, `linker`, `glibc`, `webkitgtk`: Pinned or observed toolchain facts.
-- `imported_glibc_versions[]`: Sorted GLIBC symbol versions imported by the final executable.
+- `container_target`: Governed build-target identity observed from the container.
+- `distribution`, `release`: Operating-system identity observed from `/etc/os-release`.
+- `architecture`, `elf_machine`: Normalized architecture and the final executable's observed ELF machine.
+- `rust`, `node`, `pnpm`, `compiler`, `linker`, `glibc_version`, `webkitgtk_api`, `webkitgtk_version`: Pinned or observed toolchain and runtime facts.
 - `maximum_imported_glibc`: Highest imported symbol version, which must not exceed the contract ceiling.
 
 The evidence contains no environment dump, host path, account name, token, or raw authorization response.
@@ -67,9 +66,8 @@ Candidate receipts permit `not_run_candidate` for manual fields and for the read
 
 ## Repository attestation evidence
 
-- `schema_version`: Evidence revision.
-- `repository`, `source_commit`, `workflow_identity`, `release_version`: Authorized subject identity.
-- `artifacts[]`: Canonical artifact name, SHA-256, attestation subject digest, verification status, and verification time.
-- `issuer`, `predicate_type`: Approved attestation authority and statement type.
+- `status`, `repository`, `authorized_event`, `build_trigger`, `source_ref`, `signer_workflow`: Live verification result and its pinned repository workflow/tag authority.
+- `source_commit`, `version`: Authorized source and release identity.
+- `artifacts[]`: Canonical artifact name and SHA-256 subject digest verified against unchanged final bytes.
 
-Raw tokens, certificates, signatures, and tool output are excluded. The normalized result is valid only when both final artifact subjects verify.
+Raw tokens, certificates, signatures, and tool output are excluded. The normalized result is written only after both final artifact subjects pass live GitHub attestation verification; caller-authored JSON is not an authority input.

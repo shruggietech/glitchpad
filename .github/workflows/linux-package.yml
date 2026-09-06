@@ -65,10 +65,9 @@ jobs:
               (cd "$work_root" && ./candidate.AppImage --appimage-extract >/dev/null)
               find "$work_root/squashfs-root" -printf "%P\n" | sed "/^$/d" | sort | jq -R -s "split(\"\\n\")[:-1] | map({path:.})" > "$work_root/appimage-inventory.json"
               dpkg-deb --contents "$deb_path" | awk "{path=\$6; sub(/^\\.\\//,\"\",path); sub(/\\/$/,\"\",path); if (length(path)) print path}" | sort | jq -R -s "split(\"\\n\")[:-1] | map({path:.})" > "$work_root/deb-inventory.json"
-              glibc_version="$(ldd --version | head -n 1 | grep -oE "[0-9]+\\.[0-9]+$" )"
-              imported_glibc="$(readelf --version-info target/release/glitchpad-host | grep -oE "GLIBC_[0-9.]+" | cut -d_ -f2 | sort -V | tail -n 1)"
-              jq -n --arg glibc "$glibc_version" --arg imported "$imported_glibc" \
-                "{distribution:\"ubuntu\",release:\"22.04\",architecture:\"x86_64\",container_target:\"linux-package\",glibc_version:\$glibc,maximum_imported_glibc:\$imported,webkitgtk_api:\"4.1\"}" > "$work_root/build-baseline.json"
+              node scripts/linux/collect-build-baseline.mjs \
+                --executable target/release/glitchpad-host \
+                --output "$work_root/build-baseline.json"
               rm -rf artifacts/linux
               node scripts/linux/assemble-package.mjs \
                 --appimage "$appimage_path" --deb "$deb_path" --output artifacts/linux \

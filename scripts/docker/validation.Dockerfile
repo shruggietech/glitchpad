@@ -9,6 +9,7 @@ ENV COREPACK_HOME=/opt/corepack
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PATH="/usr/local/cargo/bin:${PATH}"
 ENV GLITCHPAD_LINUX_PACKAGE_CONTAINER=true
+ENV GLITCHPAD_VALIDATION_TARGET=linux-package
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \

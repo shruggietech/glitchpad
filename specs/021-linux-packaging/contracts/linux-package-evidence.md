@@ -12,9 +12,9 @@ Branch and pull-request builds are non-official review candidates. Their manifes
 
 ## Build baseline and dependency boundary
 
-The build-baseline receipt identifies the named Ubuntu 22.04 x86_64 build target, pinned language toolchain, observed compiler/linker/glibc/WebKitGTK versions, and imported GLIBC symbol set. The validator rejects a newer distribution baseline, wrong architecture, missing WebKitGTK 4.1 build/runtime family, imported symbol newer than the governed ceiling, or a bundled browser/WebKit substitute.
+The build-baseline receipt is collected from `/etc/os-release`, the final ELF header and imported symbols, `ldd`, `pkg-config`, and the actual compiler, linker, Rust, Node.js, and pnpm commands inside the named container target. The validator rejects a newer distribution baseline, wrong ELF architecture, toolchain drift, missing WebKitGTK 4.1 build/runtime family, imported symbol newer than the governed ceiling, or a bundled browser/WebKit substitute.
 
-The Debian control metadata contains only reviewed runtime dependencies and accurately declares its architecture and version. The AppImage inventory is inspected for unexpected executables and disallowed bundled components.
+The validator extracts the final Debian control metadata with `dpkg-deb`, checks its package name, version, and architecture, and requires the reviewed GTK 3 and WebKitGTK 4.1 runtime dependency families. The AppImage inventory is inspected for unexpected executables and disallowed bundled components.
 
 ## Package inventories and integration
 
@@ -27,12 +27,12 @@ The actual desktop entries and MIME declarations must satisfy [linux-desktop-int
 - `SHA256SUMS` binds both final artifacts.
 - The CycloneDX SBOM identifies Glitchpad for Linux plus locked Rust, JavaScript, native runtime, and bundled components and binds to source commit and candidate version.
 - Candidate provenance records repository, commit, workflow, baseline identity, locked tool versions, and both final artifact digests without asserting cryptographic publisher identity.
-- Official repository attestation is generated only in an authorized release context and verified against `shruggietech/glitchpad`, the source commit, workflow identity, release version, and both final subjects.
+- Official repository attestation evidence is generated from live `gh attestation verify` results only. Verification pins `shruggietech/glitchpad`, the Linux package signer workflow, the authorized release tag, the source commit, hosted-runner policy, and both unchanged final subjects; a supplied JSON assertion is never accepted as authority.
 - `LICENSE`, `NOTICE`, and third-party notices appear inside each package and beside release evidence.
 
 ## Clean-environment receipts
 
-The exact pair is exercised on clean Ubuntu 22.04 and Ubuntu 24.04 environments. Closed-schema receipts bind the manifest digest, workflow/source authority, package form, distribution, architecture, WebKitGTK version, governed native test suites, automated lifecycle results, manual accessibility/rendering results, and S018 size/startup evidence. A candidate receipt reports `not_run_candidate` for read, edit, save, metadata, recovery, and manual interface scenarios that the clean package harness does not exercise; separately executed conformance suites cannot turn those clean-environment results into passes. Candidate startup measurements identify themselves as `hosted_smoke`, retain truthful reference-budget classification, and fail above 10 seconds. Official receipts identify `reference` startup evidence, require every governed result to pass, and fail above the S018 desktop hard limit.
+The exact pair is exercised on clean Ubuntu 22.04 and Ubuntu 24.04 environments. Each required receipt filename is bound to its encoded Ubuntu release and package form, so a receipt cannot be copied into another matrix slot. Closed-schema receipts bind the manifest digest, workflow/source authority, package form, distribution, architecture, WebKitGTK version, governed native test suites, automated lifecycle results, manual accessibility/rendering results, and S018 size/startup evidence. A candidate receipt reports `not_run_candidate` for read, edit, save, metadata, recovery, and manual interface scenarios that the clean package harness does not exercise; separately executed conformance suites cannot turn those clean-environment results into passes. The validator recomputes nearest-rank p95 and its classification from the recorded samples. Candidate startup measurements identify themselves as `hosted_smoke`, retain truthful reference-budget classification, and fail above 10 seconds. Official receipts identify `reference` startup evidence, require every governed result to pass, and fail above the S018 desktop hard limit.
 
 Receipts store no document contents, filenames, paths, account names, environment values, or secrets. Official validation requires fresh passing receipts for both package forms on both environments. One missing or failed receipt blocks the pair.
 

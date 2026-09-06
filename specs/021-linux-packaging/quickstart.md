@@ -39,6 +39,6 @@ Expected outcome: formatting, lint, tests, docs, links, Mermaid, validation boun
 
 ## 6. Validate official fail-closed behavior
 
-Attempt official Linux validation without authorized tag context and repository attestation evidence, then with mutated and incomplete fixtures.
+Attempt official Linux validation without live repository attestations for the authorized tag, then with mutated and incomplete evidence fixtures.
 
-Expected outcome: every attempt fails without altering or publishing artifacts. Only normalized fixtures representing authorized, fresh, digest-matched evidence can satisfy the contract model.
+Expected outcome: every attempt fails without publishing artifacts. The validator invokes GitHub attestation verification for both unchanged final files with the repository, signer workflow, release tag, source commit, and hosted-runner policy pinned; only then does it write the normalized attestation receipt and validate the complete evidence set.

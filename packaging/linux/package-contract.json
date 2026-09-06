@@ -7,9 +7,15 @@
     "distribution": "ubuntu",
     "release": "22.04",
     "architecture": "x86_64",
+    "elf_machine": "Advanced Micro Devices X86-64",
     "container_target": "linux-package",
     "maximum_glibc_version": "2.35",
-    "webkitgtk_api": "4.1"
+    "webkitgtk_api": "4.1",
+    "rust_version": "1.96.0",
+    "node_version": "24.11.0",
+    "pnpm_version": "10.28.2",
+    "compiler_family": "Ubuntu 11.4.0",
+    "linker_family": "GNU ld"
   },
   "artifacts": [
     {
@@ -64,6 +70,8 @@
     ]
   },
   "dependency_policy": {
+    "debian_package_name": "glitchpad",
+    "debian_architecture": "amd64",
     "required_debian_families": ["libgtk-3-0", "libwebkit2gtk-4.1-0"],
     "forbidden_bundled_components": [
       "chrome",
@@ -86,6 +94,7 @@
   },
   "official": {
     "authorized_event": "push_tag",
+    "attestation_build_trigger": "push",
     "tag_pattern": "v0.1.0",
     "repository": "shruggietech/glitchpad",
     "required_attestation_status": "verified",

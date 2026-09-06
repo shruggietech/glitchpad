@@ -77,7 +77,7 @@ dependencies {
 configurations.configureEach {
     // Tauri 2.11.5 requests Jackson 2.15.3, whose Android floor is API 26.
     // Glitchpad supports API 24, and 2.13.5 is Jackson's final compatible line.
-    resolutionStrategy.force("com.fasterxml.jackson.core:jackson-databind:2.13.5")
+    resolutionStrategy.force("com.fasterxml.jackson.core:jackson-databind:2.22.2")
 }
 
 apply(from = "tauri.build.gradle.kts")

@@ -77,6 +77,7 @@ import {
 import {
   nativeDesktopDeliveryAvailable,
   nativeDesktopDeliveryGateway,
+  reportDesktopLifecycleProbe,
   type DesktopDeliveryGateway,
   type DesktopDeliveryResult,
 } from './domain/desktop-delivery-gateway';
@@ -302,6 +303,10 @@ export function App({ sessions = initialSessions, recoveryGateway, externalLinkG
     ? (nativeDesktopDeliveryAvailable() ? nativeDesktopDeliveryGateway : null)
     : desktopDeliveryGateway;
   const openDesktopSourceIdsRef = useRef(new Set<string>());
+  const pendingDesktopDeliveryProbesRef = useRef(new Map<string, number[]>());
+  useEffect(() => {
+    void reportDesktopLifecycleProbe('shell-ready').catch(() => undefined);
+  }, []);
   const applyDesktopDeliveries = useCallback(async (results: readonly DesktopDeliveryResult[]) => {
     if (!selectedDesktopDeliveryGateway) return;
     for (const result of results) {
@@ -311,11 +316,19 @@ export function App({ sessions = initialSessions, recoveryGateway, externalLinkG
       }
       if (result.status === 'duplicate' && result.source) {
         dispatch({ type: 'activate', id: `desktop-${result.source.source_id}` });
+        await reportDesktopLifecycleProbe('delivery-ready', result.sequence).catch(() => false);
         continue;
       }
       try {
         const session = await selectedDesktopDeliveryGateway.materialize(result);
-        if (session) dispatch({ type: 'open', session });
+        if (session) {
+          const sourceId = session.source_id;
+          if (sourceId) {
+            const pending = pendingDesktopDeliveryProbesRef.current.get(sourceId) ?? [];
+            pendingDesktopDeliveryProbesRef.current.set(sourceId, [...pending, result.sequence]);
+          }
+          dispatch({ type: 'open', session });
+        }
       } catch {
         if (result.source) void selectedDesktopDeliveryGateway.close(result.source.source_id);
         setCommandStatus('The delivered file could not be decoded safely.');
@@ -332,17 +345,29 @@ export function App({ sessions = initialSessions, recoveryGateway, externalLinkG
         if (active) setCommandStatus('Desktop delivery is temporarily unavailable.');
       });
     };
-    drain();
     let unlisten: (() => void) | undefined;
     void selectedDesktopDeliveryGateway.subscribe(drain).then((dispose) => {
-      if (active) unlisten = dispose;
-      else dispose();
+      if (active) {
+        unlisten = dispose;
+        drain();
+      } else dispose();
+    }).catch(() => {
+      if (active) setCommandStatus('Desktop delivery is temporarily unavailable.');
     });
     return () => {
       active = false;
       unlisten?.();
     };
   }, [applyDesktopDeliveries, selectedDesktopDeliveryGateway]);
+  useEffect(() => {
+    const active = state.sessions.find((session) => session.id === state.activeId);
+    if (!active?.source_id) return;
+    const pending = pendingDesktopDeliveryProbesRef.current.get(active.source_id);
+    if (!pending?.length) return;
+    pendingDesktopDeliveryProbesRef.current.delete(active.source_id);
+    for (const sequence of pending)
+      void reportDesktopLifecycleProbe('delivery-ready', sequence).catch(() => undefined);
+  }, [state.activeId, state.sessions]);
   useEffect(() => {
     if (!selectedDesktopDeliveryGateway) return;
     const current = new Set(

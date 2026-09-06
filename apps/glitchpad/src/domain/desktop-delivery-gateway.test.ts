@@ -2,6 +2,7 @@ import type { DesktopSourceSummary } from './contracts';
 import {
   createDesktopDeliveryGateway,
   nativeDesktopDeliveryAvailable,
+  reportDesktopLifecycleProbe,
   type DesktopDeliveryResult,
 } from './desktop-delivery-gateway';
 
@@ -51,6 +52,25 @@ test('requires the complete Tauri callback boundary before enabling native deliv
       value: { invoke: vi.fn(), transformCallback: vi.fn() },
     });
     expect(nativeDesktopDeliveryAvailable()).toBe(true);
+  } finally {
+    if (descriptor) Object.defineProperty(window, '__TAURI_INTERNALS__', descriptor);
+    else Reflect.deleteProperty(window, '__TAURI_INTERNALS__');
+  }
+});
+
+test('native lifecycle probes expose only event and delivery sequence', async () => {
+  const descriptor = Object.getOwnPropertyDescriptor(window, '__TAURI_INTERNALS__');
+  const call = vi.fn().mockResolvedValue(true);
+  try {
+    Object.defineProperty(window, '__TAURI_INTERNALS__', {
+      configurable: true,
+      value: { invoke: vi.fn(), transformCallback: vi.fn() },
+    });
+    await expect(reportDesktopLifecycleProbe('delivery-ready', 7, call)).resolves.toBe(true);
+    expect(call).toHaveBeenCalledWith('record_desktop_lifecycle_probe', {
+      event: 'delivery-ready',
+      sequence: 7,
+    });
   } finally {
     if (descriptor) Object.defineProperty(window, '__TAURI_INTERNALS__', descriptor);
     else Reflect.deleteProperty(window, '__TAURI_INTERNALS__');

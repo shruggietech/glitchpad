@@ -1,0 +1,6 @@
+Glitchpad third-party notices
+
+This candidate bundles the dependency set locked by Cargo.lock and pnpm-lock.yaml.
+The machine-readable CycloneDX SBOM generated for each candidate records the exact package names, versions, package URLs, and declared license expressions.
+
+Original Glitchpad source and assets are licensed under Apache-2.0. The reviewed dependency policy and complete license evidence remain governed by deny.toml, Cargo.lock, package.json, pnpm-lock.yaml, and the repository license checks.

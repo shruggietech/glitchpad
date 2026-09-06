@@ -1,0 +1,143 @@
+name: macos-package
+
+on:
+  pull_request:
+  push:
+    branches:
+      - '**'
+  workflow_dispatch:
+
+concurrency:
+  group: macos-package-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  candidate:
+    name: macOS universal candidate
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.28.2
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: macos-package
+
+      - name: Install universal Rust targets
+        run: rustup target add aarch64-apple-darwin x86_64-apple-darwin
+
+      - name: Validate package and document-delivery contracts
+        run: |
+          pnpm run check:macos-package
+          cargo test -p glitchpad-host --locked
+          pnpm test
+
+      - name: Build governed universal DMG candidate
+        run: pnpm tauri build --target universal-apple-darwin --bundles app,dmg --config tauri.s020-macos.conf.json
+
+      - name: Assemble final-byte candidate and evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          app_path="$(find target/universal-apple-darwin/release/bundle/macos -maxdepth 1 -name '*.app' -print -quit)"
+          dmg_path="$(find target/universal-apple-darwin/release/bundle/dmg -maxdepth 1 -name '*.dmg' -print -quit)"
+          test -n "$app_path"
+          test -n "$dmg_path"
+          mkdir -p artifacts
+          node scripts/macos/assemble-package.mjs --app "$app_path" --dmg "$dmg_path" --output artifacts/macos --source-commit '${{ github.sha }}' --workflow-identity '${{ github.workflow_ref }}' --runner-image 'macos-15'
+          cargo metadata --locked --format-version 1 > artifacts/macos/cargo-metadata.json
+          pnpm list --prod --recursive --json --depth Infinity > artifacts/macos/pnpm-list.json
+          node scripts/generate-macos-sbom.mjs artifacts/macos/cargo-metadata.json artifacts/macos/pnpm-list.json artifacts/macos/glitchpad-macos.cdx.json '${{ github.sha }}'
+
+      - name: Validate final bytes and size policy
+        run: |
+          node scripts/check-macos-package.mjs --evidence artifacts/macos/macos-package-manifest.json --artifact-root artifacts/macos
+          node scripts/run-performance.mjs --profile desktop_reference_v1 --build-id "macos-${{ github.sha }}" --metric desktop_installer_size --artifact artifacts/macos/glitchpad-0.1.0-macos-universal.dmg --output artifacts/macos/dmg-size-evidence
+
+      - name: Upload non-notarized review candidate
+        uses: actions/upload-artifact@v7
+        with:
+          name: glitchpad-0.1.0-macos-universal-non-notarized-candidate
+          path: artifacts/macos/**
+          if-no-files-found: error
+          retention-days: 14
+
+  native-lifecycle:
+    name: Native lifecycle (${{ matrix.architecture }})
+    needs: candidate
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            architecture: arm64
+          - runner: macos-15-intel
+            architecture: x86_64
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.28.2
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: macos-lifecycle-${{ matrix.architecture }}
+
+      - name: Prove native stable-document contracts
+        run: |
+          cargo test -p glitchpad-host --locked --test desktop_source_conformance --test desktop_delivery_conformance --test recovery_conformance
+          pnpm --filter @shruggietech/glitchpad exec vitest run src/App.test.tsx src/domain/desktop-delivery-gateway.test.ts src/domain/editor-conformance.test.ts src/domain/metadata-gateway.test.ts src/domain/persistence-gateway.test.ts src/domain/recovery.test.ts
+
+      - name: Download universal candidate
+        uses: actions/download-artifact@v8
+        with:
+          name: glitchpad-0.1.0-macos-universal-non-notarized-candidate
+          path: artifacts/macos
+
+      - name: Exercise native install, launch, delivery, and removal
+        run: |
+          node scripts/macos/test-package-lifecycle.mjs --dmg artifacts/macos/glitchpad-0.1.0-macos-universal.dmg --manifest artifacts/macos/macos-package-manifest.json --receipt "clean-host-${{ matrix.architecture }}.json" --architecture '${{ matrix.architecture }}'
+
+      - name: Upload content-free clean-host receipt
+        uses: actions/upload-artifact@v7
+        with:
+          name: glitchpad-macos-clean-host-${{ matrix.architecture }}
+          path: clean-host-${{ matrix.architecture }}.json
+          if-no-files-found: error
+          retention-days: 14

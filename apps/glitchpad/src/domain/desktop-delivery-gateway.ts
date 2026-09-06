@@ -55,6 +55,15 @@ export const nativeDesktopDeliveryAvailable = (): boolean => {
   return typeof internals?.invoke === 'function' && typeof internals.transformCallback === 'function';
 };
 
+export const reportDesktopLifecycleProbe = async (
+  event: 'shell-ready' | 'delivery-ready',
+  sequence?: number,
+  call: NativeInvoke = invoke,
+): Promise<boolean> => {
+  if (!nativeDesktopDeliveryAvailable()) return false;
+  return call('record_desktop_lifecycle_probe', { event, sequence: sequence ?? null }) as Promise<boolean>;
+};
+
 const decode = (bytes: Uint8Array): { text: string; encoding: TextEncoding } => {
   const encoding = detectEncoding(bytes);
   const decoder = encoding === 'utf16_le_bom'

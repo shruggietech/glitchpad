@@ -88,3 +88,36 @@ fn dialog_drop_association_and_command_line_share_one_ordered_path_private_bound
     let serialized = serde_json::to_string(&results).expect("serialize safe results");
     assert!(!serialized.contains(root.path().to_string_lossy().as_ref()));
 }
+
+#[test]
+fn macos_open_events_share_duplicate_ordering_and_reject_non_file_urls() {
+    let root = FixtureRoot::new();
+    let document = root.path().join("Finder delivery é.md");
+    fs::write(&document, b"bounded source").expect("write Finder fixture");
+    let file_url = tauri::Url::from_file_path(&document).expect("local file URL");
+    let remote_url = tauri::Url::parse("https://example.com/private.md").expect("remote URL");
+    let host = DesktopSourceHost::new();
+    let queue = DesktopDeliveryQueue::new();
+
+    queue
+        .enqueue_file_urls(
+            &host,
+            DesktopDeliveryKind::Association,
+            [file_url.clone(), file_url, remote_url],
+        )
+        .expect("enqueue native URLs");
+
+    let results = queue.drain(64).expect("drain native URLs");
+    assert_eq!(results.len(), 3);
+    assert_eq!(results[0].status, DesktopDeliveryStatus::Opened);
+    assert_eq!(results[1].status, DesktopDeliveryStatus::Duplicate);
+    assert_eq!(results[2].status, DesktopDeliveryStatus::Rejected);
+    assert!(
+        results
+            .windows(2)
+            .all(|pair| pair[0].sequence < pair[1].sequence)
+    );
+    let serialized = serde_json::to_string(&results).expect("serialize safe results");
+    assert!(!serialized.contains(root.path().to_string_lossy().as_ref()));
+    assert!(!serialized.contains("example.com"));
+}

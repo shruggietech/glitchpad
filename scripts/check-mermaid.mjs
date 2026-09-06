@@ -46,7 +46,12 @@ export function extractMermaidBlocks(markdown) {
 }
 
 async function defaultLaunchOptions(repositoryRoot) {
-  if (process.platform !== 'linux' || process.env.GITHUB_ACTIONS !== 'true') {
+  const usesContainerPolicy =
+    process.env.GLITCHPAD_VALIDATION_CONTAINER === 'true';
+  if (
+    process.platform !== 'linux' ||
+    (process.env.GITHUB_ACTIONS !== 'true' && !usesContainerPolicy)
+  ) {
     return {};
   }
   const path = resolve(repositoryRoot, '.github', 'puppeteer-ci.json');

@@ -5,6 +5,11 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { App, initialSessions } from '../App';
 
+vi.mock('../domain/mermaid-adapter', async () => {
+  const { DeterministicMermaidRendererClient } = await import('../test/mermaid-renderer-double');
+  return { MermaidRendererClient: DeterministicMermaidRendererClient };
+});
+
 const markdownSession = (content: string) => ({
   ...initialSessions[3],
   id: 'markdown-test',

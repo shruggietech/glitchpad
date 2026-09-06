@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "candidate_manifest_sha256": "REQUIRED",
+  "evidence_authority": {
+    "kind": "github_actions_workflow",
+    "workflow_identity": "REQUIRED",
+    "source_commit": "REQUIRED",
+    "native_test_suites": [
+      "app_document_workflow",
+      "desktop_delivery_conformance",
+      "desktop_source_conformance",
+      "recovery_conformance"
+    ]
+  },
+  "macos": {
+    "product_version": "REQUIRED",
+    "build_version": "REQUIRED",
+    "hardware_architecture": "REQUIRED",
+    "application_architectures": ["arm64", "x86_64"],
+    "wkwebview_version": "REQUIRED"
+  },
+  "automated": {
+    "mount": "REQUIRED",
+    "applications_link": "REQUIRED",
+    "copy": "REQUIRED",
+    "launch": "REQUIRED",
+    "finder_delivery": "REQUIRED",
+    "running_instance_delivery": "REQUIRED",
+    "read": "REQUIRED",
+    "edit": "REQUIRED",
+    "save": "REQUIRED",
+    "metadata": "REQUIRED",
+    "recovery": "REQUIRED",
+    "remove": "REQUIRED",
+    "cleanup": "REQUIRED",
+    "universal_architecture": "REQUIRED",
+    "performance": "REQUIRED"
+  },
+  "manual": {
+    "dialog": "REQUIRED",
+    "drag_drop": "REQUIRED",
+    "save_as": "REQUIRED",
+    "print": "REQUIRED",
+    "keyboard": "REQUIRED",
+    "focus": "REQUIRED",
+    "text_scale": "REQUIRED",
+    "increased_contrast": "REQUIRED",
+    "reduced_motion": "REQUIRED",
+    "voiceover": "REQUIRED",
+    "markdown_wkwebview": "REQUIRED",
+    "mermaid_wkwebview": "REQUIRED"
+  },
+  "performance": {
+    "cold_startup_evidence_class": "REQUIRED",
+    "cold_startup_samples_ms": "REQUIRED",
+    "cold_startup_p95_ms": "REQUIRED",
+    "cold_startup_classification": "REQUIRED",
+    "dmg_size_classification": "REQUIRED"
+  },
+  "content_free": true,
+  "completed_utc": "REQUIRED"
+}

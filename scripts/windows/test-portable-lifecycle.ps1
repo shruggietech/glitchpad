@@ -12,7 +12,7 @@ $application = Join-Path $root 'Glitchpad.exe'
 $fixturePath = (Resolve-Path -LiteralPath $Fixture).Path
 $fixtureDigest = (Get-FileHash -LiteralPath $fixturePath -Algorithm SHA256).Hash
 if (-not (Test-Path -LiteralPath $application -PathType Leaf)) { throw 'Portable executable is missing.' }
-$capabilities = Get-Content -LiteralPath 'packaging/windows/capabilities.json' -Raw | ConvertFrom-Json
+$capabilities = Get-Content -LiteralPath 'packaging/desktop/capabilities.json' -Raw | ConvertFrom-Json
 $extensions = @($capabilities.families | ForEach-Object { $_.extensions } | Sort-Object -Unique)
 
 function Get-AssociationSnapshot {

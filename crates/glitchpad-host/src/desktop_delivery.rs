@@ -8,6 +8,8 @@ use std::sync::{Mutex, MutexGuard};
 use glitchpad_core::contracts::{CoreError, CoreErrorCategory};
 use glitchpad_core::source::{DesktopSourceSummary, SourceId};
 use serde::Serialize;
+#[cfg(target_os = "macos")]
+use tauri::Emitter;
 use tauri::Manager;
 use tauri_plugin_dialog::DialogExt;
 
@@ -66,33 +68,68 @@ impl DesktopDeliveryQueue {
         kind: DesktopDeliveryKind,
         paths: impl IntoIterator<Item = PathBuf>,
     ) -> Result<usize, CoreError> {
-        let paths = paths.into_iter().collect::<Vec<_>>();
+        self.enqueue_resources(host, kind, paths.into_iter().map(Ok).collect())
+    }
+
+    /// Converts local file URLs and queues path-free results for every delivered URL.
+    ///
+    /// # Errors
+    ///
+    /// Returns a safe source acquisition, queue-capacity, or synchronization error.
+    pub fn enqueue_file_urls(
+        &self,
+        host: &DesktopSourceHost,
+        kind: DesktopDeliveryKind,
+        urls: impl IntoIterator<Item = tauri::Url>,
+    ) -> Result<usize, CoreError> {
+        let resources = urls
+            .into_iter()
+            .map(|url| {
+                url.to_file_path().map_err(|()| {
+                    safe_error(
+                        CoreErrorCategory::UnsupportedInput,
+                        "The delivered resource is not a local file",
+                    )
+                })
+            })
+            .collect();
+        self.enqueue_resources(host, kind, resources)
+    }
+
+    fn enqueue_resources(
+        &self,
+        host: &DesktopSourceHost,
+        kind: DesktopDeliveryKind,
+        resources: Vec<Result<PathBuf, CoreError>>,
+    ) -> Result<usize, CoreError> {
         {
             let mut state = self.lock()?;
             let occupied = state.queued.len().saturating_add(state.reserved);
-            if paths.len() > MAX_QUEUED_DELIVERIES.saturating_sub(occupied) {
+            if resources.len() > MAX_QUEUED_DELIVERIES.saturating_sub(occupied) {
                 return Err(safe_error(
                     CoreErrorCategory::ResourceLimit,
                     "The desktop delivery queue reached its limit",
                 ));
             }
-            state.reserved = state.reserved.saturating_add(paths.len());
+            state.reserved = state.reserved.saturating_add(resources.len());
         }
         let mut accepted = 0;
-        for path in paths {
-            let acquired = if governed_extension(&path) {
-                let delivery = match kind {
-                    DesktopDeliveryKind::Dialog => DesktopDelivery::dialog(path),
-                    DesktopDeliveryKind::Drop => DesktopDelivery::dropped(path),
-                    DesktopDeliveryKind::CommandLine => DesktopDelivery::command_line(path),
-                    DesktopDeliveryKind::Association => DesktopDelivery::association(path),
-                };
-                host.acquire(delivery)
-            } else {
-                Err(safe_error(
+        for resource in resources {
+            let acquired = match resource {
+                Ok(path) if governed_extension(&path) => {
+                    let delivery = match kind {
+                        DesktopDeliveryKind::Dialog => DesktopDelivery::dialog(path),
+                        DesktopDeliveryKind::Drop => DesktopDelivery::dropped(path),
+                        DesktopDeliveryKind::CommandLine => DesktopDelivery::command_line(path),
+                        DesktopDeliveryKind::Association => DesktopDelivery::association(path),
+                    };
+                    host.acquire(delivery)
+                }
+                Ok(_) => Err(safe_error(
                     CoreErrorCategory::UnsupportedInput,
                     "The delivered file type is not supported",
-                ))
+                )),
+                Err(error) => Err(error),
             };
             let mut state = self.lock()?;
             state.reserved = state.reserved.saturating_sub(1);
@@ -206,6 +243,21 @@ fn governed_extension(path: &Path) -> bool {
 fn looks_like_url(path: &Path) -> bool {
     let value = path.as_os_str().to_string_lossy();
     value.contains("://") || value.starts_with("file:")
+}
+
+#[cfg(target_os = "macos")]
+pub(crate) fn enqueue_opened_urls(app: &tauri::AppHandle, urls: Vec<tauri::Url>) {
+    if urls.is_empty() {
+        return;
+    }
+    let host = app.state::<DesktopSourceHost>();
+    let queue = app.state::<DesktopDeliveryQueue>();
+    let _ = queue.enqueue_file_urls(&host, DesktopDeliveryKind::Association, urls);
+    let _ = app.emit("desktop-deliveries-ready", ());
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.show();
+        let _ = window.set_focus();
+    }
 }
 
 fn safe_error(category: CoreErrorCategory, summary: &str) -> CoreError {
@@ -377,6 +429,35 @@ mod tests {
             path.file_name().and_then(|name| name.to_str()),
             Some("hello world.md")
         );
+    }
+
+    #[test]
+    fn macos_opened_urls_decode_local_paths_and_reject_other_schemes() {
+        let (root, first) = fixture("hello world.md");
+        let second = root.path().join("éclair.mmd");
+        fs::write(&second, b"flowchart TB").expect("Unicode fixture");
+        let queue = DesktopDeliveryQueue::new();
+        let host = DesktopSourceHost::new();
+        let accepted = queue
+            .enqueue_file_urls(
+                &host,
+                DesktopDeliveryKind::Association,
+                [
+                    tauri::Url::from_file_path(first).expect("file URL"),
+                    tauri::Url::from_file_path(second).expect("Unicode file URL"),
+                    tauri::Url::parse("https://example.com/private.md").expect("remote URL"),
+                ],
+            )
+            .expect("enqueue URLs");
+        assert_eq!(accepted, 2);
+        let results = queue.drain(3).expect("drain URLs");
+        assert_eq!(results.len(), 3);
+        assert_eq!(results[0].status, DesktopDeliveryStatus::Opened);
+        assert_eq!(results[1].status, DesktopDeliveryStatus::Opened);
+        assert_eq!(results[2].status, DesktopDeliveryStatus::Rejected);
+        let encoded = serde_json::to_string(&results).expect("serialize results");
+        assert!(!encoded.contains(root.path().to_string_lossy().as_ref()));
+        assert!(!encoded.contains("private.md"));
     }
 
     #[test]

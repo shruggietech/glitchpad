@@ -85,3 +85,20 @@ jobs:
           test -n "$APPLE_API_KEY_PATH"
           test -n "$MACOS_REQUIRED_EVIDENCE"
           echo 'macOS authority is provisioned. Publication remains separately authorized.'
+
+  linux-authority:
+    name: Enforce the Linux repository-attestation authority contract
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: readiness
+    runs-on: ubuntu-24.04
+    env:
+      LINUX_REQUIRED_EVIDENCE: SHA256SUMS,linux-package-manifest.json,glitchpad-linux.cdx.json,provenance.json,build-baseline.json,clean-ubuntu-22.04-appimage.json,clean-ubuntu-22.04-deb.json,clean-ubuntu-24.04-appimage.json,clean-ubuntu-24.04-deb.json,repository-attestation.json
+    steps:
+      - name: Verify Linux publication authority boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          test '${{ github.repository }}' = 'shruggietech/glitchpad'
+          test '${{ github.ref_name }}' = 'v0.1.0'
+          test -n "$LINUX_REQUIRED_EVIDENCE"
+          echo 'Linux authority is eligible for repository-bound attestations. Publication remains separately authorized.'

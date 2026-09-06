@@ -1,0 +1,11 @@
+# Linux packaging
+
+S021 produces one x86_64 AppImage and one x86_64 Debian package for the v0.1.0 candidate. Both are built against the governed Ubuntu 22.04 baseline and validated on clean Ubuntu 22.04 and Ubuntu 24.04 environments.
+
+The AppImage runs without installation after execute permission is granted. It is intentionally thin and requires the distribution's GTK 3 and WebKitGTK 4.1 runtime, avoiding bundled browser-engine or system-library copies that would conflict with supported Linux releases. Debian installation uses standard package tooling, declares `libgtk-3-0` and `libwebkit2gtk-4.1-0`, and may require package-manager elevation; Glitchpad itself always runs as the invoking user. Removal deletes package-owned binaries and desktop/MIME/icon integration while preserving user documents, preferences, and recovery data.
+
+Desktop and MIME declarations are checked against `packaging/desktop/capabilities.json` and `packaging/linux/mime-map.json`. They cover only stable Markdown, Mermaid, plain-text, and approved source types. Glitchpad does not set itself as the default application and does not claim planned image, PDF, office, archive, executable, or mobile-package formats.
+
+Branch and pull-request artifacts are explicitly non-official candidates. They include final-byte checksums, a CycloneDX SBOM, candidate provenance, build-baseline evidence, and content-free lifecycle receipts, but no repository attestation or publication authority. Official validation requires authorized tag context and live repository-attestation evidence bound to both unchanged artifacts; publication remains a separate release action.
+
+Local Windows validation must use `scripts/invoke-docker-hidden.ps1`. Build the `linux-package` target from `scripts/docker/validation.Dockerfile` once as `glitchpad-linux-package:local`, then reuse it for package builds and smoke checks. Never install the Linux toolchain repeatedly in disposable containers and never run project tooling directly on the Windows desktop.

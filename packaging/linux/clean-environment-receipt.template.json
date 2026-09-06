@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "candidate_manifest_sha256": "REQUIRED",
+  "evidence_authority": {
+    "kind": "github_actions_workflow",
+    "workflow_identity": "REQUIRED",
+    "source_commit": "REQUIRED",
+    "native_test_suites": [
+      "app_document_workflow",
+      "desktop_delivery_conformance",
+      "desktop_source_conformance",
+      "recovery_conformance"
+    ]
+  },
+  "linux": {
+    "distribution": "ubuntu",
+    "release": "REQUIRED",
+    "architecture": "x86_64",
+    "package_form": "REQUIRED",
+    "product_version": "REQUIRED",
+    "webkitgtk_version": "REQUIRED"
+  },
+  "automated": {
+    "artifact_integrity": "REQUIRED",
+    "install_or_extract": "REQUIRED",
+    "desktop_registration": "REQUIRED",
+    "mime_registration": "REQUIRED",
+    "launch": "REQUIRED",
+    "startup_delivery": "REQUIRED",
+    "running_instance_delivery": "REQUIRED",
+    "read": "REQUIRED",
+    "edit": "REQUIRED",
+    "save": "REQUIRED",
+    "metadata": "REQUIRED",
+    "recovery": "REQUIRED",
+    "remove": "REQUIRED",
+    "registration_cleanup": "REQUIRED",
+    "document_preservation": "REQUIRED",
+    "performance": "REQUIRED"
+  },
+  "manual": {
+    "dialog": "REQUIRED",
+    "drag_drop": "REQUIRED",
+    "save_as": "REQUIRED",
+    "print": "REQUIRED",
+    "keyboard": "REQUIRED",
+    "focus": "REQUIRED",
+    "text_scale": "REQUIRED",
+    "increased_contrast": "REQUIRED",
+    "reduced_motion": "REQUIRED",
+    "assistive_technology": "REQUIRED",
+    "markdown_webkitgtk": "REQUIRED",
+    "mermaid_webkitgtk": "REQUIRED"
+  },
+  "performance": {
+    "startup_evidence_class": "REQUIRED",
+    "startup_samples_ms": "REQUIRED",
+    "startup_p95_ms": "REQUIRED",
+    "startup_classification": "REQUIRED",
+    "artifact_size_classification": "REQUIRED"
+  },
+  "content_free": true,
+  "completed_utc": "REQUIRED"
+}

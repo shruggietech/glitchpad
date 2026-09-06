@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "families": [
+    {
+      "id": "markdown",
+      "mappings": [
+        { "media_type": "text/markdown", "extensions": ["md", "markdown"] }
+      ]
+    },
+    {
+      "id": "mermaid",
+      "mappings": [
+        { "media_type": "text/vnd.mermaid", "extensions": ["mmd", "mermaid"] }
+      ]
+    },
+    {
+      "id": "plain-text",
+      "mappings": [{ "media_type": "text/plain", "extensions": ["txt"] }]
+    },
+    {
+      "id": "source",
+      "mappings": [
+        { "media_type": "application/json", "extensions": ["json", "jsonc"] },
+        { "media_type": "application/toml", "extensions": ["toml"] },
+        {
+          "media_type": "application/x-typescript",
+          "extensions": ["ts", "tsx"]
+        },
+        { "media_type": "application/x-yaml", "extensions": ["yaml", "yml"] },
+        { "media_type": "text/css", "extensions": ["css"] },
+        { "media_type": "text/html", "extensions": ["htm", "html"] },
+        {
+          "media_type": "text/javascript",
+          "extensions": ["cjs", "js", "jsx", "mjs"]
+        },
+        { "media_type": "text/rust", "extensions": ["rs"] },
+        { "media_type": "text/x-python", "extensions": ["py"] }
+      ]
+    }
+  ],
+  "package_owned_types": ["application/x-typescript", "text/vnd.mermaid"]
+}

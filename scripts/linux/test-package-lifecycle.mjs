@@ -20,6 +20,7 @@ const manualKeys = [
   'increased_contrast', 'reduced_motion', 'assistive_technology',
   'markdown_webkitgtk', 'mermaid_webkitgtk',
 ];
+const candidateUnexercisedKeys = new Set(['read', 'edit', 'save', 'metadata', 'recovery']);
 const deliveryPattern = /^delivery-[1-9]\d*\.marker$/u;
 
 export function validateLifecycleOptions({ packageForm, release }) {
@@ -71,7 +72,10 @@ export function buildCleanEnvironmentReceipt({
       webkitgtk_version: webkitgtkVersion,
     },
     automated: {
-      ...Object.fromEntries(resultKeys.map((key) => [key, 'pass'])),
+      ...Object.fromEntries(resultKeys.map((key) => [
+        key,
+        candidateUnexercisedKeys.has(key) ? 'not_run_candidate' : 'pass',
+      ])),
       performance: 'measured_hosted_smoke',
     },
     manual: Object.fromEntries(manualKeys.map((key) => [key, 'not_run_candidate'])),
@@ -283,6 +287,7 @@ async function main() {
       }
       await stop(child);
       child = undefined;
+      await delay(250);
     }
     if (Buffer.compare(await readFile(fixture), fixtureBytes) !== 0) throw new Error('document_preservation_failed');
     const p95 = percentile95(startupSamplesMs);

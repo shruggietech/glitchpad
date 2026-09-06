@@ -23,7 +23,7 @@ test('assembly renames and binds both final artifacts', async () => {
       outputRoot: join(root, 'out'),
       sourceCommit: 'a'.repeat(40),
       workflowIdentity:
-        'shruggietech/glitchpad/.github/workflows/linux-package.yml@refs/heads/test',
+        'shruggietech/glitchpad/.github/workflows/linux-package.yml@refs/pull/122/merge',
       buildBaseline: {
         distribution: 'ubuntu',
         release: '22.04',

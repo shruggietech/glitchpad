@@ -7,7 +7,7 @@ import { classifyPackageSize } from '../check-linux-package.mjs';
 
 const repositoryRoot = resolve(fileURLToPath(new URL('../..', import.meta.url)));
 const sourceCommitPattern = /^(?:[a-f0-9]{40}|[a-f0-9]{64})$/u;
-const workflowIdentityPattern = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\/.github\/workflows\/linux-package\.yml@refs\/(?:heads|tags)\/.+$/u;
+const workflowIdentityPattern = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\/.github\/workflows\/linux-package\.yml@refs\/(?:(?:heads|tags)\/.+|pull\/[1-9]\d*\/merge)$/u;
 
 const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex');
 

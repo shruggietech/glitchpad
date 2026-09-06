@@ -28,6 +28,8 @@
 6. SBOM generation, candidate assembly, checksums, manifests, provenance, package inventories, and evidence validation passed against the final bytes.
 7. The clean-environment matrix passed for Ubuntu 22.04 AppImage, Ubuntu 22.04 Debian, Ubuntu 24.04 AppImage, and Ubuntu 24.04 Debian. Every case completed five startups plus running-instance delivery and package cleanup.
 8. The complete repository formatting, lint, unit, security, documentation, encoding, mojibake, public-surface, frontend, site, Rust, Android, Windows-package, macOS-package, and Linux-package validation passed through `cargo xtask check` in the hidden self-contained validation container on 2026-09-05. The frontend portion passed 41 files and 231 tests; all Rust test suites passed.
+9. First-round external review identified four defects before merge: pull-request workflow refs were rejected, official mode did not enforce the complete evidence set, candidate receipts overstated unexercised operations, and the MIME XML duplicated platform-owned definitions. Five focused regressions reproduced the findings. The corrections accept only canonical pull-request merge refs, validate every official evidence file and its bindings, report unexercised candidate operations truthfully, and install MIME definitions only for package-owned types.
+10. The first rebuilt Ubuntu 22.04 AppImage lifecycle rerun exposed a teardown race after three successful launches. A bounded 250 ms settle interval now allows single-instance DBus ownership to clear after process exit. The rebuilt final bytes subsequently passed all five launches, running-instance delivery, removal, and cleanup for both package forms on Ubuntu 22.04 and Ubuntu 24.04.
 
 ## Conditional and Dynamic Coverage
 

@@ -63,7 +63,7 @@ The evidence contains no environment dump, host path, account name, token, or ra
 - `performance`: Startup evidence class, samples, percentile, classification, and artifact-size classification.
 - `content_free`, `completed_utc`: Privacy assertion and freshness time.
 
-Candidate receipts permit `not_run_candidate` only for explicitly manual fields. Official receipts require every governed result to pass and remain within the contract freshness window. All objects are closed schemas so undeclared content is rejected.
+Candidate receipts permit `not_run_candidate` for manual fields and for the read, edit, save, metadata, and recovery operations that the clean package harness does not exercise. Results from separately executed conformance suites remain named evidence inputs and do not convert those clean-environment outcomes into passes. Official receipts require every governed result to pass and remain within the contract freshness window. All objects are closed schemas so undeclared content is rejected.
 
 ## Repository attestation evidence
 

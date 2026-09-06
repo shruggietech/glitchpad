@@ -1,50 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
-  <mime-type type="application/json">
-    <glob pattern="*.json"/>
-    <glob pattern="*.jsonc"/>
-  </mime-type>
-  <mime-type type="application/toml">
-    <glob pattern="*.toml"/>
-  </mime-type>
   <mime-type type="application/x-typescript">
     <comment>TypeScript source document</comment>
     <glob pattern="*.ts" weight="80"/>
     <glob pattern="*.tsx" weight="80"/>
   </mime-type>
-  <mime-type type="application/x-yaml">
-    <glob pattern="*.yaml"/>
-    <glob pattern="*.yml"/>
-  </mime-type>
-  <mime-type type="text/css">
-    <glob pattern="*.css"/>
-  </mime-type>
-  <mime-type type="text/html">
-    <glob pattern="*.htm"/>
-    <glob pattern="*.html"/>
-  </mime-type>
-  <mime-type type="text/javascript">
-    <glob pattern="*.cjs"/>
-    <glob pattern="*.js"/>
-    <glob pattern="*.jsx"/>
-    <glob pattern="*.mjs"/>
-  </mime-type>
-  <mime-type type="text/markdown">
-    <glob pattern="*.md"/>
-    <glob pattern="*.markdown"/>
-  </mime-type>
-  <mime-type type="text/plain">
-    <glob pattern="*.txt"/>
-  </mime-type>
-  <mime-type type="text/rust">
-    <glob pattern="*.rs"/>
-  </mime-type>
   <mime-type type="text/vnd.mermaid">
     <comment>Mermaid diagram</comment>
     <glob pattern="*.mmd" weight="80"/>
     <glob pattern="*.mermaid" weight="80"/>
-  </mime-type>
-  <mime-type type="text/x-python">
-    <glob pattern="*.py"/>
   </mime-type>
 </mime-info>

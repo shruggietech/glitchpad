@@ -36,6 +36,21 @@ test('receipt builder emits a closed content-free candidate result', () => {
   });
   assert.equal(receipt.content_free, true);
   assert.equal(receipt.automated.performance, 'measured_hosted_smoke');
+  for (const key of ['read', 'edit', 'save', 'metadata', 'recovery'])
+    assert.equal(receipt.automated[key], 'not_run_candidate');
+  for (const key of [
+    'artifact_integrity',
+    'install_or_extract',
+    'desktop_registration',
+    'mime_registration',
+    'launch',
+    'startup_delivery',
+    'running_instance_delivery',
+    'remove',
+    'registration_cleanup',
+    'document_preservation',
+  ])
+    assert.equal(receipt.automated[key], 'pass');
   assert.equal(receipt.performance.startup_p95_ms, 680);
   assert.equal(JSON.stringify(receipt).includes('/home/'), false);
   assert.equal(JSON.stringify(receipt).includes('fixture'), false);

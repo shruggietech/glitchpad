@@ -1,8 +1,11 @@
 import assert from 'node:assert/strict';
+import { execFile } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
+import { promisify } from 'node:util';
 
 import {
   checkLinuxConfiguration,
@@ -25,6 +28,8 @@ const contract = JSON.parse(
 );
 const digest = 'a'.repeat(64);
 const sourceCommit = 'b'.repeat(40);
+const execFileAsync = promisify(execFile);
+const candidateUnexercisedKeys = new Set(['read', 'edit', 'save', 'metadata', 'recovery']);
 
 function candidate() {
   return {
@@ -120,7 +125,11 @@ function receipt(manifestBytes, release, packageForm, manual = 'not_run_candidat
     automated: Object.fromEntries(
       automatedKeys.map((key) => [
         key,
-        key === 'performance' ? 'measured_hosted_smoke' : 'pass',
+        key === 'performance'
+          ? 'measured_hosted_smoke'
+          : candidateUnexercisedKeys.has(key)
+            ? 'not_run_candidate'
+            : 'pass',
       ]),
     ),
     manual: Object.fromEntries(manualKeys.map((key) => [key, manual])),
@@ -142,6 +151,14 @@ test('repository Linux package configuration is internally consistent', async ()
     capabilityCount: 21,
     mimeTypeCount: 12,
   });
+});
+
+test('shared MIME XML defines only package-owned media types', async () => {
+  const source = await readFile(join(repositoryRoot, 'packaging', 'linux', 'glitchpad.xml'), 'utf8');
+  const types = [...source.matchAll(/<mime-type type="([^"]+)"/gu)].map((match) => match[1]);
+  assert.deepEqual(types.sort(), [...contract.desktop_entry.mime_types].filter((type) =>
+    ['application/x-typescript', 'text/vnd.mermaid'].includes(type),
+  ).sort());
 });
 
 test('size classification preserves exact S018 boundaries', () => {
@@ -203,11 +220,56 @@ test('official receipts require reference evidence and all manual results', () =
   );
   const valid = receipt(manifestBytes, '24.04', 'deb', 'pass');
   valid.performance.startup_evidence_class = 'reference';
-  valid.automated.performance = 'pass';
+  for (const key of Object.keys(valid.automated)) valid.automated[key] = 'pass';
   assert.equal(
     validateCleanEnvironmentReceipt(valid, manifestBytes, contract, { official: true }),
     true,
   );
+});
+
+test('official CLI rejects an attested pair when required evidence files are absent', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'glitchpad-linux-official-'));
+  try {
+    const evidence = candidate();
+    const artifactBytes = Buffer.from('candidate artifact');
+    const artifactDigest = createHash('sha256').update(artifactBytes).digest('hex');
+    for (const artifact of evidence.artifacts) {
+      artifact.bytes = artifactBytes.length;
+      artifact.sha256 = artifactDigest;
+      await writeFile(join(root, artifact.name), artifactBytes);
+    }
+    const manifestPath = join(root, 'linux-package-manifest.json');
+    const attestationPath = join(root, 'repository-attestation.json');
+    await writeFile(manifestPath, `${JSON.stringify(evidence, null, 2)}\n`, 'utf8');
+    await writeFile(
+      attestationPath,
+      `${JSON.stringify({
+        status: contract.official.required_attestation_status,
+        repository: contract.official.repository,
+        source_commit: evidence.source_commit,
+        version: evidence.version,
+        artifacts: evidence.artifacts.map(({ name, sha256 }) => ({ name, sha256 })),
+      }, null, 2)}\n`,
+      'utf8',
+    );
+    await assert.rejects(
+      execFileAsync(process.execPath, [
+        join(repositoryRoot, 'scripts', 'check-linux-package.mjs'),
+        '--repository-root',
+        repositoryRoot,
+        '--evidence',
+        manifestPath,
+        '--artifact-root',
+        root,
+        '--official',
+        '--attestation',
+        attestationPath,
+      ]),
+      /required official evidence/u,
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });
 
 test('Linux SBOM uses the shared deterministic desktop component model', () => {

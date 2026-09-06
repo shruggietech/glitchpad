@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { readFile, stat } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { isDeepStrictEqual } from 'node:util';
 
 const defaultRepositoryRoot = fileURLToPath(new URL('../', import.meta.url));
 const sha256Pattern = /^[a-f0-9]{64}$/u;
@@ -42,6 +43,9 @@ const manualReceiptKeys = [
   'markdown_webkitgtk',
   'mermaid_webkitgtk',
 ];
+const candidateUnexercisedAutomatedKeys = new Set([
+  'read', 'edit', 'save', 'metadata', 'recovery',
+]);
 
 function fail(message) {
   throw new Error(`Invalid Linux package contract: ${message}`);
@@ -321,11 +325,15 @@ export function validateCleanEnvironmentReceipt(
     fail('official receipt requires reference startup evidence');
   if (!official && receipt.performance.startup_evidence_class !== 'hosted_smoke')
     fail('candidate receipt requires hosted_smoke startup evidence');
-  const expectedAutomated = official ? 'pass' : undefined;
   for (const [key, value] of Object.entries(receipt.automated)) {
-    if (
-      value !== (expectedAutomated ?? (key === 'performance' ? 'measured_hosted_smoke' : 'pass'))
-    )
+    const expected = official
+      ? 'pass'
+      : key === 'performance'
+        ? 'measured_hosted_smoke'
+        : candidateUnexercisedAutomatedKeys.has(key)
+          ? 'not_run_candidate'
+          : 'pass';
+    if (value !== expected)
       fail(`automated receipt result ${key} is not valid for its evidence class`);
   }
   for (const value of Object.values(receipt.manual))
@@ -367,6 +375,18 @@ export async function checkLinuxConfiguration(
     fail('capability inventory version is not v0.1.0 schema 1');
   const capabilityExtensions = uniqueExtensions(capabilities);
   const mimeFacts = mimeMapFacts(mimeMap);
+  const packageOwnedTypes = sorted(mimeMap.package_owned_types ?? []);
+  if (
+    packageOwnedTypes.length === 0 ||
+    new Set(packageOwnedTypes).size !== packageOwnedTypes.length ||
+    packageOwnedTypes.some((type) => !mimeFacts.mediaTypes.includes(type))
+  )
+    fail('package-owned MIME types are invalid');
+  const packageOwnedExtensions = sorted(mimeMap.families.flatMap((family) =>
+    family.mappings
+      .filter((mapping) => packageOwnedTypes.includes(mapping.media_type))
+      .flatMap((mapping) => mapping.extensions),
+  ));
   if (!same(capabilityExtensions, mimeFacts.extensions))
     fail('Linux MIME extensions drift from shared stable capabilities');
   for (const family of capabilities.families) {
@@ -413,8 +433,8 @@ export async function checkLinuxConfiguration(
   const xmlTypes = [...mimeSource.matchAll(/<mime-type type="([^"]+)"/gu)].map(
     (match) => match[1],
   );
-  if (!same(xmlGlobs, capabilityExtensions) || !same(xmlTypes, mimeFacts.mediaTypes))
-    fail('shared MIME XML drifts from governed mappings');
+  if (!same(xmlGlobs, packageOwnedExtensions) || !same(xmlTypes, packageOwnedTypes))
+    fail('shared MIME XML must define only package-owned mappings');
   const associations = tauri.bundle?.fileAssociations ?? [];
   if (
     tauri.version !== contract.candidate_version ||
@@ -449,6 +469,9 @@ export async function checkLinuxConfiguration(
     !releaseWorkflow.includes('attestations: write')
   )
     fail('release workflow omits Linux authority preflight');
+  for (const evidenceName of contract.official.required_evidence)
+    if (!releaseWorkflow.includes(evidenceName))
+      fail(`release workflow omits required Linux evidence ${evidenceName}`);
   if (
     !deliverySource.includes('enqueue_arguments') ||
     !deliverySource.includes('GOVERNED_EXTENSIONS') ||
@@ -476,6 +499,104 @@ async function validateArtifactFiles(evidence, contract, artifactRoot) {
   }
 }
 
+function validateSbom(sbom, evidence) {
+  const sbomCommit = sbom.metadata?.properties?.find(
+    ({ name }) => name === 'glitchpad:source_commit',
+  )?.value;
+  const references = Array.isArray(sbom.components)
+    ? sbom.components.map((component) => component['bom-ref'])
+    : [];
+  if (
+    sbom.bomFormat !== 'CycloneDX' ||
+    sbom.specVersion !== '1.6' ||
+    sbom.metadata?.component?.name !== 'Glitchpad for Linux' ||
+    sbom.metadata?.component?.version !== evidence.version ||
+    sbomCommit !== evidence.source_commit ||
+    !references.some((reference) => reference.startsWith('pkg:cargo/')) ||
+    !references.some((reference) => reference.startsWith('pkg:npm/'))
+  )
+    fail('CycloneDX evidence is incomplete or stale');
+}
+
+function validateProvenance(provenance, evidence, contract) {
+  const subjects = evidence.artifacts.map(({ name, sha256 }) => ({ name, sha256 }));
+  if (
+    provenance.schema_version !== 1 ||
+    provenance.predicate_type !== 'https://slsa.dev/provenance/v1' ||
+    provenance.candidate_only !== true ||
+    provenance.repository !== contract.official.repository ||
+    provenance.source_commit !== evidence.source_commit ||
+    provenance.workflow_identity !== evidence.workflow_identity ||
+    !isDeepStrictEqual(provenance.build_baseline, evidence.build_baseline) ||
+    !isDeepStrictEqual(provenance.subjects, subjects)
+  )
+    fail('provenance is incomplete or stale');
+}
+
+export async function validateOfficialLinuxArtifactSet(
+  evidence,
+  contract,
+  { artifactRoot, attestation } = {},
+) {
+  if (!artifactRoot) fail('official mode requires the final artifact root');
+  validateLinuxEvidence(evidence, contract, { official: true, attestation });
+  const root = resolve(artifactRoot);
+  const evidenceBytes = new Map();
+  for (const name of contract.official.required_evidence ?? []) {
+    if (name !== name.split('/').at(-1) || name !== name.split('\\').at(-1))
+      fail(`required official evidence name is unsafe: ${name}`);
+    try {
+      const [bytes, metadata] = await Promise.all([
+        readFile(join(root, name)),
+        stat(join(root, name)),
+      ]);
+      if (!metadata.isFile()) throw new Error('not_a_file');
+      evidenceBytes.set(name, bytes);
+    } catch {
+      fail(`required official evidence is missing or unreadable: ${name}`);
+    }
+  }
+  const manifestBytes = evidenceBytes.get('linux-package-manifest.json');
+  if (
+    !manifestBytes ||
+    !isDeepStrictEqual(JSON.parse(manifestBytes.toString('utf8')), evidence)
+  )
+    fail('manifest evidence does not match the validated document');
+  const expectedChecksums = `${evidence.artifacts
+    .map(({ name, sha256 }) => `${sha256}  ${name}`)
+    .join('\n')}\n`;
+  if (evidenceBytes.get('SHA256SUMS')?.toString('utf8') !== expectedChecksums)
+    fail('SHA256SUMS does not bind the final Linux artifact pair');
+  const baseline = JSON.parse(evidenceBytes.get('build-baseline.json').toString('utf8'));
+  if (!isDeepStrictEqual(baseline, evidence.build_baseline))
+    fail('build baseline evidence is incomplete or stale');
+  validateSbom(
+    JSON.parse(evidenceBytes.get('glitchpad-linux.cdx.json').toString('utf8')),
+    evidence,
+  );
+  validateProvenance(
+    JSON.parse(evidenceBytes.get('provenance.json').toString('utf8')),
+    evidence,
+    contract,
+  );
+  const recordedAttestation = JSON.parse(
+    evidenceBytes.get('repository-attestation.json').toString('utf8'),
+  );
+  if (!isDeepStrictEqual(recordedAttestation, attestation))
+    fail('repository attestation file does not match live verification');
+  for (const name of contract.official.required_evidence.filter((value) =>
+    /^clean-ubuntu-(?:22\.04|24\.04)-(?:appimage|deb)\.json$/u.test(value),
+  )) {
+    validateCleanEnvironmentReceipt(
+      JSON.parse(evidenceBytes.get(name).toString('utf8')),
+      manifestBytes,
+      contract,
+      { official: true },
+    );
+  }
+  return true;
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const take = (name) => {
@@ -491,12 +612,20 @@ async function main() {
     const official = args.includes('--official');
     const attestationPath = take('--attestation');
     const attestation = attestationPath ? await json(resolve(attestationPath)) : undefined;
+    const artifactRoot = resolve(
+      take('--artifact-root') ?? new URL('.', `file://${resolve(evidencePath)}`).pathname,
+    );
     validateLinuxEvidence(evidence, contract, { official, attestation });
     await validateArtifactFiles(
       evidence,
       contract,
-      resolve(take('--artifact-root') ?? new URL('.', `file://${resolve(evidencePath)}`).pathname),
+      artifactRoot,
     );
+    if (official)
+      await validateOfficialLinuxArtifactSet(evidence, contract, {
+        artifactRoot,
+        attestation,
+      });
   }
   console.log(
     `Linux package contract valid (${result.artifactCount} artifacts, ${result.capabilityCount} extensions, ${result.mimeTypeCount} media types).`,

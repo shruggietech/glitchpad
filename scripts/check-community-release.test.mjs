@@ -4,6 +4,7 @@ import {
   validateGovernedClaims,
   validateReleaseAuthorityGate,
   validateReleaseContract,
+  validateReleaseReadinessEvidence,
   validateTagPackageWorkflows,
 } from './check-community-release.mjs';
 
@@ -151,4 +152,26 @@ test('rejects manual readiness that is not restricted to main', () =>
         ),
       ),
     /fail closed/u,
+  ));
+
+const releaseReadinessScript = `
+$requiredEvidence = @(
+    'brand/manifest.json',
+    'brand/INTEGRATION.md'
+)
+`;
+
+test('accepts current brand evidence in tag-context readiness', () =>
+  assert.equal(validateReleaseReadinessEvidence(releaseReadinessScript), true));
+
+test('rejects removed brand evidence in tag-context readiness', () =>
+  assert.throws(
+    () =>
+      validateReleaseReadinessEvidence(
+        releaseReadinessScript.replace(
+          'brand/manifest.json',
+          'brand/references/01-canon.json',
+        ),
+      ),
+    /current brand evidence|removed brand evidence/u,
   ));

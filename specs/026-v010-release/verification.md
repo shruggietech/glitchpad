@@ -22,6 +22,10 @@ The completed implementation was compared with the specification, plan, research
 
 The first complete repository run stopped when Prettier identified one S026 Markdown file. That file was formatted, and the release/documentation tail from the stopping point was rerun successfully. A subsequent redundant full rerun was terminated after exceeding the bounded local execution window; no failed assertion was used as evidence, and the already completed component results above cover every required gate.
 
+## Publication-attempt remediation
+
+The first owner-authorized tag attempt exposed one stale S023 evidence path in the tag-only readiness check after S025 replaced the governed brand kit. Release run `34168087207` failed before artifact publication, the four package workflows were cancelled, no GitHub release was created, and the local and remote `v0.1.0` tags were deleted. The readiness check now requires `brand/manifest.json` and `brand/INTEGRATION.md`, and community-release regression coverage rejects the removed `brand/references/01-canon.json` path. The focused policy suite passed 16 tests, current brand validation passed 20 tests, and the exact `v0.1.0` tag-context readiness command passed before this remediation was pushed.
+
 ## Publication boundary
 
-No `v0.1.0` tag or GitHub release was created. Manual release-workflow dispatch remains non-publishing. After owner review and merge, the operator must provision the stable Android authority, run manual readiness from current `main`, and then explicitly authorize the tag ritual in `docs/releases/v0.1.0-operator-runbook.md`.
+No `v0.1.0` tag or GitHub release currently exists. Stable Android authority is configured, manual readiness passed on current `main` in run `34166727857`, and the owner authorized publication. After this remediation is reviewed and merged, the operator may repeat the exact tag ritual in `docs/releases/v0.1.0-operator-runbook.md`.

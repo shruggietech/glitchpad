@@ -135,7 +135,7 @@ jobs:
       - name: Collect locked dependency inputs
         run: |
           cargo metadata --locked --format-version 1 > "$RUNNER_TEMP/cargo-metadata.json"
-          pnpm list --prod --json --depth Infinity > "$RUNNER_TEMP/pnpm-list.json"
+          pnpm list --recursive --prod --json --depth Infinity > "$RUNNER_TEMP/pnpm-list.json"
           ./crates/glitchpad-host/gen/android/gradlew --project-dir crates/glitchpad-host/gen/android :app:dependencies --configuration universalReleaseRuntimeClasspath --no-daemon > "$RUNNER_TEMP/gradle-dependencies.txt"
 
       - name: Assemble canonical final bytes and evidence

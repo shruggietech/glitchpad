@@ -7,9 +7,10 @@ import { generateDesktopSbom } from './generate-windows-sbom.mjs';
 export function parseMavenDependencies(report) {
   const dependencies = new Map();
   const pattern =
-    /(?:^|\s)([A-Za-z0-9_.-]+):([A-Za-z0-9_.-]+):([A-Za-z0-9_.+\-]+)(?:\s|$)/gmu;
+    /(?:^|\s)([A-Za-z0-9_.-]+):([A-Za-z0-9_.-]+):([A-Za-z0-9_.+\-]+)(?:\s+->\s+([A-Za-z0-9_.+\-]+))?(?:\s|$)/gmu;
   for (const match of report.matchAll(pattern)) {
-    const [, group, name, version] = match;
+    const [, group, name, requestedVersion, selectedVersion] = match;
+    const version = selectedVersion ?? requestedVersion;
     const purl = `pkg:maven/${group}/${name}@${version}`;
     dependencies.set(purl, {
       type: 'library',

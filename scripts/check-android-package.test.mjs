@@ -456,7 +456,7 @@ test('Android SBOM includes Cargo, npm, and Maven runtime components determinist
     },
     [{ dependencies: { react: { version: '19.1.1', license: 'MIT' } } }],
     'a'.repeat(40),
-    'androidx.core:core-ktx:1.17.0\ncom.google.android.material:material:1.14.0\n',
+    'androidx.core:core-ktx:1.17.0\ncom.fasterxml.jackson.core:jackson-databind:2.15.3 -> 2.13.5\ncom.google.android.material:material:1.14.0\n',
     { universal: 'b'.repeat(64), arm64: 'c'.repeat(64), play: 'd'.repeat(64) },
   );
   assert.equal(bom.bomFormat, 'CycloneDX');
@@ -468,6 +468,7 @@ test('Android SBOM includes Cargo, npm, and Maven runtime components determinist
     [
       'pkg:cargo/glitchpad-core@0.1.0',
       'pkg:maven/androidx.core/core-ktx@1.17.0',
+      'pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.13.5',
       'pkg:maven/com.google.android.material/material@1.14.0',
       'pkg:npm/react@19.1.1',
     ],

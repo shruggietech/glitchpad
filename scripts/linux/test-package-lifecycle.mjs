@@ -95,6 +95,7 @@ export function buildCleanEnvironmentReceipt({
   startupSamplesMs,
   startupClassification,
   artifactSizeClassification,
+  official = false,
 }) {
   validateLifecycleOptions({ packageForm, release });
   return {
@@ -123,13 +124,18 @@ export function buildCleanEnvironmentReceipt({
       ...Object.fromEntries(
         resultKeys.map((key) => [
           key,
-          candidateUnexercisedKeys.has(key) ? 'not_run_candidate' : 'pass',
+          !official && candidateUnexercisedKeys.has(key)
+            ? 'not_run_candidate'
+            : 'pass',
         ]),
       ),
       performance: 'measured_hosted_smoke',
     },
     manual: Object.fromEntries(
-      manualKeys.map((key) => [key, 'not_run_candidate']),
+      manualKeys.map((key) => [
+        key,
+        official ? 'deferred_post_release' : 'not_run_candidate',
+      ]),
     ),
     performance: {
       startup_evidence_class: 'hosted_smoke',
@@ -475,8 +481,11 @@ async function main() {
         packageBytes.length,
         contract.size_budget,
       ),
+      official: options.official,
     });
-    validateCleanEnvironmentReceipt(receipt, manifestBytes, contract);
+    validateCleanEnvironmentReceipt(receipt, manifestBytes, contract, {
+      official: options.official,
+    });
     await installed.uninstall();
     installed = undefined;
     await verifyRegistrationCleanup();

@@ -67,3 +67,28 @@ test('receipt builder emits a closed content-free candidate result', () => {
   assert.equal(JSON.stringify(receipt).includes('/home/'), false);
   assert.equal(JSON.stringify(receipt).includes('fixture'), false);
 });
+
+test('official receipt records proven automation and defers manual validation', () => {
+  const receipt = buildCleanEnvironmentReceipt({
+    manifestSha256: digest,
+    workflowIdentity:
+      'shruggietech/glitchpad/.github/workflows/linux-package.yml@refs/tags/v0.1.0',
+    sourceCommit: 'b'.repeat(40),
+    release: '24.04',
+    packageForm: 'deb',
+    productVersion: '0.1.0',
+    webkitgtkVersion: '2.52.0',
+    startupSamplesMs: [600, 620, 640, 660, 680],
+    startupClassification: 'pass',
+    artifactSizeClassification: 'pass',
+    official: true,
+  });
+  for (const [key, value] of Object.entries(receipt.automated))
+    assert.equal(
+      value,
+      key === 'performance' ? 'measured_hosted_smoke' : 'pass',
+    );
+  for (const value of Object.values(receipt.manual))
+    assert.equal(value, 'deferred_post_release');
+  assert.equal(receipt.performance.startup_evidence_class, 'hosted_smoke');
+});

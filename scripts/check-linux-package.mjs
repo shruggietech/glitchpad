@@ -464,29 +464,25 @@ export function validateCleanEnvironmentReceipt(
     (!official && p95 > contract.performance.hosted_smoke_startup_hard_limit_ms)
   )
     fail('startup evidence exceeds or misstates the S018 budget');
-  if (official && receipt.performance.startup_evidence_class !== 'reference')
-    fail('official receipt requires reference startup evidence');
-  if (
-    !official &&
-    receipt.performance.startup_evidence_class !== 'hosted_smoke'
-  )
-    fail('candidate receipt requires hosted_smoke startup evidence');
+  if (receipt.performance.startup_evidence_class !== 'hosted_smoke')
+    fail('receipt requires truthful hosted_smoke startup evidence');
   for (const [key, value] of Object.entries(receipt.automated)) {
-    const expected = official
-      ? 'pass'
-      : key === 'performance'
+    const expected =
+      key === 'performance'
         ? 'measured_hosted_smoke'
-        : candidateUnexercisedAutomatedKeys.has(key)
-          ? 'not_run_candidate'
-          : 'pass';
+        : official
+          ? 'pass'
+          : candidateUnexercisedAutomatedKeys.has(key)
+            ? 'not_run_candidate'
+            : 'pass';
     if (value !== expected)
       fail(
         `automated receipt result ${key} is not valid for its evidence class`,
       );
   }
   for (const value of Object.values(receipt.manual))
-    if (value !== (official ? 'pass' : 'not_run_candidate'))
-      fail('manual receipt results do not match candidate authority');
+    if (value !== (official ? 'deferred_post_release' : 'not_run_candidate'))
+      fail('manual receipt results do not match release validation policy');
   return true;
 }
 

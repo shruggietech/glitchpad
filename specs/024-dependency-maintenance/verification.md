@@ -5,8 +5,8 @@
 | PR | Proposal | Disposition |
 | --- | --- | --- |
 | #123 | Jackson Databind 2.22.2 | Excluded. Tauri's newer Jackson line raises the Android floor to API 26, while Glitchpad supports API 24 and intentionally pins the final compatible 2.13 line. |
-| #124 | AndroidX Test Core 1.7.0 | Included with the coherent AndroidX Test 1.7 and JUnit extension 1.3 suite. |
-| #125 | Espresso Core 3.7.0 | Included with the coherent AndroidX Test suite. |
+| #124 | AndroidX Test Core 1.7.0 | Excluded after the coherent AndroidX Test 1.7 suite caused the API 36 instrumentation process to crash before test discovery in two independent CI attempts. API 24 and the proven 1.6 baseline remain green. |
+| #125 | Espresso Core 3.7.0 | Excluded with the AndroidX Test 1.7 cluster after two reproducible API 36 instrumentation crashes before test discovery. |
 | #126 | sysinfo 0.39.6 | Included. |
 | #127 | sha2 0.11.0 | Excluded. This is a non-urgent major API migration with no associated repository advisory. |
 | #128 | npm minor and patch group | Partially included. Compatible root and application updates are consolidated. The grouped site updates are held because Fumadocs duplicates the site's main landmark and the proposed Next/Tailwind combination breaks shared brand stylesheet resolution under the workspace layout. |

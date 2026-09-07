@@ -1,0 +1,5 @@
+Glitchpad third-party notices
+
+This candidate bundles dependencies from the locked Cargo and pnpm graphs plus the Android universal release runtime graph recorded with the artifact evidence.
+
+The accompanying CycloneDX SBOM records exact Cargo, npm, and Maven package identities. Original Glitchpad source and assets are licensed under Apache-2.0. Dependency license policy remains governed by deny.toml, Cargo.lock, package.json, pnpm-lock.yaml, and the repository license checks.

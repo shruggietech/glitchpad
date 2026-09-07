@@ -90,6 +90,75 @@ COPY --from=linux-package /opt/corepack /opt/corepack
 
 WORKDIR /workspace
 
+FROM ubuntu:22.04 AS android-package
+
+ARG ANDROID_COMMAND_LINE_TOOLS_VERSION=15859902
+ARG ANDROID_COMMAND_LINE_TOOLS_SHA256=4e4c464f145a7512b57d088ac6c278c03c9eea610886b35a5e0804e74eedf583
+ARG ANDROID_PLATFORM=36
+ARG ANDROID_BUILD_TOOLS=36.0.0
+ARG ANDROID_NDK=28.2.13676358
+ARG BUNDLETOOL_VERSION=1.18.3
+ARG BUNDLETOOL_SHA256=a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29
+
+ENV ANDROID_HOME=/opt/android-sdk
+ENV ANDROID_SDK_ROOT=/opt/android-sdk
+ENV BUNDLETOOL_JAR=/opt/android/bundletool.jar
+ENV CARGO_BUILD_JOBS=2
+ENV CARGO_HOME=/usr/local/cargo
+ENV COREPACK_HOME=/opt/corepack
+ENV DEBIAN_FRONTEND=noninteractive
+ENV GLITCHPAD_ANDROID_PACKAGE_CONTAINER=true
+ENV GLITCHPAD_VALIDATION_TARGET=android-package
+ENV GRADLE_OPTS="-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=2 -Dfile.encoding=UTF-8"
+ENV NDK_HOME=/opt/android-sdk/ndk/28.2.13676358
+ENV PATH="/opt/android-sdk/cmdline-tools/latest/bin:/opt/android-sdk/platform-tools:/opt/android-sdk/build-tools/36.0.0:/usr/local/cargo/bin:${PATH}"
+ENV RUSTUP_HOME=/usr/local/rustup
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        build-essential \
+        ca-certificates \
+        curl \
+        file \
+        git \
+        jq \
+        libssl-dev \
+        openjdk-17-jdk-headless \
+        pkg-config \
+        unzip \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=linux-package /usr/local /usr/local
+COPY --from=linux-package /opt/corepack /opt/corepack
+
+RUN set -eux; \
+    archive="commandlinetools-linux-${ANDROID_COMMAND_LINE_TOOLS_VERSION}_latest.zip"; \
+    curl -fsSLo "/tmp/${archive}" "https://dl.google.com/android/repository/${archive}"; \
+    echo "${ANDROID_COMMAND_LINE_TOOLS_SHA256}  /tmp/${archive}" | sha256sum -c -; \
+    mkdir -p "${ANDROID_HOME}/cmdline-tools"; \
+    unzip -q "/tmp/${archive}" -d /tmp/android-command-line-tools; \
+    mv /tmp/android-command-line-tools/cmdline-tools "${ANDROID_HOME}/cmdline-tools/latest"; \
+    rm -rf "/tmp/${archive}" /tmp/android-command-line-tools; \
+    yes | sdkmanager --licenses >/dev/null; \
+    sdkmanager \
+        "platforms;android-${ANDROID_PLATFORM}" \
+        "build-tools;${ANDROID_BUILD_TOOLS}" \
+        "platform-tools" \
+        "ndk;${ANDROID_NDK}"
+
+RUN set -eux; \
+    mkdir -p /opt/android; \
+    curl -fsSLo "${BUNDLETOOL_JAR}" "https://github.com/google/bundletool/releases/download/${BUNDLETOOL_VERSION}/bundletool-all-${BUNDLETOOL_VERSION}.jar"; \
+    echo "${BUNDLETOOL_SHA256}  ${BUNDLETOOL_JAR}" | sha256sum -c -
+
+RUN rustup target add aarch64-linux-android x86_64-linux-android \
+    && useradd --create-home --uid 1000 validator \
+    && mkdir -p /opt/gradle \
+    && chown -R validator:validator /opt/gradle
+
+ENV GRADLE_USER_HOME=/opt/gradle
+WORKDIR /workspace
+
 FROM rust:1.96.0-bookworm
 
 ARG NODE_VERSION=24.11.0

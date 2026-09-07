@@ -2,9 +2,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />
 
-    <!-- AndroidTV support -->
-    <uses-feature android:name="android.software.leanback" android:required="false" />
-
     <application
         android:dataExtractionRules="@xml/backup_rules"
         android:fullBackupContent="@xml/backup_rules_legacy"
@@ -21,8 +18,61 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
-                <!-- AndroidTV support -->
-                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="content" />
+                <data android:mimeType="application/json" />
+                <data android:mimeType="application/toml" />
+                <data android:mimeType="application/x-typescript" />
+                <data android:mimeType="application/x-yaml" />
+                <data android:mimeType="text/css" />
+                <data android:mimeType="text/html" />
+                <data android:mimeType="text/javascript" />
+                <data android:mimeType="text/markdown" />
+                <data android:mimeType="text/plain" />
+                <data android:mimeType="text/rust" />
+                <data android:mimeType="text/vnd.mermaid" />
+                <data android:mimeType="text/x-python" />
+                <data android:pathSuffix=".cjs" />
+                <data android:pathSuffix=".css" />
+                <data android:pathSuffix=".htm" />
+                <data android:pathSuffix=".html" />
+                <data android:pathSuffix=".js" />
+                <data android:pathSuffix=".json" />
+                <data android:pathSuffix=".jsonc" />
+                <data android:pathSuffix=".jsx" />
+                <data android:pathSuffix=".markdown" />
+                <data android:pathSuffix=".md" />
+                <data android:pathSuffix=".mermaid" />
+                <data android:pathSuffix=".mjs" />
+                <data android:pathSuffix=".mmd" />
+                <data android:pathSuffix=".py" />
+                <data android:pathSuffix=".rs" />
+                <data android:pathSuffix=".toml" />
+                <data android:pathSuffix=".ts" />
+                <data android:pathSuffix=".tsx" />
+                <data android:pathSuffix=".txt" />
+                <data android:pathSuffix=".yaml" />
+                <data android:pathSuffix=".yml" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/json" />
+                <data android:mimeType="application/toml" />
+                <data android:mimeType="application/x-typescript" />
+                <data android:mimeType="application/x-yaml" />
+                <data android:mimeType="text/css" />
+                <data android:mimeType="text/html" />
+                <data android:mimeType="text/javascript" />
+                <data android:mimeType="text/markdown" />
+                <data android:mimeType="text/plain" />
+                <data android:mimeType="text/rust" />
+                <data android:mimeType="text/vnd.mermaid" />
+                <data android:mimeType="text/x-python" />
             </intent-filter>
         </activity>
 

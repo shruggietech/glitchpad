@@ -13,7 +13,7 @@ export function generateDesktopSbom(
 ) {
   if (!/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/u.test(sourceCommit))
     throw new Error('Desktop SBOM requires the exact source commit');
-  if (!['Windows', 'macOS', 'Linux'].includes(platform))
+  if (!['Windows', 'macOS', 'Linux', 'Android'].includes(platform))
     throw new Error('Desktop SBOM requires a governed platform');
   const components = new Map();
   for (const { name, version, source, license } of metadata.packages) {

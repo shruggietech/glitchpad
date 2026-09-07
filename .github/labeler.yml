@@ -1,6 +1,13 @@
 'area: android':
   - changed-files:
-      - any-glob-to-any-file: 'crates/glitchpad-host/gen/android/**'
+      - any-glob-to-any-file:
+          - 'crates/glitchpad-host/gen/android/**'
+          - 'crates/glitchpad-host/tauri.s022-android.conf.json'
+          - 'packaging/android/**'
+          - 'scripts/android/**'
+          - 'scripts/check-android-package*.mjs'
+          - 'scripts/generate-android-sbom.mjs'
+          - '.github/workflows/android-package.yml'
 'area: documentation':
   - changed-files:
       - any-glob-to-any-file:
@@ -26,6 +33,8 @@
           - 'scripts/windows/**'
           - 'scripts/macos/**'
           - 'scripts/linux/**'
+          - 'scripts/android/**'
+          - '.github/workflows/android-package.yml'
           - '.github/workflows/linux-package.yml'
           - '.github/workflows/macos-package.yml'
           - '.github/workflows/windows-package.yml'

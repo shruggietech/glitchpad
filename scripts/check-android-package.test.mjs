@@ -26,6 +26,7 @@ const contract = {
   version_code: 1000,
   min_sdk: 24,
   target_sdk: 36,
+  build_tools_version: '36.0.0',
   manifest_posture: {
     application_label: '@string/app_name',
     launcher_icon: '@mipmap/ic_launcher',

@@ -313,7 +313,7 @@ async function run(program, arguments_) {
   return `${stdout}${stderr}`;
 }
 
-async function inspectArtifact(path, declared, authority) {
+async function inspectArtifact(path, declared, authority, contract) {
   const entries = (await run('unzip', ['-Z1', path]))
     .split(/\r?\n/u)
     .filter(Boolean);
@@ -330,7 +330,11 @@ async function inspectArtifact(path, declared, authority) {
         ]);
   let signatureOutput;
   if (declared.kind === 'apk') {
-    signatureOutput = await run('apksigner', [
+    const sdkRoot = process.env.ANDROID_SDK_ROOT ?? process.env.ANDROID_HOME;
+    const apksigner = sdkRoot
+      ? join(sdkRoot, 'build-tools', contract.build_tools_version, 'apksigner')
+      : 'apksigner';
+    signatureOutput = await run(apksigner, [
       'verify',
       '--verbose',
       '--print-certs',
@@ -508,7 +512,12 @@ async function main() {
     const supplied = artifacts.find(({ role }) => role === declared.role);
     if (!supplied) throw new Error(`missing ${declared.role} artifact path`);
     inventories.push(
-      await inspectArtifact(resolve(supplied.path), declared, authority),
+      await inspectArtifact(
+        resolve(supplied.path),
+        declared,
+        authority,
+        contract,
+      ),
     );
   }
   validateArtifactInventories(inventories, contract, intentMap, authority);

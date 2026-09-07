@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "actions": [
+    "android.intent.action.MAIN",
+    "android.intent.action.SEND",
+    "android.intent.action.VIEW"
+  ],
+  "categories": [
+    "android.intent.category.BROWSABLE",
+    "android.intent.category.DEFAULT",
+    "android.intent.category.LAUNCHER"
+  ],
+  "schemes": ["content"],
+  "media_types": [
+    "application/json",
+    "application/toml",
+    "application/x-typescript",
+    "application/x-yaml",
+    "text/css",
+    "text/html",
+    "text/javascript",
+    "text/markdown",
+    "text/plain",
+    "text/rust",
+    "text/vnd.mermaid",
+    "text/x-python"
+  ],
+  "extensions": [
+    "cjs",
+    "css",
+    "htm",
+    "html",
+    "js",
+    "json",
+    "jsonc",
+    "jsx",
+    "markdown",
+    "md",
+    "mermaid",
+    "mjs",
+    "mmd",
+    "py",
+    "rs",
+    "toml",
+    "ts",
+    "tsx",
+    "txt",
+    "yaml",
+    "yml"
+  ],
+  "forbidden_permissions": [
+    "android.permission.MANAGE_EXTERNAL_STORAGE",
+    "android.permission.READ_EXTERNAL_STORAGE",
+    "android.permission.WRITE_EXTERNAL_STORAGE"
+  ],
+  "forbidden_actions": ["android.intent.action.SEND_MULTIPLE"],
+  "forbidden_schemes": ["file"],
+  "forbidden_media_types": ["*/*", "application/*", "text/*"]
+}

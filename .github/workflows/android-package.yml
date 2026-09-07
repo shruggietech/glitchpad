@@ -1,0 +1,173 @@
+name: android-package
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/android-package.yml'
+      - 'apps/glitchpad/**'
+      - 'crates/glitchpad-android-source/**'
+      - 'crates/glitchpad-core/**'
+      - 'crates/glitchpad-host/**'
+      - 'packaging/android/**'
+      - 'packaging/desktop/capabilities.json'
+      - 'scripts/android/**'
+      - 'scripts/check-android-package*.mjs'
+      - 'scripts/generate-android-sbom.mjs'
+      - 'Cargo.lock'
+      - 'Cargo.toml'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/android-package.yml'
+      - 'apps/glitchpad/**'
+      - 'crates/glitchpad-android-source/**'
+      - 'crates/glitchpad-core/**'
+      - 'crates/glitchpad-host/**'
+      - 'packaging/android/**'
+      - 'packaging/desktop/capabilities.json'
+      - 'scripts/android/**'
+      - 'scripts/check-android-package*.mjs'
+      - 'scripts/generate-android-sbom.mjs'
+      - 'Cargo.lock'
+      - 'Cargo.toml'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-package-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  candidate:
+    name: Signed Android candidate artifacts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Install pinned Android SDK and NDK
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0" "platform-tools" "ndk;28.2.13676358"
+
+      - name: Install pinned bundletool
+        env:
+          BUNDLETOOL_SHA256: a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29
+        run: |
+          curl --fail --silent --show-error --location --output "$RUNNER_TEMP/bundletool.jar" https://github.com/google/bundletool/releases/download/1.18.3/bundletool-all-1.18.3.jar
+          echo "$BUNDLETOOL_SHA256  $RUNNER_TEMP/bundletool.jar" | sha256sum --check --strict
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.28.2
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Add Rust Android targets
+        run: rustup target add aarch64-linux-android x86_64-linux-android
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: android-package-aarch64-x86_64
+
+      - name: Create disposable candidate signing authority
+        run: |
+          keytool -genkeypair -noprompt -keystore "$RUNNER_TEMP/glitchpad-candidate.jks" -storepass candidate-password -keypass candidate-password -alias candidate -keyalg RSA -keysize 3072 -validity 2 -dname "CN=Glitchpad Pull Request Candidate, O=ShruggieTech, C=US"
+          {
+            echo "storeFile=$RUNNER_TEMP/glitchpad-candidate.jks"
+            echo 'password=candidate-password'
+            echo 'keyPassword=candidate-password'
+            echo 'keyAlias=candidate'
+          } > crates/glitchpad-host/gen/android/keystore.properties
+
+      - name: Run Android package contract tests
+        run: pnpm run check:android-package
+
+      - name: Build universal APK and AAB
+        run: |
+          export NDK_HOME="$ANDROID_SDK_ROOT/ndk/28.2.13676358"
+          pnpm tauri android build --apk --aab --target aarch64 --target x86_64 --ci --config tauri.s022-android.conf.json
+          cp crates/glitchpad-host/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk "$RUNNER_TEMP/app-universal-release.apk"
+          cp crates/glitchpad-host/gen/android/app/build/outputs/bundle/universalRelease/app-universal-release.aab "$RUNNER_TEMP/app-universal-release.aab"
+
+      - name: Build ARM64 APK
+        run: |
+          export NDK_HOME="$ANDROID_SDK_ROOT/ndk/28.2.13676358"
+          pnpm tauri android build --apk --split-per-abi --target aarch64 --ci --config tauri.s022-android.conf.json
+          cp crates/glitchpad-host/gen/android/app/build/outputs/apk/arm64/release/app-arm64-release.apk "$RUNNER_TEMP/app-arm64-release.apk"
+
+      - name: Inspect raw signed packages
+        env:
+          BUNDLETOOL_JAR: ${{ runner.temp }}/bundletool.jar
+        run: |
+          node scripts/check-android-package.mjs \
+            --authority candidate \
+            --output "$RUNNER_TEMP/android-inventories" \
+            --artifact "universal=$RUNNER_TEMP/app-universal-release.apk" \
+            --artifact "arm64=$RUNNER_TEMP/app-arm64-release.apk" \
+            --artifact "play=$RUNNER_TEMP/app-universal-release.aab"
+
+      - name: Collect locked dependency inputs
+        run: |
+          cargo metadata --locked --format-version 1 > "$RUNNER_TEMP/cargo-metadata.json"
+          pnpm list --recursive --prod --json --depth Infinity > "$RUNNER_TEMP/pnpm-list.json"
+          ./crates/glitchpad-host/gen/android/gradlew --project-dir crates/glitchpad-host/gen/android :app:dependencies --configuration universalReleaseRuntimeClasspath --no-daemon > "$RUNNER_TEMP/gradle-dependencies.txt"
+
+      - name: Assemble canonical final bytes and evidence
+        run: |
+          node scripts/android/assemble-package.mjs \
+            --contract packaging/android/package-contract.json \
+            --output artifacts/android \
+            --source-commit "$GITHUB_SHA" \
+            --authority candidate \
+            --input "universal=$RUNNER_TEMP/app-universal-release.apk" \
+            --input "arm64=$RUNNER_TEMP/app-arm64-release.apk" \
+            --input "play=$RUNNER_TEMP/app-universal-release.aab" \
+            --inventory "universal=$RUNNER_TEMP/android-inventories/universal-inventory.json" \
+            --inventory "arm64=$RUNNER_TEMP/android-inventories/arm64-inventory.json" \
+            --inventory "play=$RUNNER_TEMP/android-inventories/play-inventory.json"
+          node scripts/generate-android-sbom.mjs \
+            "$RUNNER_TEMP/cargo-metadata.json" \
+            "$RUNNER_TEMP/pnpm-list.json" \
+            "$RUNNER_TEMP/gradle-dependencies.txt" \
+            artifacts/android/artifact-digests.json \
+            artifacts/android/glitchpad-android.cdx.json \
+            "$GITHUB_SHA"
+
+      - name: Validate canonical package set
+        env:
+          BUNDLETOOL_JAR: ${{ runner.temp }}/bundletool.jar
+        run: node scripts/check-android-package.mjs --authority candidate --directory artifacts/android
+
+      - name: Upload non-official Android candidates
+        uses: actions/upload-artifact@v7
+        with:
+          name: glitchpad-0.1.0-android-candidates
+          path: artifacts/android/
+          if-no-files-found: error
+          retention-days: 14

@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "platform": "android",
+  "candidate_version": "0.1.0",
+  "application_id": "com.shruggietech.glitchpad",
+  "version_code": 1000,
+  "min_sdk": 24,
+  "target_sdk": 36,
+  "build_tools_version": "36.0.0",
+  "manifest_posture": {
+    "application_label": "@string/app_name",
+    "launcher_icon": "@mipmap/ic_launcher",
+    "data_extraction_rules": "@xml/backup_rules",
+    "full_backup_content": "@xml/backup_rules_legacy",
+    "file_provider": "androidx.core.content.FileProvider",
+    "file_provider_authority": "com.shruggietech.glitchpad.fileprovider"
+  },
+  "artifacts": [
+    {
+      "kind": "apk",
+      "role": "universal",
+      "name": "glitchpad-0.1.0-android-universal.apk",
+      "required_abis": ["arm64-v8a", "x86_64"],
+      "forbidden_abis": ["armeabi-v7a", "x86"]
+    },
+    {
+      "kind": "apk",
+      "role": "arm64",
+      "name": "glitchpad-0.1.0-android-arm64.apk",
+      "required_abis": ["arm64-v8a"],
+      "forbidden_abis": ["armeabi-v7a", "x86", "x86_64"]
+    },
+    {
+      "kind": "aab",
+      "role": "play",
+      "name": "glitchpad-0.1.0-android-universal.aab",
+      "required_abis": ["arm64-v8a", "x86_64"],
+      "forbidden_abis": ["armeabi-v7a", "x86"]
+    }
+  ],
+  "size_budget": {
+    "universal_apk_target_bytes": 41943040,
+    "universal_apk_hard_limit_bytes": 68157440
+  },
+  "candidate_trust": {
+    "signature_status": "candidate_valid",
+    "publication_status": "blocked_candidate"
+  },
+  "official": {
+    "authorized_event": "push_tag",
+    "tag_pattern": "v0.1.0",
+    "repository": "shruggietech/glitchpad",
+    "certificate_sha256_environment": "ANDROID_SIGNING_CERT_SHA256",
+    "required_signature_status": "official_valid",
+    "required_evidence": [
+      "SHA256SUMS",
+      "android-package-manifest.json",
+      "glitchpad-android.cdx.json",
+      "provenance.json",
+      "LICENSE",
+      "NOTICE",
+      "THIRD_PARTY_NOTICES.txt"
+    ]
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "version": "0.1.0",
+  "bundle": {
+    "active": true,
+    "android": {
+      "minSdkVersion": 24,
+      "versionCode": 1000
+    },
+    "icon": [
+      "icons/android/mipmap-mdpi/ic_launcher.png",
+      "icons/android/mipmap-hdpi/ic_launcher.png",
+      "icons/android/mipmap-xhdpi/ic_launcher.png",
+      "icons/android/mipmap-xxhdpi/ic_launcher.png",
+      "icons/android/mipmap-xxxhdpi/ic_launcher.png"
+    ]
+  }
+}

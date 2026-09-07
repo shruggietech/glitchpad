@@ -102,3 +102,30 @@ jobs:
           test '${{ github.ref_name }}' = 'v0.1.0'
           test -n "$LINUX_REQUIRED_EVIDENCE"
           echo 'Linux authority is eligible for repository-bound attestations. Publication remains separately authorized.'
+
+  android-authority:
+    name: Enforce the Android signing authority contract
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: readiness
+    runs-on: ubuntu-24.04
+    env:
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      ANDROID_SIGNING_CERT_SHA256: ${{ secrets.ANDROID_SIGNING_CERT_SHA256 }}
+      ANDROID_REQUIRED_EVIDENCE: SHA256SUMS,android-package-manifest.json,glitchpad-android.cdx.json,provenance.json,LICENSE,NOTICE,THIRD_PARTY_NOTICES.txt
+    steps:
+      - name: Verify Android publication authority is provisioned
+        shell: bash
+        run: |
+          set -euo pipefail
+          test '${{ github.repository }}' = 'shruggietech/glitchpad'
+          test '${{ github.ref_name }}' = 'v0.1.0'
+          test -n "$ANDROID_KEYSTORE_BASE64"
+          test -n "$ANDROID_KEYSTORE_PASSWORD"
+          test -n "$ANDROID_KEY_ALIAS"
+          test -n "$ANDROID_KEY_PASSWORD"
+          test -n "$ANDROID_SIGNING_CERT_SHA256"
+          test -n "$ANDROID_REQUIRED_EVIDENCE"
+          echo 'Android authority is provisioned. Publication remains separately authorized.'

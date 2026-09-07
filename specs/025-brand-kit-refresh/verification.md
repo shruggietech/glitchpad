@@ -10,6 +10,7 @@
 - Artifact comparison: all 181 files available from the published endpoint matched the pinned Build artifact byte-for-byte.
 - Artifact caveat: the independently generated Pages PDF did not have a stable checksum, so the repository uses the manifest-bound PDF from the successful Build artifact.
 - Hidden marker recovery: the Build artifact uploader omitted `icons/.iconkit-generated.json`; its deterministic contents were regenerated from the pinned upstream generator and verified against the supplied manifest.
+- Reader-link correction: `brand/README.md` points directly to `LICENSE-BRAND.md` at the pinned upstream commit because the artifact's `../../LICENSE-BRAND.md` target escapes this repository when the kit is embedded. The corrected bytes are recorded in the local manifest.
 
 ## Integrated surfaces
 
@@ -31,4 +32,14 @@
 
 ## Full validation
 
-- `cargo xtask check`: passed end-to-end after resolving the imported artifact's repository-relative brand-license link against the pinned upstream source.
+- `cargo xtask check`: passed end-to-end before review remediation; focused validation is repeated for review changes below.
+
+## Review remediation
+
+- Added the `data-theme='system'` root to light-scheme token overrides and covered the contract in `check:brand`.
+- Replaced the embedded README's escaping license link with the immutable pinned upstream target, updated its manifest entry, and covered reader reachability in `check:brand`.
+- `pnpm check:brand`: passed (20 tests plus repository integration validation).
+- `pnpm check:frontend`: passed (lint, typecheck, 41 test files / 231 tests, production build).
+- `pnpm check:validation`: passed (18 tests).
+- `pnpm docs:links`: passed (269 Markdown files).
+- `pnpm docs:format`: passed after applying the formatter's task-checkbox normalization.

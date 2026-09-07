@@ -95,4 +95,4 @@ Run the scripts from `build/` with the dependencies described in `build/README.m
 
 Set `A ShruggieTech project` in Geist Mono, uppercase, with positive tracking. Keep it visually subordinate and outside the product logo clear space.
 
-Names, wordmarks, logos, endorsement lockups, and logo path geometry remain reserved as described in the repository's [brand asset terms](../../LICENSE-BRAND.md).
+Names, wordmarks, logos, endorsement lockups, and logo path geometry remain reserved as described in the repository's [brand asset terms](https://raw.githubusercontent.com/shruggietech/shruggie-brand/1681fcd444ff851d5bffc2cf67e23bbcedd753cd/LICENSE-BRAND.md).

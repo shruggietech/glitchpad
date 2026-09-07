@@ -16,12 +16,6 @@ const linkExcludedDirectories = new Set([
   'target',
 ]);
 const defaultCheckLinks = promisify(markdownLinkCheck);
-const importedBrandLinkTargets = new Map([
-  [
-    '../../LICENSE-BRAND.md',
-    'https://raw.githubusercontent.com/shruggietech/shruggie-brand/1681fcd444ff851d5bffc2cf67e23bbcedd753cd/LICENSE-BRAND.md',
-  ],
-]);
 
 function directoryUrl(path) {
   return pathToFileURL(`${resolve(path)}${sep}`).href;
@@ -41,16 +35,6 @@ function resultFailure(source, result) {
   return `${source}: ${result.status} link ${result.link}${detail ? ` (${detail})` : ''}`;
 }
 
-export function resolveImportedLinks(source, markdown) {
-  if (source !== 'brand/README.md') return markdown;
-
-  let resolved = markdown;
-  for (const [original, target] of importedBrandLinkTargets) {
-    resolved = resolved.replaceAll(`](${original})`, `](${target})`);
-  }
-  return resolved;
-}
-
 export async function validateLinks({
   repositoryRoot = defaultRepositoryRoot,
   configuration,
@@ -67,10 +51,7 @@ export async function validateLinks({
 
   for (const file of files) {
     const source = repositoryPath(repositoryRoot, file);
-    const markdown = resolveImportedLinks(
-      source,
-      await readFile(file, 'utf8'),
-    );
+    const markdown = await readFile(file, 'utf8');
     let results;
     try {
       results = await checkLinks(markdown, {

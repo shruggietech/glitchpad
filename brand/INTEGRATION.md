@@ -4,6 +4,8 @@ Glitchpad brand 1.1.0 under ShruggieTech canon 1.2.1 was imported from the succe
 
 The published distribution was checked independently before import. All 181 downloadable logo, favicon, icon, and specimen files exposed below `https://brand.shruggie.tech/glitchpad/downloads/files/` matched the upstream build artifact byte-for-byte. The separately generated seven-page PDF had the same size but nondeterministic bytes across the Build and Pages jobs, so `brand/brand-guide.pdf` retains the manifest-bound Build artifact copy.
 
+One integration correction intentionally differs from the artifact bytes: `brand/README.md` replaces an artifact-layout-relative `../../LICENSE-BRAND.md` target with the immutable upstream URL at the pinned commit so the legal terms remain reachable from this repository. `brand/manifest.json` governs the corrected file bytes.
+
 Files named in `manifest.json` are immutable governed inputs. `INTEGRATION.md` is the sole project-owned file inside this directory and is intentionally excluded from the upstream manifest. Do not regenerate, optimize, recolor, resize, or edit governed files in place.
 
 The public site copies approved fonts, lockups, the social preview, and web icons from this directory. Desktop packages copy the Windows ICO, macOS ICNS, and approved web raster sizes. Android copies the supplied legacy, adaptive, and monochrome resources into both Tauri icon inputs and the generated Android project. Every mapping is enforced by `scripts/check-brand.mjs` as an exact byte comparison.

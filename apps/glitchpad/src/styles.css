@@ -942,7 +942,8 @@ button:focus-visible,
 }
 
 @media (prefers-color-scheme: light) {
-  :root:not([data-theme]) {
+  :root:not([data-theme]),
+  :root[data-theme='system'] {
     --gl-bg: var(--gl-light-surface);
     --gl-panel: var(--gl-light-panel);
     --gl-panel-raised: var(--gl-light-panel);

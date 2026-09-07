@@ -30,6 +30,23 @@ test('the imported canon passes deterministic repository checks', async () => {
   assert.deepEqual(await verifyBrand(), []);
 });
 
+test('embedded brand guidance retains reachable pinned legal terms', async () => {
+  const readme = await readFile(join(repositoryRoot, 'brand', 'README.md'), 'utf8');
+  assert.doesNotMatch(readme, /\.\.\/\.\.\/LICENSE-BRAND\.md/);
+  assert.match(
+    readme,
+    /shruggie-brand\/1681fcd444ff851d5bffc2cf67e23bbcedd753cd\/LICENSE-BRAND\.md/,
+  );
+});
+
+test('system theme receives light brand tokens under a light OS', async () => {
+  const styles = await readFile(
+    join(repositoryRoot, 'apps', 'glitchpad', 'src', 'styles.css'),
+    'utf8',
+  );
+  assert.match(styles, /:root\[data-theme='system'\] \{/);
+});
+
 test('checksum drift is rejected', async () => {
   const root = await mkdtemp(join(tmpdir(), 'glitchpad-brand-test-'));
   const brandRoot = join(root, 'brand');

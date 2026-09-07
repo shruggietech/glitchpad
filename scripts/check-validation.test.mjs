@@ -6,7 +6,7 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import { assertValidatorTopology } from './check-config.mjs';
-import { resolveImportedLinks, validateLinks } from './check-links.mjs';
+import { validateLinks } from './check-links.mjs';
 import { extractMermaidBlocks, validateMermaid } from './check-mermaid.mjs';
 import { collectMarkdownFiles } from './validation-files.mjs';
 
@@ -201,17 +201,6 @@ test('Link validation accepts alive results and preserves path context', async (
   assert.ok(
     observed.every(({ options }) => options.projectBaseUrl.startsWith('file:')),
   );
-});
-
-test('imported brand terms resolve to the pinned upstream authority', () => {
-  const markdown = '[brand asset terms](../../LICENSE-BRAND.md)';
-  const resolved = resolveImportedLinks('brand/README.md', markdown);
-
-  assert.equal(
-    resolved,
-    '[brand asset terms](https://raw.githubusercontent.com/shruggietech/shruggie-brand/1681fcd444ff851d5bffc2cf67e23bbcedd753cd/LICENSE-BRAND.md)',
-  );
-  assert.equal(resolveImportedLinks('README.md', markdown), markdown);
 });
 
 test('Link validation rejects dead and error results with exact targets', async (t) => {

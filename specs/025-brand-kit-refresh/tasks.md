@@ -21,7 +21,7 @@
 ## Phase 4: Completion
 
 - [x] T008 Run focused validation and record results in `specs/025-brand-kit-refresh/verification.md`
-- [X] T009 Run `cargo xtask check`, reconcile the implementation against this specification, and prepare the reviewed change for delivery
+- [x] T009 Run `cargo xtask check`, reconcile the implementation against this specification, and prepare the reviewed change for delivery
 
 ## Dependencies & Execution Order
 

@@ -8,7 +8,7 @@
 
 ## Decision: Replace the delivery as a unit
 
-- **Decision**: Replace `brand/` with the complete Glitchpad directory from the verified artifact, then add only a clearly project-owned integration receipt outside the upstream manifest.
+- **Decision**: Replace `brand/` with the complete Glitchpad directory from the verified artifact, add a clearly project-owned integration receipt, and correct the README's artifact-layout-relative license link to an immutable URL at the pinned upstream commit.
 - **Rationale**: Partial overlay would retain obsolete generators, evidence, and filenames from canon 1.0.0.
 - **Alternatives considered**: Editing individual SVGs or tokens is prohibited by the kit and would break checksum authority.
 

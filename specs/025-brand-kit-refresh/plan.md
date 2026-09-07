@@ -24,7 +24,7 @@ Replace the obsolete canon 1.0.0 Glitchpad delivery with the verified brand 1.1.
 
 **Performance Goals**: No material runtime or bundle-size regression beyond replacement first-party assets
 
-**Constraints**: Exact upstream bytes; no local asset generation; no paid signing changes; no capability or release publication changes; UTF-8 without BOM; hidden Docker validation only
+**Constraints**: Exact upstream asset bytes; one documented README link correction for the embedded repository layout; no local asset generation; no paid signing changes; no capability or release publication changes; UTF-8 without BOM; hidden Docker validation only
 
 **Scale/Scope**: One complete brand delivery, repository/site identity copies, four platform icon integrations, validation, and provenance documentation
 

@@ -43,3 +43,4 @@
 - `pnpm check:validation`: passed (18 tests).
 - `pnpm docs:links`: passed (269 Markdown files).
 - `pnpm docs:format`: passed after applying the formatter's task-checkbox normalization.
+- Replaced the CI documentation job's removed upstream `brand/build/verify.py` invocation with the repository-owned `pnpm check:brand` gate; `pnpm check:config`, `pnpm check:validation`, `pnpm check:brand`, and `pnpm docs:format` passed for the workflow correction.

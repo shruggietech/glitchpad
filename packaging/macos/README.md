@@ -1,9 +1,9 @@
 # macOS packaging
 
-S020 defines macOS 13+ arm64/x86_64 universal DMG validation candidates for the v0.1.0 package contract. It does not change the repository's official v0.0.0 version and does not publish a release.
+S020 defines the macOS 13+ arm64/x86_64 universal DMG for the v0.1.0 community release.
 
-`../desktop/capabilities.json` is the shared Finder-association and native-dialog authority. `package-contract.json` governs the canonical DMG, application identity, architectures, inventory, size limits, candidate trust state, and official Apple evidence. `tauri.s020-macos.conf.json` is validated against both contracts.
+`../desktop/capabilities.json` is the shared Finder-association and native-dialog authority. `package-contract.json` governs the canonical DMG, application identity, architectures, inventory, size limits, and community trust evidence. `tauri.s020-macos.conf.json` is validated against both contracts.
 
-Branch and pull-request builds use an ad-hoc application signature and explicitly record that notarization and stapling were not attempted. They can pass candidate mode only. Candidate validation reads the staged DMG and application, exact notices, checksums, CycloneDX SBOM, locked-tool provenance, and closed-schema native receipts rather than trusting manifest claims alone. Official mode additionally requires an authorized `v0.1.0` tag context, the exact runtime-authorized Developer ID Application identity, hardened runtime, secure timestamps, accepted notarization and retained log bound to the final DMG, a validated stapled ticket, Gatekeeper acceptance, both native-host receipts, and exact digest agreement.
+Branch and pull-request builds use an ad-hoc application signature and record that notarization and stapling were not attempted. The official v0.1.0 tag retains that truthful `adhoc_non_notarized_community` state with checksums, CycloneDX SBOM, provenance, and exact digest agreement. macOS may block the first launch; users should verify the checksum and use the ordinary per-application Open Anyway control. Glitchpad does not claim Developer ID, notarization, Gatekeeper acceptance, or Apple endorsement.
 
 Certificates, private keys, passwords, API keys, Apple identifiers, and team identifiers are release-operator inputs. They must never enter repository files, candidate artifacts, logs, fixtures, receipts, or provenance.

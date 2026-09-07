@@ -171,13 +171,12 @@ export async function checkWindowsConfiguration(
     contract.candidate_signature_status !== 'not_applicable_unsigned_candidate'
   )
     fail('unsigned candidate signature state is not explicit');
-  if (!contract.official.required_evidence.includes('signature-evidence.json'))
-    fail('official gate does not require signature evidence');
   if (
-    typeof contract.official.publisher_subject !== 'string' ||
-    contract.official.publisher_subject.length < 4
+    contract.official.trust_state !== 'unsigned_community' ||
+    contract.official.required_signature_status !== 'not_signed' ||
+    !contract.official.required_evidence.includes('community-trust-evidence.json')
   )
-    fail('official publisher subject is not governed');
+    fail('official unsigned community trust is not governed');
 
   if (
     tauri.version !== contract.candidate_version ||
@@ -316,16 +315,9 @@ function validateWindowsEvidenceShape(evidence, contract, official) {
     !same(evidence.evidence_files, contract.official.required_evidence)
   )
     fail('official evidence file inventory is incomplete or unexpected');
-  for (const artifact of evidence.artifacts) {
-    if (
-      artifact.signature_status !==
-        contract.official.required_signature_status ||
-      artifact.timestamp_status !==
-        contract.official.required_timestamp_status ||
-      !sha256Pattern.test(artifact.signature_sha256)
-    )
-      fail(`official signature evidence does not bind ${artifact.kind}`);
-  }
+  for (const artifact of evidence.artifacts)
+    if (artifact.signature_status !== contract.official.required_signature_status)
+      fail(`official unsigned trust does not bind ${artifact.kind}`);
   return true;
 }
 
@@ -369,6 +361,21 @@ export async function validateOfficialWindowsEvidence(
   { artifactRoot, authenticodeInspector = inspectAuthenticode } = {},
 ) {
   if (!artifactRoot) fail('official mode requires the final artifact root');
+  if (contract.official.trust_state === 'unsigned_community') {
+    validateWindowsEvidenceShape(evidence, contract, true);
+    const root = resolve(artifactRoot);
+    const manifestBytes = await readFile(join(root, 'windows-package-manifest.json'));
+    if (!isDeepStrictEqual(JSON.parse(manifestBytes.toString('utf8')), evidence)) fail('manifest evidence does not match the validated document');
+    const checksums = await readFile(join(root, 'SHA256SUMS'), 'utf8');
+    for (const artifact of evidence.artifacts) {
+      const bytes = await readFile(join(root, artifact.name));
+      const digest = createHash('sha256').update(bytes).digest('hex');
+      if (digest !== artifact.sha256 || bytes.length !== artifact.bytes || !checksums.includes(`${digest}  ${artifact.name}`)) fail(`final bytes do not match ${artifact.kind}`);
+    }
+    const trust = await json(join(root, 'community-trust-evidence.json'));
+    if (trust.schema_version !== 1 || trust.trust_state !== 'unsigned_community' || trust.source_commit !== evidence.source_commit || trust.artifacts?.some(({ signature_status }) => signature_status !== 'not_signed')) fail('community trust evidence is invalid');
+    return true;
+  }
   validateWindowsEvidenceShape(evidence, contract, true);
   const root = resolve(artifactRoot);
   const manifestPath = join(root, 'windows-package-manifest.json');

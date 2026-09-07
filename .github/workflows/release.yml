@@ -1,131 +1,125 @@
-name: release-readiness
+name: release
 
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - 'v0.1.0'
   workflow_dispatch:
 
 permissions:
-  contents: read
-  attestations: write
-  id-token: write
+  actions: read
+  contents: write
+  attestations: read
+
+concurrency:
+  group: release-v0.1.0
+  cancel-in-progress: false
 
 jobs:
   readiness:
-    name: Version, documentation, and publication readiness
-    runs-on: windows-latest
+    name: Validate release preparation
+    runs-on: ubuntu-24.04
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v6
+      - uses: pnpm/action-setup@v6
         with:
           version: 10.28.2
           run_install: false
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
           cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Validate source and documentation
-        run: cargo xtask check
-
-      - name: Verify release state
-        shell: pwsh
-        run: ./scripts/check-release-readiness.ps1 -Tag '${{ github.ref_name }}'
-
-      - name: Publication remains separately authorized
-        run: Write-Host 'Readiness passed. Publication remains separately authorized.'
-
-      - name: Enforce the Windows signing authority contract
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run check:community-release
+      - name: Verify exact publication context
         if: startsWith(github.ref, 'refs/tags/')
         shell: pwsh
-        env:
-          WINDOWS_SIGNING_CERTIFICATE: ${{ secrets.WINDOWS_SIGNING_CERTIFICATE }}
-          WINDOWS_SIGNING_PASSWORD: ${{ secrets.WINDOWS_SIGNING_PASSWORD }}
-        run: |
-          if (-not $env:WINDOWS_SIGNING_CERTIFICATE -or -not $env:WINDOWS_SIGNING_PASSWORD) {
-            throw 'Official Windows artifacts require provisioned signing authority. Unsigned candidates cannot be promoted.'
-          }
-          Write-Host 'Signing authority is provisioned. A separately reviewed publication workflow must bind signatures and attestations to final bytes.'
+        run: ./scripts/check-release-readiness.ps1 -Tag '${{ github.ref_name }}' -Repository '${{ github.repository }}'
+      - name: Confirm non-publishing manual validation
+        if: github.event_name == 'workflow_dispatch'
+        run: echo 'Readiness passed. Manual dispatch cannot publish.'
 
-  macos-authority:
-    name: Enforce the macOS signing and notarization authority contract
-    if: startsWith(github.ref, 'refs/tags/')
-    needs: readiness
-    runs-on: macos-15
-    env:
-      APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-      APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-      APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-      APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
-      APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
-      MACOS_REQUIRED_EVIDENCE: SHA256SUMS,macos-package-manifest.json,glitchpad-macos.cdx.json,provenance.json,clean-host-arm64.json,clean-host-x86_64.json,apple-trust-evidence.json,notarization-log.json
-    steps:
-      - name: Verify macOS publication authority is provisioned
-        shell: bash
-        env:
-          APPLE_API_KEY_PATH: ${{ runner.temp }}/AuthKey.p8
-        run: |
-          set -euo pipefail
-          test -n "$APPLE_CERTIFICATE"
-          test -n "$APPLE_CERTIFICATE_PASSWORD"
-          test -n "$APPLE_SIGNING_IDENTITY"
-          test -n "$APPLE_API_ISSUER"
-          test -n "$APPLE_API_KEY"
-          test -n "$APPLE_API_KEY_PATH"
-          test -n "$MACOS_REQUIRED_EVIDENCE"
-          echo 'macOS authority is provisioned. Publication remains separately authorized.'
-
-  linux-authority:
-    name: Enforce the Linux repository-attestation authority contract
+  locate-platform-runs:
+    name: Wait for tag package workflows
     if: startsWith(github.ref, 'refs/tags/')
     needs: readiness
     runs-on: ubuntu-24.04
-    env:
-      LINUX_REQUIRED_EVIDENCE: SHA256SUMS,linux-package-manifest.json,glitchpad-linux.cdx.json,provenance.json,build-baseline.json,clean-ubuntu-22.04-appimage.json,clean-ubuntu-22.04-deb.json,clean-ubuntu-24.04-appimage.json,clean-ubuntu-24.04-deb.json,repository-attestation.json
+    outputs:
+      windows: ${{ steps.locate.outputs.windows }}
+      macos: ${{ steps.locate.outputs.macos }}
+      linux: ${{ steps.locate.outputs.linux }}
+      android: ${{ steps.locate.outputs.android }}
     steps:
-      - name: Verify Linux publication authority boundary
-        shell: bash
-        run: |
-          set -euo pipefail
-          test '${{ github.repository }}' = 'shruggietech/glitchpad'
-          test '${{ github.ref_name }}' = 'v0.1.0'
-          test -n "$LINUX_REQUIRED_EVIDENCE"
-          echo 'Linux authority is eligible for repository-bound attestations. Publication remains separately authorized.'
+      - name: Locate successful package runs for this commit
+        id: locate
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const workflows = { windows: 'windows-package.yml', macos: 'macos-package.yml', linux: 'linux-package.yml', android: 'android-package.yml' };
+            const deadline = Date.now() + 90 * 60 * 1000;
+            for (const [platform, workflow_id] of Object.entries(workflows)) {
+              let run;
+              while (Date.now() < deadline) {
+                const response = await github.rest.actions.listWorkflowRuns({ owner: context.repo.owner, repo: context.repo.repo, workflow_id, event: 'push', per_page: 20 });
+                run = response.data.workflow_runs.find((candidate) => candidate.head_sha === context.sha && candidate.head_branch === context.ref.replace('refs/tags/', ''));
+                if (run?.conclusion === 'success') break;
+                if (run?.status === 'completed') throw new Error(`${platform} package workflow concluded ${run.conclusion}`);
+                await new Promise((resolve) => setTimeout(resolve, 30000));
+              }
+              if (!run || run.conclusion !== 'success') throw new Error(`${platform} package workflow did not succeed before timeout`);
+              core.setOutput(platform, String(run.id));
+            }
 
-  android-authority:
-    name: Enforce the Android signing authority contract
+  publish:
+    name: Publish immutable GitHub release
     if: startsWith(github.ref, 'refs/tags/')
-    needs: readiness
+    needs: locate-platform-runs
     runs-on: ubuntu-24.04
-    env:
-      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-      ANDROID_SIGNING_CERT_SHA256: ${{ secrets.ANDROID_SIGNING_CERT_SHA256 }}
-      ANDROID_REQUIRED_EVIDENCE: SHA256SUMS,android-package-manifest.json,glitchpad-android.cdx.json,provenance.json,LICENSE,NOTICE,THIRD_PARTY_NOTICES.txt
     steps:
-      - name: Verify Android publication authority is provisioned
-        shell: bash
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: glitchpad-0.1.0-windows-x86_64-community-release
+          path: gathered/windows
+          run-id: ${{ needs.locate-platform-runs.outputs.windows }}
+          github-token: ${{ github.token }}
+      - name: Download glitchpad-0.1.0-macos-universal-community-release and receipts
+        uses: actions/download-artifact@v8
+        with:
+          pattern: glitchpad-*
+          merge-multiple: true
+          path: gathered/macos
+          run-id: ${{ needs.locate-platform-runs.outputs.macos }}
+          github-token: ${{ github.token }}
+      - name: Download glitchpad-0.1.0-linux-x86_64-community-release and receipts
+        uses: actions/download-artifact@v8
+        with:
+          pattern: glitchpad-*
+          merge-multiple: true
+          path: gathered/linux
+          run-id: ${{ needs.locate-platform-runs.outputs.linux }}
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@v8
+        with:
+          name: glitchpad-0.1.0-android-community-release
+          path: gathered/android
+          run-id: ${{ needs.locate-platform-runs.outputs.android }}
+          github-token: ${{ github.token }}
+      - name: Preserve platform evidence bundles
         run: |
-          set -euo pipefail
-          test '${{ github.repository }}' = 'shruggietech/glitchpad'
-          test '${{ github.ref_name }}' = 'v0.1.0'
-          test -n "$ANDROID_KEYSTORE_BASE64"
-          test -n "$ANDROID_KEYSTORE_PASSWORD"
-          test -n "$ANDROID_KEY_ALIAS"
-          test -n "$ANDROID_KEY_PASSWORD"
-          test -n "$ANDROID_SIGNING_CERT_SHA256"
-          test -n "$ANDROID_REQUIRED_EVIDENCE"
-          echo 'Android authority is provisioned. Publication remains separately authorized.'
+          mkdir -p release-assets
+          for platform in windows macos linux android; do
+            tar -czf "release-assets/glitchpad-0.1.0-${platform}-evidence.tar.gz" -C "gathered/$platform" .
+          done
+      - run: node scripts/assemble-community-release.mjs --input gathered --output release-assets --source-commit '${{ github.sha }}'
+      - name: Refuse replacement and publish once
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view '${{ github.ref_name }}' >/dev/null 2>&1; then
+            echo 'Release already exists; refusing to replace published bytes.' >&2
+            exit 1
+          fi
+          gh release create '${{ github.ref_name }}' release-assets/* --verify-tag --title 'Glitchpad v0.1.0' --notes-file docs/releases/v0.1.0.md

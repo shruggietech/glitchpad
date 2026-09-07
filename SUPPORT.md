@@ -1,6 +1,6 @@
 # Glitchpad Support
 
-Glitchpad is currently a v0.0.0 development project with no supported binary distribution. The project can help with repository setup, specifications, reproducible build failures, and confirmed behavior in the foundation shell.
+Glitchpad v0.1.0 is a community-supported binary release. Support covers reproducible defects in the published packages and documented stable capabilities; platform trust warnings caused by unsigned Windows or non-notarized macOS distribution are known constraints.
 
 ## Where to ask
 

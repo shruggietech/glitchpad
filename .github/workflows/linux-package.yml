@@ -5,6 +5,8 @@ on:
   push:
     branches:
       - '**'
+    tags:
+      - 'v0.1.0'
   workflow_dispatch:
 
 concurrency:
@@ -13,6 +15,8 @@ concurrency:
 
 permissions:
   contents: read
+  attestations: write
+  id-token: write
 
 jobs:
   candidate:
@@ -81,10 +85,32 @@ jobs:
               node scripts/check-linux-package.mjs --evidence artifacts/linux/linux-package-manifest.json --artifact-root artifacts/linux
             '
 
-      - name: Upload non-official Linux candidate
+      - name: Upload governed Linux package
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
         uses: actions/upload-artifact@v7
         with:
-          name: glitchpad-0.1.0-linux-x86_64-non-official-candidate
+          name: ${{ startsWith(github.ref, 'refs/tags/') && 'glitchpad-0.1.0-linux-x86_64-community-release' || 'glitchpad-0.1.0-linux-x86_64-non-official-candidate' }}
+          path: artifacts/linux/**
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Promote truthful community evidence
+        if: startsWith(github.ref, 'refs/tags/')
+        run: node scripts/promote-community-package.mjs --platform linux --directory artifacts/linux --source-commit '${{ github.sha }}'
+
+      - name: Attest final Linux community artifacts
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: |
+            artifacts/linux/glitchpad-0.1.0-linux-x86_64.AppImage
+            artifacts/linux/glitchpad-0.1.0-linux-x86_64.deb
+
+      - name: Upload governed Linux community package
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/upload-artifact@v7
+        with:
+          name: glitchpad-0.1.0-linux-x86_64-community-release
           path: artifacts/linux/**
           if-no-files-found: error
           retention-days: 14
@@ -121,7 +147,7 @@ jobs:
       - name: Download candidate
         uses: actions/download-artifact@v8
         with:
-          name: glitchpad-0.1.0-linux-x86_64-non-official-candidate
+          name: ${{ startsWith(github.ref, 'refs/tags/') && 'glitchpad-0.1.0-linux-x86_64-community-release' || 'glitchpad-0.1.0-linux-x86_64-non-official-candidate' }}
           path: artifacts/linux
 
       - name: Build clean lifecycle environment

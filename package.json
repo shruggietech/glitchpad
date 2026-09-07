@@ -1,6 +1,6 @@
 {
   "name": "@shruggietech/glitchpad-workspace",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "description": "Repository tooling for Glitchpad.",
   "license": "Apache-2.0",
@@ -22,6 +22,7 @@
     "check:linux-package": "node --test scripts/check-linux-package.test.mjs scripts/linux/assemble-package.test.mjs scripts/linux/test-package-lifecycle.test.mjs scripts/linux/thin-appimage.test.mjs && node scripts/check-linux-package.mjs",
     "check:macos-package": "node --test scripts/check-macos-package.test.mjs scripts/macos/assemble-package.test.mjs scripts/macos/test-package-lifecycle.test.mjs && node scripts/check-macos-package.mjs",
     "check:windows-package": "node --test scripts/check-windows-package.test.mjs && node scripts/check-windows-package.mjs",
+    "check:community-release": "node --test scripts/check-community-release.test.mjs scripts/assemble-community-release.test.mjs scripts/promote-community-package.test.mjs && node scripts/check-community-release.mjs",
     "check:frontend": "pnpm --filter @shruggietech/glitchpad check",
     "check:site": "pnpm --filter @shruggietech/glitchpad-site check",
     "check:config": "node scripts/check-config.mjs && taplo lint \"**/*.toml\"",

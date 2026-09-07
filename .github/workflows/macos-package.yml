@@ -5,6 +5,8 @@ on:
   push:
     branches:
       - '**'
+    tags:
+      - 'v0.1.0'
   workflow_dispatch:
 
 concurrency:
@@ -74,10 +76,14 @@ jobs:
           node scripts/check-macos-package.mjs --evidence artifacts/macos/macos-package-manifest.json --artifact-root artifacts/macos
           node scripts/run-performance.mjs --profile desktop_reference_v1 --build-id "macos-${{ github.sha }}" --metric desktop_installer_size --artifact artifacts/macos/glitchpad-0.1.0-macos-universal.dmg --output artifacts/macos/dmg-size-evidence
 
-      - name: Upload non-notarized review candidate
+      - name: Promote truthful community evidence
+        if: startsWith(github.ref, 'refs/tags/')
+        run: node scripts/promote-community-package.mjs --platform macos --directory artifacts/macos --source-commit '${{ github.sha }}'
+
+      - name: Upload governed macOS package
         uses: actions/upload-artifact@v7
         with:
-          name: glitchpad-0.1.0-macos-universal-non-notarized-candidate
+          name: ${{ startsWith(github.ref, 'refs/tags/') && 'glitchpad-0.1.0-macos-universal-community-release' || 'glitchpad-0.1.0-macos-universal-non-notarized-candidate' }}
           path: artifacts/macos/**
           if-no-files-found: error
           retention-days: 14
@@ -127,7 +133,7 @@ jobs:
       - name: Download universal candidate
         uses: actions/download-artifact@v8
         with:
-          name: glitchpad-0.1.0-macos-universal-non-notarized-candidate
+          name: ${{ startsWith(github.ref, 'refs/tags/') && 'glitchpad-0.1.0-macos-universal-community-release' || 'glitchpad-0.1.0-macos-universal-non-notarized-candidate' }}
           path: artifacts/macos
 
       - name: Exercise native install, launch, delivery, and removal

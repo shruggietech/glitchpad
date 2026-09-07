@@ -19,6 +19,7 @@ on:
       - 'pnpm-lock.yaml'
   push:
     branches: [main]
+    tags: ['v0.1.0']
     paths:
       - '.github/workflows/android-package.yml'
       - 'apps/glitchpad/**'
@@ -96,6 +97,7 @@ jobs:
           shared-key: android-package-aarch64-x86_64
 
       - name: Create disposable candidate signing authority
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
         run: |
           keytool -genkeypair -noprompt -keystore "$RUNNER_TEMP/glitchpad-candidate.jks" -storepass candidate-password -keypass candidate-password -alias candidate -keyalg RSA -keysize 3072 -validity 2 -dname "CN=Glitchpad Pull Request Candidate, O=ShruggieTech, C=US"
           {
@@ -103,6 +105,28 @@ jobs:
             echo 'password=candidate-password'
             echo 'keyPassword=candidate-password'
             echo 'keyAlias=candidate'
+          } > crates/glitchpad-host/gen/android/keystore.properties
+
+      - name: Restore stable project signing authority
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_SIGNING_CERT_SHA256: ${{ secrets.ANDROID_SIGNING_CERT_SHA256 }}
+        run: |
+          test -n "$ANDROID_KEYSTORE_BASE64"
+          test -n "$ANDROID_KEYSTORE_PASSWORD"
+          test -n "$ANDROID_KEY_ALIAS"
+          test -n "$ANDROID_KEY_PASSWORD"
+          test -n "$ANDROID_SIGNING_CERT_SHA256"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/glitchpad-release.jks"
+          {
+            echo "storeFile=$RUNNER_TEMP/glitchpad-release.jks"
+            echo "password=$ANDROID_KEYSTORE_PASSWORD"
+            echo "keyPassword=$ANDROID_KEY_PASSWORD"
+            echo "keyAlias=$ANDROID_KEY_ALIAS"
           } > crates/glitchpad-host/gen/android/keystore.properties
 
       - name: Run Android package contract tests
@@ -126,7 +150,7 @@ jobs:
           BUNDLETOOL_JAR: ${{ runner.temp }}/bundletool.jar
         run: |
           node scripts/check-android-package.mjs \
-            --authority candidate \
+            --authority "${{ startsWith(github.ref, 'refs/tags/') && 'official' || 'candidate' }}" \
             --output "$RUNNER_TEMP/android-inventories" \
             --artifact "universal=$RUNNER_TEMP/app-universal-release.apk" \
             --artifact "arm64=$RUNNER_TEMP/app-arm64-release.apk" \
@@ -144,7 +168,7 @@ jobs:
             --contract packaging/android/package-contract.json \
             --output artifacts/android \
             --source-commit "$GITHUB_SHA" \
-            --authority candidate \
+            --authority "${{ startsWith(github.ref, 'refs/tags/') && 'official' || 'candidate' }}" \
             --input "universal=$RUNNER_TEMP/app-universal-release.apk" \
             --input "arm64=$RUNNER_TEMP/app-arm64-release.apk" \
             --input "play=$RUNNER_TEMP/app-universal-release.aab" \
@@ -162,12 +186,13 @@ jobs:
       - name: Validate canonical package set
         env:
           BUNDLETOOL_JAR: ${{ runner.temp }}/bundletool.jar
-        run: node scripts/check-android-package.mjs --authority candidate --directory artifacts/android
+          ANDROID_SIGNING_CERT_SHA256: ${{ secrets.ANDROID_SIGNING_CERT_SHA256 }}
+        run: node scripts/check-android-package.mjs --authority "${{ startsWith(github.ref, 'refs/tags/') && 'official' || 'candidate' }}" --directory artifacts/android
 
-      - name: Upload non-official Android candidates
+      - name: Upload governed Android package
         uses: actions/upload-artifact@v7
         with:
-          name: glitchpad-0.1.0-android-candidates
+          name: ${{ startsWith(github.ref, 'refs/tags/') && 'glitchpad-0.1.0-android-community-release' || 'glitchpad-0.1.0-android-candidates' }}
           path: artifacts/android/
           if-no-files-found: error
           retention-days: 14

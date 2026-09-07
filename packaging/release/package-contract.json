@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "version": "0.1.0",
+  "tag": "v0.1.0",
+  "repository": "shruggietech/glitchpad",
+  "artifacts": [
+    "glitchpad-0.1.0-windows-x86_64-setup.exe",
+    "glitchpad-0.1.0-windows-x86_64.zip",
+    "glitchpad-0.1.0-macos-universal.dmg",
+    "glitchpad-0.1.0-linux-x86_64.AppImage",
+    "glitchpad-0.1.0-linux-x86_64.deb",
+    "glitchpad-0.1.0-android-universal.apk",
+    "glitchpad-0.1.0-android-arm64.apk",
+    "glitchpad-0.1.0-android-universal.aab"
+  ],
+  "trust_states": {
+    "windows": "unsigned_community",
+    "macos": "adhoc_non_notarized_community",
+    "linux": "repository_attested",
+    "android": "stable_project_key"
+  },
+  "manual_validation": "deferred_post_release_issue_66"
+}

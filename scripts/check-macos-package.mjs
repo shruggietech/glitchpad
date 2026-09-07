@@ -314,25 +314,10 @@ export async function checkMacosConfiguration(
     )
   )
     fail('branch and pull-request package workflow must not publish');
-  if (
-    /^ {6}APPLE_API_KEY_PATH:\s*\$\{\{\s*runner\.temp\s*\}\}/mu.test(
-      releaseWorkflow,
-    )
-  )
-    fail('release workflow uses the step-only runner context at job scope');
-  for (const marker of [
-    'APPLE_CERTIFICATE',
-    'APPLE_CERTIFICATE_PASSWORD',
-    'APPLE_SIGNING_IDENTITY',
-    'APPLE_API_ISSUER',
-    'APPLE_API_KEY',
-    'APPLE_API_KEY_PATH',
-  ])
-    if (!releaseWorkflow.includes(marker))
-      fail(`release workflow omits ${marker}`);
-  for (const evidence of contract.official.required_evidence)
-    if (!releaseWorkflow.includes(evidence))
-      fail(`release workflow omits required macOS evidence ${evidence}`);
+  if (!releaseWorkflow.includes('glitchpad-0.1.0-macos-universal-community-release'))
+    fail('release workflow omits the macOS community package');
+  if (contract.official.trust_state !== 'adhoc_non_notarized_community')
+    fail('macOS official community trust state is invalid');
 
   return { capabilityCount: configured.length, artifactCount: 1 };
 }
@@ -534,15 +519,15 @@ function validateMacosEvidenceShape(evidence, contract, official) {
   )
     fail('official evidence is unauthorized or incomplete');
   if (
-    artifact.signature_status !== contract.official.required_signature_status ||
+    artifact.signature_status !== contract.official.required_dmg_signature_status ||
     artifact.notarization_status !==
       contract.official.required_notarization_status ||
     artifact.staple_status !== contract.official.required_staple_status ||
     application.signature_status !==
-      contract.official.required_signature_status ||
+      contract.official.required_application_signature_status ||
     application.hardened_runtime_status !==
-      contract.official.required_hardened_runtime_status ||
-    application.timestamp_status !== contract.official.required_timestamp_status
+      'not_applicable' ||
+    application.timestamp_status !== 'not_applicable'
   )
     fail('official Apple trust state is incomplete');
   return true;
@@ -932,6 +917,18 @@ export async function validateOfficialMacosEvidence(
   } = {},
 ) {
   if (!artifactRoot) fail('official mode requires the final artifact root');
+  if (contract.official.trust_state === 'adhoc_non_notarized_community') {
+    validateMacosEvidenceShape(evidence, contract, true);
+    const root = resolve(artifactRoot);
+    const manifestBytes = await readFile(join(root, 'macos-package-manifest.json'));
+    if (!isDeepStrictEqual(JSON.parse(manifestBytes.toString('utf8')), evidence)) fail('manifest evidence does not match the validated document');
+    const dmgBytes = await readFile(join(root, evidence.artifact.name));
+    const digest = createHash('sha256').update(dmgBytes).digest('hex');
+    if (digest !== evidence.artifact.sha256 || dmgBytes.length !== evidence.artifact.bytes) fail('final DMG bytes do not match evidence');
+    const trust = await json(join(root, 'community-trust-evidence.json'));
+    if (trust.schema_version !== 1 || trust.trust_state !== 'adhoc_non_notarized_community' || trust.source_commit !== evidence.source_commit || trust.application_signature_status !== 'ad_hoc' || trust.notarization_status !== 'not_submitted') fail('macOS community trust evidence is invalid');
+    return true;
+  }
   if (
     typeof expectedSigningIdentity !== 'string' ||
     !expectedSigningIdentity.startsWith(

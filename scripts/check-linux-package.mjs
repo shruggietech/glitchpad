@@ -607,14 +607,11 @@ export async function checkLinuxConfiguration(
     if (!packageWorkflow.includes(required))
       fail(`Linux package workflow is missing ${required}`);
   if (
-    !releaseWorkflow.includes('linux-authority') ||
-    !releaseWorkflow.includes('LINUX_REQUIRED_EVIDENCE') ||
-    !releaseWorkflow.includes('attestations: write')
+    !packageWorkflow.includes('actions/attest-build-provenance@v4') ||
+    !packageWorkflow.includes("tags:\n      - 'v0.1.0'") ||
+    !releaseWorkflow.includes('glitchpad-0.1.0-linux-x86_64-community-release')
   )
-    fail('release workflow omits Linux authority preflight');
-  for (const evidenceName of contract.official.required_evidence)
-    if (!releaseWorkflow.includes(evidenceName))
-      fail(`release workflow omits required Linux evidence ${evidenceName}`);
+    fail('release path omits repository-attested Linux authority');
   if (
     !deliverySource.includes('enqueue_arguments') ||
     !deliverySource.includes('GOVERNED_EXTENSIONS') ||

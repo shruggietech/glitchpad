@@ -487,7 +487,7 @@ test('candidate receipts require exact binding, native architecture, truthful ma
   );
 });
 
-test('official mode binds final bytes, receipts, supply chain, and live Apple trust', async () => {
+test('official community mode binds final bytes and truthful macOS trust', async () => {
   const root = await mkdtemp(join(tmpdir(), 'glitchpad-macos-official-'));
   try {
     const evidence = candidate();
@@ -496,12 +496,12 @@ test('official mode binds final bytes, receipts, supply chain, and live Apple tr
     evidence.event = 'push_tag';
     evidence.tag = 'v0.1.0';
     evidence.evidence_files = [...contract.official.required_evidence];
-    evidence.artifact.signature_status = 'valid_developer_id';
-    evidence.artifact.notarization_status = 'accepted';
-    evidence.artifact.staple_status = 'valid';
-    evidence.application.signature_status = 'valid_developer_id';
-    evidence.application.hardened_runtime_status = 'enabled';
-    evidence.application.timestamp_status = 'valid';
+    evidence.artifact.signature_status = 'not_signed';
+    evidence.artifact.notarization_status = 'not_submitted';
+    evidence.artifact.staple_status = 'not_applicable';
+    evidence.application.signature_status = 'ad_hoc';
+    evidence.application.hardened_runtime_status = 'not_applicable';
+    evidence.application.timestamp_status = 'not_applicable';
     const applicationRoot = join(root, 'application', contract.bundle.name);
     for (const relativePath of contract.bundle.required_files) {
       const path = join(applicationRoot, ...relativePath.split('/'));
@@ -623,6 +623,13 @@ test('official mode binds final bytes, receipts, supply chain, and live Apple tr
       JSON.stringify(observedTrust),
     );
     await writeFile(join(root, 'notarization-log.json'), notaryLogBytes);
+    await writeFile(join(root, 'community-trust-evidence.json'), JSON.stringify({
+      schema_version: 1,
+      trust_state: 'adhoc_non_notarized_community',
+      source_commit: evidence.source_commit,
+      application_signature_status: 'ad_hoc',
+      notarization_status: 'not_submitted',
+    }));
     assert.equal(
       await validateOfficialMacosEvidence(evidence, contract, {
         artifactRoot: root,
@@ -631,28 +638,6 @@ test('official mode binds final bytes, receipts, supply chain, and live Apple tr
       }),
       true,
     );
-    await assert.rejects(
-      validateOfficialMacosEvidence(evidence, contract, {
-        artifactRoot: root,
-        expectedSigningIdentity:
-          'Developer ID Application: Unexpected Publisher',
-        trustInspector: async () => observedTrust,
-      }),
-      /live Apple trust evidence/u,
-    );
-    await writeFile(
-      join(root, 'notarization-log.json'),
-      JSON.stringify({ ...notaryLog, artifact_sha256: digest }),
-    );
-    await assert.rejects(
-      validateOfficialMacosEvidence(evidence, contract, {
-        artifactRoot: root,
-        expectedSigningIdentity,
-        trustInspector: async () => observedTrust,
-      }),
-      /live Apple trust evidence/u,
-    );
-    await writeFile(join(root, 'notarization-log.json'), notaryLogBytes);
     await writeFile(join(root, contract.artifact.name), 'tampered');
     await assert.rejects(
       validateOfficialMacosEvidence(evidence, contract, {

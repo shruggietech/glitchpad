@@ -10,10 +10,10 @@ $readme = Get-Content -Raw -LiteralPath $readmePath
 $requiredReadmeText = @(
     'Glitchpad',
     'actions/workflows/ci.yml/badge.svg',
-    'version-0.0.0',
+    'version-0.1.0',
     'license-Apache--2.0',
     '## Status',
-    '## Planned capabilities',
+    '## Current and planned capabilities',
     '## Supported platforms',
     '## Development',
     '## Architecture',

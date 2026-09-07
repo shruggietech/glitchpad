@@ -84,7 +84,7 @@ test('a self-asserted official manifest cannot bypass live verification', () => 
   );
 });
 
-test('official mode binds final bytes to live Authenticode and recorded evidence', async () => {
+test('official community mode binds unsigned final bytes and recorded trust evidence', async () => {
   const root = await mkdtemp(join(tmpdir(), 'glitchpad-signature-'));
   try {
     await mkdir(join(root, 'portable'));
@@ -99,7 +99,7 @@ test('official mode binds final bytes to live Authenticode and recorded evidence
       await writeFile(join(root, artifact.name), bytes);
       artifact.sha256 = createHash('sha256').update(bytes).digest('hex');
       artifact.bytes = bytes.length;
-      artifact.signature_status = 'valid';
+      artifact.signature_status = 'not_signed';
       artifact.timestamp_status = 'valid';
     }
     for (const entry of evidence.portable_inventory) {
@@ -170,6 +170,12 @@ test('official mode binds final bytes to live Authenticode and recorded evidence
       completed_utc: new Date().toISOString(),
     }));
     await writeFile(join(root, 'signature-evidence.json'), JSON.stringify(signatures));
+    await writeFile(join(root, 'community-trust-evidence.json'), JSON.stringify({
+      schema_version: 1,
+      trust_state: 'unsigned_community',
+      source_commit: evidence.source_commit,
+      artifacts: evidence.artifacts.map(({ name }) => ({ name, signature_status: 'not_signed' })),
+    }));
     assert.equal(await validateOfficialWindowsEvidence(evidence, contract, {
       artifactRoot: root,
       authenticodeInspector: async () => observed,

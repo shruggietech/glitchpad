@@ -35,6 +35,36 @@ export function validateReleaseContract(contract) {
   return true;
 }
 
+export const releaseAuthoritySecrets = [
+  'ANDROID_KEYSTORE_BASE64',
+  'ANDROID_KEYSTORE_PASSWORD',
+  'ANDROID_KEY_ALIAS',
+  'ANDROID_KEY_PASSWORD',
+  'ANDROID_SIGNING_CERT_SHA256',
+];
+
+export function validateReleaseAuthorityGate(releaseWorkflow) {
+  for (const name of releaseAuthoritySecrets) {
+    const binding = `${name}: \${{ secrets.${name} }}`;
+    if (!releaseWorkflow.includes(binding))
+      throw new Error(`release readiness omits ${name}`);
+  }
+  if (
+    !releaseWorkflow.includes('Confirm stable Android release authority') ||
+    !releaseWorkflow.includes('[[ -z "${!name:-}" ]]') ||
+    !releaseWorkflow.includes(
+      '::error title=Missing release authority::$name is not configured.',
+    ) ||
+    !releaseWorkflow.includes('Confirm manual readiness source') ||
+    !releaseWorkflow.includes(
+      `if [[ "$GITHUB_REF" != 'refs/heads/main' ]]; then`,
+    ) ||
+    !releaseWorkflow.includes('exit 1')
+  )
+    throw new Error('release authority readiness does not fail closed');
+  return true;
+}
+
 export function validateGovernedClaims({
   releaseWorkflow,
   windowsContract,
@@ -135,6 +165,7 @@ export async function checkCommunityRelease(repositoryRoot = root) {
     loadJson(join(repositoryRoot, 'crates/glitchpad-host/tauri.conf.json')),
   ]);
   validateReleaseContract(contract);
+  validateReleaseAuthorityGate(releaseWorkflow);
   validateGovernedClaims({
     releaseWorkflow,
     windowsContract,

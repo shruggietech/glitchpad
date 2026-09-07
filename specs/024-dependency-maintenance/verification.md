@@ -17,4 +17,4 @@
 
 ## Advisory disposition
 
-The moderate `glib` iterator advisory remains transitive through Tauri's GTK/WebKit runtime dependency family. The fixed `glib` 0.20 line cannot be selected independently while the current Tauri Linux stack requires 0.18. This slice does not add an unsafe lockfile override or replace the application framework. Existing dependency-policy checks remain the merge gate, and the advisory should be revisited with the next compatible Tauri GTK dependency transition.
+The moderate `glib` iterator advisory remains transitive through Tauri's GTK/WebKit runtime dependency family. The fixed `glib` 0.20 line cannot be selected independently while the current Tauri Linux stack requires 0.18, and Glitchpad does not directly use the affected `VariantStrIter` API. S024 configures cargo-deny to reject all unsound advisories, including transitive dependencies, then names `RUSTSEC-2024-0429` as the sole documented exception. The governing specification assigns that exception to the maintainers and expires it at the first compatible Tauri GTK transition or the v0.2 dependency pass, whichever occurs first.

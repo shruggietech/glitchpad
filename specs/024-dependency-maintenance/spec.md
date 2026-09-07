@@ -56,3 +56,10 @@ As the release owner, I want compatible dependency updates consolidated into one
 - User acceptance testing remains deferred until after v0.1 and is not a closure gate for this maintenance slice.
 - Paid Windows signing and Apple notarization are outside the project requirements.
 - The current Tauri dependency family remains authoritative unless a safe, bounded update is available through normal resolution.
+
+## Temporary Exception
+
+- **Scope**: Permit `RUSTSEC-2024-0429` only for transitive `glib` 0.18.x supplied by Tauri's current GTK/WebKit dependency family while denying all other unsound advisories, including transitive advisories.
+- **Rationale**: The patched `glib` 0.20 line cannot be selected independently without replacing Tauri's GTK dependency family, and Glitchpad does not directly call the affected `VariantStrIter` API.
+- **Owner**: Glitchpad maintainers.
+- **Expiry**: Remove the exception with the first compatible Tauri GTK transition that no longer resolves affected `glib`, or during the v0.2 dependency pass, whichever occurs first.

@@ -25,12 +25,12 @@ test('technical specification adaptation preserves authority and Mermaid source'
   assert.doesNotMatch(adapted, /^# Glitchpad Technical Specification$/m);
 });
 
-test('landing copy keeps the prerelease claim and required routes', async () => {
+test('landing copy keeps the community release claim and required routes', async () => {
   const home = await readFile(
     join(siteRoot, 'app', '(home)', 'page.tsx'),
     'utf8',
   );
-  assert.match(home, /no installable release is available yet/i);
+  assert.match(home, /v0\.1\.0 community release/i);
   for (const route of ['/docs', '/support', '/security'])
     assert.match(
       home +

@@ -61,23 +61,18 @@
   "official": {
     "authorized_event": "push_tag",
     "tag_pattern": "v0.1.0",
-    "signer_authority_prefix": "Developer ID Application:",
-    "required_signature_status": "valid_developer_id",
-    "required_hardened_runtime_status": "enabled",
-    "required_timestamp_status": "valid",
-    "required_notarization_status": "accepted",
-    "required_staple_status": "valid",
-    "required_gatekeeper_status": "accepted",
+    "trust_state": "adhoc_non_notarized_community",
+    "required_application_signature_status": "ad_hoc",
+    "required_dmg_signature_status": "not_signed",
+    "required_notarization_status": "not_submitted",
+    "required_staple_status": "not_applicable",
     "maximum_evidence_age_seconds": 86400,
     "required_evidence": [
       "SHA256SUMS",
       "macos-package-manifest.json",
       "glitchpad-macos.cdx.json",
       "provenance.json",
-      "clean-host-arm64.json",
-      "clean-host-x86_64.json",
-      "apple-trust-evidence.json",
-      "notarization-log.json"
+      "community-trust-evidence.json"
     ]
   }
 }

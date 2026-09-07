@@ -79,13 +79,9 @@ async function main() {
     readFile(join(repositoryRoot, 'SECURITY.md'), 'utf8'),
   ]);
   const workspace = JSON.parse(packageSource);
-  if (
-    !/No installable release or production viewer is available yet\./.test(
-      readme,
-    )
-  ) {
+  if (!/Glitchpad v0\.1\.0 is the first community release/.test(readme)) {
     throw new Error(
-      'README pre-release status authority is missing or changed',
+      'README community release status authority is missing or changed',
     );
   }
 

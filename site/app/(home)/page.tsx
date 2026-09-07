@@ -21,7 +21,9 @@ export default function HomePage() {
       <section className="hero">
         <div className="hero-inner">
           <div className="hero-copy">
-            <p className="eyebrow">Desktop + Android · Early development</p>
+            <p className="eyebrow">
+              Desktop + Android · v0.1.0 community release
+            </p>
             <h1>
               See the file.
               <br />
@@ -29,8 +31,8 @@ export default function HomePage() {
             </h1>
             <p className="hero-summary">
               Glitchpad is a focused, cross-platform viewer and editor for
-              common local files. The foundation is under active development,
-              and no installable release is available yet.
+              common local files. The first community release supports Markdown,
+              Mermaid, plain text, and selected source files.
             </p>
             <div className="hero-actions">
               <a className="button button-primary" href="/docs">
@@ -40,7 +42,7 @@ export default function HomePage() {
                 className="button button-secondary"
                 href="https://github.com/ShruggieTech/glitchpad"
               >
-                Follow development on GitHub
+                Download on GitHub
               </a>
             </div>
           </div>

@@ -12,6 +12,7 @@ import {
   validateCleanEnvironmentReceipt,
   validateDebianControl,
   validateLinuxEvidence,
+  validateLinuxLifecycleEvidence,
   validateOfficialLinuxArtifactSet,
   verifyRepositoryAttestations,
 } from './check-linux-package.mjs';
@@ -88,6 +89,19 @@ function verifiedAttestation(evidence) {
     source_commit: evidence.source_commit,
     version: evidence.version,
     artifacts: evidence.artifacts.map(({ name, sha256 }) => ({ name, sha256 })),
+  };
+}
+
+function officialLifecycleEvidence() {
+  const evidence = candidate();
+  return {
+    ...evidence,
+    official: true,
+    gate_status: 'official_valid',
+    event: contract.official.authorized_event,
+    tag: contract.official.tag_pattern,
+    evidence_files: [...contract.official.required_evidence],
+    repository_attestation_status: 'generated_by_tag_workflow',
   };
 }
 
@@ -248,6 +262,21 @@ test('candidate pair passes candidate mode but cannot imply official authority',
   );
 });
 
+test('tag lifecycle accepts promoted evidence without claiming live attestation verification', () => {
+  assert.equal(
+    validateLinuxLifecycleEvidence(officialLifecycleEvidence(), contract, {
+      official: true,
+    }),
+    true,
+  );
+  const stale = officialLifecycleEvidence();
+  stale.tag = 'v0.1.1';
+  assert.throws(
+    () => validateLinuxLifecycleEvidence(stale, contract, { official: true }),
+    /official lifecycle evidence/u,
+  );
+});
+
 test('candidate identity requires both canonical final artifacts', () => {
   const missing = candidate();
   missing.artifacts.pop();
@@ -316,21 +345,25 @@ test('closed candidate receipts bind the manifest and reject private fields', ()
   );
 });
 
-test('official receipts require reference evidence and all manual results', () => {
+test('official receipts preserve hosted evidence and defer manual validation', () => {
   const manifestBytes = Buffer.from(
     `${JSON.stringify(candidate(), null, 2)}\n`,
   );
   const invalid = receipt(manifestBytes, '24.04', 'deb');
+  for (const key of Object.keys(invalid.automated))
+    invalid.automated[key] =
+      key === 'performance' ? 'measured_hosted_smoke' : 'pass';
   assert.throws(
     () =>
       validateCleanEnvironmentReceipt(invalid, manifestBytes, contract, {
         official: true,
       }),
-    /reference startup evidence/u,
+    /release validation policy/u,
   );
-  const valid = receipt(manifestBytes, '24.04', 'deb', 'pass');
-  valid.performance.startup_evidence_class = 'reference';
-  for (const key of Object.keys(valid.automated)) valid.automated[key] = 'pass';
+  const valid = receipt(manifestBytes, '24.04', 'deb', 'deferred_post_release');
+  for (const key of Object.keys(valid.automated))
+    valid.automated[key] =
+      key === 'performance' ? 'measured_hosted_smoke' : 'pass';
   assert.equal(
     validateCleanEnvironmentReceipt(valid, manifestBytes, contract, {
       official: true,

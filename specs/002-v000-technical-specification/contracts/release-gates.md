@@ -15,10 +15,12 @@ The root Rust workspace package version is the canonical product version after r
 | Security | Dependency advisories, license policy, secret scan, CSP tests, parser limits, and hostile corpus pass | Block build fan-out |
 | Documentation | Markdown format/lint, internal anchors, external links, Mermaid render, terminology, UTF-8/BOM/mojibake, and version checks pass | Block build fan-out |
 | Platform build | Required Windows, macOS, Linux, and Android artifacts build from locked inputs | Block publication |
-| Package smoke | Install, launch, association/open-with, core view/edit/save, metadata, recovery, upgrade where applicable, and uninstall pass | Block platform artifact |
-| Supply chain | Signature, SHA-256 checksum, SBOM, provenance attestation, `LICENSE`, `NOTICE`, and third-party notices exist | Block platform artifact |
+| Automated package validation | Assembly, inventory, package identity, checksum, size, and supported lifecycle automation pass | Block platform artifact |
+| Supply chain | Declared trust state, SHA-256 checksum, SBOM, provenance attestation, `LICENSE`, `NOTICE`, and third-party notices exist | Block platform artifact |
 | Final join | Every release-blocking platform and documentation gate succeeds | Permit publication |
-| Post-release | Assets downloadable, checksums valid, signatures verify, store/direct metadata correct, and clean-device launch succeeds | Mark release failed and halt promotion |
+| Post-release validation | Assets remain downloadable and checksums valid; manual, accessibility, physical-device, and real-world checks proceed under issue #66 | File defects before v0.2 feature work |
+
+Windows v0.1.0 artifacts are explicitly unsigned community packages. The macOS application is ad-hoc signed and its DMG is not Apple-notarized. These states are valid only when prominently disclosed and must never be represented as platform endorsement. Linux retains repository attestations. Android retains a stable project-owned update key because package installation and upgrade continuity technically require it; private key material remains external to the repository.
 
 ## Documentation pass receipt
 
@@ -32,10 +34,10 @@ flowchart TB
   tagGate -->|Yes| tag["Push vX.Y.Z tag"]
   tag --> verify["Shared quality and security gates"]
   verify --> platform["Four-platform build fan-out"]
-  platform --> smoke["Install and behavior smoke tests"]
-  smoke --> supply["Sign, checksum, SBOM, and attest"]
+  platform --> package["Automated package validation"]
+  package --> supply["Record trust, checksum, SBOM, and attest"]
   supply --> join{"All required evidence present?"}
   join -->|No| blocked
   join -->|Yes| publish["Publish official release"]
-  publish --> post["Post-release verification"]
+  publish --> post["Post-release issue #66 validation"]
 ```

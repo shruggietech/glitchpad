@@ -4,7 +4,7 @@ S022 produces a universal APK, an ARM64 APK, and an Android App Bundle for the v
 
 The merged package manifest advertises only stable Markdown, Mermaid, plain-text, and approved source-document MIME types. External viewing uses content-provider URIs, single-item sharing is supported, and broad storage permissions, wildcard MIME types, file-scheme delivery, multi-item sharing, and planned document families are prohibited.
 
-Release signing reads ignored `crates/glitchpad-host/gen/android/keystore.properties` generated in temporary storage. Pull-request builds create disposable candidate authority and remain `blocked_candidate`. Official signing material must be provided through repository secrets during the authorized `v0.1.0` tag workflow; partial or missing official authority fails closed. Keystores, passwords, aliases, and private paths must never enter artifacts or logs.
+Release signing reads ignored `crates/glitchpad-host/gen/android/keystore.properties` generated in temporary storage. Pull-request builds create disposable candidate authority and remain `blocked_candidate`. Official signing material comes from the free stable project-owned key through repository secrets during the authorized `v0.1.0` tag workflow; partial or missing official authority fails closed. Keystores, passwords, aliases, and private paths must never enter artifacts or logs.
 
 Final-byte evidence under ignored `artifacts/android/` includes canonical artifacts, SHA-256 checksums, normalized inventories, `android-package-manifest.json`, `glitchpad-android.cdx.json`, `provenance.json`, and license notices. Evidence is generated after signing and binds the exact source commit.
 

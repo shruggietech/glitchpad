@@ -19,7 +19,7 @@ import { isDeepStrictEqual, promisify } from 'node:util';
 
 import {
   validateCleanHostReceipt,
-  validateMacosEvidence,
+  validateMacosLifecycleEvidence,
 } from '../check-macos-package.mjs';
 import {
   collectApplicationInventory,
@@ -47,7 +47,7 @@ export const initialLaunchArguments = (
 ];
 
 export function parseArguments(arguments_) {
-  const result = {};
+  const result = { official: false };
   const names = new Map([
     ['--dmg', 'dmg'],
     ['--manifest', 'manifest'],
@@ -55,6 +55,10 @@ export function parseArguments(arguments_) {
     ['--architecture', 'architecture'],
   ]);
   for (let index = 0; index < arguments_.length; index += 1) {
+    if (arguments_[index] === '--official') {
+      result.official = true;
+      continue;
+    }
     const key = names.get(arguments_[index]);
     const value = arguments_[++index];
     if (!key || !value || value.startsWith('--'))
@@ -217,7 +221,9 @@ async function main() {
     ).then(JSON.parse),
   ]);
   const manifest = JSON.parse(manifestBytes.toString('utf8'));
-  validateMacosEvidence(manifest, contract);
+  validateMacosLifecycleEvidence(manifest, contract, {
+    official: options.official,
+  });
   if (!(await stat(dmgPath)).isFile()) throw new Error('dmg_unavailable');
   const root = await mkdtemp(
     join(tmpdir(), `glitchpad-macos-${options.architecture}-`),

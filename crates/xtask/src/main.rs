@@ -235,7 +235,9 @@ fn test(repository: &Path) -> Result<(), String> {
 fn package(repository: &Path) -> Result<(), String> {
     run(repository, "pnpm", ["run", "build"])?;
     run(repository, "cargo", ["build", "--workspace", "--locked"])?;
-    println!("Development artifacts built. Distribution bundling remains disabled at v0.0.0.");
+    println!(
+        "Development artifacts built. Official distribution remains restricted to the v0.1.0 tag workflow."
+    );
     Ok(())
 }
 

@@ -1,12 +1,11 @@
-# Glitchpad Technical Specification v0.0.0
+# Glitchpad Technical Specification v0.1.0
 
 | Field | Value |
 | --- | --- |
-| Status | Draft normative foundation baseline |
-| Specification version | 0.0.0 |
-| Product version | 0.0.0 |
-| Release class | Documentation and repository-foundation release; no application binaries |
-| First binary release | 0.1.0 |
+| Status | Normative first community release |
+| Specification version | 0.1.0 |
+| Product version | 0.1.0 |
+| Release class | Installable community release |
 | Audience | Maintainers, contributors, reviewers, release operators, and implementation agents |
 | Issued | 2026-08-30 |
 | Repository | `github.com/ShruggieTech/glitchpad` |
@@ -49,13 +48,13 @@
 33. [Release and Versioning Process](#33-release-and-versioning-process)
 34. [Brand System and Required Brand Kit](#34-brand-system-and-required-brand-kit)
 35. [Spec Kit Decomposition and Decision Records](#35-spec-kit-decomposition-and-decision-records)
-36. [Roadmap Beyond v0.0.0](#36-roadmap-beyond-v000)
+36. [Roadmap Beyond v0.1.0](#36-roadmap-beyond-v010)
 37. [Open Questions](#37-open-questions)
 38. [Appendices](#38-appendices)
 
 ## 1. Document Control and Authority
 
-This document is the architecture, behavior, platform, security, development, and delivery contract for the latest official Glitchpad release. Its version MUST equal the product version. v0.0.0 establishes the normative foundation and makes no claim that installable application artifacts exist.
+This document is the architecture, behavior, platform, security, development, and delivery contract for Glitchpad v0.1.0, the first installable community release. Its version MUST equal the product version.
 
 The root Rust workspace version becomes the canonical product-version authority when the repository-foundation slice creates application manifests. Tauri configuration, npm package metadata, Android version name, this document, changelog release heading, release tag, artifact filenames, SBOM metadata, and provenance attestations MUST mirror that value. Automated consistency checks MUST reject any mismatch.
 
@@ -77,6 +76,7 @@ flowchart TB
 | Specification | Date | Product release | Change |
 | --- | --- | --- | --- |
 | 0.0.0 | 2026-08-30 | 0.0.0 | Established the product, architecture, platform, security, contributor, license, release, and standalone/embedded Mermaid baseline |
+| 0.1.0 | 2026-09-07 | 0.1.0 | Reconciled the stable text-family application, four-platform packages, community trust policy, and first publication gate |
 
 Changes to normative released behavior require a product release and a matching specification version. Typographical corrections that do not alter meaning may be applied to the current version with a dated revision-history note and reviewed pull request.
 
@@ -145,13 +145,13 @@ Notes and rationale are non-normative. Tables labeled as matrices are normative 
 
 ## 5. Scope and Capability Status
 
-v0.0.0 contains no application artifacts. Every application capability is therefore `foundation` or `planned`. A capability becomes `experimental` or `stable` only through a release that includes the renderer, platform artifacts, conformance evidence, file associations, documentation, and notices.
+v0.1.0 promotes the completed text-family capabilities to `stable`. A capability becomes `experimental` or `stable` only through a release that includes its implementation, platform artifacts, conformance evidence, associations, documentation, and notices.
 
-| Format family | Examples | v0.0.0 status | First target | Target capabilities | Fidelity boundary |
+| Format family | Examples | v0.1.0 status | First release | Capabilities | Fidelity boundary |
 | --- | --- | --- | --- | --- | --- |
-| Markdown | `.md`, `.markdown` | Foundation | v0.1.0 | View, edit, save, search, navigate, inspect, print | CommonMark, GFM, footnotes, independently bounded fenced Mermaid blocks |
-| Mermaid diagrams | `.mmd`, `.mermaid` | Foundation | v0.1.0 | View, edit, save, search, zoom, pan, inspect | Local strict rendering; no active links, callbacks, source rewriting, or generated-output export |
-| Plain text and source | `.txt`, recognized language files | Foundation | v0.1.0 | View, edit, save, search, inspect, syntax highlight | Text editing without IDE services |
+| Markdown | `.md`, `.markdown` | Stable | v0.1.0 | View, edit, save, search, navigate, inspect, print | CommonMark, GFM, footnotes, independently bounded fenced Mermaid blocks |
+| Mermaid diagrams | `.mmd`, `.mermaid` | Stable | v0.1.0 | View, edit, save, search, zoom, pan, inspect | Local strict rendering; no active links, callbacks, source rewriting, or generated-output export |
+| Plain text and source | `.txt`, recognized language files | Stable | v0.1.0 | View, edit, save, search, inspect, syntax highlight | Text editing without IDE services |
 | Raster images | PNG, JPEG, GIF, WebP, BMP, TIFF | Planned | v0.2.0 | View, zoom, pan, frame navigation, inspect | Bounded decode and metadata; no editing |
 | Vector images | SVG | Planned | v0.2.0 | View, zoom, inspect | Script-free, remote-resource-free rendering |
 | Icon containers | ICO | Planned | v0.2.0 | View, inspect entries, export selected entry | Every embedded entry listed independently |
@@ -532,7 +532,7 @@ All four target families are Tier 1 for v0.1.0. A Tier 1 platform requires an of
 | Platform | Runtime baseline | Architectures | Official v0.1.0 artifacts | Native WebView |
 | --- | --- | --- | --- | --- |
 | Windows | Windows 11 | x86_64 | NSIS installer, portable ZIP | WebView2 Evergreen |
-| macOS | macOS 13+ | arm64 and x86_64 universal | Signed and notarized DMG | WKWebView |
+| macOS | macOS 13+ | arm64 and x86_64 universal | Ad-hoc-signed application in a non-notarized DMG | WKWebView |
 | Linux | glibc baseline built on Ubuntu 22.04 | x86_64 | AppImage, Debian package | WebKitGTK 4.1 |
 | Android | Android 7.0+, min API 24, target API 36 | arm64-v8a and x86_64 required; universal package | Universal APK, split ARM64 APK, AAB | Android System WebView |
 
@@ -635,14 +635,14 @@ The bootstrap sequence is `cargo xtask doctor`, `cargo xtask bootstrap`, and `ca
 - Visual Studio 2022 Build Tools with Desktop development with C++, MSVC toolset, CMake tools, and Windows 11 SDK.
 - WebView2 Evergreen Runtime and a matching test runtime where CI pins one.
 - Rust target `x86_64-pc-windows-msvc`.
-- NSIS tooling selected by the Tauri lock and Windows signing tools for release operators.
+- NSIS tooling selected by the Tauri lock. v0.1.0 is distributed as an unsigned community release.
 
 ### macOS host
 
 - macOS 13 or newer on Apple Silicon or Intel.
 - Full Xcode selected by `xcode-select`, accepted license, command-line tools, and SDK version matching the release runner.
 - Rust targets `aarch64-apple-darwin` and `x86_64-apple-darwin` for universal artifacts.
-- Apple Developer ID Application identity, notarization credentials, and keychain profile for release operators only.
+- Standard Apple command-line packaging tools. v0.1.0 uses an ad-hoc application signature and is not notarized.
 
 ### Linux host
 
@@ -660,7 +660,7 @@ The bootstrap sequence is `cargo xtask doctor`, `cargo xtask bootstrap`, and `ca
 - `ANDROID_HOME`, `NDK_HOME`, and `JAVA_HOME` set to doctor-verifiable locations.
 - Rust targets `aarch64-linux-android`, `armv7-linux-androideabi`, `i686-linux-android`, and `x86_64-linux-android` installed through rustup.
 - `adb`, hardware virtualization, one API 36 emulator, one physical ARM64 device at API 36, and one physical or hosted device at API 24 for release evidence.
-- Android app-signing keystore and Google Play credentials for release operators only.
+- Stable project-owned Android update keystore for release operators; store credentials are outside direct-release scope.
 
 ### Test and documentation tools
 
@@ -723,13 +723,13 @@ Coverage is a diagnostic, not a success metric. Critical state, save, recovery, 
 
 Official artifact names follow `glitchpad-{version}-{platform}-{arch}.{ext}` and contain or accompany `LICENSE`, `NOTICE`, `THIRD_PARTY_NOTICES`, SHA-256 checksums, CycloneDX SBOM, and provenance attestation.
 
-Windows publishes an x86_64 NSIS current-user installer and portable ZIP. macOS publishes one universal signed and notarized DMG. Linux publishes an x86_64 AppImage and Debian package built against the declared glibc baseline. Android publishes a universal APK, a split ARM64 APK for direct installation, and an AAB for Google Play.
+Windows publishes an unsigned x86_64 NSIS current-user installer and portable ZIP. macOS publishes one universal DMG containing an ad-hoc-signed application without Apple notarization. Linux publishes an x86_64 AppImage and Debian package built against the declared glibc baseline. Android publishes a universal APK, a split ARM64 APK, and an AAB signed by the stable project-owned update key.
 
 Desktop packages register only stable editable/viewable formats from the release matrix. Android intent filters follow the same rule. Uninstall removes application binaries and registered associations while preserving user-created documents; platform conventions decide whether preferences and recovery data remain, and the uninstaller must disclose any removal option.
 
-v0.1.0 has no in-app updater. Direct-distribution users obtain signed releases through the project release channel; store users use platform-store updates. A future updater requires a separate threat model, signed manifest, rollback policy, channel model, proxy/offline behavior, and recovery test matrix.
+v0.1.0 has no in-app updater. Direct-distribution users obtain community releases through the project release channel. A future updater requires a separate threat model, authenticated manifest, rollback policy, channel model, proxy/offline behavior, and recovery test matrix.
 
-No artifact is official without its platform signature where signing exists, clean-environment smoke result, checksum, SBOM, provenance, license notices, and exact version evidence.
+No artifact is official without its declared trust state, checksum, SBOM, provenance, license notices, source revision, and exact version evidence. Windows is explicitly unsigned, macOS is ad-hoc signed and non-notarized, Linux is repository-attested, and Android uses the stable project-owned update key. Manual validation tracked by issue #66 occurs after v0.1.0 publication.
 
 ## 33. Release and Versioning Process
 
@@ -737,7 +737,7 @@ Glitchpad follows semantic versioning. Before 1.0.0, a minor release may change 
 
 Every change reaches the default branch through a reviewed pull request with a green aggregate gate. Changelog entries are contributed as fragments to avoid concurrent edits. The release operator assembles fragments, performs the documentation pass, updates the canonical product version and mirrors, reviews generated notices, commits the release, and pushes `vX.Y.Z`.
 
-The tag pipeline verifies the release contract in `specs/002-v000-technical-specification/contracts/release-gates.md`, runs shared gates, builds the four-platform matrix, runs package smoke tests, signs artifacts, generates checksums/SBOM/provenance, creates the release, and performs post-publication download and verification checks.
+The tag pipeline verifies the release contract, runs shared gates, builds the four-platform matrix, validates each platform's declared community trust state, generates checksums/SBOM/provenance, and creates the release only after every automated gate succeeds.
 
 ```mermaid
 flowchart TB
@@ -790,7 +790,7 @@ The required sequence is specify, clarify when material ambiguity exists, plan a
 
 The architecture of record changes only during a release documentation pass. Feature artifacts remain in the repository as historical intent and evidence; they do not override a later released specification.
 
-## 36. Roadmap Beyond v0.0.0
+## 36. Roadmap Beyond v0.1.0
 
 | Release target | Required scope | Exit condition |
 | --- | --- | --- |
@@ -806,7 +806,7 @@ Later quality slices may add Windows ARM64, Linux ARM64, an opt-in session resto
 
 ## 37. Open Questions
 
-There are no unresolved architecture or product questions in v0.0.0. Implementation discoveries that materially challenge this specification MUST create a Spec Kit clarification or architecture-amendment slice before code selects a different behavior.
+There are no unresolved architecture or product questions in v0.1.0. Implementation discoveries that materially challenge this specification MUST create a Spec Kit clarification or architecture-amendment slice before code selects a different behavior.
 
 Risks with fixed containment and blocking gates are recorded in `specs/002-v000-technical-specification/plan.md`; they are not permission to choose alternatives silently.
 
@@ -827,8 +827,8 @@ Risks with fixed containment and blocking gates are recorded in `specs/002-v000-
 
 | Platform | Build | Package | Core behavior | Association/intents | Signature | Clean install | Physical device |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Windows x86_64 | Required | NSIS and ZIP | Required | Required | Required for official release | Required | Not applicable |
-| macOS universal | Required | DMG | Required | Required | Signing and notarization required | Required | Native host required |
+| Windows x86_64 | Required | NSIS and ZIP | Required | Required | Explicitly unsigned community artifacts | Automated package gate | Not applicable |
+| macOS universal | Required | DMG | Required | Required | Ad-hoc application; non-notarized DMG | Automated package gate | Post-release issue #66 |
 | Linux x86_64 | Required | AppImage and DEB | Required | Required | Repository signature/attestation required | Required | Not applicable |
 | Android | Required | APK and AAB | Required | Required | APK/AAB signing required | Required | API 24 and API 36 evidence |
 
@@ -892,8 +892,8 @@ Shortcuts MUST yield to platform-reserved behavior and remain discoverable in co
 
 ### Appendix G. Packaging inventory
 
-- Windows: NSIS installer, portable ZIP, signature, checksums, SBOM, provenance, notices.
-- macOS: universal DMG, application signature, notarization ticket, checksums, SBOM, provenance, notices.
+- Windows: unsigned NSIS installer, portable ZIP, community trust evidence, checksums, SBOM, provenance, notices.
+- macOS: universal DMG, ad-hoc application signature, non-notarized trust evidence, checksums, SBOM, provenance, notices.
 - Linux: AppImage, Debian package, checksums, SBOM, provenance, notices.
 - Android: universal APK, split ARM64 APK, AAB, signatures, checksums, SBOM, provenance, notices.
 - Release: source archive, release notes, documentation-pass receipt, capability matrix, platform matrix, and verification summary.

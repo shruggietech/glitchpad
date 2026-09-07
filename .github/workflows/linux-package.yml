@@ -85,6 +85,9 @@ jobs:
               node scripts/check-linux-package.mjs --evidence artifacts/linux/linux-package-manifest.json --artifact-root artifacts/linux
             '
 
+      - name: Restore runner ownership of Linux evidence
+        run: sudo chown --recursive "$(id --user):$(id --group)" artifacts/linux
+
       - name: Upload governed Linux package
         if: ${{ !startsWith(github.ref, 'refs/tags/') }}
         uses: actions/upload-artifact@v7

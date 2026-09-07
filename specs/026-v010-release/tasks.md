@@ -38,6 +38,9 @@
 - [x] T010 Correct tag-context readiness to reference the S025 brand manifest and integration guide
 - [x] T011 Add regression coverage that rejects the removed pre-S025 brand evidence path
 - [x] T012 Re-run focused policy validation and the exact tag-context readiness command before pushing the remediation
+- [x] T013 Restore GitHub runner ownership of container-produced Linux evidence before tag-only promotion
+- [x] T014 Enforce the assembly, ownership-handoff, and promotion ordering in community-release policy tests
+- [x] T015 Re-run focused Linux and release policy validation before pushing the ownership remediation
 
 ## Dependencies and execution order
 

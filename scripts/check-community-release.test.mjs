@@ -71,8 +71,15 @@ test('requires every tag-only package input and persisted attestation', () => {
       '- name: Inspect raw signed packages\n  env:\n    ANDROID_SIGNING_CERT_SHA256: ${{ secrets.ANDROID_SIGNING_CERT_SHA256 }}\n  run: |',
     macosWorkflow:
       "${{ startsWith(github.ref, 'refs/tags/') && '--official' || '' }}",
-    linuxWorkflow:
-      "id: attest\n${{ steps.attest.outputs.bundle-path }}\nartifacts/linux/repository-attestation.json\n${{ startsWith(github.ref, 'refs/tags/') && '--official' || '' }}",
+    linuxWorkflow: `
+- name: Assemble final-byte candidate and evidence
+sudo chown --recursive "$(id --user):$(id --group)" artifacts/linux
+- name: Promote truthful community evidence
+id: attest
+\${{ steps.attest.outputs.bundle-path }}
+artifacts/linux/repository-attestation.json
+\${{ startsWith(github.ref, 'refs/tags/') && '--official' || '' }}
+`,
   };
   assert.equal(validateTagPackageWorkflows(workflows), true);
   assert.throws(
@@ -82,6 +89,17 @@ test('requires every tag-only package input and persisted attestation', () => {
   assert.throws(
     () => validateTagPackageWorkflows({ ...workflows, linuxWorkflow: '' }),
     /Linux tag lifecycle/u,
+  );
+  assert.throws(
+    () =>
+      validateTagPackageWorkflows({
+        ...workflows,
+        linuxWorkflow: workflows.linuxWorkflow.replace(
+          'sudo chown --recursive "$(id --user):$(id --group)" artifacts/linux',
+          '',
+        ),
+      }),
+    /restore runner ownership/u,
   );
 });
 

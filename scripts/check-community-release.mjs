@@ -145,6 +145,23 @@ export function validateTagPackageWorkflows({
   ])
     if (!linuxWorkflow.includes(value))
       throw new Error(`Linux tag lifecycle is incomplete: ${value}`);
+  const assemblyIndex = linuxWorkflow.indexOf(
+    '- name: Assemble final-byte candidate and evidence',
+  );
+  const ownershipIndex = linuxWorkflow.indexOf(
+    'sudo chown --recursive "$(id --user):$(id --group)" artifacts/linux',
+  );
+  const promotionIndex = linuxWorkflow.indexOf(
+    '- name: Promote truthful community evidence',
+  );
+  if (
+    assemblyIndex < 0 ||
+    ownershipIndex <= assemblyIndex ||
+    promotionIndex <= ownershipIndex
+  )
+    throw new Error(
+      'Linux tag lifecycle must restore runner ownership before promotion',
+    );
   return true;
 }
 

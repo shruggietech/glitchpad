@@ -100,11 +100,16 @@ jobs:
 
       - name: Attest final Linux community artifacts
         if: startsWith(github.ref, 'refs/tags/')
+        id: attest
         uses: actions/attest-build-provenance@v4
         with:
           subject-path: |
             artifacts/linux/glitchpad-0.1.0-linux-x86_64.AppImage
             artifacts/linux/glitchpad-0.1.0-linux-x86_64.deb
+
+      - name: Preserve repository attestation evidence
+        if: startsWith(github.ref, 'refs/tags/')
+        run: cp '${{ steps.attest.outputs.bundle-path }}' artifacts/linux/repository-attestation.json
 
       - name: Upload governed Linux community package
         if: startsWith(github.ref, 'refs/tags/')
@@ -161,7 +166,8 @@ jobs:
               --manifest artifacts/linux/linux-package-manifest.json \
               --receipt 'clean-ubuntu-${{ matrix.release }}-${{ matrix.package_form }}.json' \
               --package-form '${{ matrix.package_form }}' \
-              --release '${{ matrix.release }}'
+              --release '${{ matrix.release }}' \
+              ${{ startsWith(github.ref, 'refs/tags/') && '--official' || '' }}
 
       - name: Upload content-free clean-environment receipt
         uses: actions/upload-artifact@v7

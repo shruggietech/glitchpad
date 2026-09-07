@@ -53,7 +53,22 @@ test('lifecycle arguments require explicit artifact, manifest, receipt, and arch
       manifest: 'manifest.json',
       receipt: 'receipt.json',
       architecture: 'arm64',
+      official: false,
     },
+  );
+  assert.equal(
+    parseArguments([
+      '--dmg',
+      'release.dmg',
+      '--manifest',
+      'manifest.json',
+      '--receipt',
+      'receipt.json',
+      '--architecture',
+      'arm64',
+      '--official',
+    ]).official,
+    true,
   );
   assert.throws(
     () => parseArguments(['--dmg', 'candidate.dmg']),

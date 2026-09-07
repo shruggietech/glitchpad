@@ -79,6 +79,33 @@ export function validateGovernedClaims({
   return true;
 }
 
+export function validateTagPackageWorkflows({
+  androidWorkflow,
+  macosWorkflow,
+  linuxWorkflow,
+}) {
+  const rawAndroidInspection = androidWorkflow.match(
+    /- name: Inspect raw signed packages[\s\S]*?run: \|/u,
+  )?.[0];
+  if (
+    !rawAndroidInspection?.includes(
+      'ANDROID_SIGNING_CERT_SHA256: ${{ secrets.ANDROID_SIGNING_CERT_SHA256 }}',
+    )
+  )
+    throw new Error('Android official raw inspection lacks signing authority');
+  if (!macosWorkflow.includes("&& '--official' || ''"))
+    throw new Error('macOS tag lifecycle does not select official evidence');
+  for (const value of [
+    'id: attest',
+    'steps.attest.outputs.bundle-path',
+    'artifacts/linux/repository-attestation.json',
+    "&& '--official' || ''",
+  ])
+    if (!linuxWorkflow.includes(value))
+      throw new Error(`Linux tag lifecycle is incomplete: ${value}`);
+  return true;
+}
+
 export async function checkCommunityRelease(repositoryRoot = root) {
   const [
     contract,
@@ -87,6 +114,9 @@ export async function checkCommunityRelease(repositoryRoot = root) {
     androidContract,
     releaseWorkflow,
     releaseNotes,
+    androidWorkflow,
+    macosWorkflow,
+    linuxWorkflow,
     rootPackage,
     appPackage,
     tauri,
@@ -97,6 +127,9 @@ export async function checkCommunityRelease(repositoryRoot = root) {
     loadJson(join(repositoryRoot, 'packaging/android/package-contract.json')),
     text(join(repositoryRoot, '.github/workflows/release.yml')),
     text(join(repositoryRoot, 'docs/releases/v0.1.0.md')),
+    text(join(repositoryRoot, '.github/workflows/android-package.yml')),
+    text(join(repositoryRoot, '.github/workflows/macos-package.yml')),
+    text(join(repositoryRoot, '.github/workflows/linux-package.yml')),
     loadJson(join(repositoryRoot, 'package.json')),
     loadJson(join(repositoryRoot, 'apps/glitchpad/package.json')),
     loadJson(join(repositoryRoot, 'crates/glitchpad-host/tauri.conf.json')),
@@ -108,6 +141,11 @@ export async function checkCommunityRelease(repositoryRoot = root) {
     macosContract,
     androidContract,
     releaseNotes,
+  });
+  validateTagPackageWorkflows({
+    androidWorkflow,
+    macosWorkflow,
+    linuxWorkflow,
   });
   if (
     [rootPackage.version, appPackage.version, tauri.version].some(

@@ -10,10 +10,22 @@ import {
 const digest = 'a'.repeat(64);
 
 test('lifecycle options allow only governed package forms and Ubuntu releases', () => {
-  assert.equal(validateLifecycleOptions({ packageForm: 'appimage', release: '22.04' }), true);
-  assert.equal(validateLifecycleOptions({ packageForm: 'deb', release: '24.04' }), true);
-  assert.throws(() => validateLifecycleOptions({ packageForm: 'rpm', release: '22.04' }), /package form/u);
-  assert.throws(() => validateLifecycleOptions({ packageForm: 'deb', release: '26.04' }), /Ubuntu release/u);
+  assert.equal(
+    validateLifecycleOptions({ packageForm: 'appimage', release: '22.04' }),
+    true,
+  );
+  assert.equal(
+    validateLifecycleOptions({ packageForm: 'deb', release: '24.04' }),
+    true,
+  );
+  assert.throws(
+    () => validateLifecycleOptions({ packageForm: 'rpm', release: '22.04' }),
+    /package form/u,
+  );
+  assert.throws(
+    () => validateLifecycleOptions({ packageForm: 'deb', release: '26.04' }),
+    /Ubuntu release/u,
+  );
 });
 
 test('startup percentile uses the nearest-rank governed sample', () => {

@@ -12,6 +12,7 @@ import {
   validateCleanEnvironmentReceipt,
   validateDebianControl,
   validateLinuxEvidence,
+  validateLinuxLifecycleEvidence,
   validateOfficialLinuxArtifactSet,
   verifyRepositoryAttestations,
 } from './check-linux-package.mjs';
@@ -88,6 +89,19 @@ function verifiedAttestation(evidence) {
     source_commit: evidence.source_commit,
     version: evidence.version,
     artifacts: evidence.artifacts.map(({ name, sha256 }) => ({ name, sha256 })),
+  };
+}
+
+function officialLifecycleEvidence() {
+  const evidence = candidate();
+  return {
+    ...evidence,
+    official: true,
+    gate_status: 'official_valid',
+    event: contract.official.authorized_event,
+    tag: contract.official.tag_pattern,
+    evidence_files: [...contract.official.required_evidence],
+    repository_attestation_status: 'generated_by_tag_workflow',
   };
 }
 
@@ -245,6 +259,21 @@ test('candidate pair passes candidate mode but cannot imply official authority',
   assert.throws(
     () => validateLinuxEvidence(inflated, contract),
     /candidate attestation/u,
+  );
+});
+
+test('tag lifecycle accepts promoted evidence without claiming live attestation verification', () => {
+  assert.equal(
+    validateLinuxLifecycleEvidence(officialLifecycleEvidence(), contract, {
+      official: true,
+    }),
+    true,
+  );
+  const stale = officialLifecycleEvidence();
+  stale.tag = 'v0.1.1';
+  assert.throws(
+    () => validateLinuxLifecycleEvidence(stale, contract, { official: true }),
+    /official lifecycle evidence/u,
   );
 });
 

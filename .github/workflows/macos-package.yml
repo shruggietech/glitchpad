@@ -138,7 +138,8 @@ jobs:
 
       - name: Exercise native install, launch, delivery, and removal
         run: |
-          node scripts/macos/test-package-lifecycle.mjs --dmg artifacts/macos/glitchpad-0.1.0-macos-universal.dmg --manifest artifacts/macos/macos-package-manifest.json --receipt "clean-host-${{ matrix.architecture }}.json" --architecture '${{ matrix.architecture }}'
+          node scripts/macos/test-package-lifecycle.mjs --dmg artifacts/macos/glitchpad-0.1.0-macos-universal.dmg --manifest artifacts/macos/macos-package-manifest.json --receipt "clean-host-${{ matrix.architecture }}.json" --architecture '${{ matrix.architecture }}' \
+            ${{ startsWith(github.ref, 'refs/tags/') && '--official' || '' }}
 
       - name: Upload content-free clean-host receipt
         uses: actions/upload-artifact@v7

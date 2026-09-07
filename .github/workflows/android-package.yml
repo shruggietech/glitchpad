@@ -148,6 +148,7 @@ jobs:
       - name: Inspect raw signed packages
         env:
           BUNDLETOOL_JAR: ${{ runner.temp }}/bundletool.jar
+          ANDROID_SIGNING_CERT_SHA256: ${{ secrets.ANDROID_SIGNING_CERT_SHA256 }}
         run: |
           node scripts/check-android-package.mjs \
             --authority "${{ startsWith(github.ref, 'refs/tags/') && 'official' || 'candidate' }}" \

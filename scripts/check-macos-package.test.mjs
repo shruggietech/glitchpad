@@ -19,6 +19,7 @@ import {
   validateCandidateMacosArtifactSet,
   validateCleanHostReceipt,
   validateMacosEvidence,
+  validateMacosLifecycleEvidence,
   validateOfficialMacosEvidence,
 } from './check-macos-package.mjs';
 import { generateMacosSbom } from './generate-macos-sbom.mjs';
@@ -97,6 +98,30 @@ function candidate() {
     },
     application_inventory: applicationInventory,
     document_extensions: [...extensions],
+  };
+}
+
+function officialLifecycleEvidence() {
+  const evidence = candidate();
+  return {
+    ...evidence,
+    official: true,
+    gate_status: 'official_valid',
+    event: contract.official.authorized_event,
+    tag: contract.official.tag_pattern,
+    evidence_files: [...contract.official.required_evidence],
+    artifact: {
+      ...evidence.artifact,
+      signature_status: contract.official.required_dmg_signature_status,
+      notarization_status: contract.official.required_notarization_status,
+      staple_status: contract.official.required_staple_status,
+    },
+    application: {
+      ...evidence.application,
+      signature_status: contract.official.required_application_signature_status,
+      hardened_runtime_status: 'not_applicable',
+      timestamp_status: 'not_applicable',
+    },
   };
 }
 
@@ -225,6 +250,15 @@ test('a complete ad-hoc candidate passes candidate mode but never official mode'
   assert.throws(
     () => validateMacosEvidence(candidate(), contract, { official: true }),
     /live Apple trust verification/u,
+  );
+});
+
+test('tag lifecycle validates promoted community trust without paid Apple authority', () => {
+  assert.equal(
+    validateMacosLifecycleEvidence(officialLifecycleEvidence(), contract, {
+      official: true,
+    }),
+    true,
   );
 });
 
@@ -623,13 +657,16 @@ test('official community mode binds final bytes and truthful macOS trust', async
       JSON.stringify(observedTrust),
     );
     await writeFile(join(root, 'notarization-log.json'), notaryLogBytes);
-    await writeFile(join(root, 'community-trust-evidence.json'), JSON.stringify({
-      schema_version: 1,
-      trust_state: 'adhoc_non_notarized_community',
-      source_commit: evidence.source_commit,
-      application_signature_status: 'ad_hoc',
-      notarization_status: 'not_submitted',
-    }));
+    await writeFile(
+      join(root, 'community-trust-evidence.json'),
+      JSON.stringify({
+        schema_version: 1,
+        trust_state: 'adhoc_non_notarized_community',
+        source_commit: evidence.source_commit,
+        application_signature_status: 'ad_hoc',
+        notarization_status: 'not_submitted',
+      }),
+    );
     assert.equal(
       await validateOfficialMacosEvidence(evidence, contract, {
         artifactRoot: root,

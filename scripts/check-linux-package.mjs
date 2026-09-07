@@ -292,6 +292,62 @@ export function validateLinuxEvidence(
   return true;
 }
 
+export function validateLinuxLifecycleEvidence(
+  evidence,
+  contract,
+  { official = false } = {},
+) {
+  if (!official) return validateLinuxEvidence(evidence, contract);
+  if (
+    evidence?.schema_version !== 1 ||
+    evidence.version !== contract.candidate_version ||
+    evidence.platform !== 'linux' ||
+    evidence.architecture !== 'x86_64' ||
+    !sourceCommitPattern.test(evidence.source_commit ?? '') ||
+    typeof evidence.workflow_identity !== 'string' ||
+    !evidence.workflow_identity.includes(
+      '.github/workflows/linux-package.yml@',
+    ) ||
+    evidence.official !== true ||
+    evidence.gate_status !== 'official_valid' ||
+    evidence.event !== contract.official.authorized_event ||
+    evidence.tag !== contract.official.tag_pattern ||
+    evidence.repository_attestation_status !== 'generated_by_tag_workflow' ||
+    !same(evidence.evidence_files ?? [], contract.official.required_evidence)
+  )
+    fail('official lifecycle evidence is unauthorized or incomplete');
+  validateBuildBaseline(evidence.build_baseline, contract);
+  if (
+    !Array.isArray(evidence.artifacts) ||
+    evidence.artifacts.length !== contract.artifacts.length ||
+    !contract.artifacts.every((expected) =>
+      evidence.artifacts.some(
+        (actual) =>
+          actual.kind === expected.kind && actual.name === expected.name,
+      ),
+    )
+  )
+    fail('artifact pair is incomplete or noncanonical');
+  for (const artifact of evidence.artifacts) {
+    if (
+      !sha256Pattern.test(artifact.sha256 ?? '') ||
+      !sha256Pattern.test(artifact.inventory_sha256 ?? '') ||
+      classifyPackageSize(artifact.bytes, contract.size_budget) !==
+        artifact.size_classification ||
+      artifact.size_classification === 'failure'
+    )
+      fail(`artifact evidence is invalid for ${artifact.name}`);
+  }
+  if (
+    !same(
+      evidence.desktop_entry?.mime_types ?? [],
+      contract.desktop_entry.mime_types,
+    )
+  )
+    fail('manifest desktop MIME types drift from contract');
+  return true;
+}
+
 function validateFreshTimestamp(value, maximumAgeSeconds) {
   const completed = Date.parse(value);
   const age = Date.now() - completed;

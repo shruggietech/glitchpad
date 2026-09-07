@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   validateGovernedClaims,
   validateReleaseContract,
+  validateTagPackageWorkflows,
 } from './check-community-release.mjs';
 
 const contract = () => ({
@@ -61,3 +62,23 @@ test('rejects paid desktop credentials', () =>
       }),
     /paid desktop/u,
   ));
+
+test('requires every tag-only package input and persisted attestation', () => {
+  const workflows = {
+    androidWorkflow:
+      '- name: Inspect raw signed packages\n  env:\n    ANDROID_SIGNING_CERT_SHA256: ${{ secrets.ANDROID_SIGNING_CERT_SHA256 }}\n  run: |',
+    macosWorkflow:
+      "${{ startsWith(github.ref, 'refs/tags/') && '--official' || '' }}",
+    linuxWorkflow:
+      "id: attest\n${{ steps.attest.outputs.bundle-path }}\nartifacts/linux/repository-attestation.json\n${{ startsWith(github.ref, 'refs/tags/') && '--official' || '' }}",
+  };
+  assert.equal(validateTagPackageWorkflows(workflows), true);
+  assert.throws(
+    () => validateTagPackageWorkflows({ ...workflows, androidWorkflow: '' }),
+    /Android official raw inspection/u,
+  );
+  assert.throws(
+    () => validateTagPackageWorkflows({ ...workflows, linuxWorkflow: '' }),
+    /Linux tag lifecycle/u,
+  );
+});

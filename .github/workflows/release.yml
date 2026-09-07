@@ -113,6 +113,7 @@ jobs:
       ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
       ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
       ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      ANDROID_SIGNING_CERT_SHA256: ${{ secrets.ANDROID_SIGNING_CERT_SHA256 }}
       ANDROID_REQUIRED_EVIDENCE: SHA256SUMS,android-package-manifest.json,glitchpad-android.cdx.json,provenance.json,LICENSE,NOTICE,THIRD_PARTY_NOTICES.txt
     steps:
       - name: Verify Android publication authority is provisioned
@@ -125,5 +126,6 @@ jobs:
           test -n "$ANDROID_KEYSTORE_PASSWORD"
           test -n "$ANDROID_KEY_ALIAS"
           test -n "$ANDROID_KEY_PASSWORD"
+          test -n "$ANDROID_SIGNING_CERT_SHA256"
           test -n "$ANDROID_REQUIRED_EVIDENCE"
           echo 'Android authority is provisioned. Publication remains separately authorized.'

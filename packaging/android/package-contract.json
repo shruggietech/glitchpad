@@ -50,6 +50,7 @@
     "authorized_event": "push_tag",
     "tag_pattern": "v0.1.0",
     "repository": "shruggietech/glitchpad",
+    "certificate_sha256_environment": "ANDROID_SIGNING_CERT_SHA256",
     "required_signature_status": "official_valid",
     "required_evidence": [
       "SHA256SUMS",

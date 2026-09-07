@@ -118,6 +118,13 @@ export function validateReleasePosture(inventory, contract) {
 export function validateContract(contract) {
   if (contract.schema_version !== 1 || contract.platform !== 'android')
     throw new Error('invalid Android package contract identity');
+  if (
+    contract.official?.certificate_sha256_environment !==
+    'ANDROID_SIGNING_CERT_SHA256'
+  )
+    throw new Error(
+      'Android contract must bind the official certificate fingerprint',
+    );
   const roles = contract.artifacts?.map(({ role }) => role).sort();
   if (
     contract.artifacts?.length !== 3 ||
@@ -302,8 +309,34 @@ function normalizeCertificate(output) {
 }
 
 export function validateJarSignatureOutput(output) {
-  if (/jar is unsigned/iu.test(output) || !/jar verified\./iu.test(output))
+  if (
+    /jar is unsigned|unsigned entries|not integrity-checked/iu.test(output) ||
+    !/jar verified\./iu.test(output)
+  )
     throw new Error('Android app bundle is not cryptographically signed');
+}
+
+export function validateSigningAuthority(
+  certificateSha256,
+  authority,
+  contract,
+  environment = process.env,
+) {
+  if (authority === 'candidate')
+    return contract.candidate_trust.signature_status;
+  if (authority !== 'official')
+    throw new Error('unknown Android signing authority');
+  const variable = contract.official?.certificate_sha256_environment;
+  const expected = environment[variable]?.replaceAll(':', '').toUpperCase();
+  if (!variable || !expected || !/^[A-F0-9]{64}$/u.test(expected))
+    throw new Error(
+      'trusted official Android certificate fingerprint is not provisioned',
+    );
+  if (certificateSha256 !== expected)
+    throw new Error(
+      'Android artifact certificate does not match the official signing authority',
+    );
+  return contract.official.required_signature_status;
 }
 
 async function run(program, arguments_) {
@@ -345,6 +378,7 @@ async function inspectArtifact(path, declared, authority, contract) {
     validateJarSignatureOutput(verification);
     signatureOutput = `${verification}\n${await run('keytool', ['-printcert', '-jarfile', path])}`;
   }
+  const certificateSha256 = normalizeCertificate(signatureOutput);
   const facts = parseManifestXml(manifestXml);
   const abis = sortedUnique(
     entries
@@ -365,9 +399,12 @@ async function inspectArtifact(path, declared, authority, contract) {
     sha256: createHash('sha256').update(bytes).digest('hex'),
     size_bytes: bytes.length,
     abis,
-    signature_status:
-      authority === 'official' ? 'official_valid' : 'candidate_valid',
-    certificate_sha256: normalizeCertificate(signatureOutput),
+    signature_status: validateSigningAuthority(
+      certificateSha256,
+      authority,
+      contract,
+    ),
+    certificate_sha256: certificateSha256,
   };
 }
 

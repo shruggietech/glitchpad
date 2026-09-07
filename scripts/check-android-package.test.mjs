@@ -14,6 +14,7 @@ import {
   validateIntentSurface,
   validateJarSignatureOutput,
   validateReleasePosture,
+  validateSigningAuthority,
   verifyEvidenceFiles,
 } from './check-android-package.mjs';
 import { generateAndroidSbom } from './generate-android-sbom.mjs';
@@ -67,6 +68,7 @@ const contract = {
     publication_status: 'blocked_candidate',
   },
   official: {
+    certificate_sha256_environment: 'ANDROID_SIGNING_CERT_SHA256',
     required_signature_status: 'official_valid',
     required_evidence: [
       'SHA256SUMS',
@@ -139,6 +141,17 @@ function inventory(role, kind, abis) {
 
 test('contract requires exactly the three governed artifact roles', () => {
   assert.doesNotThrow(() => validateContract(contract));
+  assert.throws(
+    () =>
+      validateContract({
+        ...contract,
+        official: {
+          ...contract.official,
+          certificate_sha256_environment: 'UNTRUSTED_VARIABLE',
+        },
+      }),
+    /official certificate fingerprint/u,
+  );
   assert.throws(
     () =>
       validateContract({
@@ -258,6 +271,38 @@ test('app bundle signature validation rejects unsigned or ambiguous jarsigner ou
   assert.throws(
     () => validateJarSignatureOutput('verification completed'),
     /not cryptographically signed/u,
+  );
+  assert.throws(
+    () =>
+      validateJarSignatureOutput(
+        'jar verified. This jar contains unsigned entries which have not been integrity-checked.',
+      ),
+    /not cryptographically signed/u,
+  );
+});
+
+test('official signing authority requires the trusted certificate fingerprint', () => {
+  const certificate = 'B'.repeat(64);
+  assert.equal(
+    validateSigningAuthority(certificate, 'candidate', contract, {}),
+    'candidate_valid',
+  );
+  assert.equal(
+    validateSigningAuthority(certificate, 'official', contract, {
+      ANDROID_SIGNING_CERT_SHA256: certificate,
+    }),
+    'official_valid',
+  );
+  assert.throws(
+    () => validateSigningAuthority(certificate, 'official', contract, {}),
+    /not provisioned/u,
+  );
+  assert.throws(
+    () =>
+      validateSigningAuthority(certificate, 'official', contract, {
+        ANDROID_SIGNING_CERT_SHA256: 'C'.repeat(64),
+      }),
+    /does not match/u,
   );
 });
 

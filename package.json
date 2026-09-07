@@ -39,7 +39,7 @@
   },
   "devDependencies": {
     "@tauri-apps/cli": "2.11.4",
-    "@mermaid-js/mermaid-cli": "11.16.0",
+    "@mermaid-js/mermaid-cli": "11.17.0",
     "@taplo/cli": "0.7.0",
     "markdown-link-check": "3.15.0",
     "markdownlint-cli2": "0.23.2",

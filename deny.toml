@@ -1,8 +1,11 @@
 [advisories]
+unsound = "all"
 # These unmaintained advisories are indirect dependencies of Tauri 2.11.5 with
 # no safe compatible upgrade. They remain explicit so every Tauri update forces
 # a review rather than globally permitting unmaintained dependencies.
 ignore = [
+    # Transitive Tauri GTK dependency; see the time-bounded S024 exception.
+    "RUSTSEC-2024-0429",
     "RUSTSEC-2024-0370",
     "RUSTSEC-2024-0411",
     "RUSTSEC-2024-0412",

@@ -7,51 +7,51 @@
   <link rel="stylesheet" href="../../styles.css">
   <link rel="stylesheet" href="../../components/components.css">
   <style>
-    body { background: var(--gp-bg); color: var(--gp-fg); min-height: 100vh; }
+    body { background: var(--gl-bg); color: var(--gl-fg); min-height: 100vh; }
     .app { display: grid; grid-template-rows: auto auto 1fr; min-height: 100vh; }
-    .topbar { align-items: center; border-bottom: var(--gp-stroke-hairline) solid var(--gp-border); display: flex; gap: var(--gp-space-4); min-height: 4rem; padding: 0 var(--gp-space-5); }
-    .brand { align-items: center; display: flex; gap: var(--gp-space-3); margin-right: auto; }
+    .topbar { align-items: center; border-bottom: var(--gl-stroke-hairline) solid var(--gl-border); display: flex; gap: var(--gl-space-4); min-height: 4rem; padding: 0 var(--gl-space-5); }
+    .brand { align-items: center; display: flex; gap: var(--gl-space-3); margin-right: auto; }
     .brand img { height: 2.25rem; width: auto; }
-    .brand strong { font-family: var(--gp-font-display); font-size: var(--gp-display-xs); letter-spacing: var(--gp-tracking-display); }
-    .command { align-items: center; background: var(--gp-panel); border: var(--gp-stroke-hairline) solid var(--gp-border); border-radius: var(--gp-radius-md); color: var(--gp-fg-muted); display: flex; font-family: var(--gp-font-mono); font-size: var(--gp-body-xs); gap: var(--gp-space-2); min-width: 18rem; padding: var(--gp-space-2) var(--gp-space-3); }
-    .command kbd { background: var(--gp-panel-raised); border: var(--gp-stroke-hairline) solid var(--gp-border); border-radius: var(--gp-radius-sm); color: var(--gp-fg); margin-left: auto; padding: 0 var(--gp-space-2); }
-    .pathbar { align-items: center; border-bottom: var(--gp-stroke-hairline) solid var(--gp-border); color: var(--gp-fg-muted); display: flex; font-family: var(--gp-font-mono); font-size: var(--gp-body-xs); min-height: 2.75rem; overflow: hidden; padding: 0 var(--gp-space-5); white-space: nowrap; }
-    .pathbar span { color: var(--gp-fg); }
+    .brand strong { font-family: var(--gl-font-display); font-size: var(--gl-display-xs); letter-spacing: var(--gl-tracking-display); }
+    .command { align-items: center; background: var(--gl-panel); border: var(--gl-stroke-hairline) solid var(--gl-border); border-radius: var(--gl-radius-md); color: var(--gl-fg-muted); display: flex; font-family: var(--gl-font-mono); font-size: var(--gl-body-xs); gap: var(--gl-space-2); min-width: 18rem; padding: var(--gl-space-2) var(--gl-space-3); }
+    .command kbd { background: var(--gl-panel-raised); border: var(--gl-stroke-hairline) solid var(--gl-border); border-radius: var(--gl-radius-sm); color: var(--gl-fg); margin-left: auto; padding: 0 var(--gl-space-2); }
+    .pathbar { align-items: center; border-bottom: var(--gl-stroke-hairline) solid var(--gl-border); color: var(--gl-fg-muted); display: flex; font-family: var(--gl-font-mono); font-size: var(--gl-body-xs); min-height: 2.75rem; overflow: hidden; padding: 0 var(--gl-space-5); white-space: nowrap; }
+    .pathbar span { color: var(--gl-fg); }
     .workspace { display: grid; grid-template-columns: 16rem minmax(0, 1fr) 18rem; min-height: 0; }
-    .rail { background: var(--gp-surface); min-height: 0; overflow: auto; padding: var(--gp-space-4); }
-    .rail--left { border-right: var(--gp-stroke-hairline) solid var(--gp-border); }
-    .rail--right { border-left: var(--gp-stroke-hairline) solid var(--gp-border); }
-    .rail-title { color: var(--gp-fg-muted); font-family: var(--gp-font-mono); font-size: var(--gp-body-xs); letter-spacing: var(--gp-tracking-eyebrow); margin: 0 0 var(--gp-space-3); text-transform: uppercase; }
-    .tree { display: grid; gap: var(--gp-space-1); }
-    .tree-item { align-items: center; border-radius: var(--gp-radius-sm); color: var(--gp-fg-muted); display: flex; font-family: var(--gp-font-mono); font-size: var(--gp-body-xs); gap: var(--gp-space-2); min-height: 2rem; padding: 0 var(--gp-space-2); }
-    .tree-item::before { background: var(--gp-paper); border-radius: 50%; content: ""; height: .375rem; width: .375rem; }
+    .rail { background: var(--gl-surface); min-height: 0; overflow: auto; padding: var(--gl-space-4); }
+    .rail--left { border-right: var(--gl-stroke-hairline) solid var(--gl-border); }
+    .rail--right { border-left: var(--gl-stroke-hairline) solid var(--gl-border); }
+    .rail-title { color: var(--gl-fg-muted); font-family: var(--gl-font-mono); font-size: var(--gl-body-xs); letter-spacing: var(--gl-tracking-eyebrow); margin: 0 0 var(--gl-space-3); text-transform: uppercase; }
+    .tree { display: grid; gap: var(--gl-space-1); }
+    .tree-item { align-items: center; border-radius: var(--gl-radius-sm); color: var(--gl-fg-muted); display: flex; font-family: var(--gl-font-mono); font-size: var(--gl-body-xs); gap: var(--gl-space-2); min-height: 2rem; padding: 0 var(--gl-space-2); }
+    .tree-item::before { background: var(--gl-paper); border-radius: 50%; content: ""; height: .375rem; width: .375rem; }
     .tree-item--folder::before { border-radius: 1px; height: .5rem; width: .75rem; }
-    .tree-item--active { background: var(--gp-sulfur-10); color: var(--gp-fg); }
-    .tree-item--active::before { background: var(--gp-accent); }
-    .indent { margin-left: var(--gp-space-4); }
+    .tree-item--active { background: var(--gl-sulfur-10); color: var(--gl-fg); }
+    .tree-item--active::before { background: var(--gl-accent); }
+    .indent { margin-left: var(--gl-space-4); }
     .viewer { display: grid; grid-template-rows: auto auto 1fr; min-width: 0; }
-    .file-head { align-items: end; display: flex; gap: var(--gp-space-5); padding: var(--gp-space-6) var(--gp-space-6) var(--gp-space-4); }
-    .file-head h1 { font-size: var(--gp-display-sm); margin: 0; }
-    .file-head p { color: var(--gp-fg-muted); font-family: var(--gp-font-mono); font-size: var(--gp-body-xs); margin: var(--gp-space-1) 0 0; }
-    .file-head .gp-badge { margin-left: auto; }
-    .tabs { border-bottom: var(--gp-stroke-hairline) solid var(--gp-border); display: flex; gap: var(--gp-space-5); padding: 0 var(--gp-space-6); }
-    .tab { border-bottom: var(--gp-stroke-focus) solid transparent; color: var(--gp-fg-muted); font-family: var(--gp-font-mono); font-size: var(--gp-body-xs); padding: var(--gp-space-3) 0; }
-    .tab--active { border-color: var(--gp-accent); color: var(--gp-fg); }
-    .hex { font-family: var(--gp-font-mono); font-size: var(--gp-body-sm); line-height: 2; overflow: auto; padding: var(--gp-space-5) var(--gp-space-6); }
-    .hex-row { display: grid; gap: var(--gp-space-4); grid-template-columns: 5.5rem minmax(25rem, 1fr) 12rem; white-space: pre; }
-    .offset { color: var(--gp-fg-muted); }
-    .bytes { color: var(--gp-fg); letter-spacing: .06em; }
-    .bytes mark { background: var(--gp-sulfur-20); border-radius: 2px; color: var(--gp-accent); padding: .125rem .2rem; }
-    .ascii { color: var(--gp-fg-muted); }
-    .meta { display: grid; gap: var(--gp-space-4); margin: 0; }
-    .meta div { border-bottom: var(--gp-stroke-hairline) solid var(--gp-border); padding-bottom: var(--gp-space-3); }
-    .meta dt { color: var(--gp-fg-muted); font-family: var(--gp-font-mono); font-size: var(--gp-body-xs); }
-    .meta dd { font-family: var(--gp-font-mono); font-size: var(--gp-body-sm); margin: var(--gp-space-1) 0 0; }
-    .signal { border: var(--gp-stroke-hairline) solid var(--gp-sulfur-20); border-radius: var(--gp-radius-md); margin-top: var(--gp-space-5); padding: var(--gp-space-3); }
-    .signal strong { color: var(--gp-accent); display: block; font-family: var(--gp-font-mono); font-size: var(--gp-body-xs); margin-bottom: var(--gp-space-1); text-transform: uppercase; }
-    .signal p { color: var(--gp-fg-muted); font-size: var(--gp-body-xs); margin: 0; }
+    .file-head { align-items: end; display: flex; gap: var(--gl-space-5); padding: var(--gl-space-6) var(--gl-space-6) var(--gl-space-4); }
+    .file-head h1 { font-size: var(--gl-display-sm); margin: 0; }
+    .file-head p { color: var(--gl-fg-muted); font-family: var(--gl-font-mono); font-size: var(--gl-body-xs); margin: var(--gl-space-1) 0 0; }
+    .file-head .gl-badge { margin-left: auto; }
+    .tabs { border-bottom: var(--gl-stroke-hairline) solid var(--gl-border); display: flex; gap: var(--gl-space-5); padding: 0 var(--gl-space-6); }
+    .tab { border-bottom: var(--gl-stroke-focus) solid transparent; color: var(--gl-fg-muted); font-family: var(--gl-font-mono); font-size: var(--gl-body-xs); padding: var(--gl-space-3) 0; }
+    .tab--active { border-color: var(--gl-accent); color: var(--gl-fg); }
+    .hex { font-family: var(--gl-font-mono); font-size: var(--gl-body-sm); line-height: 2; overflow: auto; padding: var(--gl-space-5) var(--gl-space-6); }
+    .hex-row { display: grid; gap: var(--gl-space-4); grid-template-columns: 5.5rem minmax(25rem, 1fr) 12rem; white-space: pre; }
+    .offset { color: var(--gl-fg-muted); }
+    .bytes { color: var(--gl-fg); letter-spacing: .06em; }
+    .bytes mark { background: var(--gl-sulfur-20); border-radius: 2px; color: var(--gl-accent); padding: .125rem .2rem; }
+    .ascii { color: var(--gl-fg-muted); }
+    .meta { display: grid; gap: var(--gl-space-4); margin: 0; }
+    .meta div { border-bottom: var(--gl-stroke-hairline) solid var(--gl-border); padding-bottom: var(--gl-space-3); }
+    .meta dt { color: var(--gl-fg-muted); font-family: var(--gl-font-mono); font-size: var(--gl-body-xs); }
+    .meta dd { font-family: var(--gl-font-mono); font-size: var(--gl-body-sm); margin: var(--gl-space-1) 0 0; }
+    .signal { border: var(--gl-stroke-hairline) solid var(--gl-sulfur-20); border-radius: var(--gl-radius-md); margin-top: var(--gl-space-5); padding: var(--gl-space-3); }
+    .signal strong { color: var(--gl-accent); display: block; font-family: var(--gl-font-mono); font-size: var(--gl-body-xs); margin-bottom: var(--gl-space-1); text-transform: uppercase; }
+    .signal p { color: var(--gl-fg-muted); font-size: var(--gl-body-xs); margin: 0; }
     @media (max-width: 68rem) { .workspace { grid-template-columns: 13rem minmax(0, 1fr); } .rail--right { display: none; } }
-    @media (max-width: 46rem) { .command { display: none; } .topbar, .pathbar { padding-left: var(--gp-space-4); padding-right: var(--gp-space-4); } .workspace { grid-template-columns: 1fr; } .rail--left { display: none; } .file-head, .hex { padding-left: var(--gp-space-4); padding-right: var(--gp-space-4); } .tabs { gap: var(--gp-space-4); overflow: auto; padding-left: var(--gp-space-4); padding-right: var(--gp-space-4); } .hex-row { grid-template-columns: 5rem minmax(24rem, 1fr); } .ascii { display: none; } }
+    @media (max-width: 46rem) { .app, .workspace, .viewer { max-width: 100vw; min-width: 0; width: 100%; } .command { display: none; } .topbar, .pathbar { padding-left: var(--gl-space-4); padding-right: var(--gl-space-4); } .workspace { grid-template-columns: minmax(0, 1fr); } .rail--left { display: none; } .file-head { align-items: start; display: grid; gap: var(--gl-space-2); grid-template-columns: minmax(0, 1fr) auto; } .file-head h1 { overflow-wrap: anywhere; } .file-head .gl-badge { margin-left: 0; } .file-head, .hex { padding-left: var(--gl-space-4); padding-right: var(--gl-space-4); } .tabs { gap: var(--gl-space-4); overflow-x: auto; padding-left: var(--gl-space-4); padding-right: var(--gl-space-4); } .hex { overflow: hidden; } .hex-row { display: grid; gap: var(--gl-space-1); grid-template-columns: minmax(0, 1fr); margin-bottom: var(--gl-space-3); min-width: 0; } .bytes { display: block; overflow-x: auto; padding-bottom: var(--gl-space-1); } .ascii { display: none; } }
   </style>
 </head>
 <body>
@@ -59,7 +59,7 @@
     <header class="topbar">
       <div class="brand"><img src="../../logos/svg/glitchpad-mark-reduced-color.svg" alt=""><strong>Glitchpad</strong></div>
       <div class="command">Open file or run command <kbd>Ctrl K</kbd></div>
-      <button class="gp-button gp-button--secondary gp-button--sm" type="button">Open file</button>
+      <button class="gl-button gl-button--secondary gl-button--sm" type="button">Open file</button>
     </header>
     <nav class="pathbar" aria-label="Current file path">A:\ samples \ headers \ <span>archive-header.bin</span></nav>
     <div class="workspace">
@@ -78,7 +78,7 @@
       <section class="viewer" aria-label="File contents">
         <header class="file-head">
           <div><h1>archive-header.bin</h1><p>64.0 KB · modified 14:32:08</p></div>
-          <span class="gp-badge gp-badge--accent">binary</span>
+          <span class="gl-badge gl-badge--accent">binary</span>
         </header>
         <nav class="tabs" aria-label="Representations"><span class="tab">Text</span><span class="tab tab--active">Hex</span><span class="tab">Metadata</span><span class="tab">Strings</span></nav>
         <div class="hex" role="table" aria-label="Hexadecimal content">

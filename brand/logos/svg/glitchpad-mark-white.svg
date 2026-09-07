@@ -1,4 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" width="800" height="1000" fill="none">
-  <path d="M130 50H580L760 230V860C760 909.706 719.706 950 670 950H130C80.294 950 40 909.706 40 860V140C40 90.294 80.294 50 130 50ZM510 120H145C125.67 120 110 135.67 110 155V845C110 864.33 125.67 880 145 880H655C674.33 880 690 864.33 690 845V425C690 405.67 674.33 390 655 390H520V460H620V810H180V190H510Z" fill="#FFFFFF" fill-rule="evenodd" clip-rule="evenodd"/>
-  <path d="M580 50L760 230H580Z" fill="#FFFFFF"/>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1000 1000" width="1000" height="1000" fill="none" data-logo-source-mode="constructed" data-logo-variant="full">
+  <g data-square-enclosure="true">
+    <defs><mask id="glitchpad-white-square-knockout" maskUnits="userSpaceOnUse">
+      <rect width="1000" height="1000" fill="#000000"/>
+      <rect x="62" y="62" width="876" height="876" rx="142" fill="#FFFFFF"/>
+      <g transform="translate(240.8,176) scale(0.72) translate(-40,-50)">
+        <path d="M130 50H580L760 230V860C760 909.706 719.706 950 670 950H130C80.294 950 40 909.706 40 860V140C40 90.294 80.294 50 130 50ZM510 120H145C125.67 120 110 135.67 110 155V845C110 864.33 125.67 880 145 880H655C674.33 880 690 864.33 690 845V425C690 405.67 674.33 390 655 390H520V460H620V810H180V190H510Z" fill="#000000" fill-rule="evenodd" clip-rule="evenodd"/>
+      </g>
+    </mask></defs>
+    <rect x="62" y="62" width="876" height="876" rx="142" fill="#FFFFFF" mask="url(#glitchpad-white-square-knockout)"/>
+  </g>
 </svg>

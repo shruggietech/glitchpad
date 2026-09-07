@@ -32,8 +32,8 @@ export default [
     "message": "Font outside the system. Available: Space Grotesk, Geist, Geist Mono. Never a fourth family."
   },
   {
-    "selector": "Literal[value=/font-weight\\s*:\\s*(?:100|200|300|600|800|900)/]",
-    "message": "Weight not shipped. Geist has 400/500, Geist Mono has 400, Space Grotesk has 500/700. Anything else synthesises a faux bold."
+    "selector": "Literal[value=/font-weight\\s*:\\s*(?:100|200|300|600|800|900)\\b/]",
+    "message": "Weight not shipped. Approved weights are 400, 500, 700. Anything else synthesises or substitutes a face."
   },
   {
     "selector": "Property[key.name='fontFamily'] > Literal[value=/^(?!['\\\"]?(?:Space Grotesk|Geist|Geist Mono))/i]",
@@ -41,7 +41,7 @@ export default [
   },
   {
     "selector": "Property[key.name='fontWeight'] > Literal[value=100], Property[key.name='fontWeight'] > Literal[value=200], Property[key.name='fontWeight'] > Literal[value=300], Property[key.name='fontWeight'] > Literal[value=600], Property[key.name='fontWeight'] > Literal[value=800], Property[key.name='fontWeight'] > Literal[value=900], Property[key.name='fontWeight'] > Literal[value=/^(100|200|300|600|800|900)$/]",
-    "message": "Weight not shipped. Geist has 400/500, Geist Mono has 400, Space Grotesk has 500/700. Anything else synthesises a faux bold."
+    "message": "Weight not shipped. Approved weights are 400, 500, 700. Anything else synthesises or substitutes a face."
   },
   {
     "selector": "JSXAttribute[name.name='className'] Literal[value=/\\b(?:bg|text|border)-(?:slate|gray|zinc|neutral|stone|red|green|blue|emerald|cyan|violet)-\\d{2,3}\\b/]",

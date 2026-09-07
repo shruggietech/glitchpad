@@ -1,3 +1,3 @@
 export function Divider() {
-  return <hr className="gp-divider" />;
+  return <hr className="gl-divider" />;
 }

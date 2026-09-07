@@ -1,5 +1,5 @@
-# Foundation Build Resources
+# Approved Glitchpad Packaging Assets
 
-Tauri requires raster and platform icon files while compiling host code, even when distribution bundling is disabled. These generated files are fully transparent build resources derived from `foundation-resource.svg`; they are not Glitchpad brand assets and must not be used in public presentation or release packaging.
+These files are exact integration copies from `brand/icons/` in Glitchpad brand kit 1.1.0. Windows uses the supplied classic ICO, macOS uses the supplied ICNS, Linux uses approved web raster sizes, and Android uses the supplied legacy, adaptive, monochrome, and Play Store assets.
 
-The approved brand kit replaces this directory's generated resources before any distributable build is enabled. Release readiness fails until that brand kit and its release receipt exist.
+Do not resize, recolor, optimize, or regenerate these copies. `scripts/check-brand.mjs` maps every file used by packaging back to its canonical source and fails on drift.

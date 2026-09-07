@@ -1,0 +1,13 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "fonts",
+  "type": "registry:font",
+  "title": "Glitchpad Typography",
+  "description": "Space Grotesk display, Geist body, Geist Mono code.",
+  "font": {
+    "family": "'Geist', system-ui, sans-serif",
+    "provider": "local",
+    "variable": "--font-body"
+  },
+  "docs": "Use the bundled local files through nextjs/fonts.ts. Routine builds make no font-network requests."
+}

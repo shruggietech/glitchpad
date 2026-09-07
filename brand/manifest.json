@@ -1,173 +1,116 @@
 {
   "name": "glitchpad-brand-kit",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "parent": "ShruggieTech",
-  "canon": "1.0.0",
+  "affiliation": {
+    "ownership": "shruggietech-owned",
+    "showcase": "public",
+    "parent": "ShruggieTech",
+    "inheritance": "shruggietech-house",
+    "endorsement": "shruggietech-project",
+    "service_credit": "none"
+  },
+  "canon": "1.2.1",
   "files": [
     {
+      "path": "NOTES.md",
+      "bytes": 769,
+      "sha256": "e75d0735e31547f580dfa9246557222bdbd625eb8469fa3fac19e6cdf189ee6a"
+    },
+    {
       "path": "README.md",
-      "bytes": 4817,
-      "sha256": "aff2320663f734603d8ad938736afedb33ef23e885f07c3322575765feaf5933"
+      "bytes": 5478,
+      "sha256": "51e31e21b39c15e568c935382ff2e72c6bff12be1cccc0592f92fbe7751617b0"
     },
     {
       "path": "SKILL.md",
-      "bytes": 1513,
-      "sha256": "5c5f110ed9bcc8c0105035f4855d7f27a554ed5f04ceba1dcd33d42902b3997e"
+      "bytes": 1665,
+      "sha256": "1ae6bf930e752473dd624c83dc5c38bf0a9beb2226250cca086cb5d48f9ac2d3"
+    },
+    {
+      "path": "VERIFY.md",
+      "bytes": 2489,
+      "sha256": "10b0f8f73bad963902d5d01e98a846a7b686e97bbb35aff5dc02ce1b5a962983"
     },
     {
       "path": "brand-guide.pdf",
-      "bytes": 189325,
-      "sha256": "84304a75f9d289943bd58296c9f6a5c5cfe116e47ff8ca0b3779380338a28891"
+      "bytes": 191602,
+      "sha256": "76c1dcc7dacb6b14f25077454cf02f7e9f0850055a58aeb9b5c5053dd8e5aa4c"
     },
     {
       "path": "brand.json",
-      "bytes": 12702,
-      "sha256": "e827bb6a685eb5c892c394c9f739037617e6b126e09bdd51ef1e311744518b8e"
+      "bytes": 13377,
+      "sha256": "5baa701b70194bed6b7176a00b80ca762bfdf7bd7522067d113e0ccd95b06094"
     },
     {
       "path": "styles.css",
-      "bytes": 199,
-      "sha256": "48b09fd0bd2b3c9e0af787fd6803d0b1304653dfc1e8a01c20b481667b7d94cc"
-    },
-    {
-      "path": "build/README.md",
-      "bytes": 1047,
-      "sha256": "c317d844a054b03c5b20059a54931c909f6659fa7863d241708f0fb794f113e5"
-    },
-    {
-      "path": "build/_guidekit.py",
-      "bytes": 1803,
-      "sha256": "6520bf882a26193eec3d276fbb67c10f10cfad2d54b73b0838e6cb905eb8e7e6"
+      "bytes": 228,
+      "sha256": "a3996df1f9c0815bb46a30cdf7c9acd8cf64bdd49a49f31ece927e2dcd5db544"
     },
     {
       "path": "build/brand-guide.print.html",
-      "bytes": 393877,
-      "sha256": "727ed88580230e8636d596b7934c35b268999f1ee0ad8b64674db114ff284428"
-    },
-    {
-      "path": "build/build_kit.py",
-      "bytes": 4815,
-      "sha256": "6ba6334d0bb15ede19c6e6a82e68e148d4f9610d53f9fb5139043a5a7b2396b8"
-    },
-    {
-      "path": "build/build_specimen.py",
-      "bytes": 2544,
-      "sha256": "a74b85536c99732b8489ab8c85d3516a2bc5ed3c95531a5d88a677d553b430bf"
-    },
-    {
-      "path": "build/enrich_brand.py",
-      "bytes": 3972,
-      "sha256": "1ba4d63b836a9c4f4573c099347c78d375b6cca9897201fa54ea5a1e326c823b"
-    },
-    {
-      "path": "build/gen_enforcement.py",
-      "bytes": 14470,
-      "sha256": "9b5e5b4295a507623c864daacea09cedab83e14592b99d53f1dcf27bf43015e5"
-    },
-    {
-      "path": "build/gen_guide_pdf.py",
-      "bytes": 26291,
-      "sha256": "cd74cb72e813dc7167bfbc628707859f1f06073d1dd949177f47a3f8967898f0"
-    },
-    {
-      "path": "build/gen_guidelines.py",
-      "bytes": 11429,
-      "sha256": "30bb3d905a8f7cf1d6c4442494fdf923e237ee9b76c10dc02ad20c9840b43f31"
-    },
-    {
-      "path": "build/gen_logo.py",
-      "bytes": 17770,
-      "sha256": "f3d97b9b4c19d21e63daea2ad0d929317d77b41fd9fd02ddbea5ec366269ad74"
-    },
-    {
-      "path": "build/gen_nextjs.py",
-      "bytes": 18313,
-      "sha256": "79d85453785595dd7ec7062d3605cf2351c07defdd7723423a5e22985126e9ed"
-    },
-    {
-      "path": "build/qc_images.py",
-      "bytes": 6369,
-      "sha256": "f3a0db8871c0c8e79fb9092129d31e1800004bb1d924a5da9f1897c8eb9492e5"
-    },
-    {
-      "path": "build/qc_paginate.py",
-      "bytes": 2612,
-      "sha256": "bcc0d730f0e244b72e1f0a8efcfdf7ccb46ff4ff606eed5602b4b010b5c2d251"
-    },
-    {
-      "path": "build/qc_render.py",
-      "bytes": 9904,
-      "sha256": "9e01ec7e2c70fbb3e85468c1ee15632ef6634e4e64100bccec525f22c36854fb"
-    },
-    {
-      "path": "build/rsvg-convert.js",
-      "bytes": 931,
-      "sha256": "60880df26a6ff45491d148136b44ebd26044402603546aa198911f5aaae6ee81"
-    },
-    {
-      "path": "build/verify.py",
-      "bytes": 21475,
-      "sha256": "b811398d6c6f6863cacc7f89293fdaa294e17e1071f06af3f27b1218113f7118"
+      "bytes": 467932,
+      "sha256": "2dd1137852f24315bde959e5de7121e4f8220d37d245accd61bdd7dfb2633fe0"
     },
     {
       "path": "components/README.md",
-      "bytes": 692,
-      "sha256": "b224152f1539ff6bdf6c14c96c4343411c6c2705cfcded1dbde1e100c2c3aa27"
+      "bytes": 698,
+      "sha256": "85eadebb55082c7fa5232144267b67b8b39784a367aa46ebd8259ff206654bdd"
     },
     {
       "path": "components/components.css",
-      "bytes": 4173,
-      "sha256": "20c1a6f39a38bc412e52e3a095d8b52c55d3d7ac66705b90cd2232bd08536c0f"
+      "bytes": 3869,
+      "sha256": "607182873f824a15c82c92468edecef4004a21692763bcb20c5beb5881e56586"
     },
     {
       "path": "components/core/Badge.jsx",
       "bytes": 133,
-      "sha256": "83b8ff9f410b3dbb875f8c287a8d7e977806e54f5b6c32a4e332d1562a48b0a4"
+      "sha256": "5110f6e7b150f7d7895762a5bf7b852b2bb47f00ecdc0ec256f3c527ea9f830b"
     },
     {
       "path": "components/core/Button.jsx",
       "bytes": 213,
-      "sha256": "62eb0cfb5a15082b932aac5c69586fa8a0636bac34b9bb1b060623bf57f4703c"
+      "sha256": "c4d0e612be6760267ce09dead2efd942d65652c045a8f646fa258e2741ffc9b1"
     },
     {
       "path": "components/core/Card.jsx",
-      "bytes": 158,
-      "sha256": "4ae93900cf5e7fad444a50b63b282d20248fee092e61fe6c6d413fee7fe5ddab"
+      "bytes": 112,
+      "sha256": "e3ec9d242638ea77ed420ee8b85fbcdc7125d2c6f6b002f3e949179ca0df56f7"
     },
     {
       "path": "components/core/Divider.jsx",
       "bytes": 70,
-      "sha256": "d58f501fb143c784fc2899250bd7db58b3c689b14c269f41d7dc8504cf990584"
+      "sha256": "f1c3615a68ef14672f29bf383a4fe9d36559e5d02d017f53f60843768ec1e3ad"
     },
     {
       "path": "components/core/FileRow.jsx",
-      "bytes": 387,
-      "sha256": "1e05ee68dc604087a10ac757951e62a3c82d0c2055004af4bcde8cfa5d20bc8a"
+      "bytes": 404,
+      "sha256": "21464f319e5c2ed56f8e5ae1c4c77940d6cde16d981a97b5eed91f7a7e351255"
     },
     {
       "path": "components/core/SectionHeading.jsx",
-      "bytes": 311,
-      "sha256": "cb3031203287b7541eed23ba6e9db658df241ad546203aad1633d8ee972eb08d"
+      "bytes": 330,
+      "sha256": "5a879179a8bdb8cb7e47475d7a93b1d605a01838d8fd5efd2221c35d5b523a06"
     },
     {
       "path": "components/forms/Input.jsx",
-      "bytes": 623,
-      "sha256": "96cb58af282798d953e03356d7c77e0b61414a0751c95682a5e18180b5f4caa1"
+      "bytes": 465,
+      "sha256": "8b859b281c191d0b28ff54904493eaf36e3d7f45dea5e68f118d88cafa161d25"
     },
     {
       "path": "components/forms/Select.jsx",
-      "bytes": 712,
-      "sha256": "6789e3d32e39aba0008bb00878a2fc9cf72c3ae598ee94d4416bdbb0b1fa1b65"
+      "bytes": 482,
+      "sha256": "06d768ecb611642089eec2358fb27076bd4e94603eb489350e0bc04718891cb5"
     },
     {
       "path": "components/forms/Textarea.jsx",
-      "bytes": 624,
-      "sha256": "94a234e3b0eab4c7218fa90a735ac9841ccd22b8b2c9a0e222d3545f7d4779b4"
+      "bytes": 459,
+      "sha256": "3f03f7d99a40fa45a75fdec79c322c7007a13c40e6aab5a06d388c71c10a2072"
     },
     {
       "path": "enforcement/AGENTS.md",
-      "bytes": 4131,
-      "sha256": "af85e86171f0239a0153d1fb5d5384a418694383aef7514a34b40ecbaa9916c3"
+      "bytes": 4269,
+      "sha256": "72ae72a8c65fa6d52cf6f681289e5e4e3b9f93c3ab194194fb8beca69743e5a7"
     },
     {
       "path": "enforcement/README.md",
@@ -176,8 +119,8 @@
     },
     {
       "path": "enforcement/eslint.brand.mjs",
-      "bytes": 6721,
-      "sha256": "8689f7f879ea61fb67649f65e06efd853613215ff4f6870de81b686313cfbf7b"
+      "bytes": 6684,
+      "sha256": "816d45100082b72ad69978438c14238b324a3c6b5e0f1a980e30c706e53e6354"
     },
     {
       "path": "enforcement/stylelint.config.json",
@@ -186,83 +129,88 @@
     },
     {
       "path": "favicons/android-chrome-192x192.png",
-      "bytes": 2327,
-      "sha256": "0dcfd1ed96dc0d1c02ce29fc9af47f66ff32bcf9f456cfa1d1fd527dd4453242"
+      "bytes": 4096,
+      "sha256": "64036581825602f9f5a5deaebea81be0620ff5385154c70ce4cd8f17529f77fd"
     },
     {
       "path": "favicons/android-chrome-512x512.png",
-      "bytes": 7603,
-      "sha256": "faf6d747821832b2b5528282ebe68dd3ca56341ad11ee0ecf1e9d4dcbdbbdadd"
+      "bytes": 10986,
+      "sha256": "9cc15a258afab3f4e27350c071b18abad4094df324782c5ed9ed4985a7827352"
     },
     {
       "path": "favicons/apple-touch-icon.png",
-      "bytes": 2084,
-      "sha256": "ad10384ff9dba1e277e0fe41d63621fcb2ea99e82789205e929dab4f0211c101"
+      "bytes": 3922,
+      "sha256": "365d33244cbf8eb7de50eb4ce4c320dff5d7f69bf82e2177e5cd80b8658d918a"
     },
     {
       "path": "favicons/favicon-128x128.png",
-      "bytes": 1482,
-      "sha256": "6b4b62a23de9b9fcfefff83e465ab84f767f15f440ee12ecff042dd0e0cad1e2"
+      "bytes": 2947,
+      "sha256": "e4af1f3f8d63985af8728d1f2e46456edf46ad2ebf3cbb39008a5c728e4ddc8d"
     },
     {
       "path": "favicons/favicon-16x16.png",
-      "bytes": 281,
-      "sha256": "ed436f7f9571cc45a06b6652c14b15d6472a0af35ebd718376ba40e4599f1b40"
+      "bytes": 503,
+      "sha256": "c452fc93a17278ba50360eec4ea638b94b5f3deb01c2f8aac2cb008b75167d83"
+    },
+    {
+      "path": "favicons/favicon-180x180.png",
+      "bytes": 3922,
+      "sha256": "365d33244cbf8eb7de50eb4ce4c320dff5d7f69bf82e2177e5cd80b8658d918a"
     },
     {
       "path": "favicons/favicon-192x192.png",
-      "bytes": 2327,
-      "sha256": "0dcfd1ed96dc0d1c02ce29fc9af47f66ff32bcf9f456cfa1d1fd527dd4453242"
+      "bytes": 4096,
+      "sha256": "64036581825602f9f5a5deaebea81be0620ff5385154c70ce4cd8f17529f77fd"
     },
     {
       "path": "favicons/favicon-24x24.png",
-      "bytes": 361,
-      "sha256": "af0eb37ae69f8664d295106069a599f00499e7cb50539795ed8908894414f32f"
+      "bytes": 670,
+      "sha256": "6121f98b19c1e5d9484e254232f905b0d0505cf41cf47d6acb8a46d474c3aa5c"
     },
     {
       "path": "favicons/favicon-256x256.png",
-      "bytes": 3447,
-      "sha256": "5ce8fe715cb2e9619acb595ba6dd4f8b30f1f1c26108f15422b416b47d162f88"
+      "bytes": 5536,
+      "sha256": "b633c0f5c27cfc2de5dcbcc4bc572b1cf76dc652d5507f0bbf5448d5d7774a28"
     },
     {
       "path": "favicons/favicon-32x32.png",
-      "bytes": 432,
-      "sha256": "e16cbead4fff219425ad8b5d2f373115d5ed07041fa265de81cb0eca77d06c83"
+      "bytes": 847,
+      "sha256": "278718dae1f61b314a04df506fd6d814f127310c0b463cf6be05a14c60969fb3"
     },
     {
       "path": "favicons/favicon-48x48.png",
-      "bytes": 539,
-      "sha256": "4fb35ddb8d679dafca76f2efcb03e07130a2e3d3038f54eca3782fc60fcb89e9"
+      "bytes": 1200,
+      "sha256": "a51c93282be93a52ceaa31ac6ceb241b4822b3710990809b3152cc92fd179a4d"
     },
     {
       "path": "favicons/favicon-512x512.png",
-      "bytes": 7603,
-      "sha256": "faf6d747821832b2b5528282ebe68dd3ca56341ad11ee0ecf1e9d4dcbdbbdadd"
+      "bytes": 10986,
+      "sha256": "9cc15a258afab3f4e27350c071b18abad4094df324782c5ed9ed4985a7827352"
     },
     {
       "path": "favicons/favicon-64x64.png",
-      "bytes": 655,
-      "sha256": "873e675198ad37e296bae94455a033658b9c8ea850db39073a010e56db1f7137"
+      "bytes": 1555,
+      "sha256": "e79fd9c2126252581a6ddbeb9e39658039852b2b1666666952bd5041249f413f"
     },
     {
-      "path": "favicons/favicon-reduced.svg",
-      "bytes": 570,
-      "sha256": "684283623176f3eab6ae36e1a7bd49a3f549c83b0d8f986d049d2924528dc5bb"
+      "path": "favicons/favicon-full.svg",
+      "bytes": 1437,
+      "sha256": "3e18c5c3e967aede94c1746b125c872c89f97e3193d595790d49b28c1b5a8317"
     },
     {
       "path": "favicons/favicon.ico",
-      "bytes": 104496,
-      "sha256": "afa7a455d9047361836347e49c7b000a8c83a69dc3aa1b4ef7639499408a93eb"
+      "bytes": 13376,
+      "sha256": "d6ca84c87fee7fbe1535daf2ff913151b554cb4a4bffc9e03d5e4fb4d1db9f6b"
     },
     {
       "path": "favicons/favicon.svg",
-      "bytes": 622,
-      "sha256": "fb5d54faf7c7ddb4af2cb9b609d4af23e100e39cee0f8c87f7d89eb9cc048bfc"
+      "bytes": 1369,
+      "sha256": "66c1dd303c66b312621f5498c22cf39c1695c11f3e9a78ed9a9e8983931487a6"
     },
     {
       "path": "favicons/site.webmanifest",
-      "bytes": 378,
-      "sha256": "7de121ca7210929b4e703874b02c3aad53f96b11011a410ee1684b12359724fa"
+      "bytes": 444,
+      "sha256": "adee52f8b55f96da0a452f36d279b0bbff3d59c308bd07999eb9671c9add195a"
     },
     {
       "path": "fonts/README.md",
@@ -326,233 +274,843 @@
     },
     {
       "path": "fonts/woff2/SpaceGrotesk-Bold.woff2",
-      "bytes": 12840,
-      "sha256": "35f8aec56cfd5cbfdb03cc68733a54a0b05bb3617ffcd5fd332badc0b045ca55"
+      "bytes": 31560,
+      "sha256": "cdaf8bb228ee112c0ab784d9edd2b877cb096bad24cbbf88babeedebe197e742"
     },
     {
       "path": "fonts/woff2/SpaceGrotesk-Medium.woff2",
-      "bytes": 13312,
-      "sha256": "1b1a8131d9edf975d9decee81e2f2bf504812f7a4f498e5500f28a613e22e64c"
+      "bytes": 32480,
+      "sha256": "6d90cc6539e794019ada4d6ffd1f4080c66b7ad1762b425f5794500c12427551"
     },
     {
       "path": "guidelines/index.html",
-      "bytes": 328367,
-      "sha256": "e39d5bc4350fa9a78d0cd1b01e3b0a9e62ca9b32c63f86b2c190039994379999"
+      "bytes": 735687,
+      "sha256": "9520bc28a0a1e4be506129b1b257373c45a49fa27415935aa7aa51f096313264"
+    },
+    {
+      "path": "icons/.iconkit-generated.json",
+      "bytes": 67,
+      "sha256": "caf77af49a2add6dfc466b67567ac63e1abe2bafaf0b6a676c5249c36080c355"
+    },
+    {
+      "path": "icons/README.md",
+      "bytes": 481,
+      "sha256": "d7556abf9949f60f3e7d89576bbe8514cc08ff1b08c3f9fc84b843003d6e48af"
+    },
+    {
+      "path": "icons/manifest.json",
+      "bytes": 43396,
+      "sha256": "90a04bfe418cf6d6f5ff35eea720f663e41d5375f03ca3bc41ab5de4ecfaa362"
+    },
+    {
+      "path": "icons/android/README.md",
+      "bytes": 280,
+      "sha256": "204229c59eecb46c21c2bd1cf2060fda329d09b3ce427ca0ed9d2ce747d2f30f"
+    },
+    {
+      "path": "icons/android/manifest.json",
+      "bytes": 4549,
+      "sha256": "ff61210a5985b9c669c81e4bf0ba7432feca35577be5a0aba38d6318262dc5e5"
+    },
+    {
+      "path": "icons/android/app/src/main/res/drawable/ic_launcher_background.xml",
+      "bytes": 194,
+      "sha256": "f85842023e76ae651b068f90b0a9ec729a8beff5fcbf8b19214b11f1ae5ff9c4"
+    },
+    {
+      "path": "icons/android/app/src/main/res/drawable-nodpi/ic_launcher_foreground.png",
+      "bytes": 7744,
+      "sha256": "81542dcf9dcf8212e585d5bb530fee36be49e57b3426fbd9df0b449c9b2afd07"
+    },
+    {
+      "path": "icons/android/app/src/main/res/drawable-nodpi/ic_launcher_monochrome.png",
+      "bytes": 5659,
+      "sha256": "f05cf4e91b8524c09b4af10c4f13df8fea0ac3c29936e88f12105406e6a140bc"
+    },
+    {
+      "path": "icons/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml",
+      "bytes": 325,
+      "sha256": "4946f2433c32155d8759fd762757df243b5f6268ca5f88cae12b56b647752956"
+    },
+    {
+      "path": "icons/android/app/src/main/res/mipmap-hdpi/ic_launcher.png",
+      "bytes": 1731,
+      "sha256": "ee9d133a9ac7abf3902302bc2438b200275b10dd548771db0f82cd29a31a1f50"
+    },
+    {
+      "path": "icons/android/app/src/main/res/mipmap-mdpi/ic_launcher.png",
+      "bytes": 1200,
+      "sha256": "a51c93282be93a52ceaa31ac6ceb241b4822b3710990809b3152cc92fd179a4d"
+    },
+    {
+      "path": "icons/android/app/src/main/res/mipmap-xhdpi/ic_launcher.png",
+      "bytes": 2272,
+      "sha256": "2e3f02543266848f3d1c3fb499f80db109e2d83fb53115cdd8c5b68e1c6e0df2"
+    },
+    {
+      "path": "icons/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png",
+      "bytes": 3282,
+      "sha256": "d0c4970c3bb503741c23e186d1122fd0cc0803c1ad246f61cabe8f1da165e902"
+    },
+    {
+      "path": "icons/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png",
+      "bytes": 4096,
+      "sha256": "64036581825602f9f5a5deaebea81be0620ff5385154c70ce4cd8f17529f77fd"
+    },
+    {
+      "path": "icons/android/app/src/main/res/values/ic_launcher_colors.xml",
+      "bytes": 115,
+      "sha256": "a73a04d4717d4895191e7cecca01952b1111cfa8962cf76dc8bc354656e0969d"
+    },
+    {
+      "path": "icons/android/play-store/google-play-512.png",
+      "bytes": 11549,
+      "sha256": "76264c6e9e9ca6ae2b466854d0aa3d09039a53f786cd1bb81e5a5cbaf975ae33"
+    },
+    {
+      "path": "icons/apple/ios/README.md",
+      "bytes": 259,
+      "sha256": "61afaab8977050aa916212a40926d8c12f8f681ecd1363a92af3a03e81ae05b3"
+    },
+    {
+      "path": "icons/apple/ios/manifest.json",
+      "bytes": 2091,
+      "sha256": "3830196a746d6fa0a0af9d426417b29251b88fa1f68670b2d3966642b7ffad4b"
+    },
+    {
+      "path": "icons/apple/ios/Assets.xcassets/AppIcon.appiconset/AppIcon-1024-dark.png",
+      "bytes": 24034,
+      "sha256": "0c49bd39545ed22f86ac38fdf1b27dde8ce6e36793b398ebe367f85b02b31849"
+    },
+    {
+      "path": "icons/apple/ios/Assets.xcassets/AppIcon.appiconset/AppIcon-1024-tinted.png",
+      "bytes": 23250,
+      "sha256": "c882350cf2b143f261976e088fa689e6472204308e594b2225aea366f893594b"
+    },
+    {
+      "path": "icons/apple/ios/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png",
+      "bytes": 24700,
+      "sha256": "574404f5ba8285aae0ed30e7fb22f75c9746f9d2db95ef33c0c0e8c01486265e"
+    },
+    {
+      "path": "icons/apple/ios/Assets.xcassets/AppIcon.appiconset/Contents.json",
+      "bytes": 714,
+      "sha256": "6c867e2c65c91d8b44bba0dd7aa0fec9c371c8e1216729efddd66c813730d50f"
+    },
+    {
+      "path": "icons/apple/macos/AppIcon.icns",
+      "bytes": 47166,
+      "sha256": "3d9d0848f400e685e9d6c56d074b6e7a850148e98ee27f81fc1dce99fc337fa0"
+    },
+    {
+      "path": "icons/apple/macos/README.md",
+      "bytes": 314,
+      "sha256": "a51148ec8aa277e4f57512ec42099175d7c249a383ece5536e0a8d9eb4f9c19e"
+    },
+    {
+      "path": "icons/apple/macos/manifest.json",
+      "bytes": 8437,
+      "sha256": "cfc8ccdea7965e9aceae913c656934713334ef02813d7d3831cfc0c17ef0fc48"
+    },
+    {
+      "path": "icons/apple/macos/AppIcon.iconset/icon_128x128.png",
+      "bytes": 2947,
+      "sha256": "e4af1f3f8d63985af8728d1f2e46456edf46ad2ebf3cbb39008a5c728e4ddc8d"
+    },
+    {
+      "path": "icons/apple/macos/AppIcon.iconset/icon_128x128@2x.png",
+      "bytes": 5536,
+      "sha256": "b633c0f5c27cfc2de5dcbcc4bc572b1cf76dc652d5507f0bbf5448d5d7774a28"
+    },
+    {
+      "path": "icons/apple/macos/AppIcon.iconset/icon_16x16.png",
+      "bytes": 514,
+      "sha256": "4a1700a6809cd7137456c8ff5d68715db65619b9a6fedb5987bc4d0831107365"
+    },
+    {
+      "path": "icons/apple/macos/AppIcon.iconset/icon_16x16@2x.png",
+      "bytes": 864,
+      "sha256": "a173625b562ce2b0f4c0170ad1e3d08fd1e06e81d60516c2e51655c0859a47df"
+    },
+    {
+      "path": "icons/apple/macos/AppIcon.iconset/icon_256x256.png",
+      "bytes": 5536,
+      "sha256": "b633c0f5c27cfc2de5dcbcc4bc572b1cf76dc652d5507f0bbf5448d5d7774a28"
+    },
+    {
+      "path": "icons/apple/macos/AppIcon.iconset/icon_256x256@2x.png",
+      "bytes": 10986,
+      "sha256": "9cc15a258afab3f4e27350c071b18abad4094df324782c5ed9ed4985a7827352"
+    },
+    {
+      "path": "icons/apple/macos/AppIcon.iconset/icon_32x32.png",
+      "bytes": 864,
+      "sha256": "a173625b562ce2b0f4c0170ad1e3d08fd1e06e81d60516c2e51655c0859a47df"
+    },
+    {
+      "path": "icons/apple/macos/AppIcon.iconset/icon_32x32@2x.png",
+      "bytes": 1555,
+      "sha256": "e79fd9c2126252581a6ddbeb9e39658039852b2b1666666952bd5041249f413f"
+    },
+    {
+      "path": "icons/apple/macos/AppIcon.iconset/icon_512x512.png",
+      "bytes": 10986,
+      "sha256": "9cc15a258afab3f4e27350c071b18abad4094df324782c5ed9ed4985a7827352"
+    },
+    {
+      "path": "icons/apple/macos/AppIcon.iconset/icon_512x512@2x.png",
+      "bytes": 24700,
+      "sha256": "574404f5ba8285aae0ed30e7fb22f75c9746f9d2db95ef33c0c0e8c01486265e"
+    },
+    {
+      "path": "icons/apple/macos/Assets.xcassets/AppIcon.appiconset/Contents.json",
+      "bytes": 1257,
+      "sha256": "13b1c7461192863c9f3ab3ceab313acd6f6531898360983495bf13d48dfc967f"
+    },
+    {
+      "path": "icons/apple/macos/Assets.xcassets/AppIcon.appiconset/icon_128x128.png",
+      "bytes": 2947,
+      "sha256": "e4af1f3f8d63985af8728d1f2e46456edf46ad2ebf3cbb39008a5c728e4ddc8d"
+    },
+    {
+      "path": "icons/apple/macos/Assets.xcassets/AppIcon.appiconset/icon_128x128@2x.png",
+      "bytes": 5536,
+      "sha256": "b633c0f5c27cfc2de5dcbcc4bc572b1cf76dc652d5507f0bbf5448d5d7774a28"
+    },
+    {
+      "path": "icons/apple/macos/Assets.xcassets/AppIcon.appiconset/icon_16x16.png",
+      "bytes": 514,
+      "sha256": "4a1700a6809cd7137456c8ff5d68715db65619b9a6fedb5987bc4d0831107365"
+    },
+    {
+      "path": "icons/apple/macos/Assets.xcassets/AppIcon.appiconset/icon_16x16@2x.png",
+      "bytes": 864,
+      "sha256": "a173625b562ce2b0f4c0170ad1e3d08fd1e06e81d60516c2e51655c0859a47df"
+    },
+    {
+      "path": "icons/apple/macos/Assets.xcassets/AppIcon.appiconset/icon_256x256.png",
+      "bytes": 5536,
+      "sha256": "b633c0f5c27cfc2de5dcbcc4bc572b1cf76dc652d5507f0bbf5448d5d7774a28"
+    },
+    {
+      "path": "icons/apple/macos/Assets.xcassets/AppIcon.appiconset/icon_256x256@2x.png",
+      "bytes": 10986,
+      "sha256": "9cc15a258afab3f4e27350c071b18abad4094df324782c5ed9ed4985a7827352"
+    },
+    {
+      "path": "icons/apple/macos/Assets.xcassets/AppIcon.appiconset/icon_32x32.png",
+      "bytes": 864,
+      "sha256": "a173625b562ce2b0f4c0170ad1e3d08fd1e06e81d60516c2e51655c0859a47df"
+    },
+    {
+      "path": "icons/apple/macos/Assets.xcassets/AppIcon.appiconset/icon_32x32@2x.png",
+      "bytes": 1555,
+      "sha256": "e79fd9c2126252581a6ddbeb9e39658039852b2b1666666952bd5041249f413f"
+    },
+    {
+      "path": "icons/apple/macos/Assets.xcassets/AppIcon.appiconset/icon_512x512.png",
+      "bytes": 10986,
+      "sha256": "9cc15a258afab3f4e27350c071b18abad4094df324782c5ed9ed4985a7827352"
+    },
+    {
+      "path": "icons/apple/macos/Assets.xcassets/AppIcon.appiconset/icon_512x512@2x.png",
+      "bytes": 24700,
+      "sha256": "574404f5ba8285aae0ed30e7fb22f75c9746f9d2db95ef33c0c0e8c01486265e"
+    },
+    {
+      "path": "icons/web/README.md",
+      "bytes": 401,
+      "sha256": "ae5245a152fa44c9c5131f6cc1e52b078e76e41efd1715510fd38f0e640d56e9"
+    },
+    {
+      "path": "icons/web/android-chrome-192x192.png",
+      "bytes": 4096,
+      "sha256": "64036581825602f9f5a5deaebea81be0620ff5385154c70ce4cd8f17529f77fd"
+    },
+    {
+      "path": "icons/web/android-chrome-512x512.png",
+      "bytes": 10986,
+      "sha256": "9cc15a258afab3f4e27350c071b18abad4094df324782c5ed9ed4985a7827352"
+    },
+    {
+      "path": "icons/web/apple-touch-icon.png",
+      "bytes": 3922,
+      "sha256": "365d33244cbf8eb7de50eb4ce4c320dff5d7f69bf82e2177e5cd80b8658d918a"
+    },
+    {
+      "path": "icons/web/favicon-128x128.png",
+      "bytes": 2947,
+      "sha256": "e4af1f3f8d63985af8728d1f2e46456edf46ad2ebf3cbb39008a5c728e4ddc8d"
+    },
+    {
+      "path": "icons/web/favicon-16x16.png",
+      "bytes": 503,
+      "sha256": "c452fc93a17278ba50360eec4ea638b94b5f3deb01c2f8aac2cb008b75167d83"
+    },
+    {
+      "path": "icons/web/favicon-180x180.png",
+      "bytes": 3922,
+      "sha256": "365d33244cbf8eb7de50eb4ce4c320dff5d7f69bf82e2177e5cd80b8658d918a"
+    },
+    {
+      "path": "icons/web/favicon-192x192.png",
+      "bytes": 4096,
+      "sha256": "64036581825602f9f5a5deaebea81be0620ff5385154c70ce4cd8f17529f77fd"
+    },
+    {
+      "path": "icons/web/favicon-24x24.png",
+      "bytes": 670,
+      "sha256": "6121f98b19c1e5d9484e254232f905b0d0505cf41cf47d6acb8a46d474c3aa5c"
+    },
+    {
+      "path": "icons/web/favicon-256x256.png",
+      "bytes": 5536,
+      "sha256": "b633c0f5c27cfc2de5dcbcc4bc572b1cf76dc652d5507f0bbf5448d5d7774a28"
+    },
+    {
+      "path": "icons/web/favicon-32x32.png",
+      "bytes": 847,
+      "sha256": "278718dae1f61b314a04df506fd6d814f127310c0b463cf6be05a14c60969fb3"
+    },
+    {
+      "path": "icons/web/favicon-48x48.png",
+      "bytes": 1200,
+      "sha256": "a51c93282be93a52ceaa31ac6ceb241b4822b3710990809b3152cc92fd179a4d"
+    },
+    {
+      "path": "icons/web/favicon-512x512.png",
+      "bytes": 10986,
+      "sha256": "9cc15a258afab3f4e27350c071b18abad4094df324782c5ed9ed4985a7827352"
+    },
+    {
+      "path": "icons/web/favicon-64x64.png",
+      "bytes": 1555,
+      "sha256": "e79fd9c2126252581a6ddbeb9e39658039852b2b1666666952bd5041249f413f"
+    },
+    {
+      "path": "icons/web/favicon-full.svg",
+      "bytes": 1437,
+      "sha256": "3e18c5c3e967aede94c1746b125c872c89f97e3193d595790d49b28c1b5a8317"
+    },
+    {
+      "path": "icons/web/favicon.ico",
+      "bytes": 13376,
+      "sha256": "d6ca84c87fee7fbe1535daf2ff913151b554cb4a4bffc9e03d5e4fb4d1db9f6b"
+    },
+    {
+      "path": "icons/web/favicon.svg",
+      "bytes": 1369,
+      "sha256": "66c1dd303c66b312621f5498c22cf39c1695c11f3e9a78ed9a9e8983931487a6"
+    },
+    {
+      "path": "icons/web/manifest.json",
+      "bytes": 5682,
+      "sha256": "38c4b7200677e78c6742723aa4b82bb4379d32888814e53ed4710e06e1a103df"
+    },
+    {
+      "path": "icons/web/site.webmanifest",
+      "bytes": 444,
+      "sha256": "adee52f8b55f96da0a452f36d279b0bbff3d59c308bd07999eb9671c9add195a"
+    },
+    {
+      "path": "icons/windows/README.md",
+      "bytes": 416,
+      "sha256": "b6b7cdb5ae147fbc5699333d7309b8e1a11964cd75c4e181375ca348d5462694"
+    },
+    {
+      "path": "icons/windows/manifest.json",
+      "bytes": 19514,
+      "sha256": "676a6802b1fb26fc94e585e94065edc023cc6ff6655f232300c2cd182e5fbc31"
+    },
+    {
+      "path": "icons/windows/classic/app.ico",
+      "bytes": 13376,
+      "sha256": "d6ca84c87fee7fbe1535daf2ff913151b554cb4a4bffc9e03d5e4fb4d1db9f6b"
+    },
+    {
+      "path": "icons/windows/msix/ApplicationVisualElements.fragment.xml",
+      "bytes": 333,
+      "sha256": "ae3bdb697c4bb680832315cd05de762e49d101014f5cac299aa5ef3ff72ba866"
+    },
+    {
+      "path": "icons/windows/msix/PackageProperties.fragment.xml",
+      "bytes": 308,
+      "sha256": "97e7f0accdf3ceda48011e0226c8f9f5d186f07f782613fbc55d6c460cd15285"
+    },
+    {
+      "path": "icons/windows/msix/Assets/Square150x150Logo.scale-100.png",
+      "bytes": 3434,
+      "sha256": "750eb511cc7e6d1669801bdc2267f8bd9165fc6abc63204ed08035a875de7943"
+    },
+    {
+      "path": "icons/windows/msix/Assets/Square150x150Logo.scale-200.png",
+      "bytes": 6498,
+      "sha256": "a63b1fc7e8f72527634fae334f7ce32927aec43634861d902f82592650468d67"
+    },
+    {
+      "path": "icons/windows/msix/Assets/Square150x150Logo.scale-400.png",
+      "bytes": 13392,
+      "sha256": "96c4e36e320b8dac8f33f30d26ec68fc186f6c7d8abdac56c49fe4da95225fda"
+    },
+    {
+      "path": "icons/windows/msix/Assets/Square44x44Logo.scale-100.png",
+      "bytes": 1140,
+      "sha256": "10fa41ac5d5be4674eca0d80d45730dde855ec6cc28c768f44d7c885f2dd92fb"
+    },
+    {
+      "path": "icons/windows/msix/Assets/Square44x44Logo.scale-200.png",
+      "bytes": 2049,
+      "sha256": "15d696ea09a1f92cd09fccc4e838aaa837abf4ba2141e8aa3214f92a278517d1"
+    },
+    {
+      "path": "icons/windows/msix/Assets/Square44x44Logo.scale-400.png",
+      "bytes": 3956,
+      "sha256": "804e9d2e7574604b61d3b62fe37de4c479e62c267978065579bc72a4d117e08e"
+    },
+    {
+      "path": "icons/windows/msix/Assets/Square44x44Logo.targetsize-16.png",
+      "bytes": 503,
+      "sha256": "c452fc93a17278ba50360eec4ea638b94b5f3deb01c2f8aac2cb008b75167d83"
+    },
+    {
+      "path": "icons/windows/msix/Assets/Square44x44Logo.targetsize-16_altform-lightunplated.png",
+      "bytes": 458,
+      "sha256": "227e9d4e44ca277a7cb4d17d349d1b83e089fd1a95166a3629b3694860ac6b98"
+    },
+    {
+      "path": "icons/windows/msix/Assets/Square44x44Logo.targetsize-16_altform-unplated.png",
+      "bytes": 458,
+      "sha256": "227e9d4e44ca277a7cb4d17d349d1b83e089fd1a95166a3629b3694860ac6b98"
+    },
+    {
+      "path": "icons/windows/msix/Assets/Square44x44Logo.targetsize-20.png",
+      "bytes": 565,
+      "sha256": "c62830dc710bff6a3ed4c274975374e7df3c962d5706c91994de2d5474805182"
+    },
+    {
+      "path": "icons/windows/msix/Assets/Square44x44Logo.targetsize-20_altform-lightunplated.png",
+      "bytes": 539,
+      "sha256": "bb9cbdd10b5e89a8193a40dcb9d3e3eb2c5bf3a9190b47967979bb65d3f5c709"
+    },
+    {
+      "path": "icons/windows/msix/Assets/Square44x44Logo.targetsize-20_altform-unplated.png",
+      "bytes": 539,
+      "sha256": "bb9cbdd10b5e89a8193a40dcb9d3e3eb2c5bf3a9190b47967979bb65d3f5c709"
+    },
+    {
+      "path": "icons/windows/msix/Assets/Square44x44Logo.targetsize-24.png",
+      "bytes": 670,
+      "sha256": "6121f98b19c1e5d9484e254232f905b0d0505cf41cf47d6acb8a46d474c3aa5c"
+    },
+    {
+      "path": "icons/windows/msix/Assets/Square44x44Logo.targetsize-24_altform-lightunplated.png",
+      "bytes": 654,
+      "sha256": "fab946a22e1f0676874d3f99593e51b5c348b7cb76e0221c288915770195dcff"
+    },
+    {
+      "path": "icons/windows/msix/Assets/Square44x44Logo.targetsize-24_altform-unplated.png",
+      "bytes": 654,
+      "sha256": "fab946a22e1f0676874d3f99593e51b5c348b7cb76e0221c288915770195dcff"
+    },
+    {
+      "path": "icons/windows/msix/Assets/Square44x44Logo.targetsize-256.png",
+      "bytes": 5536,
+      "sha256": "b633c0f5c27cfc2de5dcbcc4bc572b1cf76dc652d5507f0bbf5448d5d7774a28"
+    },
+    {
+      "path": "icons/windows/msix/Assets/Square44x44Logo.targetsize-256_altform-lightunplated.png",
+      "bytes": 5251,
+      "sha256": "9c702728ed9923828f4ee27005441059c598789fe613aa2a080102f517764969"
+    },
+    {
+      "path": "icons/windows/msix/Assets/Square44x44Logo.targetsize-256_altform-unplated.png",
+      "bytes": 5251,
+      "sha256": "9c702728ed9923828f4ee27005441059c598789fe613aa2a080102f517764969"
+    },
+    {
+      "path": "icons/windows/msix/Assets/Square44x44Logo.targetsize-30.png",
+      "bytes": 852,
+      "sha256": "3e62ab550cbc0c5aea4a5509384ba7183c5274fc9a11ccb93e643be1614c6d68"
+    },
+    {
+      "path": "icons/windows/msix/Assets/Square44x44Logo.targetsize-30_altform-lightunplated.png",
+      "bytes": 798,
+      "sha256": "056a77ad5f001a614b2a8fe9320516f402a4a95f7f8ac2654e1400095cb14009"
+    },
+    {
+      "path": "icons/windows/msix/Assets/Square44x44Logo.targetsize-30_altform-unplated.png",
+      "bytes": 798,
+      "sha256": "056a77ad5f001a614b2a8fe9320516f402a4a95f7f8ac2654e1400095cb14009"
+    },
+    {
+      "path": "icons/windows/msix/Assets/Square44x44Logo.targetsize-32.png",
+      "bytes": 847,
+      "sha256": "278718dae1f61b314a04df506fd6d814f127310c0b463cf6be05a14c60969fb3"
+    },
+    {
+      "path": "icons/windows/msix/Assets/Square44x44Logo.targetsize-32_altform-lightunplated.png",
+      "bytes": 801,
+      "sha256": "5eaf96f42b8cf34a74af9314e5cfcab3dda2c527e912966778908618cbbda1bc"
+    },
+    {
+      "path": "icons/windows/msix/Assets/Square44x44Logo.targetsize-32_altform-unplated.png",
+      "bytes": 801,
+      "sha256": "5eaf96f42b8cf34a74af9314e5cfcab3dda2c527e912966778908618cbbda1bc"
+    },
+    {
+      "path": "icons/windows/msix/Assets/Square44x44Logo.targetsize-36.png",
+      "bytes": 990,
+      "sha256": "31e46d0da323a221c7bfcd541297ea7571e6bb4f69ef9967068358af85addef8"
+    },
+    {
+      "path": "icons/windows/msix/Assets/Square44x44Logo.targetsize-36_altform-lightunplated.png",
+      "bytes": 925,
+      "sha256": "f5144d76ef8ed37c17f2280357bc688238fe2d48ebcc803a43ad69098f6e606a"
+    },
+    {
+      "path": "icons/windows/msix/Assets/Square44x44Logo.targetsize-36_altform-unplated.png",
+      "bytes": 925,
+      "sha256": "f5144d76ef8ed37c17f2280357bc688238fe2d48ebcc803a43ad69098f6e606a"
+    },
+    {
+      "path": "icons/windows/msix/Assets/Square44x44Logo.targetsize-40.png",
+      "bytes": 1074,
+      "sha256": "c8179ef9b5d841bf2696f4ddd4283885a594e9d9f6cdc72c897d34d0de035c60"
+    },
+    {
+      "path": "icons/windows/msix/Assets/Square44x44Logo.targetsize-40_altform-lightunplated.png",
+      "bytes": 1013,
+      "sha256": "7376021464629242a50765d85fd79cf962a56a7bbd9eb27e6e710d8bc073532c"
+    },
+    {
+      "path": "icons/windows/msix/Assets/Square44x44Logo.targetsize-40_altform-unplated.png",
+      "bytes": 1013,
+      "sha256": "7376021464629242a50765d85fd79cf962a56a7bbd9eb27e6e710d8bc073532c"
+    },
+    {
+      "path": "icons/windows/msix/Assets/Square44x44Logo.targetsize-48.png",
+      "bytes": 1200,
+      "sha256": "a51c93282be93a52ceaa31ac6ceb241b4822b3710990809b3152cc92fd179a4d"
+    },
+    {
+      "path": "icons/windows/msix/Assets/Square44x44Logo.targetsize-48_altform-lightunplated.png",
+      "bytes": 1188,
+      "sha256": "44881c190d9cfff23ea8e4270597561891fd72010ba81ef69590599f804bef41"
+    },
+    {
+      "path": "icons/windows/msix/Assets/Square44x44Logo.targetsize-48_altform-unplated.png",
+      "bytes": 1188,
+      "sha256": "44881c190d9cfff23ea8e4270597561891fd72010ba81ef69590599f804bef41"
+    },
+    {
+      "path": "icons/windows/msix/Assets/Square44x44Logo.targetsize-60.png",
+      "bytes": 1444,
+      "sha256": "c393810bbdf8bd8ce1162329d19dde3359a4237d7be5abfdd61cffe5777317e7"
+    },
+    {
+      "path": "icons/windows/msix/Assets/Square44x44Logo.targetsize-60_altform-lightunplated.png",
+      "bytes": 1395,
+      "sha256": "060d6a8bf68c93913a7ac4bbf512c9f271a9d408e4d2c92257da7defe0479242"
+    },
+    {
+      "path": "icons/windows/msix/Assets/Square44x44Logo.targetsize-60_altform-unplated.png",
+      "bytes": 1395,
+      "sha256": "060d6a8bf68c93913a7ac4bbf512c9f271a9d408e4d2c92257da7defe0479242"
+    },
+    {
+      "path": "icons/windows/msix/Assets/Square44x44Logo.targetsize-64.png",
+      "bytes": 1555,
+      "sha256": "e79fd9c2126252581a6ddbeb9e39658039852b2b1666666952bd5041249f413f"
+    },
+    {
+      "path": "icons/windows/msix/Assets/Square44x44Logo.targetsize-64_altform-lightunplated.png",
+      "bytes": 1492,
+      "sha256": "1565f704d1f25578488c69e407f5d5a2cd38709429a1b7146985464e7731ff58"
+    },
+    {
+      "path": "icons/windows/msix/Assets/Square44x44Logo.targetsize-64_altform-unplated.png",
+      "bytes": 1492,
+      "sha256": "1565f704d1f25578488c69e407f5d5a2cd38709429a1b7146985464e7731ff58"
+    },
+    {
+      "path": "icons/windows/msix/Assets/Square44x44Logo.targetsize-72.png",
+      "bytes": 1731,
+      "sha256": "ee9d133a9ac7abf3902302bc2438b200275b10dd548771db0f82cd29a31a1f50"
+    },
+    {
+      "path": "icons/windows/msix/Assets/Square44x44Logo.targetsize-72_altform-lightunplated.png",
+      "bytes": 1644,
+      "sha256": "08c1d625532fe20e509d6b2a0bcce26ef4e63552882f1160cc6a3b6297ad9113"
+    },
+    {
+      "path": "icons/windows/msix/Assets/Square44x44Logo.targetsize-72_altform-unplated.png",
+      "bytes": 1644,
+      "sha256": "08c1d625532fe20e509d6b2a0bcce26ef4e63552882f1160cc6a3b6297ad9113"
+    },
+    {
+      "path": "icons/windows/msix/Assets/Square44x44Logo.targetsize-80.png",
+      "bytes": 1890,
+      "sha256": "3bbc08c818748f651f858ff165f9d35f586c9e76a7aa76d9a062c04137470c29"
+    },
+    {
+      "path": "icons/windows/msix/Assets/Square44x44Logo.targetsize-80_altform-lightunplated.png",
+      "bytes": 1847,
+      "sha256": "49c179b0bcece99eeb7d4d8cb0a15eb317ffb627c31c162097aa28d77b9cbf8c"
+    },
+    {
+      "path": "icons/windows/msix/Assets/Square44x44Logo.targetsize-80_altform-unplated.png",
+      "bytes": 1847,
+      "sha256": "49c179b0bcece99eeb7d4d8cb0a15eb317ffb627c31c162097aa28d77b9cbf8c"
+    },
+    {
+      "path": "icons/windows/msix/Assets/Square44x44Logo.targetsize-96.png",
+      "bytes": 2272,
+      "sha256": "2e3f02543266848f3d1c3fb499f80db109e2d83fb53115cdd8c5b68e1c6e0df2"
+    },
+    {
+      "path": "icons/windows/msix/Assets/Square44x44Logo.targetsize-96_altform-lightunplated.png",
+      "bytes": 2162,
+      "sha256": "bc5fb04c2e9f3d9e0c4ed6bae509dd723f6a605ce2243ab4b0017f22d4cb13f4"
+    },
+    {
+      "path": "icons/windows/msix/Assets/Square44x44Logo.targetsize-96_altform-unplated.png",
+      "bytes": 2162,
+      "sha256": "bc5fb04c2e9f3d9e0c4ed6bae509dd723f6a605ce2243ab4b0017f22d4cb13f4"
+    },
+    {
+      "path": "icons/windows/msix/Assets/StoreLogo.scale-100.png",
+      "bytes": 1241,
+      "sha256": "15f0dfa63de1a4183557574d1feefce9f6ff0811ee0a93504fbfad5a82501d63"
+    },
+    {
+      "path": "icons/windows/msix/Assets/StoreLogo.scale-200.png",
+      "bytes": 2311,
+      "sha256": "12e07c22086a3e0e35218b04d0554b08093eafcc37053573c4e5d40f70fbb39b"
+    },
+    {
+      "path": "icons/windows/msix/Assets/StoreLogo.scale-400.png",
+      "bytes": 4335,
+      "sha256": "0609881e5b0741133014bbbb3bbab3f49a6dc3ac51c5a70ae8eec772d276050c"
+    },
+    {
+      "path": "logos/provenance.json",
+      "bytes": 12663,
+      "sha256": "bb226dcf0892f0c78b20ccf959077cbfc576d8f4600c45281b16df5a1a46ab7c"
     },
     {
       "path": "logos/png/glitchpad-horizontal-black-1024.png",
-      "bytes": 15656,
-      "sha256": "f47bffea16a36286f2c2d8aecb2322845a9ef25c51c2a2d0587c1fce592bb9cb"
+      "bytes": 11912,
+      "sha256": "9b96c038e06d52af119027c0af97439350b417a1f3b6dd81774c91d8148a50ea"
     },
     {
       "path": "logos/png/glitchpad-horizontal-color-1024.png",
-      "bytes": 17496,
-      "sha256": "89a20cf688747471551c9810928a90563159e404f4cabee27485bcc26f6322b3"
+      "bytes": 18870,
+      "sha256": "c8c0a9a8f9fab996954f508e3d3a32ca2a014544c1448d2db20fcb4ab0492f3e"
     },
     {
       "path": "logos/png/glitchpad-horizontal-light-1024.png",
-      "bytes": 19802,
-      "sha256": "fa874ccc060ea0b6d47e936e38c0673697c2881b163aa550ae5a280cbb5ecfde"
+      "bytes": 18156,
+      "sha256": "86ba940687cfc8a1246ee847113245488e6859477a544a2cd8506fe1f053a1b2"
     },
     {
       "path": "logos/png/glitchpad-horizontal-white-1024.png",
-      "bytes": 20471,
-      "sha256": "d93e7f7355bf24083b4b205c8ed9e383867aa309ca376700515264abc1a1b7a2"
+      "bytes": 13242,
+      "sha256": "e8c2d4d1d7661537475d36f81d53e07ca97063fff2848e816445c7f9a0172a3c"
     },
     {
       "path": "logos/png/glitchpad-mark-black-1024.png",
-      "bytes": 9544,
-      "sha256": "f65c961ce955f5bbc7cec4c530dfe9c11198c0bc052d78b3ebb7a683dde9c36a"
+      "bytes": 21857,
+      "sha256": "35258c851384532bf3ae11f9767ed7c86392d61d6dfe203c58e0658fecbe39e7"
     },
     {
       "path": "logos/png/glitchpad-mark-color-1024.png",
-      "bytes": 10710,
-      "sha256": "49b7b67a14091571c6b429ac94d619c6f269d45f8174c416bf78cccf65b5edac"
+      "bytes": 17304,
+      "sha256": "ab417914f69d361299dd61efdee51dd9ef68b6d074a72ced2929f069cda300fa"
     },
     {
       "path": "logos/png/glitchpad-mark-light-1024.png",
-      "bytes": 10556,
-      "sha256": "95c17673a6ff0cf483464ada55289afef0b92bcbb9ddc3d7319f83a7205c3313"
+      "bytes": 18131,
+      "sha256": "853c4cc73fa4be520dc8bf421e8655a181417159c614b639d4e2dc5000b1d2c5"
     },
     {
       "path": "logos/png/glitchpad-mark-reduced-black-1024.png",
-      "bytes": 9524,
-      "sha256": "0ec9cb3f457644c9363a8843cf7e4d25c861dc7109ac84f4c96f35a5c87265bd"
+      "bytes": 21857,
+      "sha256": "35258c851384532bf3ae11f9767ed7c86392d61d6dfe203c58e0658fecbe39e7"
     },
     {
       "path": "logos/png/glitchpad-mark-reduced-color-1024.png",
-      "bytes": 10089,
-      "sha256": "645e6a5a4c03b870bdebd594a21fe78c80f03222c1de8ca4bc64e65ff6916516"
+      "bytes": 17301,
+      "sha256": "a0e01ab87e686a0e898efd3778dc628f21cbb2bc355d9b491d96ecc5333fa5de"
     },
     {
       "path": "logos/png/glitchpad-mark-reduced-light-1024.png",
-      "bytes": 10361,
-      "sha256": "01c95f2f43ca4a13cc621db95aaad0b27e81d9ddbbf160b7ef32a0427c3f8b3d"
+      "bytes": 18074,
+      "sha256": "0941419cf4b9604265fd33525072ab989450a0efe395e2f5be30da6d37621bf2"
     },
     {
       "path": "logos/png/glitchpad-mark-reduced-white-1024.png",
-      "bytes": 9845,
-      "sha256": "0e9f902ef3e2de241b39d1e09e7bbf939a4faa7fc914769877635b6e929ba9c6"
+      "bytes": 23447,
+      "sha256": "d84c89128d3bb859766a62b20189c4c4e47cc9ae166bbd4d6d2fbea654a7b495"
     },
     {
       "path": "logos/png/glitchpad-mark-white-1024.png",
-      "bytes": 9900,
-      "sha256": "b44bcd0c34fae3d5b39c53ec19b188ba4f268b3d9098c2f0f025b22b4e36de82"
+      "bytes": 23447,
+      "sha256": "d84c89128d3bb859766a62b20189c4c4e47cc9ae166bbd4d6d2fbea654a7b495"
     },
     {
       "path": "logos/png/glitchpad-social-preview-1280.png",
-      "bytes": 28118,
-      "sha256": "c1a2fa7c5d73a088966c5f892323c70a1474df6f43b7ade46ba9387f2b1fec3a"
+      "bytes": 26024,
+      "sha256": "4533d1f158306910dbad2f5eb3a959d2c41e24f60fad7dba0fe9c54a17c0a2ed"
     },
     {
       "path": "logos/png/glitchpad-stacked-black-1024.png",
-      "bytes": 22609,
-      "sha256": "244f4064123a372f9b0dea718c2368d9ae40ffa0ef605a1628aa77d375227c26"
+      "bytes": 17067,
+      "sha256": "94e19eee57d530810d84392f58873d49ba0ab45a3886bbb81eb058731c4bcdb0"
     },
     {
       "path": "logos/png/glitchpad-stacked-color-1024.png",
-      "bytes": 24340,
-      "sha256": "eb39045d2316429c6505b6a64dfe440e1d2aadfaa9f1421b32bc52d4a79c86b6"
+      "bytes": 26292,
+      "sha256": "901c5e66e579bbbb23bd3b564692243ae3e20f1c27df89b7aa753f3d579296c1"
     },
     {
       "path": "logos/png/glitchpad-stacked-light-1024.png",
-      "bytes": 26229,
-      "sha256": "ef9b0da26a60dc6a18aae9748fbd3bb810461e844fac3a4c01e99c0dfecf698b"
+      "bytes": 25567,
+      "sha256": "feb45a780c23020e1f3f68765451c0f6afa4e86f661771fc3271ca9d343ca559"
     },
     {
       "path": "logos/png/glitchpad-stacked-white-1024.png",
-      "bytes": 27260,
-      "sha256": "e54c672afc2bbdbfef660f3a1ee6d380790ad7bf3936a5a0dde1ccf7488b8b31"
+      "bytes": 18672,
+      "sha256": "8a79b65407c1be60cbb8cec227af07c4db9b3fbec320684fc710a68c4926d354"
     },
     {
       "path": "logos/png/glitchpad-wordmark-black-1024.png",
-      "bytes": 16348,
-      "sha256": "4bbbdc86f367601b4645420e0ec42b51265d67933252610880ea762222271b37"
+      "bytes": 14891,
+      "sha256": "cd0d453e40ebf3540d0bb79d438bf9f8d75b78bd1325ace946c68faf76033e94"
     },
     {
       "path": "logos/png/glitchpad-wordmark-color-1024.png",
-      "bytes": 18175,
-      "sha256": "f2a4ebf04c53f43af216c95c5c9e7bd22e8cac39a0de38409b746d48e7070294"
+      "bytes": 21277,
+      "sha256": "6fc03a721a5ed898ea33a9dba9ee0e2c4d635449a871aa972fdab1c9d15d1dab"
     },
     {
       "path": "logos/png/glitchpad-wordmark-light-1024.png",
-      "bytes": 20744,
-      "sha256": "d0e3f7dae4ec7100f010d95bfcd1652c4456503907822b2462b621e46a3f1d5a"
+      "bytes": 20129,
+      "sha256": "03981bee7d605376fa3fa088c986025660af4309ec16ecaf92ecdb67595d6080"
     },
     {
       "path": "logos/png/glitchpad-wordmark-white-1024.png",
-      "bytes": 20756,
-      "sha256": "46964cb4af87fba41e987a395637d9dcab215cccc0e2777542f54c37dc445cbb"
+      "bytes": 16494,
+      "sha256": "85ad4cdc02a016805cdd1133940be75338df97f728b14a0fce6cf690a00ee6f4"
     },
     {
       "path": "logos/svg/glitchpad-horizontal-black.svg",
-      "bytes": 6687,
-      "sha256": "c9b8ccaea8f8e6411bc8822b37979fb7d91a5cc0b9b010a36cccad8c447ed2f5"
+      "bytes": 7243,
+      "sha256": "7adde4e66733d0c320691de5b954bcb6893355f88f85532c9e52424d78eb80c7"
     },
     {
       "path": "logos/svg/glitchpad-horizontal-color.svg",
-      "bytes": 6687,
-      "sha256": "a3273f87c50315a973953c9b37357968b42c68fd5588022e7725c7dc770fbd1f"
+      "bytes": 7042,
+      "sha256": "228dead9437a4c57cc773d8fcf6081d9dd5de9dac20a1a4a1f9e72f44227f0c4"
     },
     {
       "path": "logos/svg/glitchpad-horizontal-light.svg",
-      "bytes": 6687,
-      "sha256": "cd9a3aa4a908daa422c71d8381854be24fd625e9203df49e8a936ecc6adf9a40"
+      "bytes": 7042,
+      "sha256": "282b9bcae46a433bc13bde291212cf823cf44511b9de7e0ab2e0a2e41414af86"
     },
     {
       "path": "logos/svg/glitchpad-horizontal-white.svg",
-      "bytes": 6687,
-      "sha256": "3a1afa4be42e39e7d8c6a32a402a6b165fab5fc446bdd9686bd8690bbccbb414"
+      "bytes": 7243,
+      "sha256": "5cb1d97108e273c8887974c019f56c08e93f2dd316336cc2afebbcdcf4f52695"
     },
     {
       "path": "logos/svg/glitchpad-mark-black.svg",
-      "bytes": 522,
-      "sha256": "475bc14634b9b8ab74093ab76a9aa41d9514017a95222fa47ab90371bda8fbb2"
+      "bytes": 1064,
+      "sha256": "d566d51c12dbec4cec658beede716919b7b92b54519a470ef2971d663d7e6f13"
     },
     {
       "path": "logos/svg/glitchpad-mark-color.svg",
-      "bytes": 522,
-      "sha256": "30cf793503711955d512435247766482f3bcfd603c765129ad243598eb5e4dbb"
+      "bytes": 869,
+      "sha256": "ccb83d532384f327c7980704ed87f375ec23a998ec8566a1560dc5b2a6c72d40"
     },
     {
       "path": "logos/svg/glitchpad-mark-light.svg",
-      "bytes": 522,
-      "sha256": "c16b523ee29136272b23e1ba313bc76cb34601a660e5bbc1547c97d970221288"
+      "bytes": 869,
+      "sha256": "813a7a477dd6d808d1ea29b08243f2ccc46a0b6172e60932c4114c613342a683"
     },
     {
       "path": "logos/svg/glitchpad-mark-reduced-black.svg",
-      "bytes": 472,
-      "sha256": "2bb3674f63f2e49923545033695d95fc8ef58c7ae6e122ea061e299f046b24f9"
+      "bytes": 1067,
+      "sha256": "0519b179e3d24ac375394159d816972c3963e6f6a25a1b7c6393f2a279800cc1"
     },
     {
       "path": "logos/svg/glitchpad-mark-reduced-color.svg",
-      "bytes": 472,
-      "sha256": "03208d6b87a12b1df635b35a80bd0c41fd8ca1434d618ce845cefb03bfa873b0"
+      "bytes": 818,
+      "sha256": "c4935f7d6f0a98ec332e549174e081f77a2279d22ac8e0e3f052e8076d66090f"
     },
     {
       "path": "logos/svg/glitchpad-mark-reduced-light.svg",
-      "bytes": 472,
-      "sha256": "f1839b886c297a1c3377d79b2a780019b71f2bc059e9bdf7f3978f7452dc507b"
+      "bytes": 818,
+      "sha256": "ffd762ce92fb78d1cb73216dc84c9fd4133a69f7b80c5c6d731086a835aeaec4"
     },
     {
       "path": "logos/svg/glitchpad-mark-reduced-white.svg",
-      "bytes": 472,
-      "sha256": "2ea9490bc37bcc542f25e849d92bd197dcf7ed54cf2301ff841063093d7ea3d1"
+      "bytes": 1067,
+      "sha256": "06e236f9ed4ac84694b94a95c4f3f99dbeece4565ae6aad65dfb2f66c77e485b"
     },
     {
       "path": "logos/svg/glitchpad-mark-white.svg",
-      "bytes": 522,
-      "sha256": "81434d13e3af1935b351d7efbba44af8c4806697dbf105bbc81d8c0fbfbdb7b2"
+      "bytes": 1064,
+      "sha256": "de59c18ad27bbfa94e30812d533061ac67699a03455948b719b2003e9eeacc65"
     },
     {
       "path": "logos/svg/glitchpad-social-preview.svg",
-      "bytes": 13626,
-      "sha256": "c8acdae91eefdd3d4f2f3e7261819f61c1199b8cae12954c20a4705c1c4f1d8b"
+      "bytes": 14003,
+      "sha256": "58fc646f4bb65eb94712bf1dd8b3531812e52818977a9abd0f5215ddf8eb5f65"
     },
     {
       "path": "logos/svg/glitchpad-stacked-black.svg",
-      "bytes": 6709,
-      "sha256": "75e87a2fe13440f0f6e80907738220f4da1841473dfcab7c734a0cf478234b2b"
+      "bytes": 7265,
+      "sha256": "e89ef3b82cced3aab0635bd45a2513d23688a53e4f7fe0a3a55ca47511a2636f"
     },
     {
       "path": "logos/svg/glitchpad-stacked-color.svg",
-      "bytes": 6709,
-      "sha256": "fe1c47e0f69e49d23f034effb87dbf480ce8bf72768a37fb29dacd03659cb5b2"
+      "bytes": 7064,
+      "sha256": "605137318b6ee7c1c40901715084169e245625c6faa75fa53aa2d1c28e4088f2"
     },
     {
       "path": "logos/svg/glitchpad-stacked-light.svg",
-      "bytes": 6709,
-      "sha256": "9d33d8c6c9437936e7dda2631f0b12802e87d92def684f0b17a72d5b5b8b9f33"
+      "bytes": 7064,
+      "sha256": "8e1681f663499538229e871b44731d44f5081720c9e067c1e976b88cfc238b09"
     },
     {
       "path": "logos/svg/glitchpad-stacked-white.svg",
-      "bytes": 6709,
-      "sha256": "f58f962390e0a818a8acf6f374cf281378e069ef6307c1e9f2dd0f9ecddac97a"
+      "bytes": 7265,
+      "sha256": "6dab822d381a288d4ac2a36b1b5b5661d4be18e9b122a61938a83802ff57700c"
     },
     {
       "path": "logos/svg/glitchpad-wordmark-black.svg",
-      "bytes": 6173,
-      "sha256": "2df7bf3f7b2135ef9a92e14dbb2e9773b2f8454a731de3e4131d0d145998f1ea"
+      "bytes": 6261,
+      "sha256": "04c446aa6a5efb67d1d8aa0fc2977ddf756dcb2137f0464bf9393c530c0a1516"
     },
     {
       "path": "logos/svg/glitchpad-wordmark-color.svg",
-      "bytes": 6173,
-      "sha256": "3115dad78134748b18059d24f0b16ca0f8079ce8f576a95c703cfa310e77e625"
+      "bytes": 6261,
+      "sha256": "22ae79499c8d1708c7439121e68f27a8688b31ac698472ea0877c4346ac0d858"
     },
     {
       "path": "logos/svg/glitchpad-wordmark-light.svg",
-      "bytes": 6173,
-      "sha256": "c3c9133c5ef43c7175fb0d5a048fd7bd2930da2538313275d551e1004c0e672b"
+      "bytes": 6261,
+      "sha256": "fbc15ccdf29338c3c6a2b711923be9af6f6ace0332647a8276ac638fab46d1b3"
     },
     {
       "path": "logos/svg/glitchpad-wordmark-white.svg",
-      "bytes": 6173,
-      "sha256": "abf6da01963805ce206114aaa703778e3d10afffd274781e86db368da6ae095d"
+      "bytes": 6261,
+      "sha256": "d12765f3844ccd37554499973486aa650fdd98d59b712f1f45c8531f7198e30a"
     },
     {
       "path": "nextjs/README.md",
-      "bytes": 968,
-      "sha256": "aba83bd19d6588a922645d5497ce1ef1e406f609a37f94c83e3b9851341fa65e"
+      "bytes": 1011,
+      "sha256": "8f90c9e0dd9fb868cf3f87592df0921cddac968d7955be6ce46d844abf49068a"
     },
     {
       "path": "nextjs/app-icon.tsx",
@@ -561,23 +1119,23 @@
     },
     {
       "path": "nextjs/components.json.snippet",
-      "bytes": 88,
-      "sha256": "4e6beecf59e7ebe98b7169289555db12123d02a310253a3b1b30cdfe6d9c3bdf"
+      "bytes": 104,
+      "sha256": "fb240c91e6740ee1cb6374af1ce468247596471cafde5e6a1c621089b1f96654"
     },
     {
       "path": "nextjs/fonts.ts",
-      "bytes": 753,
-      "sha256": "5cb83533ea3417e6a71dca68119443589b86dc5a460ae875b5f6ef0c875953d0"
+      "bytes": 1124,
+      "sha256": "398dd37897bce092630ec05847fc57da95c48ac99a1970ccd67d3c3fa5d54c38"
     },
     {
       "path": "nextjs/globals.css",
-      "bytes": 7078,
-      "sha256": "5203404f098c5312d2af7ccfde60cfdc907c381c3cd556b8d8ed2556b58103a8"
+      "bytes": 7083,
+      "sha256": "3740179dccf5a38bfca595f122cec8edef2b3480a2d92689dde8548582714426"
     },
     {
       "path": "nextjs/opengraph-image.tsx",
-      "bytes": 261,
-      "sha256": "f44ef3dc137488439055c41275a14688cbb5e6a096ae8443130d3d04a4203cb1"
+      "bytes": 280,
+      "sha256": "38df19b4c05076bd50b3a30368d54ed411d4c9027b96e38e78bf8aeae3454f5b"
     },
     {
       "path": "nextjs/providers.tsx",
@@ -586,13 +1144,13 @@
     },
     {
       "path": "nextjs/registry/file-row.json",
-      "bytes": 766,
-      "sha256": "af48ad3ee0f68525df6ac61521e0312c3764ab08f778776a99c8777e2ef013d9"
+      "bytes": 779,
+      "sha256": "5ef69b14e840f3a9c47dd7d7b36fc66faa59d5211c141d8dfbb41faf2c5b2d96"
     },
     {
-      "path": "nextjs/registry/font.json",
-      "bytes": 644,
-      "sha256": "f3dc61d1a853560cacbf3156b046931a63f6f049569476708a32540bf2d5a86d"
+      "path": "nextjs/registry/fonts.json",
+      "bytes": 452,
+      "sha256": "3f1d658495ae4ff4a6c6bce218f8fff6f2dbffb6995e0c5c80ab57756b5cfdd1"
     },
     {
       "path": "nextjs/registry/registry.json",
@@ -601,53 +1159,103 @@
     },
     {
       "path": "nextjs/registry/theme.json",
-      "bytes": 4099,
-      "sha256": "139140982e49a50220c78bf92f3c8d6aa847654b7ebc39d838bb0b6533a7b592"
+      "bytes": 4106,
+      "sha256": "a24cf762b93ecc4cceed0a39c6dcbd7150697f2dc19ec9b356e94c6e2d3a37dc"
     },
     {
-      "path": "references/01-canon.json",
-      "bytes": 32383,
-      "sha256": "e6cd8eda6304e25b6382c809fc64ca30b8b1351285d6120477ba4edf9000ded3"
+      "path": "qc/authoritative-inputs.json",
+      "bytes": 69,
+      "sha256": "9a1eaa52cd25d537aec30622fa768c87d329ac74c3e753a95fe2ddf7ea6f6f1a"
     },
     {
-      "path": "specimens/README.md",
-      "bytes": 317,
-      "sha256": "d4d26997ec6557e7a2693685ad694a3d705ed2f30965f78d21f1bc028b0d5216"
+      "path": "qc/contact-sheet.png",
+      "bytes": 376537,
+      "sha256": "409e38c33a103c37bafe493d230cba3c17c08c7f5895a24ae13ded9ca96d34c2"
     },
     {
-      "path": "specimens/glitchpad-type-specimen.png",
-      "bytes": 72730,
-      "sha256": "87c39a30129b0cb5b80c263dcaeb4bae02d9b03730f94ee0c75869be6a365272"
+      "path": "qc/logo-sheet.png",
+      "bytes": 61155,
+      "sha256": "7d7b8390d45f4b3df45f364a09c6757ee67e6665fc3e90736ae56bb6e0ca8bd1"
+    },
+    {
+      "path": "qc/pages-glitchpad-web-index.png",
+      "bytes": 144922,
+      "sha256": "48bda4276dc2ff8aeb03ecd9b4ba3361839ee324a521e2412d2eedef227a4c81"
+    },
+    {
+      "path": "qc/pages-guidelines-index.png",
+      "bytes": 210737,
+      "sha256": "fa64df56d594cc290a51690468682d9584e726e228c9d9aaa89f65cc8036752f"
+    },
+    {
+      "path": "qc/probe.json",
+      "bytes": 561,
+      "sha256": "4fb71b6d75d6d1884dba9f9885cc1cf83f75728093d76afa93dce805774bda97"
+    },
+    {
+      "path": "qc/_pdf-pages/p-1.png",
+      "bytes": 36982,
+      "sha256": "941f8c24e81da40c7faad37baec9fa7c533a57f413963e13a8b41b049b3cc374"
+    },
+    {
+      "path": "qc/_pdf-pages/p-2.png",
+      "bytes": 95738,
+      "sha256": "617edabce690b524a32003899ee77ea335556e34c4fdcc710a0ec9bcb41c835b"
+    },
+    {
+      "path": "qc/_pdf-pages/p-3.png",
+      "bytes": 131518,
+      "sha256": "0c36f58150227ec10efc457fca5409a5081dd9f7fa18ae1fdcb09b6fddba4690"
+    },
+    {
+      "path": "qc/_pdf-pages/p-4.png",
+      "bytes": 115323,
+      "sha256": "cc666f4fc6088e383f87a0474fbbdd01170b5d98af641860d1eae0ff41a0a2db"
+    },
+    {
+      "path": "qc/_pdf-pages/p-5.png",
+      "bytes": 107021,
+      "sha256": "d06a8321bbdfccd6f969c2843c9a30acab845ec48b58f320f5fc2d88c3b2ca46"
+    },
+    {
+      "path": "qc/_pdf-pages/p-6.png",
+      "bytes": 106857,
+      "sha256": "706fa7cac7f754177f3280b16732c4a4865c2aa490bca52bd84c5d465454ca44"
+    },
+    {
+      "path": "qc/_pdf-pages/p-7.png",
+      "bytes": 111506,
+      "sha256": "47c73ab087e2d43bd839573638b470fb2741800d6b3d7da9a2e3d7d7bb87acee"
     },
     {
       "path": "specimens/glitchpad-type-specimen.svg",
-      "bytes": 175434,
-      "sha256": "2bf325e79e38ab98d39122f55df77384e39aac7eeed4337c72e3d8ed9d16a1a5"
+      "bytes": 191698,
+      "sha256": "46d8c087134eb93b8f4e96498a56798af7bfd94cde6e9ba87873a08cb42543b1"
     },
     {
       "path": "tokens/base.css",
-      "bytes": 1468,
-      "sha256": "3f558cf588f74b77d66a646486daf660190bda6ba16013f46edaec382eadd6a8"
+      "bytes": 1650,
+      "sha256": "fce84bbabc9510c69964b80a65e3268d8fbd79e70bccaa68babbcee71cdd168f"
     },
     {
       "path": "tokens/brand.tokens.json",
-      "bytes": 1739,
-      "sha256": "4d125cce71412c32007683eb1ed2ec229c9a3a24d60be3e4d77d992f3c1885f0"
+      "bytes": 2561,
+      "sha256": "651c312ca037b65a19a3d46bf2e013f98a70bf642bda9e8127692ac5f0c3f197"
     },
     {
       "path": "tokens/colors.css",
-      "bytes": 1820,
-      "sha256": "c0dce00e223d74cf1ce4b18fbf19e316f268aefb88e42648f46251dd1fdc3c7c"
+      "bytes": 1784,
+      "sha256": "11128ffe308e3a91ba45b760122eb60335a147af8fd18a17d96f715d317b6520"
     },
     {
       "path": "tokens/spacing.css",
       "bytes": 661,
-      "sha256": "401478841fd2248c8854bd20247ee38c9f6927f9f35747bfcc72782adf70c4fc"
+      "sha256": "a31522c8695ffdb5ea96b9e14cd44cd24174b3800fd31011450e0196d540c410"
     },
     {
       "path": "tokens/typography.css",
       "bytes": 672,
-      "sha256": "5715d4f0ad1a02b7c1c0474e4d9ca9f401b28c6e0557287c0e14ef8295b71f44"
+      "sha256": "bc59d7b204d0d23fdbfb3e36e455c982e72e6d1fef327de21accc6f1ff0608c3"
     },
     {
       "path": "ui_kits/glitchpad-web/README.md",
@@ -656,8 +1264,8 @@
     },
     {
       "path": "ui_kits/glitchpad-web/index.html",
-      "bytes": 10446,
-      "sha256": "e6e1a69dd480e1504274fd9bfd6987eea93b642790241e89c58374fe37723ef6"
+      "bytes": 10921,
+      "sha256": "0e127d9ba9acdbb9be3dafb5137e6384db20f67e1161764128071010728356b5"
     }
   ]
 }

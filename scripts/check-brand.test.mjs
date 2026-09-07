@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 
 import {
   verifyBrand,
+  verifyIntegratedCopy,
   verifyPublicCopy,
   verifyReadmeBanner,
 } from './check-brand.mjs';
@@ -47,8 +48,8 @@ test('checksum drift is rejected', async () => {
     join(brandRoot, 'manifest.json'),
     JSON.stringify({
       name: 'glitchpad-brand-kit',
-      version: '1.0.0',
-      canon: '1.0.0',
+      version: '1.1.0',
+      canon: '1.2.1',
       files: [
         {
           path: 'asset.txt',
@@ -227,15 +228,16 @@ test('public copy validation accepts equality and rejects drift or absence', asy
   const label = 'site/public/logos/integrated.svg';
   await writeFile(canonical, '<svg>canonical</svg>\n');
   await writeFile(integrated, '<svg>canonical</svg>\n');
-  assert.deepEqual(await verifyPublicCopy(canonical, integrated, label), []);
+  assert.equal(verifyPublicCopy, verifyIntegratedCopy);
+  assert.deepEqual(await verifyIntegratedCopy(canonical, integrated, label), []);
 
   await writeFile(integrated, '<svg>drifted</svg>\n');
-  assert.deepEqual(await verifyPublicCopy(canonical, integrated, label), [
-    `site asset drift: ${label}`,
+  assert.deepEqual(await verifyIntegratedCopy(canonical, integrated, label), [
+    `integrated asset drift: ${label}`,
   ]);
 
   await rm(integrated);
-  assert.deepEqual(await verifyPublicCopy(canonical, integrated, label), [
-    `missing site asset copy: ${label}`,
+  assert.deepEqual(await verifyIntegratedCopy(canonical, integrated, label), [
+    `missing integrated asset copy: ${label}`,
   ]);
 });

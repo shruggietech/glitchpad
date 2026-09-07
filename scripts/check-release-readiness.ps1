@@ -21,7 +21,8 @@ if ($Repository -and $Repository.ToLowerInvariant() -ne 'shruggietech/glitchpad'
 }
 
 $requiredEvidence = @(
-    'brand/references/01-canon.json',
+    'brand/manifest.json',
+    'brand/INTEGRATION.md',
     "docs/releases/v$($package.version).md",
     "docs/releases/v$($package.version)-receipt.md",
     'packaging/release/package-contract.json'

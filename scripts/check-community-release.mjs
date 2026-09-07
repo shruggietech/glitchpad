@@ -65,6 +65,18 @@ export function validateReleaseAuthorityGate(releaseWorkflow) {
   return true;
 }
 
+export function validateReleaseReadinessEvidence(readinessScript) {
+  for (const path of ['brand/manifest.json', 'brand/INTEGRATION.md']) {
+    if (!readinessScript.includes(`'${path}'`))
+      throw new Error(
+        `release readiness omits current brand evidence: ${path}`,
+      );
+  }
+  if (readinessScript.includes('brand/references/01-canon.json'))
+    throw new Error('release readiness retains removed brand evidence');
+  return true;
+}
+
 export function validateGovernedClaims({
   releaseWorkflow,
   windowsContract,
@@ -143,6 +155,7 @@ export async function checkCommunityRelease(repositoryRoot = root) {
     macosContract,
     androidContract,
     releaseWorkflow,
+    readinessScript,
     releaseNotes,
     androidWorkflow,
     macosWorkflow,
@@ -156,6 +169,7 @@ export async function checkCommunityRelease(repositoryRoot = root) {
     loadJson(join(repositoryRoot, 'packaging/macos/package-contract.json')),
     loadJson(join(repositoryRoot, 'packaging/android/package-contract.json')),
     text(join(repositoryRoot, '.github/workflows/release.yml')),
+    text(join(repositoryRoot, 'scripts/check-release-readiness.ps1')),
     text(join(repositoryRoot, 'docs/releases/v0.1.0.md')),
     text(join(repositoryRoot, '.github/workflows/android-package.yml')),
     text(join(repositoryRoot, '.github/workflows/macos-package.yml')),
@@ -166,6 +180,7 @@ export async function checkCommunityRelease(repositoryRoot = root) {
   ]);
   validateReleaseContract(contract);
   validateReleaseAuthorityGate(releaseWorkflow);
+  validateReleaseReadinessEvidence(readinessScript);
   validateGovernedClaims({
     releaseWorkflow,
     windowsContract,

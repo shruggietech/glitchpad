@@ -35,6 +35,9 @@
 - [x] T007 Run focused community-release tests and policy validation from `specs/026-v010-release/quickstart.md`
 - [x] T008 Run the complete repository gate and record results in `specs/026-v010-release/verification.md`
 - [x] T009 Mark completed tasks and confirm UTF-8, formatting, and no tag/release mutation in `specs/026-v010-release/tasks.md`
+- [x] T010 Correct tag-context readiness to reference the S025 brand manifest and integration guide
+- [x] T011 Add regression coverage that rejects the removed pre-S025 brand evidence path
+- [x] T012 Re-run focused policy validation and the exact tag-context readiness command before pushing the remediation
 
 ## Dependencies and execution order
 

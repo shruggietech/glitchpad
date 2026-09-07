@@ -1,0 +1,27 @@
+# Verification: v0.1.0 Release Publication
+
+## Spec Kit convergence
+
+The completed implementation was compared with the specification, plan, research decisions, data model, readiness contract, quickstart, and task graph. All 14 functional requirements and six success criteria have implementation or validation coverage. No clarification marker, constitution violation, critical inconsistency, or incomplete task remains.
+
+## Pre-push evidence
+
+| Gate | Result |
+| --- | --- |
+| Focused community-release policy and assembly suite | Passed, 14 tests |
+| Missing-secret coverage | Passed for all five required secret names |
+| Rust formatting, Clippy, workspace tests, and dependency policy | Passed |
+| Frontend lint, typecheck, tests, and production build | Passed, 41 files and 231 tests |
+| Existing site, brand, metadata, persistence, performance, and four-platform package-policy stages | Passed before the documentation formatting stop |
+| Markdown and structured-file formatting | Passed after correcting `data-model.md` |
+| Markdown lint and links | Passed, 254 linted files and links in 277 Markdown files |
+| Mermaid rendering | Passed, 43 diagrams |
+| Version agreement | Passed at 0.1.0 |
+| UTF-8, BOM, and mojibake validation | Passed, 807 text files |
+| Public documentation and repository metadata | Passed |
+
+The first complete repository run stopped when Prettier identified one S026 Markdown file. That file was formatted, and the release/documentation tail from the stopping point was rerun successfully. A subsequent redundant full rerun was terminated after exceeding the bounded local execution window; no failed assertion was used as evidence, and the already completed component results above cover every required gate.
+
+## Publication boundary
+
+No `v0.1.0` tag or GitHub release was created. Manual release-workflow dispatch remains non-publishing. After owner review and merge, the operator must provision the stable Android authority, run manual readiness from current `main`, and then explicitly authorize the tag ritual in `docs/releases/v0.1.0-operator-runbook.md`.

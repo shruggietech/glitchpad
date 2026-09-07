@@ -33,13 +33,35 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm run check:community-release
+      - name: Confirm stable Android release authority
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_SIGNING_CERT_SHA256: ${{ secrets.ANDROID_SIGNING_CERT_SHA256 }}
+        run: |
+          required=(ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD ANDROID_SIGNING_CERT_SHA256)
+          for name in "${required[@]}"; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "::error title=Missing release authority::$name is not configured."
+              exit 1
+            fi
+          done
+      - name: Confirm manual readiness source
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          if [[ "$GITHUB_REF" != 'refs/heads/main' ]]; then
+            echo '::error title=Invalid readiness source::Manual release readiness must run from current main.'
+            exit 1
+          fi
       - name: Verify exact publication context
         if: startsWith(github.ref, 'refs/tags/')
         shell: pwsh
         run: ./scripts/check-release-readiness.ps1 -Tag '${{ github.ref_name }}' -Repository '${{ github.repository }}'
       - name: Confirm non-publishing manual validation
         if: github.event_name == 'workflow_dispatch'
-        run: echo 'Readiness passed. Manual dispatch cannot publish.'
+        run: echo 'Readiness and release authority checks passed. Manual dispatch cannot publish.'
 
   locate-platform-runs:
     name: Wait for tag package workflows

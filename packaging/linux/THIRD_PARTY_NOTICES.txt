@@ -1,0 +1,5 @@
+Glitchpad includes open-source dependencies identified in the accompanying CycloneDX software bill of materials.
+
+Copyright and license notices for the bundled Glitchpad application are provided under the dependency licenses recorded by the locked Rust and JavaScript dependency graphs. System WebKitGTK, GTK, and desktop integration libraries are runtime dependencies supplied by the Linux distribution and are not bundled as Glitchpad application code.
+
+The complete project source and license policy are available at https://github.com/shruggietech/glitchpad.

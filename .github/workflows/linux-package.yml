@@ -1,0 +1,146 @@
+name: linux-package
+
+on:
+  pull_request:
+  push:
+    branches:
+      - '**'
+  workflow_dispatch:
+
+concurrency:
+  group: linux-package-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  candidate:
+    name: Ubuntu 22.04 x86_64 candidate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Build governed Ubuntu 22.04 environment
+        run: docker build --target linux-package --tag glitchpad-linux-package:local --file scripts/docker/validation.Dockerfile .
+
+      - name: Validate source and package contracts
+        run: |
+          docker run --rm --volume "$PWD:/workspace" --workdir /workspace glitchpad-linux-package:local sh -lc '
+            set -eu
+            pnpm install --frozen-lockfile
+            pnpm run check:linux-package
+            cargo test -p glitchpad-host --locked
+            pnpm test
+          '
+
+      - name: Build governed AppImage and Debian candidates
+        run: |
+          docker run --rm --volume "$PWD:/workspace" --workdir /workspace glitchpad-linux-package:local sh -lc '
+            set -eu
+            pnpm tauri build --bundles appimage,deb --config tauri.s021-linux.conf.json
+          '
+
+      - name: Assemble final-byte candidate and evidence
+        env:
+          SOURCE_COMMIT: ${{ github.sha }}
+          WORKFLOW_IDENTITY: ${{ github.workflow_ref }}
+        run: |
+          docker run --rm --volume "$PWD:/workspace" --workdir /workspace \
+            --env SOURCE_COMMIT --env WORKFLOW_IDENTITY \
+            glitchpad-linux-package:local sh -lc '
+              set -eu
+              upstream_appimage="$(find target/release/bundle/appimage -maxdepth 1 -name "*.AppImage" -print -quit)"
+              appdir="$(find target/release/bundle/appimage -maxdepth 1 -name "*.AppDir" -type d -print -quit)"
+              deb_path="$(find target/release/bundle/deb -maxdepth 1 -name "*.deb" -print -quit)"
+              test -n "$upstream_appimage"
+              test -n "$appdir"
+              test -n "$deb_path"
+              work_root="$(mktemp -d)"
+              trap "rm -rf \"$work_root\"" EXIT
+              appimage_path="$work_root/candidate.AppImage"
+              node scripts/linux/thin-appimage.mjs --input "$upstream_appimage" --appdir "$appdir" --output "$appimage_path"
+              (cd "$work_root" && ./candidate.AppImage --appimage-extract >/dev/null)
+              find "$work_root/squashfs-root" -printf "%P\n" | sed "/^$/d" | sort | jq -R -s "split(\"\\n\")[:-1] | map({path:.})" > "$work_root/appimage-inventory.json"
+              dpkg-deb --contents "$deb_path" | awk "{path=\$6; sub(/^\\.\\//,\"\",path); sub(/\\/$/,\"\",path); if (length(path)) print path}" | sort | jq -R -s "split(\"\\n\")[:-1] | map({path:.})" > "$work_root/deb-inventory.json"
+              node scripts/linux/collect-build-baseline.mjs \
+                --executable target/release/glitchpad-host \
+                --output "$work_root/build-baseline.json"
+              rm -rf artifacts/linux
+              node scripts/linux/assemble-package.mjs \
+                --appimage "$appimage_path" --deb "$deb_path" --output artifacts/linux \
+                --source-commit "$SOURCE_COMMIT" --workflow-identity "$WORKFLOW_IDENTITY" \
+                --baseline "$work_root/build-baseline.json" \
+                --appimage-inventory "$work_root/appimage-inventory.json" \
+                --deb-inventory "$work_root/deb-inventory.json"
+              cargo metadata --locked --format-version 1 > artifacts/linux/cargo-metadata.json
+              pnpm list --prod --recursive --json --depth Infinity > artifacts/linux/pnpm-list.json
+              node scripts/generate-linux-sbom.mjs artifacts/linux/cargo-metadata.json artifacts/linux/pnpm-list.json artifacts/linux/glitchpad-linux.cdx.json "$SOURCE_COMMIT"
+              node scripts/check-linux-package.mjs --evidence artifacts/linux/linux-package-manifest.json --artifact-root artifacts/linux
+            '
+
+      - name: Upload non-official Linux candidate
+        uses: actions/upload-artifact@v7
+        with:
+          name: glitchpad-0.1.0-linux-x86_64-non-official-candidate
+          path: artifacts/linux/**
+          if-no-files-found: error
+          retention-days: 14
+
+  clean-environment:
+    name: Clean Ubuntu ${{ matrix.release }} ${{ matrix.package_form }} lifecycle
+    needs: candidate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - release: '22.04'
+            container_target: linux-package
+            package_form: appimage
+            artifact_name: glitchpad-0.1.0-linux-x86_64.AppImage
+          - release: '22.04'
+            container_target: linux-package
+            package_form: deb
+            artifact_name: glitchpad-0.1.0-linux-x86_64.deb
+          - release: '24.04'
+            container_target: linux-lifecycle-24
+            package_form: appimage
+            artifact_name: glitchpad-0.1.0-linux-x86_64.AppImage
+          - release: '24.04'
+            container_target: linux-lifecycle-24
+            package_form: deb
+            artifact_name: glitchpad-0.1.0-linux-x86_64.deb
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Download candidate
+        uses: actions/download-artifact@v8
+        with:
+          name: glitchpad-0.1.0-linux-x86_64-non-official-candidate
+          path: artifacts/linux
+
+      - name: Build clean lifecycle environment
+        run: docker build --target '${{ matrix.container_target }}' --tag glitchpad-linux-lifecycle:local --file scripts/docker/validation.Dockerfile .
+
+      - name: Exercise install, launch, delivery, and removal
+        run: |
+          docker run --rm --volume "$PWD:/workspace" --workdir /workspace glitchpad-linux-lifecycle:local \
+            timeout --signal=KILL 120s xvfb-run -a dbus-run-session -- node scripts/linux/test-package-lifecycle.mjs \
+              --package 'artifacts/linux/${{ matrix.artifact_name }}' \
+              --manifest artifacts/linux/linux-package-manifest.json \
+              --receipt 'clean-ubuntu-${{ matrix.release }}-${{ matrix.package_form }}.json' \
+              --package-form '${{ matrix.package_form }}' \
+              --release '${{ matrix.release }}'
+
+      - name: Upload content-free clean-environment receipt
+        uses: actions/upload-artifact@v7
+        with:
+          name: glitchpad-linux-clean-ubuntu-${{ matrix.release }}-${{ matrix.package_form }}
+          path: clean-ubuntu-${{ matrix.release }}-${{ matrix.package_form }}.json
+          if-no-files-found: error
+          retention-days: 14

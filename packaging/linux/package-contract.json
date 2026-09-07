@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "platform": "linux",
+  "architecture": "x86_64",
+  "candidate_version": "0.1.0",
+  "build_baseline": {
+    "distribution": "ubuntu",
+    "release": "22.04",
+    "architecture": "x86_64",
+    "elf_machine": "Advanced Micro Devices X86-64",
+    "container_target": "linux-package",
+    "maximum_glibc_version": "2.35",
+    "webkitgtk_api": "4.1",
+    "rust_version": "1.96.0",
+    "node_version": "24.11.0",
+    "pnpm_version": "10.28.2",
+    "compiler_family": "Ubuntu 11.4.0",
+    "linker_family": "GNU ld"
+  },
+  "artifacts": [
+    {
+      "kind": "appimage",
+      "name": "glitchpad-0.1.0-linux-x86_64.AppImage"
+    },
+    {
+      "kind": "deb",
+      "name": "glitchpad-0.1.0-linux-x86_64.deb"
+    }
+  ],
+  "desktop_entry": {
+    "id": "com.shruggietech.glitchpad.desktop",
+    "exec_field_code": "%F",
+    "icon": "glitchpad",
+    "terminal": false,
+    "categories": ["Utility", "TextEditor"],
+    "mime_types": [
+      "application/json",
+      "application/toml",
+      "application/x-typescript",
+      "application/x-yaml",
+      "text/css",
+      "text/html",
+      "text/javascript",
+      "text/markdown",
+      "text/plain",
+      "text/rust",
+      "text/vnd.mermaid",
+      "text/x-python"
+    ]
+  },
+  "required_content": {
+    "appimage": [
+      "AppRun",
+      "Glitchpad.desktop",
+      "Glitchpad.png",
+      "usr/bin/glitchpad-host",
+      "usr/lib/Glitchpad/LICENSE",
+      "usr/lib/Glitchpad/NOTICE",
+      "usr/lib/Glitchpad/THIRD_PARTY_NOTICES.txt",
+      "usr/share/mime/packages/glitchpad.xml"
+    ],
+    "deb": [
+      "usr/bin/glitchpad-host",
+      "usr/lib/Glitchpad/LICENSE",
+      "usr/lib/Glitchpad/NOTICE",
+      "usr/lib/Glitchpad/THIRD_PARTY_NOTICES.txt",
+      "usr/share/applications/Glitchpad.desktop",
+      "usr/share/icons/hicolor/128x128/apps/glitchpad-host.png",
+      "usr/share/mime/packages/glitchpad.xml"
+    ]
+  },
+  "dependency_policy": {
+    "debian_package_name": "glitchpad",
+    "debian_architecture": "amd64",
+    "required_debian_families": ["libgtk-3-0", "libwebkit2gtk-4.1-0"],
+    "forbidden_bundled_components": [
+      "chrome",
+      "chromium",
+      "electron",
+      "firefox",
+      "libwebkit2gtk-4.1.so"
+    ]
+  },
+  "size_budget": {
+    "target_bytes": 36700160,
+    "hard_limit_bytes": 62914560
+  },
+  "performance": {
+    "hosted_smoke_startup_hard_limit_ms": 10000
+  },
+  "candidate_trust": {
+    "repository_attestation_status": "not_generated_candidate",
+    "publication_status": "blocked_candidate"
+  },
+  "official": {
+    "authorized_event": "push_tag",
+    "attestation_build_trigger": "push",
+    "tag_pattern": "v0.1.0",
+    "repository": "shruggietech/glitchpad",
+    "required_attestation_status": "verified",
+    "maximum_evidence_age_seconds": 86400,
+    "required_evidence": [
+      "SHA256SUMS",
+      "linux-package-manifest.json",
+      "glitchpad-linux.cdx.json",
+      "provenance.json",
+      "build-baseline.json",
+      "clean-ubuntu-22.04-appimage.json",
+      "clean-ubuntu-22.04-deb.json",
+      "clean-ubuntu-24.04-appimage.json",
+      "clean-ubuntu-24.04-deb.json",
+      "repository-attestation.json"
+    ]
+  }
+}

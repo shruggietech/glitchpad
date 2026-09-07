@@ -1,0 +1,115 @@
+{
+  "version": "0.1.0",
+  "bundle": {
+    "active": true,
+    "targets": ["appimage", "deb"],
+    "category": "Utility",
+    "shortDescription": "Local-first document viewer and editor",
+    "longDescription": "Glitchpad is a local-first viewer and editor for text, Markdown, Mermaid, and source documents.",
+    "license": "Apache-2.0",
+    "licenseFile": "../../LICENSE",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.png"
+    ],
+    "resources": {
+      "../../LICENSE": "LICENSE",
+      "../../NOTICE": "NOTICE",
+      "../../packaging/linux/THIRD_PARTY_NOTICES.txt": "THIRD_PARTY_NOTICES.txt"
+    },
+    "fileAssociations": [
+      {
+        "name": "Glitchpad Markdown",
+        "description": "Markdown document",
+        "ext": ["md", "markdown"],
+        "mimeType": "text/markdown"
+      },
+      {
+        "name": "Glitchpad Mermaid",
+        "description": "Mermaid diagram",
+        "ext": ["mmd", "mermaid"],
+        "mimeType": "text/vnd.mermaid"
+      },
+      {
+        "name": "Glitchpad Text",
+        "description": "Plain text document",
+        "ext": ["txt"],
+        "mimeType": "text/plain"
+      },
+      {
+        "name": "Glitchpad JSON",
+        "description": "JSON source document",
+        "ext": ["json", "jsonc"],
+        "mimeType": "application/json"
+      },
+      {
+        "name": "Glitchpad TOML",
+        "description": "TOML source document",
+        "ext": ["toml"],
+        "mimeType": "application/toml"
+      },
+      {
+        "name": "Glitchpad TypeScript",
+        "description": "TypeScript source document",
+        "ext": ["ts", "tsx"],
+        "mimeType": "application/x-typescript"
+      },
+      {
+        "name": "Glitchpad YAML",
+        "description": "YAML source document",
+        "ext": ["yaml", "yml"],
+        "mimeType": "application/x-yaml"
+      },
+      {
+        "name": "Glitchpad CSS",
+        "description": "CSS source document",
+        "ext": ["css"],
+        "mimeType": "text/css"
+      },
+      {
+        "name": "Glitchpad HTML",
+        "description": "HTML source document",
+        "ext": ["htm", "html"],
+        "mimeType": "text/html"
+      },
+      {
+        "name": "Glitchpad JavaScript",
+        "description": "JavaScript source document",
+        "ext": ["cjs", "js", "jsx", "mjs"],
+        "mimeType": "text/javascript"
+      },
+      {
+        "name": "Glitchpad Rust",
+        "description": "Rust source document",
+        "ext": ["rs"],
+        "mimeType": "text/rust"
+      },
+      {
+        "name": "Glitchpad Python",
+        "description": "Python source document",
+        "ext": ["py"],
+        "mimeType": "text/x-python"
+      }
+    ],
+    "linux": {
+      "appimage": {
+        "bundleMediaFramework": false,
+        "files": {
+          "/usr/share/mime/packages/glitchpad.xml": "../../packaging/linux/glitchpad.xml"
+        }
+      },
+      "deb": {
+        "desktopTemplate": "linux/glitchpad.desktop.hbs",
+        "files": {
+          "/usr/share/mime/packages/glitchpad.xml": "../../packaging/linux/glitchpad.xml"
+        },
+        "postInstallScript": "linux/post-install.sh",
+        "postRemoveScript": "linux/post-remove.sh",
+        "priority": "optional",
+        "section": "utils"
+      }
+    }
+  }
+}

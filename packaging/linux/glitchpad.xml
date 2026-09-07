@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="application/x-typescript">
+    <comment>TypeScript source document</comment>
+    <glob pattern="*.ts" weight="80"/>
+    <glob pattern="*.tsx" weight="80"/>
+  </mime-type>
+  <mime-type type="text/vnd.mermaid">
+    <comment>Mermaid diagram</comment>
+    <glob pattern="*.mmd" weight="80"/>
+    <glob pattern="*.mermaid" weight="80"/>
+  </mime-type>
+</mime-info>

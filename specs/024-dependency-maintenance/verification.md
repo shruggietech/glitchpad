@@ -9,7 +9,7 @@
 | #125 | Espresso Core 3.7.0 | Included with the coherent AndroidX Test suite. |
 | #126 | sysinfo 0.39.6 | Included. |
 | #127 | sha2 0.11.0 | Excluded. This is a non-urgent major API migration with no associated repository advisory. |
-| #128 | npm minor and patch group | Included. |
+| #128 | npm minor and patch group | Partially included. Compatible root and application updates are consolidated. The grouped site updates are held because Fumadocs duplicates the site's main landmark and the proposed Next/Tailwind combination breaks shared brand stylesheet resolution under the workspace layout. |
 | #129 | @types/node 26.4.1 | Excluded. Node 26 types conflict with the repository's Node 24 runtime authority; the site types are aligned to Node 24 instead. |
 | #130 | Testing Library jest-dom 7.0.1 | Included. |
 | #131 | jsdom 30.0.1 | Excluded. Its declared minimum on the Node 24 line is 24.15.0, newer than the pinned 24.11.0 runtime. |

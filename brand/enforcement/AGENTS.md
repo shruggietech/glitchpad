@@ -22,7 +22,7 @@ hex, an `rgb()`, or `bg-slate-900`.
 | `background` | `#0B0C0D` | `#F8F8F6` |
 | `foreground` | `#FFFFFF` | `#0A0A0A` |
 | `card` | `#121416` | `#FFFFFF` |
-| `primary` | `#FFD900` | `#867100` |
+| `primary` | `#FFD900` | `#0B0C0D` |
 | `muted-foreground` | `#9A9A9A` | `#6B6B6B` |
 | `destructive` | `#E9505F` | `#C0293A` |
 | `border` / `input` | `#262626` | `#E5E5E5` |
@@ -33,9 +33,9 @@ hex, an `rgb()`, or `bg-slate-900`.
    fails. The legal foreground is `#000000` at 15.18:1. Use
    `text-primary-foreground` and it is handled.
 2. **The bright accent as text on a light surface.** `#FFD900` measures 1.3:1
-   on `#F8F8F6`. The light block already substitutes `#867100`. Never override it.
+   on `#F8F8F6`. The light block already substitutes `#0B0C0D`. Never override it.
 3. **`#C24000` as text.** It measures 4.03:1 on the dark base. It is a fill.
-   White on it measures 5.21:1.
+   Its legal foreground is `#FFFFFF` at 5.21:1.
 
 ## Spacing and radius
 
@@ -50,11 +50,13 @@ Layout: content 1200px, narrow 720px. Gutters 24px then 48px then 80px. Section 
 ## Type
 
 Space Grotesk for display at 500/700. Geist for body at 400/500. Geist Mono for labels,
-code, and metadata.
+code, and metadata at 400.
 
-**Geist has no 700 and Geist Mono has no bold.** Asking for a weight that does
-not exist makes the renderer synthesise a faux bold, which prints badly and
-forces outlined glyphs into PDFs. In mono, carry emphasis with colour.
+Asking for an undeclared weight makes the renderer synthesise or substitute a face, which prints badly and forces outlined glyphs into PDFs. In mono, carry emphasis with colour.
+
+## Affiliation
+
+This is a ShruggieTech-owned child brand. The only approved ownership endorsement is `A ShruggieTech project`. Keep it outside the logo clear space.
 
 ## Density
 
@@ -77,17 +79,16 @@ install another icon library. If lucide lacks a domain symbol, it goes in
 
 ## Copy
 
-Glitchpad copy is direct, calm, and matter-of-fact. Put the file, task, or
-current state first. Use familiar nouns and verbs. Keep sentences short.
+Glitchpad copy is direct, calm and matter-of-fact. Put the file and the user task first. Use familiar nouns and verbs. Keep
+sentences short.
 
-Headlines name an action a user can take. Supporting copy names the relevant
-file categories or capabilities. Prefer literal product language such as
-"View your files" over slogans, mood, or abstract benefit claims.
+Headlines name something a reader can act on. Prefer literal product
+language such as "View your files." to slogans, mood, or abstract benefit claims.
 
-Describe the interface through what users can see or do. Do not frame file
-viewing as mystery, revelation, transformation, decoding, or discovery. Keep
-the tone useful and literal. Sulfur is a recognition and navigation color. It
-identifies Glitchpad and marks selection, active views, and keyboard focus.
+Do not reach for: mystery and suspense; revelation or transformation metaphors; self-important product claims; language that makes the interface the subject.
+
+Near-black surfaces keep controls visually secondary to file content. Pure sulfur provides identity, focus, and selection; cool slate supplies the fold and subdued states. Muddy and darkened yellows are prohibited.
+
 
 Never build a sentence out of `X, not Y`, or `X over Y`, or
 `rather than merely Z`. It is the clearest tell of machine-written copy.

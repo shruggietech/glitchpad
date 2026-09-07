@@ -1,3 +1,3 @@
 export function Badge({ tone = "neutral", children }) {
-  return <span className={`gp-badge gp-badge--${tone}`}>{children}</span>;
+  return <span className={`gl-badge gl-badge--${tone}`}>{children}</span>;
 }

@@ -6,8 +6,8 @@ Glitchpad is a fast, cross-platform viewer and editor for local files. It opens 
 
 - Glitchpad inspects local files and never executes their contents.
 - The product name is written as Glitchpad in prose and lowercase only in technical identifiers.
-- Sulfur gold carries product identity. The inherited ShruggieTech orange remains reserved for emphasis and warning states.
-- The `800 × 1000` rectangular vector master preserves the calculator-shaped `0.8:1` silhouette. Standalone full and reduced mark PNGs are exported on transparent `1024 × 1024` canvases with equal side padding. Lockups and wordmarks retain their natural aspect ratios.
+- Pure sulfur carries product identity. Muddy and darkened yellow variants are prohibited. The inherited ShruggieTech orange remains reserved for emphasis and warning states.
+- The protected `800 × 1000` rectangular page source is uniformly centered inside a permanent `1000 × 1000` square composition. Full, reduced, lockup, desktop, Android, and store forms all retain that square-based glyph.
 
 ## Positioning
 
@@ -24,10 +24,9 @@ Glitchpad is a fast, cross-platform viewer and editor for local files. It opens 
 
 | Token | Hex | Use |
 | --- | --- | --- |
-| Sulfur Gold | `#FFD900` | Identity, focus, selection, folded corner |
-| Sulfur Deep | `#CBAD00` | Hover and active states on dark surfaces |
-| Sulfur Accessible | `#867100` | Links and identity text on light surfaces |
-| Paper | `#A8A39D` | Full-color document body in the mark |
+| Pure Sulfur | `#FFD900` | Identity, focus, selection, dark-context square, and light-context page |
+| Cool Slate | `#667788` | Fold and subdued identity states |
+| Charcoal | `#0B0C0D` | Dark-context page, light-context square, and accessible light-surface text |
 | ShruggieTech Orange | `#FF5300` | Shared emphasis and warning hue |
 | CTA Orange | `#C24000` | Fill with white foreground |
 | Fault | `#E9505F` | Failure state on dark surfaces |
@@ -37,11 +36,15 @@ Measured color values and legal foreground pairings live in `brand.json` and `VE
 
 ## Logo construction
 
-The full-color mark is one solid paper silhouette with a capital G removed as a continuous negative-space channel. The sulfur corner is the recognition detail. It helps the mark stand out in app lists, tabs, and file association menus.
+The glyph is always a square containing the protected rectangular paper silhouette with a capital G removed as a continuous negative-space channel. Dark mode uses a sulfur square with charcoal paper. Light mode uses a charcoal square with sulfur paper. Both retain the cool-slate folded corner.
 
 | Measurement | Value |
 | --- | ---: |
-| Canvas | 800 × 1000 units |
+| Protected page source canvas | 800 × 1000 units |
+| Composed glyph canvas | 1000 × 1000 units |
+| Square | 876 × 876 units at a 62-unit inset |
+| Square edge | 24 units |
+| Page scale in square | 72% |
 | Paper | 720 × 900 units |
 | G channel | 70 units |
 | G-to-paper inset | 70 units on every side |
@@ -57,14 +60,15 @@ The horizontal banner retains its approved fixed composition. `C` is the cap hei
 | Horizontal | 160 master units | 34 master units | Mark and wordmark ink are optically centered |
 | Stacked | 1.80C | 0.45C | Mark and wordmark center on the wordmark ink width |
 
-Clear space around the mark and every lockup is one `X`, where `X` is the 70-unit G channel on the master mark. Scale `X` with the mark. The supplied SVGs are the canonical compositions.
+The delivered square master keeps 50 units of clear space between its visible edge and the canvas boundary. The protected page retains its 70-unit G channel and internal inset. Scale those relationships with the supplied canonical compositions, and never resize the mark and wordmark independently.
 
-The shipped SVGs contain filled paths and outlined wordmarks. The reduced master removes the two-color fold treatment and uses one sulfur shape around the negative-space G.
+The shipped SVGs compose the permanent square around byte-identical filled page paths and outlined wordmarks. The reduced master removes the fold while retaining the same square, centered page, and negative-space G.
 
 ### Prohibited treatments
 
 - Do not detach the G from the paper into a separate glyph.
-- Keep sulfur gold exclusive to the folded corner in the full-color mark.
+- Keep the square enclosure in every full, reduced, lockup, desktop, Android, and store use.
+- Use the approved dark and light contextual inversion without muddy or darkened yellow substitutes.
 - Do not add fragments, scan lines, glow, bevel, texture, or motion effects.
 - Do not alter the paper dimensions, G thickness, or G inset.
 - Do not combine the Glitchpad and ShruggieTech marks into one lockup.
@@ -90,3 +94,5 @@ Run the scripts from `build/` with the dependencies described in `build/README.m
 ## Parent endorsement
 
 Set `A ShruggieTech project` in Geist Mono, uppercase, with positive tracking. Keep it visually subordinate and outside the product logo clear space.
+
+Names, wordmarks, logos, endorsement lockups, and logo path geometry remain reserved as described in the repository's [brand asset terms](https://raw.githubusercontent.com/shruggietech/shruggie-brand/1681fcd444ff851d5bffc2cf67e23bbcedd753cd/LICENSE-BRAND.md).

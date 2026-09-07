@@ -1,11 +1,13 @@
 # Repository integration
 
-Glitchpad brand canon 1.0.0 was imported from the approved `glitchpad-brand.zip` delivery. Files named in `manifest.json` are governed inputs and must remain byte-for-byte identical unless a newly approved canon replaces the delivery.
+Glitchpad brand 1.1.0 under ShruggieTech canon 1.2.1 was imported from the successful `verified-brand-kits` artifact produced by upstream commit `1681fcd444ff851d5bffc2cf67e23bbcedd753cd` in Build run `34137139742`. That commit also produced the Pages deployment served at `https://brand.shruggie.tech`.
 
-Production surfaces may consume approved files from `logos/`, `favicons/`, `fonts/`, `tokens/`, `components/`, and `nextjs/`. The `concepts/` and `qc/` trees are design history and verification evidence, not production asset sources. Generated reference material under `build/`, `guidelines/`, `specimens/`, and `ui_kits/` may inform implementation but does not override `brand.json`, the token sources, or the approved logo masters.
+The published distribution was checked independently before import. All 181 downloadable logo, favicon, icon, and specimen files exposed below `https://brand.shruggie.tech/glitchpad/downloads/files/` matched the upstream build artifact byte-for-byte. The separately generated seven-page PDF had the same size but nondeterministic bytes across the Build and Pages jobs, so `brand/brand-guide.pdf` retains the manifest-bound Build artifact copy.
 
-The website copies selected canonical assets into `site/public/` so the static export is self-contained. Those copies must be reproducible from this directory and are validated against the canon. The integration intentionally uses `next/font/local` with bundled WOFF2 files instead of `brand/nextjs/fonts.ts`, whose Google-font imports conflict with the canon's no-remote-font requirement.
+One integration correction intentionally differs from the artifact bytes: `brand/README.md` replaces an artifact-layout-relative `../../LICENSE-BRAND.md` target with the immutable upstream URL at the pinned commit so the legal terms remain reachable from this repository. `brand/manifest.json` governs the corrected file bytes.
 
-Run `pnpm check:brand` from the repository root to verify manifest checksums, UTF-8 integrity, font licensing, README banner usage, and forbidden production references. The upstream receipt can be reproduced with `python brand/build/verify.py brand` when Python and its declared dependencies are available.
+Files named in `manifest.json` are immutable governed inputs. `INTEGRATION.md` is the sole project-owned file inside this directory and is intentionally excluded from the upstream manifest. Do not regenerate, optimize, recolor, resize, or edit governed files in place.
 
-To update the brand, replace the complete governed delivery with a separately approved canon, retain its provenance and verification receipt, refresh the selected `site/public/` copies, and review every production integration in the same change. Do not regenerate or edit individual governed files in place.
+The public site copies approved fonts, lockups, the social preview, and web icons from this directory. Desktop packages copy the Windows ICO, macOS ICNS, and approved web raster sizes. Android copies the supplied legacy, adaptive, and monochrome resources into both Tauri icon inputs and the generated Android project. Every mapping is enforced by `scripts/check-brand.mjs` as an exact byte comparison.
+
+Run `pnpm check:brand` for manifest, provenance, encoding, licensing, stale-file, README, site, desktop, and Android integration validation. Run the complete `cargo xtask check` gate before describing the update as verified.

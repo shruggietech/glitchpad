@@ -1,23 +1,26 @@
+@import '../../../brand/fonts/fonts.css';
+@import '../../../brand/tokens/colors.css';
+@import '../../../brand/tokens/typography.css';
+
 :root {
-  font-family:
-    Inter,
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    sans-serif;
-  color: #e8e9ed;
-  background: #101114;
+  font-family: var(--gl-font-body);
+  color: var(--gl-fg);
+  background: var(--gl-bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   --tab-row-height: 40px;
   --command-row-height: 32px;
-  --focus-color: #8ab4ff;
-  --editor-font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  --focus-color: var(--gl-focus);
+  --editor-font-family: var(--gl-font-mono);
   --editor-font-size: 14px;
   --editor-tab-width: 4;
   --editor-white-space: pre-wrap;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--gl-font-display);
 }
 
 * {
@@ -52,7 +55,7 @@ button:focus-visible,
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: #101114;
+  background: var(--gl-bg);
 }
 
 .integrity-banner {
@@ -172,8 +175,8 @@ button:focus-visible,
 }
 
 .tab-button.active {
-  background: #101114;
-  box-shadow: inset 0 2px #8ab4ff;
+  background: var(--gl-bg);
+  box-shadow: inset 0 2px var(--gl-focus);
 }
 
 .active-tab-actions {
@@ -194,7 +197,7 @@ button:focus-visible,
   flex: 0 0 auto;
   border: 1px solid currentColor;
   border-radius: 50%;
-  background: #f3b562;
+  background: var(--gl-warning);
 }
 
 .tab-action {
@@ -318,7 +321,7 @@ button:focus-visible,
   min-height: 0;
   overflow: auto;
   padding: clamp(1rem, 3vw, 2.5rem);
-  background: #101114;
+  background: var(--gl-bg);
 }
 
 .text-editor-shell {
@@ -355,7 +358,7 @@ button:focus-visible,
   min-width: 0;
   min-height: 0;
   overflow: hidden;
-  color: #e8e9ed;
+  color: var(--gl-fg);
 }
 
 .text-editor .cm-editor,
@@ -440,7 +443,7 @@ button:focus-visible,
 .document-content {
   max-width: 80rem;
   margin: 0;
-  color: #e8e9ed;
+  color: var(--gl-fg);
   font:
     400 clamp(0.9rem, 1.4vw, 1rem) / 1.65 ui-monospace,
     'Cascadia Code',
@@ -556,7 +559,7 @@ button:focus-visible,
   padding: 0;
   border: 0;
   background: transparent;
-  color: #82b7ff;
+  color: var(--gl-link);
   text-decoration: underline;
   cursor: pointer;
 }
@@ -569,7 +572,7 @@ button:focus-visible,
 
 .markdown-search-match {
   border-radius: 0.15rem;
-  outline: 2px solid #f3b562;
+  outline: 2px solid var(--gl-focus);
   outline-offset: 2px;
 }
 
@@ -939,14 +942,26 @@ button:focus-visible,
 }
 
 @media (prefers-color-scheme: light) {
-  :root {
-    color: #17181c;
-    background: #f5f5f3;
+  :root:not([data-theme]),
+  :root[data-theme='system'] {
+    --gl-bg: var(--gl-light-surface);
+    --gl-panel: var(--gl-light-panel);
+    --gl-panel-raised: var(--gl-light-panel);
+    --gl-hover: #f0efed;
+    --gl-border: var(--gl-light-line);
+    --gl-fg: var(--gl-light-text);
+    --gl-fg-muted: var(--gl-light-text-muted);
+    --gl-link: var(--gl-accent-accessible);
+    --gl-focus: var(--gl-accent-accessible);
+    --gl-warning: var(--gl-action);
+    --gl-danger: var(--gl-fault-deep);
+    color: var(--gl-fg);
+    background: var(--gl-bg);
   }
 
   .app-shell,
   .document-surface {
-    background: #f5f5f3;
+    background: var(--gl-bg);
   }
 
   .tab-strip-shell,
@@ -961,16 +976,16 @@ button:focus-visible,
   }
 
   .tab-button.active {
-    background: #f5f5f3;
+    background: var(--gl-bg);
   }
 
   .document-content {
-    color: #17181c;
+    color: var(--gl-fg);
   }
 
   .overflow-menu {
     border-color: #b9bdc5;
-    background: #f5f5f3;
+    background: var(--gl-bg);
     box-shadow: 0 0.75rem 2rem #0003;
   }
 
@@ -982,7 +997,7 @@ button:focus-visible,
 
   .resolution-dialog {
     border-color: #b9bdc5;
-    background: #f5f5f3;
+    background: var(--gl-bg);
     box-shadow: 0 1rem 3rem #0004;
   }
 
@@ -1014,13 +1029,24 @@ button:focus-visible,
 }
 
 :root[data-theme='light'] {
-  color: #17181c;
-  background: #f5f5f3;
+  --gl-bg: var(--gl-light-surface);
+  --gl-panel: var(--gl-light-panel);
+  --gl-panel-raised: var(--gl-light-panel);
+  --gl-hover: #f0efed;
+  --gl-border: var(--gl-light-line);
+  --gl-fg: var(--gl-light-text);
+  --gl-fg-muted: var(--gl-light-text-muted);
+  --gl-link: var(--gl-accent-accessible);
+  --gl-focus: var(--gl-accent-accessible);
+  --gl-warning: var(--gl-action);
+  --gl-danger: var(--gl-fault-deep);
+  color: var(--gl-fg);
+  background: var(--gl-bg);
 }
 
 :root[data-theme='light'] .app-shell,
 :root[data-theme='light'] .document-surface {
-  background: #f5f5f3;
+  background: var(--gl-bg);
 }
 
 :root[data-theme='light'] .tab-strip-shell,
@@ -1041,12 +1067,12 @@ button:focus-visible,
 :root[data-theme='light'] .metadata-inspector,
 :root[data-theme='light'] .application-sheet {
   border-color: #b9bdc5;
-  background: #f5f5f3;
+  background: var(--gl-bg);
   box-shadow: 0 0.75rem 2rem #0003;
 }
 
 :root[data-theme='light'] .document-content {
-  color: #17181c;
+  color: var(--gl-fg);
 }
 
 :root[data-theme='light'] .integrity-banner {
@@ -1070,15 +1096,15 @@ button:focus-visible,
 }
 
 :root[data-theme='dark'] {
-  color: #e8e9ed;
-  background: #101114;
+  color: var(--gl-fg);
+  background: var(--gl-bg);
 }
 
 :root[data-theme='dark'] .app-shell,
 :root[data-theme='dark'] .document-surface,
 :root[data-theme='dark'] .diagnostic-preview {
-  color: #e8e9ed;
-  background: #101114;
+  color: var(--gl-fg);
+  background: var(--gl-bg);
 }
 
 :root[data-theme='dark'] .tab-strip-shell,

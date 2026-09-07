@@ -1,13 +1,21 @@
 {
-  "$schema": "../shruggie-brandbuilder/references/canon.schema.json",
+  "$schema": "../../skill/references/canon.schema.json",
   "id": "glitchpad",
   "kind": "sub-brand",
   "title": "Glitchpad",
   "slug": "glitchpad",
-  "version": "1.0.0",
-  "parent": "ShruggieTech",
+  "version": "1.1.0",
+  "showcase_surface": "card",
+  "affiliation": {
+    "ownership": "shruggietech-owned",
+    "showcase": "public",
+    "parent": "ShruggieTech",
+    "inheritance": "shruggietech-house",
+    "endorsement": "shruggietech-project",
+    "service_credit": "none"
+  },
   "homepage": "https://glitchpad.com",
-  "registry_base": "https://glitchpad.com/brand",
+  "registry_base": "https://brand.shruggie.tech/glitchpad/brand",
   "descriptor": "A fast, cross-platform viewer and editor for local files.",
   "functional_descriptor": "Cross-platform file viewer and editor",
   "category": "Developer tool",
@@ -39,13 +47,13 @@
   "assumptions": [
     "Glitchpad inspects files locally and never executes their contents.",
     "The product name is written as Glitchpad in prose and lowercase only in technical identifiers.",
-    "Sulfur gold is the identity accent; inherited orange remains reserved for emphasis and warning states."
+    "Pure sulfur is the identity accent; muddy and darkened yellow variants are prohibited, while inherited orange remains reserved for emphasis and warning states."
   ],
   "accent": {
     "bright": "#FFD900",
-    "deep": "#CBAD00",
-    "accessible": "#867100",
-    "dim": "#A8A39D"
+    "deep": "#667788",
+    "accessible": "#0B0C0D",
+    "dim": "#667788"
   },
   "chart_palette": {
     "dark_target_lightness": 0.62,
@@ -59,6 +67,7 @@
     "hover": "#181A1D"
   },
   "typography": {
+    "mode": "house",
     "families": {
       "display": {
         "name": "Space Grotesk",
@@ -92,6 +101,7 @@
     ]
   },
   "logo": {
+    "source_mode": "constructed",
     "grid": 1000,
     "canvas_width": 800,
     "canvas_height": 1000,
@@ -123,14 +133,31 @@
       "wordmark": 120
     },
     "reduced_below_px": 32,
+    "square_enclosure": {
+      "canvas_size": 1000,
+      "inset": 62,
+      "corner_radius": 142,
+      "stroke_width": 24,
+      "content_scale": 0.72,
+      "frame_role": "frame",
+      "stroke_role": "frame_stroke",
+      "knockout_role": "neutral",
+      "monochrome_knockout": true
+    },
     "role_colors": {
       "color": {
-        "neutral": "#A8A39D",
-        "accent": "#FFD900"
+        "neutral": "#0B0C0D",
+        "accent": "#667788",
+        "frame": "#FFD900",
+        "frame_stroke": "#FFD900",
+        "wordmark": "#F2F5FA"
       },
       "light": {
-        "neutral": "#0A0A0A",
-        "accent": "#867100"
+        "neutral": "#FFD900",
+        "accent": "#667788",
+        "frame": "#0B0C0D",
+        "frame_stroke": "#0B0C0D",
+        "wordmark": "#0A0A0A"
       }
     },
     "paths": {
@@ -147,7 +174,7 @@
       ],
       "reduced": [
         {
-          "role": "accent",
+          "role": "neutral",
           "fill_rule": "evenodd",
           "d": "M130 50H580L760 230V860C760 909.706 719.706 950 670 950H130C80.294 950 40 909.706 40 860V140C40 90.294 80.294 50 130 50ZM510 120H145C125.67 120 110 135.67 110 155V845C110 864.33 125.67 880 145 880H655C674.33 880 690 864.33 690 845V425C690 405.67 674.33 390 655 390H520V460H620V810H180V190H510Z"
         }
@@ -155,10 +182,14 @@
     },
     "prohibitions": [
       "Do not detach the G from the paper into a separate glyph.",
-      "Keep sulfur gold exclusive to the folded corner in the full-color mark.",
+      "Always keep the rectangular paper-and-G construction inside its permanent square enclosure.",
+      "Use the approved contextual inversion: sulfur square on dark surfaces and charcoal square with sulfur paper on light surfaces.",
+      "Never use muddy or darkened yellow variants in the Glitchpad identity.",
       "Do not add fragments, scan lines, glow, bevel, texture, or motion effects.",
-      "Do not alter the 720 by 900 paper, 70-unit G channel, or 70-unit inset."
-    ]
+      "Do not alter the 720 by 900 paper, 70-unit G channel, 70-unit inset, or safe square composition."
+    ],
+    "geometry_provenance": "imported",
+    "geometry_provenance_reason": "The shipped Glitchpad paper-and-G paths predate glyphkit and have no authoritative mk_paths.py source."
   },
   "guide": {
     "idea": "View your files.",
@@ -198,10 +229,10 @@
       "Replacing a dedicated editor or forensic suite"
     ],
     "sharp_edge": "File contents can be sensitive or malformed. Glitchpad reports what it can read and does not determine whether a file is safe.",
-    "logo": "The paper and G share one construction. The G is cut from the page. The sulfur corner makes Glitchpad easy to identify in app lists, tabs, and file association menus.",
-    "palette": "Near-black surfaces keep controls visually secondary to file content. Sulfur gold makes Glitchpad easy to find and marks selected items, active views, and keyboard focus."
+    "logo": "The rectangular paper and G share one protected construction inside a permanent square. On dark surfaces the square is sulfur with a charcoal page; on light surfaces the square is charcoal with a sulfur page. The slate fold stays consistent across both contexts.",
+    "palette": "Near-black surfaces keep controls visually secondary to file content. Pure sulfur provides identity, focus, and selection; cool slate supplies the fold and subdued states. Muddy and darkened yellows are prohibited."
   },
-  "canon": "1.0.0",
+  "canon": "1.2.1",
   "measured": {
     "generated_by": "shruggie-brandbuilder/enrich_brand.py",
     "rule": "Every number here is measured from the hex at generation time. Regenerate rather than edit; verify.py re-derives all of it.",
@@ -212,6 +243,7 @@
       "shruggietech": 56.8,
       "fragcap": 119.5,
       "go-schedule": 157.1,
+      "covarity": 144.4,
       "inherited-orange": 57.9
     }
   },
@@ -231,63 +263,33 @@
       }
     },
     "accent-deep": {
-      "hex": "#CBAD00",
-      "oklch": "oklch(0.7515 0.1548 96.53)",
-      "hue": 96.5,
+      "hex": "#667788",
+      "oklch": "oklch(0.5615 0.0333 248.42)",
+      "hue": 248.4,
       "role": "hover and active",
       "contrast": {
-        "on_dark_base": 8.87,
-        "on_light_base": 2.08
+        "on_dark_base": 4.25,
+        "on_light_base": 4.33
       },
       "legal_foreground_when_used_as_fill": {
-        "color": "#000000",
-        "ratio": 9.52
+        "color": "#FFFFFF",
+        "ratio": 4.61
       }
     },
     "accent-accessible": {
-      "hex": "#867100",
-      "oklch": "oklch(0.5521 0.1136 96.12)",
-      "hue": 96.1,
+      "hex": "#0B0C0D",
+      "oklch": "oklch(0.1536 0.0027 248.00)",
+      "hue": null,
       "role": "the accent on light surfaces",
       "contrast": {
-        "on_dark_base": 4.08,
-        "on_light_base": 4.51
+        "on_dark_base": 1.0,
+        "on_light_base": 18.41
       },
       "legal_foreground_when_used_as_fill": {
         "color": "#FFFFFF",
-        "ratio": 4.8
+        "ratio": 19.58
       },
       "note": "The bright accent measures 1.3:1 on the light base and is never text there."
-    },
-    "black": {
-      "hex": "#000000",
-      "oklch": "oklch(0.0000 0 0)",
-      "hue": null,
-      "role": "dark base surface",
-      "contrast": {
-        "on_dark_base": 1.07,
-        "on_light_base": 19.75
-      },
-      "legal_foreground_when_used_as_fill": {
-        "color": "#FFFFFF",
-        "ratio": 21.0
-      },
-      "note": "inherited verbatim from canon 1.0.0"
-    },
-    "white": {
-      "hex": "#FFFFFF",
-      "oklch": "oklch(1.0000 0 0)",
-      "hue": null,
-      "role": "primary text on dark",
-      "contrast": {
-        "on_dark_base": 19.58,
-        "on_light_base": 1.06
-      },
-      "legal_foreground_when_used_as_fill": {
-        "color": "#000000",
-        "ratio": 21.0
-      },
-      "note": "inherited verbatim from canon 1.0.0"
     },
     "orange": {
       "hex": "#FF5300",
@@ -302,7 +304,7 @@
         "color": "#000000",
         "ratio": 6.49
       },
-      "note": "inherited verbatim from canon 1.0.0"
+      "note": "inherited verbatim from canon 1.2.1"
     },
     "orange-cta": {
       "hex": "#C24000",
@@ -317,7 +319,7 @@
         "color": "#FFFFFF",
         "ratio": 5.21
       },
-      "note": "inherited verbatim from canon 1.0.0"
+      "note": "inherited verbatim from canon 1.2.1"
     },
     "fault": {
       "hex": "#E9505F",
@@ -332,7 +334,7 @@
         "color": "#000000",
         "ratio": 5.78
       },
-      "note": "inherited verbatim from canon 1.0.0"
+      "note": "inherited verbatim from canon 1.2.1"
     },
     "fault-deep": {
       "hex": "#C0293A",
@@ -347,7 +349,7 @@
         "color": "#FFFFFF",
         "ratio": 5.8
       },
-      "note": "inherited verbatim from canon 1.0.0"
+      "note": "inherited verbatim from canon 1.2.1"
     },
     "surface-base": {
       "hex": "#0B0C0D",

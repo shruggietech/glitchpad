@@ -141,7 +141,7 @@ export function verifyReadmeBanner(readme) {
   return problems;
 }
 
-export async function verifyPublicCopy(
+export async function verifyIntegratedCopy(
   canonicalPath,
   integratedPath,
   integratedLabel = integratedPath,
@@ -153,11 +153,13 @@ export async function verifyPublicCopy(
     ]);
     return expected.equals(actual)
       ? []
-      : [`site asset drift: ${integratedLabel}`];
+      : [`integrated asset drift: ${integratedLabel}`];
   } catch {
-    return [`missing site asset copy: ${integratedLabel}`];
+    return [`missing integrated asset copy: ${integratedLabel}`];
   }
 }
+
+export const verifyPublicCopy = verifyIntegratedCopy;
 
 export async function verifyBrand(
   brandRoot = join(repositoryRoot, 'brand'),
@@ -172,11 +174,16 @@ export async function verifyBrand(
 
   if (
     manifest.name !== 'glitchpad-brand-kit' ||
-    manifest.version !== '1.0.0' ||
-    manifest.canon !== '1.0.0'
+    manifest.version !== '1.1.0' ||
+    manifest.canon !== '1.2.1'
   ) {
-    problems.push('brand/manifest.json must identify Glitchpad canon 1.0.0');
+    problems.push(
+      'brand/manifest.json must identify Glitchpad 1.1.0 under canon 1.2.1',
+    );
   }
+
+  const manifestFiles = new Set(manifest.files.map((entry) => entry.path));
+  const allowedProjectFiles = new Set(['INTEGRATION.md', 'manifest.json']);
 
   for (const entry of manifest.files) {
     const path = join(brandRoot, ...entry.path.split('/'));
@@ -195,6 +202,13 @@ export async function verifyBrand(
   }
 
   for (const path of await collectFiles(brandRoot)) {
+    const relativePath = relative(brandRoot, path).replaceAll('\\', '/');
+    if (
+      !manifestFiles.has(relativePath) &&
+      !allowedProjectFiles.has(relativePath)
+    ) {
+      problems.push(`unexpected canonical file: brand/${relativePath}`);
+    }
     if (!textExtensions.has(extname(path).toLowerCase())) continue;
     const source = await readFile(path, 'utf8');
     const name = relative(projectRoot, path).replaceAll('\\', '/');
@@ -225,7 +239,20 @@ export async function verifyBrand(
     : '';
   if (integrations) problems.push(...verifyReadmeBanner(readme));
 
-  const publicCopies = [
+  if (integrations) {
+    const receipt = await readFile(join(brandRoot, 'INTEGRATION.md'), 'utf8');
+    for (const authority of [
+      '1681fcd444ff851d5bffc2cf67e23bbcedd753cd',
+      '34137139742',
+      'https://brand.shruggie.tech',
+    ]) {
+      if (!receipt.includes(authority)) {
+        problems.push(`brand integration receipt is missing ${authority}`);
+      }
+    }
+  }
+
+  const integratedCopies = [
     [
       'fonts/woff2/Geist-Regular.woff2',
       'site/public/fonts/Geist-Regular.woff2',
@@ -264,21 +291,66 @@ export async function verifyBrand(
       'logos/svg/glitchpad-mark-color.svg',
       'site/public/logos/glitchpad-mark-color.svg',
     ],
-    ['favicons/favicon.svg', 'site/public/favicon.svg'],
-    ['favicons/favicon.ico', 'site/public/favicon.ico'],
-    ['favicons/favicon-16x16.png', 'site/public/favicon-16x16.png'],
-    ['favicons/favicon-32x32.png', 'site/public/favicon-32x32.png'],
-    ['favicons/apple-touch-icon.png', 'site/public/apple-touch-icon.png'],
-    ['favicons/site.webmanifest', 'site/public/site.webmanifest'],
+    ['icons/web/favicon.svg', 'site/public/favicon.svg'],
+    ['icons/web/favicon.ico', 'site/public/favicon.ico'],
+    ['icons/web/favicon-16x16.png', 'site/public/favicon-16x16.png'],
+    ['icons/web/favicon-32x32.png', 'site/public/favicon-32x32.png'],
+    ['icons/web/apple-touch-icon.png', 'site/public/apple-touch-icon.png'],
+    ['icons/web/android-chrome-192x192.png', 'site/public/android-chrome-192x192.png'],
+    ['icons/web/android-chrome-512x512.png', 'site/public/android-chrome-512x512.png'],
+    ['icons/web/site.webmanifest', 'site/public/site.webmanifest'],
+    ['icons/web/favicon.svg', 'apps/glitchpad/public/favicon.svg'],
+    ['icons/web/favicon-32x32.png', 'crates/glitchpad-host/icons/32x32.png'],
+    ['icons/web/favicon-128x128.png', 'crates/glitchpad-host/icons/128x128.png'],
+    ['icons/web/favicon-256x256.png', 'crates/glitchpad-host/icons/128x128@2x.png'],
+    ['icons/web/favicon-512x512.png', 'crates/glitchpad-host/icons/icon.png'],
+    ['icons/windows/classic/app.ico', 'crates/glitchpad-host/icons/icon.ico'],
+    ['icons/apple/macos/AppIcon.icns', 'crates/glitchpad-host/icons/icon.icns'],
+    ['icons/android/play-store/google-play-512.png', 'crates/glitchpad-host/icons/android/play-store/google-play-512.png'],
   ];
-  for (const [canonical, integrated] of integrations ? publicCopies : []) {
+
+  const androidResources = [
+    'drawable-nodpi/ic_launcher_foreground.png',
+    'drawable-nodpi/ic_launcher_monochrome.png',
+    'drawable/ic_launcher_background.xml',
+    'mipmap-anydpi-v26/ic_launcher.xml',
+    'mipmap-mdpi/ic_launcher.png',
+    'mipmap-hdpi/ic_launcher.png',
+    'mipmap-xhdpi/ic_launcher.png',
+    'mipmap-xxhdpi/ic_launcher.png',
+    'mipmap-xxxhdpi/ic_launcher.png',
+    'values/ic_launcher_colors.xml',
+  ];
+  for (const resource of androidResources) {
+    integratedCopies.push(
+      [
+        `icons/android/app/src/main/res/${resource}`,
+        `crates/glitchpad-host/icons/android/${resource}`,
+      ],
+      [
+        `icons/android/app/src/main/res/${resource}`,
+        `crates/glitchpad-host/gen/android/app/src/main/res/${resource}`,
+      ],
+    );
+  }
+
+  for (const [canonical, integrated] of integrations ? integratedCopies : []) {
     problems.push(
-      ...(await verifyPublicCopy(
+      ...(await verifyIntegratedCopy(
         join(brandRoot, ...canonical.split('/')),
         join(projectRoot, ...integrated.split('/')),
         integrated,
       )),
     );
+  }
+
+  if (integrations) {
+    try {
+      await stat(join(projectRoot, 'crates/glitchpad-host/icons/foundation-resource.svg'));
+      problems.push('foundation packaging icon must be removed');
+    } catch {
+      // Expected: release packaging consumes only approved brand assets.
+    }
   }
 
   const governed = [join(projectRoot, 'README.md'), join(projectRoot, 'site')];
@@ -315,7 +387,7 @@ if (
     process.exitCode = 1;
   } else {
     console.log(
-      'Brand canon 1.0.0 verified: manifest, encoding, licenses, and governed references are clean.',
+      'Glitchpad brand 1.1.0 / canon 1.2.1 verified: manifest, provenance, integrations, encoding, and licenses are clean.',
     );
   }
 }

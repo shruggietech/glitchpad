@@ -7,7 +7,7 @@
 gradlew text eol=lf
 
 # Approved brand canon is checksum-governed and must survive Git unchanged.
-brand/** -text
+brand/** -text whitespace=-blank-at-eof
 brand/INTEGRATION.md text eol=lf
 
 *.avif binary

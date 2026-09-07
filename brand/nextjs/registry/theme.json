@@ -3,7 +3,7 @@
   "name": "theme",
   "type": "registry:theme",
   "title": "Glitchpad Theme",
-  "description": "Glitchpad design tokens. Dark-first, WCAG AA, ShruggieTech canon compliant.",
+  "description": "Glitchpad design tokens. Dark-first, WCAG AA, and brand-contract compliant.",
   "cssVars": {
     "theme": {
       "radius-sm": "6px",
@@ -11,7 +11,7 @@
       "radius-lg": "10px",
       "radius-xl": "12px",
       "radius-2xl": "16px",
-      "font-display": "var(--font-space-grotesk)"
+      "font-display": "var(--font-display-role)"
     },
     "light": {
       "background": "oklch(0.9786 0.0026 106.45)",
@@ -20,7 +20,7 @@
       "card-foreground": "oklch(0.1448 0 0)",
       "popover": "oklch(1.0000 0 0)",
       "popover-foreground": "oklch(0.1448 0 0)",
-      "primary": "oklch(0.5521 0.1136 96.12)",
+      "primary": "oklch(0.1536 0.0027 248.00)",
       "primary-foreground": "oklch(1.0000 0 0)",
       "secondary": "oklch(0.9523 0.0029 84.56)",
       "secondary-foreground": "oklch(0.1448 0 0)",
@@ -31,21 +31,21 @@
       "destructive": "oklch(0.5308 0.1857 20.87)",
       "border": "oklch(0.9219 0 0)",
       "input": "oklch(0.9219 0 0)",
-      "ring": "oklch(0.5521 0.1136 96.12)",
-      "chart-1": "oklch(0.5521 0.1136 96.12)",
-      "chart-2": "oklch(0.5514 0.1049 44.04)",
-      "chart-3": "oklch(0.5399 0.1041 148.20)",
-      "chart-4": "oklch(0.5524 0.1039 352.52)",
-      "chart-5": "oklch(0.5424 0.0922 200.62)",
+      "ring": "oklch(0.1536 0.0027 248.00)",
+      "chart-1": "oklch(0.3508 0.0032 228.87)",
+      "chart-2": "oklch(0.3504 0.0027 197.03)",
+      "chart-3": "oklch(0.3502 0.0037 308.34)",
+      "chart-4": "oklch(0.3510 0.0022 145.53)",
+      "chart-5": "oklch(0.3508 0.0032 345.38)",
       "sidebar": "oklch(1.0000 0 0)",
       "sidebar-foreground": "oklch(0.1448 0 0)",
-      "sidebar-primary": "oklch(0.5521 0.1136 96.12)",
+      "sidebar-primary": "oklch(0.1536 0.0027 248.00)",
       "sidebar-primary-foreground": "oklch(1.0000 0 0)",
       "sidebar-accent": "oklch(0.9523 0.0029 84.56)",
       "sidebar-accent-foreground": "oklch(0.1448 0 0)",
       "sidebar-border": "oklch(0.9219 0 0)",
-      "sidebar-ring": "oklch(0.5521 0.1136 96.12)",
-      "brand-accent-deep": "oklch(0.7515 0.1548 96.53)",
+      "sidebar-ring": "oklch(0.1536 0.0027 248.00)",
+      "brand-accent-deep": "oklch(0.5615 0.0333 248.42)",
       "brand-emphasis": "oklch(0.5519 0.1759 39.26)",
       "brand-cta": "oklch(0.5519 0.1759 39.26)"
     },
@@ -81,7 +81,7 @@
       "sidebar-accent-foreground": "oklch(1.0000 0 0)",
       "sidebar-border": "oklch(0.2686 0 0)",
       "sidebar-ring": "oklch(0.8907 0.1833 96.19)",
-      "brand-accent-deep": "oklch(0.7515 0.1548 96.53)",
+      "brand-accent-deep": "oklch(0.5615 0.0333 248.42)",
       "brand-emphasis": "oklch(0.6738 0.2190 38.33)",
       "brand-cta": "oklch(0.5519 0.1759 39.26)"
     }

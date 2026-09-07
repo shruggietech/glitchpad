@@ -4,7 +4,7 @@ export function OpenGraphImage({ className }: { className?: string }) {
     <img
       className={className}
       src="/glitchpad-social-preview-1280.png"
-      alt="Glitchpad, a fast file viewer"
+      alt="Glitchpad, Cross-platform file viewer and editor"
     />
   )
 }

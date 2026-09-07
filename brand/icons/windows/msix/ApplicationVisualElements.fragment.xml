@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="utf-8"?>
+<uap:VisualElements xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10" DisplayName="Glitchpad" Description="Glitchpad application" BackgroundColor="#0B0C0D" Square44x44Logo="Assets\Square44x44Logo.png" Square150x150Logo="Assets\Square150x150Logo.png" AppListEntry="default"/>

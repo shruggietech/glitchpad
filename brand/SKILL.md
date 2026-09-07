@@ -19,8 +19,8 @@ Read `README.md`, `brand.json`, and `enforcement/AGENTS.md` before producing Gli
 
 Glitchpad is a fast, cross-platform viewer and editor for local files. Its voice is direct, calm, and matter-of-fact. Lead with the file or the task. Use familiar terms, short sentences, and specific labels. Product headlines should name a user action. Supporting copy should name relevant file categories or capabilities. Keep product language free of mystery, suspense, transformation, and self-important claims.
 
-Use the supplied logo masters without recomposition. The horizontal lockup retains the approved 160-unit mark, 34-unit gap and optical-center alignment. In the stacked lockup, the mark is 1.80 cap heights with a 0.45-cap gap. Never resize the mark and wordmark independently.
+Use the supplied logo masters without recomposition. The permanent square and its safely centered rectangular page are one glyph in every context. The horizontal lockup retains the approved 160-unit mark, 34-unit gap and optical-center alignment. In the stacked lockup, the mark is 1.80 cap heights with a 0.45-cap gap. Never resize the mark and wordmark independently.
 
-Use the semantic tokens and bundled components. Preserve the document/G mark geometry exactly. Sulfur gold is the identity accent. The inherited orange retains its warning and emphasis role.
+Use the semantic tokens and bundled components. Preserve the document/G paths and square composition exactly. Pure sulfur is the identity accent; muddy and darkened yellows are prohibited. The inherited orange retains its warning and emphasis role.
 
 Run `build/verify.py` after any kit change. A nonzero problem count blocks delivery.

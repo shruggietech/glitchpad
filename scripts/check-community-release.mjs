@@ -145,6 +145,36 @@ export function validateTagPackageWorkflows({
   ])
     if (!linuxWorkflow.includes(value))
       throw new Error(`Linux tag lifecycle is incomplete: ${value}`);
+  const assemblyIndex = linuxWorkflow.indexOf(
+    '- name: Assemble final-byte candidate and evidence',
+  );
+  const ownershipIndex = linuxWorkflow.indexOf(
+    'sudo chown --recursive "$(id --user):$(id --group)" artifacts/linux',
+  );
+  const promotionIndex = linuxWorkflow.indexOf(
+    '- name: Promote truthful community evidence',
+  );
+  const probeIndex = linuxWorkflow.indexOf(
+    '- name: Exercise release promotion mutation before merge',
+  );
+  const candidateUploadIndex = linuxWorkflow.indexOf(
+    '- name: Upload governed Linux package',
+  );
+  const promotionCommand =
+    "node scripts/promote-community-package.mjs --platform linux --directory artifacts/linux --source-commit '${{ github.sha }}'";
+  const probeBlock = linuxWorkflow.slice(probeIndex, candidateUploadIndex);
+  if (
+    assemblyIndex < 0 ||
+    ownershipIndex <= assemblyIndex ||
+    probeIndex <= ownershipIndex ||
+    candidateUploadIndex <= probeIndex ||
+    promotionIndex <= candidateUploadIndex ||
+    linuxWorkflow.split(promotionCommand).length - 1 !== 2 ||
+    !probeBlock.includes("if: ${{ !startsWith(github.ref, 'refs/tags/') }}")
+  )
+    throw new Error(
+      'Linux release path must exercise runner-side promotion before merge',
+    );
   return true;
 }
 

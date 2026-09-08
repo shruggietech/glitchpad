@@ -71,8 +71,21 @@ test('requires every tag-only package input and persisted attestation', () => {
       '- name: Inspect raw signed packages\n  env:\n    ANDROID_SIGNING_CERT_SHA256: ${{ secrets.ANDROID_SIGNING_CERT_SHA256 }}\n  run: |',
     macosWorkflow:
       "${{ startsWith(github.ref, 'refs/tags/') && '--official' || '' }}",
-    linuxWorkflow:
-      "id: attest\n${{ steps.attest.outputs.bundle-path }}\nartifacts/linux/repository-attestation.json\n${{ startsWith(github.ref, 'refs/tags/') && '--official' || '' }}",
+    linuxWorkflow: `
+- name: Assemble final-byte candidate and evidence
+sudo chown --recursive "$(id --user):$(id --group)" artifacts/linux
+- name: Exercise release promotion mutation before merge
+if: \${{ !startsWith(github.ref, 'refs/tags/') }}
+node scripts/promote-community-package.mjs --platform linux --directory artifacts/linux --source-commit '\${{ github.sha }}'
+- name: Upload governed Linux package
+if: \${{ !startsWith(github.ref, 'refs/tags/') }}
+- name: Promote truthful community evidence
+node scripts/promote-community-package.mjs --platform linux --directory artifacts/linux --source-commit '\${{ github.sha }}'
+id: attest
+\${{ steps.attest.outputs.bundle-path }}
+artifacts/linux/repository-attestation.json
+\${{ startsWith(github.ref, 'refs/tags/') && '--official' || '' }}
+`,
   };
   assert.equal(validateTagPackageWorkflows(workflows), true);
   assert.throws(
@@ -82,6 +95,39 @@ test('requires every tag-only package input and persisted attestation', () => {
   assert.throws(
     () => validateTagPackageWorkflows({ ...workflows, linuxWorkflow: '' }),
     /Linux tag lifecycle/u,
+  );
+  assert.throws(
+    () =>
+      validateTagPackageWorkflows({
+        ...workflows,
+        linuxWorkflow: workflows.linuxWorkflow.replace(
+          'sudo chown --recursive "$(id --user):$(id --group)" artifacts/linux',
+          '',
+        ),
+      }),
+    /exercise runner-side promotion/u,
+  );
+  assert.throws(
+    () =>
+      validateTagPackageWorkflows({
+        ...workflows,
+        linuxWorkflow: workflows.linuxWorkflow.replace(
+          '- name: Exercise release promotion mutation before merge',
+          '- name: Candidate-only shortcut',
+        ),
+      }),
+    /exercise runner-side promotion/u,
+  );
+  assert.throws(
+    () =>
+      validateTagPackageWorkflows({
+        ...workflows,
+        linuxWorkflow: workflows.linuxWorkflow.replace(
+          "if: ${{ !startsWith(github.ref, 'refs/tags/') }}",
+          '',
+        ),
+      }),
+    /exercise runner-side promotion/u,
   );
 });
 

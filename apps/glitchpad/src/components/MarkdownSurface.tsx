@@ -327,6 +327,8 @@ const initialMarkdownState = (session: ShellSession): MarkdownDocumentState => {
     eligibility,
     render_revision: null,
     render_status: eligibility === 'full' ? 'idle' : 'limited',
+    printable: false,
+    outline_count: 0,
     source_selection: null,
   };
 };
@@ -405,6 +407,8 @@ export const MarkdownSurface = forwardRef<
         eligibility,
         render_revision: null,
         render_status: 'limited',
+        printable: false,
+        outline_count: 0,
         source_selection: null,
       });
       return;
@@ -427,6 +431,8 @@ export const MarkdownSurface = forwardRef<
           eligibility,
           render_revision: next.source_revision,
           render_status: nextStatus,
+          printable: Boolean(next.tree),
+          outline_count: next.outline.length,
           source_selection: selection
             ? { from: selection.start_offset, to: selection.end_offset }
             : null,
@@ -498,6 +504,8 @@ export const MarkdownSurface = forwardRef<
       eligibility,
       render_revision: result?.source_revision ?? null,
       render_status: status,
+      printable: Boolean(result?.tree),
+      outline_count: result?.outline.length ?? 0,
       source_selection: nextSelection
         ? { from: nextSelection.start_offset, to: nextSelection.end_offset }
         : null,

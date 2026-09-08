@@ -34,6 +34,8 @@ const markdownSession = (content: string) => ({
     eligibility: 'full' as const,
     render_revision: null,
     render_status: 'idle' as const,
+    printable: false,
+    outline_count: 0,
     source_selection: null,
   },
 });

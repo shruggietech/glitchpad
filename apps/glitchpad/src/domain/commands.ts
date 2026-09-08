@@ -59,8 +59,8 @@ export const commandSetFor = (session: ShellSession | null): CommandDescriptor[]
     [canToggleSource, 'edit', documentMode === 'source' ? 'Preview' : canEditSource ? 'Edit source' : 'View source'],
     [renderer.save && source.write, 'save', 'Save', 'Ctrl+S'],
     [renderer.inspect_metadata && source.metadata, 'metadata', 'File information'],
-    [Boolean(session.markdown_document && documentMode === 'rendered'), 'outline', 'Outline'],
-    [Boolean(session.markdown_document), 'print', 'Print', 'Ctrl+P'],
+    [Boolean(session.markdown_document && documentMode === 'rendered' && session.markdown_document.outline_count > 0), 'outline', 'Outline'],
+    [Boolean(session.markdown_document?.printable), 'print', 'Print', 'Ctrl+P'],
     [renderer.navigate, 'previous_page', 'Previous page', 'PageUp'],
     [renderer.navigate, 'next_page', 'Next page', 'PageDown'],
   ];

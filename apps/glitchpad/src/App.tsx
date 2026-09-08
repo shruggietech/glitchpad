@@ -622,7 +622,7 @@ export function App({ sessions = [], recoveryGateway, externalLinkGateway, local
   return (
     <main className="app-shell" data-performance-ready="true" onKeyDown={handleShellKey}>
       <TabStrip state={state} dispatch={dispatch} />
-      {activeSession && (
+      {activeSession && applicationPanel === 'closed' && !inspectorOpen && (
         <ApplicationMenu
           commands={commands}
           canOpen={Boolean(selectedDesktopDeliveryGateway)}

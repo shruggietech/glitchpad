@@ -419,16 +419,16 @@ describe('document foundation shell', () => {
     expect(screen.getByRole('status')).toHaveTextContent(/save.*draft\.md/i);
   });
 
-  it('opens one shell-owned inspector, retargets it with the active tab, and restores opener focus', async () => {
+  it('opens one shell-owned inspector, retargets it with the active tab, and restores active-tab focus', async () => {
     render(<App sessions={initialSessions} />);
-    const opener = screen.getByRole('button', { name: 'Menu' });
     invokeMenu('File information');
     expect(screen.getByRole('complementary', { name: 'File information' })).toHaveTextContent('welcome.md');
+    expect(screen.queryByRole('button', { name: 'Menu' })).not.toBeInTheDocument();
     expect(screen.getByRole('tabpanel')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('tab', { name: /diagram\.mmd/iu }));
     expect(screen.getByRole('complementary', { name: 'File information' })).toHaveTextContent('diagram.mmd');
     fireEvent.click(screen.getByRole('button', { name: 'Close file information' }));
-    await waitFor(() => expect(opener).toHaveFocus());
+    await waitFor(() => expect(screen.getByRole('tab', { name: /diagram\.mmd/iu })).toHaveFocus());
     expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
   });
 
@@ -607,6 +607,7 @@ describe('document foundation shell', () => {
     render(<App sessions={[initialSessions[2]]} persistenceGateway={gateway} />);
     invokeMenu('Preferences');
     expect(screen.getByRole('complementary', { name: 'Preferences' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Menu' })).not.toBeInTheDocument();
     expect(screen.getByRole('region', { name: 'notes.txt' })).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('Theme'), {
       target: { value: 'dark' },
@@ -614,6 +615,8 @@ describe('document foundation shell', () => {
     await waitFor(() => expect(gateway.persistPreferences).toHaveBeenCalledWith(expect.objectContaining({ theme: 'dark' })), { timeout: 1_000 });
     fireEvent.click(screen.getByRole('button', { name: 'Reset preferences' }));
     await waitFor(() => expect(gateway.reset).toHaveBeenCalledWith('preferences'));
+    fireEvent.click(screen.getByRole('button', { name: 'Close preferences' }));
+    expect(screen.getByRole('button', { name: 'Menu' })).toBeInTheDocument();
   });
 
   it('previews the exact redacted diagnostic bundle before explicit export', async () => {
@@ -622,6 +625,7 @@ describe('document foundation shell', () => {
     render(<App sessions={[initialSessions[2]]} persistenceGateway={gateway} diagnosticExportGateway={exporter} />);
     invokeMenu('Diagnostics');
     expect(await screen.findByText(/"generated_unix_ms": 42/u)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Menu' })).not.toBeInTheDocument();
     expect(exporter.export).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Export previewed bundle' }));
     expect(exporter.export).toHaveBeenCalledWith(expect.objectContaining({ generated_unix_ms: 42 }));
@@ -662,8 +666,7 @@ describe('document foundation shell', () => {
 
     await waitFor(() => expect(screen.getByRole('tab', { name: /diagram\.mmd/iu })).toHaveAttribute('aria-selected', 'true'));
     expect(screen.getByRole('complementary', { name: 'Preferences' })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
-    expect(screen.queryByRole('menuitem', { name: 'Preview' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Menu' })).not.toBeInTheDocument();
   });
 
   it('invokes Android restoration before matching a loaded native projection', async () => {

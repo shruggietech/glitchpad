@@ -15,8 +15,14 @@ export function TabStrip({ state, dispatch }: TabStripProps) {
 
   useEffect(() => {
     if (state.activeId) {
+      const sessionCountChanged = previousCount.current !== state.sessions.length;
+      const focusWasLost = !document.activeElement || document.activeElement === document.body;
       const focusTarget =
-        previousCount.current >= 2 && state.sessions.length < 2 ? `panel-${state.activeId}` : previousActive.current !== state.activeId ? `tab-${state.activeId}` : null;
+        previousCount.current >= 2 && state.sessions.length < 2
+          ? `panel-${state.activeId}`
+          : previousActive.current !== state.activeId || (sessionCountChanged && focusWasLost)
+            ? `tab-${state.activeId}`
+            : null;
       if (focusTarget) document.getElementById(focusTarget)?.focus();
     }
     previousActive.current = state.activeId;

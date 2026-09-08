@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { initialSessions } from '../test/fixtures';
@@ -42,5 +42,23 @@ describe('TabStrip', () => {
       </>,
     );
     await waitFor(() => expect(screen.getByText('Remaining document')).toHaveFocus());
+  });
+
+  it('returns focus to the active tab after a focused inactive close control disappears', async () => {
+    const dispatch = vi.fn();
+    const { rerender } = render(<TabStrip state={createTabState(initialSessions.slice(0, 3))} dispatch={dispatch} />);
+    screen.getByRole('button', { name: 'Close diagram.mmd' }).focus();
+    rerender(<TabStrip state={createTabState([initialSessions[0], initialSessions[2]])} dispatch={dispatch} />);
+    await waitFor(() => expect(screen.getByRole('tab', { name: /welcome\.md/iu })).toHaveFocus());
+  });
+
+  it('returns focus to the active tab after a focused overflow close control disappears', async () => {
+    const dispatch = vi.fn();
+    const state = { ...createTabState(initialSessions.slice(0, 6)), overflowOpen: true };
+    const { rerender } = render(<TabStrip state={state} dispatch={dispatch} />);
+    const overflow = screen.getByRole('menu', { name: 'Overflow documents' });
+    within(overflow).getByRole('menuitem', { name: /Close/iu }).focus();
+    rerender(<TabStrip state={createTabState(initialSessions.slice(0, 5))} dispatch={dispatch} />);
+    await waitFor(() => expect(screen.getByRole('tab', { name: /welcome\.md/iu })).toHaveFocus());
   });
 });

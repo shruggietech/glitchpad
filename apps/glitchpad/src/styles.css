@@ -651,6 +651,10 @@ button:focus-visible,
   transform: translateX(-50%);
 }
 
+.app-shell:has(.tab-strip-shell) .delivery-error {
+  top: calc(var(--tab-row-height) + 0.75rem);
+}
+
 .markdown-surface {
   display: grid;
   min-width: 0;

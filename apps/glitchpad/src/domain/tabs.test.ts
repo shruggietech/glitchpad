@@ -238,6 +238,8 @@ describe('tab state', () => {
       eligibility: 'full' as const,
       render_revision: 1,
       render_status: 'ready' as const,
+      printable: true,
+      outline_count: 1,
       source_selection: { from: 0, to: 4 },
     };
     const updated = tabReducer(initial, {

@@ -41,7 +41,7 @@ const makePerformanceSession = (
     revision: 1,
     content,
     text_document: textDocument,
-    markdown_document: renderer === 'Markdown' ? { mode: 'rendered', eligibility, render_revision: null, render_status: 'idle', source_selection: null } : null,
+    markdown_document: renderer === 'Markdown' ? { mode: 'rendered', eligibility, render_revision: null, render_status: 'idle', printable: false, outline_count: 0, source_selection: null } : null,
     mermaid_document: renderer === 'Mermaid' ? { mode: 'rendered', render_revision: null, render_status: 'idle', preview_stale: false, viewport: initialMermaidViewport() } : null,
   };
 };

@@ -78,6 +78,7 @@ sudo chown --recursive "$(id --user):$(id --group)" artifacts/linux
 if: \${{ !startsWith(github.ref, 'refs/tags/') }}
 node scripts/promote-community-package.mjs --platform linux --directory artifacts/linux --source-commit '\${{ github.sha }}'
 - name: Upload governed Linux package
+if: \${{ !startsWith(github.ref, 'refs/tags/') }}
 - name: Promote truthful community evidence
 node scripts/promote-community-package.mjs --platform linux --directory artifacts/linux --source-commit '\${{ github.sha }}'
 id: attest
@@ -113,6 +114,17 @@ artifacts/linux/repository-attestation.json
         linuxWorkflow: workflows.linuxWorkflow.replace(
           '- name: Exercise release promotion mutation before merge',
           '- name: Candidate-only shortcut',
+        ),
+      }),
+    /exercise runner-side promotion/u,
+  );
+  assert.throws(
+    () =>
+      validateTagPackageWorkflows({
+        ...workflows,
+        linuxWorkflow: workflows.linuxWorkflow.replace(
+          "if: ${{ !startsWith(github.ref, 'refs/tags/') }}",
+          '',
         ),
       }),
     /exercise runner-side promotion/u,

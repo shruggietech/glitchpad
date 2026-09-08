@@ -162,6 +162,7 @@ export function validateTagPackageWorkflows({
   );
   const promotionCommand =
     "node scripts/promote-community-package.mjs --platform linux --directory artifacts/linux --source-commit '${{ github.sha }}'";
+  const probeBlock = linuxWorkflow.slice(probeIndex, candidateUploadIndex);
   if (
     assemblyIndex < 0 ||
     ownershipIndex <= assemblyIndex ||
@@ -169,7 +170,7 @@ export function validateTagPackageWorkflows({
     candidateUploadIndex <= probeIndex ||
     promotionIndex <= candidateUploadIndex ||
     linuxWorkflow.split(promotionCommand).length - 1 !== 2 ||
-    !linuxWorkflow.includes("if: ${{ !startsWith(github.ref, 'refs/tags/') }}")
+    !probeBlock.includes("if: ${{ !startsWith(github.ref, 'refs/tags/') }}")
   )
     throw new Error(
       'Linux release path must exercise runner-side promotion before merge',

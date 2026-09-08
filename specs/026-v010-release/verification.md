@@ -30,6 +30,8 @@ The second owner-authorized tag attempt passed release preparation but exposed a
 
 The ownership correction alone would prevent the observed failure but would leave the underlying coverage gap intact. Non-tag Linux CI now runs the exact release-promotion command against the actual container-produced artifact directory, proves the mutation succeeded, and restores non-official candidate evidence before upload. Static release-policy coverage requires this probe to run after ownership restoration and before candidate upload, and requires the probe and tag path to use the same command.
 
+Second-round review identified that the initial static assertion could accept the candidate-upload step's identical non-tag guard if the promotion probe guard were removed. The validator now scopes the guard requirement to the probe block, with a regression fixture that preserves the upload guard while removing only the probe guard.
+
 ## Publication boundary
 
 No `v0.1.0` tag or GitHub release currently exists. Stable Android authority is configured, manual readiness passed on current `main` in run `34166727857`, and the owner authorized publication. After this remediation is reviewed and merged, the operator may repeat the exact tag ritual in `docs/releases/v0.1.0-operator-runbook.md`.

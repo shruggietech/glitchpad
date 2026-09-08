@@ -343,7 +343,6 @@ export const MarkdownSurface = forwardRef<
     rendererClient,
     externalLinkGateway = unavailableMarkdownExternalLinkGateway,
     localAssetGateway = unavailableMarkdownLocalAssetGateway,
-    onOpenMetadata,
     onMetadataContribution,
   },
   handleRef,
@@ -385,10 +384,6 @@ export const MarkdownSurface = forwardRef<
   const onMarkdownChangeRef = useRef(onMarkdownChange);
   const textDocument = session.text_document!;
   const eligibility = markdownEligibility(textDocument.source_bytes);
-  const canModify =
-    session.renderer.capabilities.edit &&
-    (session.source.capabilities.write || session.integrity === 'recovery_only');
-
   modeRef.current = mode;
   sourceSelectionRef.current = sourceSelection;
   onMarkdownChangeRef.current = onMarkdownChange;
@@ -534,6 +529,14 @@ export const MarkdownSurface = forwardRef<
 
   useImperativeHandle(handleRef, () => ({
     invoke(command: CommandId) {
+      if (command === 'outline') {
+        setOutlineOpen((open) => !open);
+        return true;
+      }
+      if (command === 'print') {
+        window.print();
+        return true;
+      }
       if (mode === 'source') {
         if (command === 'edit' && eligibility === 'full') {
           publishMode('rendered');
@@ -616,24 +619,7 @@ export const MarkdownSurface = forwardRef<
   if (mode === 'source' || eligibility !== 'full') {
     return (
       <div className="markdown-surface markdown-source-mode">
-        <div className="markdown-controls" aria-label="Markdown controls">
-          <button
-            type="button"
-            onClick={() => publishMode('rendered')}
-            disabled={eligibility !== 'full'}
-          >
-            Preview
-          </button>
-          <button type="button" onClick={() => window.print()} disabled={!result?.tree}>
-            Print
-          </button>
-          {session.renderer.capabilities.inspect_metadata && session.source.capabilities.metadata && (
-            <button type="button" onClick={(event) => onOpenMetadata?.(event.currentTarget)}>File information</button>
-          )}
-          {eligibility !== 'full' && (
-            <span role="status">Live preview is unavailable above 16 MiB.</span>
-          )}
-        </div>
+        {eligibility !== 'full' && <span className="visually-hidden" role="status">Live preview is unavailable above 16 MiB.</span>}
         <div className="markdown-source-editor">
           <TextEditorSurface
             ref={editorRef}
@@ -653,39 +639,17 @@ export const MarkdownSurface = forwardRef<
 
   return (
     <div className="markdown-surface">
-      <div className="markdown-controls" aria-label="Markdown controls">
-        <button type="button" onClick={enterSourceMode}>
-          {canModify ? 'Edit' : 'View source'}
-        </button>
-        <button
-          type="button"
-          aria-expanded={outlineOpen}
-          onClick={() => setOutlineOpen((open) => !open)}
-          disabled={!result?.outline.length}
-        >
-          Outline
-        </button>
-        <button type="button" onClick={() => setSearchOpen((open) => !open)}>
-          Search
-        </button>
-        <button type="button" onClick={() => window.print()} disabled={!result?.tree}>
-          Print
-        </button>
-        {session.renderer.capabilities.inspect_metadata && session.source.capabilities.metadata && (
-          <button type="button" onClick={(event) => onOpenMetadata?.(event.currentTarget)}>File information</button>
-        )}
-        <span className="markdown-render-status" aria-live="polite">
-          {status === 'scheduled' || status === 'rendering'
-            ? 'Rendering preview'
-            : status === 'ready'
-              ? 'Preview current'
-              : status === 'empty'
-                ? 'Empty document'
-                : status === 'failed'
-                  ? 'Preview failed safely'
-                  : status}
-        </span>
-      </div>
+      <span className="visually-hidden" aria-live="polite">
+        {status === 'scheduled' || status === 'rendering'
+          ? 'Rendering preview'
+          : status === 'ready'
+            ? 'Preview current'
+            : status === 'empty'
+              ? 'Empty document'
+              : status === 'failed'
+                ? 'Preview failed safely'
+                : status}
+      </span>
       {outlineOpen && result && (
         <nav className="markdown-outline" aria-label="Document outline">
           <ol>

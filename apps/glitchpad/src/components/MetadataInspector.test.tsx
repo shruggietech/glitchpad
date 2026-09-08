@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import axe from 'axe-core';
 import { describe, expect, it, vi } from 'vitest';
 
-import { initialSessions } from '../App';
+import { initialSessions } from '../test/fixtures';
 import { MemoryClipboardGateway } from '../domain/metadata-gateway';
 import {
   projectSessionMetadata,

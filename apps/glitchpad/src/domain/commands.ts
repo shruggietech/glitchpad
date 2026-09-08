@@ -17,6 +17,8 @@ export type CommandId =
   | 'edit'
   | 'save'
   | 'metadata'
+  | 'outline'
+  | 'print'
   | 'previous_page'
   | 'next_page';
 
@@ -43,6 +45,11 @@ export const commandSetFor = (
     renderer.edit &&
     (source.write || session.integrity === 'recovery_only');
   const documentMode = session.markdown_document?.mode ?? session.mermaid_document?.mode;
+  const canToggleSource = Boolean(
+    (session.markdown_document &&
+      (documentMode === 'rendered' || session.markdown_document.eligibility !== 'source_only')) ||
+      session.mermaid_document,
+  );
   const definitions: Array<[boolean, CommandId, string, string?]> = [
     [renderer.copy, 'copy', 'Copy', 'Ctrl+C'],
     [renderer.search, 'search', 'Search', 'Ctrl+F'],
@@ -56,13 +63,19 @@ export const commandSetFor = (
     [Boolean(session.text_document && session.text_document.mode === 'editable'), 'toggle_wrap', 'Toggle wrap'],
     [renderer.zoom, 'zoom_out', 'Zoom out', 'Ctrl+-'],
     [renderer.zoom, 'zoom_in', 'Zoom in', 'Ctrl++'],
-    [canEditSource && session.markdown_document?.eligibility !== 'source_only', 'edit', documentMode === 'source' ? 'Preview' : 'Edit'],
+    [
+      canToggleSource,
+      'edit',
+      documentMode === 'source' ? 'Preview' : canEditSource ? 'Edit source' : 'View source',
+    ],
     [renderer.save && source.write, 'save', 'Save', 'Ctrl+S'],
     [
       renderer.inspect_metadata && source.metadata,
       'metadata',
       'File information',
     ],
+    [Boolean(session.markdown_document), 'outline', 'Outline'],
+    [Boolean(session.markdown_document), 'print', 'Print', 'Ctrl+P'],
     [renderer.navigate, 'previous_page', 'Previous page', 'PageUp'],
     [renderer.navigate, 'next_page', 'Next page', 'PageDown'],
   ];

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { markdownEligibility } from './markdown-contract';
 import { commandSetFor } from './commands';
-import { initialSessions } from '../App';
+import { initialSessions } from '../test/fixtures';
 
 describe('Markdown renderer conformance', () => {
   it.each([
@@ -20,7 +20,7 @@ describe('Markdown renderer conformance', () => {
     const readOnly = commandSetFor(initialSessions[0]).map(({ id }) => id);
     const writable = commandSetFor(initialSessions[3]).map(({ id }) => id);
     expect(readOnly).toEqual(expect.arrayContaining(['copy', 'search', 'find_next', 'find_previous']));
-    expect(readOnly).not.toContain('edit');
+    expect(readOnly).toContain('edit');
     expect(writable).toEqual(expect.arrayContaining(['edit', 'undo', 'redo', 'save']));
   });
 });

@@ -2,7 +2,8 @@ import axe from 'axe-core';
 import { EditorView } from '@codemirror/view';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 
-import { App, initialSessions } from './App';
+import { App } from './App';
+import { initialSessions } from './test/fixtures';
 import { RecoveryCandidateResolution } from './components/RecoveryResolution';
 import type { RecoveryGateway } from './domain/recovery-gateway';
 import type { MetadataGateway } from './domain/metadata-gateway';
@@ -29,6 +30,12 @@ const saveReceipt = {
   durability: 'atomic_file_and_directory' as const,
 };
 
+const invokeMenu = (name: string | RegExp) => {
+  fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
+  const matcher = typeof name === 'string' ? new RegExp(`^${name}`, 'u') : name;
+  fireEvent.click(within(screen.getByRole('menu', { name: 'Glitchpad menu' })).getByRole('menuitem', { name: matcher }));
+};
+
 describe('document foundation shell', () => {
   const persistenceGateway = (overrides: Partial<PersistenceGateway> = {}): PersistenceGateway => ({
     loadPreferences: vi.fn().mockResolvedValue({ status: 'loaded', value: defaultPreferences(), warning_code: null }),
@@ -39,6 +46,28 @@ describe('document foundation shell', () => {
     previewDiagnostics: vi.fn().mockResolvedValue({ status: 'loaded', value: { schema_version: 1, generated_unix_ms: 42, environment: { product_version: '0.0.0', specification_version: '0.0.0', platform: 'unknown', architecture: 'unknown', webview_version: null, core_version: '0.0.0', build_commit: null }, events: [] }, warning_code: null }),
     reset: vi.fn().mockResolvedValue(false),
     ...overrides,
+  });
+
+  it('starts with no synthetic documents in the production shell', () => {
+    render(<App />);
+    expect(within(screen.getByRole('region', { name: 'Document surface' })).getByText('No document is open')).toBeVisible();
+    expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
+    for (const fixture of ['welcome.md', 'draft.md', 'notes.txt'])
+      expect(screen.queryByText(fixture)).not.toBeInTheDocument();
+  });
+
+  it('shows native delivery failures as an actionable visible alert', async () => {
+    const gateway: DesktopDeliveryGateway = {
+      choose: vi.fn().mockResolvedValue([]),
+      drain: vi.fn().mockResolvedValue([{ sequence: 1, kind: 'association', status: 'rejected', source: null, error: { summary: 'The selected file cannot be read.', retryable: true } }]),
+      materialize: vi.fn().mockResolvedValue(null),
+      close: vi.fn().mockResolvedValue(undefined),
+      save: vi.fn().mockResolvedValue(false),
+      saveAs: vi.fn().mockResolvedValue(false),
+      subscribe: vi.fn().mockResolvedValue(() => undefined),
+    };
+    render(<App sessions={[]} desktopDeliveryGateway={gateway} />);
+    expect(await screen.findByRole('alert')).toHaveTextContent('The selected file cannot be read.');
   });
 
   it('opens native desktop deliveries through the compact application commands', async () => {
@@ -65,16 +94,16 @@ describe('document foundation shell', () => {
     };
     render(<App sessions={[]} desktopDeliveryGateway={gateway} />);
     await waitFor(() => expect(subscriptionOrder).toEqual(['subscribe', 'drain']));
-    fireEvent.click(screen.getByRole('button', { name: 'Open' }));
-    await screen.findByRole('tab', { name: /notes\.txt/i });
+    fireEvent.click(screen.getByRole('button', { name: /Open file/i }));
+    await screen.findByRole('region', { name: 'notes.txt' });
     expect(choose).toHaveBeenCalledOnce();
     expect(materialize).toHaveBeenCalledOnce();
     const textbox = await screen.findByRole('textbox', { name: 'notes.txt text editor' });
     act(() => EditorView.findFromDOM(textbox)?.dispatch({ changes: { from: 0, insert: 'x' } }));
-    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    invokeMenu('Save');
     await waitFor(() => expect(save).toHaveBeenCalledWith(expect.objectContaining({ source_id: 'source', revision: 2 })));
     await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(/saved durably/i));
-    fireEvent.click(screen.getByRole('button', { name: /close notes\.txt/i }));
+    fireEvent.keyDown(screen.getByRole('main'), { key: 'w', ctrlKey: true });
     await waitFor(() => expect(close).toHaveBeenCalledWith('source'));
   });
 
@@ -84,13 +113,13 @@ describe('document foundation shell', () => {
     const view = EditorView.findFromDOM(textbox);
     expect(view).not.toBeNull();
     act(() => view?.dispatch({ changes: { from: 0, to: 1, insert: 'a' } }));
-    expect(screen.getByRole('tab', { name: /unsaved changes/i })).toBeInTheDocument();
-    expect(screen.getByRole('tabpanel')).toHaveTextContent('a small text fixture');
-    expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
+    expect(screen.getByRole('region', { name: 'notes.txt' })).toHaveTextContent('a small text fixture');
+    fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
+    expect(screen.getByRole('menuitem', { name: /^Save/u })).toBeEnabled();
   });
 
   it('renders semantic compact tabs and an active document surface', () => {
-    render(<App />);
+    render(<App sessions={initialSessions} />);
 
     expect(
       screen.getByRole('tablist', { name: 'Open documents' }),
@@ -109,7 +138,7 @@ describe('document foundation shell', () => {
   });
 
   it('supports automatic keyboard activation, reorder, cycling, close focus, and overflow', () => {
-    render(<App />);
+    render(<App sessions={initialSessions} />);
     const first = screen.getByRole('tab', { name: /welcome\.md/i });
     first.focus();
     fireEvent.keyDown(first, { key: 'ArrowRight' });
@@ -142,7 +171,7 @@ describe('document foundation shell', () => {
     );
     const menu = screen.getByRole('menu', { name: 'Overflow documents' });
     fireEvent.click(
-      within(menu).getByRole('menuitem', { name: /welcome\.md/i }),
+      within(menu).getByRole('menuitem', { name: /^welcome\.md$/iu }),
     );
     expect(
       screen.getByRole('tab', { name: /welcome\.md/i }),
@@ -151,16 +180,16 @@ describe('document foundation shell', () => {
 
   it('cancels dirty close without changing content and returns keyboard focus', () => {
     render(<App sessions={[initialSessions[3]]} />);
-    const draft = screen.getByRole('tab', { name: /draft\.md/i });
-    draft.focus();
+    const document = screen.getByRole('region', { name: 'draft.md' });
+    document.focus();
     fireEvent.keyDown(screen.getByRole('main'), { key: 'w', ctrlKey: true });
     expect(
       within(screen.getByRole('dialog')).getByRole('button', { name: 'Save' }),
     ).toHaveFocus();
     fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    expect(draft).toHaveFocus();
-    expect(screen.getByRole('tabpanel')).toHaveTextContent(
+    expect(document).toHaveFocus();
+    expect(screen.getByRole('region', { name: 'draft.md' })).toHaveTextContent(
       'Unsaved fixture content.',
     );
     expect(screen.getByRole('status')).toHaveTextContent(/remains open/i);
@@ -168,15 +197,15 @@ describe('document foundation shell', () => {
 
   it('keeps dirty content open while Save As waits for a durable receipt', () => {
     render(<App sessions={[initialSessions[3]]} />);
-    fireEvent.click(screen.getByRole('button', { name: /close draft\.md/i }));
+    fireEvent.keyDown(screen.getByRole('main'), { key: 'w', ctrlKey: true });
     fireEvent.click(screen.getByRole('button', { name: 'Save As' }));
     expect(screen.getByRole('dialog')).toHaveTextContent(
       /until a durable receipt arrives/i,
     );
-    expect(screen.getByRole('tabpanel')).toHaveTextContent(
+    expect(screen.getByRole('region', { name: 'draft.md' })).toHaveTextContent(
       'Unsaved fixture content.',
     );
-    expect(screen.getByRole('tab', { name: /unsaved changes/i })).toBeVisible();
+    expect(screen.getByRole('region', { name: 'draft.md' })).toBeVisible();
   });
 
   it('completes a destructive transition only after native Save As succeeds', async () => {
@@ -191,10 +220,10 @@ describe('document foundation shell', () => {
       subscribe: vi.fn().mockResolvedValue(() => undefined),
     };
     render(<App sessions={[initialSessions[3]]} desktopDeliveryGateway={gateway} />);
-    fireEvent.click(screen.getByRole('button', { name: /close draft\.md/i }));
+    fireEvent.keyDown(screen.getByRole('main'), { key: 'w', ctrlKey: true });
     fireEvent.click(screen.getByRole('button', { name: 'Save As' }));
     expect(screen.getByRole('dialog')).toHaveTextContent(/until a durable receipt arrives/i);
-    await waitFor(() => expect(screen.queryByRole('tab', { name: /draft\.md/i })).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByRole('region', { name: 'draft.md' })).not.toBeInTheDocument());
     expect(saveAs).toHaveBeenCalledWith(expect.objectContaining({ id: 'draft' }));
   });
 
@@ -214,10 +243,10 @@ describe('document foundation shell', () => {
       subscribe: vi.fn().mockResolvedValue(() => undefined),
     };
     render(<App sessions={[session]} desktopDeliveryGateway={gateway} />);
-    fireEvent.click(screen.getByRole('button', { name: /close draft\.md/i }));
+    fireEvent.keyDown(screen.getByRole('main'), { key: 'w', ctrlKey: true });
     fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Save' }));
     await waitFor(() => expect(save).toHaveBeenCalledWith(expect.objectContaining({ id: 'draft' })));
-    await waitFor(() => expect(screen.queryByRole('tab', { name: /draft\.md/i })).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByRole('region', { name: 'draft.md' })).not.toBeInTheDocument());
   });
 
   it('projects conflict messaging and removes unsafe in-place save', () => {
@@ -228,8 +257,9 @@ describe('document foundation shell', () => {
     };
     render(<App sessions={[conflicted]} />);
     expect(screen.getByText(/source changed outside/i)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /close draft\.md/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
+    expect(screen.queryByRole('menuitem', { name: /Save Ctrl\+S/i })).not.toBeInTheDocument();
+    fireEvent.keyDown(screen.getByRole('main'), { key: 'w', ctrlKey: true });
     const dialog = within(screen.getByRole('dialog'));
     expect(dialog.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
     expect(dialog.getByRole('button', { name: 'Save As' })).toBeInTheDocument();
@@ -300,11 +330,8 @@ describe('document foundation shell', () => {
       await screen.findByRole('button', { name: 'Recover' }),
     );
 
-    expect(await screen.findByRole('tab', { name: /recovered\.txt/i })).toHaveAttribute(
-      'aria-selected',
-      'true',
-    );
-    await waitFor(() => expect(screen.getByRole('tabpanel')).toHaveTextContent(
+    expect(await screen.findByRole('region', { name: 'recovered.txt' })).toBeVisible();
+    await waitFor(() => expect(screen.getByRole('region', { name: 'recovered.txt' })).toHaveTextContent(
       'Recovered exact content',
     ));
     expect(remove).not.toHaveBeenCalled();
@@ -347,22 +374,21 @@ describe('document foundation shell', () => {
   });
 
   it('derives commands from the active capabilities and reports interaction changes', () => {
-    render(<App />);
-    expect(screen.getByRole('button', { name: /copy/i })).toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', { name: /save/i }),
-    ).not.toBeInTheDocument();
+    render(<App sessions={initialSessions} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
+    expect(screen.getByRole('menuitem', { name: /copy/i })).toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: /save/i })).not.toBeInTheDocument();
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' });
 
     fireEvent.click(screen.getByRole('tab', { name: /draft\.md/i }));
-    expect(screen.getByRole('button', { name: /save/i })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /save/i }));
+    invokeMenu(/save/i);
     expect(screen.getByRole('status')).toHaveTextContent(/save.*draft\.md/i);
   });
 
   it('opens one shell-owned inspector, retargets it with the active tab, and restores opener focus', async () => {
-    render(<App />);
-    const opener = within(screen.getByRole('navigation', { name: 'Document commands' })).getByRole('button', { name: 'File information' });
-    fireEvent.click(opener);
+    render(<App sessions={initialSessions} />);
+    const opener = screen.getByRole('button', { name: 'Menu' });
+    invokeMenu('File information');
     expect(screen.getByRole('complementary', { name: 'File information' })).toHaveTextContent('welcome.md');
     expect(screen.getByRole('tabpanel')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('tab', { name: /diagram\.mmd/iu }));
@@ -394,7 +420,7 @@ describe('document foundation shell', () => {
       cancelIntegrity: vi.fn(() => Promise.resolve()),
     };
     render(<App sessions={[source]} metadataGateway={gateway} />);
-    fireEvent.click(within(screen.getByRole('navigation', { name: 'Document commands' })).getByRole('button', { name: 'File information' }));
+    invokeMenu('File information');
     await waitFor(() => expect(screen.getByRole('complementary')).toHaveTextContent('refreshed.txt'));
     fireEvent.click(screen.getByRole('button', { name: 'Calculate SHA-256' }));
     expect(await screen.findByText('a'.repeat(64))).toBeInTheDocument();
@@ -423,7 +449,7 @@ describe('document foundation shell', () => {
       cancelIntegrity: vi.fn(() => Promise.resolve()),
     };
     render(<App sessions={[source]} metadataGateway={gateway} />);
-    fireEvent.click(within(screen.getByRole('navigation', { name: 'Document commands' })).getByRole('button', { name: 'File information' }));
+    invokeMenu('File information');
     expect(await screen.findByRole('button', { name: 'Calculate SHA-256' })).toBeInTheDocument();
     await waitFor(() => expect(query).toHaveBeenCalledTimes(2), { timeout: 2_000 });
     await waitFor(() => expect(screen.getAllByRole('status').some((status) => status.textContent?.includes('Source facts are unavailable'))).toBe(true));
@@ -442,7 +468,7 @@ describe('document foundation shell', () => {
       cancelIntegrity,
     };
     render(<App sessions={[source]} metadataGateway={gateway} />);
-    fireEvent.click(within(screen.getByRole('navigation', { name: 'Document commands' })).getByRole('button', { name: 'File information' }));
+    invokeMenu('File information');
     fireEvent.click(await screen.findByRole('button', { name: 'Calculate SHA-256' }));
     await waitFor(() => expect(advanceIntegrity).toHaveBeenCalled());
     fireEvent.click(screen.getByRole('button', { name: 'Close file information' }));
@@ -456,7 +482,7 @@ describe('document foundation shell', () => {
   });
 
   it('has no critical or serious automated accessibility findings', async () => {
-    const { container } = render(<App />);
+    const { container } = render(<App sessions={initialSessions.slice(0, 2)} />);
     const results = await axe.run(container, {
       runOnly: {
         type: 'tag',
@@ -472,10 +498,10 @@ describe('document foundation shell', () => {
 
   it('loads, edits, persists, and resets bounded preferences without replacing the document', async () => {
     const gateway = persistenceGateway();
-    render(<App persistenceGateway={gateway} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Preferences' }));
+    render(<App sessions={[initialSessions[2]]} persistenceGateway={gateway} />);
+    invokeMenu('Preferences');
     expect(screen.getByRole('complementary', { name: 'Preferences' })).toBeInTheDocument();
-    expect(screen.getByRole('tabpanel')).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'notes.txt' })).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('Theme'), { target: { value: 'dark' } });
     await waitFor(() => expect(gateway.persistPreferences).toHaveBeenCalledWith(expect.objectContaining({ theme: 'dark' })), { timeout: 1_000 });
     fireEvent.click(screen.getByRole('button', { name: 'Reset preferences' }));
@@ -485,8 +511,8 @@ describe('document foundation shell', () => {
   it('previews the exact redacted diagnostic bundle before explicit export', async () => {
     const gateway = persistenceGateway();
     const exporter = { export: vi.fn().mockResolvedValue(undefined) };
-    render(<App persistenceGateway={gateway} diagnosticExportGateway={exporter} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Diagnostics' }));
+    render(<App sessions={[initialSessions[2]]} persistenceGateway={gateway} diagnosticExportGateway={exporter} />);
+    invokeMenu('Diagnostics');
     expect(await screen.findByText(/"generated_unix_ms": 42/u)).toBeInTheDocument();
     expect(exporter.export).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Export previewed bundle' }));
@@ -531,7 +557,8 @@ describe('document foundation shell', () => {
         .toHaveAttribute('aria-selected', 'true'));
     expect(screen.getByRole('complementary', { name: 'Preferences' }))
       .toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Preview' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
+    expect(screen.getByRole('menuitem', { name: 'Preview' })).toBeInTheDocument();
   });
 
   it('invokes Android restoration before matching a loaded native projection', async () => {
@@ -574,8 +601,7 @@ describe('document foundation shell', () => {
       androidRestorationGateway={androidGateway}
     />);
 
-    expect(await screen.findByRole('tab', { name: /welcome\.md/iu }))
-      .toHaveAttribute('aria-selected', 'true');
+    expect(await screen.findByRole('region', { name: 'welcome.md' })).toBeVisible();
     expect(restore).toHaveBeenCalledWith([
       expect.objectContaining({ source_reference: sourceReference }),
     ]);
@@ -583,7 +609,7 @@ describe('document foundation shell', () => {
 
   it('uses a minimal empty surface after all fixture sessions close', () => {
     render(<App sessions={initialSessions.slice(0, 1)} />);
-    fireEvent.click(screen.getByRole('button', { name: /close welcome\.md/i }));
+    fireEvent.keyDown(screen.getByRole('main'), { key: 'w', ctrlKey: true });
     expect(screen.getByRole('status')).toHaveTextContent('No document is open');
     expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
   });

@@ -1,4 +1,4 @@
-import { initialSessions } from '../App';
+import { initialSessions } from '../test/fixtures';
 import {
   defaultPreferences,
   normalizeExtension,

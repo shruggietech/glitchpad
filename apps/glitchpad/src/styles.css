@@ -9,7 +9,6 @@
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   --tab-row-height: 40px;
-  --command-row-height: 32px;
   --focus-color: var(--gl-focus);
   --editor-font-family: var(--gl-font-mono);
   --editor-font-size: 14px;
@@ -51,7 +50,7 @@ button:focus-visible,
 .app-shell {
   position: relative;
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
   width: 100%;
   height: 100%;
   overflow: hidden;
@@ -61,7 +60,7 @@ button:focus-visible,
 .integrity-banner {
   position: absolute;
   z-index: 2;
-  top: calc(var(--tab-row-height) + var(--command-row-height) + 0.5rem);
+  top: 0.5rem;
   left: 50%;
   width: min(42rem, calc(100% - 2rem));
   padding: 0.65rem 0.85rem;
@@ -143,45 +142,67 @@ button:focus-visible,
   background: #17191e;
 }
 
-.tab-list {
-  display: flex;
+.tab-list-shell {
+  position: relative;
+  display: grid;
   min-width: 0;
   flex: 1;
+}
+
+.tab-list,
+.tab-close-list {
+  grid-area: 1 / 1;
+  display: flex;
+  min-width: 0;
   overflow: hidden;
 }
 
+.tab-close-list {
+  z-index: 1;
+  pointer-events: none;
+}
+
 .tab-button,
-.tab-action,
+.tab-close,
 .overflow-trigger,
-.command-button,
 .overflow-menu button {
   border: 0;
   background: transparent;
   cursor: pointer;
 }
 
-.tab-button {
-  display: flex;
+.tab-button,
+.tab-close-slot {
   min-width: 0;
   max-width: 15rem;
   flex: 1 1 8rem;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0 0.55rem;
-  overflow: hidden;
   border-right: 1px solid #2c2f36;
   background: #1c1f25;
+}
+
+.tab-close-slot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  pointer-events: none;
+}
+
+.tab-button {
+  display: flex;
+  min-width: 0;
+  height: 100%;
+  flex: 1;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0 2.25rem 0 0.55rem;
+  overflow: hidden;
   text-align: left;
 }
 
-.tab-button.active {
+.tab-button.active,
+.tab-close-slot.active {
   background: var(--gl-bg);
   box-shadow: inset 0 2px var(--gl-focus);
-}
-
-.active-tab-actions {
-  display: flex;
-  flex: 0 0 auto;
 }
 
 .tab-name {
@@ -200,17 +221,18 @@ button:focus-visible,
   background: var(--gl-warning);
 }
 
-.tab-action {
-  width: 1.45rem;
-  min-width: 1.45rem;
+.tab-close {
+  width: 2rem;
+  min-width: 2rem;
+  height: 100%;
   padding: 0;
   color: #b9bec8;
   font-size: 1rem;
+  pointer-events: auto;
 }
 
-.tab-action:hover,
+.tab-close:hover,
 .overflow-trigger:hover,
-.command-button:hover,
 .overflow-menu button:hover {
   background: #2a2e36;
   color: #fff;
@@ -251,6 +273,80 @@ button:focus-visible,
   text-align: left;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.overflow-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.application-menu-shell {
+  position: absolute;
+  z-index: 8;
+  top: 0.5rem;
+  right: 0.5rem;
+}
+
+.app-shell:has(.tab-strip-shell) .application-menu-shell {
+  top: calc(var(--tab-row-height) + 0.5rem);
+}
+
+.application-menu-trigger {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--gl-border);
+  border-radius: 0.35rem;
+  background: color-mix(in srgb, var(--gl-panel) 92%, transparent);
+  box-shadow: 0 0.25rem 1rem #0005;
+  cursor: pointer;
+}
+
+.application-menu {
+  display: grid;
+  width: min(19rem, calc(100vw - 1rem));
+  max-height: calc(100vh - 3.5rem);
+  margin-top: 0.35rem;
+  overflow: auto;
+  border: 1px solid var(--gl-border);
+  border-radius: 0.4rem;
+  background: var(--gl-panel-raised);
+  box-shadow: 0 0.75rem 2rem #0009;
+}
+
+.application-menu button {
+  display: flex;
+  min-height: 2.4rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.45rem 0.7rem;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.application-menu button:hover,
+.application-menu button:focus-visible {
+  background: var(--gl-hover);
+}
+
+.application-menu button:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.application-menu kbd {
+  color: var(--gl-fg-muted);
+  font-size: 0.7rem;
+}
+
+.application-menu-separator {
+  height: 1px;
+  background: var(--gl-border);
 }
 
 .command-bar {
@@ -315,20 +411,45 @@ button:focus-visible,
 }
 
 .document-surface {
+  grid-row: 2;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   min-width: 0;
   min-height: 0;
   overflow: auto;
-  padding: clamp(1rem, 3vw, 2.5rem);
+  padding: 0;
   background: var(--gl-bg);
 }
 
 .text-editor-shell {
+  position: relative;
   display: grid;
   min-width: 0;
   min-height: 0;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.editor-details {
+  position: absolute;
+  z-index: 3;
+  right: 0.5rem;
+  bottom: 0.5rem;
+  max-width: calc(100% - 1rem);
+  border: 1px solid var(--gl-border);
+  border-radius: 0.3rem;
+  background: var(--gl-panel-raised);
+  color: var(--gl-fg-muted);
+  font-size: 0.7rem;
+}
+
+.editor-details summary {
+  padding: 0.3rem 0.5rem;
+  cursor: pointer;
+}
+
+.editor-details[open] {
+  padding: 0 0.5rem 0.4rem;
+  box-shadow: 0 0.5rem 1.5rem #0008;
 }
 
 .editor-status {
@@ -364,6 +485,38 @@ button:focus-visible,
 .text-editor .cm-editor,
 .text-editor .cm-scroller {
   height: 100%;
+}
+
+.text-editor .cm-panels {
+  border-color: var(--gl-border);
+  background: var(--gl-panel-raised);
+  color: var(--gl-fg);
+}
+
+.text-editor .cm-search {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem;
+}
+
+.text-editor .cm-search input,
+.text-editor .cm-search button {
+  min-height: 2rem;
+  border: 1px solid var(--gl-border);
+  border-radius: 0.25rem;
+  background: var(--gl-panel);
+  color: var(--gl-fg);
+}
+
+.text-editor .cm-search input {
+  padding: 0.3rem 0.45rem;
+}
+
+.text-editor .cm-search button {
+  padding: 0.3rem 0.55rem;
+  cursor: pointer;
 }
 
 .text-editor .cm-scroller {
@@ -460,11 +613,45 @@ button:focus-visible,
   color: #8f96a3;
 }
 
+.empty-state {
+  display: grid;
+  justify-items: center;
+  gap: 0.75rem;
+}
+
+.empty-state p {
+  margin: 0;
+}
+
+.empty-state button {
+  min-height: 2.5rem;
+  padding: 0.45rem 0.9rem;
+  border: 1px solid var(--gl-border);
+  border-radius: 0.35rem;
+  background: var(--gl-panel-raised);
+  cursor: pointer;
+}
+
+.delivery-error {
+  position: absolute;
+  z-index: 9;
+  top: 0.75rem;
+  left: 50%;
+  width: min(38rem, calc(100% - 5rem));
+  padding: 0.65rem 0.8rem;
+  border: 1px solid var(--gl-danger);
+  border-radius: 0.4rem;
+  background: var(--gl-panel-raised);
+  color: var(--gl-danger);
+  box-shadow: 0 0.5rem 1.5rem #0008;
+  transform: translateX(-50%);
+}
+
 .markdown-surface {
   display: grid;
   min-width: 0;
   min-height: 0;
-  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
 }
 
 .markdown-controls,
@@ -591,7 +778,7 @@ button:focus-visible,
 
 .mermaid-surface {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   height: 100%;
   overflow: hidden;
 }
@@ -680,7 +867,7 @@ button:focus-visible,
 .metadata-inspector {
   position: absolute;
   z-index: 5;
-  top: calc(var(--tab-row-height) + var(--command-row-height));
+  top: 0;
   right: 0;
   bottom: 0;
   width: min(360px, 40vw);
@@ -696,7 +883,7 @@ button:focus-visible,
 .application-sheet {
   position: absolute;
   z-index: 6;
-  top: calc(var(--tab-row-height) + var(--command-row-height));
+  top: 0;
   right: 0;
   bottom: 0;
   width: min(420px, 46vw);
@@ -1056,12 +1243,14 @@ button:focus-visible,
   background: #e7e8e9;
 }
 
-:root[data-theme='light'] .tab-button {
+:root[data-theme='light'] .tab-button,
+:root[data-theme='light'] .tab-close-slot {
   border-color: #cfd2d8;
   background: #dedfe2;
 }
 
 :root[data-theme='light'] .tab-button.active,
+:root[data-theme='light'] .tab-close-slot.active,
 :root[data-theme='light'] .overflow-menu,
 :root[data-theme='light'] .resolution-dialog,
 :root[data-theme='light'] .metadata-inspector,
@@ -1114,12 +1303,14 @@ button:focus-visible,
   background: #17191e;
 }
 
-:root[data-theme='dark'] .tab-button {
+:root[data-theme='dark'] .tab-button,
+:root[data-theme='dark'] .tab-close-slot {
   border-color: #2c2f36;
   background: #1c1f25;
 }
 
-:root[data-theme='dark'] .tab-button.active {
+:root[data-theme='dark'] .tab-button.active,
+:root[data-theme='dark'] .tab-close-slot.active {
   background: #101114;
 }
 

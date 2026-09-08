@@ -1,11 +1,18 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { EditorView } from '@codemirror/view';
 import axe from 'axe-core';
 import { StrictMode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { App, initialSessions } from '../App';
+import { App } from '../App';
+import { initialSessions } from '../test/fixtures';
 import { MERMAID_STANDALONE_MAX_BYTES } from '../domain/mermaid-contract';
+
+const invokeMenu = (name: string | RegExp) => {
+  fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
+  const matcher = typeof name === 'string' ? new RegExp(`^${name}`, 'u') : name;
+  fireEvent.click(within(screen.getByRole('menu')).getByRole('menuitem', { name: matcher }));
+};
 
 vi.mock('../domain/mermaid-adapter', async () => {
   const { DeterministicMermaidRendererClient } = await import('../test/mermaid-renderer-double');
@@ -44,7 +51,7 @@ describe('Mermaid surface', () => {
     render(<App sessions={[mermaidSession('flowchart LR\n  Alpha --> Beta')]} />);
     expect(await screen.findByRole('img', { name: /architecture\.mmd Mermaid diagram/iu }, { timeout: 10_000 })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Fit' })).toBeInTheDocument();
-    fireEvent.click(screen.getAllByRole('button', { name: 'File information' }).at(-1)!);
+    invokeMenu('File information');
     expect(screen.getByText('flowchart')).toBeInTheDocument();
     expect(screen.getByText('11.17.2')).toBeInTheDocument();
     const inspector = screen.getByRole('complementary', { name: 'File information' });
@@ -60,7 +67,7 @@ describe('Mermaid surface', () => {
   it('composes the exact source editor and labels the last valid preview stale', async () => {
     render(<App sessions={[mermaidSession('flowchart TB\n  A --> B')]} />);
     await screen.findByRole('img');
-    fireEvent.click(screen.getByRole('button', { name: 'Edit source' }));
+    invokeMenu('Edit source');
     const textbox = screen.getByRole('textbox', { name: 'architecture.mmd text editor' });
     const view = EditorView.findFromDOM(textbox)!;
     act(() => view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: 'flowchart TB\n  A -->' } }));
@@ -76,7 +83,7 @@ describe('Mermaid surface', () => {
   it('marks a retained preview stale and publishes the limited state above 1 MiB', async () => {
     render(<App sessions={[mermaidSession('flowchart TB\n  A --> B')]} />);
     await screen.findByRole('img');
-    fireEvent.click(screen.getByRole('button', { name: 'Edit source' }));
+    invokeMenu('Edit source');
     const textbox = screen.getByRole('textbox', { name: 'architecture.mmd text editor' });
     const view = EditorView.findFromDOM(textbox)!;
     const oversized = `flowchart TB\nA --> B\n%%${'x'.repeat(MERMAID_STANDALONE_MAX_BYTES)}`;
@@ -93,9 +100,8 @@ describe('Mermaid surface', () => {
   it('routes the command-bar search to CodeMirror while source mode is active', async () => {
     const { container } = render(<App sessions={[mermaidSession('flowchart TB\n  SearchableNode --> B')]} />);
     await screen.findByRole('img');
-    fireEvent.click(screen.getByRole('button', { name: 'Edit source' }));
-    const commandSearch = screen.getAllByRole('button', { name: 'Search' }).find((button) => button.classList.contains('command-button'))!;
-    fireEvent.click(commandSearch);
+    invokeMenu('Edit source');
+    invokeMenu('Search');
     await waitFor(() => expect(container.querySelector('.cm-search')).toBeInTheDocument());
     expect(screen.queryByRole('textbox', { name: 'Find diagram text' })).not.toBeInTheDocument();
   });

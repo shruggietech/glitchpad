@@ -28,7 +28,7 @@ const initialState = (session: ShellSession): MermaidDocumentState => ({
 });
 
 export const MermaidSurface = forwardRef<TextEditorHandle, MermaidSurfaceProps>(function MermaidSurface(
-  { session, onDocumentChange, onLanguageChange, onMermaidChange, rendererClient, onOpenMetadata, onMetadataContribution },
+  { session, onDocumentChange, onLanguageChange, onMermaidChange, rendererClient, onMetadataContribution },
   handleRef,
 ) {
   const performanceInstanceId = useId();
@@ -219,18 +219,9 @@ export const MermaidSurface = forwardRef<TextEditorHandle, MermaidSurfaceProps>(
       data-performance-revision={visibleResult?.source_revision ?? ''}
       data-performance-duration={visibleResult?.measurements.total_duration_ms ?? ''}
     >
-      <div className="mermaid-controls" aria-label="Mermaid controls">
-        <button type="button" onClick={() => changeMode(mode === 'source' ? 'rendered' : 'source')} disabled={mode === 'source' && !visibleResult}>
-          {mode === 'source' ? 'Preview' : session.renderer.capabilities.edit ? 'Edit source' : 'View source'}
-        </button>
-        <button type="button" onClick={() => setSearchOpen((open) => !open)}>Search</button>
-        {session.renderer.capabilities.inspect_metadata && session.source.capabilities.metadata && (
-          <button type="button" onClick={(event) => onOpenMetadata?.(event.currentTarget)}>File information</button>
-        )}
-        <span role="status" aria-live="polite">
-          {status === 'scheduled' ? 'Rendering diagram' : stale ? 'Preview is from an earlier source revision' : status === 'ready' ? 'Preview current' : status === 'idle' ? 'Preparing preview' : result?.diagnostic?.message ?? status}
-        </span>
-      </div>
+      <span className="visually-hidden" role="status" aria-live="polite">
+        {status === 'scheduled' ? 'Rendering diagram' : stale ? 'Preview is from an earlier source revision' : status === 'ready' ? 'Preview current' : status === 'idle' ? 'Preparing preview' : result?.diagnostic?.message ?? status}
+      </span>
       {searchOpen && (
         <div className="mermaid-search" role="search">
           <label>Find diagram text <input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} /></label>

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 
-import { CommandBar } from './components/CommandBar';
+import { ApplicationMenu } from './components/ApplicationMenu';
 import { DocumentSurface } from './components/DocumentSurface';
 import { MetadataInspector } from './components/MetadataInspector';
 import { PreferencesPanel } from './components/PreferencesPanel';
@@ -17,12 +17,7 @@ import {
   commandSetFor,
   type CommandDescriptor,
 } from './domain/commands';
-import {
-  noRendererCapabilities,
-  noSourceCapabilities,
-  type SaveReceipt,
-  type ShellSession,
-} from './domain/contracts';
+import { type SaveReceipt, type ShellSession } from './domain/contracts';
 import {
   canSaveInPlace,
   integrityOf,
@@ -34,10 +29,6 @@ import {
   type RecoveryGateway,
 } from './domain/recovery-gateway';
 import { createTabState, tabReducer } from './domain/tabs';
-import { createTextDocument } from './domain/text-document';
-import { detectLanguage } from './domain/language';
-import { markdownEligibility } from './domain/markdown-contract';
-import { initialMermaidViewport } from './domain/mermaid-contract';
 import {
   nativeExternalLinkAvailable,
   nativeMarkdownExternalLinkGateway,
@@ -82,154 +73,6 @@ import {
   type DesktopDeliveryResult,
 } from './domain/desktop-delivery-gateway';
 
-const makeSession = (
-  id: string,
-  name: string,
-  renderer: string,
-  content: string,
-  capabilities: Partial<ShellSession['renderer']['capabilities']>,
-  options: { dirty?: boolean; writable?: boolean; metadata?: boolean } = {},
-): ShellSession => {
-  const isText = renderer !== 'Image';
-  const textDocument = isText
-    ? createTextDocument({
-        rawText: content,
-        displayName: name,
-        language: detectLanguage(name, content),
-      })
-    : null;
-  const eligibility = markdownEligibility(textDocument?.source_bytes ?? 0);
-  return {
-    id,
-    source: {
-      identity: {
-        authority: 'synthetic',
-        scope: 'foundation-fixtures',
-        token: id,
-        strength: 'strong',
-      },
-      display_name: name,
-      claimed_media_type: name.endsWith('.md')
-        ? 'text/markdown'
-        : /\.(?:mmd|mermaid)$/iu.test(name)
-          ? 'text/vnd.mermaid'
-          : 'text/plain',
-      byte_length: textDocument?.source_bytes ?? content.length,
-      modified_unix_ms: 1_788_044_400_000,
-      kind: 'memory',
-      capabilities: {
-        ...noSourceCapabilities(),
-        read: true,
-        metadata: options.metadata ?? true,
-        write: options.writable ?? false,
-        observe_revision: options.writable ?? false,
-        revalidate: options.writable ?? false,
-        replace_atomically: options.writable ?? false,
-      },
-    },
-    renderer: {
-      id: renderer.toLowerCase(),
-      label: renderer,
-      capabilities: {
-        ...noRendererCapabilities(),
-        view: true,
-        copy: true,
-        inspect_metadata: true,
-        ...capabilities,
-      },
-    },
-    lifecycle: id === 'welcome' ? 'active' : 'background',
-    dirty: options.dirty ?? false,
-    revision: 1,
-    content,
-    text_document: textDocument,
-    markdown_document: renderer === 'Markdown'
-      ? {
-          mode: eligibility === 'full' ? 'rendered' : 'source',
-          eligibility,
-          render_revision: null,
-          render_status: eligibility === 'full' ? 'idle' : 'limited',
-          source_selection: null,
-        }
-      : null,
-    mermaid_document: renderer === 'Mermaid'
-      ? {
-          mode: content.trim() ? 'rendered' : 'source',
-          render_revision: null,
-          render_status: 'idle',
-          preview_stale: false,
-          viewport: initialMermaidViewport(),
-        }
-      : null,
-  };
-};
-
-export const initialSessions: ShellSession[] = [
-  makeSession(
-    'welcome',
-    'welcome.md',
-    'Markdown',
-    '# Glitchpad document foundation\n\nThe file owns the viewport.',
-    { search: true },
-  ),
-  makeSession(
-    'diagram',
-    'diagram.mmd',
-    'Mermaid',
-    'flowchart TB\n    Source --> Session\n    Session --> Renderer',
-    { search: true, zoom: true },
-  ),
-  makeSession(
-    'notes',
-    'notes.txt',
-    'Text',
-    'A small text fixture for tab interaction.',
-    { search: true, edit: true, save: true },
-    { writable: true },
-  ),
-  makeSession(
-    'draft',
-    'draft.md',
-    'Markdown',
-    '# Draft\n\nUnsaved fixture content.',
-    { search: true, edit: true, save: true },
-    { dirty: true, writable: true },
-  ),
-  makeSession(
-    'guide',
-    'guide.md',
-    'Markdown',
-    '# Guide\n\nCapability-driven commands.',
-    { search: true },
-  ),
-  makeSession(
-    'architecture',
-    'architecture.rs',
-    'Source',
-    'pub struct DocumentSession;',
-    { search: true },
-  ),
-  makeSession('image', 'preview.webp', 'Image', 'WebP preview fixture', {
-    zoom: true,
-    inspect_metadata: true,
-  }),
-];
-
-export const createPerformanceSessions = (): ShellSession[] => {
-  const bytes = 1024 * 1024;
-  const text = 'x'.repeat(bytes);
-  const markdownPrefix = '# Performance fixture\n\n';
-  const markdown = `${markdownPrefix}${'x'.repeat(bytes - new TextEncoder().encode(markdownPrefix).byteLength)}`;
-  const mermaidPrefix = 'flowchart TB\n  A --> B\n%%';
-  const mermaid = `${mermaidPrefix}${'x'.repeat(bytes - new TextEncoder().encode(mermaidPrefix).byteLength)}`;
-  return [
-    makeSession('welcome', 'performance.txt', 'Text', text, { search: true, edit: true }, { writable: true }),
-    makeSession('performance-markdown', 'performance.md', 'Markdown', markdown, { search: true }),
-    makeSession('performance-mermaid', 'performance.mmd', 'Mermaid', mermaid, { search: true, zoom: true, edit: true }, { writable: true }),
-    makeSession('performance-mermaid-edit', 'performance-edit.mmd', 'Mermaid', 'flowchart TB\n  A --> B\n', { search: true, zoom: true, edit: true }, { writable: true }),
-  ];
-};
-
 interface AppProps {
   sessions?: ShellSession[];
   recoveryGateway?: RecoveryGateway | null;
@@ -243,9 +86,10 @@ interface AppProps {
   desktopDeliveryGateway?: DesktopDeliveryGateway | null;
 }
 
-export function App({ sessions = initialSessions, recoveryGateway, externalLinkGateway, localAssetGateway, metadataGateway, clipboardGateway = browserClipboardGateway, persistenceGateway, diagnosticExportGateway = browserDiagnosticExportGateway, androidRestorationGateway, desktopDeliveryGateway }: AppProps) {
+export function App({ sessions = [], recoveryGateway, externalLinkGateway, localAssetGateway, metadataGateway, clipboardGateway = browserClipboardGateway, persistenceGateway, diagnosticExportGateway = browserDiagnosticExportGateway, androidRestorationGateway, desktopDeliveryGateway }: AppProps) {
   const [state, dispatch] = useReducer(tabReducer, sessions, createTabState);
   const [commandStatus, setCommandStatus] = useState('');
+  const [deliveryError, setDeliveryError] = useState('');
   const [inspectorOpen, setInspectorOpen] = useState(false);
   const [applicationPanel, setApplicationPanel] = useState<'closed' | 'preferences' | 'diagnostics'>('closed');
   const [metadataReadySessionId, setMetadataReadySessionId] = useState<string | null>(null);
@@ -311,7 +155,7 @@ export function App({ sessions = initialSessions, recoveryGateway, externalLinkG
     if (!selectedDesktopDeliveryGateway) return;
     for (const result of results) {
       if (result.status === 'rejected') {
-        setCommandStatus(result.error?.summary ?? 'The delivered file could not be opened.');
+        setDeliveryError(result.error?.summary ?? 'The delivered file could not be opened.');
         continue;
       }
       if (result.status === 'duplicate' && result.source) {
@@ -322,6 +166,7 @@ export function App({ sessions = initialSessions, recoveryGateway, externalLinkG
       try {
         const session = await selectedDesktopDeliveryGateway.materialize(result);
         if (session) {
+          setDeliveryError('');
           const sourceId = session.source_id;
           if (sourceId) {
             const pending = pendingDesktopDeliveryProbesRef.current.get(sourceId) ?? [];
@@ -331,7 +176,7 @@ export function App({ sessions = initialSessions, recoveryGateway, externalLinkG
         }
       } catch {
         if (result.source) void selectedDesktopDeliveryGateway.close(result.source.source_id);
-        setCommandStatus('The delivered file could not be decoded safely.');
+        setDeliveryError('The delivered file could not be decoded safely. Check that it is readable UTF-8 or UTF-16 text.');
       }
     }
   }, [selectedDesktopDeliveryGateway]);
@@ -342,7 +187,7 @@ export function App({ sessions = initialSessions, recoveryGateway, externalLinkG
       void selectedDesktopDeliveryGateway.drain().then((results) => {
         if (active) void applyDesktopDeliveries(results);
       }).catch(() => {
-        if (active) setCommandStatus('Desktop delivery is temporarily unavailable.');
+        if (active) setDeliveryError('Desktop delivery is temporarily unavailable. Try Open again.');
       });
     };
     let unlisten: (() => void) | undefined;
@@ -352,7 +197,7 @@ export function App({ sessions = initialSessions, recoveryGateway, externalLinkG
         drain();
       } else dispose();
     }).catch(() => {
-      if (active) setCommandStatus('Desktop delivery is temporarily unavailable.');
+      if (active) setDeliveryError('Desktop delivery is temporarily unavailable. Try Open again.');
     });
     return () => {
       active = false;
@@ -567,6 +412,7 @@ export function App({ sessions = initialSessions, recoveryGateway, externalLinkG
 
   const openMetadata = (opener: HTMLElement) => {
     windowProjectionChangedRef.current = true;
+    editorRef.current?.invoke('close_search');
     metadataOpenerRef.current = opener;
     setApplicationPanel('closed');
     setInspectorOpen(true);
@@ -588,6 +434,7 @@ export function App({ sessions = initialSessions, recoveryGateway, externalLinkG
 
   const openApplicationPanel = (panel: 'preferences' | 'diagnostics', opener: HTMLButtonElement) => {
     windowProjectionChangedRef.current = true;
+    editorRef.current?.invoke('close_search');
     applicationOpenerRef.current = opener;
     setInspectorOpen(false);
     setApplicationPanel(panel);
@@ -628,9 +475,10 @@ export function App({ sessions = initialSessions, recoveryGateway, externalLinkG
 
   const chooseDesktopSources = () => {
     if (!selectedDesktopDeliveryGateway) return;
+    setDeliveryError('');
     void selectedDesktopDeliveryGateway.choose()
       .then(applyDesktopDeliveries)
-      .catch(() => setCommandStatus('The native Open dialog is unavailable.'));
+      .catch(() => setDeliveryError('The native Open dialog is unavailable. Try again or open the file from your desktop.'));
   };
 
   const publishMetadata = (contribution: MetadataContribution) =>
@@ -774,14 +622,17 @@ export function App({ sessions = initialSessions, recoveryGateway, externalLinkG
   return (
     <main className="app-shell" data-performance-ready="true" onKeyDown={handleShellKey}>
       <TabStrip state={state} dispatch={dispatch} />
-      <div className="toolbar-row">
-        <CommandBar commands={commands} onInvoke={invoke} />
-        <nav className="application-actions" aria-label="Application commands">
-          {selectedDesktopDeliveryGateway && <button type="button" onClick={chooseDesktopSources}>Open</button>}
-          <button type="button" onClick={(event) => openApplicationPanel('preferences', event.currentTarget)}>Preferences</button>
-          <button type="button" onClick={(event) => openApplicationPanel('diagnostics', event.currentTarget)}>Diagnostics</button>
-        </nav>
-      </div>
+      {activeSession && (
+        <ApplicationMenu
+          commands={commands}
+          canOpen={Boolean(selectedDesktopDeliveryGateway)}
+          onOpen={chooseDesktopSources}
+          onInvoke={invoke}
+          onPreferences={(opener) => openApplicationPanel('preferences', opener)}
+          onDiagnostics={(opener) => openApplicationPanel('diagnostics', opener)}
+        />
+      )}
+      {deliveryError && <aside className="delivery-error" role="alert">{deliveryError}</aside>}
       {activeSession &&
         (integrityOf(activeSession) === 'conflicted' ||
           integrityOf(activeSession) === 'recovery_only') && (
@@ -805,6 +656,9 @@ export function App({ sessions = initialSessions, recoveryGateway, externalLinkG
         <DocumentSurface
           ref={editorRef}
           session={activeSession}
+          canOpen={Boolean(selectedDesktopDeliveryGateway)}
+          onOpen={chooseDesktopSources}
+          labelledByTab={state.sessions.length > 1}
         onDocumentChange={(id, expectedRevision, document, revision) =>
           dispatch({
             type: 'update_text',

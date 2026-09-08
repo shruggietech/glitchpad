@@ -8,6 +8,7 @@ import test from 'node:test';
 import {
   checkWindowsConfiguration,
   classifyPackageSize,
+  validatePortableSmokeContract,
   validateOfficialWindowsEvidence,
   validateWindowsEvidence,
 } from './check-windows-package.mjs';
@@ -48,6 +49,18 @@ test('repository Windows package configuration is internally consistent', async 
     capabilityCount: 21,
     artifactCount: 2,
   });
+});
+
+test('portable lifecycle policy rejects removal of content-first release assertions', async () => {
+  const [lifecycle, workflow] = await Promise.all([
+    readFile(join(repositoryRoot, 'scripts', 'windows', 'test-portable-lifecycle.ps1'), 'utf8'),
+    readFile(join(repositoryRoot, '.github', 'workflows', 'windows-package.yml'), 'utf8'),
+  ]);
+  assert.equal(validatePortableSmokeContract(lifecycle, workflow), true);
+  assert.throws(
+    () => validatePortableSmokeContract(lifecycle.replace("conditional_tabs = 'pass'", ''), workflow),
+    /portable smoke lifecycle omits/u,
+  );
 });
 
 test('size classification preserves exact S018 boundaries', () => {

@@ -38,12 +38,41 @@ const invokeMenu = (name: string | RegExp) => {
 
 describe('document foundation shell', () => {
   const persistenceGateway = (overrides: Partial<PersistenceGateway> = {}): PersistenceGateway => ({
-    loadPreferences: vi.fn().mockResolvedValue({ status: 'loaded', value: defaultPreferences(), warning_code: null }),
+    loadPreferences: vi.fn().mockResolvedValue({
+      status: 'loaded',
+      value: defaultPreferences(),
+      warning_code: null,
+    }),
     persistPreferences: vi.fn().mockResolvedValue(undefined),
-    loadSession: vi.fn().mockResolvedValue({ status: 'defaulted', value: { schema_version: 1, window: { active_session_index: null, inspector: 'closed' }, sessions: [] }, warning_code: null }),
+    loadSession: vi.fn().mockResolvedValue({
+      status: 'defaulted',
+      value: {
+        schema_version: 1,
+        window: { active_session_index: null, inspector: 'closed' },
+        sessions: [],
+      },
+      warning_code: null,
+    }),
     persistSession: vi.fn().mockResolvedValue(undefined),
     appendDiagnostic: vi.fn().mockResolvedValue(undefined),
-    previewDiagnostics: vi.fn().mockResolvedValue({ status: 'loaded', value: { schema_version: 1, generated_unix_ms: 42, environment: { product_version: '0.0.0', specification_version: '0.0.0', platform: 'unknown', architecture: 'unknown', webview_version: null, core_version: '0.0.0', build_commit: null }, events: [] }, warning_code: null }),
+    previewDiagnostics: vi.fn().mockResolvedValue({
+      status: 'loaded',
+      value: {
+        schema_version: 1,
+        generated_unix_ms: 42,
+        environment: {
+          product_version: '0.0.0',
+          specification_version: '0.0.0',
+          platform: 'unknown',
+          architecture: 'unknown',
+          webview_version: null,
+          core_version: '0.0.0',
+          build_commit: null,
+        },
+        events: [],
+      },
+      warning_code: null,
+    }),
     reset: vi.fn().mockResolvedValue(false),
     ...overrides,
   });
@@ -52,14 +81,24 @@ describe('document foundation shell', () => {
     render(<App />);
     expect(within(screen.getByRole('region', { name: 'Document surface' })).getByText('No document is open')).toBeVisible();
     expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
-    for (const fixture of ['welcome.md', 'draft.md', 'notes.txt'])
-      expect(screen.queryByText(fixture)).not.toBeInTheDocument();
+    for (const fixture of ['welcome.md', 'draft.md', 'notes.txt']) expect(screen.queryByText(fixture)).not.toBeInTheDocument();
   });
 
   it('shows native delivery failures as an actionable visible alert', async () => {
     const gateway: DesktopDeliveryGateway = {
       choose: vi.fn().mockResolvedValue([]),
-      drain: vi.fn().mockResolvedValue([{ sequence: 1, kind: 'association', status: 'rejected', source: null, error: { summary: 'The selected file cannot be read.', retryable: true } }]),
+      drain: vi.fn().mockResolvedValue([
+        {
+          sequence: 1,
+          kind: 'association',
+          status: 'rejected',
+          source: null,
+          error: {
+            summary: 'The selected file cannot be read.',
+            retryable: true,
+          },
+        },
+      ]),
       materialize: vi.fn().mockResolvedValue(null),
       close: vi.fn().mockResolvedValue(undefined),
       save: vi.fn().mockResolvedValue(false),
@@ -72,8 +111,25 @@ describe('document foundation shell', () => {
 
   it('opens native desktop deliveries through the compact application commands', async () => {
     const subscriptionOrder: string[] = [];
-    const delivered = { ...initialSessions[2], id: 'desktop-source', source_id: 'source', external_revision: revision };
-    const choose = vi.fn().mockResolvedValue([{ sequence: 1, kind: 'dialog', status: 'opened', source: { source_id: 'source', descriptor: delivered.source, external_revision: revision }, error: null }]);
+    const delivered = {
+      ...initialSessions[2],
+      id: 'desktop-source',
+      source_id: 'source',
+      external_revision: revision,
+    };
+    const choose = vi.fn().mockResolvedValue([
+      {
+        sequence: 1,
+        kind: 'dialog',
+        status: 'opened',
+        source: {
+          source_id: 'source',
+          descriptor: delivered.source,
+          external_revision: revision,
+        },
+        error: null,
+      },
+    ]);
     const materialize = vi.fn().mockResolvedValue(delivered);
     const close = vi.fn().mockResolvedValue(undefined);
     const save = vi.fn().mockResolvedValue(saveReceipt);
@@ -98,8 +154,14 @@ describe('document foundation shell', () => {
     await screen.findByRole('region', { name: 'notes.txt' });
     expect(choose).toHaveBeenCalledOnce();
     expect(materialize).toHaveBeenCalledOnce();
-    const textbox = await screen.findByRole('textbox', { name: 'notes.txt text editor' });
-    act(() => EditorView.findFromDOM(textbox)?.dispatch({ changes: { from: 0, insert: 'x' } }));
+    const textbox = await screen.findByRole('textbox', {
+      name: 'notes.txt text editor',
+    });
+    act(() =>
+      EditorView.findFromDOM(textbox)?.dispatch({
+        changes: { from: 0, insert: 'x' },
+      }),
+    );
     invokeMenu('Save');
     await waitFor(() => expect(save).toHaveBeenCalledWith(expect.objectContaining({ source_id: 'source', revision: 2 })));
     await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(/saved durably/i));
@@ -109,7 +171,9 @@ describe('document foundation shell', () => {
 
   it('projects editor changes into dirty shell state before save is available', () => {
     render(<App sessions={[initialSessions[2]]} />);
-    const textbox = screen.getByRole('textbox', { name: 'notes.txt text editor' });
+    const textbox = screen.getByRole('textbox', {
+      name: 'notes.txt text editor',
+    });
     const view = EditorView.findFromDOM(textbox);
     expect(view).not.toBeNull();
     act(() => view?.dispatch({ changes: { from: 0, to: 1, insert: 'a' } }));
@@ -121,20 +185,11 @@ describe('document foundation shell', () => {
   it('renders semantic compact tabs and an active document surface', () => {
     render(<App sessions={initialSessions} />);
 
-    expect(
-      screen.getByRole('tablist', { name: 'Open documents' }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('tablist', { name: 'Open documents' })).toBeInTheDocument();
     expect(screen.getAllByRole('tab')).toHaveLength(5);
-    expect(screen.getByRole('tab', { name: /welcome\.md/i })).toHaveAttribute(
-      'aria-selected',
-      'true',
-    );
-    expect(
-      screen.getByRole('tabpanel', { name: /welcome\.md/i }),
-    ).toHaveTextContent('Glitchpad document foundation');
-    expect(
-      screen.getByRole('button', { name: /more open documents/i }),
-    ).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByRole('tab', { name: /welcome\.md/i })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tabpanel', { name: /welcome\.md/i })).toHaveTextContent('Glitchpad document foundation');
+    expect(screen.getByRole('button', { name: /more open documents/i })).toHaveAttribute('aria-expanded', 'false');
   });
 
   it('supports automatic keyboard activation, reorder, cycling, close focus, and overflow', () => {
@@ -152,30 +207,17 @@ describe('document foundation shell', () => {
     expect(screen.getByRole('tab', { name: /diagram\.mmd/i })).toHaveFocus();
 
     fireEvent.keyDown(screen.getByRole('main'), { key: 'Tab', ctrlKey: true });
-    expect(screen.getByRole('tab', { name: /draft\.md/i })).toHaveAttribute(
-      'aria-selected',
-      'true',
-    );
+    expect(screen.getByRole('tab', { name: /draft\.md/i })).toHaveAttribute('aria-selected', 'true');
     fireEvent.keyDown(screen.getByRole('main'), { key: 'w', ctrlKey: true });
     expect(screen.getByRole('dialog')).toHaveTextContent(/unsaved changes/i);
-    expect(
-      within(screen.getByRole('dialog')).getByRole('button', { name: 'Save' }),
-    ).toHaveFocus();
+    expect(within(screen.getByRole('dialog')).getByRole('button', { name: 'Save' })).toHaveFocus();
     fireEvent.click(screen.getByRole('button', { name: 'Discard' }));
-    expect(
-      screen.queryByRole('tab', { name: /draft\.md/i }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: /draft\.md/i })).not.toBeInTheDocument();
 
-    fireEvent.click(
-      screen.getByRole('button', { name: /more open documents/i }),
-    );
+    fireEvent.click(screen.getByRole('button', { name: /more open documents/i }));
     const menu = screen.getByRole('menu', { name: 'Overflow documents' });
-    fireEvent.click(
-      within(menu).getByRole('menuitem', { name: /^welcome\.md$/iu }),
-    );
-    expect(
-      screen.getByRole('tab', { name: /welcome\.md/i }),
-    ).toHaveAttribute('aria-selected', 'true');
+    fireEvent.click(within(menu).getByRole('menuitem', { name: /^welcome\.md$/iu }));
+    expect(screen.getByRole('tab', { name: /welcome\.md/i })).toHaveAttribute('aria-selected', 'true');
   });
 
   it('cancels dirty close without changing content and returns keyboard focus', () => {
@@ -183,15 +225,11 @@ describe('document foundation shell', () => {
     const document = screen.getByRole('region', { name: 'draft.md' });
     document.focus();
     fireEvent.keyDown(screen.getByRole('main'), { key: 'w', ctrlKey: true });
-    expect(
-      within(screen.getByRole('dialog')).getByRole('button', { name: 'Save' }),
-    ).toHaveFocus();
+    expect(within(screen.getByRole('dialog')).getByRole('button', { name: 'Save' })).toHaveFocus();
     fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(document).toHaveFocus();
-    expect(screen.getByRole('region', { name: 'draft.md' })).toHaveTextContent(
-      'Unsaved fixture content.',
-    );
+    expect(screen.getByRole('region', { name: 'draft.md' })).toHaveTextContent('Unsaved fixture content.');
     expect(screen.getByRole('status')).toHaveTextContent(/remains open/i);
   });
 
@@ -199,12 +237,8 @@ describe('document foundation shell', () => {
     render(<App sessions={[initialSessions[3]]} />);
     fireEvent.keyDown(screen.getByRole('main'), { key: 'w', ctrlKey: true });
     fireEvent.click(screen.getByRole('button', { name: 'Save As' }));
-    expect(screen.getByRole('dialog')).toHaveTextContent(
-      /until a durable receipt arrives/i,
-    );
-    expect(screen.getByRole('region', { name: 'draft.md' })).toHaveTextContent(
-      'Unsaved fixture content.',
-    );
+    expect(screen.getByRole('dialog')).toHaveTextContent(/until a durable receipt arrives/i);
+    expect(screen.getByRole('region', { name: 'draft.md' })).toHaveTextContent('Unsaved fixture content.');
     expect(screen.getByRole('region', { name: 'draft.md' })).toBeVisible();
   });
 
@@ -228,7 +262,11 @@ describe('document foundation shell', () => {
   });
 
   it('completes a close only after native in-place Save returns a durable receipt', async () => {
-    const session = { ...initialSessions[3], source_id: 'source', external_revision: revision };
+    const session = {
+      ...initialSessions[3],
+      source_id: 'source',
+      external_revision: revision,
+    };
     const save = vi.fn().mockResolvedValue({
       ...saveReceipt,
       accepted_session_revision: session.revision,
@@ -326,14 +364,10 @@ describe('document foundation shell', () => {
     };
 
     render(<App sessions={[]} recoveryGateway={gateway} />);
-    fireEvent.click(
-      await screen.findByRole('button', { name: 'Recover' }),
-    );
+    fireEvent.click(await screen.findByRole('button', { name: 'Recover' }));
 
     expect(await screen.findByRole('region', { name: 'recovered.txt' })).toBeVisible();
-    await waitFor(() => expect(screen.getByRole('region', { name: 'recovered.txt' })).toHaveTextContent(
-      'Recovered exact content',
-    ));
+    await waitFor(() => expect(screen.getByRole('region', { name: 'recovered.txt' })).toHaveTextContent('Recovered exact content'));
     expect(remove).not.toHaveBeenCalled();
   });
 
@@ -399,22 +433,62 @@ describe('document foundation shell', () => {
   });
 
   it('refreshes metadata and publishes only a revision-bound checksum', async () => {
-    const observedRevision = { ...revision, byte_length: 4, modified_unix_nanos: '2', change_token: 'observed' };
+    const observedRevision = {
+      ...revision,
+      byte_length: 4,
+      modified_unix_nanos: '2',
+      change_token: 'observed',
+    };
     const source = {
       ...initialSessions[2],
       lifecycle: 'active' as const,
       source_id: 'source',
       external_revision: revision,
-      renderer: { ...initialSessions[2].renderer, capabilities: { ...initialSessions[2].renderer.capabilities, inspect_metadata: true } },
+      renderer: {
+        ...initialSessions[2].renderer,
+        capabilities: {
+          ...initialSessions[2].renderer.capabilities,
+          inspect_metadata: true,
+        },
+      },
     };
-    const advanceIntegrity = vi.fn((requestId: string) => Promise.resolve({ request_id: requestId, source_id: 'source', external_revision: observedRevision, processed_bytes: '4', total_bytes: '4', state: 'ready' as const, sha256: 'a'.repeat(64) }));
-    const startIntegrity = vi.fn((request: IntegrityStartRequest) => Promise.resolve({ request_id: request.request_id, source_id: 'source', external_revision: request.expected_external_revision, processed_bytes: '0', total_bytes: '4', state: 'pending' as const, sha256: null }));
+    const advanceIntegrity = vi.fn((requestId: string) =>
+      Promise.resolve({
+        request_id: requestId,
+        source_id: 'source',
+        external_revision: observedRevision,
+        processed_bytes: '4',
+        total_bytes: '4',
+        state: 'ready' as const,
+        sha256: 'a'.repeat(64),
+      }),
+    );
+    const startIntegrity = vi.fn((request: IntegrityStartRequest) =>
+      Promise.resolve({
+        request_id: request.request_id,
+        source_id: 'source',
+        external_revision: request.expected_external_revision,
+        processed_bytes: '0',
+        total_bytes: '4',
+        state: 'pending' as const,
+        sha256: null,
+      }),
+    );
     const gateway: MetadataGateway = {
-      query: vi.fn(() => Promise.resolve({
-        source_id: 'source', external_revision: observedRevision, display_name: 'refreshed.txt', source_kind: 'file' as const,
-        byte_length: '4', modified_unix_nanos: '2', created_unix_nanos: null, accessed_unix_nanos: null,
-        write_state: 'writable' as const, identity_confidence: 'strong' as const,
-      })),
+      query: vi.fn(() =>
+        Promise.resolve({
+          source_id: 'source',
+          external_revision: observedRevision,
+          display_name: 'refreshed.txt',
+          source_kind: 'file' as const,
+          byte_length: '4',
+          modified_unix_nanos: '2',
+          created_unix_nanos: null,
+          accessed_unix_nanos: null,
+          write_state: 'writable' as const,
+          identity_confidence: 'strong' as const,
+        }),
+      ),
       startIntegrity,
       advanceIntegrity,
       cancelIntegrity: vi.fn(() => Promise.resolve()),
@@ -435,11 +509,19 @@ describe('document foundation shell', () => {
       source_id: 'source',
       external_revision: revision,
     };
-    const query = vi.fn()
+    const query = vi
+      .fn()
       .mockResolvedValueOnce({
-        source_id: 'source', external_revision: revision, display_name: 'observed.txt', source_kind: 'file' as const,
-        byte_length: '3', modified_unix_nanos: '1', created_unix_nanos: null, accessed_unix_nanos: null,
-        write_state: 'writable' as const, identity_confidence: 'strong' as const,
+        source_id: 'source',
+        external_revision: revision,
+        display_name: 'observed.txt',
+        source_kind: 'file' as const,
+        byte_length: '3',
+        modified_unix_nanos: '1',
+        created_unix_nanos: null,
+        accessed_unix_nanos: null,
+        write_state: 'writable' as const,
+        identity_confidence: 'strong' as const,
       })
       .mockRejectedValue(new Error('source unavailable'));
     const gateway: MetadataGateway = {
@@ -451,19 +533,49 @@ describe('document foundation shell', () => {
     render(<App sessions={[source]} metadataGateway={gateway} />);
     invokeMenu('File information');
     expect(await screen.findByRole('button', { name: 'Calculate SHA-256' })).toBeInTheDocument();
-    await waitFor(() => expect(query).toHaveBeenCalledTimes(2), { timeout: 2_000 });
+    await waitFor(() => expect(query).toHaveBeenCalledTimes(2), {
+      timeout: 2_000,
+    });
     await waitFor(() => expect(screen.getAllByRole('status').some((status) => status.textContent?.includes('Source facts are unavailable'))).toBe(true));
     expect(screen.queryByRole('button', { name: 'Calculate SHA-256' })).not.toBeInTheDocument();
     expect(screen.getAllByText('Unavailable (metadata_unavailable)').length).toBeGreaterThan(0);
   });
 
   it('cancels native checksum work immediately when the inspector closes', async () => {
-    const source = { ...initialSessions[2], lifecycle: 'active' as const, source_id: 'source', external_revision: revision };
+    const source = {
+      ...initialSessions[2],
+      lifecycle: 'active' as const,
+      source_id: 'source',
+      external_revision: revision,
+    };
     const cancelIntegrity = vi.fn(() => Promise.resolve());
     const advanceIntegrity = vi.fn(() => new Promise<IntegrityProgress>(() => undefined));
     const gateway: MetadataGateway = {
-      query: vi.fn(() => Promise.resolve({ source_id: 'source', external_revision: revision, display_name: 'notes.txt', source_kind: 'file' as const, byte_length: '3', modified_unix_nanos: '1', created_unix_nanos: null, accessed_unix_nanos: null, write_state: 'writable' as const, identity_confidence: 'strong' as const })),
-      startIntegrity: vi.fn((request: IntegrityStartRequest) => Promise.resolve({ request_id: request.request_id, source_id: 'source', external_revision: revision, processed_bytes: '0', total_bytes: '3', state: 'pending' as const, sha256: null })),
+      query: vi.fn(() =>
+        Promise.resolve({
+          source_id: 'source',
+          external_revision: revision,
+          display_name: 'notes.txt',
+          source_kind: 'file' as const,
+          byte_length: '3',
+          modified_unix_nanos: '1',
+          created_unix_nanos: null,
+          accessed_unix_nanos: null,
+          write_state: 'writable' as const,
+          identity_confidence: 'strong' as const,
+        }),
+      ),
+      startIntegrity: vi.fn((request: IntegrityStartRequest) =>
+        Promise.resolve({
+          request_id: request.request_id,
+          source_id: 'source',
+          external_revision: revision,
+          processed_bytes: '0',
+          total_bytes: '3',
+          state: 'pending' as const,
+          sha256: null,
+        }),
+      ),
       advanceIntegrity,
       cancelIntegrity,
     };
@@ -476,9 +588,7 @@ describe('document foundation shell', () => {
   });
 
   it('keeps the reference document area at or above 90 percent', () => {
-    expect(DESKTOP_CHROME_MAX_PX).toBeLessThanOrEqual(
-      REFERENCE_HEIGHT_PX * 0.1,
-    );
+    expect(DESKTOP_CHROME_MAX_PX).toBeLessThanOrEqual(REFERENCE_HEIGHT_PX * 0.1);
   });
 
   it('has no critical or serious automated accessibility findings', async () => {
@@ -489,11 +599,7 @@ describe('document foundation shell', () => {
         values: ['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'],
       },
     });
-    expect(
-      results.violations.filter(
-        ({ impact }) => impact === 'critical' || impact === 'serious',
-      ),
-    ).toEqual([]);
+    expect(results.violations.filter(({ impact }) => impact === 'critical' || impact === 'serious')).toEqual([]);
   });
 
   it('loads, edits, persists, and resets bounded preferences without replacing the document', async () => {
@@ -502,7 +608,9 @@ describe('document foundation shell', () => {
     invokeMenu('Preferences');
     expect(screen.getByRole('complementary', { name: 'Preferences' })).toBeInTheDocument();
     expect(screen.getByRole('region', { name: 'notes.txt' })).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText('Theme'), { target: { value: 'dark' } });
+    fireEvent.change(screen.getByLabelText('Theme'), {
+      target: { value: 'dark' },
+    });
     await waitFor(() => expect(gateway.persistPreferences).toHaveBeenCalledWith(expect.objectContaining({ theme: 'dark' })), { timeout: 1_000 });
     fireEvent.click(screen.getByRole('button', { name: 'Reset preferences' }));
     await waitFor(() => expect(gateway.reset).toHaveBeenCalledWith('preferences'));
@@ -552,13 +660,10 @@ describe('document foundation shell', () => {
     });
     render(<App sessions={restorable} persistenceGateway={gateway} />);
 
-    await waitFor(() =>
-      expect(screen.getByRole('tab', { name: /diagram\.mmd/iu }))
-        .toHaveAttribute('aria-selected', 'true'));
-    expect(screen.getByRole('complementary', { name: 'Preferences' }))
-      .toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('tab', { name: /diagram\.mmd/iu })).toHaveAttribute('aria-selected', 'true'));
+    expect(screen.getByRole('complementary', { name: 'Preferences' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
-    expect(screen.getByRole('menuitem', { name: 'Preview' })).toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: 'Preview' })).not.toBeInTheDocument();
   });
 
   it('invokes Android restoration before matching a loaded native projection', async () => {
@@ -573,8 +678,7 @@ describe('document foundation shell', () => {
         restoration_reference: sourceReference,
       },
     };
-    const restore = vi.fn<AndroidRestorationGateway['restore']>()
-      .mockResolvedValue([restoredSession]);
+    const restore = vi.fn<AndroidRestorationGateway['restore']>().mockResolvedValue([restoredSession]);
     const androidGateway: AndroidRestorationGateway = { restore };
     const gateway = persistenceGateway({
       loadSession: vi.fn().mockResolvedValue({
@@ -582,29 +686,25 @@ describe('document foundation shell', () => {
         value: {
           schema_version: 1,
           window: { active_session_index: 0, inspector: 'closed' },
-          sessions: [{
-            session_key: 'old-process-session-1',
-            display_hint: 'welcome.md',
-            renderer_id: 'markdown',
-            presentation_mode: 'rendered',
-            source_reference: sourceReference,
-            recovery_record_id: null,
-          }],
+          sessions: [
+            {
+              session_key: 'old-process-session-1',
+              display_hint: 'welcome.md',
+              renderer_id: 'markdown',
+              presentation_mode: 'rendered',
+              source_reference: sourceReference,
+              recovery_record_id: null,
+            },
+          ],
         },
         warning_code: null,
       }),
     });
 
-    render(<App
-      sessions={[]}
-      persistenceGateway={gateway}
-      androidRestorationGateway={androidGateway}
-    />);
+    render(<App sessions={[]} persistenceGateway={gateway} androidRestorationGateway={androidGateway} />);
 
     expect(await screen.findByRole('region', { name: 'welcome.md' })).toBeVisible();
-    expect(restore).toHaveBeenCalledWith([
-      expect.objectContaining({ source_reference: sourceReference }),
-    ]);
+    expect(restore).toHaveBeenCalledWith([expect.objectContaining({ source_reference: sourceReference })]);
   });
 
   it('uses a minimal empty surface after all fixture sessions close', () => {

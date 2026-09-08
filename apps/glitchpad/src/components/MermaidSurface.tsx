@@ -35,13 +35,16 @@ export const MermaidSurface = forwardRef<TextEditorHandle, MermaidSurfaceProps>(
   const ownedClient = useRef<MermaidRendererClient | null>(null);
   const ownsClient = useRef(rendererClient === undefined);
   const lifecycleGeneration = useRef(0);
-  if (!ownedClient.current) ownedClient.current = rendererClient ?? new MermaidRendererClient(
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    rendererResourceLedger.register(`mermaid:${session.id}:${performanceInstanceId}`, session.text_document?.source_bytes ?? 0),
-  );
+  if (!ownedClient.current)
+    ownedClient.current =
+      rendererClient ??
+      new MermaidRendererClient(
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        rendererResourceLedger.register(`mermaid:${session.id}:${performanceInstanceId}`, session.text_document?.source_bytes ?? 0),
+      );
   const client = ownedClient.current;
   const editorRef = useRef<TextEditorHandle>(null);
   const viewportRef = useRef<DiagramViewportHandle>(null);
@@ -58,8 +61,22 @@ export const MermaidSurface = forwardRef<TextEditorHandle, MermaidSurfaceProps>(
   const textDocument = session.text_document!;
   const eligible = textDocument.source_bytes <= MERMAID_STANDALONE_MAX_BYTES;
   const visibleResult = result?.status === 'ready' ? result : lastValid;
-  const projectionRef = useRef({ mode, result, lastValid, status, stale, viewport });
-  projectionRef.current = { mode, result, lastValid, status, stale, viewport };
+  const projectionRef = useRef({
+    mode,
+    result,
+    lastValid,
+    status,
+    stale,
+    viewport,
+  });
+  projectionRef.current = {
+    mode,
+    result,
+    lastValid,
+    status,
+    stale,
+    viewport,
+  };
 
   const publish = (next: Partial<MermaidDocumentState>) => {
     const current = projectionRef.current;
@@ -87,7 +104,12 @@ export const MermaidSurface = forwardRef<TextEditorHandle, MermaidSurfaceProps>(
         setStatus('limited');
         setMode('source');
         setStale(hasPrevious);
-        projectionRef.current = { ...projectionRef.current, mode: 'source', status: 'limited', stale: hasPrevious };
+        projectionRef.current = {
+          ...projectionRef.current,
+          mode: 'source',
+          status: 'limited',
+          stale: hasPrevious,
+        };
         publish({
           mode: 'source',
           render_revision: previous?.source_revision ?? null,
@@ -98,49 +120,63 @@ export const MermaidSurface = forwardRef<TextEditorHandle, MermaidSurfaceProps>(
       return;
     }
     setStatus('scheduled');
-    void client.render({
-      owner_id: session.id,
-      source_revision: session.revision,
-      source_text: textDocument.normalized_text,
-      fallback_label: `${session.source.display_name} Mermaid diagram`,
-      theme,
-    }).then((next) => {
-      if (!next) return;
-      setResult(next);
-      setStatus(next.status);
-      projectionRef.current = { ...projectionRef.current, result: next, status: next.status };
-      if (next.status === 'ready') {
-        setLastValid(next);
-        setStale(false);
-        projectionRef.current = { ...projectionRef.current, lastValid: next, stale: false };
-        publish({ render_revision: next.source_revision, render_status: 'ready', preview_stale: false });
-      } else {
-        const previous = projectionRef.current.lastValid;
-        const hasPrevious = previous !== null;
-        setStale(hasPrevious);
-        if (!hasPrevious) setMode('source');
-        projectionRef.current = { ...projectionRef.current, mode: hasPrevious ? projectionRef.current.mode : 'source', stale: hasPrevious };
-        publish({ render_revision: previous?.source_revision ?? null });
-      }
-      onMetadataContribution?.(
-        rendererContribution(session, mermaidMetadataFacts(next, projectionRef.current.stale), next.source_revision),
-      );
-    });
+    void client
+      .render({
+        owner_id: session.id,
+        source_revision: session.revision,
+        source_text: textDocument.normalized_text,
+        fallback_label: `${session.source.display_name} Mermaid diagram`,
+        theme,
+      })
+      .then((next) => {
+        if (!next) return;
+        setResult(next);
+        setStatus(next.status);
+        projectionRef.current = {
+          ...projectionRef.current,
+          result: next,
+          status: next.status,
+        };
+        if (next.status === 'ready') {
+          setLastValid(next);
+          setStale(false);
+          projectionRef.current = {
+            ...projectionRef.current,
+            lastValid: next,
+            stale: false,
+          };
+          publish({
+            render_revision: next.source_revision,
+            render_status: 'ready',
+            preview_stale: false,
+          });
+        } else {
+          const previous = projectionRef.current.lastValid;
+          const hasPrevious = previous !== null;
+          setStale(hasPrevious);
+          if (!hasPrevious) setMode('source');
+          projectionRef.current = {
+            ...projectionRef.current,
+            mode: hasPrevious ? projectionRef.current.mode : 'source',
+            stale: hasPrevious,
+          };
+          publish({ render_revision: previous?.source_revision ?? null });
+        }
+        onMetadataContribution?.(rendererContribution(session, mermaidMetadataFacts(next, projectionRef.current.stale), next.source_revision));
+      });
     return () => client.cancel();
   }, [client, eligible, session.id, session.lifecycle, session.revision, textDocument.normalized_text, theme]);
 
-  useEffect(
-    () => {
-      const generation = ++lifecycleGeneration.current;
-      return () => queueMicrotask(() => {
+  useEffect(() => {
+    const generation = ++lifecycleGeneration.current;
+    return () =>
+      queueMicrotask(() => {
         if (ownsClient.current && lifecycleGeneration.current === generation) {
           ownedClient.current?.dispose();
           ownedClient.current = null;
         }
       });
-    },
-    [],
-  );
+  }, []);
 
   const matches = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase();
@@ -148,16 +184,16 @@ export const MermaidSurface = forwardRef<TextEditorHandle, MermaidSurfaceProps>(
   }, [query, visibleResult?.search_text]);
 
   const changeMode = (nextMode: 'rendered' | 'source') => {
-    if (nextMode === 'rendered' && !visibleResult) return;
+    if (nextMode === 'rendered' && !visibleResult) return false;
     setMode(nextMode);
     publish({ mode: nextMode });
+    return true;
   };
 
   useImperativeHandle(handleRef, () => ({
     invoke(command) {
       if (command === 'edit') {
-        changeMode(mode === 'source' ? 'rendered' : 'source');
-        return true;
+        return changeMode(mode === 'source' ? 'rendered' : 'source');
       }
       if (mode === 'source' && (command === 'search' || command === 'close_search' || command === 'go_to_line')) {
         return editorRef.current?.invoke(command) ?? false;
@@ -220,24 +256,46 @@ export const MermaidSurface = forwardRef<TextEditorHandle, MermaidSurfaceProps>(
       data-performance-duration={visibleResult?.measurements.total_duration_ms ?? ''}
     >
       <span className="visually-hidden" role="status" aria-live="polite">
-        {status === 'scheduled' ? 'Rendering diagram' : stale ? 'Preview is from an earlier source revision' : status === 'ready' ? 'Preview current' : status === 'idle' ? 'Preparing preview' : result?.diagnostic?.message ?? status}
+        {status === 'scheduled'
+          ? 'Rendering diagram'
+          : stale
+            ? 'Preview is from an earlier source revision'
+            : status === 'ready'
+              ? 'Preview current'
+              : status === 'idle'
+                ? 'Preparing preview'
+                : (result?.diagnostic?.message ?? status)}
       </span>
       {searchOpen && (
         <div className="mermaid-search" role="search">
-          <label>Find diagram text <input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} /></label>
+          <label>
+            Find diagram text <input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} />
+          </label>
           <span aria-live="polite">{query ? `${matches.length} matches` : 'Enter search text'}</span>
-          <button type="button" onClick={() => setSearchOpen(false)}>Close search</button>
+          <button type="button" onClick={() => setSearchOpen(false)}>
+            Close search
+          </button>
         </div>
       )}
       {mode === 'source' ? (
         <div className="mermaid-source-layout">
-          <div className="mermaid-source-editor"><TextEditorSurface ref={editorRef} session={session} onDocumentChange={onDocumentChange} onLanguageChange={onLanguageChange} /></div>
-          {preview && <div className="mermaid-stale-preview" aria-label={stale ? 'Earlier valid preview' : 'Current preview'}>{preview}</div>}
+          <div className="mermaid-source-editor">
+            <TextEditorSurface ref={editorRef} session={session} onDocumentChange={onDocumentChange} onLanguageChange={onLanguageChange} />
+          </div>
+          {preview && (
+            <div className="mermaid-stale-preview" aria-label={stale ? 'Earlier valid preview' : 'Current preview'}>
+              {preview}
+            </div>
+          )}
         </div>
-      ) : preview ? preview : (
+      ) : preview ? (
+        preview
+      ) : (
         <div className="mermaid-fallback" role="alert">
-          <p>{eligible ? result?.diagnostic?.message ?? 'Rendering diagram' : 'Diagram preview is unavailable above 1 MiB. Source remains available.'}</p>
-          <button type="button" onClick={() => changeMode('source')}>View source</button>
+          <p>{eligible ? (result?.diagnostic?.message ?? 'Rendering diagram') : 'Diagram preview is unavailable above 1 MiB. Source remains available.'}</p>
+          <button type="button" onClick={() => changeMode('source')}>
+            View source
+          </button>
         </div>
       )}
     </div>
@@ -245,18 +303,98 @@ export const MermaidSurface = forwardRef<TextEditorHandle, MermaidSurfaceProps>(
 });
 
 const mermaidMetadataFacts = (result: MermaidRenderResult, stale: boolean): MetadataObservation[] => [
-  result.diagram_type ? { key: 'diagram.type', availability: 'available', value: { kind: 'text', value: result.diagram_type } } : { key: 'diagram.type', availability: 'not_provided' },
-  { key: 'diagram.parser_version', availability: 'available', value: { kind: 'text', value: result.parser_version } },
-  { key: 'diagram.sanitizer_version', availability: 'available', value: { kind: 'integer', value: String(result.sanitizer_version) } },
-  { key: 'diagram.preview_revision', availability: 'available', value: { kind: 'integer', value: String(result.source_revision) } },
-  { key: 'diagram.preview_stale', availability: 'available', value: { kind: 'boolean', value: stale } },
-  { key: 'diagram.source_bytes', availability: 'available', value: { kind: 'integer', value: String(result.measurements.source_bytes) }, unit: 'bytes' },
-  { key: 'diagram.edge_count', availability: 'available', value: { kind: 'integer', value: String(result.measurements.edge_count) } },
-  { key: 'diagram.output_bytes', availability: 'available', value: { kind: 'integer', value: String(result.measurements.output_bytes) }, unit: 'bytes' },
-  { key: 'diagram.parse_duration', availability: 'available', value: { kind: 'decimal', value: String(result.measurements.parse_duration_ms) }, unit: 'ms' },
-  { key: 'diagram.render_duration', availability: 'available', value: { kind: 'decimal', value: String(result.measurements.render_duration_ms) }, unit: 'ms' },
-  { key: 'diagram.total_duration', availability: 'available', value: { kind: 'decimal', value: String(result.measurements.total_duration_ms) }, unit: 'ms' },
-  result.limit ? { key: 'diagram.active_limit', availability: 'available', value: { kind: 'text', value: result.limit.replaceAll('_', ' ') } } : { key: 'diagram.active_limit', availability: 'not_provided' },
-  { key: 'diagram.accessible_title', availability: 'available', value: { kind: 'text', value: result.accessibility.authored_title ? 'Authored' : 'Fallback' } },
-  { key: 'diagram.accessible_description', availability: 'available', value: { kind: 'text', value: result.accessibility.authored_description ? 'Authored' : 'Absent' } },
+  result.diagram_type
+    ? {
+        key: 'diagram.type',
+        availability: 'available',
+        value: { kind: 'text', value: result.diagram_type },
+      }
+    : { key: 'diagram.type', availability: 'not_provided' },
+  {
+    key: 'diagram.parser_version',
+    availability: 'available',
+    value: { kind: 'text', value: result.parser_version },
+  },
+  {
+    key: 'diagram.sanitizer_version',
+    availability: 'available',
+    value: { kind: 'integer', value: String(result.sanitizer_version) },
+  },
+  {
+    key: 'diagram.preview_revision',
+    availability: 'available',
+    value: { kind: 'integer', value: String(result.source_revision) },
+  },
+  {
+    key: 'diagram.preview_stale',
+    availability: 'available',
+    value: { kind: 'boolean', value: stale },
+  },
+  {
+    key: 'diagram.source_bytes',
+    availability: 'available',
+    value: { kind: 'integer', value: String(result.measurements.source_bytes) },
+    unit: 'bytes',
+  },
+  {
+    key: 'diagram.edge_count',
+    availability: 'available',
+    value: { kind: 'integer', value: String(result.measurements.edge_count) },
+  },
+  {
+    key: 'diagram.output_bytes',
+    availability: 'available',
+    value: { kind: 'integer', value: String(result.measurements.output_bytes) },
+    unit: 'bytes',
+  },
+  {
+    key: 'diagram.parse_duration',
+    availability: 'available',
+    value: {
+      kind: 'decimal',
+      value: String(result.measurements.parse_duration_ms),
+    },
+    unit: 'ms',
+  },
+  {
+    key: 'diagram.render_duration',
+    availability: 'available',
+    value: {
+      kind: 'decimal',
+      value: String(result.measurements.render_duration_ms),
+    },
+    unit: 'ms',
+  },
+  {
+    key: 'diagram.total_duration',
+    availability: 'available',
+    value: {
+      kind: 'decimal',
+      value: String(result.measurements.total_duration_ms),
+    },
+    unit: 'ms',
+  },
+  result.limit
+    ? {
+        key: 'diagram.active_limit',
+        availability: 'available',
+        value: { kind: 'text', value: result.limit.replaceAll('_', ' ') },
+      }
+    : { key: 'diagram.active_limit', availability: 'not_provided' },
+  {
+    key: 'diagram.accessible_title',
+    availability: 'available',
+    value: {
+      kind: 'text',
+      value: result.accessibility.authored_title ? 'Authored' : 'Fallback',
+    },
+  },
+  {
+    key: 'diagram.accessible_description',
+    availability: 'available',
+    value: {
+      kind: 'text',
+      value: result.accessibility.authored_description ? 'Authored' : 'Absent',
+    },
+  },
 ];

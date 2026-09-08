@@ -21,6 +21,16 @@ describe('Markdown renderer conformance', () => {
     const writable = commandSetFor(initialSessions[3]).map(({ id }) => id);
     expect(readOnly).toEqual(expect.arrayContaining(['copy', 'search', 'find_next', 'find_previous']));
     expect(readOnly).toContain('edit');
+    expect(readOnly).toContain('outline');
     expect(writable).toEqual(expect.arrayContaining(['edit', 'undo', 'redo', 'save']));
+
+    const sourceMode = {
+      ...initialSessions[3],
+      markdown_document: {
+        ...initialSessions[3].markdown_document!,
+        mode: 'source' as const,
+      },
+    };
+    expect(commandSetFor(sourceMode).map(({ id }) => id)).not.toContain('outline');
   });
 });

@@ -11,25 +11,22 @@ interface TabStripProps {
 export function TabStrip({ state, dispatch }: TabStripProps) {
   const projection = projectTabs(state);
   const previousActive = useRef(state.activeId);
+  const previousCount = useRef(state.sessions.length);
 
   useEffect(() => {
-    if (previousActive.current !== state.activeId && state.activeId) {
-      document.getElementById(`tab-${state.activeId}`)?.focus();
+    if (state.activeId) {
+      const focusTarget =
+        previousCount.current >= 2 && state.sessions.length < 2 ? `panel-${state.activeId}` : previousActive.current !== state.activeId ? `tab-${state.activeId}` : null;
+      if (focusTarget) document.getElementById(focusTarget)?.focus();
     }
     previousActive.current = state.activeId;
-  }, [state.activeId]);
+    previousCount.current = state.sessions.length;
+  }, [state.activeId, state.sessions.length]);
 
   if (state.sessions.length < 2) return null;
 
-  const handleTabKey = (
-    event: KeyboardEvent<HTMLButtonElement>,
-    id: string,
-  ) => {
-    if (
-      event.altKey &&
-      event.shiftKey &&
-      (event.key === 'ArrowLeft' || event.key === 'ArrowRight')
-    ) {
+  const handleTabKey = (event: KeyboardEvent<HTMLButtonElement>, id: string) => {
+    if (event.altKey && event.shiftKey && (event.key === 'ArrowLeft' || event.key === 'ArrowRight')) {
       event.preventDefault();
       dispatch({
         type: 'reorder',
@@ -38,16 +35,7 @@ export function TabStrip({ state, dispatch }: TabStripProps) {
       });
       return;
     }
-    const action =
-      event.key === 'ArrowLeft'
-        ? 'previous'
-        : event.key === 'ArrowRight'
-          ? 'next'
-          : event.key === 'Home'
-            ? 'first'
-            : event.key === 'End'
-              ? 'last'
-              : null;
+    const action = event.key === 'ArrowLeft' ? 'previous' : event.key === 'ArrowRight' ? 'next' : event.key === 'Home' ? 'first' : event.key === 'End' ? 'last' : null;
     if (action) {
       event.preventDefault();
       dispatch({ type: action });
@@ -84,12 +72,7 @@ export function TabStrip({ state, dispatch }: TabStripProps) {
         <div className="tab-close-list" aria-label="Close open documents">
           {projection.inline.map((session) => (
             <div className={`tab-close-slot${session.id === state.activeId ? ' active' : ''}`} key={session.id}>
-              <button
-                className="tab-close"
-                type="button"
-                aria-label={`Close ${session.source.display_name}`}
-                onClick={() => dispatch({ type: 'close', id: session.id })}
-              >
+              <button className="tab-close" type="button" aria-label={`Close ${session.source.display_name}`} onClick={() => dispatch({ type: 'close', id: session.id })}>
                 <span aria-hidden="true">×</span>
               </button>
             </div>
@@ -109,17 +92,16 @@ export function TabStrip({ state, dispatch }: TabStripProps) {
             +{projection.overflow.length}
           </button>
           {state.overflowOpen && (
-            <div
-              className="overflow-menu"
-              role="menu"
-              aria-label="Overflow documents"
-            >
+            <div className="overflow-menu" role="menu" aria-label="Overflow documents">
               {projection.overflow.map((session) => (
                 <div className="overflow-item" key={session.id}>
                   <button type="button" role="menuitem" onClick={() => dispatch({ type: 'activate', id: session.id })}>
-                    {session.source.display_name}{session.dirty ? ' (unsaved)' : ''}
+                    {session.source.display_name}
+                    {session.dirty ? ' (unsaved)' : ''}
                   </button>
-                  <button type="button" role="menuitem" aria-label={`Close ${session.source.display_name}`} onClick={() => dispatch({ type: 'close', id: session.id })}>×</button>
+                  <button type="button" role="menuitem" aria-label={`Close ${session.source.display_name}`} onClick={() => dispatch({ type: 'close', id: session.id })}>
+                    ×
+                  </button>
                 </div>
               ))}
             </div>

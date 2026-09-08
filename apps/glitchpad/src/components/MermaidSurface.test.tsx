@@ -28,11 +28,20 @@ const mermaidSession = (content: string) => ({
     ...initialSessions[1].source,
     display_name: 'architecture.mmd',
     byte_length: new TextEncoder().encode(content).byteLength,
-    capabilities: { ...initialSessions[1].source.capabilities, write: true, replace_atomically: true },
+    capabilities: {
+      ...initialSessions[1].source.capabilities,
+      write: true,
+      replace_atomically: true,
+    },
   },
   renderer: {
     ...initialSessions[1].renderer,
-    capabilities: { ...initialSessions[1].renderer.capabilities, edit: true, save: true, inspect_metadata: true },
+    capabilities: {
+      ...initialSessions[1].renderer.capabilities,
+      edit: true,
+      save: true,
+      inspect_metadata: true,
+    },
   },
   text_document: {
     ...initialSessions[1].text_document!,
@@ -42,7 +51,7 @@ const mermaidSession = (content: string) => ({
   },
   mermaid_document: {
     ...initialSessions[1].mermaid_document!,
-    mode: content.trim() ? 'rendered' as const : 'source' as const,
+    mode: content.trim() ? ('rendered' as const) : ('source' as const),
   },
 });
 
@@ -54,7 +63,9 @@ describe('Mermaid surface', () => {
     invokeMenu('File information');
     expect(screen.getByText('flowchart')).toBeInTheDocument();
     expect(screen.getByText('11.17.2')).toBeInTheDocument();
-    const inspector = screen.getByRole('complementary', { name: 'File information' });
+    const inspector = screen.getByRole('complementary', {
+      name: 'File information',
+    });
     expect(inspector).toHaveTextContent('File namearchitecture.mmd');
     expect(inspector).toHaveTextContent('Media typetext/vnd.mermaid');
     expect(inspector).toHaveTextContent('Encodingutf8');
@@ -68,9 +79,19 @@ describe('Mermaid surface', () => {
     render(<App sessions={[mermaidSession('flowchart TB\n  A --> B')]} />);
     await screen.findByRole('img');
     invokeMenu('Edit source');
-    const textbox = screen.getByRole('textbox', { name: 'architecture.mmd text editor' });
+    const textbox = screen.getByRole('textbox', {
+      name: 'architecture.mmd text editor',
+    });
     const view = EditorView.findFromDOM(textbox)!;
-    act(() => view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: 'flowchart TB\n  A -->' } }));
+    act(() =>
+      view.dispatch({
+        changes: {
+          from: 0,
+          to: view.state.doc.length,
+          insert: 'flowchart TB\n  A -->',
+        },
+      }),
+    );
     await waitFor(() => expect(screen.getByText('Preview is from an earlier source revision')).toBeInTheDocument(), { timeout: 2_000 });
     expect(screen.getByLabelText('Earlier valid preview')).toBeInTheDocument();
   });
@@ -78,22 +99,34 @@ describe('Mermaid surface', () => {
   it('opens an empty Mermaid source directly in editable source mode', () => {
     render(<App sessions={[mermaidSession('')]} />);
     expect(screen.getByRole('textbox', { name: 'architecture.mmd text editor' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
+    expect(screen.queryByRole('menuitem', { name: 'Preview' })).not.toBeInTheDocument();
   });
 
   it('marks a retained preview stale and publishes the limited state above 1 MiB', async () => {
     render(<App sessions={[mermaidSession('flowchart TB\n  A --> B')]} />);
     await screen.findByRole('img');
     invokeMenu('Edit source');
-    const textbox = screen.getByRole('textbox', { name: 'architecture.mmd text editor' });
+    const textbox = screen.getByRole('textbox', {
+      name: 'architecture.mmd text editor',
+    });
     const view = EditorView.findFromDOM(textbox)!;
     const oversized = `flowchart TB\nA --> B\n%%${'x'.repeat(MERMAID_STANDALONE_MAX_BYTES)}`;
-    act(() => view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: oversized } }));
+    act(() =>
+      view.dispatch({
+        changes: { from: 0, to: view.state.doc.length, insert: oversized },
+      }),
+    );
     await waitFor(() => expect(screen.getByText('Preview is from an earlier source revision')).toBeInTheDocument());
     expect(screen.getByLabelText('Earlier valid preview')).toBeInTheDocument();
   });
 
   it('renders after StrictMode replays effect setup and cleanup', async () => {
-    render(<StrictMode><App sessions={[mermaidSession('flowchart TB\n  A --> B')]} /></StrictMode>);
+    render(
+      <StrictMode>
+        <App sessions={[mermaidSession('flowchart TB\n  A --> B')]} />
+      </StrictMode>,
+    );
     expect(await screen.findByRole('img', {}, { timeout: 2_000 })).toBeInTheDocument();
   });
 
@@ -109,7 +142,9 @@ describe('Mermaid surface', () => {
   it('has no critical or serious accessibility violations', async () => {
     const { container } = render(<App sessions={[mermaidSession('flowchart TB\n  accTitle: Architecture\n  A --> B')]} />);
     await screen.findByRole('img');
-    const results = await axe.run(container, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa'] } });
+    const results = await axe.run(container, {
+      runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa'] },
+    });
     expect(results.violations.filter(({ impact }) => impact === 'critical' || impact === 'serious')).toEqual([]);
   });
 });

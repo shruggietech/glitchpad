@@ -31,24 +31,17 @@ export interface CommandDescriptor {
   targetRevision: number;
 }
 
-export type CommandResult =
-  | { ok: true; message: string }
-  | { ok: false; reason: 'stale_session' | 'unsupported' };
+export type CommandResult = { ok: true; message: string } | { ok: false; reason: 'stale_session' | 'unsupported' };
 
-export const commandSetFor = (
-  session: ShellSession | null,
-): CommandDescriptor[] => {
+export const commandSetFor = (session: ShellSession | null): CommandDescriptor[] => {
   if (!session) return [];
   const renderer = session.renderer.capabilities;
   const source = session.source.capabilities;
-  const canEditSource =
-    renderer.edit &&
-    (source.write || session.integrity === 'recovery_only');
+  const canEditSource = renderer.edit && (source.write || session.integrity === 'recovery_only');
   const documentMode = session.markdown_document?.mode ?? session.mermaid_document?.mode;
   const canToggleSource = Boolean(
-    (session.markdown_document &&
-      (documentMode === 'rendered' || session.markdown_document.eligibility !== 'source_only')) ||
-      session.mermaid_document,
+    (session.markdown_document && (documentMode === 'rendered' || session.markdown_document.eligibility !== 'source_only')) ||
+    (session.mermaid_document && (documentMode === 'rendered' || session.mermaid_document.render_revision !== null)),
   );
   const definitions: Array<[boolean, CommandId, string, string?]> = [
     [renderer.copy, 'copy', 'Copy', 'Ctrl+C'],
@@ -63,18 +56,10 @@ export const commandSetFor = (
     [Boolean(session.text_document && session.text_document.mode === 'editable'), 'toggle_wrap', 'Toggle wrap'],
     [renderer.zoom, 'zoom_out', 'Zoom out', 'Ctrl+-'],
     [renderer.zoom, 'zoom_in', 'Zoom in', 'Ctrl++'],
-    [
-      canToggleSource,
-      'edit',
-      documentMode === 'source' ? 'Preview' : canEditSource ? 'Edit source' : 'View source',
-    ],
+    [canToggleSource, 'edit', documentMode === 'source' ? 'Preview' : canEditSource ? 'Edit source' : 'View source'],
     [renderer.save && source.write, 'save', 'Save', 'Ctrl+S'],
-    [
-      renderer.inspect_metadata && source.metadata,
-      'metadata',
-      'File information',
-    ],
-    [Boolean(session.markdown_document), 'outline', 'Outline'],
+    [renderer.inspect_metadata && source.metadata, 'metadata', 'File information'],
+    [Boolean(session.markdown_document && documentMode === 'rendered'), 'outline', 'Outline'],
     [Boolean(session.markdown_document), 'print', 'Print', 'Ctrl+P'],
     [renderer.navigate, 'previous_page', 'Previous page', 'PageUp'],
     [renderer.navigate, 'next_page', 'Next page', 'PageDown'],
@@ -92,15 +77,8 @@ export const commandSetFor = (
     }));
 };
 
-export const executeCommand = (
-  command: CommandDescriptor,
-  currentSession: ShellSession | null,
-): CommandResult => {
-  if (
-    !currentSession ||
-    command.targetSessionId !== currentSession.id ||
-    command.targetRevision !== currentSession.revision
-  ) {
+export const executeCommand = (command: CommandDescriptor, currentSession: ShellSession | null): CommandResult => {
+  if (!currentSession || command.targetSessionId !== currentSession.id || command.targetRevision !== currentSession.revision) {
     return { ok: false, reason: 'stale_session' };
   }
   if (!commandSetFor(currentSession).some(({ id }) => id === command.id)) {

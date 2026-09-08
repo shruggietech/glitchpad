@@ -154,13 +154,25 @@ export function validateTagPackageWorkflows({
   const promotionIndex = linuxWorkflow.indexOf(
     '- name: Promote truthful community evidence',
   );
+  const probeIndex = linuxWorkflow.indexOf(
+    '- name: Exercise release promotion mutation before merge',
+  );
+  const candidateUploadIndex = linuxWorkflow.indexOf(
+    '- name: Upload governed Linux package',
+  );
+  const promotionCommand =
+    "node scripts/promote-community-package.mjs --platform linux --directory artifacts/linux --source-commit '${{ github.sha }}'";
   if (
     assemblyIndex < 0 ||
     ownershipIndex <= assemblyIndex ||
-    promotionIndex <= ownershipIndex
+    probeIndex <= ownershipIndex ||
+    candidateUploadIndex <= probeIndex ||
+    promotionIndex <= candidateUploadIndex ||
+    linuxWorkflow.split(promotionCommand).length - 1 !== 2 ||
+    !linuxWorkflow.includes("if: ${{ !startsWith(github.ref, 'refs/tags/') }}")
   )
     throw new Error(
-      'Linux tag lifecycle must restore runner ownership before promotion',
+      'Linux release path must exercise runner-side promotion before merge',
     );
   return true;
 }

@@ -41,6 +41,8 @@
 - [x] T013 Restore GitHub runner ownership of container-produced Linux evidence before tag-only promotion
 - [x] T014 Enforce the assembly, ownership-handoff, and promotion ordering in community-release policy tests
 - [x] T015 Re-run focused Linux and release policy validation before pushing the ownership remediation
+- [x] T016 Execute the real Linux promotion mutation against container-produced evidence on every non-tag CI run, then restore candidate state
+- [x] T017 Require the pre-merge promotion probe and exact tag promotion to share the same command in release-policy coverage
 
 ## Dependencies and execution order
 

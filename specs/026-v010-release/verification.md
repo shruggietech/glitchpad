@@ -28,6 +28,8 @@ The first owner-authorized tag attempt exposed one stale S023 evidence path in t
 
 The second owner-authorized tag attempt passed release preparation but exposed a Linux ownership boundary in run `34170361890`: the governed container produced `artifacts/linux` as root, so the runner could not rewrite the manifest during tag-only promotion. Windows and macOS packaging passed, Android was cancelled after the orchestrator stopped, no GitHub release was created, and both `v0.1.0` tags were deleted. The Linux workflow now restores runner ownership immediately after container assembly, and release-policy coverage requires that handoff to occur before promotion. The focused release suite passed 16 tests, Linux packaging passed 21 tests plus static contract validation, exact tag-context readiness passed, workflow syntax validation passed, and formatting and Markdown lint passed before push.
 
+The ownership correction alone would prevent the observed failure but would leave the underlying coverage gap intact. Non-tag Linux CI now runs the exact release-promotion command against the actual container-produced artifact directory, proves the mutation succeeded, and restores non-official candidate evidence before upload. Static release-policy coverage requires this probe to run after ownership restoration and before candidate upload, and requires the probe and tag path to use the same command.
+
 ## Publication boundary
 
 No `v0.1.0` tag or GitHub release currently exists. Stable Android authority is configured, manual readiness passed on current `main` in run `34166727857`, and the owner authorized publication. After this remediation is reviewed and merged, the operator may repeat the exact tag ritual in `docs/releases/v0.1.0-operator-runbook.md`.

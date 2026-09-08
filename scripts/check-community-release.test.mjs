@@ -74,7 +74,12 @@ test('requires every tag-only package input and persisted attestation', () => {
     linuxWorkflow: `
 - name: Assemble final-byte candidate and evidence
 sudo chown --recursive "$(id --user):$(id --group)" artifacts/linux
+- name: Exercise release promotion mutation before merge
+if: \${{ !startsWith(github.ref, 'refs/tags/') }}
+node scripts/promote-community-package.mjs --platform linux --directory artifacts/linux --source-commit '\${{ github.sha }}'
+- name: Upload governed Linux package
 - name: Promote truthful community evidence
+node scripts/promote-community-package.mjs --platform linux --directory artifacts/linux --source-commit '\${{ github.sha }}'
 id: attest
 \${{ steps.attest.outputs.bundle-path }}
 artifacts/linux/repository-attestation.json
@@ -99,7 +104,18 @@ artifacts/linux/repository-attestation.json
           '',
         ),
       }),
-    /restore runner ownership/u,
+    /exercise runner-side promotion/u,
+  );
+  assert.throws(
+    () =>
+      validateTagPackageWorkflows({
+        ...workflows,
+        linuxWorkflow: workflows.linuxWorkflow.replace(
+          '- name: Exercise release promotion mutation before merge',
+          '- name: Candidate-only shortcut',
+        ),
+      }),
+    /exercise runner-side promotion/u,
   );
 });
 

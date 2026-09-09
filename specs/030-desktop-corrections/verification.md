@@ -21,6 +21,7 @@
 13. The corrected sentinel passed in both Windows candidate jobs. Their next failure showed that the rendered footnote is exposed as nested UI Automation text rather than one exact-name element. Its assertion now uses the same bounded descendant text discovery as the raw-source guard while exact-name checks remain in place for headings, tabs, and the embedded diagram.
 14. Both Windows candidates then advanced to an ambiguous UI Automation activation and failed because a name-only lookup returned a node without InvokePattern. Menu and close activation now require the matching node to have the Button control type, retrieve InvokePattern through its supported-pattern API, and emit the control name if invocation is unavailable.
 15. Typed lookup identified `Menu` as the control lacking InvokePattern on both hosted WebView runners. Button activation now prefers InvokePattern, falls back to the standard LegacyIAccessible default action exposed by WebView, and fails with the accessible control name if neither pattern is supported.
+16. Hosted PowerShell 7 did not project a static LegacyIAccessiblePattern .NET type. The fallback now resolves the registered UI Automation pattern by standard ID 10018 and invokes the returned pattern object dynamically, avoiding runtime type binding while preserving the capability check.
 
 ## Aggregate execution note
 

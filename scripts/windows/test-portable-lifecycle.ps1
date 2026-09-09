@@ -178,8 +178,9 @@ function Invoke-NamedButton([Diagnostics.Process] $Process, [string] $Name) {
         return
     }
     $patternObject = $null
-    if ($button.TryGetCurrentPattern([System.Windows.Automation.LegacyIAccessiblePattern]::Pattern, [ref]$patternObject)) {
-        ([System.Windows.Automation.LegacyIAccessiblePattern]$patternObject).DoDefaultAction()
+    $legacyAccessiblePattern = [System.Windows.Automation.AutomationPattern]::LookupById(10018)
+    if ($legacyAccessiblePattern -and $button.TryGetCurrentPattern($legacyAccessiblePattern, [ref]$patternObject)) {
+        $patternObject.DoDefaultAction()
         return
     }
     throw "Portable UI button '$Name' exposed neither InvokePattern nor LegacyIAccessiblePattern."

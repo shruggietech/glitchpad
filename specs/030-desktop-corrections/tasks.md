@@ -75,6 +75,7 @@
 - [x] T028 Assert packaged footnote content through bounded UI Automation text discovery instead of an incorrect exact-name element assumption
 - [x] T029 Resolve packaged menu and close controls by both accessible name and button type before requiring UI Automation InvokePattern
 - [x] T030 Activate WebView buttons through InvokePattern with the standard LegacyIAccessible default-action fallback
+- [x] T031 Resolve the standard legacy-accessible UIA pattern by registered ID for PowerShell 7 hosts that do not project its static .NET type
 
 ## Dependencies and execution order
 

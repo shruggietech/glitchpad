@@ -51,8 +51,10 @@ class AndroidDeliveryInstrumentedTest {
     clientContext.startActivity(warmIntent.setComponent(component).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     waitForBodyText(scenario, "resolver-warm.txt", "S031_WARM_MARKER_7C9D")
     println("delivery_evidence=cold:pass,warm:pass,api:${android.os.Build.VERSION.SDK_INT}")
-    // This test runs alone because MainActivity owns the Tauri process. The
-    // ephemeral emulator performs teardown after JUnit publishes the marker.
+    System.out.flush()
+    // This test runs alone because MainActivity owns the Tauri process. Closing
+    // it after the flushed evidence marker lets the dedicated runner terminate.
+    scenario.close()
   }
 
   private fun viewIntent(uri: Uri, mediaType: String): Intent =

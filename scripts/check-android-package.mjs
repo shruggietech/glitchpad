@@ -14,6 +14,48 @@ const attributeValues = (xml, name) =>
     ),
   );
 
+const normalizeIntentFilter = (filter) => ({
+  actions: sortedUnique(filter.actions ?? []),
+  categories: sortedUnique(filter.categories ?? []),
+  schemes: sortedUnique(filter.schemes ?? []),
+  authorities: sortedUnique(filter.authorities ?? []),
+  media_types: sortedUnique(filter.media_types ?? []),
+  extensions: sortedUnique(filter.extensions ?? []),
+});
+
+const normalizedIntentFilters = (filters) =>
+  filters
+    .map(normalizeIntentFilter)
+    .sort((left, right) =>
+      JSON.stringify(left).localeCompare(JSON.stringify(right)),
+    );
+
+function parseIntentFilters(publicSurface) {
+  return normalizedIntentFilters(
+    [
+      ...publicSurface.matchAll(
+        /<intent-filter\b[^>]*>([\s\S]*?)<\/intent-filter\s*>/gu,
+      ),
+    ].map((match) => {
+      const body = match[1];
+      return {
+        actions: attributeValues(body, 'name').filter((name) =>
+          name.startsWith('android.intent.action.'),
+        ),
+        categories: attributeValues(body, 'name').filter((name) =>
+          name.startsWith('android.intent.category.'),
+        ),
+        schemes: attributeValues(body, 'scheme'),
+        authorities: attributeValues(body, 'host'),
+        media_types: attributeValues(body, 'mimeType'),
+        extensions: attributeValues(body, 'pathSuffix').map((extension) =>
+          extension.replace(/^\./u, ''),
+        ),
+      };
+    }),
+  );
+}
+
 export function parseManifestXml(xml) {
   const manifest = xml.match(/<manifest\b([^>]*)>/u)?.[1] ?? '';
   const usesSdk = xml.match(/<uses-sdk\b([^>]*)\/?\s*>/u)?.[1] ?? '';
@@ -64,6 +106,7 @@ export function parseManifestXml(xml) {
     extensions: attributeValues(publicSurface, 'pathSuffix').map((extension) =>
       extension.replace(/^\./u, ''),
     ),
+    intent_filters: parseIntentFilters(publicSurface),
     exported_components: sortedUnique(exportedComponents),
     application_label: value(application, 'label'),
     launcher_icon: value(application, 'icon'),
@@ -148,6 +191,15 @@ function assertExactSet(actual, expected, label) {
 }
 
 export function validateIntentSurface(inventory, intentMap) {
+  if (
+    intentMap.schema_version !== 2 ||
+    intentMap.generic_media_type_policy !==
+      'reject_without_exact_supported_type' ||
+    JSON.stringify(sortedUnique(intentMap.generic_media_types ?? [])) !==
+      JSON.stringify(['application/octet-stream']) ||
+    !Array.isArray(intentMap.intent_filters)
+  )
+    throw new Error('invalid Android resolver policy contract');
   for (const permission of intentMap.forbidden_permissions)
     if (inventory.permissions.includes(permission))
       throw new Error(`forbidden Android permission: ${permission}`);
@@ -160,6 +212,11 @@ export function validateIntentSurface(inventory, intentMap) {
   for (const mediaType of intentMap.forbidden_media_types)
     if (inventory.media_types.includes(mediaType))
       throw new Error(`forbidden Android media type: ${mediaType}`);
+  for (const mediaType of intentMap.generic_media_types)
+    if (inventory.media_types.includes(mediaType))
+      throw new Error(
+        `generic Android media type must remain rejected: ${mediaType}`,
+      );
   assertExactSet(inventory.actions, intentMap.actions, 'Android action');
   assertExactSet(
     inventory.categories,
@@ -177,6 +234,28 @@ export function validateIntentSurface(inventory, intentMap) {
     intentMap.extensions,
     'Android extension',
   );
+  const observedFilters = normalizedIntentFilters(
+    inventory.intent_filters ?? [],
+  );
+  const governedFilters = normalizedIntentFilters(
+    intentMap.intent_filters ?? [],
+  );
+  if (JSON.stringify(observedFilters) !== JSON.stringify(governedFilters))
+    throw new Error('Android intent-filter group mismatch');
+  for (const filter of observedFilters) {
+    if (
+      filter.actions.includes('android.intent.action.VIEW') &&
+      !filter.categories.includes('android.intent.category.DEFAULT')
+    )
+      throw new Error('Android ACTION_VIEW filter is missing DEFAULT');
+    if (filter.extensions.length > 0 && filter.authorities.length === 0)
+      throw new Error('Android path suffix is ignored without an authority');
+    if (
+      filter.actions.includes('android.intent.action.VIEW') &&
+      JSON.stringify(filter.schemes) !== JSON.stringify(['content'])
+    )
+      throw new Error('Android ACTION_VIEW filter must use only content URIs');
+  }
   assertExactSet(
     inventory.exported_components.map((name) =>
       name === '.MainActivity'
@@ -251,6 +330,16 @@ export function validateArtifactInventories(
   }
   if (certificates.size !== 1)
     throw new Error('Android artifacts must share one signing certificate');
+  if (
+    new Set(
+      inventories
+        .filter(({ kind }) => kind === 'apk')
+        .map(({ intent_filters: filters }) =>
+          JSON.stringify(normalizedIntentFilters(filters ?? [])),
+        ),
+    ).size !== 1
+  )
+    throw new Error('Android APK resolver filter groups must be equivalent');
   return inventories;
 }
 

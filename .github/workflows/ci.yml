@@ -267,7 +267,7 @@ jobs:
         with:
           shared-key: android-x86_64-api-${{ matrix.api-level }}
 
-      - name: Run controlled-provider and restoration evidence
+      - name: Run provider, resolver, delivery, and restoration evidence
         uses: ReactiveCircus/android-emulator-runner@4c44018e59b437e86cdfc41da381398f93ed8808 # v2
         with:
           api-level: ${{ matrix.api-level }}

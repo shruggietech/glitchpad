@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "actions": [
     "android.intent.action.MAIN",
     "android.intent.action.SEND",
@@ -25,7 +25,8 @@
     "text/vnd.mermaid",
     "text/x-python"
   ],
-  "extensions": [
+  "extensions": [],
+  "document_extensions": [
     "cjs",
     "css",
     "htm",
@@ -48,6 +49,66 @@
     "yaml",
     "yml"
   ],
+  "intent_filters": [
+    {
+      "id": "launcher",
+      "actions": ["android.intent.action.MAIN"],
+      "categories": ["android.intent.category.LAUNCHER"],
+      "schemes": [],
+      "authorities": [],
+      "media_types": [],
+      "extensions": []
+    },
+    {
+      "id": "view-exact-content",
+      "actions": ["android.intent.action.VIEW"],
+      "categories": [
+        "android.intent.category.BROWSABLE",
+        "android.intent.category.DEFAULT"
+      ],
+      "schemes": ["content"],
+      "authorities": [],
+      "media_types": [
+        "application/json",
+        "application/toml",
+        "application/x-typescript",
+        "application/x-yaml",
+        "text/css",
+        "text/html",
+        "text/javascript",
+        "text/markdown",
+        "text/plain",
+        "text/rust",
+        "text/vnd.mermaid",
+        "text/x-python"
+      ],
+      "extensions": []
+    },
+    {
+      "id": "send-exact",
+      "actions": ["android.intent.action.SEND"],
+      "categories": ["android.intent.category.DEFAULT"],
+      "schemes": [],
+      "authorities": [],
+      "media_types": [
+        "application/json",
+        "application/toml",
+        "application/x-typescript",
+        "application/x-yaml",
+        "text/css",
+        "text/html",
+        "text/javascript",
+        "text/markdown",
+        "text/plain",
+        "text/rust",
+        "text/vnd.mermaid",
+        "text/x-python"
+      ],
+      "extensions": []
+    }
+  ],
+  "generic_media_types": ["application/octet-stream"],
+  "generic_media_type_policy": "reject_without_exact_supported_type",
   "forbidden_permissions": [
     "android.permission.MANAGE_EXTERNAL_STORAGE",
     "android.permission.READ_EXTERNAL_STORAGE",

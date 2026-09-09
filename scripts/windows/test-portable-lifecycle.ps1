@@ -183,7 +183,9 @@ function Invoke-NamedButton([Diagnostics.Process] $Process, [string] $Name) {
         $patternObject.DoDefaultAction()
         return
     }
-    throw "Portable UI button '$Name' exposed neither InvokePattern nor LegacyIAccessiblePattern."
+    $button.SetFocus()
+    Start-Sleep -Milliseconds 50
+    [System.Windows.Forms.SendKeys]::SendWait('{ENTER}')
 }
 
 function Close-Document([Diagnostics.Process] $Process, [string] $Path) {
@@ -220,6 +222,7 @@ function Assert-MenuGeometry([Diagnostics.Process] $Process) {
 
 $associationBefore = Get-AssociationSnapshot | ConvertTo-Json -Compress
 Add-Type -AssemblyName UIAutomationClient
+Add-Type -AssemblyName System.Windows.Forms
 $isolatedState = Join-Path ([IO.Path]::GetTempPath()) ("glitchpad-s027-{0}" -f [Guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $isolatedState -Force | Out-Null
 $isolatedEnvironment = @{ APPDATA = $isolatedState; LOCALAPPDATA = $isolatedState }

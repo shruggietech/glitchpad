@@ -22,6 +22,7 @@
 14. Both Windows candidates then advanced to an ambiguous UI Automation activation and failed because a name-only lookup returned a node without InvokePattern. Menu and close activation now require the matching node to have the Button control type, retrieve InvokePattern through its supported-pattern API, and emit the control name if invocation is unavailable.
 15. Typed lookup identified `Menu` as the control lacking InvokePattern on both hosted WebView runners. Button activation now prefers InvokePattern, falls back to the standard LegacyIAccessible default action exposed by WebView, and fails with the accessible control name if neither pattern is supported.
 16. Hosted PowerShell 7 did not project a static LegacyIAccessiblePattern .NET type. The fallback now resolves the registered UI Automation pattern by standard ID 10018 and invokes the returned pattern object dynamically, avoiding runtime type binding while preserving the capability check.
+17. Both hosted WebView runners exposed the typed `Menu` button without InvokePattern or LegacyIAccessiblePattern. The final activation path now focuses the verified Button control and sends Enter, matching platform keyboard semantics without depending on a Chromium-specific UI Automation action provider.
 
 ## Aggregate execution note
 

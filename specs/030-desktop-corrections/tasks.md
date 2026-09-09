@@ -71,6 +71,7 @@
 - [x] T024 Reject an already-ready projection synchronously when the active source revision changes in `apps/glitchpad/src/components/MarkdownSurface.tsx`
 - [x] T025 Address first-round Codex findings by monitoring actual raw sentinels from delivery through safe settlement and exercising nontrivial table, footnote, nesting, and embedded-Mermaid paths in final Windows artifacts
 - [x] T026 Address second-round Codex findings by synchronizing incoming presentation mode before paint and suppressing a failed projection throughout revision-scoped source recovery
+- [x] T027 Correct final-artifact raw-source sentinels to unused Markdown reference definitions so safe inert-HTML rendering cannot create a false positive
 
 ## Dependencies and execution order
 

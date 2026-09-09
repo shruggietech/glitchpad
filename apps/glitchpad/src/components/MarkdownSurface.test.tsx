@@ -109,6 +109,13 @@ describe('Markdown surface', () => {
     document.documentElement.removeAttribute('data-theme');
   });
 
+  it('keeps an unused reference definition source-only after rendering settles', async () => {
+    render(<App sessions={[markdownSession('# Safe heading\n\n[SOURCE_ONLY_REFERENCE_8A2C]: https://example.invalid/reference')]} />);
+
+    expect(await screen.findByRole('heading', { name: 'Safe heading' })).toBeInTheDocument();
+    expect(document.body).not.toHaveTextContent('SOURCE_ONLY_REFERENCE_8A2C');
+  });
+
   it('turns a render timeout into an actionable contained failure', async () => {
     const executor: MarkdownExecutor = {
       execute: (_request, signal) => new Promise((_resolve, reject) => {

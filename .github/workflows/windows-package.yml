@@ -70,8 +70,8 @@ jobs:
         run: |
           $fixture = 'fixtures/documents/README.md'
           [IO.File]::WriteAllText('artifacts/windows/s027-visible.txt', "S027 TXT CONTENT 7E5A`n", [Text.UTF8Encoding]::new($false))
-          $alpha = "# S030 Markdown Alpha 2B7C`n`n- Parent`n  - Nested child`n`n| Alpha | Beta |`n| --- | --- |`n| One | Two |`n`nFootnote[^1].`n`n[^1]: S030 Alpha Footnote 6A1E`n`n<!-- S030_ALPHA_RAW_SENTINEL -->`n"
-          $beta = "# S030 Markdown Beta 9D4E`n`n> Nested quoted content`n`n``````mermaid`nflowchart TB`n  Start --> Finish`n```````n`n<!-- S030_BETA_RAW_SENTINEL -->`n"
+          $alpha = "# S030 Markdown Alpha 2B7C`n`n- Parent`n  - Nested child`n`n| Alpha | Beta |`n| --- | --- |`n| One | Two |`n`nFootnote[^1].`n`n[^1]: S030 Alpha Footnote 6A1E`n`n[S030_ALPHA_RAW_SENTINEL]: https://example.invalid/alpha`n"
+          $beta = "# S030 Markdown Beta 9D4E`n`n> Nested quoted content`n`n``````mermaid`nflowchart TB`n  Start --> Finish`n```````n`n[S030_BETA_RAW_SENTINEL]: https://example.invalid/beta`n"
           [IO.File]::WriteAllText('artifacts/windows/s030-alpha.md', $alpha, [Text.UTF8Encoding]::new($false))
           [IO.File]::WriteAllText('artifacts/windows/s030-beta.md', $beta, [Text.UTF8Encoding]::new($false))
           ./scripts/windows/test-installer-lifecycle.ps1 -Installer artifacts/windows/glitchpad-0.1.1-windows-x86_64-setup.exe -Fixture $fixture -TextFixture artifacts/windows/s027-visible.txt -MarkdownFixtureA artifacts/windows/s030-alpha.md -MarkdownFixtureB artifacts/windows/s030-beta.md -InstalledMarkdownReceipt artifacts/windows/installed-markdown-lifecycle-receipt.json -Receipt artifacts/windows/installer-lifecycle-receipt.json

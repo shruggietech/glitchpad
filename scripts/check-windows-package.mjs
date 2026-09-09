@@ -81,7 +81,7 @@ export function validatePortableSmokeContract(lifecycleSource, workflowSource) {
   for (const requirement of ['-TextFixture', '-MarkdownFixtureA', '-MarkdownFixtureB', 's027-visible.txt', 's030-alpha.md', 's030-beta.md'])
     if (!workflowSource.includes(requirement))
       fail(`Windows workflow omits ${requirement}`);
-  for (const requirement of ['S030_ALPHA_RAW_SENTINEL', 'S030_BETA_RAW_SENTINEL', '| Alpha | Beta |', 'Footnote[^1]', 'flowchart TB', 'Wait-SafeMarkdownOutcome', 'Send-MarkdownDelivery'])
+  for (const requirement of ['[S030_ALPHA_RAW_SENTINEL]: https://example.invalid/alpha', '[S030_BETA_RAW_SENTINEL]: https://example.invalid/beta', '| Alpha | Beta |', 'Footnote[^1]', 'flowchart TB', 'Wait-SafeMarkdownOutcome', 'Send-MarkdownDelivery'])
     if (!`${lifecycleSource}\n${workflowSource}`.includes(requirement))
       fail(`Windows Markdown lifecycle omits ${requirement}`);
   for (const requirement of ['-InstalledMarkdownReceipt', 'installed-markdown-lifecycle-receipt.json'])

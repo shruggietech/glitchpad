@@ -22,6 +22,7 @@ export function verifyPublicSources(sources) {
   const {
     readme,
     home,
+    styles,
     navigation,
     footer,
     docsIndex,
@@ -64,6 +65,12 @@ export function verifyPublicSources(sources) {
       problems.push(`site/app/(home)/page.tsx is missing ${action} action`);
   }
   requireText(problems, 'site/app/(home)/page.tsx', home, releaseUrl);
+  if (
+    !/\.hero-endorsement\s*\{[^}]*font-family:\s*var\(--font-mono\)[^}]*letter-spacing:\s*0\.08em[^}]*text-transform:\s*uppercase/s.test(
+      styles,
+    )
+  )
+    problems.push('homepage endorsement typography is not governed');
 
   if (/text:\s*['"](?:Support|Security)['"]/.test(navigation))
     problems.push('primary navigation contains Support or Security');
@@ -143,6 +150,7 @@ export async function loadPublicSources(root = repositoryRoot) {
   const paths = {
     readme: 'README.md',
     home: 'site/app/(home)/page.tsx',
+    styles: 'site/app/global.css',
     navigation: 'site/lib/layout.shared.tsx',
     footer: 'site/components/footer.tsx',
     docsIndex: 'site/content/docs/index.mdx',

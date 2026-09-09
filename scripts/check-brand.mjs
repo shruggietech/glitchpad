@@ -370,6 +370,14 @@ export async function verifyBrand(
       'site/public/logos/glitchpad-horizontal-light.svg',
     ],
     [
+      'logos/svg/glitchpad-horizontal-black.svg',
+      'site/public/logos/glitchpad-horizontal-black.svg',
+    ],
+    [
+      'logos/svg/glitchpad-horizontal-white.svg',
+      'site/public/logos/glitchpad-horizontal-white.svg',
+    ],
+    [
       'logos/png/glitchpad-social-preview-1280.png',
       'site/public/social-preview.png',
     ],

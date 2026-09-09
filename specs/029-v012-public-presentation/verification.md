@@ -4,7 +4,7 @@
 
 Completed on 2026-09-09 in the repository validation image built from `scripts/docker/validation.Dockerfile` and invoked only through `scripts/invoke-docker-hidden.ps1`.
 
-- Brand import and public-release mutation suites: 28 tests passed.
+- Brand import and public-release mutation suites: 29 tests passed.
 - Brand manifest, receipt, provenance, exact-copy, encoding, licensing, README PNG geometry, and offline integration validation: passed.
 - Live brand freshness comparison against `brand.shruggie.tech`: passed for the recorded upstream derivatives.
 - Rust formatting and strict Clippy across the workspace: passed.

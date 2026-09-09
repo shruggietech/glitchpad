@@ -39,6 +39,16 @@ for (const [name, mutate, expected] of [
     /missing A ShruggieTech project/,
   ],
   [
+    'noncanonical endorsement typography',
+    (sources) => {
+      sources.styles = sources.styles.replace(
+        /(\.hero-endorsement\s*\{[^}]*?)text-transform: uppercase/s,
+        '$1text-transform: none',
+      );
+    },
+    /endorsement typography is not governed/,
+  ],
+  [
     'stale specification date',
     (sources) => {
       sources.specification = sources.specification.replace(

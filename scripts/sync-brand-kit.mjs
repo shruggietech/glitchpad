@@ -9,31 +9,75 @@ const destination = join(repositoryRoot, 'brand');
 const integrations = [
   ['fonts/woff2/Geist-Regular.woff2', 'site/public/fonts/Geist-Regular.woff2'],
   ['fonts/woff2/Geist-Medium.woff2', 'site/public/fonts/Geist-Medium.woff2'],
-  ['fonts/woff2/GeistMono-Regular.woff2', 'site/public/fonts/GeistMono-Regular.woff2'],
-  ['fonts/woff2/SpaceGrotesk-Medium.woff2', 'site/public/fonts/SpaceGrotesk-Medium.woff2'],
-  ['fonts/woff2/SpaceGrotesk-Bold.woff2', 'site/public/fonts/SpaceGrotesk-Bold.woff2'],
+  [
+    'fonts/woff2/GeistMono-Regular.woff2',
+    'site/public/fonts/GeistMono-Regular.woff2',
+  ],
+  [
+    'fonts/woff2/SpaceGrotesk-Medium.woff2',
+    'site/public/fonts/SpaceGrotesk-Medium.woff2',
+  ],
+  [
+    'fonts/woff2/SpaceGrotesk-Bold.woff2',
+    'site/public/fonts/SpaceGrotesk-Bold.woff2',
+  ],
   ['fonts/licenses/OFL-Geist.txt', 'site/public/fonts/OFL-Geist.txt'],
-  ['fonts/licenses/OFL-Space-Grotesk.txt', 'site/public/fonts/OFL-Space-Grotesk.txt'],
-  ['logos/svg/glitchpad-horizontal-color.svg', 'site/public/logos/glitchpad-horizontal-color.svg'],
-  ['logos/svg/glitchpad-horizontal-light.svg', 'site/public/logos/glitchpad-horizontal-light.svg'],
-  ['logos/png/glitchpad-social-preview-1280.png', 'site/public/social-preview.png'],
-  ['logos/svg/glitchpad-mark-color.svg', 'site/public/logos/glitchpad-mark-color.svg'],
+  [
+    'fonts/licenses/OFL-Space-Grotesk.txt',
+    'site/public/fonts/OFL-Space-Grotesk.txt',
+  ],
+  [
+    'logos/svg/glitchpad-horizontal-color.svg',
+    'site/public/logos/glitchpad-horizontal-color.svg',
+  ],
+  [
+    'logos/svg/glitchpad-horizontal-light.svg',
+    'site/public/logos/glitchpad-horizontal-light.svg',
+  ],
+  [
+    'logos/svg/glitchpad-horizontal-black.svg',
+    'site/public/logos/glitchpad-horizontal-black.svg',
+  ],
+  [
+    'logos/svg/glitchpad-horizontal-white.svg',
+    'site/public/logos/glitchpad-horizontal-white.svg',
+  ],
+  [
+    'logos/png/glitchpad-social-preview-1280.png',
+    'site/public/social-preview.png',
+  ],
+  [
+    'logos/svg/glitchpad-mark-color.svg',
+    'site/public/logos/glitchpad-mark-color.svg',
+  ],
   ['icons/web/favicon.svg', 'site/public/favicon.svg'],
   ['icons/web/favicon.ico', 'site/public/favicon.ico'],
   ['icons/web/favicon-16x16.png', 'site/public/favicon-16x16.png'],
   ['icons/web/favicon-32x32.png', 'site/public/favicon-32x32.png'],
   ['icons/web/apple-touch-icon.png', 'site/public/apple-touch-icon.png'],
-  ['icons/web/android-chrome-192x192.png', 'site/public/android-chrome-192x192.png'],
-  ['icons/web/android-chrome-512x512.png', 'site/public/android-chrome-512x512.png'],
+  [
+    'icons/web/android-chrome-192x192.png',
+    'site/public/android-chrome-192x192.png',
+  ],
+  [
+    'icons/web/android-chrome-512x512.png',
+    'site/public/android-chrome-512x512.png',
+  ],
   ['icons/web/site.webmanifest', 'site/public/site.webmanifest'],
   ['icons/web/favicon.svg', 'apps/glitchpad/public/favicon.svg'],
   ['icons/web/favicon-32x32.png', 'crates/glitchpad-host/icons/32x32.png'],
   ['icons/web/favicon-128x128.png', 'crates/glitchpad-host/icons/128x128.png'],
-  ['icons/web/favicon-256x256.png', 'crates/glitchpad-host/icons/128x128@2x.png'],
+  [
+    'icons/web/favicon-256x256.png',
+    'crates/glitchpad-host/icons/128x128@2x.png',
+  ],
   ['icons/web/favicon-512x512.png', 'crates/glitchpad-host/icons/icon.png'],
   ['icons/windows/classic/app.ico', 'crates/glitchpad-host/icons/icon.ico'],
   ['icons/apple/macos/AppIcon.icns', 'crates/glitchpad-host/icons/icon.icns'],
-  ['icons/android/play-store/google-play-512.png', 'crates/glitchpad-host/icons/android/play-store/google-play-512.png'],
+  [
+    'icons/android/play-store/google-play-512.png',
+    'crates/glitchpad-host/icons/android/play-store/google-play-512.png',
+  ],
 ];
 
 const androidResources = [
@@ -62,7 +106,13 @@ function parseArguments(argv) {
       throw new Error(`invalid argument sequence near ${key ?? '<end>'}`);
     values.set(key.slice(2), value);
   }
-  for (const required of ['source', 'revision', 'run-id', 'artifact-id', 'retrieved-at']) {
+  for (const required of [
+    'source',
+    'revision',
+    'run-id',
+    'artifact-id',
+    'retrieved-at',
+  ]) {
     if (!values.has(required)) throw new Error(`missing --${required}`);
   }
   if (!/^[0-9a-f]{40}$/.test(values.get('revision')))
@@ -78,12 +128,15 @@ async function verifyManifest(root, manifest) {
     manifest.version !== '1.1.0' ||
     manifest.canon !== '1.2.1'
   ) {
-    throw new Error('source manifest is not Glitchpad brand 1.1.0 / canon 1.2.1');
+    throw new Error(
+      'source manifest is not Glitchpad brand 1.1.0 / canon 1.2.1',
+    );
   }
   const seen = new Set();
   const recovered = new Map();
   for (const entry of manifest.files) {
-    if (seen.has(entry.path)) throw new Error(`duplicate manifest path: ${entry.path}`);
+    if (seen.has(entry.path))
+      throw new Error(`duplicate manifest path: ${entry.path}`);
     seen.add(entry.path);
     let bytes;
     try {
@@ -108,7 +161,9 @@ async function updateIntegratedManifest(revision) {
     `https://raw.githubusercontent.com/shruggietech/shruggie-brand/${revision}/LICENSE-BRAND.md`,
   );
   if (integratedReadme === readme)
-    throw new Error('upstream README legal-link integration point was not found');
+    throw new Error(
+      'upstream README legal-link integration point was not found',
+    );
   await writeFile(readmePath, integratedReadme, 'utf8');
 
   const manifestPath = join(destination, 'manifest.json');
@@ -118,7 +173,11 @@ async function updateIntegratedManifest(revision) {
   const bytes = await readFile(readmePath);
   entry.bytes = bytes.byteLength;
   entry.sha256 = digest(bytes);
-  await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
+  await writeFile(
+    manifestPath,
+    `${JSON.stringify(manifest, null, 2)}\n`,
+    'utf8',
+  );
   return digest(await readFile(manifestPath));
 }
 
@@ -143,13 +202,21 @@ async function main() {
     await mkdir(dirname(target), { recursive: true });
     await writeFile(target, bytes);
   }
-  const integratedManifestSha256 = await updateIntegratedManifest(values.get('revision'));
+  const integratedManifestSha256 = await updateIntegratedManifest(
+    values.get('revision'),
+  );
 
   for (const mapping of integrations) await copyIntegration(...mapping);
   for (const resource of androidResources) {
     const canonical = `icons/android/app/src/main/res/${resource}`;
-    await copyIntegration(canonical, `crates/glitchpad-host/icons/android/${resource}`);
-    await copyIntegration(canonical, `crates/glitchpad-host/gen/android/app/src/main/res/${resource}`);
+    await copyIntegration(
+      canonical,
+      `crates/glitchpad-host/icons/android/${resource}`,
+    );
+    await copyIntegration(
+      canonical,
+      `crates/glitchpad-host/gen/android/app/src/main/res/${resource}`,
+    );
   }
 
   const receipt = {
@@ -169,17 +236,20 @@ async function main() {
       {
         path: 'logos/provenance.json',
         url: 'https://brand.shruggie.tech/glitchpad/downloads/files/logos/provenance.json',
-        sha256: '439b20c4cc8db1fb8fe84a3ea04012bb20f1a4b5db42e3d2830465806fb5ac3d',
+        sha256:
+          '439b20c4cc8db1fb8fe84a3ea04012bb20f1a4b5db42e3d2830465806fb5ac3d',
       },
       {
         path: 'icons/manifest.json',
         url: 'https://brand.shruggie.tech/glitchpad/downloads/files/icons/manifest.json',
-        sha256: '90a04bfe418cf6d6f5ff35eea720f663e41d5375f03ca3bc41ab5de4ecfaa362',
+        sha256:
+          '90a04bfe418cf6d6f5ff35eea720f663e41d5375f03ca3bc41ab5de4ecfaa362',
       },
       {
         path: 'logos/svg/glitchpad-horizontal-white.svg',
         url: 'https://brand.shruggie.tech/glitchpad/downloads/files/logos/svg/glitchpad-horizontal-white.svg',
-        sha256: 'f23b0aba814c9988d97a1a65d84f263ec69e36d9162fda58bdbaefe21c88fc1f',
+        sha256:
+          'f23b0aba814c9988d97a1a65d84f263ec69e36d9162fda58bdbaefe21c88fc1f',
       },
     ],
   };
@@ -194,8 +264,11 @@ async function main() {
     'utf8',
   );
 
-  const unexpected = (await readdir(destination)).filter((name) => name === '.git');
-  if (unexpected.length) throw new Error('refusing imported nested repository metadata');
+  const unexpected = (await readdir(destination)).filter(
+    (name) => name === '.git',
+  );
+  if (unexpected.length)
+    throw new Error('refusing imported nested repository metadata');
   console.log(
     `Imported Glitchpad brand ${receipt.brandVersion} from ${receipt.sourceRevision}; ${receipt.governedFileCount} governed files verified.`,
   );

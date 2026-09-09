@@ -23,14 +23,6 @@ async function fetchText(path) {
   return response.text();
 }
 
-function visibleText(html) {
-  return html
-    .replaceAll(/<!--.*?-->/gs, '')
-    .replaceAll(/<[^>]+>/g, ' ')
-    .replaceAll(/\s+/g, ' ')
-    .trim();
-}
-
 async function verifyExpectedDeployment() {
   const provenance = JSON.parse(await fetchText('/deployment.json'));
   if (provenance.productVersion !== expectedVersion)
@@ -64,10 +56,12 @@ async function verifyExpectedDeployment() {
     if (!home.includes(expected))
       throw new Error(`production homepage is missing ${expected}`);
   }
-  if (!visibleText(docs).includes(`v${expectedVersion}`))
+  if (!docs.includes(`v${expectedVersion}`))
     throw new Error(`production docs are missing v${expectedVersion}`);
   if (
-    !visibleText(specification).includes(`Product version ${expectedVersion}`)
+    !specification.includes(
+      `<tr><td>Product version</td><td>${expectedVersion}</td></tr>`,
+    )
   )
     throw new Error(
       `production specification is missing product version ${expectedVersion}`,

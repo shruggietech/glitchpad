@@ -260,16 +260,18 @@ export function App({ sessions = [], recoveryGateway, externalLinkGateway, local
       });
     };
     let unlisten: (() => void) | undefined;
+    let fallbackTimer: ReturnType<typeof setInterval> | undefined;
     void selectedAndroidDeliveryGateway.subscribe(drain).then((dispose) => {
       if (active) {
         unlisten = dispose;
       } else dispose();
     }).catch(() => {
-      if (active) setDeliveryError('Android file delivery is temporarily unavailable. Open the file again.');
+      if (active) fallbackTimer = setInterval(drain, 500);
     }).finally(drain);
     return () => {
       active = false;
       unlisten?.();
+      if (fallbackTimer !== undefined) clearInterval(fallbackTimer);
     };
   }, [applyAndroidDeliveries, selectedAndroidDeliveryGateway]);
   useEffect(() => {

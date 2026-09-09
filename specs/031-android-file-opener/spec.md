@@ -85,6 +85,7 @@ As an Android user, I receive predictable behavior when a provider reports a gen
 - **FR-012**: Resolver and delivery diagnostics MUST omit provider URI, private filename, path, document contents, and account data.
 - **FR-013**: S031 MUST update the v0.1.2 release delta and issue traceability without changing product versions or publishing the release.
 - **FR-014**: Manual physical-device and third-party-provider exploration MUST remain post-release validation under issue #66 and MUST NOT block S031 merge or v0.1.2 publication.
+- **FR-015**: The frontend MUST drain queued Android deliveries after startup and after every warm `onNewIntent` notification, materialize each accepted source through the bounded Android source reader, and release native source authority when its session closes.
 
 ### Key Entities
 

@@ -27,7 +27,7 @@ interface RangeReadResult {
   end_of_source: boolean;
 }
 
-type NativeInvoke = (command: string, args?: Record<string, unknown>) => Promise<unknown>;
+export type NativeInvoke = (command: string, args?: Record<string, unknown>) => Promise<unknown>;
 
 export interface AndroidRestorationGateway {
   restore(projections: readonly SessionProjection[]): Promise<ShellSession[]>;
@@ -108,13 +108,24 @@ const readBoundedText = async (
   return { text: decoder.decode(bytes), sourceBytes: offset, encoding };
 };
 
-const restoredSession = async (
+export const rendererForAndroidSource = (
+  displayName: string,
+): 'markdown' | 'mermaid' | 'text' | 'source' => {
+  const extension = displayName.toLowerCase().split('.').at(-1);
+  if (extension === 'md' || extension === 'markdown') return 'markdown';
+  if (extension === 'mmd' || extension === 'mermaid') return 'mermaid';
+  if (extension === 'txt') return 'text';
+  return 'source';
+};
+
+export const materializeAndroidSource = async (
   call: NativeInvoke,
   source: AndroidSourceSummary,
-  projection: SessionProjection,
+  rendererId: string,
+  idPrefix: 'android' | 'restored',
 ): Promise<ShellSession> => {
   const { text, sourceBytes, encoding } = await readBoundedText(call, source);
-  const rendererId = projection.renderer_id.toLowerCase();
+  const renderer = rendererId.toLowerCase();
   const textDocument = createTextDocument({
     rawText: text,
     displayName: source.descriptor.display_name,
@@ -125,15 +136,17 @@ const restoredSession = async (
   const eligibility = markdownEligibility(sourceBytes);
   const editable = textDocument.mode === 'editable' && source.descriptor.capabilities.write;
   return {
-    id: `restored-${source.source_id}`,
+    id: `${idPrefix}-${source.source_id}`,
     source: source.descriptor,
     renderer: {
-      id: rendererId,
-      label: rendererId === 'markdown'
+      id: renderer,
+      label: renderer === 'markdown'
         ? 'Markdown'
-        : rendererId === 'mermaid'
+        : renderer === 'mermaid'
           ? 'Mermaid'
-          : 'Text',
+          : renderer === 'source'
+            ? 'Source'
+            : 'Text',
       capabilities: {
         ...noRendererCapabilities(),
         view: true,
@@ -142,6 +155,7 @@ const restoredSession = async (
         edit: editable,
         save: editable,
         inspect_metadata: true,
+        zoom: renderer === 'mermaid',
       },
     },
     lifecycle: 'background',
@@ -153,7 +167,7 @@ const restoredSession = async (
     content: text,
     source_id: source.source_id,
     text_document: textDocument,
-    markdown_document: rendererId === 'markdown'
+    markdown_document: renderer === 'markdown'
       ? {
           mode: eligibility === 'full' ? 'rendered' : 'source',
           eligibility,
@@ -164,7 +178,7 @@ const restoredSession = async (
           source_selection: null,
         }
       : null,
-    mermaid_document: rendererId === 'mermaid'
+    mermaid_document: renderer === 'mermaid'
       ? {
           mode: text.trim() ? 'rendered' : 'source',
           render_revision: null,
@@ -192,7 +206,12 @@ export const createNativeAndroidRestorationGateway = (
       const projection = byReference.get(source.descriptor.restoration_reference);
       if (!projection || !TEXT_RENDERERS.has(projection.renderer_id.toLowerCase())) return null;
       try {
-        return await restoredSession(call, source, projection);
+        return await materializeAndroidSource(
+          call,
+          source,
+          projection.renderer_id,
+          'restored',
+        );
       } catch {
         return null;
       }

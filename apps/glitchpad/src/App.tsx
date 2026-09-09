@@ -66,6 +66,11 @@ import {
   type AndroidRestorationGateway,
 } from './domain/android-restoration-gateway';
 import {
+  nativeAndroidDeliveryAvailable,
+  nativeAndroidDeliveryGateway,
+  type AndroidDeliveryGateway,
+} from './domain/android-delivery-gateway';
+import {
   nativeDesktopDeliveryAvailable,
   nativeDesktopDeliveryGateway,
   reportDesktopLifecycleProbe,
@@ -82,11 +87,12 @@ interface AppProps {
   clipboardGateway?: ClipboardGateway;
   persistenceGateway?: PersistenceGateway | null;
   diagnosticExportGateway?: DiagnosticExportGateway;
+  androidDeliveryGateway?: AndroidDeliveryGateway | null;
   androidRestorationGateway?: AndroidRestorationGateway | null;
   desktopDeliveryGateway?: DesktopDeliveryGateway | null;
 }
 
-export function App({ sessions = [], recoveryGateway, externalLinkGateway, localAssetGateway, metadataGateway, clipboardGateway = browserClipboardGateway, persistenceGateway, diagnosticExportGateway = browserDiagnosticExportGateway, androidRestorationGateway, desktopDeliveryGateway }: AppProps) {
+export function App({ sessions = [], recoveryGateway, externalLinkGateway, localAssetGateway, metadataGateway, clipboardGateway = browserClipboardGateway, persistenceGateway, diagnosticExportGateway = browserDiagnosticExportGateway, androidDeliveryGateway, androidRestorationGateway, desktopDeliveryGateway }: AppProps) {
   const [state, dispatch] = useReducer(tabReducer, sessions, createTabState);
   const [commandStatus, setCommandStatus] = useState('');
   const [deliveryError, setDeliveryError] = useState('');
@@ -143,10 +149,14 @@ export function App({ sessions = [], recoveryGateway, externalLinkGateway, local
   const selectedAndroidRestorationGateway = androidRestorationGateway === undefined
     ? (nativeAndroidRestorationAvailable() ? nativeAndroidRestorationGateway : null)
     : androidRestorationGateway;
+  const selectedAndroidDeliveryGateway = androidDeliveryGateway === undefined
+    ? (nativeAndroidDeliveryAvailable() ? nativeAndroidDeliveryGateway : null)
+    : androidDeliveryGateway;
   const selectedDesktopDeliveryGateway = desktopDeliveryGateway === undefined
     ? (nativeDesktopDeliveryAvailable() ? nativeDesktopDeliveryGateway : null)
     : desktopDeliveryGateway;
   const openDesktopSourceIdsRef = useRef(new Set<string>());
+  const openAndroidSourceIdsRef = useRef(new Set<string>());
   const pendingDesktopDeliveryProbesRef = useRef(new Map<string, number[]>());
   useEffect(() => {
     void reportDesktopLifecycleProbe('shell-ready').catch(() => undefined);
@@ -225,6 +235,56 @@ export function App({ sessions = [], recoveryGateway, externalLinkGateway, local
     }
     openDesktopSourceIdsRef.current = current;
   }, [selectedDesktopDeliveryGateway, state.sessions]);
+  const applyAndroidDeliveries = useCallback(async () => {
+    if (!selectedAndroidDeliveryGateway) return;
+    const delivery = await selectedAndroidDeliveryGateway.drain();
+    for (const rejection of delivery.rejections)
+      setDeliveryError(`The delivered Android file could not be opened (${rejection.code}).`);
+    for (const source of delivery.sources) {
+      try {
+        const session = await selectedAndroidDeliveryGateway.materialize(source);
+        setDeliveryError('');
+        dispatch({ type: 'open', session });
+      } catch {
+        void selectedAndroidDeliveryGateway.close(source.source_id);
+        setDeliveryError('The delivered Android file could not be decoded safely. Check that it is readable UTF-8 or UTF-16 text.');
+      }
+    }
+  }, [selectedAndroidDeliveryGateway]);
+  useEffect(() => {
+    if (!selectedAndroidDeliveryGateway) return;
+    let active = true;
+    const drain = () => {
+      void applyAndroidDeliveries().catch(() => {
+        if (active) setDeliveryError('Android file delivery is temporarily unavailable. Open the file again.');
+      });
+    };
+    let unlisten: (() => void) | undefined;
+    void selectedAndroidDeliveryGateway.subscribe(drain).then((dispose) => {
+      if (active) {
+        unlisten = dispose;
+        drain();
+      } else dispose();
+    }).catch(() => {
+      if (active) setDeliveryError('Android file delivery is temporarily unavailable. Open the file again.');
+    });
+    return () => {
+      active = false;
+      unlisten?.();
+    };
+  }, [applyAndroidDeliveries, selectedAndroidDeliveryGateway]);
+  useEffect(() => {
+    if (!selectedAndroidDeliveryGateway) return;
+    const current = new Set(
+      state.sessions
+        .filter((session) => session.source_id && session.id === `android-${session.source_id}`)
+        .map((session) => session.source_id as string),
+    );
+    for (const sourceId of openAndroidSourceIdsRef.current) {
+      if (!current.has(sourceId)) void selectedAndroidDeliveryGateway.close(sourceId);
+    }
+    openAndroidSourceIdsRef.current = current;
+  }, [selectedAndroidDeliveryGateway, state.sessions]);
   useEffect(() => {
     const restored = persistence.restoredSession;
     if (!restored || !selectedAndroidRestorationGateway) return;

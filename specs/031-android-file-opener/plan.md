@@ -4,7 +4,7 @@
 
 ## Summary
 
-Replace the flattened Android intent inventory with explicit resolver-filter groups, correct the main activity's exact-type `ACTION_VIEW` declarations for opaque content URIs, define a bounded generic-provider policy, exercise installed-package resolution and cold/warm delivery on API 24 and API 36, validate equivalent universal and ARM64 final manifests, and record the v0.1.2 behavior delta.
+Replace the flattened Android intent inventory with explicit resolver-filter groups, correct the main activity's exact-type `ACTION_VIEW` declarations for opaque content URIs, connect the native delivery queue to the frontend through a permission-scoped plugin event and bounded materialization gateway, define a bounded generic-provider policy, exercise installed-package resolution and cold/warm delivery on API 24 and API 36, validate equivalent universal and ARM64 final manifests, and record the v0.1.2 behavior delta.
 
 ## Technical Context
 
@@ -71,7 +71,7 @@ scripts/
 docs/releases/v0.1.2.md
 ```
 
-**Structure Decision**: Correct the established Android manifest and controlled-provider test boundary in place. Preserve both grouped filter semantics and aggregate inventory in package evidence so policy can detect Android's cross-element merging without replacing the existing release pipeline.
+**Structure Decision**: Correct the established Android manifest and controlled-provider test boundary in place. Add the missing Android frontend delivery gateway beside the existing restoration gateway and use Tauri's permission-scoped mobile plugin event rather than polling. Preserve both grouped filter semantics and aggregate inventory in package evidence so policy can detect Android's cross-element merging without replacing the existing release pipeline.
 
 ## Complexity Tracking
 

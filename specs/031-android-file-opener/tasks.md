@@ -58,10 +58,13 @@
 - [x] T018 Run focused Android policy and parser checks from `specs/031-android-file-opener/quickstart.md`
 - [x] T019 Run all locally available format, lint, unit, documentation, security, and package gates and record results in `specs/031-android-file-opener/verification.md`
 - [x] T020 Mark every completed task, verify UTF-8 without BOM and mojibake absence, and reconcile S031 against issue #159 in `specs/031-android-file-opener/tasks.md`
+- [x] T021 [US2] Add a bounded Android delivery gateway and source materialization reuse in `apps/glitchpad/src/domain/android-delivery-gateway.ts` and `apps/glitchpad/src/domain/android-restoration-gateway.ts`
+- [x] T022 [US2] Drain startup deliveries, subscribe to warm native delivery events, open sessions, and release closed sources in `apps/glitchpad/src/App.tsx`
+- [x] T023 [US2] Emit permission-scoped warm delivery notifications from `AndroidSourcePlugin.kt` and prove the frontend, native host, and instrumentation targets compile and pass focused tests
 
 ## Dependencies and execution order
 
-T001-T006 establish the feature context and grouped policy. US1 corrects and proves resolver eligibility. US2 depends on successful US1 resolution and proves the document reaches the viewport. US3 extends the same policy with bounded generic behavior. T015-T017 integrate final evidence after all stories pass. T018-T020 run last.
+T001-T006 establish the feature context and grouped policy. US1 corrects and proves resolver eligibility. US2 depends on successful US1 resolution and proves the document reaches the viewport, including the native-to-frontend drain path added in T021-T023 after hosted instrumentation exposed the missing consumer. US3 extends the same policy with bounded generic behavior. T015-T017 integrate final evidence after all stories pass. T018-T023 run last.
 
 ## Parallel opportunities
 

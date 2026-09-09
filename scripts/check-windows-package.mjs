@@ -55,24 +55,35 @@ function same(left, right) {
 export function validatePortableSmokeContract(lifecycleSource, workflowSource) {
   const lifecycleRequirements = [
     '[string] $TextFixture',
-    '[string] $MarkdownFixture',
+    '[string] $MarkdownFixtureA',
+    '[string] $MarkdownFixtureB',
     "'Open file…'",
     "'S027 TXT CONTENT 7E5A'",
-    "'S027 Markdown Content 4C9B'",
+    "'S030 Markdown Alpha 2B7C'",
+    "'S030 Markdown Beta 9D4E'",
     'Get-TabCount $process) -ne 0',
     'Get-TabCount $process) -ne 2',
     'Close {0}',
-    "schema_version = 2",
+    "schema_version = 3",
     "fixture_absence = 'pass'",
     "conditional_tabs = 'pass'",
     "direct_close = 'pass'",
+    "markdown_alpha_beta = 'pass'",
+    "markdown_beta_alpha = 'pass'",
+    "blank_viewport_absence = 'pass'",
+    "pending_source_absence = 'pass'",
+    "active_document_identity = 'pass'",
+    "menu_geometry = 'pass'",
   ];
   for (const requirement of lifecycleRequirements)
     if (!lifecycleSource.includes(requirement))
       fail(`portable smoke lifecycle omits ${requirement}`);
-  for (const requirement of ['-TextFixture', '-MarkdownFixture', 's027-visible.txt', 's027-visible.md'])
+  for (const requirement of ['-TextFixture', '-MarkdownFixtureA', '-MarkdownFixtureB', 's027-visible.txt', 's030-alpha.md', 's030-beta.md'])
     if (!workflowSource.includes(requirement))
       fail(`Windows workflow omits ${requirement}`);
+  for (const requirement of ['-InstalledMarkdownReceipt', 'installed-markdown-lifecycle-receipt.json'])
+    if (!workflowSource.includes(requirement))
+      fail(`Windows installed lifecycle omits ${requirement}`);
   return true;
 }
 

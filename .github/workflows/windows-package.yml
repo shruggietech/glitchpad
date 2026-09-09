@@ -70,9 +70,10 @@ jobs:
         run: |
           $fixture = 'fixtures/documents/README.md'
           [IO.File]::WriteAllText('artifacts/windows/s027-visible.txt', "S027 TXT CONTENT 7E5A`n", [Text.UTF8Encoding]::new($false))
-          [IO.File]::WriteAllText('artifacts/windows/s027-visible.md', "# S027 Markdown Content 4C9B`n", [Text.UTF8Encoding]::new($false))
-          ./scripts/windows/test-installer-lifecycle.ps1 -Installer artifacts/windows/glitchpad-0.1.1-windows-x86_64-setup.exe -Fixture $fixture -Receipt artifacts/windows/installer-lifecycle-receipt.json
-          ./scripts/windows/test-portable-lifecycle.ps1 -PortableRoot artifacts/windows/portable -TextFixture artifacts/windows/s027-visible.txt -MarkdownFixture artifacts/windows/s027-visible.md -Receipt artifacts/windows/portable-lifecycle-receipt.json
+          [IO.File]::WriteAllText('artifacts/windows/s030-alpha.md', "# S030 Markdown Alpha 2B7C`n`n<!-- S030_ALPHA_RAW_SENTINEL -->`n", [Text.UTF8Encoding]::new($false))
+          [IO.File]::WriteAllText('artifacts/windows/s030-beta.md', "# S030 Markdown Beta 9D4E`n`n<!-- S030_BETA_RAW_SENTINEL -->`n", [Text.UTF8Encoding]::new($false))
+          ./scripts/windows/test-installer-lifecycle.ps1 -Installer artifacts/windows/glitchpad-0.1.1-windows-x86_64-setup.exe -Fixture $fixture -TextFixture artifacts/windows/s027-visible.txt -MarkdownFixtureA artifacts/windows/s030-alpha.md -MarkdownFixtureB artifacts/windows/s030-beta.md -InstalledMarkdownReceipt artifacts/windows/installed-markdown-lifecycle-receipt.json -Receipt artifacts/windows/installer-lifecycle-receipt.json
+          ./scripts/windows/test-portable-lifecycle.ps1 -PortableRoot artifacts/windows/portable -TextFixture artifacts/windows/s027-visible.txt -MarkdownFixtureA artifacts/windows/s030-alpha.md -MarkdownFixtureB artifacts/windows/s030-beta.md -Receipt artifacts/windows/portable-lifecycle-receipt.json
 
       - name: Validate final bytes and size policy
         run: |

@@ -24,7 +24,10 @@ export function ApplicationMenu({ commands, canOpen, onOpen, onInvoke, onPrefere
   useEffect(() => {
     if (!open) return;
     const dismiss = (event: PointerEvent) => {
-      if (!shellRef.current?.contains(event.target as Node)) setOpen(false);
+      if (!shellRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+        requestAnimationFrame(() => triggerRef.current?.focus());
+      }
     };
     document.addEventListener('pointerdown', dismiss);
     return () => document.removeEventListener('pointerdown', dismiss);
@@ -36,7 +39,16 @@ export function ApplicationMenu({ commands, canOpen, onOpen, onInvoke, onPrefere
   };
 
   return (
-    <div className="application-menu-shell" ref={shellRef}>
+    <div
+      className="application-menu-shell"
+      ref={shellRef}
+      data-menu-open={open ? 'true' : 'false'}
+      onBlur={(event) => {
+        if (!open || shellRef.current?.contains(event.relatedTarget)) return;
+        setOpen(false);
+        requestAnimationFrame(() => triggerRef.current?.focus());
+      }}
+    >
       <button
         className="application-menu-trigger"
         type="button"

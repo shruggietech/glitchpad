@@ -30,7 +30,7 @@ test('landing copy keeps the community release claim and required routes', async
     join(siteRoot, 'app', '(home)', 'page.tsx'),
     'utf8',
   );
-  assert.match(home, /v0\.1\.0 community release/i);
+  assert.match(home, /v0\.1\.1 community release/i);
   for (const route of ['/docs', '/support', '/security'])
     assert.match(
       home +

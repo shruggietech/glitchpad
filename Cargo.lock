@@ -1412,7 +1412,7 @@ dependencies = [
 
 [[package]]
 name = "glitchpad-android-source"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "serde",
  "tauri",
@@ -1421,7 +1421,7 @@ dependencies = [
 
 [[package]]
 name = "glitchpad-core"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "schemars 1.2.2",
  "serde",
@@ -1431,7 +1431,7 @@ dependencies = [
 
 [[package]]
 name = "glitchpad-host"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "atomic-write-file",
  "chrono",
@@ -5275,7 +5275,7 @@ dependencies = [
 
 [[package]]
 name = "xtask"
-version = "0.1.0"
+version = "0.1.1"
 
 [[package]]
 name = "yoke"

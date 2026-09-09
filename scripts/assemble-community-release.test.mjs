@@ -12,7 +12,7 @@ test('assembles exactly the declared artifact set', async () => {
   await mkdir(input);
   const artifacts = Array.from(
     { length: 8 },
-    (_, index) => `glitchpad-0.1.0-${index}.bin`,
+    (_, index) => `glitchpad-0.1.1-${index}.bin`,
   );
   for (const name of artifacts) await writeFile(join(input, name), name);
   const trustStates = {
@@ -51,8 +51,8 @@ test('assembles exactly the declared artifact set', async () => {
   await writeFile(
     contractPath,
     JSON.stringify({
-      version: '0.1.0',
-      tag: 'v0.1.0',
+      version: '0.1.1',
+      tag: 'v0.1.1',
       repository: 'shruggietech/glitchpad',
       artifacts,
       trust_states: trustStates,
@@ -67,6 +67,6 @@ test('assembles exactly the declared artifact set', async () => {
   assert.equal(manifest.artifacts.length, 8);
   assert.match(
     await readFile(join(output, 'SHA256SUMS'), 'utf8'),
-    /glitchpad-0\.1\.0-7\.bin/u,
+    /glitchpad-0\.1\.1-7\.bin/u,
   );
 });

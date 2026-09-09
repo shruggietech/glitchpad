@@ -91,7 +91,7 @@ class PerformanceInstrumentedTest {
         }.format(Date())
         val evidence = JSONObject()
             .put("schema_version", 1)
-            .put("catalog_version", "v0.1.0-performance-1")
+            .put("catalog_version", "v0.1.1-performance-1")
             .put("metric_id", "idle_android_pss")
             .put("scenario_id", "idle_application")
             .put("profile_id", "android_api${Build.VERSION.SDK_INT}_reference_v1")

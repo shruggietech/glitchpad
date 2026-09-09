@@ -63,6 +63,19 @@ test('portable lifecycle policy rejects removal of content-first release asserti
   );
 });
 
+test('desktop menu geometry stays left-anchored and independently positioned', async () => {
+  const styles = await readFile(join(repositoryRoot, 'apps', 'glitchpad', 'src', 'styles.css'), 'utf8');
+  const shell = styles.match(/\.application-menu-shell\s*\{([^}]*)\}/su)?.[1] ?? '';
+  const popup = styles.match(/\.application-menu\s*\{([^}]*)\}/su)?.[1] ?? '';
+  assert.match(shell, /left:\s*0\.5rem/u);
+  assert.doesNotMatch(shell, /right:/u);
+  assert.match(shell, /width:\s*2\.25rem/u);
+  assert.match(popup, /position:\s*absolute/u);
+  assert.match(popup, /left:\s*0/u);
+  assert.match(styles, /@media \(forced-colors: active\)[\s\S]*\.application-menu-trigger/u);
+  assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/u);
+});
+
 test('size classification preserves exact S018 boundaries', () => {
   assert.equal(classifyPackageSize(contract.size_budget.target_bytes, contract.size_budget), 'pass');
   assert.equal(classifyPackageSize(contract.size_budget.target_bytes + 1, contract.size_budget), 'warning');

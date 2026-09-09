@@ -7,7 +7,14 @@ import {
 } from './check-public-release.mjs';
 
 test('repository public release sources satisfy the current authority', async () => {
-  assert.deepEqual(verifyPublicSources(await loadPublicSources()), []);
+  const sources = await loadPublicSources();
+  assert.deepEqual(verifyPublicSources(sources), []);
+  assert.doesNotMatch(sources.readme, /shields\.io\/badge\/platforms-/u);
+  assert.match(sources.readme, /## Supported platforms/u);
+  assert.match(sources.readme, /Windows 11 x86_64/u);
+  assert.match(sources.readme, /macOS 13\+ universal/u);
+  assert.match(sources.readme, /Ubuntu 22\.04\/24\.04 x86_64/u);
+  assert.match(sources.readme, /Android 7\.0\+/u);
 });
 
 for (const [name, mutate, expected] of [

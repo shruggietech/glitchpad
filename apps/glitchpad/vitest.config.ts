@@ -7,6 +7,9 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     globals: true,
-    maxWorkers: 4,
+    // The repository is commonly tested from a bind-mounted Windows workspace.
+    // Keep fork startup below the I/O saturation point so files cannot time out
+    // before their tests begin.
+    maxWorkers: 2,
   },
 });

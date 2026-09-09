@@ -182,13 +182,13 @@ describe('document foundation shell', () => {
     expect(screen.getByRole('menuitem', { name: /^Save/u })).toBeEnabled();
   });
 
-  it('renders semantic compact tabs and an active document surface', () => {
+  it('renders semantic compact tabs and an active document surface', async () => {
     render(<App sessions={initialSessions} />);
 
     expect(screen.getByRole('tablist', { name: 'Open documents' })).toBeInTheDocument();
     expect(screen.getAllByRole('tab')).toHaveLength(5);
     expect(screen.getByRole('tab', { name: /welcome\.md/i })).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByRole('tabpanel', { name: /welcome\.md/i })).toHaveTextContent('Glitchpad document foundation');
+    expect(await screen.findByRole('heading', { name: 'Glitchpad document foundation' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /more open documents/i })).toHaveAttribute('aria-expanded', 'false');
   });
 
@@ -220,7 +220,7 @@ describe('document foundation shell', () => {
     expect(screen.getByRole('tab', { name: /welcome\.md/i })).toHaveAttribute('aria-selected', 'true');
   });
 
-  it('cancels dirty close without changing content and returns keyboard focus', () => {
+  it('cancels dirty close without changing content and returns keyboard focus', async () => {
     render(<App sessions={[initialSessions[3]]} />);
     const document = screen.getByRole('region', { name: 'draft.md' });
     document.focus();
@@ -229,16 +229,16 @@ describe('document foundation shell', () => {
     fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(document).toHaveFocus();
-    expect(screen.getByRole('region', { name: 'draft.md' })).toHaveTextContent('Unsaved fixture content.');
+    expect(await screen.findByText('Unsaved fixture content.')).toBeInTheDocument();
     expect(screen.getByRole('status')).toHaveTextContent(/remains open/i);
   });
 
-  it('keeps dirty content open while Save As waits for a durable receipt', () => {
+  it('keeps dirty content open while Save As waits for a durable receipt', async () => {
     render(<App sessions={[initialSessions[3]]} />);
     fireEvent.keyDown(screen.getByRole('main'), { key: 'w', ctrlKey: true });
     fireEvent.click(screen.getByRole('button', { name: 'Save As' }));
     expect(screen.getByRole('dialog')).toHaveTextContent(/until a durable receipt arrives/i);
-    expect(screen.getByRole('region', { name: 'draft.md' })).toHaveTextContent('Unsaved fixture content.');
+    expect(await screen.findByText('Unsaved fixture content.')).toBeInTheDocument();
     expect(screen.getByRole('region', { name: 'draft.md' })).toBeVisible();
   });
 

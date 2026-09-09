@@ -44,6 +44,7 @@ import {
 
 interface MarkdownSurfaceProps {
   session: ShellSession;
+  projectionSuppressed?: boolean;
   onDocumentChange: (
     id: string,
     expectedRevision: number,
@@ -182,7 +183,10 @@ function SafeTree({
       />
     );
   }
-  const children = node.children.map((child) => (
+  const forbidsWhitespaceChildren = ['table', 'thead', 'tbody', 'tfoot', 'tr'].includes(node.tag_name);
+  const children = node.children
+    .filter((child) => !(forbidsWhitespaceChildren && child.type === 'text' && child.value.trim() === ''))
+    .map((child) => (
     <SafeTree
       key={child.id}
       node={child}
@@ -193,7 +197,7 @@ function SafeTree({
       localAssetGateway={localAssetGateway}
       onMermaidSource={onMermaidSource}
     />
-  ));
+    ));
   if (node.link) {
     const candidate = node.link;
     if (candidate.kind === 'external' || candidate.kind === 'email') {
@@ -339,6 +343,7 @@ export const MarkdownSurface = forwardRef<
 >(function MarkdownSurface(
   {
     session,
+    projectionSuppressed = false,
     onDocumentChange,
     onLanguageChange,
     onMarkdownChange,
@@ -353,6 +358,7 @@ export const MarkdownSurface = forwardRef<
   const ownedClient = useRef<MarkdownRendererClient | null>(null);
   const ownsClient = useRef(rendererClient === undefined);
   const lifecycleGeneration = useRef(0);
+  const renderGeneration = useRef(0);
   if (!ownedClient.current)
     ownedClient.current = rendererClient ?? new MarkdownRendererClient(
       undefined,
@@ -363,9 +369,12 @@ export const MarkdownSurface = forwardRef<
   const client = ownedClient.current;
   const editorRef = useRef<TextEditorHandle>(null);
   const linkTriggerRef = useRef<HTMLElement | null>(null);
-  const [mode, setMode] = useState(
-    session.markdown_document?.mode ?? initialMarkdownState(session).mode,
-  );
+  const projectedMode = session.markdown_document?.mode ?? initialMarkdownState(session).mode;
+  const [modeState, setModeState] = useState(() => ({
+    sessionId: session.id,
+    projectedMode,
+    localMode: projectedMode,
+  }));
   const [result, setResult] = useState<MarkdownRenderResult | null>(null);
   const [status, setStatus] = useState<MarkdownDocumentState['render_status']>(
     session.markdown_document?.render_status ?? 'idle',
@@ -381,23 +390,34 @@ export const MarkdownSurface = forwardRef<
   const [linkOpening, setLinkOpening] = useState(false);
   const [linkError, setLinkError] = useState('');
   const [localLinkError, setLocalLinkError] = useState('');
-  const modeRef = useRef(mode);
+  const modeRef = useRef(projectedMode);
   const sourceSelectionRef = useRef(sourceSelection);
   const onMarkdownChangeRef = useRef(onMarkdownChange);
   const textDocument = session.text_document!;
   const eligibility = markdownEligibility(textDocument.source_bytes);
+  const currentResult =
+    result?.session_id === session.id && result.source_revision === session.revision
+      ? result
+      : null;
+  const synchronizedMode =
+    modeState.sessionId === session.id && modeState.projectedMode === projectedMode
+      ? modeState.localMode
+      : projectedMode;
+  const mode = projectionSuppressed ? 'source' : synchronizedMode;
   modeRef.current = mode;
   sourceSelectionRef.current = sourceSelection;
   onMarkdownChangeRef.current = onMarkdownChange;
 
   useEffect(() => {
-    setMode(
-      session.markdown_document?.mode ??
-        (eligibility === 'full' ? 'rendered' : 'source'),
-    );
-  }, [eligibility, session.id, session.markdown_document?.mode]);
+    setModeState({
+      sessionId: session.id,
+      projectedMode,
+      localMode: projectedMode,
+    });
+  }, [projectedMode, session.id]);
 
   useEffect(() => {
+    const generation = ++renderGeneration.current;
     if (eligibility !== 'full') {
       client.suspend();
       setStatus('limited');
@@ -413,6 +433,7 @@ export const MarkdownSurface = forwardRef<
       });
       return;
     }
+    setResult(null);
     setStatus('scheduled');
     void client
       .render({
@@ -421,7 +442,12 @@ export const MarkdownSurface = forwardRef<
         source_text: textDocument.normalized_text,
       })
       .then((next) => {
-        if (!next) return;
+        if (
+          !next ||
+          renderGeneration.current !== generation ||
+          next.session_id !== session.id ||
+          next.source_revision !== session.revision
+        ) return;
         setResult(next);
         const nextStatus = next.status;
         setStatus(nextStatus);
@@ -441,7 +467,10 @@ export const MarkdownSurface = forwardRef<
           rendererContribution(session, markdownMetadataFacts(next), next.source_revision),
         );
       });
-    return () => client.cancel();
+    return () => {
+      client.cancel();
+      if (renderGeneration.current === generation) renderGeneration.current += 1;
+    };
   }, [
     client,
     eligibility,
@@ -475,8 +504,8 @@ export const MarkdownSurface = forwardRef<
   }, [mode, sourceSelection]);
 
   const matches = useMemo(
-    () => findRenderedMatches(result?.search_text ?? [], query),
-    [query, result?.search_text],
+    () => findRenderedMatches(currentResult?.search_text ?? [], query),
+    [query, currentResult?.search_text],
   );
   const activeNodeId =
     activeMatch === null ? null : (matches[activeMatch]?.node_id ?? null);
@@ -498,14 +527,18 @@ export const MarkdownSurface = forwardRef<
     nextSelection = sourceSelection,
   ) => {
     if (nextMode === 'rendered' && eligibility !== 'full') return;
-    setMode(nextMode);
+    setModeState({
+      sessionId: session.id,
+      projectedMode,
+      localMode: nextMode,
+    });
     onMarkdownChange(session.id, session.revision, {
       mode: nextMode,
       eligibility,
-      render_revision: result?.source_revision ?? null,
+      render_revision: currentResult?.source_revision ?? null,
       render_status: status,
-      printable: Boolean(result?.tree),
-      outline_count: result?.outline.length ?? 0,
+      printable: Boolean(currentResult?.tree),
+      outline_count: currentResult?.outline.length ?? 0,
       source_selection: nextSelection
         ? { from: nextSelection.start_offset, to: nextSelection.end_offset }
         : null,
@@ -572,7 +605,7 @@ export const MarkdownSurface = forwardRef<
       }
       if (command === 'copy') {
         void navigator.clipboard?.writeText(
-          result?.search_text.map(({ text }) => text).join('\n') ?? '',
+          currentResult?.search_text.map(({ text }) => text).join('\n') ?? '',
         );
         return true;
       }
@@ -636,9 +669,9 @@ export const MarkdownSurface = forwardRef<
             onLanguageChange={onLanguageChange}
           />
         </div>
-        {result?.tree && (
+        {!projectionSuppressed && currentResult?.tree && (
           <article className="markdown-document markdown-print-document">
-            <SafeTree node={result.tree} session={session} activeNodeId={null} onLink={beginLink} onLocalLink={openLocalLink} localAssetGateway={localAssetGateway} onMermaidSource={enterMermaidSource} />
+            <SafeTree node={currentResult.tree} session={session} activeNodeId={null} onLink={beginLink} onLocalLink={openLocalLink} localAssetGateway={localAssetGateway} onMermaidSource={enterMermaidSource} />
           </article>
         )}
       </div>
@@ -658,10 +691,10 @@ export const MarkdownSurface = forwardRef<
                 ? 'Preview failed safely'
                 : status}
       </span>
-      {outlineOpen && result && (
+      {outlineOpen && currentResult && (
         <nav className="markdown-outline" aria-label="Document outline">
           <ol>
-            {result.outline.map((heading) => (
+            {currentResult.outline.map((heading) => (
               <li key={heading.id} data-level={heading.level}>
                 <button
                   type="button"
@@ -703,14 +736,14 @@ export const MarkdownSurface = forwardRef<
       <article
         className="markdown-document"
         aria-busy={status === 'scheduled'}
-        data-performance-ready={result?.tree ? 'true' : 'pending'}
-        data-performance-status={result?.status ?? status}
-        data-performance-duration={result?.measurements.parse_duration_ms ?? ''}
-        data-performance-diagnostic={result?.diagnostics[0]?.code ?? ''}
+        data-performance-ready={currentResult?.tree ? 'true' : 'pending'}
+        data-performance-status={currentResult?.status ?? status}
+        data-performance-duration={currentResult?.measurements.parse_duration_ms ?? ''}
+        data-performance-diagnostic={currentResult?.diagnostics[0]?.code ?? ''}
       >
-        {result?.tree ? (
+        {currentResult?.tree ? (
           <SafeTree
-            node={result.tree}
+            node={currentResult.tree}
             session={session}
             activeNodeId={activeNodeId}
             onLink={beginLink}
@@ -719,11 +752,14 @@ export const MarkdownSurface = forwardRef<
             onMermaidSource={enterMermaidSource}
           />
         ) : status === 'failed' ? (
-          <p role="alert">Markdown preview failed safely. Source remains available.</p>
+          <div className="markdown-failure">
+            <p role="alert">Markdown preview failed safely. Source remains available.</p>
+            <button type="button" onClick={enterSourceMode}>View source</button>
+          </div>
         ) : status === 'empty' ? (
           <p>This document is empty.</p>
         ) : (
-          <pre className="markdown-pending-source" aria-label="Markdown source while preview renders">{textDocument.normalized_text}</pre>
+          <p className="markdown-pending" aria-hidden="true">Rendering preview</p>
         )}
       </article>
       {localLinkError && <p role="alert">{localLinkError}</p>}

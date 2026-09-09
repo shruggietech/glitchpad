@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import axe from 'axe-core';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -35,6 +35,24 @@ describe('ApplicationMenu', () => {
     fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' });
     expect(screen.queryByRole('menu')).not.toBeInTheDocument();
     expect(trigger).toHaveFocus();
+  });
+
+  it('keeps a fixed trigger wrapper while the popup is disclosed', async () => {
+    const { container } = render(<ApplicationMenu commands={[command]} canOpen onOpen={vi.fn()} onInvoke={vi.fn()} onPreferences={vi.fn()} onDiagnostics={vi.fn()} />);
+    const trigger = screen.getByRole('button', { name: 'Menu' });
+    const shell = container.querySelector('.application-menu-shell');
+    expect(shell).toHaveAttribute('data-menu-open', 'false');
+    expect(trigger.parentElement).toBe(shell);
+
+    fireEvent.click(trigger);
+    expect(shell).toHaveAttribute('data-menu-open', 'true');
+    expect(screen.getByRole('menu').parentElement).toBe(shell);
+    expect(trigger.parentElement).toBe(shell);
+
+    fireEvent.pointerDown(document.body);
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+    expect(shell).toHaveAttribute('data-menu-open', 'false');
+    await waitFor(() => expect(trigger).toHaveFocus());
   });
 
   it('has no serious accessibility violations while disclosed', async () => {

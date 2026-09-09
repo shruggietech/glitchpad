@@ -4,7 +4,13 @@ import axe from 'axe-core';
 import { describe, expect, it, vi } from 'vitest';
 
 import { App } from '../App';
+import type { ShellSession } from '../domain/contracts';
+import type { MarkdownRenderRequest, MarkdownRenderResult } from '../domain/markdown-contract';
+import { renderMarkdown } from '../domain/markdown-pipeline';
+import { MarkdownRendererClient, type MarkdownExecutor } from '../domain/markdown-renderer';
+import { markdownCorpus } from '../test/markdown-corpus';
 import { initialSessions } from '../test/fixtures';
+import { MarkdownSurface } from './MarkdownSurface';
 
 const invokeMenu = (name: string | RegExp) => {
   fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
@@ -40,7 +46,180 @@ const markdownSession = (content: string) => ({
   },
 });
 
+interface DeferredRender {
+  request: MarkdownRenderRequest;
+  resolve: (result: MarkdownRenderResult) => void;
+  reject: (error: Error) => void;
+}
+
+const deferredRenderer = () => {
+  const renders: DeferredRender[] = [];
+  const executor: MarkdownExecutor = {
+    execute: (request) => new Promise((resolve, reject) => renders.push({ request, resolve, reject })),
+  };
+  return { client: new MarkdownRendererClient(executor, 0, 5_000), renders };
+};
+
+const renderDirectSurface = (session: ShellSession, rendererClient: MarkdownRendererClient) => render(
+  <MarkdownSurface
+    session={session}
+    rendererClient={rendererClient}
+    onDocumentChange={vi.fn()}
+    onLanguageChange={vi.fn()}
+    onMarkdownChange={vi.fn()}
+  />,
+);
+
 describe('Markdown surface', () => {
+  it('never exposes source content while a rendered preview is pending and makes failure recovery explicit', async () => {
+    const { client, renders } = deferredRenderer();
+    const session = markdownSession('# Heading\n\nSOURCE_ONLY_SENTINEL_6F2A');
+    const { container } = renderDirectSurface(session, client);
+    await waitFor(() => expect(renders).toHaveLength(1));
+
+    expect(document.body).not.toHaveTextContent('SOURCE_ONLY_SENTINEL_6F2A');
+    expect(screen.getAllByText('Rendering preview').length).toBeGreaterThan(0);
+    let accessibility = await axe.run(container, {
+      runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'] },
+    });
+    expect(accessibility.violations.filter(({ impact }) => impact === 'critical' || impact === 'serious')).toEqual([]);
+
+    await act(async () => {
+      renders[0].reject(new Error('renderer details'));
+      await Promise.resolve();
+    });
+    expect(await screen.findByRole('alert')).toHaveTextContent('Markdown preview failed safely');
+    expect(document.body).not.toHaveTextContent('renderer details');
+    accessibility = await axe.run(container, {
+      runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'] },
+    });
+    expect(accessibility.violations.filter(({ impact }) => impact === 'critical' || impact === 'serious')).toEqual([]);
+    fireEvent.click(screen.getByRole('button', { name: 'View source' }));
+    const editor = screen.getByRole('textbox', { name: 'test.md text editor' });
+    expect(EditorView.findFromDOM(editor)?.state.doc.toString()).toContain('SOURCE_ONLY_SENTINEL_6F2A');
+  });
+
+  it.each(['light', 'dark'])('keeps the pending state content-free in the %s theme', async (theme) => {
+    document.documentElement.dataset.theme = theme;
+    const { client, renders } = deferredRenderer();
+    renderDirectSurface(markdownSession('# PRIVATE_THEME_SENTINEL_9C3D'), client);
+    await waitFor(() => expect(renders).toHaveLength(1));
+    expect(screen.getAllByText('Rendering preview').length).toBeGreaterThan(0);
+    expect(document.body).not.toHaveTextContent('PRIVATE_THEME_SENTINEL_9C3D');
+    document.documentElement.removeAttribute('data-theme');
+  });
+
+  it('keeps an unused reference definition source-only after rendering settles', async () => {
+    render(<App sessions={[markdownSession('# Safe heading\n\n[SOURCE_ONLY_REFERENCE_8A2C]: https://example.invalid/reference')]} />);
+
+    expect(await screen.findByRole('heading', { name: 'Safe heading' })).toBeInTheDocument();
+    expect(document.body).not.toHaveTextContent('SOURCE_ONLY_REFERENCE_8A2C');
+  });
+
+  it('turns a render timeout into an actionable contained failure', async () => {
+    const executor: MarkdownExecutor = {
+      execute: (_request, signal) => new Promise((_resolve, reject) => {
+        signal.addEventListener('abort', () => reject(new DOMException('Timed out', 'AbortError')), { once: true });
+      }),
+    };
+    const client = new MarkdownRendererClient(executor, 0, 5);
+    renderDirectSurface(markdownSession('# Timeout source'), client);
+    expect(await screen.findByRole('alert')).toHaveTextContent('Markdown preview failed safely');
+    expect(screen.getByRole('button', { name: 'View source' })).toBeInTheDocument();
+  });
+
+  it('publishes only the current session revision when renders settle out of order', async () => {
+    const { client, renders } = deferredRenderer();
+    const first = markdownSession('# First revision');
+    const { rerender } = renderDirectSurface(first, client);
+    await waitFor(() => expect(renders).toHaveLength(1));
+    const second = {
+      ...markdownSession('# Second revision'),
+      revision: first.revision + 1,
+    };
+    rerender(
+      <MarkdownSurface session={second} rendererClient={client} onDocumentChange={vi.fn()} onLanguageChange={vi.fn()} onMarkdownChange={vi.fn()} />,
+    );
+    await waitFor(() => expect(renders).toHaveLength(2));
+
+    await act(async () => renders[1].resolve(await renderMarkdown(renders[1].request)));
+    expect(await screen.findByRole('heading', { name: 'Second revision' })).toBeInTheDocument();
+    await act(async () => renders[0].resolve(await renderMarkdown(renders[0].request)));
+    expect(screen.getByRole('heading', { name: 'Second revision' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'First revision' })).not.toBeInTheDocument();
+  });
+
+  it('withdraws a ready projection synchronously when its source revision changes', async () => {
+    const { client, renders } = deferredRenderer();
+    const first = markdownSession('# Ready first revision');
+    const { rerender } = renderDirectSurface(first, client);
+    await waitFor(() => expect(renders).toHaveLength(1));
+    await act(async () => renders[0].resolve(await renderMarkdown(renders[0].request)));
+    expect(await screen.findByRole('heading', { name: 'Ready first revision' })).toBeInTheDocument();
+
+    const second = { ...markdownSession('# Private next revision'), revision: first.revision + 1 };
+    rerender(<MarkdownSurface session={second} rendererClient={client} onDocumentChange={vi.fn()} onLanguageChange={vi.fn()} onMarkdownChange={vi.fn()} />);
+    expect(screen.queryByRole('heading', { name: 'Ready first revision' })).not.toBeInTheDocument();
+    expect(document.body).not.toHaveTextContent('Private next revision');
+    expect(screen.getAllByText('Rendering preview').length).toBeGreaterThan(0);
+  });
+
+  it('honors an incoming rendered mode before an earlier local source mode can paint', async () => {
+    const { client, renders } = deferredRenderer();
+    const sourceSession = {
+      ...markdownSession('# Heading\n\nPRIVATE_MODE_SENTINEL_4D7B'),
+      markdown_document: {
+        ...markdownSession('').markdown_document,
+        mode: 'source' as const,
+      },
+    };
+    const { rerender } = renderDirectSurface(sourceSession, client);
+    await waitFor(() => expect(renders).toHaveLength(1));
+    expect(screen.getByRole('textbox', { name: 'test.md text editor' })).toBeInTheDocument();
+
+    const renderedSession = {
+      ...sourceSession,
+      markdown_document: {
+        ...sourceSession.markdown_document,
+        mode: 'rendered' as const,
+      },
+    };
+    rerender(
+      <MarkdownSurface session={renderedSession} rendererClient={client} onDocumentChange={vi.fn()} onLanguageChange={vi.fn()} onMarkdownChange={vi.fn()} />,
+    );
+
+    expect(screen.queryByRole('textbox', { name: 'test.md text editor' })).not.toBeInTheDocument();
+    expect(document.body).not.toHaveTextContent('PRIVATE_MODE_SENTINEL_4D7B');
+    expect(screen.getAllByText('Rendering preview').length).toBeGreaterThan(0);
+  });
+
+  it('renders the governed complex corpus without blanking the document surface', async () => {
+    for (const fixture of markdownCorpus) {
+      const { unmount } = render(<App sessions={[{
+        ...markdownSession(fixture.content),
+        id: fixture.id,
+        source: { ...markdownSession('').source, display_name: fixture.name },
+      }]} />);
+      expect(await screen.findByText(fixture.marker, {}, { timeout: 10_000 })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Menu' })).toBeInTheDocument();
+      unmount();
+    }
+  }, 30_000);
+
+  it.each([
+    ['alpha then beta', 'alpha.md', 'Alpha body', 'beta.md', 'Beta body'],
+    ['beta then alpha', 'beta.md', 'Beta body', 'alpha.md', 'Alpha body'],
+    ['same bytes with different names', 'left.md', 'Identical body', 'right.md', 'Identical body'],
+  ])('keeps the active identity and usable content for %s', async (_label, firstName, firstBody, secondName, secondBody) => {
+    const first = { ...markdownSession(`# ${firstBody}`), id: `first-${firstName}`, source: { ...markdownSession('').source, display_name: firstName } };
+    const second = { ...markdownSession(`# ${secondBody}`), id: `second-${secondName}`, lifecycle: 'background' as const, source: { ...markdownSession('').source, display_name: secondName } };
+    render(<App sessions={[first, second]} />);
+    expect(await screen.findByRole('heading', { name: firstBody })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('tab', { name: new RegExp(secondName.replace('.', '\\.'), 'iu') }));
+    expect(await screen.findByRole('heading', { name: secondBody })).toBeInTheDocument();
+    expect(screen.getByRole('tabpanel')).toHaveAccessibleName(new RegExp(secondName.replace('.', '\\.'), 'iu'));
+  });
+
   it('publishes renderer measurements to the shared inspector', async () => {
     render(<App sessions={[markdownSession('# Metadata heading')]} />);
     await screen.findByRole('heading', { name: 'Metadata heading' });

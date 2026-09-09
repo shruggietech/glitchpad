@@ -27,13 +27,10 @@ export const nativeAndroidDeliveryAvailable = (): boolean => {
     return false;
   const internals = (
     window as unknown as {
-      __TAURI_INTERNALS__?: { invoke?: unknown; transformCallback?: unknown };
+      __TAURI_INTERNALS__?: { invoke?: unknown };
     }
   ).__TAURI_INTERNALS__;
-  return (
-    typeof internals?.invoke === 'function' &&
-    typeof internals.transformCallback === 'function'
-  );
+  return typeof internals?.invoke === 'function';
 };
 
 export const createNativeAndroidDeliveryGateway = (

@@ -155,6 +155,42 @@ describe('document foundation shell', () => {
     await waitFor(() => expect(close).toHaveBeenCalledWith('source'));
   });
 
+  it('drains a cold Android delivery when event subscription is unavailable', async () => {
+    const delivered = {
+      ...initialSessions[2],
+      id: 'android-source',
+      source_id: 'source',
+      external_revision: revision,
+    };
+    const drain = vi.fn().mockResolvedValue({
+      sources: [{
+        source_id: 'source',
+        descriptor: delivered.source,
+        external_revision: revision,
+        delivery_kind: 'view',
+        grant: {
+          read: true,
+          write: false,
+          persisted_read: false,
+          persisted_write: false,
+          restorable: false,
+        },
+      }],
+      rejections: [],
+    });
+    const gateway: AndroidDeliveryGateway = {
+      close: vi.fn().mockResolvedValue(undefined),
+      drain,
+      materialize: vi.fn().mockResolvedValue(delivered),
+      subscribe: vi.fn().mockRejectedValue(new Error('listener unavailable')),
+    };
+
+    render(<App sessions={[]} androidDeliveryGateway={gateway} />);
+
+    expect(await screen.findByRole('region', { name: 'notes.txt' })).toBeVisible();
+    expect(drain).toHaveBeenCalledOnce();
+  });
+
   it('opens native desktop deliveries through the compact application commands', async () => {
     const subscriptionOrder: string[] = [];
     const delivered = {

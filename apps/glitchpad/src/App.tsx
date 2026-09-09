@@ -263,11 +263,10 @@ export function App({ sessions = [], recoveryGateway, externalLinkGateway, local
     void selectedAndroidDeliveryGateway.subscribe(drain).then((dispose) => {
       if (active) {
         unlisten = dispose;
-        drain();
       } else dispose();
     }).catch(() => {
       if (active) setDeliveryError('Android file delivery is temporarily unavailable. Open the file again.');
-    });
+    }).finally(drain);
     return () => {
       active = false;
       unlisten?.();

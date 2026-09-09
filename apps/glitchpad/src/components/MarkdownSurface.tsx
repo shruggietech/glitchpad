@@ -44,6 +44,7 @@ import {
 
 interface MarkdownSurfaceProps {
   session: ShellSession;
+  projectionSuppressed?: boolean;
   onDocumentChange: (
     id: string,
     expectedRevision: number,
@@ -342,6 +343,7 @@ export const MarkdownSurface = forwardRef<
 >(function MarkdownSurface(
   {
     session,
+    projectionSuppressed = false,
     onDocumentChange,
     onLanguageChange,
     onMarkdownChange,
@@ -367,9 +369,12 @@ export const MarkdownSurface = forwardRef<
   const client = ownedClient.current;
   const editorRef = useRef<TextEditorHandle>(null);
   const linkTriggerRef = useRef<HTMLElement | null>(null);
-  const [mode, setMode] = useState(
-    session.markdown_document?.mode ?? initialMarkdownState(session).mode,
-  );
+  const projectedMode = session.markdown_document?.mode ?? initialMarkdownState(session).mode;
+  const [modeState, setModeState] = useState(() => ({
+    sessionId: session.id,
+    projectedMode,
+    localMode: projectedMode,
+  }));
   const [result, setResult] = useState<MarkdownRenderResult | null>(null);
   const [status, setStatus] = useState<MarkdownDocumentState['render_status']>(
     session.markdown_document?.render_status ?? 'idle',
@@ -385,7 +390,7 @@ export const MarkdownSurface = forwardRef<
   const [linkOpening, setLinkOpening] = useState(false);
   const [linkError, setLinkError] = useState('');
   const [localLinkError, setLocalLinkError] = useState('');
-  const modeRef = useRef(mode);
+  const modeRef = useRef(projectedMode);
   const sourceSelectionRef = useRef(sourceSelection);
   const onMarkdownChangeRef = useRef(onMarkdownChange);
   const textDocument = session.text_document!;
@@ -394,16 +399,22 @@ export const MarkdownSurface = forwardRef<
     result?.session_id === session.id && result.source_revision === session.revision
       ? result
       : null;
+  const synchronizedMode =
+    modeState.sessionId === session.id && modeState.projectedMode === projectedMode
+      ? modeState.localMode
+      : projectedMode;
+  const mode = projectionSuppressed ? 'source' : synchronizedMode;
   modeRef.current = mode;
   sourceSelectionRef.current = sourceSelection;
   onMarkdownChangeRef.current = onMarkdownChange;
 
   useEffect(() => {
-    setMode(
-      session.markdown_document?.mode ??
-        (eligibility === 'full' ? 'rendered' : 'source'),
-    );
-  }, [eligibility, session.id, session.markdown_document?.mode]);
+    setModeState({
+      sessionId: session.id,
+      projectedMode,
+      localMode: projectedMode,
+    });
+  }, [projectedMode, session.id]);
 
   useEffect(() => {
     const generation = ++renderGeneration.current;
@@ -516,7 +527,11 @@ export const MarkdownSurface = forwardRef<
     nextSelection = sourceSelection,
   ) => {
     if (nextMode === 'rendered' && eligibility !== 'full') return;
-    setMode(nextMode);
+    setModeState({
+      sessionId: session.id,
+      projectedMode,
+      localMode: nextMode,
+    });
     onMarkdownChange(session.id, session.revision, {
       mode: nextMode,
       eligibility,
@@ -654,7 +669,7 @@ export const MarkdownSurface = forwardRef<
             onLanguageChange={onLanguageChange}
           />
         </div>
-        {currentResult?.tree && (
+        {!projectionSuppressed && currentResult?.tree && (
           <article className="markdown-document markdown-print-document">
             <SafeTree node={currentResult.tree} session={session} activeNodeId={null} onLink={beginLink} onLocalLink={openLocalLink} localAssetGateway={localAssetGateway} onMermaidSource={enterMermaidSource} />
           </article>

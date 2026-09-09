@@ -4,6 +4,7 @@ import axe from 'axe-core';
 import { describe, expect, it, vi } from 'vitest';
 
 import { App } from '../App';
+import type { ShellSession } from '../domain/contracts';
 import type { MarkdownRenderRequest, MarkdownRenderResult } from '../domain/markdown-contract';
 import { renderMarkdown } from '../domain/markdown-pipeline';
 import { MarkdownRendererClient, type MarkdownExecutor } from '../domain/markdown-renderer';
@@ -59,7 +60,7 @@ const deferredRenderer = () => {
   return { client: new MarkdownRendererClient(executor, 0, 5_000), renders };
 };
 
-const renderDirectSurface = (session: ReturnType<typeof markdownSession>, rendererClient: MarkdownRendererClient) => render(
+const renderDirectSurface = (session: ShellSession, rendererClient: MarkdownRendererClient) => render(
   <MarkdownSurface
     session={session}
     rendererClient={rendererClient}
@@ -153,6 +154,35 @@ describe('Markdown surface', () => {
     rerender(<MarkdownSurface session={second} rendererClient={client} onDocumentChange={vi.fn()} onLanguageChange={vi.fn()} onMarkdownChange={vi.fn()} />);
     expect(screen.queryByRole('heading', { name: 'Ready first revision' })).not.toBeInTheDocument();
     expect(document.body).not.toHaveTextContent('Private next revision');
+    expect(screen.getAllByText('Rendering preview').length).toBeGreaterThan(0);
+  });
+
+  it('honors an incoming rendered mode before an earlier local source mode can paint', async () => {
+    const { client, renders } = deferredRenderer();
+    const sourceSession = {
+      ...markdownSession('# Heading\n\nPRIVATE_MODE_SENTINEL_4D7B'),
+      markdown_document: {
+        ...markdownSession('').markdown_document,
+        mode: 'source' as const,
+      },
+    };
+    const { rerender } = renderDirectSurface(sourceSession, client);
+    await waitFor(() => expect(renders).toHaveLength(1));
+    expect(screen.getByRole('textbox', { name: 'test.md text editor' })).toBeInTheDocument();
+
+    const renderedSession = {
+      ...sourceSession,
+      markdown_document: {
+        ...sourceSession.markdown_document,
+        mode: 'rendered' as const,
+      },
+    };
+    rerender(
+      <MarkdownSurface session={renderedSession} rendererClient={client} onDocumentChange={vi.fn()} onLanguageChange={vi.fn()} onMarkdownChange={vi.fn()} />,
+    );
+
+    expect(screen.queryByRole('textbox', { name: 'test.md text editor' })).not.toBeInTheDocument();
+    expect(document.body).not.toHaveTextContent('PRIVATE_MODE_SENTINEL_4D7B');
     expect(screen.getAllByText('Rendering preview').length).toBeGreaterThan(0);
   });
 

@@ -16,6 +16,7 @@
 8. Final ESLint and Prettier checks passed, and the post-convergence encoding scan validated 867 text files as UTF-8 without BOM or common mojibake markers.
 9. Final diff review identified a one-frame ready-result retention risk during a same-session revision change. Synchronous result identity gating was added, then 51 Markdown and App tests, TypeScript, ESLint, and the production build passed.
 10. First-round Codex review findings strengthened packaged Windows evidence: delivery now monitors each actual raw sentinel continuously until safe heading settlement, and the two final-artifact fixtures exercise table, footnote, nested, and embedded-Mermaid rendering. Windows package policy, PowerShell syntax, and Prettier passed after the changes.
+11. The second Codex round identified a durable-recovery gap and a pre-effect mode transition. Both were reproduced and fixed at the state boundary. The two focused component files passed 27 tests; TypeScript, ESLint, Prettier, the production build, and all 11 Windows package-policy tests passed. The prior packaged Windows run caught the same raw-source transition before this correction, providing final-artifact evidence that the regression test exercises the affected path.
 
 ## Aggregate execution note
 

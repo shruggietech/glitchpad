@@ -70,6 +70,7 @@
 - [x] T023 Cap frontend test concurrency in `apps/glitchpad/vitest.config.ts` after the full suite exposed fork-start timeouts under bind-mounted workspace I/O pressure
 - [x] T024 Reject an already-ready projection synchronously when the active source revision changes in `apps/glitchpad/src/components/MarkdownSurface.tsx`
 - [x] T025 Address first-round Codex findings by monitoring actual raw sentinels from delivery through safe settlement and exercising nontrivial table, footnote, nesting, and embedded-Mermaid paths in final Windows artifacts
+- [x] T026 Address second-round Codex findings by synchronizing incoming presentation mode before paint and suppressing a failed projection throughout revision-scoped source recovery
 
 ## Dependencies and execution order
 

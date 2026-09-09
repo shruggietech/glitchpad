@@ -1,4 +1,4 @@
-import { forwardRef } from 'react';
+import { forwardRef, useState } from 'react';
 
 import type { LanguageDecision, MarkdownDocumentState, MermaidDocumentState, ShellSession, TextDocumentState } from '../domain/contracts';
 import type { MarkdownExternalLinkGateway, MarkdownLocalAssetGateway } from '../domain/markdown-gateway';
@@ -33,6 +33,8 @@ export const DocumentSurface = forwardRef<TextEditorHandle, DocumentSurfaceProps
   { session, canOpen = false, onOpen, labelledByTab = false, onDocumentChange, onLanguageChange, onMarkdownChange, onMermaidChange, externalLinkGateway, localAssetGateway, onOpenMetadata, onMetadataContribution },
   ref,
 ) {
+  const [markdownRecoveryKey, setMarkdownRecoveryKey] = useState<string | null>(null);
+
   if (!session) {
     return (
       <section
@@ -47,13 +49,16 @@ export const DocumentSurface = forwardRef<TextEditorHandle, DocumentSurfaceProps
     );
   }
 
+  const currentDocumentKey = `${session.id}:${session.revision}`;
+  const projectionSuppressed = markdownRecoveryKey === currentDocumentKey;
+
   const presentation = session.text_document ? (
     session.text_document.mode === 'refused' ? (
       <p className="document-limit" role="alert">This text source exceeds the 256 MiB viewing limit. Use a streaming log viewer or command-line pager for this file.</p>
     ) : session.text_document.mode === 'large_read_only' ? (
       <LargeTextSurface session={session} />
     ) : session.renderer.id === 'markdown' ? (
-      <MarkdownSurface key={session.id} ref={ref} session={session} onDocumentChange={onDocumentChange} onLanguageChange={onLanguageChange} onMarkdownChange={onMarkdownChange} externalLinkGateway={externalLinkGateway} localAssetGateway={localAssetGateway} onOpenMetadata={onOpenMetadata} onMetadataContribution={onMetadataContribution} />
+      <MarkdownSurface key={session.id} ref={ref} session={session} projectionSuppressed={projectionSuppressed} onDocumentChange={onDocumentChange} onLanguageChange={onLanguageChange} onMarkdownChange={onMarkdownChange} externalLinkGateway={externalLinkGateway} localAssetGateway={localAssetGateway} onOpenMetadata={onOpenMetadata} onMetadataContribution={onMetadataContribution} />
     ) : session.renderer.id === 'mermaid' ? (
       <MermaidSurface key={session.id} ref={ref} session={session} onDocumentChange={onDocumentChange} onLanguageChange={onLanguageChange} onMermaidChange={onMermaidChange ?? (() => undefined)} onOpenMetadata={onOpenMetadata} onMetadataContribution={onMetadataContribution} />
     ) : (
@@ -84,6 +89,7 @@ export const DocumentSurface = forwardRef<TextEditorHandle, DocumentSurfaceProps
               <button
                 type="button"
                 onClick={() => {
+                  setMarkdownRecoveryKey(currentDocumentKey);
                   onMarkdownChange(session.id, session.revision, {
                     mode: 'source',
                     eligibility: session.markdown_document?.eligibility ?? 'full',

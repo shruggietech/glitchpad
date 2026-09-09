@@ -118,6 +118,16 @@ function Test-WindowContainsText([System.Windows.Automation.AutomationElement] $
     return $false
 }
 
+function Wait-WindowText([Diagnostics.Process] $Process, [string] $Text, [int] $Seconds = 10) {
+    $deadline = [DateTimeOffset]::UtcNow.AddSeconds($Seconds)
+    do {
+        $window = Get-WindowRoot $Process
+        if ($window -and (Test-WindowContainsText $window $Text)) { return }
+        Start-Sleep -Milliseconds 50
+    } while ([DateTimeOffset]::UtcNow -lt $deadline)
+    throw "Portable UI did not expose text '$Text'."
+}
+
 function Wait-SafeMarkdownOutcome([Diagnostics.Process] $Process, [string] $ExpectedHeading, [string] $RawSentinel, [int] $Seconds = 20) {
     $deadline = [DateTimeOffset]::UtcNow.AddSeconds($Seconds)
     do {
@@ -199,7 +209,7 @@ try {
 
     Send-MarkdownDelivery $markdownFixtureAPath $process 'S030 Markdown Alpha 2B7C' 'S030_ALPHA_RAW_SENTINEL'
     Wait-NamedElement $process ([IO.Path]::GetFileName($markdownFixtureAPath)) | Out-Null
-    Wait-NamedElement $process 'S030 Alpha Footnote 6A1E' | Out-Null
+    Wait-WindowText $process 'S030 Alpha Footnote 6A1E'
     if ((Get-TabCount $process) -ne 2) { throw 'Two delivered documents did not expose exactly two tabs.' }
     Wait-NamedElement $process ("Close {0}" -f [IO.Path]::GetFileName($textFixturePath)) | Out-Null
     Send-MarkdownDelivery $markdownFixtureBPath $process 'S030 Markdown Beta 9D4E' 'S030_BETA_RAW_SENTINEL'
@@ -231,7 +241,7 @@ try {
     Wait-NamedElement $reverseProcess 's030-beta.md diagram 1' | Out-Null
     if ((Get-TabCount $reverseProcess) -ne 0) { throw 'The first reverse-order document exposed tab chrome.' }
     Send-MarkdownDelivery $markdownFixtureAPath $reverseProcess 'S030 Markdown Alpha 2B7C' 'S030_ALPHA_RAW_SENTINEL'
-    Wait-NamedElement $reverseProcess 'S030 Alpha Footnote 6A1E' | Out-Null
+    Wait-WindowText $reverseProcess 'S030 Alpha Footnote 6A1E'
     if ((Get-TabCount $reverseProcess) -ne 2) { throw 'The reverse-order pair did not expose exactly two tabs.' }
 }
 finally {

@@ -18,6 +18,7 @@
 10. First-round Codex review findings strengthened packaged Windows evidence: delivery now monitors each actual raw sentinel continuously until safe heading settlement, and the two final-artifact fixtures exercise table, footnote, nested, and embedded-Mermaid rendering. Windows package policy, PowerShell syntax, and Prettier passed after the changes.
 11. The second Codex round identified a durable-recovery gap and a pre-effect mode transition. Both were reproduced and fixed at the state boundary. The two focused component files passed 27 tests; TypeScript, ESLint, the production build, and all 11 Windows package-policy tests passed.
 12. Final Windows artifact execution exposed that HTML comments are intentionally rendered as inert visible source by the Markdown security pipeline, making the original sentinel itself a false positive. Both sentinels were changed to unused Markdown reference definitions, which remain in raw source but are omitted from the rendered projection. The package policy now requires those exact source-only definitions.
+13. The corrected sentinel passed in both Windows candidate jobs. Their next failure showed that the rendered footnote is exposed as nested UI Automation text rather than one exact-name element. Its assertion now uses the same bounded descendant text discovery as the raw-source guard while exact-name checks remain in place for headings, tabs, and the embedded diagram.
 
 ## Aggregate execution note
 

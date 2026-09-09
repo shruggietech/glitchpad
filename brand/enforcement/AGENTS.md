@@ -58,6 +58,8 @@ Asking for an undeclared weight makes the renderer synthesise or substitute a fa
 
 This is a ShruggieTech-owned child brand. The only approved ownership endorsement is `A ShruggieTech project`. Keep it outside the logo clear space.
 
+
+
 ## Density
 
 Two settings ship, and both are correct in the right place. Default for

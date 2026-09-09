@@ -1,6 +1,13 @@
 import { expect, test } from '@playwright/test';
 
-const routes = ['/', '/docs'];
+const routes = [
+  '/',
+  '/docs',
+  '/docs/technical-specification',
+  '/license',
+  '/support',
+  '/security',
+];
 const widths = [320, 768, 1280];
 
 async function openWithSystemTheme(page, route, colorScheme, width) {
@@ -31,13 +38,51 @@ async function openWithStoredTheme(page, route, systemTheme, storedTheme) {
 async function expectLockup(page, colorScheme) {
   const expected =
     colorScheme === 'dark'
-      ? '/logos/glitchpad-horizontal-white.svg'
-      : '/logos/glitchpad-horizontal-black.svg';
+      ? '/logos/glitchpad-horizontal-color.svg'
+      : '/logos/glitchpad-horizontal-light.svg';
   const lockup = page.locator('.brand-lockup:visible');
   await expect(lockup).toHaveCount(1);
   await expect(lockup.locator('img')).toHaveCount(2);
   await expect(lockup.locator('img:visible')).toHaveCount(1);
   await expect(lockup.locator('img:visible')).toHaveAttribute('src', expected);
+  const renderedPixels = await lockup
+    .locator('img:visible')
+    .evaluate((image) => {
+      const canvas = document.createElement('canvas');
+      canvas.width = image.naturalWidth;
+      canvas.height = image.naturalHeight;
+      const context = canvas.getContext('2d');
+      context.drawImage(image, 0, 0);
+      const pixels = context.getImageData(
+        0,
+        0,
+        canvas.width,
+        canvas.height,
+      ).data;
+      let opaque = 0;
+      let sulfur = 0;
+      let pale = 0;
+      let charcoal = 0;
+      for (let index = 0; index < pixels.length; index += 4) {
+        if (pixels[index + 3] > 0) opaque += 1;
+        const [red, green, blue] = pixels.slice(index, index + 3);
+        if (red > 245 && green > 200 && blue < 30) sulfur += 1;
+        if (red > 225 && green > 225 && blue > 225) pale += 1;
+        if (red < 30 && green < 30 && blue < 30) charcoal += 1;
+      }
+      return {
+        opaque,
+        sulfur,
+        pale,
+        charcoal,
+        total: canvas.width * canvas.height,
+      };
+    });
+  expect(renderedPixels.opaque / renderedPixels.total).toBeGreaterThan(0.05);
+  expect(renderedPixels.sulfur).toBeGreaterThan(20);
+  expect(
+    colorScheme === 'dark' ? renderedPixels.pale : renderedPixels.charcoal,
+  ).toBeGreaterThan(20);
   const home = page.getByRole('link', { name: 'Glitchpad', exact: true });
   await expect(home).toHaveCount(1);
   await expect(home).toBeVisible();
@@ -80,13 +125,15 @@ for (const route of routes) {
     await openWithSystemTheme(page, route, 'light', 1280);
     await expectLockup(page, 'light');
     await page.evaluate(() => {
-      window.__s010PageMarker = 'retained';
+      window.__themePageMarker = 'retained';
     });
 
     await page.getByRole('button', { name: 'Toggle Theme' }).click();
     await expect(page.locator('html')).toHaveAttribute('class', /dark/);
     await expectLockup(page, 'dark');
-    expect(await page.evaluate(() => window.__s010PageMarker)).toBe('retained');
+    expect(await page.evaluate(() => window.__themePageMarker)).toBe(
+      'retained',
+    );
 
     await page.getByRole('button', { name: 'Toggle Theme' }).click();
     await expect(page.locator('html')).not.toHaveAttribute(
@@ -94,6 +141,8 @@ for (const route of routes) {
       /(?:^|\s)dark(?:\s|$)/,
     );
     await expectLockup(page, 'light');
-    expect(await page.evaluate(() => window.__s010PageMarker)).toBe('retained');
+    expect(await page.evaluate(() => window.__themePageMarker)).toBe(
+      'retained',
+    );
   });
 }

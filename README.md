@@ -1,13 +1,13 @@
 <div align="center">
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="brand/logos/svg/glitchpad-horizontal-white.svg">
-  <img src="brand/logos/svg/glitchpad-horizontal-black.svg" alt="Glitchpad" width="480">
+  <source media="(prefers-color-scheme: dark)" srcset="brand/logos/png/glitchpad-horizontal-color-1024.png">
+  <img src="brand/logos/png/glitchpad-horizontal-light-1024.png" alt="Glitchpad" width="480">
 </picture>
 
 # Glitchpad
 
-**A focused, cross-platform viewer and editor for your files.**
+**A fast, cross-platform viewer and editor for local files.**
 
 [![CI](https://github.com/ShruggieTech/glitchpad/actions/workflows/ci.yml/badge.svg)](https://github.com/ShruggieTech/glitchpad/actions/workflows/ci.yml) [![CodeQL](https://github.com/ShruggieTech/glitchpad/actions/workflows/codeql.yml/badge.svg)](https://github.com/ShruggieTech/glitchpad/actions/workflows/codeql.yml) [![Version](https://img.shields.io/badge/version-0.1.1-6f42c1)](https://github.com/ShruggieTech/glitchpad/releases) [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE) [![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20Android-444)](#supported-platforms) [![Status](https://img.shields.io/badge/status-community%20release-green)](#status)
 

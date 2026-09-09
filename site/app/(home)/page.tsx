@@ -24,25 +24,20 @@ export default function HomePage() {
             <p className="eyebrow">
               Desktop + Android · v0.1.1 community release
             </p>
-            <h1>
-              See the file.
-              <br />
-              Keep your flow.
-            </h1>
+            <h1>View your files.</h1>
             <p className="hero-summary">
-              Glitchpad is a focused, cross-platform viewer and editor for
-              common local files. The current corrective release supports
-              Markdown, Mermaid, plain text, and selected source files.
+              A fast, cross-platform viewer and editor for local files.
             </p>
+            <p className="hero-endorsement">A ShruggieTech project.</p>
             <div className="hero-actions">
-              <a className="button button-primary" href="/docs">
-                Read the documentation
-              </a>
               <a
-                className="button button-secondary"
-                href="https://github.com/ShruggieTech/glitchpad"
+                className="button button-primary"
+                href="https://github.com/ShruggieTech/glitchpad/releases/tag/v0.1.1"
               >
-                Download on GitHub
+                Download
+              </a>
+              <a className="button button-secondary" href="/docs">
+                Docs
               </a>
             </div>
           </div>

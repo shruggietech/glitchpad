@@ -8,7 +8,6 @@ h3 { font-size: var(--gl-display-xs); font-weight: var(--gl-weight-medium); }
 p { margin: 0 0 var(--gl-space-4); }
 code, pre, kbd, samp { font-family: var(--gl-font-mono); line-height: var(--gl-leading-code); font-variant-ligatures: none; font-feature-settings: "liga" 0, "clig" 0, "calt" 0; }
 a { color: var(--gl-link); text-decoration: none; }
-a:hover { text-decoration: underline; }
 :focus-visible { outline: var(--gl-stroke-focus) solid var(--gl-focus); outline-offset: 2px; }
 .gl-eyebrow { color: var(--gl-accent); font-family: var(--gl-font-mono); font-size: var(--gl-body-xs); letter-spacing: var(--gl-tracking-eyebrow); text-transform: uppercase; }
 .gl-endorsement { color: var(--gl-fg-muted); font-family: var(--gl-font-mono); font-size: var(--gl-body-xs); letter-spacing: var(--gl-tracking-eyebrow); text-transform: uppercase; }

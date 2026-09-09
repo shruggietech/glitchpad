@@ -18,6 +18,16 @@ async function files(directory) {
 export async function auditExport() {
   const problems = [];
   const all = await files(outRoot);
+  const deploymentPath = join(outRoot, 'deployment.json');
+  if (!all.includes(deploymentPath))
+    problems.push('missing deployment provenance');
+  else {
+    const deployment = JSON.parse(await readFile(deploymentPath, 'utf8'));
+    if (deployment.productVersion !== '0.1.1')
+      problems.push('deployment provenance has stale product version');
+    if (!/^(?:local|[0-9a-f]{40})$/.test(deployment.sourceRevision ?? ''))
+      problems.push('deployment provenance has invalid source revision');
+  }
   const html = all.filter((path) => extname(path) === '.html');
   const routeSet = new Set(
     html.map((path) => {
@@ -49,6 +59,8 @@ export async function auditExport() {
       problems.push(`remote runtime dependency: ${name}`);
     if (/example\.com|localhost|temporary mark/i.test(source))
       problems.push(`placeholder public value: ${name}`);
+    if (/no installable release is available|early development/i.test(source))
+      problems.push(`stale release availability claim: ${name}`);
     if (!/<meta name="description" content="[^"]+"/.test(source))
       problems.push(`missing description metadata: ${name}`);
   }

@@ -6,8 +6,7 @@ import { SkipLink } from '@/components/skip-link';
 import { geist, geistMono, spaceGrotesk } from '@/lib/fonts';
 
 const url = 'https://glitchpad.com';
-const description =
-  'A focused, local-first desktop and Android viewer and editor for common files.';
+const description = 'A fast, cross-platform viewer and editor for local files.';
 
 export const metadata: Metadata = {
   metadataBase: new URL(url),

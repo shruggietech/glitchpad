@@ -25,18 +25,29 @@ test('technical specification adaptation preserves authority and Mermaid source'
   assert.doesNotMatch(adapted, /^# Glitchpad Technical Specification$/m);
 });
 
-test('landing copy keeps the community release claim and required routes', async () => {
+test('landing copy keeps the current release, canonical brand, and navigation contract', async () => {
   const home = await readFile(
     join(siteRoot, 'app', '(home)', 'page.tsx'),
     'utf8',
   );
+  const navigation = await readFile(
+    join(siteRoot, 'lib', 'layout.shared.tsx'),
+    'utf8',
+  );
+  const footer = await readFile(
+    join(siteRoot, 'components', 'footer.tsx'),
+    'utf8',
+  );
   assert.match(home, /v0\.1\.1 community release/i);
+  assert.match(home, /View your files\./);
+  assert.match(
+    home,
+    /A fast, cross-platform viewer and editor for local files\./,
+  );
+  assert.match(home, /A ShruggieTech project\./);
+  assert.doesNotMatch(navigation, /text:\s*['"](?:Support|Security)['"]/);
   for (const route of ['/docs', '/support', '/security'])
-    assert.match(
-      home +
-        (await readFile(join(siteRoot, 'components', 'footer.tsx'), 'utf8')),
-      new RegExp(route),
-    );
+    assert.match(home + navigation + footer, new RegExp(route));
 });
 
 test('root metadata declares the production domain and social preview', async () => {

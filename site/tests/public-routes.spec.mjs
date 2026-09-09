@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 for (const [path, heading, title] of [
-  ['/', /See the file/, 'Glitchpad'],
+  ['/', /View your files/, 'Glitchpad'],
   ['/docs', 'Documentation', 'Documentation'],
   [
     '/docs/technical-specification',
@@ -37,6 +37,34 @@ for (const [path, heading, title] of [
     );
   });
 }
+
+test('homepage presents concise release actions and keeps utility pages secondary', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await expect(
+    page.getByText('A ShruggieTech project.', { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.locator('#main-content').getByRole('link', {
+      name: 'Download',
+      exact: true,
+    }),
+  ).toHaveAttribute(
+    'href',
+    'https://github.com/ShruggieTech/glitchpad/releases/tag/v0.1.1',
+  );
+  await expect(
+    page.getByRole('link', { name: 'Docs', exact: true }),
+  ).toHaveCount(2);
+  const navigation = page.locator('header, nav').first();
+  await expect(
+    navigation.getByRole('link', { name: 'Support', exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    navigation.getByRole('link', { name: 'Security', exact: true }),
+  ).toHaveCount(0);
+});
 
 test('repository-authored support and security links remain operable', async ({
   page,

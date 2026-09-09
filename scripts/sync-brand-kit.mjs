@@ -219,6 +219,28 @@ async function main() {
     );
   }
 
+  const publicComparisonSources = [
+    {
+      path: 'logos/provenance.json',
+      url: 'https://brand.shruggie.tech/glitchpad/downloads/files/logos/provenance.json',
+    },
+    {
+      path: 'icons/manifest.json',
+      url: 'https://brand.shruggie.tech/glitchpad/downloads/files/icons/manifest.json',
+    },
+    {
+      path: 'logos/svg/glitchpad-horizontal-white.svg',
+      url: 'https://brand.shruggie.tech/glitchpad/downloads/files/logos/svg/glitchpad-horizontal-white.svg',
+    },
+  ];
+  const publicComparisons = await Promise.all(
+    publicComparisonSources.map(async ({ path, url }) => ({
+      path,
+      url,
+      sha256: digest(await readFile(join(destination, ...path.split('/')))),
+    })),
+  );
+
   const receipt = {
     brandVersion: sourceManifest.version,
     canonVersion: sourceManifest.canon,
@@ -232,26 +254,7 @@ async function main() {
     integratedManifestSha256,
     governedFileCount: sourceManifest.files.length,
     recoveredArtifactFiles: [...recoveredFiles.keys()],
-    publicComparisons: [
-      {
-        path: 'logos/provenance.json',
-        url: 'https://brand.shruggie.tech/glitchpad/downloads/files/logos/provenance.json',
-        sha256:
-          '439b20c4cc8db1fb8fe84a3ea04012bb20f1a4b5db42e3d2830465806fb5ac3d',
-      },
-      {
-        path: 'icons/manifest.json',
-        url: 'https://brand.shruggie.tech/glitchpad/downloads/files/icons/manifest.json',
-        sha256:
-          '90a04bfe418cf6d6f5ff35eea720f663e41d5375f03ca3bc41ab5de4ecfaa362',
-      },
-      {
-        path: 'logos/svg/glitchpad-horizontal-white.svg',
-        url: 'https://brand.shruggie.tech/glitchpad/downloads/files/logos/svg/glitchpad-horizontal-white.svg',
-        sha256:
-          'f23b0aba814c9988d97a1a65d84f263ec69e36d9162fda58bdbaefe21c88fc1f',
-      },
-    ],
+    publicComparisons,
   };
   await writeFile(
     join(destination, 'INTEGRATION.json'),

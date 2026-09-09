@@ -88,7 +88,7 @@ a {
   margin: 0.75rem 0 0;
   color: var(--foreground);
   font-family: var(--font-mono);
-  font-weight: 500;
+  font-weight: 400;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }

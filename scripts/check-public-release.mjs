@@ -66,7 +66,7 @@ export function verifyPublicSources(sources) {
   }
   requireText(problems, 'site/app/(home)/page.tsx', home, releaseUrl);
   if (
-    !/\.hero-endorsement\s*\{[^}]*font-family:\s*var\(--font-mono\)[^}]*letter-spacing:\s*0\.08em[^}]*text-transform:\s*uppercase/s.test(
+    !/\.hero-endorsement\s*\{[^}]*font-family:\s*var\(--font-mono\)[^}]*font-weight:\s*400[^}]*letter-spacing:\s*0\.08em[^}]*text-transform:\s*uppercase/s.test(
       styles,
     )
   )

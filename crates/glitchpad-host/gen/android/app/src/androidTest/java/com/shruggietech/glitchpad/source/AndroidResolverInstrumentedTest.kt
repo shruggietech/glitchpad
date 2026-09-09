@@ -3,19 +3,8 @@ package com.shruggietech.glitchpad.source
 import android.content.ComponentName
 import android.content.Intent
 import android.net.Uri
-import android.os.SystemClock
-import android.provider.DocumentsContract
-import android.view.View
-import android.view.ViewGroup
-import android.webkit.WebView
-import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import com.shruggietech.glitchpad.MainActivity
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicReference
-import org.junit.After
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -25,16 +14,6 @@ import org.junit.runner.RunWith
 class AndroidResolverInstrumentedTest {
   private val instrumentation = InstrumentationRegistry.getInstrumentation()
   private val clientContext = instrumentation.targetContext
-  private val resolver = clientContext.contentResolver
-  private val grantedUris = mutableSetOf<Uri>()
-
-  @After
-  fun revokeFixtureGrants() {
-    grantedUris.forEach { uri ->
-      instrumentation.context.revokeUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-    }
-    grantedUris.clear()
-  }
 
   @Test
   fun installedPackageResolvesEveryGovernedExactTypeForOpaqueContentUris() {
@@ -63,27 +42,6 @@ class AndroidResolverInstrumentedTest {
     println("resolver_evidence=exact:${EXACT_MEDIA_TYPES.size},broad:${BROAD_REQUEST_MEDIA_TYPES.size},negative:${negativeCases.size},api:${android.os.Build.VERSION.SDK_INT}")
   }
 
-  @Test
-  fun resolvedIntentDisplaysColdAndWarmProviderDocuments() {
-    val cold = grant(documentUri("resolver-cold"))
-    val warm = grant(documentUri("resolver-warm"))
-    val coldIntent = viewIntent(cold, "text/markdown")
-    val component = requireNotNull(glitchpadComponent(coldIntent)) {
-      "installed Glitchpad package did not resolve the cold fixture"
-    }
-
-    val scenario = ActivityScenario.launch<MainActivity>(coldIntent.setComponent(component))
-    retainedScenario = scenario
-    waitForBodyText(scenario, "resolver-cold.md", "S031_COLD_MARKER_4F2A")
-    val warmIntent = viewIntent(warm, "text/plain")
-    assertTrue("installed Glitchpad package did not resolve the warm fixture", resolvesGlitchpad(warmIntent))
-    clientContext.startActivity(warmIntent.setComponent(component).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-    waitForBodyText(scenario, "resolver-warm.txt", "S031_WARM_MARKER_7C9D")
-    println("delivery_evidence=cold:pass,warm:pass,api:${android.os.Build.VERSION.SDK_INT}")
-    // MainActivity owns the Tauri process. Closing the scenario destroys the process
-    // before JUnit can publish success; the ephemeral emulator performs teardown.
-  }
-
   private fun viewIntent(uri: Uri, mediaType: String): Intent =
     Intent(Intent.ACTION_VIEW)
       .addCategory(Intent.CATEGORY_DEFAULT)
@@ -100,59 +58,8 @@ class AndroidResolverInstrumentedTest {
 
   private fun resolvesGlitchpad(intent: Intent): Boolean = glitchpadComponent(intent) != null
 
-  private fun grant(uri: Uri): Uri {
-    resolver.call(FixtureGrantProvider.COMMAND_URI, FixtureGrantProvider.METHOD_GRANT, uri.toString(), null)
-    resolver.query(uri, arrayOf(DocumentsContract.Document.COLUMN_DOCUMENT_ID), null, null, null).use { cursor ->
-      assertTrue("fixture provider must expose the granted document", cursor != null && cursor.moveToFirst())
-    }
-    grantedUris.add(uri)
-    return uri
-  }
-
-  private fun waitForBodyText(scenario: ActivityScenario<MainActivity>, vararg expected: String) {
-    val deadline = SystemClock.elapsedRealtime() + 30_000L
-    var latest = ""
-    while (SystemClock.elapsedRealtime() < deadline) {
-      val webView = AtomicReference<WebView?>()
-      scenario.onActivity { activity -> webView.set(findWebView(activity.window.decorView)) }
-      webView.get()?.let { view -> bodyText(view)?.let { text -> latest = text } }
-      if (expected.all(latest::contains)) return
-      SystemClock.sleep(100L)
-    }
-    throw AssertionError("document surface did not expose expected synthetic evidence; observed length=${latest.length}")
-  }
-
-  private fun bodyText(webView: WebView): String? {
-    val result = AtomicReference("")
-    val latch = CountDownLatch(1)
-    instrumentation.runOnMainSync {
-      webView.evaluateJavascript("document.body ? document.body.innerText : ''") { value ->
-        result.set(value ?: "")
-        latch.countDown()
-      }
-    }
-    return if (latch.await(2, TimeUnit.SECONDS)) result.get() else null
-  }
-
-  private fun findWebView(view: View): WebView? {
-    if (view is WebView) return view
-    if (view is ViewGroup) {
-      for (index in 0 until view.childCount) {
-        findWebView(view.getChildAt(index))?.let { return it }
-      }
-    }
-    return null
-  }
-
-  private fun documentUri(id: String): Uri = DocumentsContract.buildDocumentUri(FIXTURE_AUTHORITY, id)
-
   companion object {
-    // MainActivity owns the Tauri process. Retain its scenario for the complete
-    // instrumentation suite so ActivityScenario cleanup cannot terminate the
-    // process between resolver and provider tests on legacy Android.
-    private var retainedScenario: ActivityScenario<MainActivity>? = null
     private const val TARGET_PACKAGE = "com.shruggietech.glitchpad"
-    private const val FIXTURE_AUTHORITY = "com.shruggietech.glitchpad.fixture.documents"
     private val BROAD_REQUEST_MEDIA_TYPES = listOf("*/*", "application/*", "text/*")
     private val EXACT_MEDIA_TYPES = listOf(
       "application/json",

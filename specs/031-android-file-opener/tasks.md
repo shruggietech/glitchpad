@@ -35,8 +35,8 @@
 **Independent Test**: Stop Glitchpad, deliver the first provider fixture, deliver a second fixture to the running single task, and assert visible filename and marker identity after each transition.
 
 - [x] T010 [US2] Add safe cold and warm delivery fixtures in `crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/FixtureDocumentsProvider.java`
-- [x] T011 [US2] Add resolved cold-start and warm-delivery assertions in `crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidResolverInstrumentedTest.kt`
-- [x] T012 [US2] Add redacted resolver and delivery evidence output in `crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidResolverInstrumentedTest.kt`
+- [x] T011 [US2] Add isolated resolved cold-start and warm-delivery assertions in `crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt`
+- [x] T012 [US2] Add redacted resolver and delivery evidence output in `crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidResolverInstrumentedTest.kt` and `crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt`
 
 ## Phase 5: User Story 3 - Handle generic provider types honestly (Priority: P2)
 
@@ -49,7 +49,7 @@
 
 ## Phase 6: CI and final-package integration
 
-- [x] T015 Run resolver and delivery instrumentation in the API 24 and API 36 matrix in `.github/workflows/ci.yml`
+- [x] T015 Run resolver and isolated delivery instrumentation in the API 24 and API 36 matrix in `.github/workflows/ci.yml`
 - [x] T016 Inspect final universal and ARM64 APK resolver groups in `.github/workflows/android-package.yml`
 - [x] T017 Upload redacted resolver receipts with existing Android evidence in `.github/workflows/ci.yml` and `.github/workflows/android-package.yml`
 

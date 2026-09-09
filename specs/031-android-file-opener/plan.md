@@ -60,6 +60,7 @@ crates/glitchpad-host/gen/android/app/src/
 └── androidTest/
     ├── AndroidManifest.xml
     └── java/com/shruggietech/glitchpad/source/
+        ├── AndroidDeliveryInstrumentedTest.kt
         ├── AndroidResolverInstrumentedTest.kt
         └── FixtureDocumentsProvider.java
 scripts/
@@ -71,7 +72,7 @@ scripts/
 docs/releases/v0.1.2.md
 ```
 
-**Structure Decision**: Correct the established Android manifest and controlled-provider test boundary in place. Add the missing Android frontend delivery gateway beside the existing restoration gateway and use Tauri's permission-scoped mobile plugin event rather than polling. Preserve both grouped filter semantics and aggregate inventory in package evidence so policy can detect Android's cross-element merging without replacing the existing release pipeline.
+**Structure Decision**: Correct the established Android manifest and controlled-provider test boundary in place. Add the missing Android frontend delivery gateway beside the existing restoration gateway, use Tauri's permission-scoped mobile plugin event with a legacy-WebView fallback drain, and isolate the MainActivity delivery proof from provider tests because AndroidX closes activities after every test. Preserve both grouped filter semantics and aggregate inventory in package evidence so policy can detect Android's cross-element merging without replacing the existing release pipeline.
 
 ## Complexity Tracking
 

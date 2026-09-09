@@ -26,7 +26,7 @@
 
 **Rationale**: An opaque URI plus `application/octet-stream` supplies no trustworthy resolver-time signal that distinguishes a supported text document from arbitrary binary content. Glitchpad must not become a universal opener to paper over provider metadata defects.
 
-**Alternatives considered**: `*/*`, `text/*`, and `application/*` violate the issue and security boundary. Sniffing after selection cannot prevent the application from being advertised for unsupported content.
+**Alternatives considered**: Declaring `*/*`, `text/*`, or `application/*` violates the issue and security boundary. Android callers may still request those broad types and match compatible exact declarations, so instrumentation records that platform behavior and normal content detection governs delivery.
 
 ## Decision 4: Query the installed package, then prove delivery
 

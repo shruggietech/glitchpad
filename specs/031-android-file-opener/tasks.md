@@ -25,7 +25,7 @@
 **Independent Test**: Query the installed package manager on API 24 and API 36 with the complete positive and negative matrix.
 
 - [x] T007 [US1] Replace ineffective suffix-coupled opener declarations with exact-type content opener declarations in `crates/glitchpad-host/gen/android/app/src/main/AndroidManifest.xml`
-- [x] T008 [US1] Add opaque exact-type and negative resolver matrix tests in `crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidResolverInstrumentedTest.kt`
+- [x] T008 [US1] Add opaque exact-type, caller-wildcard, and negative resolver matrix tests in `crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidResolverInstrumentedTest.kt`
 - [x] T009 [US1] Require universal and ARM64 final APK grouped-filter equivalence in `scripts/check-android-package.mjs` and `scripts/check-android-package.test.mjs`
 
 ## Phase 4: User Story 2 - Open the selected document (Priority: P1)

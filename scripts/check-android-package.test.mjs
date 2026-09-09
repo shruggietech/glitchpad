@@ -197,6 +197,13 @@ test('manifest parser extracts release identity and public surface', () => {
       extensions: ['md'],
     },
   ]);
+  assert.throws(
+    () =>
+      parseManifestXml(
+        `<?xml version="1.0"?><manifest package="com.shruggietech.glitchpad" xmlns:android="http://schemas.android.com/apk/res/android"><application><activity android:name="com.shruggietech.glitchpad.MainActivity" android:exported="true"><intent-filter><action android:name="android.intent.action.VIEW"/><category android:name="android.intent.category.DEFAULT"/><data android:scheme="content" android:sspPrefix="opaque"/></intent-filter></activity></application></manifest>`,
+      ),
+    /unsupported Android intent-filter data attribute: sspPrefix/u,
+  );
 });
 
 test('manifest parser excludes permission-protected exported library components', () => {

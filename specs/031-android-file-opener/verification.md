@@ -19,7 +19,7 @@
 
 ## Hosted Android evidence
 
-The pull-request CI matrix runs the compiled resolver and delivery tests on API 24 and API 36. It queries the installed package for every governed exact media type, rejects unsupported and generic types, launches opaque provider documents on cold and warm delivery, and retains redacted test reports. The final Android package workflow parses the universal and ARM64 manifests and requires equivalent normalized resolver groups.
+The pull-request CI matrix runs the compiled resolver and delivery tests on API 24 and API 36. It queries the installed package for every governed exact media type, records Android's caller-wildcard matching, rejects unsupported and generic types, launches opaque provider documents on cold and warm delivery, and retains redacted test reports. The final Android package workflow parses the universal and ARM64 manifests and requires equivalent normalized resolver groups with no wildcard declarations or unmodeled data constraints.
 
 Physical-device validation is intentionally deferred to post-release issue #66 under the maintainer's standing release policy. It is not a completion prerequisite for S031 or v0.1.2.
 

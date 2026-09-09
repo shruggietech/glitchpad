@@ -8,7 +8,8 @@
 
 ## Negative resolver contract
 
-- Glitchpad does not resolve unsupported image, PDF, DOCX, ODT, directory, wildcard, broad-family, `file://`, or `ACTION_SEND_MULTIPLE` cases.
+- Glitchpad does not declare unsupported image, PDF, DOCX, ODT, directory, wildcard, broad-family, `file://`, or `ACTION_SEND_MULTIPLE` handling.
+- Caller-supplied `text/*`, `application/*`, and `*/*` requests resolve through Android's compatibility matching against Glitchpad's exact declarations; normal content detection governs the delivered document.
 - Resolver declarations contain no broad storage permission and no exported component beyond the governed main activity.
 - Every opener filter includes `DEFAULT`; unrelated actions and categories cannot combine with opener data rules.
 

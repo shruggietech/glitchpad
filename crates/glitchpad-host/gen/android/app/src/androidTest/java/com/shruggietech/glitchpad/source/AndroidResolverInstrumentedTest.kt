@@ -42,6 +42,10 @@ class AndroidResolverInstrumentedTest {
       val uri = Uri.parse("content://com.shruggietech.synthetic/document/opaque-$index")
       assertTrue("Glitchpad must resolve $mediaType", resolvesGlitchpad(viewIntent(uri, mediaType)))
     }
+    BROAD_REQUEST_MEDIA_TYPES.forEachIndexed { index, mediaType ->
+      val uri = Uri.parse("content://com.shruggietech.synthetic/document/broad-$index")
+      assertTrue("Android wildcard request must match a governed exact type for $mediaType", resolvesGlitchpad(viewIntent(uri, mediaType)))
+    }
 
     val negativeCases = listOf(
       viewIntent(Uri.parse("file:///tmp/private.md"), "text/markdown"),
@@ -56,7 +60,7 @@ class AndroidResolverInstrumentedTest {
     negativeCases.forEach { intent ->
       assertFalse("Glitchpad must reject ${intent.action} ${intent.type}", resolvesGlitchpad(intent))
     }
-    println("resolver_evidence=exact:${EXACT_MEDIA_TYPES.size},negative:${negativeCases.size},api:${android.os.Build.VERSION.SDK_INT}")
+    println("resolver_evidence=exact:${EXACT_MEDIA_TYPES.size},broad:${BROAD_REQUEST_MEDIA_TYPES.size},negative:${negativeCases.size},api:${android.os.Build.VERSION.SDK_INT}")
   }
 
   @Test
@@ -68,14 +72,15 @@ class AndroidResolverInstrumentedTest {
       "installed Glitchpad package did not resolve the cold fixture"
     }
 
-    ActivityScenario.launch<MainActivity>(coldIntent.setComponent(component)).use { scenario ->
-      waitForBodyText(scenario, "resolver-cold.md", "S031_COLD_MARKER_4F2A")
-      val warmIntent = viewIntent(warm, "text/plain")
-      assertTrue("installed Glitchpad package did not resolve the warm fixture", resolvesGlitchpad(warmIntent))
-      clientContext.startActivity(warmIntent.setComponent(component).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-      waitForBodyText(scenario, "resolver-warm.txt", "S031_WARM_MARKER_7C9D")
-    }
+    val scenario = ActivityScenario.launch<MainActivity>(coldIntent.setComponent(component))
+    waitForBodyText(scenario, "resolver-cold.md", "S031_COLD_MARKER_4F2A")
+    val warmIntent = viewIntent(warm, "text/plain")
+    assertTrue("installed Glitchpad package did not resolve the warm fixture", resolvesGlitchpad(warmIntent))
+    clientContext.startActivity(warmIntent.setComponent(component).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    waitForBodyText(scenario, "resolver-warm.txt", "S031_WARM_MARKER_7C9D")
     println("delivery_evidence=cold:pass,warm:pass,api:${android.os.Build.VERSION.SDK_INT}")
+    // MainActivity owns the Tauri process. Closing the scenario destroys the process
+    // before JUnit can publish success; the ephemeral emulator performs teardown.
   }
 
   private fun viewIntent(uri: Uri, mediaType: String): Intent =
@@ -144,6 +149,7 @@ class AndroidResolverInstrumentedTest {
   companion object {
     private const val TARGET_PACKAGE = "com.shruggietech.glitchpad"
     private const val FIXTURE_AUTHORITY = "com.shruggietech.glitchpad.fixture.documents"
+    private val BROAD_REQUEST_MEDIA_TYPES = listOf("*/*", "application/*", "text/*")
     private val EXACT_MEDIA_TYPES = listOf(
       "application/json",
       "application/toml",

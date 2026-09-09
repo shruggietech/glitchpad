@@ -60,6 +60,7 @@ As an Android user, I receive predictable behavior when a provider reports a gen
 
 - A provider URI may contain no filename, a percent-encoded document identifier, or a path unrelated to the display name.
 - Providers may report the same supported content as an exact type, `text/plain`, or `application/octet-stream`.
+- A caller may request `text/*`, `application/*`, or `*/*`; Android matches those broad requests against compatible exact declarations even though Glitchpad declares no wildcard.
 - An implicit intent may include extra categories, omit a persistable grant, or arrive while the existing single task is active.
 - Multiple installed activities may resolve the same request; eligibility must not depend on Glitchpad becoming the system default.
 - Android API behavior differs around package-manager flags, but the governed result must remain equivalent on API 24 and API 36.
@@ -72,14 +73,14 @@ As an Android user, I receive predictable behavior when a provider reports a gen
 - **FR-001**: Glitchpad MUST be an eligible `ACTION_VIEW` target for every released media type delivered through an opaque `content://` URI on Android API 24 and API 36.
 - **FR-002**: Exact media-type eligibility MUST NOT depend on a filename, extension, provider authority, or URI path.
 - **FR-003**: Resolver declarations MUST separate materially different data-matching jobs so unrelated scheme, type, authority, and path attributes cannot silently combine into a broader or narrower contract.
-- **FR-004**: Glitchpad MUST NOT advertise unsupported image, PDF, DOCX, ODT, wildcard media type, broad media family, `file://`, directory, or multiple-document handling.
+- **FR-004**: Glitchpad MUST NOT declare unsupported image, PDF, DOCX, ODT, wildcard media type, broad media family, `file://`, directory, or multiple-document handling.
 - **FR-005**: Glitchpad MUST NOT request broad or legacy external-storage permission as part of resolver eligibility or delivery.
 - **FR-006**: Cold-start and warm `singleTask` delivery MUST acquire the scoped provider URI through the existing native source boundary and display the requested synthetic filename and safe marker.
 - **FR-007**: Resolver evidence MUST query the installed package through Android's package manager before attempting delivery; source-manifest inventory alone is insufficient.
 - **FR-008**: Final universal and ARM64 APK manifests MUST expose equivalent actions, categories, resolver filter groups, media types, schemes, and least-privilege posture.
-- **FR-009**: API 24 and API 36 automated evidence MUST cover exact-type eligibility, representative negative cases, cold delivery, and warm delivery.
-- **FR-010**: Generic media-type behavior MUST be represented by an explicit bounded policy, tested for both resolvable and intentionally unsupported cases, and described in the unreleased v0.1.2 record.
-- **FR-011**: Automated policy checks MUST reject resolver filters whose merged semantics permit a forbidden scheme, wildcard or broad media type, unsupported format, missing default category, or extension rule that Android ignores.
+- **FR-009**: API 24 and API 36 automated evidence MUST cover exact-type eligibility, caller-supplied wildcard matching, representative negative cases, cold delivery, and warm delivery.
+- **FR-010**: Generic media-type behavior MUST be represented by an explicit rejection policy, tested for suffix-bearing and opaque cases, and described in the unreleased v0.1.2 record.
+- **FR-011**: Automated policy checks MUST reject resolver filters whose merged semantics declare a forbidden scheme, wildcard or broad media type, unsupported format, missing default category, unmodeled data constraint, or extension rule that Android ignores.
 - **FR-012**: Resolver and delivery diagnostics MUST omit provider URI, private filename, path, document contents, and account data.
 - **FR-013**: S031 MUST update the v0.1.2 release delta and issue traceability without changing product versions or publishing the release.
 - **FR-014**: Manual physical-device and third-party-provider exploration MUST remain post-release validation under issue #66 and MUST NOT block S031 merge or v0.1.2 publication.
@@ -96,12 +97,13 @@ As an Android user, I receive predictable behavior when a provider reports a gen
 ### Measurable Outcomes
 
 - **SC-001**: One hundred percent of governed released media types resolve to Glitchpad for opaque `content://` URIs on API 24 and API 36.
-- **SC-002**: Zero governed negative cases resolve Glitchpad for unsupported formats, forbidden schemes, wildcard types, directories, or multiple-document requests.
+- **SC-002**: Zero governed negative cases resolve Glitchpad for unsupported formats, forbidden schemes, generic binary types, directories, or multiple-document requests.
 - **SC-003**: Cold and warm delivery tests display the expected synthetic filename and content marker in every governed API-level run.
 - **SC-004**: Universal and ARM64 final APK inventories report identical resolver filter groups and zero forbidden permissions or exported components.
 - **SC-005**: One hundred percent of generic-type matrix rows produce the documented resolve or reject outcome.
 - **SC-006**: Redaction checks find zero provider URIs, private paths, private filenames, or document contents in resolver receipts and failure diagnostics.
 - **SC-007**: All required format, lint, unit, instrumentation, documentation, security, platform, and final-package checks pass before pull-request publication.
+- **SC-008**: One hundred percent of caller-supplied `text/*`, `application/*`, and `*/*` probes produce Android's documented match against Glitchpad's compatible exact declarations, while package inspection confirms zero wildcard declarations.
 
 ## Assumptions
 

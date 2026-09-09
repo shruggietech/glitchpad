@@ -38,6 +38,20 @@ function parseIntentFilters(publicSurface) {
       ),
     ].map((match) => {
       const body = match[1];
+      const unsupportedDataAttributes = [
+        ...body.matchAll(/<data\b([^>]*)\/?\s*>/gu),
+      ].flatMap((data) =>
+        [...data[1].matchAll(/android:([A-Za-z][A-Za-z0-9]*)="[^"]*"/gu)]
+          .map((attribute) => attribute[1])
+          .filter(
+            (name) =>
+              !['scheme', 'host', 'mimeType', 'pathSuffix'].includes(name),
+          ),
+      );
+      if (unsupportedDataAttributes.length > 0)
+        throw new Error(
+          `unsupported Android intent-filter data attribute: ${sortedUnique(unsupportedDataAttributes).join(', ')}`,
+        );
       return {
         actions: attributeValues(body, 'name').filter((name) =>
           name.startsWith('android.intent.action.'),

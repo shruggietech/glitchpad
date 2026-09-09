@@ -248,6 +248,16 @@ fn release_check(repository: &Path) -> Result<(), String> {
 
 fn check(repository: &Path) -> Result<(), String> {
     verify_android_source_layout(repository)?;
+    run(
+        repository,
+        "pnpm",
+        [
+            "install",
+            "--frozen-lockfile",
+            "--lockfile-only",
+            "--ignore-scripts",
+        ],
+    )?;
     run(repository, "cargo", ["fmt", "--all", "--", "--check"])?;
     run(
         repository,

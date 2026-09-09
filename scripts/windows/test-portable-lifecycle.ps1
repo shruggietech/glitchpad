@@ -173,10 +173,16 @@ function Wait-NamedButton([Diagnostics.Process] $Process, [string] $Name, [int] 
 function Invoke-NamedButton([Diagnostics.Process] $Process, [string] $Name) {
     $button = Wait-NamedButton $Process $Name
     $patternObject = $null
-    if (-not $button.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern, [ref]$patternObject)) {
-        throw "Portable UI button '$Name' did not expose InvokePattern."
+    if ($button.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern, [ref]$patternObject)) {
+        ([System.Windows.Automation.InvokePattern]$patternObject).Invoke()
+        return
     }
-    ([System.Windows.Automation.InvokePattern]$patternObject).Invoke()
+    $patternObject = $null
+    if ($button.TryGetCurrentPattern([System.Windows.Automation.LegacyIAccessiblePattern]::Pattern, [ref]$patternObject)) {
+        ([System.Windows.Automation.LegacyIAccessiblePattern]$patternObject).DoDefaultAction()
+        return
+    }
+    throw "Portable UI button '$Name' exposed neither InvokePattern nor LegacyIAccessiblePattern."
 }
 
 function Close-Document([Diagnostics.Process] $Process, [string] $Path) {

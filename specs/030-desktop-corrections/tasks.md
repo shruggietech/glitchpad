@@ -74,6 +74,7 @@
 - [x] T027 Correct final-artifact raw-source sentinels to unused Markdown reference definitions so safe inert-HTML rendering cannot create a false positive
 - [x] T028 Assert packaged footnote content through bounded UI Automation text discovery instead of an incorrect exact-name element assumption
 - [x] T029 Resolve packaged menu and close controls by both accessible name and button type before requiring UI Automation InvokePattern
+- [x] T030 Activate WebView buttons through InvokePattern with the standard LegacyIAccessible default-action fallback
 
 ## Dependencies and execution order
 

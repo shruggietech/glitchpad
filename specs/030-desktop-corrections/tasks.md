@@ -69,6 +69,7 @@
 - [x] T022 Mark every completed task, verify UTF-8 without BOM and mojibake absence, and reconcile S030 against issues #160-#163 in `specs/030-desktop-corrections/tasks.md`
 - [x] T023 Cap frontend test concurrency in `apps/glitchpad/vitest.config.ts` after the full suite exposed fork-start timeouts under bind-mounted workspace I/O pressure
 - [x] T024 Reject an already-ready projection synchronously when the active source revision changes in `apps/glitchpad/src/components/MarkdownSurface.tsx`
+- [x] T025 Address first-round Codex findings by monitoring actual raw sentinels from delivery through safe settlement and exercising nontrivial table, footnote, nesting, and embedded-Mermaid paths in final Windows artifacts
 
 ## Dependencies and execution order
 

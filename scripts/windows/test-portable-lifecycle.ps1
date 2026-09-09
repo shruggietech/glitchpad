@@ -92,22 +92,55 @@ function Get-TabCount([Diagnostics.Process] $Process) {
     return $window.FindAll([System.Windows.Automation.TreeScope]::Descendants, $condition).Count
 }
 
-function Send-Delivery([string] $Path, [Diagnostics.Process] $HostProcess, [string] $ProhibitedPendingName = '') {
+function Send-Delivery([string] $Path) {
     $delivery = Start-Process -FilePath $application -ArgumentList ('"{0}"' -f $Path) -PassThru -WindowStyle Hidden -Environment $isolatedEnvironment
-    try {
-        $deadline = [DateTimeOffset]::UtcNow.AddSeconds(5)
-        do {
-            if ($ProhibitedPendingName) {
-                $window = Get-WindowRoot $HostProcess
-                if ($window -and (Find-NamedElement $window $ProhibitedPendingName)) {
-                    throw "Rendered-mode delivery exposed prohibited pending source '$ProhibitedPendingName'."
-                }
-            }
-            Start-Sleep -Milliseconds 25
-            $delivery.Refresh()
-        } while (-not $delivery.HasExited -and [DateTimeOffset]::UtcNow -lt $deadline)
-    }
+    try { $delivery.WaitForExit(5000) | Out-Null }
     finally { if (-not $delivery.HasExited) { Stop-Process -Id $delivery.Id -Force } }
+}
+
+function Test-WindowContainsText([System.Windows.Automation.AutomationElement] $Window, [string] $Text) {
+    if (Find-NamedElement $Window $Text) { return $true }
+    $elements = $Window.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)
+    foreach ($element in $elements) {
+        try {
+            if ($element.Current.Name.Contains($Text, [StringComparison]::Ordinal)) { return $true }
+            $patternObject = $null
+            if ($element.TryGetCurrentPattern([System.Windows.Automation.TextPattern]::Pattern, [ref]$patternObject)) {
+                if (([System.Windows.Automation.TextPattern]$patternObject).DocumentRange.GetText(-1).Contains($Text, [StringComparison]::Ordinal)) { return $true }
+            }
+            $patternObject = $null
+            if ($element.TryGetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern, [ref]$patternObject)) {
+                if (([System.Windows.Automation.ValuePattern]$patternObject).Current.Value.Contains($Text, [StringComparison]::Ordinal)) { return $true }
+            }
+        }
+        catch { continue }
+    }
+    return $false
+}
+
+function Wait-SafeMarkdownOutcome([Diagnostics.Process] $Process, [string] $ExpectedHeading, [string] $RawSentinel, [int] $Seconds = 20) {
+    $deadline = [DateTimeOffset]::UtcNow.AddSeconds($Seconds)
+    do {
+        $window = Get-WindowRoot $Process
+        if ($window) {
+            if (Test-WindowContainsText $window $RawSentinel) { throw "Rendered-mode delivery exposed raw sentinel '$RawSentinel'." }
+            if (Find-NamedElement $window 'Markdown source while preview renders') { throw 'Rendered-mode delivery exposed the legacy raw-source pending surface.' }
+            if (Find-NamedElement $window $ExpectedHeading) { return }
+            if (Find-NamedElement $window 'Markdown preview failed safely. Source remains available.') { throw "Markdown rendering failed before '$ExpectedHeading' became usable." }
+            if (Find-NamedElement $window 'This document could not be displayed. The application remains available.') { throw "Document containment activated before '$ExpectedHeading' became usable." }
+        }
+        Start-Sleep -Milliseconds 50
+    } while ([DateTimeOffset]::UtcNow -lt $deadline)
+    throw "Portable UI did not expose safe Markdown content '$ExpectedHeading'."
+}
+
+function Send-MarkdownDelivery([string] $Path, [Diagnostics.Process] $HostProcess, [string] $ExpectedHeading, [string] $RawSentinel) {
+    $delivery = Start-Process -FilePath $application -ArgumentList ('"{0}"' -f $Path) -PassThru -WindowStyle Hidden -Environment $isolatedEnvironment
+    try { Wait-SafeMarkdownOutcome $HostProcess $ExpectedHeading $RawSentinel }
+    finally {
+        $delivery.WaitForExit(1000) | Out-Null
+        if (-not $delivery.HasExited) { Stop-Process -Id $delivery.Id -Force }
+    }
 }
 
 function Close-Document([Diagnostics.Process] $Process, [string] $Path) {
@@ -159,19 +192,20 @@ try {
         if (Find-NamedElement $window $prohibited) { throw "A clean launch exposed prohibited fixture UI '$prohibited'." }
     }
 
-    Send-Delivery $textFixturePath $process
+    Send-Delivery $textFixturePath
     Wait-NamedElement $process ([IO.Path]::GetFileName($textFixturePath)) | Out-Null
     Wait-ElementText $process ("{0} text editor" -f [IO.Path]::GetFileName($textFixturePath)) 'S027 TXT CONTENT 7E5A'
     if ((Get-TabCount $process) -ne 0) { throw 'The first delivered document exposed tab chrome.' }
 
-    Send-Delivery $markdownFixtureAPath $process 'Markdown source while preview renders'
+    Send-MarkdownDelivery $markdownFixtureAPath $process 'S030 Markdown Alpha 2B7C' 'S030_ALPHA_RAW_SENTINEL'
     Wait-NamedElement $process ([IO.Path]::GetFileName($markdownFixtureAPath)) | Out-Null
-    Wait-NamedElement $process 'S030 Markdown Alpha 2B7C' | Out-Null
+    Wait-NamedElement $process 'S030 Alpha Footnote 6A1E' | Out-Null
     if ((Get-TabCount $process) -ne 2) { throw 'Two delivered documents did not expose exactly two tabs.' }
     Wait-NamedElement $process ("Close {0}" -f [IO.Path]::GetFileName($textFixturePath)) | Out-Null
-    Send-Delivery $markdownFixtureBPath $process 'Markdown source while preview renders'
+    Send-MarkdownDelivery $markdownFixtureBPath $process 'S030 Markdown Beta 9D4E' 'S030_BETA_RAW_SENTINEL'
     Wait-NamedElement $process ([IO.Path]::GetFileName($markdownFixtureBPath)) | Out-Null
     Wait-NamedElement $process 'S030 Markdown Beta 9D4E' | Out-Null
+    Wait-NamedElement $process 's030-beta.md diagram 1' | Out-Null
     Assert-MenuGeometry $process
     if ((Get-TabCount $process) -ne 3) { throw 'Three delivered documents did not expose exactly three tabs.' }
     Close-Document $process $markdownFixtureBPath
@@ -193,11 +227,11 @@ $isolatedEnvironment = @{ APPDATA = $reverseState; LOCALAPPDATA = $reverseState 
 $reverseProcess = Start-Process -FilePath $application -PassThru -WindowStyle Hidden -Environment $isolatedEnvironment
 try {
     Wait-NamedElement $reverseProcess 'Open file…' | Out-Null
-    Send-Delivery $markdownFixtureBPath $reverseProcess 'Markdown source while preview renders'
-    Wait-NamedElement $reverseProcess 'S030 Markdown Beta 9D4E' | Out-Null
+    Send-MarkdownDelivery $markdownFixtureBPath $reverseProcess 'S030 Markdown Beta 9D4E' 'S030_BETA_RAW_SENTINEL'
+    Wait-NamedElement $reverseProcess 's030-beta.md diagram 1' | Out-Null
     if ((Get-TabCount $reverseProcess) -ne 0) { throw 'The first reverse-order document exposed tab chrome.' }
-    Send-Delivery $markdownFixtureAPath $reverseProcess 'Markdown source while preview renders'
-    Wait-NamedElement $reverseProcess 'S030 Markdown Alpha 2B7C' | Out-Null
+    Send-MarkdownDelivery $markdownFixtureAPath $reverseProcess 'S030 Markdown Alpha 2B7C' 'S030_ALPHA_RAW_SENTINEL'
+    Wait-NamedElement $reverseProcess 'S030 Alpha Footnote 6A1E' | Out-Null
     if ((Get-TabCount $reverseProcess) -ne 2) { throw 'The reverse-order pair did not expose exactly two tabs.' }
 }
 finally {

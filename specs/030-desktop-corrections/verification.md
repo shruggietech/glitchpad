@@ -15,6 +15,7 @@
 7. Vitest concurrency was capped at two workers to stay below bind-mounted workspace I/O saturation. The exact repository frontend command then passed all 44 test files and all 255 tests without missing workers.
 8. Final ESLint and Prettier checks passed, and the post-convergence encoding scan validated 867 text files as UTF-8 without BOM or common mojibake markers.
 9. Final diff review identified a one-frame ready-result retention risk during a same-session revision change. Synchronous result identity gating was added, then 51 Markdown and App tests, TypeScript, ESLint, and the production build passed.
+10. First-round Codex review findings strengthened packaged Windows evidence: delivery now monitors each actual raw sentinel continuously until safe heading settlement, and the two final-artifact fixtures exercise table, footnote, nested, and embedded-Mermaid rendering. Windows package policy, PowerShell syntax, and Prettier passed after the changes.
 
 ## Aggregate execution note
 

@@ -153,19 +153,42 @@ function Send-MarkdownDelivery([string] $Path, [Diagnostics.Process] $HostProces
     }
 }
 
+function Wait-NamedButton([Diagnostics.Process] $Process, [string] $Name, [int] $Seconds = 10) {
+    $deadline = [DateTimeOffset]::UtcNow.AddSeconds($Seconds)
+    $condition = New-Object System.Windows.Automation.AndCondition(
+        (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::NameProperty, $Name)),
+        (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button))
+    )
+    do {
+        $window = Get-WindowRoot $Process
+        if ($window) {
+            $button = $window.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $condition)
+            if ($button) { return $button }
+        }
+        Start-Sleep -Milliseconds 50
+    } while ([DateTimeOffset]::UtcNow -lt $deadline)
+    throw "Portable UI did not expose button '$Name'."
+}
+
+function Invoke-NamedButton([Diagnostics.Process] $Process, [string] $Name) {
+    $button = Wait-NamedButton $Process $Name
+    $patternObject = $null
+    if (-not $button.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern, [ref]$patternObject)) {
+        throw "Portable UI button '$Name' did not expose InvokePattern."
+    }
+    ([System.Windows.Automation.InvokePattern]$patternObject).Invoke()
+}
+
 function Close-Document([Diagnostics.Process] $Process, [string] $Path) {
-    $close = Wait-NamedElement $Process ("Close {0}" -f [IO.Path]::GetFileName($Path))
-    $invoke = [System.Windows.Automation.InvokePattern]$close.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern)
-    $invoke.Invoke()
+    Invoke-NamedButton $Process ("Close {0}" -f [IO.Path]::GetFileName($Path))
 }
 
 function Assert-MenuGeometry([Diagnostics.Process] $Process) {
-    $trigger = Wait-NamedElement $Process 'Menu'
+    $trigger = Wait-NamedButton $Process 'Menu'
     $before = $trigger.Current.BoundingRectangle
-    $invoke = [System.Windows.Automation.InvokePattern]$trigger.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern)
-    $invoke.Invoke()
+    Invoke-NamedButton $Process 'Menu'
     $menu = Wait-NamedElement $Process 'Glitchpad menu'
-    $during = (Wait-NamedElement $Process 'Menu').Current.BoundingRectangle
+    $during = (Wait-NamedButton $Process 'Menu').Current.BoundingRectangle
     foreach ($field in @('X', 'Y', 'Width', 'Height')) {
         if ([Math]::Abs($before.$field - $during.$field) -gt 1) { throw "Menu trigger moved while disclosed ($field)." }
     }
@@ -178,11 +201,11 @@ function Assert-MenuGeometry([Diagnostics.Process] $Process) {
             if ($intersects) { throw 'Application menu intersects a document scrollbar hit region.' }
         }
     }
-    $invoke.Invoke()
+    Invoke-NamedButton $Process 'Menu'
     $deadline = [DateTimeOffset]::UtcNow.AddSeconds(5)
     do { Start-Sleep -Milliseconds 25; $window = Get-WindowRoot $Process } while ((Find-NamedElement $window 'Glitchpad menu') -and [DateTimeOffset]::UtcNow -lt $deadline)
     if (Find-NamedElement $window 'Glitchpad menu') { throw 'Application menu did not close.' }
-    $after = (Wait-NamedElement $Process 'Menu').Current.BoundingRectangle
+    $after = (Wait-NamedButton $Process 'Menu').Current.BoundingRectangle
     foreach ($field in @('X', 'Y', 'Width', 'Height')) {
         if ([Math]::Abs($before.$field - $after.$field) -gt 1) { throw "Menu trigger moved after disclosure ($field)." }
     }

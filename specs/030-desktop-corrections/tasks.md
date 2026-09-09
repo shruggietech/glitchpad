@@ -73,6 +73,7 @@
 - [x] T026 Address second-round Codex findings by synchronizing incoming presentation mode before paint and suppressing a failed projection throughout revision-scoped source recovery
 - [x] T027 Correct final-artifact raw-source sentinels to unused Markdown reference definitions so safe inert-HTML rendering cannot create a false positive
 - [x] T028 Assert packaged footnote content through bounded UI Automation text discovery instead of an incorrect exact-name element assumption
+- [x] T029 Resolve packaged menu and close controls by both accessible name and button type before requiring UI Automation InvokePattern
 
 ## Dependencies and execution order
 

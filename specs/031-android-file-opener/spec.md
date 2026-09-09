@@ -21,8 +21,9 @@ As an Android user, I can select Glitchpad from the system resolver when a provi
 **Acceptance Scenarios**:
 
 1. **Given** an opaque provider URI and a governed media type, **When** Android resolves an `ACTION_VIEW` request, **Then** Glitchpad is an eligible default activity without relying on a filename in the URI.
-2. **Given** an unsupported image, PDF, DOCX, ODT, wildcard, or `file://` request, **When** Android resolves the request, **Then** Glitchpad does not advertise eligibility.
-3. **Given** the universal and ARM64 packages, **When** their final manifests are inspected, **Then** they expose the same governed resolver contract.
+2. **Given** an unsupported exact image, PDF, DOCX, ODT, generic binary, or `file://` request, **When** Android resolves the request, **Then** Glitchpad does not advertise eligibility.
+3. **Given** a caller-supplied `text/*`, `application/*`, or `*/*` request, **When** Android resolves the request, **Then** Glitchpad is eligible through compatible exact declarations without declaring a wildcard itself.
+4. **Given** the universal and ARM64 packages, **When** their final manifests are inspected, **Then** they expose the same governed resolver contract.
 
 ---
 

@@ -73,6 +73,7 @@ class AndroidResolverInstrumentedTest {
     }
 
     val scenario = ActivityScenario.launch<MainActivity>(coldIntent.setComponent(component))
+    retainedScenario = scenario
     waitForBodyText(scenario, "resolver-cold.md", "S031_COLD_MARKER_4F2A")
     val warmIntent = viewIntent(warm, "text/plain")
     assertTrue("installed Glitchpad package did not resolve the warm fixture", resolvesGlitchpad(warmIntent))
@@ -114,14 +115,14 @@ class AndroidResolverInstrumentedTest {
     while (SystemClock.elapsedRealtime() < deadline) {
       val webView = AtomicReference<WebView?>()
       scenario.onActivity { activity -> webView.set(findWebView(activity.window.decorView)) }
-      webView.get()?.let { latest = bodyText(it) }
+      webView.get()?.let { view -> bodyText(view)?.let { text -> latest = text } }
       if (expected.all(latest::contains)) return
       SystemClock.sleep(100L)
     }
     throw AssertionError("document surface did not expose expected synthetic evidence; observed length=${latest.length}")
   }
 
-  private fun bodyText(webView: WebView): String {
+  private fun bodyText(webView: WebView): String? {
     val result = AtomicReference("")
     val latch = CountDownLatch(1)
     instrumentation.runOnMainSync {
@@ -130,8 +131,7 @@ class AndroidResolverInstrumentedTest {
         latch.countDown()
       }
     }
-    assertTrue("WebView body text callback timed out", latch.await(2, TimeUnit.SECONDS))
-    return result.get()
+    return if (latch.await(2, TimeUnit.SECONDS)) result.get() else null
   }
 
   private fun findWebView(view: View): WebView? {
@@ -147,6 +147,10 @@ class AndroidResolverInstrumentedTest {
   private fun documentUri(id: String): Uri = DocumentsContract.buildDocumentUri(FIXTURE_AUTHORITY, id)
 
   companion object {
+    // MainActivity owns the Tauri process. Retain its scenario for the complete
+    // instrumentation suite so ActivityScenario cleanup cannot terminate the
+    // process between resolver and provider tests on legacy Android.
+    private var retainedScenario: ActivityScenario<MainActivity>? = null
     private const val TARGET_PACKAGE = "com.shruggietech.glitchpad"
     private const val FIXTURE_AUTHORITY = "com.shruggietech.glitchpad.fixture.documents"
     private val BROAD_REQUEST_MEDIA_TYPES = listOf("*/*", "application/*", "text/*")

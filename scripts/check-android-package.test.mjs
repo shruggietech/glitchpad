@@ -22,9 +22,9 @@ import { generateAndroidSbom } from './generate-android-sbom.mjs';
 const contract = {
   schema_version: 1,
   platform: 'android',
-  candidate_version: '0.1.0',
+  candidate_version: '0.1.1',
   application_id: 'com.shruggietech.glitchpad',
-  version_code: 1000,
+  version_code: 1001,
   min_sdk: 24,
   target_sdk: 36,
   build_tools_version: '36.0.0',
@@ -164,10 +164,10 @@ test('contract requires exactly the three governed artifact roles', () => {
 
 test('manifest parser extracts release identity and public surface', () => {
   const parsed = parseManifestXml(
-    `<?xml version="1.0"?><manifest package="com.shruggietech.glitchpad" android:versionCode="1000" android:versionName="0.1.0" xmlns:android="http://schemas.android.com/apk/res/android"><uses-sdk android:minSdkVersion="24" android:targetSdkVersion="36"/><uses-permission android:name="android.permission.INTERNET"/><application android:debuggable="false" android:usesCleartextTraffic="false"><activity android:name="com.shruggietech.glitchpad.MainActivity" android:exported="true"><intent-filter><action android:name="android.intent.action.VIEW"/><category android:name="android.intent.category.DEFAULT"/><data android:scheme="content" android:mimeType="text/markdown" android:pathSuffix=".md"/></intent-filter></activity></application></manifest>`,
+    `<?xml version="1.0"?><manifest package="com.shruggietech.glitchpad" android:versionCode="1001" android:versionName="0.1.1" xmlns:android="http://schemas.android.com/apk/res/android"><uses-sdk android:minSdkVersion="24" android:targetSdkVersion="36"/><uses-permission android:name="android.permission.INTERNET"/><application android:debuggable="false" android:usesCleartextTraffic="false"><activity android:name="com.shruggietech.glitchpad.MainActivity" android:exported="true"><intent-filter><action android:name="android.intent.action.VIEW"/><category android:name="android.intent.category.DEFAULT"/><data android:scheme="content" android:mimeType="text/markdown" android:pathSuffix=".md"/></intent-filter></activity></application></manifest>`,
   );
   assert.equal(parsed.application_id, contract.application_id);
-  assert.equal(parsed.version_code, 1000);
+  assert.equal(parsed.version_code, 1001);
   assert.deepEqual(parsed.permissions, ['android.permission.INTERNET']);
   assert.deepEqual(parsed.schemes, ['content']);
 });
@@ -337,7 +337,7 @@ test('evidence manifest binds exactly three final artifacts and candidate author
   const evidence = {
     schema_version: 1,
     platform: 'android',
-    version: '0.1.0',
+    version: '0.1.1',
     source_commit: 'a'.repeat(40),
     authority: 'candidate',
     publication_status: 'blocked_candidate',
@@ -493,7 +493,7 @@ test('Android SBOM includes Cargo, npm, and Maven runtime components determinist
       packages: [
         {
           name: 'glitchpad-core',
-          version: '0.1.0',
+          version: '0.1.1',
           license: 'Apache-2.0',
           source: 'registry+https://github.com/rust-lang/crates.io-index',
         },
@@ -511,7 +511,7 @@ test('Android SBOM includes Cargo, npm, and Maven runtime components determinist
       .filter(Boolean)
       .sort(),
     [
-      'pkg:cargo/glitchpad-core@0.1.0',
+      'pkg:cargo/glitchpad-core@0.1.1',
       'pkg:maven/androidx.core/core-ktx@1.17.0',
       'pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.13.5',
       'pkg:maven/com.google.android.material/material@1.14.0',

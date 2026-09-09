@@ -552,8 +552,8 @@ export async function checkLinuxConfiguration(
       'utf8',
     ),
   ]);
-  if (capabilities.schema_version !== 1 || capabilities.release !== '0.1.0')
-    fail('capability inventory version is not v0.1.0 schema 1');
+  if (capabilities.schema_version !== 1 || capabilities.release !== '0.1.1')
+    fail('capability inventory version is not v0.1.1 schema 1');
   const capabilityExtensions = uniqueExtensions(capabilities);
   const mimeFacts = mimeMapFacts(mimeMap);
   const packageOwnedTypes = sorted(mimeMap.package_owned_types ?? []);
@@ -660,8 +660,8 @@ export async function checkLinuxConfiguration(
       fail(`Linux package workflow is missing ${required}`);
   if (
     !packageWorkflow.includes('actions/attest-build-provenance@v4') ||
-    !packageWorkflow.includes("tags:\n      - 'v0.1.0'") ||
-    !releaseWorkflow.includes('glitchpad-0.1.0-linux-x86_64-community-release')
+    !packageWorkflow.includes("tags:\n      - 'v0.1.1'") ||
+    !releaseWorkflow.includes('glitchpad-0.1.1-linux-x86_64-community-release')
   )
     fail('release path omits repository-attested Linux authority');
   if (

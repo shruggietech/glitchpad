@@ -4,6 +4,19 @@ All notable changes to Glitchpad are documented in this file. The format follows
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-09-08
+
+### Changed
+
+- Reworked the production shell around a content-first layout with a compact application menu, capability-backed commands, coherent secondary panels, and styled editor search controls.
+- Limited tabs to multi-document sessions and added a close control to every visible tab.
+
+### Fixed
+
+- Removed synthetic first-run documents so a normal launch starts empty and opening a TXT or Markdown file displays the requested content immediately.
+- Strengthened packaged Windows smoke coverage for launch, native file-open delivery, and visible document content.
+- Kept delivery errors visible beneath the tab strip instead of allowing them to obscure the active document.
+
 ## [0.1.0] - 2026-09-07
 
 ### Added

@@ -2,7 +2,7 @@
 param()
 
 $ErrorActionPreference = 'Stop'
-$expectedVersion = '0.1.0'
+$expectedVersion = '0.1.1'
 $repositoryRoot = Split-Path -Parent $PSScriptRoot
 $failures = [System.Collections.Generic.List[string]]::new()
 
@@ -29,20 +29,20 @@ Assert-VersionValue -Label 'root package version' -Actual $rootPackage.version
 Assert-VersionValue -Label 'application package version' -Actual $appPackage.version
 Assert-VersionValue -Label 'Tauri version' -Actual $tauriConfig.version
 
-if ($cargoManifest -notmatch '(?m)^version = "0\.1\.0"$') {
-    $failures.Add('Cargo workspace version authority is not 0.1.0.')
+if ($cargoManifest -notmatch '(?m)^version = "0\.1\.1"$') {
+    $failures.Add('Cargo workspace version authority is not 0.1.1.')
 }
 
-if ($technicalSpecification -notmatch '^# Glitchpad Technical Specification v0\.1\.0') {
-    $failures.Add('Technical specification heading is not v0.1.0.')
+if ($technicalSpecification -notmatch '^# Glitchpad Technical Specification v0\.1\.1') {
+    $failures.Add('Technical specification heading is not v0.1.1.')
 }
 
-if ($readme -notmatch 'version-0\.1\.0') {
-    $failures.Add('README version badge is not 0.1.0.')
+if ($readme -notmatch 'version-0\.1\.1') {
+    $failures.Add('README version badge is not 0.1.1.')
 }
 
-if ($androidManifest -notmatch 'versionName = tauriProperties\.getProperty\("tauri\.android\.versionName", "0\.1\.0"\)') {
-    $failures.Add('Android fallback version is not 0.1.0.')
+if ($androidManifest -notmatch 'versionName = tauriProperties\.getProperty\("tauri\.android\.versionName", "0\.1\.1"\)') {
+    $failures.Add('Android fallback version is not 0.1.1.')
 }
 
 if ($failures.Count -gt 0) {

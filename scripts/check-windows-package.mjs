@@ -151,8 +151,8 @@ export async function checkWindowsConfiguration(
 
   validatePortableSmokeContract(portableLifecycle, windowsWorkflow);
 
-  if (capabilities.schema_version !== 1 || capabilities.release !== '0.1.0')
-    fail('capability inventory version is not v0.1.0 schema 1');
+  if (capabilities.schema_version !== 1 || capabilities.release !== '0.1.1')
+    fail('capability inventory version is not v0.1.1 schema 1');
   const configured = uniqueExtensions(capabilities.families);
   const expectedBase = ['markdown', 'md', 'mermaid', 'mmd', 'txt'];
   for (const extension of expectedBase)

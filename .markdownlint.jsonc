@@ -4,4 +4,6 @@
   // The public README uses the organization's centered HTML identity block.
   "MD033": false,
   "MD041": false,
+  // Release sections intentionally repeat Keep a Changelog category headings.
+  "MD024": { "siblings_only": true },
 }

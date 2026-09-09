@@ -1,6 +1,6 @@
 # Glitchpad Support
 
-Glitchpad v0.1.0 is a community-supported binary release. Support covers reproducible defects in the published packages and documented stable capabilities; platform trust warnings caused by unsigned Windows or non-notarized macOS distribution are known constraints.
+Glitchpad v0.1.1 is a community-supported binary release. Support covers reproducible defects in the published packages and documented stable capabilities; platform trust warnings caused by unsigned Windows or non-notarized macOS distribution are known constraints.
 
 ## Where to ask
 

@@ -3,7 +3,7 @@ name: release
 on:
   push:
     tags:
-      - 'v0.1.0'
+      - 'v0.1.1'
   workflow_dispatch:
 
 permissions:
@@ -12,7 +12,7 @@ permissions:
   attestations: read
 
 concurrency:
-  group: release-v0.1.0
+  group: release-v0.1.1
   cancel-in-progress: false
 
 jobs:
@@ -103,11 +103,11 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/download-artifact@v8
         with:
-          name: glitchpad-0.1.0-windows-x86_64-community-release
+          name: glitchpad-0.1.1-windows-x86_64-community-release
           path: gathered/windows
           run-id: ${{ needs.locate-platform-runs.outputs.windows }}
           github-token: ${{ github.token }}
-      - name: Download glitchpad-0.1.0-macos-universal-community-release and receipts
+      - name: Download glitchpad-0.1.1-macos-universal-community-release and receipts
         uses: actions/download-artifact@v8
         with:
           pattern: glitchpad-*
@@ -115,7 +115,7 @@ jobs:
           path: gathered/macos
           run-id: ${{ needs.locate-platform-runs.outputs.macos }}
           github-token: ${{ github.token }}
-      - name: Download glitchpad-0.1.0-linux-x86_64-community-release and receipts
+      - name: Download glitchpad-0.1.1-linux-x86_64-community-release and receipts
         uses: actions/download-artifact@v8
         with:
           pattern: glitchpad-*
@@ -125,7 +125,7 @@ jobs:
           github-token: ${{ github.token }}
       - uses: actions/download-artifact@v8
         with:
-          name: glitchpad-0.1.0-android-community-release
+          name: glitchpad-0.1.1-android-community-release
           path: gathered/android
           run-id: ${{ needs.locate-platform-runs.outputs.android }}
           github-token: ${{ github.token }}
@@ -133,7 +133,7 @@ jobs:
         run: |
           mkdir -p release-assets
           for platform in windows macos linux android; do
-            tar -czf "release-assets/glitchpad-0.1.0-${platform}-evidence.tar.gz" -C "gathered/$platform" .
+            tar -czf "release-assets/glitchpad-0.1.1-${platform}-evidence.tar.gz" -C "gathered/$platform" .
           done
       - run: node scripts/assemble-community-release.mjs --input gathered --output release-assets --source-commit '${{ github.sha }}'
       - name: Refuse replacement and publish once
@@ -144,4 +144,4 @@ jobs:
             echo 'Release already exists; refusing to replace published bytes.' >&2
             exit 1
           fi
-          gh release create '${{ github.ref_name }}' release-assets/* --verify-tag --title 'Glitchpad v0.1.0' --notes-file docs/releases/v0.1.0.md
+          gh release create '${{ github.ref_name }}' release-assets/* --verify-tag --title 'Glitchpad v0.1.1' --notes-file docs/releases/v0.1.1.md

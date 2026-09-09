@@ -4,7 +4,7 @@ Glitchpad treats every opened file as untrusted input. Security reports are hand
 
 ## Supported versions
 
-Glitchpad v0.1.0 is the current supported community release. This policy applies to published packages, the repository, build pipeline, and dependency graph.
+Glitchpad v0.1.1 is the current supported community release. This policy applies to published packages, the repository, build pipeline, and dependency graph.
 
 | Version | Supported |
 | ------- | --------- |

@@ -188,8 +188,8 @@ export async function checkMacosConfiguration(
     ),
   ]);
 
-  if (capabilities.schema_version !== 1 || capabilities.release !== '0.1.0')
-    fail('capability inventory version is not v0.1.0 schema 1');
+  if (capabilities.schema_version !== 1 || capabilities.release !== '0.1.1')
+    fail('capability inventory version is not v0.1.1 schema 1');
   const configured = uniqueExtensions(capabilities.families);
   if (!same(contract.document_extensions ?? [], configured))
     fail(
@@ -316,7 +316,7 @@ export async function checkMacosConfiguration(
     fail('branch and pull-request package workflow must not publish');
   if (
     !releaseWorkflow.includes(
-      'glitchpad-0.1.0-macos-universal-community-release',
+      'glitchpad-0.1.1-macos-universal-community-release',
     )
   )
     fail('release workflow omits the macOS community package');

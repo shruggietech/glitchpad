@@ -28,7 +28,7 @@ Every number below is measured from the shipped files at run time.
 | `ico-entries` | pass | icons/windows/classic/app.ico: 7 entries (16x16,24x24,32x32,48x48,64x64,128x128,256x256) |
 | `ico-entries` | pass | icons/web/favicon.ico: 7 entries (16x16,24x24,32x32,48x48,64x64,128x128,256x256) |
 | `pdf-fonts-embedded` | pass | 1 PDFs, all fonts embedded; 1 Type3 glyph fonts (inline CharProcs, embedded; usually a renderer fallback) |
-| `manifest-checksums` | pass | 237 files match |
+| `manifest-checksums` | pass | 239 files match |
 
 | | |
 | --- | ---: |

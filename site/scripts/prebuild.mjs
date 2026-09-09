@@ -99,7 +99,8 @@ async function main() {
   const generated = [
     '// Generated from repository authorities. Do not edit by hand.',
     `export const projectVersion = ${JSON.stringify(workspace.version)};`,
-    'export const installableReleaseAvailable = false;',
+    'export const installableReleaseAvailable = true;',
+    `export const releaseUrl = ${JSON.stringify(`https://github.com/ShruggieTech/glitchpad/releases/tag/v${workspace.version}`)};`,
     `export const licenseText = ${JSON.stringify(license.trimEnd())};`,
     `export const noticeText = ${JSON.stringify(notice.trimEnd())};`,
     `export const supportText = ${JSON.stringify(extractSection(support, 'Where to ask') || support.trimEnd())};`,

@@ -84,6 +84,14 @@ a {
   font-size: clamp(1.125rem, 2vw, 1.4rem);
   line-height: 1.6;
 }
+.hero-endorsement {
+  margin: 0.75rem 0 0;
+  color: var(--foreground);
+  font-family: var(--font-mono);
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
 .hero-actions {
   display: flex;
   flex-wrap: wrap;

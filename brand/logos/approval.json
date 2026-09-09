@@ -1,0 +1,195 @@
+{
+  "brand": "glitchpad",
+  "derivatives": [
+    {
+      "path": "logos/png/glitchpad-horizontal-black-1024.png",
+      "rendered_from": "logos/svg/glitchpad-horizontal-black.svg",
+      "rendered_from_sha256": "d01a57886b7b598b8513c259b0fa668a445b83c0dbba78ecf5bace95458a9889"
+    },
+    {
+      "path": "logos/png/glitchpad-horizontal-color-1024.png",
+      "rendered_from": "logos/svg/glitchpad-horizontal-color.svg",
+      "rendered_from_sha256": "14ed9f12012eb6ac9fbded7871fc9f83ad5e12541c50d52d1e157e7afdd7f3f0"
+    },
+    {
+      "path": "logos/png/glitchpad-horizontal-light-1024.png",
+      "rendered_from": "logos/svg/glitchpad-horizontal-light.svg",
+      "rendered_from_sha256": "46dcc8b6ccdffaa704f531729dfbd4705fd834ec774b7f933885ecb4ba3d434e"
+    },
+    {
+      "path": "logos/png/glitchpad-horizontal-white-1024.png",
+      "rendered_from": "logos/svg/glitchpad-horizontal-white.svg",
+      "rendered_from_sha256": "f23b0aba814c9988d97a1a65d84f263ec69e36d9162fda58bdbaefe21c88fc1f"
+    },
+    {
+      "path": "logos/png/glitchpad-mark-black-1024.png",
+      "rendered_from": "logos/svg/glitchpad-mark-black.svg",
+      "rendered_from_sha256": "2f3340bf974b1af9d6d41418c5306c71386d3f9250c312b8fe1e3c476abc1f25"
+    },
+    {
+      "path": "logos/png/glitchpad-mark-color-1024.png",
+      "rendered_from": "logos/svg/glitchpad-mark-color.svg",
+      "rendered_from_sha256": "594343a01a8f499114db51ea490cae129a1b5c190587ab83cd6f82005190d410"
+    },
+    {
+      "path": "logos/png/glitchpad-mark-light-1024.png",
+      "rendered_from": "logos/svg/glitchpad-mark-light.svg",
+      "rendered_from_sha256": "1e2ab2ae45d253509faabeae53a6efa5e58e60c10b25b581210963420f4e8ee2"
+    },
+    {
+      "path": "logos/png/glitchpad-mark-reduced-black-1024.png",
+      "rendered_from": "logos/svg/glitchpad-mark-reduced-black.svg",
+      "rendered_from_sha256": "41c47b4519670929f78c79049e2df0c3d18bd778789d79d8774ce910ceed2b00"
+    },
+    {
+      "path": "logos/png/glitchpad-mark-reduced-color-1024.png",
+      "rendered_from": "logos/svg/glitchpad-mark-reduced-color.svg",
+      "rendered_from_sha256": "82cae67e417073a03444433c63e128e018f36640e2738848e97bc1e220be6faa"
+    },
+    {
+      "path": "logos/png/glitchpad-mark-reduced-light-1024.png",
+      "rendered_from": "logos/svg/glitchpad-mark-reduced-light.svg",
+      "rendered_from_sha256": "a0cd3f2a6e50e80b032ab6bc009493a5d34551c416804a3039bf62a5a4ae4f42"
+    },
+    {
+      "path": "logos/png/glitchpad-mark-reduced-white-1024.png",
+      "rendered_from": "logos/svg/glitchpad-mark-reduced-white.svg",
+      "rendered_from_sha256": "8525f8dd80285d28bd29033dcb681f6bbed4f452eebf5721eacc3036bf3a7e7b"
+    },
+    {
+      "path": "logos/png/glitchpad-mark-white-1024.png",
+      "rendered_from": "logos/svg/glitchpad-mark-white.svg",
+      "rendered_from_sha256": "4fb595ec6b5c7bca70ddb2ff008e91331914f2ca049a6fdd95683bc69d3318ad"
+    },
+    {
+      "path": "logos/png/glitchpad-social-preview-1280.png",
+      "rendered_from": "logos/svg/glitchpad-social-preview.svg",
+      "rendered_from_sha256": "909a714ca81923b217721d0e3b3f3e4adfc40c378c028c595e63f7408e5a29db"
+    },
+    {
+      "path": "logos/png/glitchpad-stacked-black-1024.png",
+      "rendered_from": "logos/svg/glitchpad-stacked-black.svg",
+      "rendered_from_sha256": "cff1c6ee8d16a9e8d0c5e3008e56226281180ed6a94ece6e738bcb597a8ddaa0"
+    },
+    {
+      "path": "logos/png/glitchpad-stacked-color-1024.png",
+      "rendered_from": "logos/svg/glitchpad-stacked-color.svg",
+      "rendered_from_sha256": "c49a6138663beb919c3e43337690fa2954eb8a50dd32e4cf8241637dc7443ad7"
+    },
+    {
+      "path": "logos/png/glitchpad-stacked-light-1024.png",
+      "rendered_from": "logos/svg/glitchpad-stacked-light.svg",
+      "rendered_from_sha256": "36e61748da65aed32a8591ffc3fc1d88d79a944ae5a0634c96b5d90e1c1d21c7"
+    },
+    {
+      "path": "logos/png/glitchpad-stacked-white-1024.png",
+      "rendered_from": "logos/svg/glitchpad-stacked-white.svg",
+      "rendered_from_sha256": "d64de91977a5dd2abcb851a5e063bfc1471c9487eaaba1c96a80e62a6b948849"
+    },
+    {
+      "path": "logos/png/glitchpad-wordmark-black-1024.png",
+      "rendered_from": "logos/svg/glitchpad-wordmark-black.svg",
+      "rendered_from_sha256": "10996f2bec7304883f5fd0a37d9dcb1bd0da69a875edca25d853e110303b6ee8"
+    },
+    {
+      "path": "logos/png/glitchpad-wordmark-color-1024.png",
+      "rendered_from": "logos/svg/glitchpad-wordmark-color.svg",
+      "rendered_from_sha256": "c96f6ad6a214be087baeb91b5d7ef9f4c221f0618c6f473c4081052bc0e49c22"
+    },
+    {
+      "path": "logos/png/glitchpad-wordmark-light-1024.png",
+      "rendered_from": "logos/svg/glitchpad-wordmark-light.svg",
+      "rendered_from_sha256": "6e13af92506422e93d1dd7e45665ae353dd35b1e311332686a2ff1986e1ff847"
+    },
+    {
+      "path": "logos/png/glitchpad-wordmark-white-1024.png",
+      "rendered_from": "logos/svg/glitchpad-wordmark-white.svg",
+      "rendered_from_sha256": "c14e547db132b763f601511aa3754140a5b6da968f93424cabb400127f7a8f8a"
+    },
+    {
+      "path": "logos/svg/glitchpad-horizontal-black.svg",
+      "sha256": "d01a57886b7b598b8513c259b0fa668a445b83c0dbba78ecf5bace95458a9889"
+    },
+    {
+      "path": "logos/svg/glitchpad-horizontal-color.svg",
+      "sha256": "14ed9f12012eb6ac9fbded7871fc9f83ad5e12541c50d52d1e157e7afdd7f3f0"
+    },
+    {
+      "path": "logos/svg/glitchpad-horizontal-light.svg",
+      "sha256": "46dcc8b6ccdffaa704f531729dfbd4705fd834ec774b7f933885ecb4ba3d434e"
+    },
+    {
+      "path": "logos/svg/glitchpad-horizontal-white.svg",
+      "sha256": "f23b0aba814c9988d97a1a65d84f263ec69e36d9162fda58bdbaefe21c88fc1f"
+    },
+    {
+      "path": "logos/svg/glitchpad-mark-black.svg",
+      "sha256": "2f3340bf974b1af9d6d41418c5306c71386d3f9250c312b8fe1e3c476abc1f25"
+    },
+    {
+      "path": "logos/svg/glitchpad-mark-color.svg",
+      "sha256": "594343a01a8f499114db51ea490cae129a1b5c190587ab83cd6f82005190d410"
+    },
+    {
+      "path": "logos/svg/glitchpad-mark-light.svg",
+      "sha256": "1e2ab2ae45d253509faabeae53a6efa5e58e60c10b25b581210963420f4e8ee2"
+    },
+    {
+      "path": "logos/svg/glitchpad-mark-reduced-black.svg",
+      "sha256": "41c47b4519670929f78c79049e2df0c3d18bd778789d79d8774ce910ceed2b00"
+    },
+    {
+      "path": "logos/svg/glitchpad-mark-reduced-color.svg",
+      "sha256": "82cae67e417073a03444433c63e128e018f36640e2738848e97bc1e220be6faa"
+    },
+    {
+      "path": "logos/svg/glitchpad-mark-reduced-light.svg",
+      "sha256": "a0cd3f2a6e50e80b032ab6bc009493a5d34551c416804a3039bf62a5a4ae4f42"
+    },
+    {
+      "path": "logos/svg/glitchpad-mark-reduced-white.svg",
+      "sha256": "8525f8dd80285d28bd29033dcb681f6bbed4f452eebf5721eacc3036bf3a7e7b"
+    },
+    {
+      "path": "logos/svg/glitchpad-mark-white.svg",
+      "sha256": "4fb595ec6b5c7bca70ddb2ff008e91331914f2ca049a6fdd95683bc69d3318ad"
+    },
+    {
+      "path": "logos/svg/glitchpad-social-preview.svg",
+      "sha256": "909a714ca81923b217721d0e3b3f3e4adfc40c378c028c595e63f7408e5a29db"
+    },
+    {
+      "path": "logos/svg/glitchpad-stacked-black.svg",
+      "sha256": "cff1c6ee8d16a9e8d0c5e3008e56226281180ed6a94ece6e738bcb597a8ddaa0"
+    },
+    {
+      "path": "logos/svg/glitchpad-stacked-color.svg",
+      "sha256": "c49a6138663beb919c3e43337690fa2954eb8a50dd32e4cf8241637dc7443ad7"
+    },
+    {
+      "path": "logos/svg/glitchpad-stacked-light.svg",
+      "sha256": "36e61748da65aed32a8591ffc3fc1d88d79a944ae5a0634c96b5d90e1c1d21c7"
+    },
+    {
+      "path": "logos/svg/glitchpad-stacked-white.svg",
+      "sha256": "d64de91977a5dd2abcb851a5e063bfc1471c9487eaaba1c96a80e62a6b948849"
+    },
+    {
+      "path": "logos/svg/glitchpad-wordmark-black.svg",
+      "sha256": "10996f2bec7304883f5fd0a37d9dcb1bd0da69a875edca25d853e110303b6ee8"
+    },
+    {
+      "path": "logos/svg/glitchpad-wordmark-color.svg",
+      "sha256": "c96f6ad6a214be087baeb91b5d7ef9f4c221f0618c6f473c4081052bc0e49c22"
+    },
+    {
+      "path": "logos/svg/glitchpad-wordmark-light.svg",
+      "sha256": "6e13af92506422e93d1dd7e45665ae353dd35b1e311332686a2ff1986e1ff847"
+    },
+    {
+      "path": "logos/svg/glitchpad-wordmark-white.svg",
+      "sha256": "c14e547db132b763f601511aa3754140a5b6da968f93424cabb400127f7a8f8a"
+    }
+  ],
+  "schema_version": 1
+}

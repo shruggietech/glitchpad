@@ -13,6 +13,8 @@
     "build": "pnpm --filter @shruggietech/glitchpad build",
     "check": "cargo xtask check",
     "check:brand": "node --test scripts/check-brand.test.mjs && node scripts/check-brand.mjs",
+    "check:brand:freshness": "node scripts/check-brand.mjs --freshness",
+    "check:public-release": "node --test scripts/check-public-release.test.mjs && node scripts/check-public-release.mjs",
     "check:validation": "node --test scripts/check-validation.test.mjs",
     "check:mermaid-runtime": "node --test scripts/check-mermaid-runtime.test.mjs && node scripts/check-mermaid-runtime.mjs",
     "check:metadata": "node --test scripts/check-metadata-fixture.test.mjs && node scripts/check-metadata-fixture.mjs",

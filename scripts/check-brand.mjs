@@ -80,9 +80,7 @@ export function verifyReadmeBanner(readme) {
   }
 
   const pictures = [
-    ...centeredWrapper[2].matchAll(
-      /<picture>([\s\S]*?)<\/picture>/g,
-    ),
+    ...centeredWrapper[2].matchAll(/<picture>([\s\S]*?)<\/picture>/g),
   ];
   if (pictures.length !== 1) {
     return [
@@ -102,8 +100,9 @@ export function verifyReadmeBanner(readme) {
 
   const { attributes: source, duplicates: sourceDuplicates } =
     parseTagAttributes(children[1]);
-  const { attributes: image, duplicates: imageDuplicates } =
-    parseTagAttributes(children[2]);
+  const { attributes: image, duplicates: imageDuplicates } = parseTagAttributes(
+    children[2],
+  );
   for (const [label, duplicates, governedAttributes] of [
     ['dark source', sourceDuplicates, ['media', 'srcset']],
     ['fallback image', imageDuplicates, ['src', 'alt', 'width']],
@@ -121,12 +120,12 @@ export function verifyReadmeBanner(readme) {
     [
       'dark source srcset',
       source.get('srcset'),
-      'brand/logos/svg/glitchpad-horizontal-white.svg',
+      'brand/logos/png/glitchpad-horizontal-color-1024.png',
     ],
     [
       'light fallback src',
       image.get('src'),
-      'brand/logos/svg/glitchpad-horizontal-black.svg',
+      'brand/logos/png/glitchpad-horizontal-light-1024.png',
     ],
     ['fallback alternative text', image.get('alt'), 'Glitchpad'],
     ['fallback width', image.get('width'), '480'],
@@ -138,6 +137,52 @@ export function verifyReadmeBanner(readme) {
     }
   }
 
+  return problems;
+}
+
+export function verifyPngHeader(bytes, label) {
+  const signature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
+  if (bytes.length < 24 || !bytes.subarray(0, 8).equals(signature))
+    return [`README banner asset is not a valid PNG: ${label}`];
+  const width = bytes.readUInt32BE(16);
+  const height = bytes.readUInt32BE(20);
+  return width === 1024 && height === 259
+    ? []
+    : [
+        `README banner asset has unexpected ${width}x${height} geometry: ${label}`,
+      ];
+}
+
+export async function verifyBrandFreshness(
+  receipt,
+  fetchImplementation = fetch,
+) {
+  const problems = [];
+  for (const comparison of receipt.publicComparisons ?? []) {
+    let response;
+    try {
+      response = await fetchImplementation(comparison.url, {
+        headers: { 'user-agent': 'glitchpad-brand-freshness-check' },
+        signal: AbortSignal.timeout(15_000),
+      });
+    } catch (error) {
+      problems.push(
+        `brand freshness request failed: ${comparison.url} (${error})`,
+      );
+      continue;
+    }
+    if (!response.ok) {
+      problems.push(
+        `brand freshness request returned ${response.status}: ${comparison.url}`,
+      );
+      continue;
+    }
+    const observed = createHash('sha256')
+      .update(Buffer.from(await response.arrayBuffer()))
+      .digest('hex');
+    if (observed !== comparison.sha256)
+      problems.push(`upstream brand drift: ${comparison.path}`);
+  }
   return problems;
 }
 
@@ -183,7 +228,11 @@ export async function verifyBrand(
   }
 
   const manifestFiles = new Set(manifest.files.map((entry) => entry.path));
-  const allowedProjectFiles = new Set(['INTEGRATION.md', 'manifest.json']);
+  const allowedProjectFiles = new Set([
+    'INTEGRATION.json',
+    'INTEGRATION.md',
+    'manifest.json',
+  ]);
 
   for (const entry of manifest.files) {
     const path = join(brandRoot, ...entry.path.split('/'));
@@ -240,15 +289,52 @@ export async function verifyBrand(
   if (integrations) problems.push(...verifyReadmeBanner(readme));
 
   if (integrations) {
-    const receipt = await readFile(join(brandRoot, 'INTEGRATION.md'), 'utf8');
-    for (const authority of [
-      '1681fcd444ff851d5bffc2cf67e23bbcedd753cd',
-      '34137139742',
-      'https://brand.shruggie.tech',
-    ]) {
-      if (!receipt.includes(authority)) {
-        problems.push(`brand integration receipt is missing ${authority}`);
-      }
+    const receipt = JSON.parse(
+      await readFile(join(brandRoot, 'INTEGRATION.json'), 'utf8'),
+    );
+    if (!/^[0-9a-f]{40}$/.test(receipt.sourceRevision ?? ''))
+      problems.push('brand integration receipt has no pinned source revision');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(receipt.retrievedAt ?? ''))
+      problems.push('brand integration receipt has no retrieval date');
+    if (receipt.governedFileCount !== manifest.files.length)
+      problems.push(
+        'brand integration receipt file count does not match manifest',
+      );
+    const manifestDigest = createHash('sha256')
+      .update(await readFile(manifestPath))
+      .digest('hex');
+    if (receipt.integratedManifestSha256 !== manifestDigest)
+      problems.push('brand integration receipt manifest digest does not match');
+    if (
+      !Array.isArray(receipt.publicComparisons) ||
+      receipt.publicComparisons.length < 3
+    )
+      problems.push(
+        'brand integration receipt lacks public derivative comparisons',
+      );
+    for (const recovered of receipt.recoveredArtifactFiles ?? []) {
+      const entry = manifest.files.find(({ path }) => path === recovered);
+      if (!entry)
+        problems.push(`recovered artifact file is not governed: ${recovered}`);
+    }
+
+    for (const path of [
+      'logos/png/glitchpad-horizontal-color-1024.png',
+      'logos/png/glitchpad-horizontal-light-1024.png',
+    ])
+      problems.push(
+        ...verifyPngHeader(
+          await readFile(join(brandRoot, ...path.split('/'))),
+          path,
+        ),
+      );
+
+    const provenance = JSON.parse(
+      await readFile(join(brandRoot, 'logos', 'provenance.json'), 'utf8'),
+    );
+    for (const derivative of provenance.derivatives ?? []) {
+      if (!/^[0-9a-f]{64}$/.test(derivative.sha256 ?? ''))
+        problems.push(`missing derivative sha256: ${derivative.path}`);
     }
   }
 
@@ -276,12 +362,20 @@ export async function verifyBrand(
       'site/public/fonts/OFL-Space-Grotesk.txt',
     ],
     [
-      'logos/svg/glitchpad-horizontal-white.svg',
-      'site/public/logos/glitchpad-horizontal-white.svg',
+      'logos/svg/glitchpad-horizontal-color.svg',
+      'site/public/logos/glitchpad-horizontal-color.svg',
+    ],
+    [
+      'logos/svg/glitchpad-horizontal-light.svg',
+      'site/public/logos/glitchpad-horizontal-light.svg',
     ],
     [
       'logos/svg/glitchpad-horizontal-black.svg',
       'site/public/logos/glitchpad-horizontal-black.svg',
+    ],
+    [
+      'logos/svg/glitchpad-horizontal-white.svg',
+      'site/public/logos/glitchpad-horizontal-white.svg',
     ],
     [
       'logos/png/glitchpad-social-preview-1280.png',
@@ -296,17 +390,32 @@ export async function verifyBrand(
     ['icons/web/favicon-16x16.png', 'site/public/favicon-16x16.png'],
     ['icons/web/favicon-32x32.png', 'site/public/favicon-32x32.png'],
     ['icons/web/apple-touch-icon.png', 'site/public/apple-touch-icon.png'],
-    ['icons/web/android-chrome-192x192.png', 'site/public/android-chrome-192x192.png'],
-    ['icons/web/android-chrome-512x512.png', 'site/public/android-chrome-512x512.png'],
+    [
+      'icons/web/android-chrome-192x192.png',
+      'site/public/android-chrome-192x192.png',
+    ],
+    [
+      'icons/web/android-chrome-512x512.png',
+      'site/public/android-chrome-512x512.png',
+    ],
     ['icons/web/site.webmanifest', 'site/public/site.webmanifest'],
     ['icons/web/favicon.svg', 'apps/glitchpad/public/favicon.svg'],
     ['icons/web/favicon-32x32.png', 'crates/glitchpad-host/icons/32x32.png'],
-    ['icons/web/favicon-128x128.png', 'crates/glitchpad-host/icons/128x128.png'],
-    ['icons/web/favicon-256x256.png', 'crates/glitchpad-host/icons/128x128@2x.png'],
+    [
+      'icons/web/favicon-128x128.png',
+      'crates/glitchpad-host/icons/128x128.png',
+    ],
+    [
+      'icons/web/favicon-256x256.png',
+      'crates/glitchpad-host/icons/128x128@2x.png',
+    ],
     ['icons/web/favicon-512x512.png', 'crates/glitchpad-host/icons/icon.png'],
     ['icons/windows/classic/app.ico', 'crates/glitchpad-host/icons/icon.ico'],
     ['icons/apple/macos/AppIcon.icns', 'crates/glitchpad-host/icons/icon.icns'],
-    ['icons/android/play-store/google-play-512.png', 'crates/glitchpad-host/icons/android/play-store/google-play-512.png'],
+    [
+      'icons/android/play-store/google-play-512.png',
+      'crates/glitchpad-host/icons/android/play-store/google-play-512.png',
+    ],
   ];
 
   const androidResources = [
@@ -346,7 +455,12 @@ export async function verifyBrand(
 
   if (integrations) {
     try {
-      await stat(join(projectRoot, 'crates/glitchpad-host/icons/foundation-resource.svg'));
+      await stat(
+        join(
+          projectRoot,
+          'crates/glitchpad-host/icons/foundation-resource.svg',
+        ),
+      );
       problems.push('foundation packaging icon must be removed');
     } catch {
       // Expected: release packaging consumes only approved brand assets.
@@ -382,6 +496,12 @@ if (
   resolve(process.argv[1]) === fileURLToPath(import.meta.url)
 ) {
   const problems = await verifyBrand();
+  if (process.argv.includes('--freshness') && problems.length === 0) {
+    const receipt = JSON.parse(
+      await readFile(join(repositoryRoot, 'brand', 'INTEGRATION.json'), 'utf8'),
+    );
+    problems.push(...(await verifyBrandFreshness(receipt)));
+  }
   if (problems.length) {
     console.error(problems.join('\n'));
     process.exitCode = 1;

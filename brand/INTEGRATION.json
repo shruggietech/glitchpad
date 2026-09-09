@@ -1,0 +1,33 @@
+{
+  "brandVersion": "1.1.0",
+  "canonVersion": "1.2.1",
+  "sourceRepository": "https://github.com/ShruggieTech/shruggie-brand",
+  "sourceRevision": "737cc1e88f3ddf50950a50897f68cdd131bf0167",
+  "workflowRunId": 34314125097,
+  "artifactId": 10089799642,
+  "artifactName": "verified-brand-kits",
+  "retrievedAt": "2026-09-09",
+  "sourceManifestSha256": "071deeb7e8983e8695e0f8d1f84beb11fed9749f02eab3959141309a92c47f33",
+  "integratedManifestSha256": "c11a9a324d56666e6eb361b3b1f84bbd9db61cdd514ff3d48ed4ea123c6d279d",
+  "governedFileCount": 253,
+  "recoveredArtifactFiles": [
+    "icons/.iconkit-generated.json"
+  ],
+  "publicComparisons": [
+    {
+      "path": "logos/provenance.json",
+      "url": "https://brand.shruggie.tech/glitchpad/downloads/files/logos/provenance.json",
+      "sha256": "439b20c4cc8db1fb8fe84a3ea04012bb20f1a4b5db42e3d2830465806fb5ac3d"
+    },
+    {
+      "path": "icons/manifest.json",
+      "url": "https://brand.shruggie.tech/glitchpad/downloads/files/icons/manifest.json",
+      "sha256": "90a04bfe418cf6d6f5ff35eea720f663e41d5375f03ca3bc41ab5de4ecfaa362"
+    },
+    {
+      "path": "logos/svg/glitchpad-horizontal-white.svg",
+      "url": "https://brand.shruggie.tech/glitchpad/downloads/files/logos/svg/glitchpad-horizontal-white.svg",
+      "sha256": "f23b0aba814c9988d97a1a65d84f263ec69e36d9162fda58bdbaefe21c88fc1f"
+    }
+  ]
+}

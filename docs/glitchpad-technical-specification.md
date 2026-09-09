@@ -8,6 +8,7 @@
 | Release class | Installable community release |
 | Audience | Maintainers, contributors, reviewers, release operators, and implementation agents |
 | Issued | 2026-08-30 |
+| Updated | 2026-09-09 |
 | Repository | `github.com/ShruggieTech/glitchpad` |
 | License | Apache License 2.0 (`Apache-2.0`) |
 
@@ -58,6 +59,8 @@ This document is the architecture, behavior, platform, security, development, an
 
 The root Rust workspace version becomes the canonical product-version authority when the repository-foundation slice creates application manifests. Tauri configuration, npm package metadata, Android version name, this document, changelog release heading, release tag, artifact filenames, SBOM metadata, and provenance attestations MUST mirror that value. Automated consistency checks MUST reject any mismatch.
 
+`Issued` records the date this specification was first published. It remains stable across corrective revisions. `Updated` records the effective date of the current specification text and MUST equal the date of the latest revision-history entry.
+
 Unreleased changes belong in numbered Spec Kit feature directories under `specs/`. A completed feature does not alter the latest-release architecture of record until a release documentation pass reconciles it into this document. The pass MUST review every completed slice since the prior release, update affected architecture and behavior, revise capability and platform matrices, update contributor prerequisites and security posture, assemble changelog fragments, regenerate notices, and produce a reviewed documentation-pass receipt before the release tag is created.
 
 ```mermaid
@@ -78,6 +81,7 @@ flowchart TB
 | 0.0.0 | 2026-08-30 | 0.0.0 | Established the product, architecture, platform, security, contributor, license, release, and standalone/embedded Mermaid baseline |
 | 0.1.0 | 2026-09-07 | 0.1.0 | Reconciled the stable text-family application, four-platform packages, community trust policy, and first publication gate |
 | 0.1.1 | 2026-09-08 | 0.1.1 | Reconciled the S027 content-first interface correction and the governed corrective-release transaction |
+| 0.1.1 | 2026-09-09 | 0.1.1 | Corrected public presentation, brand delivery authority, document-control semantics, and deployment requirements for the pending v0.1.2 patch |
 
 Changes to normative released behavior require a product release and a matching specification version. Typographical corrections that do not alter meaning may be applied to the current version with a dated revision-history note and reviewed pull request.
 

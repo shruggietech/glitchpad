@@ -6,13 +6,13 @@ export function baseOptions(): BaseLayoutProps {
       title: (
         <span className="brand-lockup">
           <img
-            src="/logos/glitchpad-horizontal-white.svg"
+            src="/logos/glitchpad-horizontal-color.svg"
             alt=""
             aria-hidden="true"
             className="brand-lockup-on-dark"
           />
           <img
-            src="/logos/glitchpad-horizontal-black.svg"
+            src="/logos/glitchpad-horizontal-light.svg"
             alt=""
             aria-hidden="true"
             className="brand-lockup-on-light"
@@ -22,9 +22,12 @@ export function baseOptions(): BaseLayoutProps {
       ),
     },
     links: [
-      { text: 'Documentation', url: '/docs' },
-      { text: 'Support', url: '/support' },
-      { text: 'Security', url: '/security' },
+      { text: 'Docs', url: '/docs' },
+      {
+        text: 'Download',
+        url: 'https://github.com/ShruggieTech/glitchpad/releases/tag/v0.1.1',
+        external: true,
+      },
     ],
     githubUrl: 'https://github.com/ShruggieTech/glitchpad',
   };

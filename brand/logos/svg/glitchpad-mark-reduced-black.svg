@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1000 1000" width="1000" height="1000" fill="none" data-logo-source-mode="constructed" data-logo-variant="reduced">
-  <g data-square-enclosure="true">
-    <defs><mask id="glitchpad-black-square-knockout" maskUnits="userSpaceOnUse">
+  <g data-square-enclosure="true" data-lockup-component="mark">
+    <defs><mask id="glitchpad-black-square-knockout" maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse" x="0" y="0" width="1000" height="1000">
       <rect width="1000" height="1000" fill="#000000"/>
       <rect x="62" y="62" width="876" height="876" rx="142" fill="#FFFFFF"/>
       <g transform="translate(240.8,176) scale(0.72) translate(-40,-50)">

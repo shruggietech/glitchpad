@@ -50,9 +50,11 @@ jobs:
 
       - name: Build and test public site
         run: pnpm check:site
+        env:
+          GLITCHPAD_SOURCE_REVISION: ${{ github.sha }}
 
       - name: Upload Pages artifact
-        if: github.event_name == 'workflow_dispatch' && inputs.deploy
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.deploy)
         uses: actions/upload-pages-artifact@v5
         with:
           path: site/out
@@ -60,7 +62,7 @@ jobs:
   deploy:
     name: Deploy to GitHub Pages
     needs: build
-    if: github.event_name == 'workflow_dispatch' && inputs.deploy
+    if: github.event_name != 'pull_request' && (github.event_name == 'push' || inputs.deploy)
     runs-on: ubuntu-latest
     permissions:
       pages: write
@@ -69,6 +71,15 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - name: Checkout verifier
+        uses: actions/checkout@v7
+
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v5
+
+      - name: Verify production deployment
+        run: node scripts/verify-site-deployment.mjs
+        env:
+          GLITCHPAD_EXPECTED_VERSION: 0.1.1
+          GLITCHPAD_EXPECTED_REVISION: ${{ github.sha }}

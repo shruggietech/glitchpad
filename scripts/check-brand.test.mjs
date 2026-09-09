@@ -8,14 +8,16 @@ import { fileURLToPath } from 'node:url';
 import {
   verifyBrand,
   verifyIntegratedCopy,
+  verifyBrandFreshness,
+  verifyPngHeader,
   verifyPublicCopy,
   verifyReadmeBanner,
 } from './check-brand.mjs';
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const canonicalBanner = `<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="brand/logos/svg/glitchpad-horizontal-white.svg">
-  <img src="brand/logos/svg/glitchpad-horizontal-black.svg" alt="Glitchpad" width="480">
+  <source media="(prefers-color-scheme: dark)" srcset="brand/logos/png/glitchpad-horizontal-color-1024.png">
+  <img src="brand/logos/png/glitchpad-horizontal-light-1024.png" alt="Glitchpad" width="480">
 </picture>`;
 
 function readmeWithCenteredBanner(banner, afterHeading = '') {
@@ -31,11 +33,17 @@ test('the imported canon passes deterministic repository checks', async () => {
 });
 
 test('embedded brand guidance retains reachable pinned legal terms', async () => {
-  const readme = await readFile(join(repositoryRoot, 'brand', 'README.md'), 'utf8');
+  const [readme, integrationSource] = await Promise.all([
+    readFile(join(repositoryRoot, 'brand', 'README.md'), 'utf8'),
+    readFile(join(repositoryRoot, 'brand', 'INTEGRATION.json'), 'utf8'),
+  ]);
+  const integration = JSON.parse(integrationSource);
   assert.doesNotMatch(readme, /\.\.\/\.\.\/LICENSE-BRAND\.md/);
   assert.match(
     readme,
-    /shruggie-brand\/1681fcd444ff851d5bffc2cf67e23bbcedd753cd\/LICENSE-BRAND\.md/,
+    new RegExp(
+      `shruggie-brand/${integration.sourceRevision}/LICENSE-BRAND\\.md`,
+    ),
   );
 });
 
@@ -109,7 +117,9 @@ test('README banner validation rejects a picture outside the centered introducti
 # Glitchpad
 </div>
 `);
-  assert.ok(problems.some((problem) => problem.includes('centered introduction')));
+  assert.ok(
+    problems.some((problem) => problem.includes('centered introduction')),
+  );
 });
 
 test('README banner validation rejects a picture hidden inside an HTML comment', () => {
@@ -119,7 +129,9 @@ ${canonicalBanner}
 -->`),
   );
   assert.ok(
-    problems.some((problem) => problem.includes('must not contain HTML comments')),
+    problems.some((problem) =>
+      problem.includes('must not contain HTML comments'),
+    ),
   );
 });
 
@@ -135,32 +147,40 @@ for (const openingTag of [
     );
     assert.ok(
       problems.some((problem) =>
-        problem.includes('exactly one <picture> before the # Glitchpad heading'),
+        problem.includes(
+          'exactly one <picture> before the # Glitchpad heading',
+        ),
       ),
     );
   });
 }
 
 test('README banner validation rejects reversed asset mappings', () => {
-  const problems = verifyReadmeBanner(readmeWithCenteredBanner(`
+  const problems = verifyReadmeBanner(
+    readmeWithCenteredBanner(`
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="brand/logos/svg/glitchpad-horizontal-black.svg">
-  <img src="brand/logos/svg/glitchpad-horizontal-white.svg" alt="Glitchpad" width="480">
+  <source media="(prefers-color-scheme: dark)" srcset="brand/logos/png/glitchpad-horizontal-light-1024.png">
+  <img src="brand/logos/png/glitchpad-horizontal-color-1024.png" alt="Glitchpad" width="480">
 </picture>
-`));
+`),
+  );
   assert.ok(problems.some((problem) => problem.includes('dark source srcset')));
   assert.ok(problems.some((problem) => problem.includes('light fallback src')));
 });
 
 test('README banner validation rejects duplicate governed attributes', () => {
-  const problems = verifyReadmeBanner(readmeWithCenteredBanner(`
+  const problems = verifyReadmeBanner(
+    readmeWithCenteredBanner(`
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="brand/logos/svg/glitchpad-horizontal-black.svg" srcset="brand/logos/svg/glitchpad-horizontal-white.svg">
-  <img src="brand/logos/svg/glitchpad-horizontal-white.svg" src="brand/logos/svg/glitchpad-horizontal-black.svg" alt="Glitchpad" width="480">
+  <source media="(prefers-color-scheme: dark)" srcset="brand/logos/png/glitchpad-horizontal-light-1024.png" srcset="brand/logos/png/glitchpad-horizontal-color-1024.png">
+  <img src="brand/logos/png/glitchpad-horizontal-color-1024.png" src="brand/logos/png/glitchpad-horizontal-light-1024.png" alt="Glitchpad" width="480">
 </picture>
-`));
+`),
+  );
   assert.ok(
-    problems.some((problem) => problem.includes('must not repeat the "srcset"')),
+    problems.some((problem) =>
+      problem.includes('must not repeat the "srcset"'),
+    ),
   );
   assert.ok(
     problems.some((problem) => problem.includes('must not repeat the "src"')),
@@ -170,14 +190,18 @@ test('README banner validation rejects duplicate governed attributes', () => {
 });
 
 test('README banner validation detects unquoted duplicate attributes', () => {
-  const problems = verifyReadmeBanner(readmeWithCenteredBanner(`
+  const problems = verifyReadmeBanner(
+    readmeWithCenteredBanner(`
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset=brand/logos/svg/glitchpad-horizontal-black.svg srcset="brand/logos/svg/glitchpad-horizontal-white.svg">
-  <img src=brand/logos/svg/glitchpad-horizontal-white.svg src="brand/logos/svg/glitchpad-horizontal-black.svg" alt="Glitchpad" width="480">
+  <source media="(prefers-color-scheme: dark)" srcset=brand/logos/png/glitchpad-horizontal-light-1024.png srcset="brand/logos/png/glitchpad-horizontal-color-1024.png">
+  <img src=brand/logos/png/glitchpad-horizontal-color-1024.png src="brand/logos/png/glitchpad-horizontal-light-1024.png" alt="Glitchpad" width="480">
 </picture>
-`));
+`),
+  );
   assert.ok(
-    problems.some((problem) => problem.includes('must not repeat the "srcset"')),
+    problems.some((problem) =>
+      problem.includes('must not repeat the "srcset"'),
+    ),
   );
   assert.ok(
     problems.some((problem) => problem.includes('must not repeat the "src"')),
@@ -187,14 +211,18 @@ test('README banner validation detects unquoted duplicate attributes', () => {
 });
 
 test('README banner validation detects valueless duplicate attributes', () => {
-  const problems = verifyReadmeBanner(readmeWithCenteredBanner(`
+  const problems = verifyReadmeBanner(
+    readmeWithCenteredBanner(`
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset srcset="brand/logos/svg/glitchpad-horizontal-white.svg">
-  <img src src="brand/logos/svg/glitchpad-horizontal-black.svg" alt="Glitchpad" width="480">
+  <source media="(prefers-color-scheme: dark)" srcset srcset="brand/logos/png/glitchpad-horizontal-color-1024.png">
+  <img src src="brand/logos/png/glitchpad-horizontal-light-1024.png" alt="Glitchpad" width="480">
 </picture>
-`));
+`),
+  );
   assert.ok(
-    problems.some((problem) => problem.includes('must not repeat the "srcset"')),
+    problems.some((problem) =>
+      problem.includes('must not repeat the "srcset"'),
+    ),
   );
   assert.ok(
     problems.some((problem) => problem.includes('must not repeat the "src"')),
@@ -206,15 +234,15 @@ test('README banner validation detects valueless duplicate attributes', () => {
 for (const [name, markup] of [
   [
     'missing',
-    '<picture><img src="brand/logos/svg/glitchpad-horizontal-black.svg" alt="Glitchpad" width="480"></picture>',
+    '<picture><img src="brand/logos/png/glitchpad-horizontal-light-1024.png" alt="Glitchpad" width="480"></picture>',
   ],
   [
     'duplicated',
-    '<picture><source media="(prefers-color-scheme: dark)" srcset="brand/logos/svg/glitchpad-horizontal-white.svg"><source media="(prefers-color-scheme: dark)" srcset="brand/logos/svg/glitchpad-horizontal-white.svg"><img src="brand/logos/svg/glitchpad-horizontal-black.svg" alt="Glitchpad" width="480"></picture>',
+    '<picture><source media="(prefers-color-scheme: dark)" srcset="brand/logos/png/glitchpad-horizontal-color-1024.png"><source media="(prefers-color-scheme: dark)" srcset="brand/logos/png/glitchpad-horizontal-color-1024.png"><img src="brand/logos/png/glitchpad-horizontal-light-1024.png" alt="Glitchpad" width="480"></picture>',
   ],
   [
     'detached',
-    '<source media="(prefers-color-scheme: dark)" srcset="brand/logos/svg/glitchpad-horizontal-white.svg"><picture><img src="brand/logos/svg/glitchpad-horizontal-black.svg" alt="Glitchpad" width="480"></picture>',
+    '<source media="(prefers-color-scheme: dark)" srcset="brand/logos/png/glitchpad-horizontal-color-1024.png"><picture><img src="brand/logos/png/glitchpad-horizontal-light-1024.png" alt="Glitchpad" width="480"></picture>',
   ],
 ]) {
   test(`README banner validation rejects ${name} direct children`, () => {
@@ -226,15 +254,45 @@ for (const [name, markup] of [
 }
 
 test('README banner validation rejects missing fallback semantics', () => {
-  const problems = verifyReadmeBanner(readmeWithCenteredBanner(`
+  const problems = verifyReadmeBanner(
+    readmeWithCenteredBanner(`
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="brand/logos/svg/glitchpad-horizontal-white.svg">
-  <img src="brand/logos/svg/glitchpad-horizontal-black.svg" alt="" width="480">
+  <source media="(prefers-color-scheme: dark)" srcset="brand/logos/png/glitchpad-horizontal-color-1024.png">
+  <img src="brand/logos/png/glitchpad-horizontal-light-1024.png" alt="" width="480">
 </picture>
-`));
+`),
+  );
   assert.ok(
     problems.some((problem) => problem.includes('fallback alternative text')),
   );
+});
+
+test('README raster geometry rejects clipped or invalid assets', () => {
+  const png = Buffer.alloc(24);
+  Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]).copy(png);
+  png.writeUInt32BE(1024, 16);
+  png.writeUInt32BE(259, 20);
+  assert.deepEqual(verifyPngHeader(png, 'lockup.png'), []);
+  png.writeUInt32BE(40, 16);
+  assert.match(verifyPngHeader(png, 'lockup.png')[0], /unexpected 40x259/);
+});
+
+test('online freshness rejects same-version derivative drift', async () => {
+  const payload = Buffer.from('current');
+  const receipt = {
+    publicComparisons: [
+      {
+        path: 'logos/provenance.json',
+        url: 'https://brand.example/provenance.json',
+        sha256: '0'.repeat(64),
+      },
+    ],
+  };
+  const problems = await verifyBrandFreshness(
+    receipt,
+    async () => new Response(payload, { status: 200 }),
+  );
+  assert.deepEqual(problems, ['upstream brand drift: logos/provenance.json']);
 });
 
 test('public copy validation accepts equality and rejects drift or absence', async (t) => {
@@ -246,7 +304,10 @@ test('public copy validation accepts equality and rejects drift or absence', asy
   await writeFile(canonical, '<svg>canonical</svg>\n');
   await writeFile(integrated, '<svg>canonical</svg>\n');
   assert.equal(verifyPublicCopy, verifyIntegratedCopy);
-  assert.deepEqual(await verifyIntegratedCopy(canonical, integrated, label), []);
+  assert.deepEqual(
+    await verifyIntegratedCopy(canonical, integrated, label),
+    [],
+  );
 
   await writeFile(integrated, '<svg>drifted</svg>\n');
   assert.deepEqual(await verifyIntegratedCopy(canonical, integrated, label), [

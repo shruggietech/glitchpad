@@ -24,6 +24,7 @@
 16. Hosted PowerShell 7 did not project a static LegacyIAccessiblePattern .NET type. The fallback now resolves the registered UI Automation pattern by standard ID 10018 and invokes the returned pattern object dynamically, avoiding runtime type binding while preserving the capability check.
 17. Both hosted WebView runners exposed the typed `Menu` button without InvokePattern or LegacyIAccessiblePattern. The final activation path now focuses the verified Button control and sends Enter, matching platform keyboard semantics without depending on a Chromium-specific UI Automation action provider.
 18. Keyboard activation successfully opened the hosted menu. Closing it by activating the trigger again raced the menu's initial-focus effect, so the geometry check now dismisses the disclosed menu through its supported Escape contract before verifying that the trigger returns to its original bounds. Direct document-close buttons continue to exercise the same focused-button activation path independently.
+19. The following hosted run showed that synthetic keyboard delivery itself was nondeterministic and did not open the menu. The fallback now obtains the verified on-screen Button's UI Automation clickable point, foregrounds the isolated candidate, dispatches a bounded native pointer click, and immediately restores the runner cursor. Menu toggles and document-close controls use the same provider-independent activation path.
 
 ## Aggregate execution note
 

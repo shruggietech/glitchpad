@@ -177,35 +177,29 @@ function Invoke-NamedButton([Diagnostics.Process] $Process, [string] $Name) {
         ([System.Windows.Automation.InvokePattern]$patternObject).Invoke()
         return
     }
-    $patternObject = $null
-    $legacyAccessiblePattern = [System.Windows.Automation.AutomationPattern]::LookupById(10018)
-    if ($legacyAccessiblePattern -and $button.TryGetCurrentPattern($legacyAccessiblePattern, [ref]$patternObject)) {
-        $patternObject.DoDefaultAction()
-        return
+    if ($button.Current.IsOffscreen) { throw "Portable UI button '$Name' is offscreen and cannot be activated." }
+    $point = $button.GetClickablePoint()
+    $previousCursor = [System.Windows.Forms.Cursor]::Position
+    try {
+        [GlitchpadNativeInput]::SetForegroundWindow($Process.MainWindowHandle) | Out-Null
+        [GlitchpadNativeInput]::SetCursorPos([Math]::Round($point.X), [Math]::Round($point.Y)) | Out-Null
+        Start-Sleep -Milliseconds 50
+        [GlitchpadNativeInput]::mouse_event(0x0002, 0, 0, 0, [UIntPtr]::Zero)
+        [GlitchpadNativeInput]::mouse_event(0x0004, 0, 0, 0, [UIntPtr]::Zero)
     }
-    $button.SetFocus()
-    Start-Sleep -Milliseconds 50
-    [System.Windows.Forms.SendKeys]::SendWait('{ENTER}')
+    finally {
+        [GlitchpadNativeInput]::SetCursorPos($previousCursor.X, $previousCursor.Y) | Out-Null
+    }
 }
 
 function Close-Document([Diagnostics.Process] $Process, [string] $Path) {
     Invoke-NamedButton $Process ("Close {0}" -f [IO.Path]::GetFileName($Path))
 }
 
-function Dismiss-Menu([Diagnostics.Process] $Process) {
-    $menu = Wait-NamedElement $Process 'Glitchpad menu'
-    $condition = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::MenuItem)
-    $menuItem = $menu.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $condition)
-    if (-not $menuItem) { throw 'Application menu did not expose a focusable menu item.' }
-    $menuItem.SetFocus()
-    Start-Sleep -Milliseconds 50
-    [System.Windows.Forms.SendKeys]::SendWait('{ESC}')
-}
-
 function Assert-MenuGeometry([Diagnostics.Process] $Process) {
     $trigger = Wait-NamedButton $Process 'Menu'
     $before = $trigger.Current.BoundingRectangle
-    Dismiss-Menu $Process
+    Invoke-NamedButton $Process 'Menu'
     $menu = Wait-NamedElement $Process 'Glitchpad menu'
     $during = (Wait-NamedButton $Process 'Menu').Current.BoundingRectangle
     foreach ($field in @('X', 'Y', 'Width', 'Height')) {
@@ -233,6 +227,22 @@ function Assert-MenuGeometry([Diagnostics.Process] $Process) {
 $associationBefore = Get-AssociationSnapshot | ConvertTo-Json -Compress
 Add-Type -AssemblyName UIAutomationClient
 Add-Type -AssemblyName System.Windows.Forms
+Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+
+public static class GlitchpadNativeInput
+{
+    [DllImport("user32.dll")]
+    public static extern bool SetForegroundWindow(IntPtr window);
+
+    [DllImport("user32.dll")]
+    public static extern bool SetCursorPos(int x, int y);
+
+    [DllImport("user32.dll")]
+    public static extern void mouse_event(uint flags, uint x, uint y, uint data, UIntPtr extraInfo);
+}
+'@
 $isolatedState = Join-Path ([IO.Path]::GetTempPath()) ("glitchpad-s027-{0}" -f [Guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $isolatedState -Force | Out-Null
 $isolatedEnvironment = @{ APPDATA = $isolatedState; LOCALAPPDATA = $isolatedState }

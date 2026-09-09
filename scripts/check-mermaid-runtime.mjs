@@ -1,4 +1,5 @@
 import { createServer } from 'node:http';
+import { spawn } from 'node:child_process';
 import { readFile, stat } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -7,6 +8,22 @@ import puppeteer from 'puppeteer';
 
 const root = new URL('..', import.meta.url).pathname.replace(/^\/(?:[A-Za-z]:)/u, (value) => value.slice(1));
 const distribution = join(root, 'apps', 'glitchpad', 'dist');
+
+const buildPerformanceApplication = () => new Promise((resolvePromise, reject) => {
+  const windowsPnpm = process.platform === 'win32';
+  const executable = windowsPnpm ? (process.env.ComSpec ?? 'cmd.exe') : 'pnpm';
+  const arguments_ = windowsPnpm
+    ? ['/d', '/s', '/c', 'pnpm --filter @shruggietech/glitchpad build']
+    : ['--filter', '@shruggietech/glitchpad', 'build'];
+  const child = spawn(executable, arguments_, {
+    cwd: root,
+    env: { ...process.env, VITE_GLITCHPAD_PERFORMANCE: '1' },
+    stdio: 'inherit',
+    windowsHide: true,
+  });
+  child.once('error', reject);
+  child.once('exit', (code) => code === 0 ? resolvePromise() : reject(new Error('performance_fixture_build_failed')));
+});
 
 export const isAllowedRuntimeRequest = (target, origin) => {
   const url = new URL(target, origin);
@@ -75,8 +92,8 @@ export const verifyMermaidRuntime = async () => {
       window.open = () => { throw new Error('navigation_blocked_by_test'); };
     });
     await page.goto(origin, { waitUntil: 'networkidle0' });
-    await page.waitForSelector('[role="tab"][aria-label*="diagram.mmd"]');
-    await page.$eval('[role="tab"][aria-label*="diagram.mmd"]', (tab) => tab.click());
+    await page.waitForSelector('[role="tab"][aria-label*="performance.mmd"]');
+    await page.$eval('[role="tab"][aria-label*="performance.mmd"]', (tab) => tab.click());
     await page.waitForSelector('img.diagram-image', { timeout: 10_000 });
     const source = await page.$eval('img.diagram-image', (image) => image.getAttribute('src'));
     if (!source?.startsWith('blob:')) throw new Error('runtime_diagram_is_not_inert_blob');
@@ -90,7 +107,7 @@ export const verifyMermaidRuntime = async () => {
 };
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
-  verifyMermaidRuntime().catch((error) => {
+  buildPerformanceApplication().then(verifyMermaidRuntime).catch((error) => {
     process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
     process.exitCode = 1;
   });

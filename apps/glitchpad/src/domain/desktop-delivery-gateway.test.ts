@@ -98,6 +98,35 @@ test('materializes a bounded path-free native summary', async () => {
   expect(call).toHaveBeenCalledWith('read_source_range', expect.objectContaining({ operationBudget: bytes.length }));
 });
 
+test('materializes exact TXT content without injecting shell fixtures', async () => {
+  const textBytes = new TextEncoder().encode('S027 TXT CONTENT 7E5A\nsecond line\n');
+  const textSource = {
+    ...source,
+    descriptor: {
+      ...source.descriptor,
+      display_name: 's027-visible.txt',
+      claimed_media_type: 'text/plain',
+      byte_length: textBytes.length,
+    },
+  };
+  const call = vi.fn((_command: string, args?: Record<string, unknown>) => {
+    const offset = args?.offset as number;
+    const length = args?.length as number;
+    return Promise.resolve({
+      source_id: textSource.source_id,
+      offset,
+      bytes: [...textBytes.slice(offset, offset + length)],
+      end_of_source: offset + length >= textBytes.length,
+    });
+  });
+  const gateway = createDesktopDeliveryGateway(call, () => Promise.resolve(() => undefined));
+  const session = await gateway.materialize({ ...result, source: textSource });
+  expect(session?.content).toBe('S027 TXT CONTENT 7E5A\nsecond line\n');
+  expect(session?.renderer.id).toBe('text');
+  expect(session?.source.display_name).toBe('s027-visible.txt');
+  expect(session?.content).not.toContain('Glitchpad document foundation');
+});
+
 test('detects a large desktop source BOM from a bounded prefix', async () => {
   const largeSource = {
     ...source,

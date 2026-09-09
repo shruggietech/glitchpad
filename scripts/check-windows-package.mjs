@@ -52,6 +52,30 @@ function same(left, right) {
   return JSON.stringify([...left].sort()) === JSON.stringify([...right].sort());
 }
 
+export function validatePortableSmokeContract(lifecycleSource, workflowSource) {
+  const lifecycleRequirements = [
+    '[string] $TextFixture',
+    '[string] $MarkdownFixture',
+    "'Open file…'",
+    "'S027 TXT CONTENT 7E5A'",
+    "'S027 Markdown Content 4C9B'",
+    'Get-TabCount $process) -ne 0',
+    'Get-TabCount $process) -ne 2',
+    'Close {0}',
+    "schema_version = 2",
+    "fixture_absence = 'pass'",
+    "conditional_tabs = 'pass'",
+    "direct_close = 'pass'",
+  ];
+  for (const requirement of lifecycleRequirements)
+    if (!lifecycleSource.includes(requirement))
+      fail(`portable smoke lifecycle omits ${requirement}`);
+  for (const requirement of ['-TextFixture', '-MarkdownFixture', 's027-visible.txt', 's027-visible.md'])
+    if (!workflowSource.includes(requirement))
+      fail(`Windows workflow omits ${requirement}`);
+  return true;
+}
+
 export function classifyPackageSize(bytes, budget) {
   if (!Number.isSafeInteger(bytes) || bytes < 1)
     fail('artifact byte length must be positive');
@@ -84,6 +108,8 @@ export async function checkWindowsConfiguration(
     languageSource,
     deliverySource,
     installerHooks,
+    portableLifecycle,
+    windowsWorkflow,
   ] = await Promise.all([
     json(join(repositoryRoot, 'packaging', 'desktop', 'capabilities.json')),
     json(join(packagingRoot, 'package-contract.json')),
@@ -119,7 +145,11 @@ export async function checkWindowsConfiguration(
       ),
       'utf8',
     ),
+    readFile(join(repositoryRoot, 'scripts', 'windows', 'test-portable-lifecycle.ps1'), 'utf8'),
+    readFile(join(repositoryRoot, '.github', 'workflows', 'windows-package.yml'), 'utf8'),
   ]);
+
+  validatePortableSmokeContract(portableLifecycle, windowsWorkflow);
 
   if (capabilities.schema_version !== 1 || capabilities.release !== '0.1.0')
     fail('capability inventory version is not v0.1.0 schema 1');

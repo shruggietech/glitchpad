@@ -357,7 +357,9 @@ export const TextEditorSurface = forwardRef<
   const profile = session.text_document?.profile;
   return (
     <div className="text-editor-shell">
-      <div className="editor-status" aria-label="Text document status">
+      <details className="editor-details">
+        <summary>Document details</summary>
+        <div className="editor-status" aria-label="Text document status">
         <span>
           {session.text_document?.mode === 'editable' &&
           session.renderer.capabilities.edit &&
@@ -434,7 +436,8 @@ export const TextEditorSurface = forwardRef<
         <span>
           {session.text_document?.source_bytes.toLocaleString()} bytes
         </span>
-      </div>
+        </div>
+      </details>
       <div
         className="text-editor"
         data-performance-ready={performanceReady ? 'true' : 'pending'}

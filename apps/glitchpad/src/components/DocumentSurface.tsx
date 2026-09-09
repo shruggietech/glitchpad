@@ -10,6 +10,9 @@ import type { MetadataContribution } from '../domain/metadata';
 
 interface DocumentSurfaceProps {
   session: ShellSession | null;
+  canOpen?: boolean;
+  onOpen?: () => void;
+  labelledByTab?: boolean;
   onDocumentChange: (
     id: string,
     expectedRevision: number,
@@ -26,7 +29,7 @@ interface DocumentSurfaceProps {
 }
 
 export const DocumentSurface = forwardRef<TextEditorHandle, DocumentSurfaceProps>(function DocumentSurface(
-  { session, onDocumentChange, onLanguageChange, onMarkdownChange, onMermaidChange, externalLinkGateway, localAssetGateway, onOpenMetadata, onMetadataContribution },
+  { session, canOpen = false, onOpen, labelledByTab = false, onDocumentChange, onLanguageChange, onMarkdownChange, onMermaidChange, externalLinkGateway, localAssetGateway, onOpenMetadata, onMetadataContribution },
   ref,
 ) {
   if (!session) {
@@ -35,7 +38,10 @@ export const DocumentSurface = forwardRef<TextEditorHandle, DocumentSurfaceProps
         className="document-surface empty-surface"
         aria-label="Document surface"
       >
-        <p>No document is open</p>
+        <div className="empty-state">
+          <p>No document is open</p>
+          {canOpen && <button type="button" onClick={onOpen}>Open file…</button>}
+        </div>
       </section>
     );
   }
@@ -46,18 +52,11 @@ export const DocumentSurface = forwardRef<TextEditorHandle, DocumentSurfaceProps
       data-performance-renderer={session.renderer.id}
       data-performance-revision={session.revision}
       id={`panel-${session.id}`}
-      role="tabpanel"
-      aria-labelledby={`tab-${session.id}`}
+      role={labelledByTab ? 'tabpanel' : 'region'}
+      aria-labelledby={labelledByTab ? `tab-${session.id}` : undefined}
+      aria-label={labelledByTab ? undefined : session.source.display_name}
       tabIndex={0}
     >
-      <header className="document-heading">
-        <span>
-          {session.renderer.label}
-          {session.text_document &&
-            ` · ${session.text_document.language.language.replaceAll('_', ' ')} · ${session.text_document.profile.encoding.replaceAll('_', ' ')} · ${session.text_document.profile.newline_pattern}`}
-        </span>
-        {session.dirty && <span className="dirty-label">Unsaved changes</span>}
-      </header>
       {session.text_document ? (
         session.text_document.mode === 'refused' ? (
           <p className="document-limit" role="alert">This text source exceeds the 256 MiB viewing limit. Use a streaming log viewer or command-line pager for this file.</p>

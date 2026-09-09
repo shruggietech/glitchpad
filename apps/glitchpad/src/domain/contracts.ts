@@ -312,6 +312,8 @@ export interface MarkdownDocumentState {
   eligibility: MarkdownEligibility;
   render_revision: number | null;
   render_status: MarkdownProjectionStatus;
+  printable: boolean;
+  outline_count: number;
   source_selection: { from: number; to: number } | null;
 }
 

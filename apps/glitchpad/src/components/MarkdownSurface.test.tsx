@@ -3,7 +3,14 @@ import { EditorView } from '@codemirror/view';
 import axe from 'axe-core';
 import { describe, expect, it, vi } from 'vitest';
 
-import { App, initialSessions } from '../App';
+import { App } from '../App';
+import { initialSessions } from '../test/fixtures';
+
+const invokeMenu = (name: string | RegExp) => {
+  fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
+  const matcher = typeof name === 'string' ? new RegExp(`^${name}`, 'u') : name;
+  fireEvent.click(within(screen.getByRole('menu')).getByRole('menuitem', { name: matcher }));
+};
 
 vi.mock('../domain/mermaid-adapter', async () => {
   const { DeterministicMermaidRendererClient } = await import('../test/mermaid-renderer-double');
@@ -27,6 +34,8 @@ const markdownSession = (content: string) => ({
     eligibility: 'full' as const,
     render_revision: null,
     render_status: 'idle' as const,
+    printable: false,
+    outline_count: 0,
     source_selection: null,
   },
 });
@@ -35,7 +44,7 @@ describe('Markdown surface', () => {
   it('publishes renderer measurements to the shared inspector', async () => {
     render(<App sessions={[markdownSession('# Metadata heading')]} />);
     await screen.findByRole('heading', { name: 'Metadata heading' });
-    fireEvent.click(screen.getAllByRole('button', { name: 'File information' }).at(-1)!);
+    invokeMenu('File information');
     const inspector = screen.getByRole('complementary', { name: 'File information' });
     expect(inspector).toHaveTextContent('Sanitizer version2');
     expect(inspector).toHaveTextContent('Headings1');
@@ -49,7 +58,7 @@ describe('Markdown surface', () => {
     expect(screen.getByText('Between')).toBeInTheDocument();
     expect(screen.getByText('After')).toBeInTheDocument();
     expect(await screen.findByText('The Mermaid source is malformed. Source remains available.', {}, { timeout: 10_000 })).toBeInTheDocument();
-    fireEvent.click(screen.getAllByRole('button', { name: 'Search' }).at(-1)!);
+    invokeMenu('Search');
     fireEvent.change(screen.getByRole('textbox', { name: 'Find rendered text' }), { target: { value: 'AlphaNode' } });
     expect(screen.getByText('1 of 1')).toBeInTheDocument();
     const sourceButtons = screen.getAllByRole('button', { name: 'View source' });
@@ -64,13 +73,13 @@ describe('Markdown surface', () => {
     expect(screen.getByText('<script>alert(1)</script>')).toBeInTheDocument();
     expect(document.querySelector('script')).toBeNull();
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'Outline' }).at(-1)!);
+    invokeMenu('Outline');
     expect(within(screen.getByRole('navigation', { name: 'Document outline' })).getByRole('button', { name: 'Heading' })).toBeInTheDocument();
-    fireEvent.click(screen.getAllByRole('button', { name: 'Search' }).at(-1)!);
+    invokeMenu('Search');
     fireEvent.change(screen.getByRole('textbox', { name: 'Find rendered text' }), { target: { value: 'phrase' } });
     expect(screen.getByText('1 of 1')).toBeInTheDocument();
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'Edit' }).at(-1)!);
+    invokeMenu('Edit source');
     const textbox = screen.getByRole('textbox', { name: 'test.md text editor' });
     expect(EditorView.findFromDOM(textbox)?.state.doc.toString()).toBe(content);
   });
@@ -116,11 +125,11 @@ describe('Markdown surface', () => {
     const resolve = vi.fn(() => Promise.resolve('https://asset.localhost/image'));
     render(<App sessions={[markdownSession('![local](./image.png)')]} localAssetGateway={{ resolve }} />);
     expect(await screen.findByRole('img', { name: 'local' })).toBeInTheDocument();
-    fireEvent.click(screen.getAllByRole('button', { name: 'Edit' }).at(-1)!);
+    invokeMenu('Edit source');
     const textbox = screen.getByRole('textbox', { name: 'test.md text editor' });
     const view = EditorView.findFromDOM(textbox)!;
     act(() => view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: '![remote](https://example.com/image.png)' } }));
-    fireEvent.click(screen.getAllByRole('button', { name: 'Preview' }).at(-1)!);
+    invokeMenu('Preview');
     await waitFor(() => expect(screen.getByRole('note')).toHaveTextContent('Image unavailable: remote'));
     expect(screen.queryByRole('img')).not.toBeInTheDocument();
   });
@@ -137,10 +146,10 @@ describe('Markdown surface', () => {
   it('selects the active rendered match when entering source mode', async () => {
     render(<App sessions={[markdownSession('# Heading\n\nFind the needle here.')]} />);
     await screen.findByRole('heading', { name: 'Heading' });
-    fireEvent.click(screen.getAllByRole('button', { name: 'Search' }).at(-1)!);
+    invokeMenu('Search');
     fireEvent.change(screen.getByRole('textbox', { name: 'Find rendered text' }), { target: { value: 'needle' } });
     await screen.findByText('1 of 1');
-    fireEvent.click(screen.getAllByRole('button', { name: 'Edit' }).at(-1)!);
+    invokeMenu('Edit source');
     const textbox = screen.getByRole('textbox', { name: 'test.md text editor' });
     const view = EditorView.findFromDOM(textbox)!;
     await waitFor(() => {
@@ -178,11 +187,11 @@ describe('Markdown surface', () => {
     const session = { ...markdownSession('# Read only'), renderer: { ...markdownSession('').renderer, capabilities: { ...markdownSession('').renderer.capabilities, edit: false } }, source: { ...markdownSession('').source, capabilities: { ...markdownSession('').source.capabilities, write: false } } };
     render(<App sessions={[session]} />);
     await screen.findByRole('heading', { name: 'Read only' });
-    fireEvent.click(screen.getByRole('button', { name: 'Print' }));
+    invokeMenu(/Print/);
     expect(print).toHaveBeenCalledOnce();
-    fireEvent.click(screen.getByRole('button', { name: 'View source' }));
+    invokeMenu('View source');
     expect(screen.getByRole('textbox', { name: 'test.md text editor' })).toHaveAttribute('aria-readonly', 'true');
-    fireEvent.click(screen.getByRole('button', { name: 'Print' }));
+    invokeMenu(/Print/);
     expect(print).toHaveBeenCalledTimes(2);
     expect(document.querySelector('.markdown-print-document')).toHaveTextContent('Read only');
     print.mockRestore();

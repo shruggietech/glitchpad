@@ -3,7 +3,8 @@ import './runtime-polyfills';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
-import { App, createPerformanceSessions } from './App';
+import { App } from './App';
+import { createPerformanceSessions } from './performance-sessions';
 import './styles.css';
 
 const root = document.getElementById('root');
@@ -14,6 +15,6 @@ if (root === null) {
 
 createRoot(root).render(
   <StrictMode>
-    <App sessions={import.meta.env.VITE_GLITCHPAD_PERFORMANCE === '1' ? createPerformanceSessions() : undefined} />
+    <App sessions={import.meta.env.VITE_GLITCHPAD_PERFORMANCE === '1' ? createPerformanceSessions() : []} />
   </StrictMode>,
 );

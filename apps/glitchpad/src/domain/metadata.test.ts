@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { initialSessions } from '../App';
+import { initialSessions } from '../test/fixtures';
 import {
   METADATA_CATALOG,
   bulkCopyText,

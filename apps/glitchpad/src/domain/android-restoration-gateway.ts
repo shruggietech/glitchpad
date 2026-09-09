@@ -159,6 +159,8 @@ const restoredSession = async (
           eligibility,
           render_revision: null,
           render_status: eligibility === 'full' ? 'idle' : 'limited',
+          printable: false,
+          outline_count: 0,
           source_selection: null,
         }
       : null,

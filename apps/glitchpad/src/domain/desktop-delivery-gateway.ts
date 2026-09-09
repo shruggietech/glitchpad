@@ -224,7 +224,7 @@ export const createDesktopDeliveryGateway = (
       source_id: source.source_id,
       text_document: textDocument,
       markdown_document: renderer === 'markdown'
-        ? { mode: markdown === 'full' ? 'rendered' : 'source', eligibility: markdown, render_revision: null, render_status: markdown === 'full' ? 'idle' : 'limited', source_selection: null }
+        ? { mode: markdown === 'full' ? 'rendered' : 'source', eligibility: markdown, render_revision: null, render_status: markdown === 'full' ? 'idle' : 'limited', printable: false, outline_count: 0, source_selection: null }
         : null,
       mermaid_document: renderer === 'mermaid'
         ? { mode: text.trim() ? 'rendered' : 'source', render_revision: null, render_status: 'idle', preview_stale: false, viewport: initialMermaidViewport() }

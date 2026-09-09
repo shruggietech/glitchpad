@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { markdownEligibility } from './markdown-contract';
 import { commandSetFor } from './commands';
-import { initialSessions } from '../App';
+import { initialSessions } from '../test/fixtures';
 
 describe('Markdown renderer conformance', () => {
   it.each([
@@ -17,10 +17,44 @@ describe('Markdown renderer conformance', () => {
   });
 
   it('retains shared viewer commands and gates editing by source authority', () => {
-    const readOnly = commandSetFor(initialSessions[0]).map(({ id }) => id);
+    const renderedWithOutline = {
+      ...initialSessions[0],
+      markdown_document: {
+        ...initialSessions[0].markdown_document!,
+        render_revision: initialSessions[0].revision,
+        render_status: 'ready' as const,
+        printable: true,
+        outline_count: 1,
+      },
+    };
+    const readOnly = commandSetFor(renderedWithOutline).map(({ id }) => id);
     const writable = commandSetFor(initialSessions[3]).map(({ id }) => id);
     expect(readOnly).toEqual(expect.arrayContaining(['copy', 'search', 'find_next', 'find_previous']));
-    expect(readOnly).not.toContain('edit');
+    expect(readOnly).toContain('edit');
+    expect(readOnly).toContain('outline');
+    expect(readOnly).toContain('print');
     expect(writable).toEqual(expect.arrayContaining(['edit', 'undo', 'redo', 'save']));
+
+    const sourceMode = {
+      ...initialSessions[3],
+      markdown_document: {
+        ...initialSessions[3].markdown_document!,
+        mode: 'source' as const,
+      },
+    };
+    expect(commandSetFor(sourceMode).map(({ id }) => id)).not.toContain('outline');
+
+    const renderedWithoutOutline = {
+      ...renderedWithOutline,
+      markdown_document: { ...renderedWithOutline.markdown_document, outline_count: 0 },
+    };
+    expect(commandSetFor(renderedWithoutOutline).map(({ id }) => id)).not.toContain('outline');
+    expect(commandSetFor(renderedWithoutOutline).map(({ id }) => id)).toContain('print');
+
+    const unavailableTree = {
+      ...renderedWithOutline,
+      markdown_document: { ...renderedWithOutline.markdown_document, printable: false, outline_count: 0 },
+    };
+    expect(commandSetFor(unavailableTree).map(({ id }) => id)).not.toContain('print');
   });
 });

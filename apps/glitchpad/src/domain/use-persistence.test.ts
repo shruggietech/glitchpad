@@ -1,6 +1,6 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 
-import { initialSessions } from '../App';
+import { initialSessions } from '../test/fixtures';
 import { defaultPreferences, type SessionState } from './persistence';
 import type { PersistenceGateway } from './persistence-gateway';
 import { usePersistence } from './use-persistence';

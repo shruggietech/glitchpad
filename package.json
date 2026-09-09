@@ -14,7 +14,7 @@
     "check": "cargo xtask check",
     "check:brand": "node --test scripts/check-brand.test.mjs && node scripts/check-brand.mjs",
     "check:validation": "node --test scripts/check-validation.test.mjs",
-    "check:mermaid-runtime": "pnpm --filter @shruggietech/glitchpad build && node --test scripts/check-mermaid-runtime.test.mjs && node scripts/check-mermaid-runtime.mjs",
+    "check:mermaid-runtime": "node --test scripts/check-mermaid-runtime.test.mjs && node scripts/check-mermaid-runtime.mjs",
     "check:metadata": "node --test scripts/check-metadata-fixture.test.mjs && node scripts/check-metadata-fixture.mjs",
     "check:persistence": "node --test scripts/check-persistence-fixture.test.mjs && node scripts/check-persistence-fixture.mjs",
     "check:performance": "node --test scripts/check-performance.test.mjs scripts/run-performance.test.mjs && node scripts/check-performance.mjs",

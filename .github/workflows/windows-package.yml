@@ -69,8 +69,10 @@ jobs:
         shell: pwsh
         run: |
           $fixture = 'fixtures/documents/README.md'
+          [IO.File]::WriteAllText('artifacts/windows/s027-visible.txt', "S027 TXT CONTENT 7E5A`n", [Text.UTF8Encoding]::new($false))
+          [IO.File]::WriteAllText('artifacts/windows/s027-visible.md', "# S027 Markdown Content 4C9B`n", [Text.UTF8Encoding]::new($false))
           ./scripts/windows/test-installer-lifecycle.ps1 -Installer artifacts/windows/glitchpad-0.1.0-windows-x86_64-setup.exe -Fixture $fixture -Receipt artifacts/windows/installer-lifecycle-receipt.json
-          ./scripts/windows/test-portable-lifecycle.ps1 -PortableRoot artifacts/windows/portable -Fixture $fixture -Receipt artifacts/windows/portable-lifecycle-receipt.json
+          ./scripts/windows/test-portable-lifecycle.ps1 -PortableRoot artifacts/windows/portable -TextFixture artifacts/windows/s027-visible.txt -MarkdownFixture artifacts/windows/s027-visible.md -Receipt artifacts/windows/portable-lifecycle-receipt.json
 
       - name: Validate final bytes and size policy
         run: |

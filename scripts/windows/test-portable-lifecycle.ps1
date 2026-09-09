@@ -192,10 +192,20 @@ function Close-Document([Diagnostics.Process] $Process, [string] $Path) {
     Invoke-NamedButton $Process ("Close {0}" -f [IO.Path]::GetFileName($Path))
 }
 
+function Dismiss-Menu([Diagnostics.Process] $Process) {
+    $menu = Wait-NamedElement $Process 'Glitchpad menu'
+    $condition = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::MenuItem)
+    $menuItem = $menu.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $condition)
+    if (-not $menuItem) { throw 'Application menu did not expose a focusable menu item.' }
+    $menuItem.SetFocus()
+    Start-Sleep -Milliseconds 50
+    [System.Windows.Forms.SendKeys]::SendWait('{ESC}')
+}
+
 function Assert-MenuGeometry([Diagnostics.Process] $Process) {
     $trigger = Wait-NamedButton $Process 'Menu'
     $before = $trigger.Current.BoundingRectangle
-    Invoke-NamedButton $Process 'Menu'
+    Dismiss-Menu $Process
     $menu = Wait-NamedElement $Process 'Glitchpad menu'
     $during = (Wait-NamedButton $Process 'Menu').Current.BoundingRectangle
     foreach ($field in @('X', 'Y', 'Width', 'Height')) {

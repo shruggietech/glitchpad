@@ -23,6 +23,7 @@
 15. Typed lookup identified `Menu` as the control lacking InvokePattern on both hosted WebView runners. Button activation now prefers InvokePattern, falls back to the standard LegacyIAccessible default action exposed by WebView, and fails with the accessible control name if neither pattern is supported.
 16. Hosted PowerShell 7 did not project a static LegacyIAccessiblePattern .NET type. The fallback now resolves the registered UI Automation pattern by standard ID 10018 and invokes the returned pattern object dynamically, avoiding runtime type binding while preserving the capability check.
 17. Both hosted WebView runners exposed the typed `Menu` button without InvokePattern or LegacyIAccessiblePattern. The final activation path now focuses the verified Button control and sends Enter, matching platform keyboard semantics without depending on a Chromium-specific UI Automation action provider.
+18. Keyboard activation successfully opened the hosted menu. Closing it by activating the trigger again raced the menu's initial-focus effect, so the geometry check now dismisses the disclosed menu through its supported Escape contract before verifying that the trigger returns to its original bounds. Direct document-close buttons continue to exercise the same focused-button activation path independently.
 
 ## Aggregate execution note
 

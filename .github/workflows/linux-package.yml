@@ -6,7 +6,7 @@ on:
     branches:
       - '**'
     tags:
-      - 'v0.1.1'
+      - 'v0.1.2'
   workflow_dispatch:
 
 concurrency:
@@ -105,7 +105,7 @@ jobs:
         if: ${{ !startsWith(github.ref, 'refs/tags/') }}
         uses: actions/upload-artifact@v7
         with:
-          name: ${{ startsWith(github.ref, 'refs/tags/') && 'glitchpad-0.1.1-linux-x86_64-community-release' || 'glitchpad-0.1.1-linux-x86_64-non-official-candidate' }}
+          name: ${{ startsWith(github.ref, 'refs/tags/') && 'glitchpad-0.1.2-linux-x86_64-community-release' || 'glitchpad-0.1.2-linux-x86_64-non-official-candidate' }}
           path: artifacts/linux/**
           if-no-files-found: error
           retention-days: 14
@@ -120,8 +120,8 @@ jobs:
         uses: actions/attest-build-provenance@v4
         with:
           subject-path: |
-            artifacts/linux/glitchpad-0.1.1-linux-x86_64.AppImage
-            artifacts/linux/glitchpad-0.1.1-linux-x86_64.deb
+            artifacts/linux/glitchpad-0.1.2-linux-x86_64.AppImage
+            artifacts/linux/glitchpad-0.1.2-linux-x86_64.deb
 
       - name: Preserve repository attestation evidence
         if: startsWith(github.ref, 'refs/tags/')
@@ -131,7 +131,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         uses: actions/upload-artifact@v7
         with:
-          name: glitchpad-0.1.1-linux-x86_64-community-release
+          name: glitchpad-0.1.2-linux-x86_64-community-release
           path: artifacts/linux/**
           if-no-files-found: error
           retention-days: 14
@@ -148,19 +148,19 @@ jobs:
           - release: '22.04'
             container_target: linux-package
             package_form: appimage
-            artifact_name: glitchpad-0.1.1-linux-x86_64.AppImage
+            artifact_name: glitchpad-0.1.2-linux-x86_64.AppImage
           - release: '22.04'
             container_target: linux-package
             package_form: deb
-            artifact_name: glitchpad-0.1.1-linux-x86_64.deb
+            artifact_name: glitchpad-0.1.2-linux-x86_64.deb
           - release: '24.04'
             container_target: linux-lifecycle-24
             package_form: appimage
-            artifact_name: glitchpad-0.1.1-linux-x86_64.AppImage
+            artifact_name: glitchpad-0.1.2-linux-x86_64.AppImage
           - release: '24.04'
             container_target: linux-lifecycle-24
             package_form: deb
-            artifact_name: glitchpad-0.1.1-linux-x86_64.deb
+            artifact_name: glitchpad-0.1.2-linux-x86_64.deb
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -168,7 +168,7 @@ jobs:
       - name: Download candidate
         uses: actions/download-artifact@v8
         with:
-          name: ${{ startsWith(github.ref, 'refs/tags/') && 'glitchpad-0.1.1-linux-x86_64-community-release' || 'glitchpad-0.1.1-linux-x86_64-non-official-candidate' }}
+          name: ${{ startsWith(github.ref, 'refs/tags/') && 'glitchpad-0.1.2-linux-x86_64-community-release' || 'glitchpad-0.1.2-linux-x86_64-non-official-candidate' }}
           path: artifacts/linux
 
       - name: Build clean lifecycle environment

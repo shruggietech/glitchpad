@@ -3,10 +3,10 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-export const currentVersion = '0.1.1';
+export const currentVersion = '0.1.2';
 export const currentTag = `v${currentVersion}`;
 export const releaseUrl =
-  'https://github.com/ShruggieTech/glitchpad/releases/tag/v0.1.1';
+  'https://github.com/ShruggieTech/glitchpad/releases/tag/v0.1.2';
 
 function requireText(problems, source, text, expected) {
   if (!text.includes(expected))
@@ -29,6 +29,7 @@ export function verifyPublicSources(sources) {
     specification,
     prebuild,
     workflow,
+    releaseWorkflow,
   } = sources;
 
   for (const [source, text] of [
@@ -128,13 +129,32 @@ export function verifyPublicSources(sources) {
 
   if (!/push:\s*\n\s*branches:\s*\[main\]/.test(workflow))
     problems.push('docs workflow is not triggered by main pushes');
-  if (!/github\.event_name == 'push'/.test(workflow))
-    problems.push(
-      'docs workflow does not authorize deployment after a main push',
-    );
-  if (!/github\.event_name != 'pull_request'/.test(workflow))
-    problems.push(
-      'docs workflow does not explicitly exclude pull-request deployment',
+  if (!/workflow_call:\s*\n\s*inputs:/.test(workflow))
+    problems.push('docs workflow is not reusable by the release publisher');
+  requireText(
+    problems,
+    '.github/workflows/docs.yml',
+    workflow,
+    "inputs.release_tag == 'v0.1.2'",
+  );
+  if (
+    /Upload Pages artifact[\s\S]*?github\.event_name == 'push'/.test(
+      workflow,
+    ) ||
+    /Deploy to GitHub Pages[\s\S]*?github\.event_name == 'push'/.test(workflow)
+  )
+    problems.push('docs workflow permits deployment before publication');
+  for (const expected of [
+    'needs: publish',
+    'uses: ./.github/workflows/docs.yml',
+    'deploy: true',
+    'release_tag: v0.1.2',
+  ])
+    requireText(
+      problems,
+      '.github/workflows/release.yml',
+      releaseWorkflow,
+      expected,
     );
   requireText(
     problems,
@@ -157,6 +177,7 @@ export async function loadPublicSources(root = repositoryRoot) {
     specification: 'docs/glitchpad-technical-specification.md',
     prebuild: 'site/scripts/prebuild.mjs',
     workflow: '.github/workflows/docs.yml',
+    releaseWorkflow: '.github/workflows/release.yml',
   };
   return Object.fromEntries(
     await Promise.all(

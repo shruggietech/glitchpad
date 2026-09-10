@@ -4,6 +4,19 @@ All notable changes to Glitchpad are documented in this file. The format follows
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-09-09
+
+### Changed
+
+- Corrected repository and website branding, ownership attribution, release claims, calls to action, navigation, and specification document control.
+- Kept the application menu fixed outside document layout and removed the redundant README platforms badge.
+- Expanded Android package declarations and delivery handling for released exact media types supplied through scoped content-provider URIs.
+
+### Fixed
+
+- Kept Markdown documents usable when rendering fails and prevented stale, superseded, or pending previews from exposing source or replacing current content.
+- Restored Android resolver eligibility plus cold-start and warm-intent delivery for supported provider-backed files on API 24 and API 36.
+
 ## [0.1.1] - 2026-09-08
 
 ### Changed

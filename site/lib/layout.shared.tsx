@@ -25,7 +25,7 @@ export function baseOptions(): BaseLayoutProps {
       { text: 'Docs', url: '/docs' },
       {
         text: 'Download',
-        url: 'https://github.com/ShruggieTech/glitchpad/releases/tag/v0.1.1',
+        url: 'https://github.com/ShruggieTech/glitchpad/releases/tag/v0.1.2',
         external: true,
       },
     ],

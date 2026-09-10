@@ -6,7 +6,7 @@ on:
     branches:
       - 'codex/**'
     tags:
-      - 'v0.1.1'
+      - 'v0.1.2'
   workflow_dispatch:
 
 concurrency:
@@ -60,7 +60,7 @@ jobs:
           New-Item -ItemType Directory -Path artifacts -Force | Out-Null
           $installer = Get-ChildItem -LiteralPath target/release/bundle/nsis -Filter '*-setup.exe' -File | Select-Object -First 1
           if (-not $installer) { throw 'The governed NSIS installer was not produced.' }
-          ./scripts/windows/assemble-package.ps1 -Version '0.1.1' -Executable 'target/release/glitchpad-host.exe' -Installer $installer.FullName -OutputRoot 'artifacts/windows' -SourceCommit '${{ github.sha }}' -WorkflowIdentity '${{ github.workflow_ref }}'
+          ./scripts/windows/assemble-package.ps1 -Version '0.1.2' -Executable 'target/release/glitchpad-host.exe' -Installer $installer.FullName -OutputRoot 'artifacts/windows' -SourceCommit '${{ github.sha }}' -WorkflowIdentity '${{ github.workflow_ref }}'
           cargo metadata --locked --format-version 1 | Set-Content -LiteralPath artifacts/windows/cargo-metadata.json -Encoding utf8
           pnpm list --prod --recursive --json --depth Infinity | Set-Content -LiteralPath artifacts/windows/pnpm-list.json -Encoding utf8
           node scripts/generate-windows-sbom.mjs artifacts/windows/cargo-metadata.json artifacts/windows/pnpm-list.json artifacts/windows/glitchpad-windows.cdx.json '${{ github.sha }}'
@@ -74,14 +74,14 @@ jobs:
           $beta = "# S030 Markdown Beta 9D4E`n`n> Nested quoted content`n`n``````mermaid`nflowchart TB`n  Start --> Finish`n```````n`n[S030_BETA_RAW_SENTINEL]: https://example.invalid/beta`n"
           [IO.File]::WriteAllText('artifacts/windows/s030-alpha.md', $alpha, [Text.UTF8Encoding]::new($false))
           [IO.File]::WriteAllText('artifacts/windows/s030-beta.md', $beta, [Text.UTF8Encoding]::new($false))
-          ./scripts/windows/test-installer-lifecycle.ps1 -Installer artifacts/windows/glitchpad-0.1.1-windows-x86_64-setup.exe -Fixture $fixture -TextFixture artifacts/windows/s027-visible.txt -MarkdownFixtureA artifacts/windows/s030-alpha.md -MarkdownFixtureB artifacts/windows/s030-beta.md -InstalledMarkdownReceipt artifacts/windows/installed-markdown-lifecycle-receipt.json -Receipt artifacts/windows/installer-lifecycle-receipt.json
+          ./scripts/windows/test-installer-lifecycle.ps1 -Installer artifacts/windows/glitchpad-0.1.2-windows-x86_64-setup.exe -Fixture $fixture -TextFixture artifacts/windows/s027-visible.txt -MarkdownFixtureA artifacts/windows/s030-alpha.md -MarkdownFixtureB artifacts/windows/s030-beta.md -InstalledMarkdownReceipt artifacts/windows/installed-markdown-lifecycle-receipt.json -Receipt artifacts/windows/installer-lifecycle-receipt.json
           ./scripts/windows/test-portable-lifecycle.ps1 -PortableRoot artifacts/windows/portable -TextFixture artifacts/windows/s027-visible.txt -MarkdownFixtureA artifacts/windows/s030-alpha.md -MarkdownFixtureB artifacts/windows/s030-beta.md -Receipt artifacts/windows/portable-lifecycle-receipt.json
 
       - name: Validate final bytes and size policy
         run: |
           node scripts/check-windows-package.mjs --evidence artifacts/windows/windows-package-manifest.json
-          node scripts/run-performance.mjs --profile desktop_reference_v1 --build-id "windows-${{ github.sha }}" --metric desktop_installer_size --artifact artifacts/windows/glitchpad-0.1.1-windows-x86_64-setup.exe --output artifacts/windows/installer-size-evidence.json
-          node scripts/run-performance.mjs --profile desktop_reference_v1 --build-id "windows-${{ github.sha }}" --metric desktop_installer_size --artifact artifacts/windows/glitchpad-0.1.1-windows-x86_64.zip --output artifacts/windows/portable-size-evidence.json
+          node scripts/run-performance.mjs --profile desktop_reference_v1 --build-id "windows-${{ github.sha }}" --metric desktop_installer_size --artifact artifacts/windows/glitchpad-0.1.2-windows-x86_64-setup.exe --output artifacts/windows/installer-size-evidence.json
+          node scripts/run-performance.mjs --profile desktop_reference_v1 --build-id "windows-${{ github.sha }}" --metric desktop_installer_size --artifact artifacts/windows/glitchpad-0.1.2-windows-x86_64.zip --output artifacts/windows/portable-size-evidence.json
 
       - name: Promote truthful community evidence
         if: startsWith(github.ref, 'refs/tags/')
@@ -90,7 +90,7 @@ jobs:
       - name: Upload governed Windows package
         uses: actions/upload-artifact@v7
         with:
-          name: ${{ startsWith(github.ref, 'refs/tags/') && 'glitchpad-0.1.1-windows-x86_64-community-release' || 'glitchpad-0.1.1-windows-x86_64-unsigned-candidate' }}
+          name: ${{ startsWith(github.ref, 'refs/tags/') && 'glitchpad-0.1.2-windows-x86_64-community-release' || 'glitchpad-0.1.2-windows-x86_64-unsigned-candidate' }}
           path: artifacts/windows/**
           if-no-files-found: error
           retention-days: 14

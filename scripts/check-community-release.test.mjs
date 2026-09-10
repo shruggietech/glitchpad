@@ -10,12 +10,12 @@ import {
 
 const contract = () => ({
   schema_version: 1,
-  version: '0.1.1',
-  tag: 'v0.1.1',
+  version: '0.1.2',
+  tag: 'v0.1.2',
   repository: 'shruggietech/glitchpad',
   artifacts: Array.from(
     { length: 8 },
-    (_, index) => `glitchpad-0.1.1-${index}`,
+    (_, index) => `glitchpad-0.1.2-${index}`,
   ),
   trust_states: {
     windows: 'unsigned_community',
@@ -28,13 +28,13 @@ const contract = () => ({
 
 test('accepts the exact community release inventory', () =>
   assert.equal(validateReleaseContract(contract()), true));
-test('rejects the stale v0.1.0 release identity', () =>
+test('rejects the stale v0.1.1 release identity', () =>
   assert.throws(
     () =>
       validateReleaseContract({
         ...contract(),
-        version: '0.1.0',
-        tag: 'v0.1.0',
+        version: '0.1.1',
+        tag: 'v0.1.1',
       }),
     /release identity/u,
   ));
@@ -51,7 +51,7 @@ test('rejects paid desktop credentials', () =>
   assert.throws(
     () =>
       validateGovernedClaims({
-        releaseWorkflow: "workflow_dispatch:\n- 'v0.1.1'\nAPPLE_API_KEY",
+        releaseWorkflow: "workflow_dispatch:\n- 'v0.1.2'\nAPPLE_API_KEY",
         windowsContract: {
           official: {
             trust_state: 'unsigned_community',

@@ -40,7 +40,7 @@ export async function promoteCommunityPackage({
   manifest.official = true;
   manifest.gate_status = 'official_valid';
   manifest.event = 'push_tag';
-  manifest.tag = 'v0.1.1';
+  manifest.tag = 'v0.1.2';
   const packageContract = JSON.parse(await readFile(contractPath, 'utf8'));
   manifest.evidence_files = packageContract.official.required_evidence;
   provenance.candidate_only = false;

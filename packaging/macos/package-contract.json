@@ -2,10 +2,10 @@
   "schema_version": 1,
   "platform": "macos",
   "architecture": "universal",
-  "candidate_version": "0.1.1",
+  "candidate_version": "0.1.2",
   "artifact": {
     "kind": "dmg",
-    "name": "glitchpad-0.1.1-macos-universal.dmg"
+    "name": "glitchpad-0.1.2-macos-universal.dmg"
   },
   "document_extensions": [
     "cjs",
@@ -60,7 +60,7 @@
   },
   "official": {
     "authorized_event": "push_tag",
-    "tag_pattern": "v0.1.1",
+    "tag_pattern": "v0.1.2",
     "trust_state": "adhoc_non_notarized_community",
     "required_application_signature_status": "ad_hoc",
     "required_dmg_signature_status": "not_signed",

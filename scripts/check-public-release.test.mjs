@@ -72,6 +72,26 @@ for (const [name, mutate, expected] of [
     },
     /primary navigation contains Support or Security/,
   ],
+  [
+    'premature main deployment',
+    (sources) => {
+      sources.workflow = sources.workflow.replace(
+        'inputs.deploy',
+        "github.event_name == 'push'",
+      );
+    },
+    /permits deployment before publication/,
+  ],
+  [
+    'missing publisher deployment handoff',
+    (sources) => {
+      sources.releaseWorkflow = sources.releaseWorkflow.replace(
+        'uses: ./.github/workflows/docs.yml',
+        'uses: ./.github/workflows/missing.yml',
+      );
+    },
+    /missing uses: \.\/\.github\/workflows\/docs\.yml/,
+  ],
 ]) {
   test(`public authority rejects ${name}`, async () => {
     const sources = await loadPublicSources();

@@ -83,6 +83,7 @@ const contract = {
 };
 
 const intentMap = {
+  schema_version: 2,
   actions: [
     'android.intent.action.MAIN',
     'android.intent.action.SEND',
@@ -95,7 +96,20 @@ const intentMap = {
   ],
   schemes: ['content'],
   media_types: ['text/markdown', 'text/plain', 'text/vnd.mermaid'],
-  extensions: ['md', 'mmd', 'txt'],
+  extensions: [],
+  intent_filters: [
+    {
+      id: 'view-exact-content',
+      actions: ['android.intent.action.VIEW'],
+      categories: ['android.intent.category.DEFAULT'],
+      schemes: ['content'],
+      authorities: [],
+      media_types: ['text/markdown', 'text/plain', 'text/vnd.mermaid'],
+      extensions: [],
+    },
+  ],
+  generic_media_types: ['application/octet-stream'],
+  generic_media_type_policy: 'reject_without_exact_supported_type',
   forbidden_permissions: ['android.permission.MANAGE_EXTERNAL_STORAGE'],
   forbidden_actions: ['android.intent.action.SEND_MULTIPLE'],
   forbidden_schemes: ['file'],
@@ -121,6 +135,9 @@ function inventory(role, kind, abis) {
     schemes: intentMap.schemes,
     media_types: intentMap.media_types,
     extensions: intentMap.extensions,
+    intent_filters: intentMap.intent_filters.map(
+      ({ id: _id, ...filter }) => filter,
+    ),
     exported_components: ['com.shruggietech.glitchpad.MainActivity'],
     application_label: '@string/app_name',
     launcher_icon: '@mipmap/ic_launcher',
@@ -170,6 +187,23 @@ test('manifest parser extracts release identity and public surface', () => {
   assert.equal(parsed.version_code, 1001);
   assert.deepEqual(parsed.permissions, ['android.permission.INTERNET']);
   assert.deepEqual(parsed.schemes, ['content']);
+  assert.deepEqual(parsed.intent_filters, [
+    {
+      actions: ['android.intent.action.VIEW'],
+      categories: ['android.intent.category.DEFAULT'],
+      schemes: ['content'],
+      authorities: [],
+      media_types: ['text/markdown'],
+      extensions: ['md'],
+    },
+  ]);
+  assert.throws(
+    () =>
+      parseManifestXml(
+        `<?xml version="1.0"?><manifest package="com.shruggietech.glitchpad" xmlns:android="http://schemas.android.com/apk/res/android"><application><activity android:name="com.shruggietech.glitchpad.MainActivity" android:exported="true"><intent-filter><action android:name="android.intent.action.VIEW"/><category android:name="android.intent.category.DEFAULT"/><data android:scheme="content" android:sspPrefix="opaque"/></intent-filter></activity></application></manifest>`,
+      ),
+    /unsupported Android intent-filter data attribute: sspPrefix/u,
+  );
 });
 
 test('manifest parser excludes permission-protected exported library components', () => {
@@ -185,6 +219,14 @@ test('manifest parser excludes permission-protected exported library components'
 test('intent validation rejects wildcard, file scheme, broad storage, and extra exported components', () => {
   const valid = inventory('universal', 'apk', ['arm64-v8a', 'x86_64']);
   assert.doesNotThrow(() => validateIntentSurface(valid, intentMap));
+  assert.throws(
+    () =>
+      validateIntentSurface(valid, {
+        ...intentMap,
+        generic_media_type_policy: 'accept_by_suffix',
+      }),
+    /resolver policy contract/u,
+  );
   assert.throws(
     () =>
       validateIntentSurface(
@@ -222,6 +264,50 @@ test('intent validation rejects wildcard, file scheme, broad storage, and extra 
         intentMap,
       ),
     /exported component/u,
+  );
+  assert.throws(
+    () =>
+      validateIntentSurface(
+        {
+          ...valid,
+          intent_filters: valid.intent_filters.map((filter) => ({
+            ...filter,
+            authorities: [],
+          })),
+        },
+        {
+          ...intentMap,
+          intent_filters: intentMap.intent_filters.map((filter) => ({
+            ...filter,
+            authorities: ['*'],
+          })),
+        },
+      ),
+    /intent-filter group/u,
+  );
+  assert.throws(
+    () =>
+      validateIntentSurface(
+        {
+          ...valid,
+          extensions: ['md'],
+          intent_filters: valid.intent_filters.map((filter) => ({
+            ...filter,
+            authorities: [],
+            extensions: ['md'],
+          })),
+        },
+        {
+          ...intentMap,
+          extensions: ['md'],
+          intent_filters: intentMap.intent_filters.map((filter) => ({
+            ...filter,
+            authorities: [],
+            extensions: ['md'],
+          })),
+        },
+      ),
+    /ignored without an authority/u,
   );
 });
 

@@ -12,6 +12,7 @@ import { DESKTOP_CHROME_MAX_PX, REFERENCE_HEIGHT_PX } from './domain/tabs';
 import { defaultPreferences } from './domain/persistence';
 import type { PersistenceGateway } from './domain/persistence-gateway';
 import type { AndroidRestorationGateway } from './domain/android-restoration-gateway';
+import type { AndroidDeliveryGateway } from './domain/android-delivery-gateway';
 import type { DesktopDeliveryGateway } from './domain/desktop-delivery-gateway';
 
 const revision = {
@@ -107,6 +108,89 @@ describe('document foundation shell', () => {
     };
     render(<App sessions={[]} desktopDeliveryGateway={gateway} />);
     expect(await screen.findByRole('alert')).toHaveTextContent('The selected file cannot be read.');
+  });
+
+  it('opens initial and warm Android deliveries and releases closed sources', async () => {
+    const delivered = {
+      ...initialSessions[2],
+      id: 'android-source',
+      source_id: 'source',
+      external_revision: revision,
+    };
+    let notify: (() => void) | undefined;
+    const drain = vi.fn()
+      .mockResolvedValueOnce({
+        sources: [{
+          source_id: 'source',
+          descriptor: delivered.source,
+          external_revision: revision,
+          delivery_kind: 'view',
+          grant: {
+            read: true,
+            write: false,
+            persisted_read: false,
+            persisted_write: false,
+            restorable: false,
+          },
+        }],
+        rejections: [],
+      })
+      .mockResolvedValue({ sources: [], rejections: [] });
+    const close = vi.fn().mockResolvedValue(undefined);
+    const gateway: AndroidDeliveryGateway = {
+      close,
+      drain,
+      materialize: vi.fn().mockResolvedValue(delivered),
+      subscribe: vi.fn().mockImplementation((handler: () => void) => {
+        notify = handler;
+        return Promise.resolve(() => undefined);
+      }),
+    };
+
+    render(<App sessions={[]} androidDeliveryGateway={gateway} />);
+    await screen.findByRole('region', { name: 'notes.txt' });
+    notify?.();
+    await waitFor(() => expect(drain).toHaveBeenCalledTimes(2));
+    fireEvent.keyDown(screen.getByRole('main'), { key: 'w', ctrlKey: true });
+    await waitFor(() => expect(close).toHaveBeenCalledWith('source'));
+  });
+
+  it('drains cold and warm Android deliveries when event subscription is unavailable', async () => {
+    const delivered = {
+      ...initialSessions[2],
+      id: 'android-source',
+      source_id: 'source',
+      external_revision: revision,
+    };
+    const drain = vi.fn()
+      .mockResolvedValueOnce({
+        sources: [{
+          source_id: 'source',
+          descriptor: delivered.source,
+          external_revision: revision,
+          delivery_kind: 'view',
+          grant: {
+            read: true,
+            write: false,
+            persisted_read: false,
+            persisted_write: false,
+            restorable: false,
+          },
+        }],
+        rejections: [],
+      })
+      .mockResolvedValue({ sources: [], rejections: [] });
+    const gateway: AndroidDeliveryGateway = {
+      close: vi.fn().mockResolvedValue(undefined),
+      drain,
+      materialize: vi.fn().mockResolvedValue(delivered),
+      subscribe: vi.fn().mockRejectedValue(new Error('listener unavailable')),
+    };
+
+    render(<App sessions={[]} androidDeliveryGateway={gateway} />);
+
+    expect(await screen.findByRole('region', { name: 'notes.txt' })).toBeVisible();
+    await waitFor(() => expect(drain).toHaveBeenCalledTimes(2), { timeout: 1_500 });
   });
 
   it('opens native desktop deliveries through the compact application commands', async () => {

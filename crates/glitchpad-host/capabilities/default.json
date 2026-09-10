@@ -3,5 +3,9 @@
   "identifier": "default",
   "description": "Minimum capability set for the Glitchpad foundation shell.",
   "windows": ["main"],
-  "permissions": ["core:default"]
+  "permissions": [
+    "core:default",
+    "glitchpad-android-source:allow-register-listener",
+    "glitchpad-android-source:allow-remove-listener"
+  ]
 }

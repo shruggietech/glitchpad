@@ -38,11 +38,12 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
 
   override fun load(webView: WebView) {
     super.load(webView)
-    if (initialIntentConsumed.compareAndSet(false, true)) enqueueInbound(activity.intent)
+    if (initialIntentConsumed.compareAndSet(false, true) && enqueueInbound(activity.intent))
+      notifyDeliveriesReady()
   }
 
   override fun onNewIntent(intent: Intent) {
-    enqueueInbound(intent)
+    if (enqueueInbound(intent)) notifyDeliveriesReady()
   }
 
   @Command
@@ -312,18 +313,24 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
     invoke.resolve()
   }
 
-  private fun enqueueInbound(intent: Intent?) {
+  private fun enqueueInbound(intent: Intent?): Boolean {
+    if (intent?.action != Intent.ACTION_VIEW && intent?.action != Intent.ACTION_SEND) return false
     DeliveryPolicy.inbound(intent)
       .onSuccess { candidate ->
         if (!pending.offer(candidate)) enqueueRejection("delivery_queue_full")
       }
       .onFailure { enqueueRejection(code(it)) }
+    return true
   }
 
   private fun enqueueRejection(rejection: String) {
     if (rejections.offer(rejection)) return
     rejections.poll()
     rejections.offer(rejection)
+  }
+
+  private fun notifyDeliveriesReady() {
+    trigger("deliveriesReady", JSObject())
   }
 
   private fun acquire(candidate: DeliveryCandidate): Result<JSObject> = runCatching {

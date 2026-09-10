@@ -48,6 +48,8 @@ public final class FixtureDocumentsProvider extends DocumentsProvider {
     writeFixture(directory, "\u05e9\u05dc\u05d5\u05dd-e\u0301-\ud83e\uddea.txt", "unicode metadata payload");
     writeFixture(directory, "pipe.txt", "pipe fixture payload");
     writeFixture(directory, "diagram.mmd", "flowchart LR\nSource --> Session\n");
+    writeFixture(directory, "resolver-cold.md", "# S031 cold delivery\n\nS031_COLD_MARKER_4F2A\n");
+    writeFixture(directory, "resolver-warm.txt", "S031_WARM_MARKER_7C9D\n");
     return true;
   }
 
@@ -207,11 +209,11 @@ public final class FixtureDocumentsProvider extends DocumentsProvider {
       return;
     }
     File file = documentFile(documentId);
-    row.add(Document.COLUMN_DOCUMENT_ID, file.getName());
-    if (!"metadata-omitted.txt".equals(file.getName())) {
-      row.add(Document.COLUMN_DISPLAY_NAME, file.getName());
+    row.add(Document.COLUMN_DOCUMENT_ID, documentId);
+    if (!"metadata-omitted.txt".equals(documentId)) {
+      row.add(Document.COLUMN_DISPLAY_NAME, displayName(documentId));
     }
-    row.add(Document.COLUMN_MIME_TYPE, mimeType(file.getName()));
+    row.add(Document.COLUMN_MIME_TYPE, mimeType(documentId));
     row.add(
         Document.COLUMN_FLAGS,
         Document.FLAG_SUPPORTS_WRITE
@@ -235,16 +237,39 @@ public final class FixtureDocumentsProvider extends DocumentsProvider {
   }
 
   private static String mimeType(String name) {
+    if ("resolver-cold".equals(name)) {
+      return "text/markdown";
+    }
     return name.endsWith(".mmd") || name.endsWith(".mermaid")
         ? "text/vnd.mermaid"
         : "text/plain";
+  }
+
+  private static String displayName(String documentId) {
+    if ("resolver-cold".equals(documentId)) {
+      return "resolver-cold.md";
+    }
+    if ("resolver-warm".equals(documentId)) {
+      return "resolver-warm.txt";
+    }
+    return documentId;
+  }
+
+  private static String storageName(String documentId) {
+    if ("resolver-cold".equals(documentId)) {
+      return "resolver-cold.md";
+    }
+    if ("resolver-warm".equals(documentId)) {
+      return "resolver-warm.txt";
+    }
+    return documentId;
   }
 
   private File documentFile(String documentId) throws FileNotFoundException {
     if (ROOT_ID.equals(documentId) || documentId.indexOf('/') >= 0 || documentId.indexOf('\\') >= 0) {
       throw new FileNotFoundException(documentId);
     }
-    File file = new File(fixtureDirectory(), documentId);
+    File file = new File(fixtureDirectory(), storageName(documentId));
     if (!file.exists()) {
       throw new FileNotFoundException(documentId);
     }

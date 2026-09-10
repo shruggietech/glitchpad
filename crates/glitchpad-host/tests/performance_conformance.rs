@@ -159,8 +159,10 @@ fn android_emulator_uses_supported_software_rendering() {
         "standalone instrumentation may be confirmed once, but must not retry without a strict bound"
     );
     assert!(
-        instrumentation.contains("if grep -Fq \"$marker\" \"$output\"; then"),
-        "standalone instrumentation retries must depend on required semantic evidence"
+        instrumentation.contains(
+            "if grep -Fq \"$marker\" \"$output\" || grep -Fq \"$marker\" \"$logcat_output\"; then"
+        ),
+        "standalone instrumentation retries must accept semantic evidence emitted before Tauri process teardown"
     );
     assert!(
         instrumentation.contains("adb logcat -d -t 2000"),

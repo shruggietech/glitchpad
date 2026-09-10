@@ -36,27 +36,6 @@
                 <data android:mimeType="text/rust" />
                 <data android:mimeType="text/vnd.mermaid" />
                 <data android:mimeType="text/x-python" />
-                <data android:pathSuffix=".cjs" />
-                <data android:pathSuffix=".css" />
-                <data android:pathSuffix=".htm" />
-                <data android:pathSuffix=".html" />
-                <data android:pathSuffix=".js" />
-                <data android:pathSuffix=".json" />
-                <data android:pathSuffix=".jsonc" />
-                <data android:pathSuffix=".jsx" />
-                <data android:pathSuffix=".markdown" />
-                <data android:pathSuffix=".md" />
-                <data android:pathSuffix=".mermaid" />
-                <data android:pathSuffix=".mjs" />
-                <data android:pathSuffix=".mmd" />
-                <data android:pathSuffix=".py" />
-                <data android:pathSuffix=".rs" />
-                <data android:pathSuffix=".toml" />
-                <data android:pathSuffix=".ts" />
-                <data android:pathSuffix=".tsx" />
-                <data android:pathSuffix=".txt" />
-                <data android:pathSuffix=".yaml" />
-                <data android:pathSuffix=".yml" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />

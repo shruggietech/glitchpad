@@ -9,8 +9,8 @@
 
 ## Focused validation
 
-- `node --test scripts/check-community-release.test.mjs`: passed 20 tests with zero failures.
-- Mutation coverage rejects a stale S032 tag target, missing S033 traceability, missing issue #167 traceability, and missing patched dependency versions.
+- `node --test scripts/check-community-release.test.mjs`: passed 22 tests with zero failures after the round-one review correction.
+- Mutation coverage rejects a stale S032 tag target, missing S033 traceability in any active handoff document, missing issue #167 traceability in any active handoff document, and missing patched dependency versions.
 - `node scripts/check-community-release.mjs`: passed live v0.1.2 community-release validation.
 
 ## Complete repository gate
@@ -18,6 +18,8 @@
 `cargo xtask check` passed with exit code 0 against the exact formatted S034 source snapshot in the pinned validation image on an isolated native Linux volume. The aggregate covered Rust formatting, Clippy, native and documentation tests, dependency policy, frontend lint/typecheck/262 tests/build, brand and release policy, static site build/unit/browser validation, launcher policy, Mermaid runtime, metadata, persistence, performance, Android/Linux/macOS/Windows package policy, configuration, documentation formatting/lint/links/46 Mermaid renders, version authority, encoding, and public-surface policy.
 
 The first aggregate attempt correctly stopped when Prettier rejected `specs/034-finalize-v012-release/spec.md`. The file was formatted, the source snapshot was recreated, and the complete gate then passed. A final warmed rerun independently returned exit code 0.
+
+After Codex round one identified incomplete cross-document traceability enforcement, the validator and changelog were corrected and the complete repository gate passed again with exit code 0 on the review-adjusted source.
 
 ## Spec Kit analysis and convergence
 

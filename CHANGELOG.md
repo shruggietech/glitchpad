@@ -16,7 +16,7 @@ All notable changes to Glitchpad are documented in this file. The format follows
 
 - Kept Markdown documents usable when rendering fails and prevented stale, superseded, or pending previews from exposing source or replacing current content.
 - Restored Android resolver eligibility plus cold-start and warm-intent delivery for supported provider-backed files on API 24 and API 36.
-- Patched Next.js 16.3.3 and the development-only transitive `smol-toml` 1.7.1 resolution to clear known pre-release dependency advisories.
+- S033 (#167) patched Next.js 16.3.3 and the development-only transitive `smol-toml` 1.7.1 resolution to clear known pre-release dependency advisories.
 
 ## [0.1.1] - 2026-09-08
 

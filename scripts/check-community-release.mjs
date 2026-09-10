@@ -91,12 +91,19 @@ export function validateFinalReleaseHandoff({
     )
   )
     throw new Error('final handoff omits the S034 release authority');
-  if (!releaseNotes.includes('S033'))
-    throw new Error('release notes omit the S033 security remediation');
+  for (const [source, content] of [
+    ['release notes', releaseNotes],
+    ['release receipt', releaseReceipt],
+    ['operator runbook', operatorRunbook],
+    ['changelog', changelog],
+  ]) {
+    if (!content.includes('S033'))
+      throw new Error(`${source} omits the S033 security remediation`);
+    if (!content.includes('#167'))
+      throw new Error(`${source} omits issue #167`);
+  }
   if (!releaseReceipt.includes('S033') || !releaseReceipt.includes('S034'))
     throw new Error('release receipt omits the final slice chain');
-  if (!releaseNotes.includes('#167') || !releaseReceipt.includes('#167'))
-    throw new Error('final release record omits issue #167');
   if (
     !changelog.includes('Next.js 16.3.3') ||
     !changelog.includes('`smol-toml` 1.7.1')

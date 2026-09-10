@@ -4,9 +4,19 @@ on:
   push:
     branches: [main]
   pull_request:
-  release:
-    types: [published]
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      deploy:
+        description: Deploy the already-published release site
+        required: false
+        type: boolean
+        default: false
+      release_tag:
+        description: Exact published release tag
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -50,7 +60,7 @@ jobs:
           GLITCHPAD_SOURCE_REVISION: ${{ github.sha }}
 
       - name: Upload Pages artifact
-        if: github.event_name == 'release' && github.event.release.tag_name == 'v0.1.2' && !github.event.release.prerelease
+        if: inputs.deploy && inputs.release_tag == 'v0.1.2'
         uses: actions/upload-pages-artifact@v5
         with:
           path: site/out
@@ -58,7 +68,7 @@ jobs:
   deploy:
     name: Deploy to GitHub Pages
     needs: build
-    if: github.event_name == 'release' && github.event.release.tag_name == 'v0.1.2' && !github.event.release.prerelease
+    if: inputs.deploy && inputs.release_tag == 'v0.1.2'
     runs-on: ubuntu-latest
     permissions:
       pages: write

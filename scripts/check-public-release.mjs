@@ -29,6 +29,7 @@ export function verifyPublicSources(sources) {
     specification,
     prebuild,
     workflow,
+    releaseWorkflow,
   } = sources;
 
   for (const [source, text] of [
@@ -128,30 +129,33 @@ export function verifyPublicSources(sources) {
 
   if (!/push:\s*\n\s*branches:\s*\[main\]/.test(workflow))
     problems.push('docs workflow is not triggered by main pushes');
-  if (!/release:\s*\n\s*types:\s*\[published\]/.test(workflow))
-    problems.push(
-      'docs workflow is not triggered by a published GitHub release',
-    );
-  if (!/github\.event_name == 'release'/.test(workflow))
-    problems.push(
-      'docs workflow does not restrict deployment to a release event',
-    );
+  if (!/workflow_call:\s*\n\s*inputs:/.test(workflow))
+    problems.push('docs workflow is not reusable by the release publisher');
   requireText(
     problems,
     '.github/workflows/docs.yml',
     workflow,
-    "github.event.release.tag_name == 'v0.1.2'",
+    "inputs.release_tag == 'v0.1.2'",
   );
   if (
     /Upload Pages artifact[\s\S]*?github\.event_name == 'push'/.test(
       workflow,
     ) ||
-    /Deploy to GitHub Pages[\s\S]*?github\.event_name == 'push'/.test(
-      workflow,
-    ) ||
-    /inputs\.deploy/.test(workflow)
+    /Deploy to GitHub Pages[\s\S]*?github\.event_name == 'push'/.test(workflow)
   )
     problems.push('docs workflow permits deployment before publication');
+  for (const expected of [
+    'needs: publish',
+    'uses: ./.github/workflows/docs.yml',
+    'deploy: true',
+    'release_tag: v0.1.2',
+  ])
+    requireText(
+      problems,
+      '.github/workflows/release.yml',
+      releaseWorkflow,
+      expected,
+    );
   requireText(
     problems,
     '.github/workflows/docs.yml',
@@ -173,6 +177,7 @@ export async function loadPublicSources(root = repositoryRoot) {
     specification: 'docs/glitchpad-technical-specification.md',
     prebuild: 'site/scripts/prebuild.mjs',
     workflow: '.github/workflows/docs.yml',
+    releaseWorkflow: '.github/workflows/release.yml',
   };
   return Object.fromEntries(
     await Promise.all(

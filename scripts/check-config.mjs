@@ -129,20 +129,36 @@ export async function checkConfiguration(
   for (const [label, pattern] of [
     ['pull-request build trigger', /^\s*pull_request:\s*$/m],
     ['main build trigger', /^\s*push:\s*\n\s*branches:\s*\[main\]/m],
-    [
-      'published release trigger',
-      /^\s*release:\s*\n\s*types:\s*\[published\]/m,
-    ],
+    ['reusable release entry point', /^\s*workflow_call:\s*\n\s*inputs:/m],
     ['read-only default permission', /^permissions:\s*\n\s*contents:\s*read/m],
     ['Pages artifact path', /^\s*path:\s*site\/out\s*$/m],
     ['protected Pages environment', /^\s*name:\s*github-pages\s*$/m],
     [
-      'exact published-release deployment condition',
-      /github\.event_name == 'release' && github\.event\.release\.tag_name == 'v0\.1\.2'/,
+      'exact publisher deployment condition',
+      /inputs\.deploy && inputs\.release_tag == 'v0\.1\.2'/,
     ],
   ]) {
     if (!pattern.test(docsWorkflow)) {
       throw new Error(`Invalid docs workflow contract: missing ${label}`);
+    }
+  }
+
+  const releaseWorkflow = await readFile(
+    join(repositoryRoot, '.github', 'workflows', 'release.yml'),
+    'utf8',
+  );
+  for (const [label, pattern] of [
+    ['post-publication site job', /^\s*publish-site:\s*$/m],
+    ['publication dependency', /^\s*needs:\s*publish\s*$/m],
+    [
+      'reusable docs workflow call',
+      /^\s*uses:\s*\.\/\.github\/workflows\/docs\.yml\s*$/m,
+    ],
+    ['deployment authorization', /^\s*deploy:\s*true\s*$/m],
+    ['exact release tag input', /^\s*release_tag:\s*v0\.1\.2\s*$/m],
+  ]) {
+    if (!pattern.test(releaseWorkflow)) {
+      throw new Error(`Invalid release workflow contract: missing ${label}`);
     }
   }
 

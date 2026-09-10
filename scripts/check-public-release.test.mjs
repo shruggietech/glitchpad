@@ -76,11 +76,21 @@ for (const [name, mutate, expected] of [
     'premature main deployment',
     (sources) => {
       sources.workflow = sources.workflow.replace(
-        "github.event_name == 'release'",
+        'inputs.deploy',
         "github.event_name == 'push'",
       );
     },
-    /does not restrict deployment to a release event|permits deployment before publication/,
+    /permits deployment before publication/,
+  ],
+  [
+    'missing publisher deployment handoff',
+    (sources) => {
+      sources.releaseWorkflow = sources.releaseWorkflow.replace(
+        'uses: ./.github/workflows/docs.yml',
+        'uses: ./.github/workflows/missing.yml',
+      );
+    },
+    /missing uses: \.\/\.github\/workflows\/docs\.yml/,
   ],
 ]) {
   test(`public authority rejects ${name}`, async () => {

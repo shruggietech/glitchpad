@@ -111,7 +111,7 @@ export async function assembleCommunityRelease({
     artifacts,
     trust_states: contract.trust_states,
     evidence_bundles: Object.keys(contract.trust_states).map(
-      (platform) => `glitchpad-0.1.1-${platform}-evidence.tar.gz`,
+      (platform) => `glitchpad-0.1.2-${platform}-evidence.tar.gz`,
     ),
   };
   await writeFile(join(output, 'SHA256SUMS'), sums, 'utf8');

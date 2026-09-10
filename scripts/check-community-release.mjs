@@ -9,8 +9,8 @@ const text = async (path) => readFile(path, 'utf8');
 export function validateReleaseContract(contract) {
   if (
     contract.schema_version !== 1 ||
-    contract.version !== '0.1.1' ||
-    contract.tag !== 'v0.1.1' ||
+    contract.version !== '0.1.2' ||
+    contract.tag !== 'v0.1.2' ||
     contract.repository !== 'shruggietech/glitchpad'
   )
     throw new Error('release identity is invalid');
@@ -20,7 +20,7 @@ export function validateReleaseContract(contract) {
     new Set(contract.artifacts).size !== 8
   )
     throw new Error('release must declare exactly eight unique artifacts');
-  if (contract.artifacts.some((name) => !name.includes('0.1.1')))
+  if (contract.artifacts.some((name) => !name.includes('0.1.2')))
     throw new Error('artifact version is stale');
   const expectedTrust = {
     windows: 'unsigned_community',
@@ -94,7 +94,7 @@ export function validateGovernedClaims({
   if (forbidden.some((value) => releaseWorkflow.includes(value)))
     throw new Error('paid desktop authority remains in the release workflow');
   if (
-    !releaseWorkflow.includes("- 'v0.1.1'") ||
+    !releaseWorkflow.includes("- 'v0.1.2'") ||
     !releaseWorkflow.includes('workflow_dispatch:')
   )
     throw new Error('release event guards are incomplete');
@@ -200,7 +200,7 @@ export async function checkCommunityRelease(repositoryRoot = root) {
     loadJson(join(repositoryRoot, 'packaging/android/package-contract.json')),
     text(join(repositoryRoot, '.github/workflows/release.yml')),
     text(join(repositoryRoot, 'scripts/check-release-readiness.ps1')),
-    text(join(repositoryRoot, 'docs/releases/v0.1.1.md')),
+    text(join(repositoryRoot, 'docs/releases/v0.1.2.md')),
     text(join(repositoryRoot, '.github/workflows/android-package.yml')),
     text(join(repositoryRoot, '.github/workflows/macos-package.yml')),
     text(join(repositoryRoot, '.github/workflows/linux-package.yml')),
@@ -234,5 +234,5 @@ export async function checkCommunityRelease(repositoryRoot = root) {
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   await checkCommunityRelease();
-  console.log('v0.1.1 community release policy is internally consistent.');
+  console.log('v0.1.2 community release policy is internally consistent.');
 }

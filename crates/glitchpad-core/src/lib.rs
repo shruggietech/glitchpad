@@ -43,6 +43,6 @@ mod tests {
 
         assert_eq!(product.name, PRODUCT_NAME);
         assert_eq!(product.version, VERSION);
-        assert_eq!(product.version, "0.1.1");
+        assert_eq!(product.version, "0.1.2");
     }
 }

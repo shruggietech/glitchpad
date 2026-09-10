@@ -6,7 +6,7 @@ on:
     branches:
       - '**'
     tags:
-      - 'v0.1.1'
+      - 'v0.1.2'
   workflow_dispatch:
 
 concurrency:
@@ -74,7 +74,7 @@ jobs:
       - name: Validate final bytes and size policy
         run: |
           node scripts/check-macos-package.mjs --evidence artifacts/macos/macos-package-manifest.json --artifact-root artifacts/macos
-          node scripts/run-performance.mjs --profile desktop_reference_v1 --build-id "macos-${{ github.sha }}" --metric desktop_installer_size --artifact artifacts/macos/glitchpad-0.1.1-macos-universal.dmg --output artifacts/macos/dmg-size-evidence
+          node scripts/run-performance.mjs --profile desktop_reference_v1 --build-id "macos-${{ github.sha }}" --metric desktop_installer_size --artifact artifacts/macos/glitchpad-0.1.2-macos-universal.dmg --output artifacts/macos/dmg-size-evidence
 
       - name: Promote truthful community evidence
         if: startsWith(github.ref, 'refs/tags/')
@@ -83,7 +83,7 @@ jobs:
       - name: Upload governed macOS package
         uses: actions/upload-artifact@v7
         with:
-          name: ${{ startsWith(github.ref, 'refs/tags/') && 'glitchpad-0.1.1-macos-universal-community-release' || 'glitchpad-0.1.1-macos-universal-non-notarized-candidate' }}
+          name: ${{ startsWith(github.ref, 'refs/tags/') && 'glitchpad-0.1.2-macos-universal-community-release' || 'glitchpad-0.1.2-macos-universal-non-notarized-candidate' }}
           path: artifacts/macos/**
           if-no-files-found: error
           retention-days: 14
@@ -133,12 +133,12 @@ jobs:
       - name: Download universal candidate
         uses: actions/download-artifact@v8
         with:
-          name: ${{ startsWith(github.ref, 'refs/tags/') && 'glitchpad-0.1.1-macos-universal-community-release' || 'glitchpad-0.1.1-macos-universal-non-notarized-candidate' }}
+          name: ${{ startsWith(github.ref, 'refs/tags/') && 'glitchpad-0.1.2-macos-universal-community-release' || 'glitchpad-0.1.2-macos-universal-non-notarized-candidate' }}
           path: artifacts/macos
 
       - name: Exercise native install, launch, delivery, and removal
         run: |
-          node scripts/macos/test-package-lifecycle.mjs --dmg artifacts/macos/glitchpad-0.1.1-macos-universal.dmg --manifest artifacts/macos/macos-package-manifest.json --receipt "clean-host-${{ matrix.architecture }}.json" --architecture '${{ matrix.architecture }}' \
+          node scripts/macos/test-package-lifecycle.mjs --dmg artifacts/macos/glitchpad-0.1.2-macos-universal.dmg --manifest artifacts/macos/macos-package-manifest.json --receipt "clean-host-${{ matrix.architecture }}.json" --architecture '${{ matrix.architecture }}' \
             ${{ startsWith(github.ref, 'refs/tags/') && '--official' || '' }}
 
       - name: Upload content-free clean-host receipt

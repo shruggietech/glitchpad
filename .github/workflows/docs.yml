@@ -81,5 +81,5 @@ jobs:
       - name: Verify production deployment
         run: node scripts/verify-site-deployment.mjs
         env:
-          GLITCHPAD_EXPECTED_VERSION: 0.1.1
+          GLITCHPAD_EXPECTED_VERSION: 0.1.2
           GLITCHPAD_EXPECTED_REVISION: ${{ github.sha }}

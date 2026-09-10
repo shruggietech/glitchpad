@@ -1,6 +1,6 @@
 # Linux packaging
 
-S021 produces one x86_64 AppImage and one x86_64 Debian package for the v0.1.1 candidate. Both are built against the governed Ubuntu 22.04 baseline and validated on clean Ubuntu 22.04 and Ubuntu 24.04 environments.
+S021 produces one x86_64 AppImage and one x86_64 Debian package for the v0.1.2 candidate. Both are built against the governed Ubuntu 22.04 baseline and validated on clean Ubuntu 22.04 and Ubuntu 24.04 environments.
 
 The AppImage runs without installation after execute permission is granted. It is intentionally thin and requires the distribution's GTK 3 and WebKitGTK 4.1 runtime, avoiding bundled browser-engine or system-library copies that would conflict with supported Linux releases. Debian installation uses standard package tooling, declares `libgtk-3-0` and `libwebkit2gtk-4.1-0`, and may require package-manager elevation; validation extracts the final control metadata and enforces those dependencies rather than relying on the build configuration. Glitchpad itself always runs as the invoking user. Removal deletes package-owned binaries and desktop/MIME/icon integration while preserving user documents, preferences, and recovery data.
 

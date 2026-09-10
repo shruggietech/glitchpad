@@ -80,7 +80,7 @@ async function main() {
   ]);
   const workspace = JSON.parse(packageSource);
   if (
-    !/Glitchpad v0\.1\.1 is the current corrective community release/.test(
+    !/Glitchpad v0\.1\.2 is the current corrective community release/.test(
       readme,
     )
   ) {

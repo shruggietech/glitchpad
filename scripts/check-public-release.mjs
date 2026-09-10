@@ -3,10 +3,10 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-export const currentVersion = '0.1.1';
+export const currentVersion = '0.1.2';
 export const currentTag = `v${currentVersion}`;
 export const releaseUrl =
-  'https://github.com/ShruggieTech/glitchpad/releases/tag/v0.1.1';
+  'https://github.com/ShruggieTech/glitchpad/releases/tag/v0.1.2';
 
 function requireText(problems, source, text, expected) {
   if (!text.includes(expected))

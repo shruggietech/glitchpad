@@ -38,7 +38,7 @@ test('landing copy keeps the current release, canonical brand, and navigation co
     join(siteRoot, 'components', 'footer.tsx'),
     'utf8',
   );
-  assert.match(home, /v0\.1\.1 community release/i);
+  assert.match(home, /v0\.1\.2 community release/i);
   assert.match(home, /View your files\./);
   assert.match(
     home,

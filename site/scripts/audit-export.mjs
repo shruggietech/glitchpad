@@ -23,7 +23,7 @@ export async function auditExport() {
     problems.push('missing deployment provenance');
   else {
     const deployment = JSON.parse(await readFile(deploymentPath, 'utf8'));
-    if (deployment.productVersion !== '0.1.1')
+    if (deployment.productVersion !== '0.1.2')
       problems.push('deployment provenance has stale product version');
     if (!/^(?:local|[0-9a-f]{40})$/.test(deployment.sourceRevision ?? ''))
       problems.push('deployment provenance has invalid source revision');

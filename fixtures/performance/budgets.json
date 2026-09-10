@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "catalog_version": "v0.1.1-performance-1",
+  "catalog_version": "v0.1.2-performance-1",
   "metrics": [
     {
       "id": "cold_shell_desktop",

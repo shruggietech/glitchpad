@@ -92,7 +92,7 @@ fn desktop_reference_working_set_receipt() {
     };
     let evidence = json!({
         "schema_version": 1,
-        "catalog_version": "v0.1.1-performance-1",
+        "catalog_version": "v0.1.2-performance-1",
         "metric_id": "idle_desktop_working_set",
         "scenario_id": "idle_application",
         "profile_id": "desktop_reference_v1",

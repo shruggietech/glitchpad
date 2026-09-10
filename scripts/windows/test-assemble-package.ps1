@@ -13,7 +13,7 @@ try {
     [System.IO.File]::WriteAllBytes($executable, [byte[]](1..32))
     [System.IO.File]::WriteAllBytes($installer, [byte[]](33..64))
     $output = Join-Path $scratch 'out'
-    $manifestPath = & (Join-Path $PSScriptRoot 'assemble-package.ps1') -Version '0.1.1' -Executable $executable -Installer $installer -OutputRoot $output -SourceCommit ('a' * 40) -WorkflowIdentity 'local-contract-test' -RepositoryRoot $repositoryRoot
+    $manifestPath = & (Join-Path $PSScriptRoot 'assemble-package.ps1') -Version '0.1.2' -Executable $executable -Installer $installer -OutputRoot $output -SourceCommit ('a' * 40) -WorkflowIdentity 'local-contract-test' -RepositoryRoot $repositoryRoot
     $manifest = Get-Content -Raw -LiteralPath $manifestPath | ConvertFrom-Json
     if ($manifest.artifacts.Count -ne 2 -or $manifest.portable_inventory.Count -ne 4) {
         throw 'Assembly did not produce the governed manifest.'
@@ -23,11 +23,11 @@ try {
             throw "Portable staging omitted $required."
         }
     }
-    if (-not (Test-Path -LiteralPath (Join-Path $output 'glitchpad-0.1.1-windows-x86_64.zip') -PathType Leaf)) {
+    if (-not (Test-Path -LiteralPath (Join-Path $output 'glitchpad-0.1.2-windows-x86_64.zip') -PathType Leaf)) {
         throw 'Portable ZIP was not created.'
     }
     try {
-        & (Join-Path $PSScriptRoot 'assemble-package.ps1') -Version '0.1.1' -Executable $executable -Installer $installer -OutputRoot $output -SourceCommit ('a' * 40) -WorkflowIdentity 'overwrite-test' -RepositoryRoot $repositoryRoot | Out-Null
+        & (Join-Path $PSScriptRoot 'assemble-package.ps1') -Version '0.1.2' -Executable $executable -Installer $installer -OutputRoot $output -SourceCommit ('a' * 40) -WorkflowIdentity 'overwrite-test' -RepositoryRoot $repositoryRoot | Out-Null
         throw 'Assembly unexpectedly overwrote an existing output root.'
     }
     catch {

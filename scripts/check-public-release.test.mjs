@@ -72,6 +72,16 @@ for (const [name, mutate, expected] of [
     },
     /primary navigation contains Support or Security/,
   ],
+  [
+    'premature main deployment',
+    (sources) => {
+      sources.workflow = sources.workflow.replace(
+        "github.event_name == 'release'",
+        "github.event_name == 'push'",
+      );
+    },
+    /does not restrict deployment to a release event|permits deployment before publication/,
+  ],
 ]) {
   test(`public authority rejects ${name}`, async () => {
     const sources = await loadPublicSources();

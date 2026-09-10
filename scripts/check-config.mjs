@@ -129,13 +129,16 @@ export async function checkConfiguration(
   for (const [label, pattern] of [
     ['pull-request build trigger', /^\s*pull_request:\s*$/m],
     ['main build trigger', /^\s*push:\s*\n\s*branches:\s*\[main\]/m],
-    ['explicit deployment input', /^\s*deploy:\s*$/m],
+    [
+      'published release trigger',
+      /^\s*release:\s*\n\s*types:\s*\[published\]/m,
+    ],
     ['read-only default permission', /^permissions:\s*\n\s*contents:\s*read/m],
     ['Pages artifact path', /^\s*path:\s*site\/out\s*$/m],
     ['protected Pages environment', /^\s*name:\s*github-pages\s*$/m],
     [
-      'dispatch-only deployment condition',
-      /github\.event_name == 'workflow_dispatch' && inputs\.deploy/,
+      'exact published-release deployment condition',
+      /github\.event_name == 'release' && github\.event\.release\.tag_name == 'v0\.1\.2'/,
     ],
   ]) {
     if (!pattern.test(docsWorkflow)) {

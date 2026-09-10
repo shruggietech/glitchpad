@@ -128,14 +128,30 @@ export function verifyPublicSources(sources) {
 
   if (!/push:\s*\n\s*branches:\s*\[main\]/.test(workflow))
     problems.push('docs workflow is not triggered by main pushes');
-  if (!/github\.event_name == 'push'/.test(workflow))
+  if (!/release:\s*\n\s*types:\s*\[published\]/.test(workflow))
     problems.push(
-      'docs workflow does not authorize deployment after a main push',
+      'docs workflow is not triggered by a published GitHub release',
     );
-  if (!/github\.event_name != 'pull_request'/.test(workflow))
+  if (!/github\.event_name == 'release'/.test(workflow))
     problems.push(
-      'docs workflow does not explicitly exclude pull-request deployment',
+      'docs workflow does not restrict deployment to a release event',
     );
+  requireText(
+    problems,
+    '.github/workflows/docs.yml',
+    workflow,
+    "github.event.release.tag_name == 'v0.1.2'",
+  );
+  if (
+    /Upload Pages artifact[\s\S]*?github\.event_name == 'push'/.test(
+      workflow,
+    ) ||
+    /Deploy to GitHub Pages[\s\S]*?github\.event_name == 'push'/.test(
+      workflow,
+    ) ||
+    /inputs\.deploy/.test(workflow)
+  )
+    problems.push('docs workflow permits deployment before publication');
   requireText(
     problems,
     '.github/workflows/docs.yml',

@@ -4,13 +4,9 @@ on:
   push:
     branches: [main]
   pull_request:
+  release:
+    types: [published]
   workflow_dispatch:
-    inputs:
-      deploy:
-        description: Deploy the validated artifact to the protected GitHub Pages environment
-        required: true
-        type: boolean
-        default: false
 
 permissions:
   contents: read
@@ -54,7 +50,7 @@ jobs:
           GLITCHPAD_SOURCE_REVISION: ${{ github.sha }}
 
       - name: Upload Pages artifact
-        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.deploy)
+        if: github.event_name == 'release' && github.event.release.tag_name == 'v0.1.2' && !github.event.release.prerelease
         uses: actions/upload-pages-artifact@v5
         with:
           path: site/out
@@ -62,7 +58,7 @@ jobs:
   deploy:
     name: Deploy to GitHub Pages
     needs: build
-    if: github.event_name != 'pull_request' && (github.event_name == 'push' || inputs.deploy)
+    if: github.event_name == 'release' && github.event.release.tag_name == 'v0.1.2' && !github.event.release.prerelease
     runs-on: ubuntu-latest
     permissions:
       pages: write

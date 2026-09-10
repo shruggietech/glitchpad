@@ -44,7 +44,7 @@
 - [x] T010 [US3] Run the complete `cargo xtask check` repository gate before push
 - [x] T011 [US3] Record validation, encoding, diff hygiene, historical-record preservation, and zero-publication evidence in `specs/034-finalize-v012-release/verification.md`
 - [x] T012 [US3] Reconcile specification, plan, tasks, and implementation through analysis and convergence in `specs/034-finalize-v012-release/tasks.md`
-- [ ] T013 [US3] Push the branch and publish an official pull request against `main` with epic #157 traceability
+- [x] T013 [US3] Push the branch and publish an official pull request against `main` with epic #157 traceability
 - [ ] T014 [US3] Address every automated review and security comment individually, request no more than one second Codex round, and confirm all CI checks are green
 
 ## Dependencies and execution order

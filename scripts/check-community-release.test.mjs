@@ -1,12 +1,67 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  validateFinalReleaseHandoff,
   validateGovernedClaims,
   validateReleaseAuthorityGate,
   validateReleaseContract,
   validateReleaseReadinessEvidence,
   validateTagPackageWorkflows,
 } from './check-community-release.mjs';
+
+const finalHandoff = () => ({
+  releaseNotes:
+    'S033 dependency security maintenance resolves issue #167 before the S034 release boundary.',
+  releaseReceipt:
+    '| Dependency security slice | S033 |\n| Final release authority slice | S034 |\n| Included corrective issues | #167 |',
+  operatorRunbook:
+    'Confirm the S034 pull request is merged. Create the annotated tag `v0.1.2` on the reviewed S034 merge commit.',
+  changelog:
+    'Patched Next.js 16.3.3 and the transitive `smol-toml` 1.7.1 resolution before release.',
+});
+
+test('accepts the final S034 release handoff', () =>
+  assert.equal(validateFinalReleaseHandoff(finalHandoff()), true));
+
+for (const [name, mutate, expected] of [
+  [
+    'stale S032 tag target',
+    (handoff) => {
+      handoff.operatorRunbook = handoff.operatorRunbook.replaceAll(
+        'S034',
+        'S032',
+      );
+    },
+    /S034 release authority/u,
+  ],
+  [
+    'missing S033 traceability',
+    (handoff) => {
+      handoff.releaseNotes = handoff.releaseNotes.replace('S033', 'S032');
+    },
+    /S033 security remediation/u,
+  ],
+  [
+    'missing issue 167 traceability',
+    (handoff) => {
+      handoff.releaseReceipt = handoff.releaseReceipt.replace('#167', '#166');
+    },
+    /issue #167/u,
+  ],
+  [
+    'missing patched dependency record',
+    (handoff) => {
+      handoff.changelog = 'Dependency maintenance completed.';
+    },
+    /patched dependency versions/u,
+  ],
+]) {
+  test(`rejects a final handoff with ${name}`, () => {
+    const handoff = finalHandoff();
+    mutate(handoff);
+    assert.throws(() => validateFinalReleaseHandoff(handoff), expected);
+  });
+}
 
 const contract = () => ({
   schema_version: 1,

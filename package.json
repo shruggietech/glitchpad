@@ -9,6 +9,11 @@
     "node": ">=24.11.0 <25",
     "pnpm": ">=10.28.2 <11"
   },
+  "pnpm": {
+    "overrides": {
+      "smol-toml": "1.7.1"
+    }
+  },
   "scripts": {
     "build": "pnpm --filter @shruggietech/glitchpad build",
     "check": "cargo xtask check",

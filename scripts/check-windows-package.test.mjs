@@ -94,15 +94,19 @@ test('desktop menu geometry reserves shell chrome and keeps its popup independen
 });
 
 test('Markdown recovery stays intrinsic and avoids unsupported Chrome 69 globals', async () => {
-  const [documentSurface, markdownSurface, worker, styles] = await Promise.all([
+  const [documentSurface, markdownSurface, worker, styles, shellLayout] = await Promise.all([
     readFile(join(repositoryRoot, 'apps', 'glitchpad', 'src', 'components', 'DocumentSurface.tsx'), 'utf8'),
     readFile(join(repositoryRoot, 'apps', 'glitchpad', 'src', 'components', 'MarkdownSurface.tsx'), 'utf8'),
     readFile(join(repositoryRoot, 'apps', 'glitchpad', 'src', 'domain', 'markdown-worker.ts'), 'utf8'),
     readFile(join(repositoryRoot, 'apps', 'glitchpad', 'src', 'styles.css'), 'utf8'),
+    readFile(join(repositoryRoot, 'scripts', 'check-shell-layout.mjs'), 'utf8'),
   ]);
   assert.match(documentSurface, /Retry preview/u);
   assert.match(documentSurface, /attempt:\s*recoveryAttempt \+ 1/u);
   assert.match(styles, /\.markdown-failure,\s*\.document-render-failure\s*\{[^}]*grid-auto-rows:\s*max-content[^}]*align-content:\s*start/u);
+  assert.match(styles, /@media \(max-width: 640px\), \(pointer: coarse\)[\s\S]*\.document-render-failure button,[\s\S]*\.markdown-recovery-banner button\s*\{[\s\S]*min-height:\s*44px/u);
+  assert.match(shellLayout, /documentSurface\.scrollTop = 37/u);
+  assert.match(shellLayout, /before\.scrollTop > 0/u);
   assert.doesNotMatch(markdownSurface, /Object\.hasOwn\(/u);
   assert.doesNotMatch(markdownSurface, /queueMicrotask\(/u);
   assert.doesNotMatch(worker, /globalThis/u);

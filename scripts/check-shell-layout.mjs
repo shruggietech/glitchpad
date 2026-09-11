@@ -63,7 +63,7 @@ try {
             pageScaleFactor,
           });
           await page.setContent(
-            `<!doctype html><html data-theme="${theme}"><head><style>${css}</style></head><body><main class="app-shell" data-has-tabs="${hasTabs}"><div class="shell-chrome" data-has-tabs="${hasTabs}"><div class="application-menu-shell application-toolbar" data-menu-active="true" data-menu-open="false"><button class="application-menu-trigger" type="button" aria-label="Menu"><span class="application-menu-glyph">☰</span></button></div>${hasTabs ? '<div class="tab-strip-shell"><div class="tab-list-shell">Fixture tab</div></div>' : ''}</div><section class="document-surface" aria-label="Document surface"><div class="document-render-failure"><p>Contained failure</p><button type="button">View source</button><button type="button">Retry preview</button></div></section></main><script>const trigger=document.querySelector('.application-menu-trigger');trigger.addEventListener('click',()=>{const shell=document.querySelector('.application-menu-shell');const popup=document.createElement('div');popup.className='application-menu';popup.setAttribute('role','menu');popup.innerHTML='<button role="menuitem">Open</button><button role="menuitem">Preferences</button>';shell.append(popup);shell.dataset.menuOpen='true';});document.addEventListener('keydown',(event)=>{if(event.key!=='Escape')return;document.querySelector('.application-menu')?.remove();document.querySelector('.application-menu-shell').dataset.menuOpen='false';trigger.focus();});</script></body></html>`,
+            `<!doctype html><html data-theme="${theme}"><head><style>${css}</style></head><body><main class="app-shell" data-has-tabs="${hasTabs}"><div class="shell-chrome" data-has-tabs="${hasTabs}"><div class="application-menu-shell application-toolbar" data-menu-active="true" data-menu-open="false"><button class="application-menu-trigger" type="button" aria-label="Menu"><span class="application-menu-glyph">☰</span></button></div>${hasTabs ? '<div class="tab-strip-shell"><div class="tab-list-shell">Fixture tab</div></div>' : ''}</div><section class="document-surface" aria-label="Document surface"><div class="document-render-failure"><p>Contained failure</p><button type="button">View source</button><button type="button">Retry preview</button></div><div aria-hidden="true" style="height: calc(100vh + 200px); width: 1px"></div></section></main><script>const trigger=document.querySelector('.application-menu-trigger');trigger.addEventListener('click',()=>{const shell=document.querySelector('.application-menu-shell');const popup=document.createElement('div');popup.className='application-menu';popup.setAttribute('role','menu');popup.innerHTML='<button role="menuitem">Open</button><button role="menuitem">Preferences</button>';shell.append(popup);shell.dataset.menuOpen='true';});document.addEventListener('keydown',(event)=>{if(event.key!=='Escape')return;document.querySelector('.application-menu')?.remove();document.querySelector('.application-menu-shell').dataset.menuOpen='false';trigger.focus();});</script></body></html>`,
           );
           const before = await page.evaluate(() => {
             const rect = (selector) => {
@@ -80,7 +80,7 @@ try {
               };
             };
             const documentSurface = document.querySelector('.document-surface');
-            documentSurface.scrollTop = 1;
+            documentSurface.scrollTop = 37;
             return {
               toolbar: rect('.application-toolbar'),
               trigger: rect('.application-menu-trigger'),
@@ -143,8 +143,16 @@ try {
             'glyph must retain the compact visual footprint',
           );
           assert.ok(
+            before.action.height >= (coarsePointer ? 44 : 32) - tolerance,
+            'recovery actions must preserve their pointer target',
+          );
+          assert.ok(
             before.action.height <= 44 + tolerance,
             'recovery actions must retain intrinsic compact height',
+          );
+          assert.ok(
+            before.scrollTop > 0,
+            'governed scroll case must start from a nonzero offset',
           );
           assert.ok(
             Math.abs(after.trigger.left - before.trigger.left) <= tolerance &&

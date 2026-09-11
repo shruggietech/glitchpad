@@ -82,9 +82,10 @@ export function validatePortableSmokeContract(lifecycleSource, workflowSource) {
     "popup_viewport_containment = 'pass'",
     "document_scroll_preserved = 'pass'",
     "escape_focus_restoration = 'pass'",
-    "webview_scale_matrix = 'pass'",
+    "webview_device_scale_matrix = 'pass'",
     'WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS',
-    '$expectedTarget = 32 * $ExpectedScale',
+    'Get-WebViewDeviceScale',
+    'window.devicePixelRatio',
   ];
   for (const requirement of lifecycleRequirements)
     if (!lifecycleSource.includes(requirement))

@@ -1161,7 +1161,9 @@ button:focus-visible,
   .overflow-menu button,
   .markdown-controls button,
   .markdown-search button,
-  .markdown-outline button {
+  .markdown-outline button,
+  .document-render-failure button,
+  .markdown-recovery-banner button {
     min-width: 44px;
     min-height: 44px;
   }

@@ -73,14 +73,24 @@ for (const [name, mutate, expected] of [
     /primary navigation contains Support or Security/,
   ],
   [
-    'premature main deployment',
+    'pull request deployment authority',
     (sources) => {
-      sources.workflow = sources.workflow.replace(
-        'inputs.deploy',
+      sources.workflow = sources.workflow.replaceAll(
         "github.event_name == 'push'",
+        "github.event_name == 'pull_request'",
       );
     },
-    /permits deployment before publication/,
+    /exact trusted deployment authority|missing github\.event_name == 'push'/,
+  ],
+  [
+    'stale deployment guard',
+    (sources) => {
+      sources.workflow = sources.workflow.replace(
+        'github.rest.repos.getBranch',
+        'github.rest.repos.getCommit',
+      );
+    },
+    /missing github\.rest\.repos\.getBranch/,
   ],
   [
     'missing publisher deployment handoff',
@@ -91,6 +101,132 @@ for (const [name, mutate, expected] of [
       );
     },
     /missing uses: \.\/\.github\/workflows\/docs\.yml/,
+  ],
+]) {
+  test(`public authority rejects ${name}`, async () => {
+    const sources = await loadPublicSources();
+    mutate(sources);
+    assert.match(verifyPublicSources(sources).join('\n'), expected);
+  });
+}
+
+for (const [name, mutate, expected] of [
+  [
+    'cleanup close-event trigger',
+    (sources) => {
+      sources.cleanupWorkflow = sources.cleanupWorkflow.replace(
+        'pull_request_target:',
+        'pull_request:',
+      );
+    },
+    /missing pull_request_target:/,
+  ],
+  [
+    'cleanup excess permission',
+    (sources) => {
+      sources.cleanupWorkflow = sources.cleanupWorkflow.replace(
+        'contents: write',
+        'contents: write\n  issues: write',
+      );
+    },
+    /unsafe excess token permission/,
+  ],
+  [
+    'cleanup merged-state gate',
+    (sources) => {
+      sources.cleanupWorkflow = sources.cleanupWorkflow.replace(
+        'github.event.pull_request.merged == true &&',
+        'true &&',
+      );
+    },
+    /missing github\.event\.pull_request\.merged == true/,
+  ],
+  [
+    'cleanup same-repository job gate',
+    (sources) => {
+      sources.cleanupWorkflow = sources.cleanupWorkflow.replace(
+        'github.event.pull_request.head.repo.full_name == github.repository &&',
+        'true &&',
+      );
+    },
+    /missing github\.event\.pull_request\.head\.repo\.full_name == github\.repository/,
+  ],
+  [
+    'cleanup pull request checkout',
+    (sources) => {
+      sources.cleanupWorkflow += '\n      - uses: actions/checkout@v7\n';
+    },
+    /unsafe pull request checkout/,
+  ],
+  [
+    'cleanup event interpolation',
+    (sources) => {
+      sources.cleanupWorkflow = sources.cleanupWorkflow.replace(
+        '"$HEAD_REPOSITORY" != "$BASE_REPOSITORY"',
+        '"${{ github.event.pull_request.head.repo.full_name }}" != "$BASE_REPOSITORY"',
+      );
+    },
+    /unsafe event interpolation in executable source/,
+  ],
+  [
+    'cleanup repository identity guard',
+    (sources) => {
+      sources.cleanupWorkflow = sources.cleanupWorkflow.replace(
+        '"$HEAD_REPOSITORY" != "$BASE_REPOSITORY"',
+        'false',
+      );
+    },
+    /missing "\$HEAD_REPOSITORY" != "\$BASE_REPOSITORY"/,
+  ],
+  [
+    'cleanup default branch guard',
+    (sources) => {
+      sources.cleanupWorkflow = sources.cleanupWorkflow.replace(
+        '"$HEAD_REF" == "$DEFAULT_BRANCH"',
+        'false',
+      );
+    },
+    /missing "\$HEAD_REF" == "\$DEFAULT_BRANCH"/,
+  ],
+  [
+    'cleanup revision guard',
+    (sources) => {
+      sources.cleanupWorkflow = sources.cleanupWorkflow.replaceAll(
+        '"$current_sha" != "$HEAD_SHA"',
+        'false',
+      );
+    },
+    /missing "\$current_sha" != "\$HEAD_SHA"/,
+  ],
+  [
+    'cleanup deletion operation',
+    (sources) => {
+      sources.cleanupWorkflow = sources.cleanupWorkflow.replace(
+        '--force-with-lease="refs/heads/${HEAD_REF}:${HEAD_SHA}"',
+        '--force',
+      );
+    },
+    /missing --force-with-lease=/,
+  ],
+  [
+    'cleanup absent-ref handling',
+    (sources) => {
+      sources.cleanupWorkflow = sources.cleanupWorkflow.replaceAll(
+        '$lookup_status -eq 2',
+        'false',
+      );
+    },
+    /missing \$lookup_status -eq 2/,
+  ],
+  [
+    'cleanup unexpected-error propagation',
+    (sources) => {
+      sources.cleanupWorkflow = sources.cleanupWorkflow.replaceAll(
+        'exit "$lookup_status"',
+        'exit 0',
+      );
+    },
+    /missing exit "\$lookup_status"/,
   ],
 ]) {
   test(`public authority rejects ${name}`, async () => {

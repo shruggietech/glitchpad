@@ -2,11 +2,19 @@ import { readFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { parse as parseYaml } from 'yaml';
+
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export const currentVersion = '0.1.2';
 export const currentTag = `v${currentVersion}`;
 export const releaseUrl =
   'https://github.com/ShruggieTech/glitchpad/releases/tag/v0.1.2';
+const deploymentCondition =
+  "(github.event_name == 'push' && github.ref == 'refs/heads/main') || (inputs.deploy && inputs.release_tag == 'v0.1.2')";
+
+function normalizeExpression(value) {
+  return typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : '';
+}
 
 function requireText(problems, source, text, expected) {
   if (!text.includes(expected))
@@ -30,6 +38,7 @@ export function verifyPublicSources(sources) {
     prebuild,
     workflow,
     releaseWorkflow,
+    cleanupWorkflow,
   } = sources;
 
   for (const [source, text] of [
@@ -131,19 +140,37 @@ export function verifyPublicSources(sources) {
     problems.push('docs workflow is not triggered by main pushes');
   if (!/workflow_call:\s*\n\s*inputs:/.test(workflow))
     problems.push('docs workflow is not reusable by the release publisher');
-  requireText(
-    problems,
-    '.github/workflows/docs.yml',
-    workflow,
+  for (const expected of [
+    "github.event_name == 'push'",
+    "github.ref == 'refs/heads/main'",
+    'inputs.deploy',
     "inputs.release_tag == 'v0.1.2'",
-  );
-  if (
-    /Upload Pages artifact[\s\S]*?github\.event_name == 'push'/.test(
-      workflow,
-    ) ||
-    /Deploy to GitHub Pages[\s\S]*?github\.event_name == 'push'/.test(workflow)
-  )
-    problems.push('docs workflow permits deployment before publication');
+    'group: github-pages-production',
+    'queue: max',
+    'Confirm deployment revision is current',
+    'github.rest.repos.getBranch',
+    'current.data.commit.sha === process.env.CANDIDATE_SHA',
+    "steps.freshness.outputs.deploy == 'true'",
+  ])
+    requireText(problems, '.github/workflows/docs.yml', workflow, expected);
+  try {
+    const parsedWorkflow = parseYaml(workflow);
+    const uploadStep = parsedWorkflow.jobs?.build?.steps?.find(
+      (step) => step.name === 'Upload Pages artifact',
+    );
+    if (
+      normalizeExpression(uploadStep?.if) !== deploymentCondition ||
+      normalizeExpression(parsedWorkflow.jobs?.deploy?.if) !==
+        deploymentCondition
+    )
+      problems.push(
+        'docs workflow does not use the exact trusted deployment authority',
+      );
+  } catch {
+    problems.push('docs workflow cannot be parsed for deployment authority');
+  }
+  if (/\b(?:gh\s+release|git\s+tag)\b/.test(workflow))
+    problems.push('docs workflow can mutate immutable release authority');
   for (const expected of [
     'needs: publish',
     'uses: ./.github/workflows/docs.yml',
@@ -163,6 +190,55 @@ export function verifyPublicSources(sources) {
     'Verify production deployment',
   );
 
+  for (const expected of [
+    'pull_request_target:',
+    'types: [closed]',
+    'contents: write',
+    'github.event.pull_request.merged == true',
+    'github.event.pull_request.head.repo.full_name == github.repository',
+    'github.event.pull_request.head.ref != github.event.repository.default_branch',
+    'HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}',
+    'BASE_REPOSITORY: ${{ github.repository }}',
+    'HEAD_REF: ${{ github.event.pull_request.head.ref }}',
+    'HEAD_SHA: ${{ github.event.pull_request.head.sha }}',
+    'DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}',
+    'GITHUB_TOKEN: ${{ github.token }}',
+    'shell: bash',
+    'set -euo pipefail',
+    '"$HEAD_REPOSITORY" != "$BASE_REPOSITORY"',
+    '"$HEAD_REF" == "$DEFAULT_BRANCH"',
+    'git init --bare --quiet "$git_directory"',
+    'git -C "$git_directory"',
+    'run_git ls-remote --exit-code --refs',
+    '"$current_sha" != "$HEAD_SHA"',
+    '--force-with-lease="refs/heads/${HEAD_REF}:${HEAD_SHA}"',
+    '":refs/heads/${HEAD_REF}"',
+    '$lookup_status -eq 2',
+    'exit "$lookup_status"',
+    'exit "$push_status"',
+  ])
+    requireText(
+      problems,
+      '.github/workflows/delete-merged-branch.yml',
+      cleanupWorkflow,
+      expected,
+    );
+  for (const [pattern, label] of [
+    [/actions\/checkout@/u, 'pull request checkout'],
+    [
+      /run:\s*\|[\s\S]*\$\{\{\s*github\.event/u,
+      'event interpolation in executable source',
+    ],
+    [
+      /^\s{2}(?!contents:)\S+:\s*(?:read|write)\s*$/mu,
+      'excess token permission',
+    ],
+  ])
+    if (pattern.test(cleanupWorkflow))
+      problems.push(
+        `.github/workflows/delete-merged-branch.yml contains unsafe ${label}`,
+      );
+
   return problems;
 }
 
@@ -178,12 +254,18 @@ export async function loadPublicSources(root = repositoryRoot) {
     prebuild: 'site/scripts/prebuild.mjs',
     workflow: '.github/workflows/docs.yml',
     releaseWorkflow: '.github/workflows/release.yml',
+    cleanupWorkflow: '.github/workflows/delete-merged-branch.yml',
   };
   return Object.fromEntries(
     await Promise.all(
       Object.entries(paths).map(async ([key, path]) => [
         key,
-        await readFile(join(root, ...path.split('/')), 'utf8'),
+        await readFile(join(root, ...path.split('/')), 'utf8').catch(
+          (error) => {
+            if (error.code === 'ENOENT') return '';
+            throw error;
+          },
+        ),
       ]),
     ),
   );

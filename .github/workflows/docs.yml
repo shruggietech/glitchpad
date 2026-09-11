@@ -63,7 +63,8 @@ jobs:
         run: git diff --exit-code -- site/content/docs/index.mdx site/content/docs/meta.json site/lib/generated/documentation.json
 
       - name: Upload Pages artifact
-        if: inputs.deploy && inputs.release_tag == 'v0.1.2'
+        if: >-
+          (github.event_name == 'push' && github.ref == 'refs/heads/main') || (inputs.deploy && inputs.release_tag == 'v0.1.2')
         uses: actions/upload-pages-artifact@v5
         with:
           path: site/out
@@ -71,23 +72,47 @@ jobs:
   deploy:
     name: Deploy to GitHub Pages
     needs: build
-    if: inputs.deploy && inputs.release_tag == 'v0.1.2'
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') || (inputs.deploy && inputs.release_tag == 'v0.1.2')
     runs-on: ubuntu-latest
+    concurrency:
+      group: github-pages-production
+      queue: max
     permissions:
+      contents: read
       pages: write
       id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - name: Confirm deployment revision is current
+        id: freshness
+        uses: actions/github-script@v8
+        env:
+          CANDIDATE_SHA: ${{ github.sha }}
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const branch = context.payload.repository?.default_branch ?? 'main';
+            const current = await github.rest.repos.getBranch({ owner, repo, branch });
+            const deploy = current.data.commit.sha === process.env.CANDIDATE_SHA;
+            core.setOutput('deploy', String(deploy));
+            if (!deploy) {
+              core.notice(`Skipping stale site revision ${process.env.CANDIDATE_SHA}; ${branch} is ${current.data.commit.sha}.`);
+            }
+
       - name: Checkout verifier
+        if: steps.freshness.outputs.deploy == 'true'
         uses: actions/checkout@v7
 
       - name: Deploy
+        if: steps.freshness.outputs.deploy == 'true'
         id: deployment
         uses: actions/deploy-pages@v5
 
       - name: Verify production deployment
+        if: steps.freshness.outputs.deploy == 'true'
         run: node scripts/verify-site-deployment.mjs
         env:
           GLITCHPAD_EXPECTED_VERSION: 0.1.2

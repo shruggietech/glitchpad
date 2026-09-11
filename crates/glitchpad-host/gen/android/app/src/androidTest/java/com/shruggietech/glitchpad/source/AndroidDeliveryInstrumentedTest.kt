@@ -81,7 +81,9 @@ class AndroidDeliveryInstrumentedTest {
   }
 
   private fun waitForBodyText(scenario: ActivityScenario<MainActivity>, vararg expected: String) {
-    val deadline = SystemClock.elapsedRealtime() + 30_000L
+    // API 36 hosted emulators can remain CPU-bound while Google services settle.
+    // Preserve the strict marker assertion while allowing WebView startup to finish.
+    val deadline = SystemClock.elapsedRealtime() + 60_000L
     var latest = ""
     while (SystemClock.elapsedRealtime() < deadline) {
       val webView = AtomicReference<WebView?>()

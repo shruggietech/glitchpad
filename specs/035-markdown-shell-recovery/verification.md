@@ -6,7 +6,7 @@
 | --- | --- | --- |
 | Red-phase focused frontend tests | Expected failure | Four new recovery and shell assertions failed before implementation. |
 | Focused Markdown and shell suite | Pass | 10 test files, 93 tests passed. |
-| Complete frontend gate | Pass | ESLint, TypeScript, 46 test files with 265 tests, and the Vite production build passed in the isolated rerun. |
+| Complete frontend gate | Pass | ESLint, TypeScript, 46 test files with 267 tests, and the Vite production build passed in the isolated rerun. |
 | Production shell geometry | Pass | 48 pairwise compiled-CSS cases passed across three viewport sizes, 100/125/150/200 percent page scales, four device scale factors, light and dark themes, reduced and ordinary motion, forced colors, tabbed and untabbed states, fine and coarse pointers, and Escape focus restoration. |
 | Windows package policy | Pass | 12 policy tests and package configuration validation passed. |
 | Windows lifecycle script parsing | Pass | Portable and installer lifecycle scripts parsed successfully with PowerShell. |
@@ -16,6 +16,7 @@
 | Encoding integrity | Pass | 923 tracked text files passed UTF-8 without BOM and common mojibake-marker validation. |
 | First automated-review remediation | Pass | 31 targeted frontend tests, ESLint, TypeScript, 12 Windows policy tests, and both lifecycle-script parsers passed after independently keying recovery state, restoring menu-opener focus, adding the packaged WebView scale matrix, and asserting rendered association content. |
 | Second automated-review remediation | Pass | The production build, all 48 rendered geometry cases, 12 Windows policy tests, ESLint, TypeScript, and the portable lifecycle parser passed after raising coarse-pointer recovery actions, requiring a nonzero scroll offset, and replacing the invalid scaled-UIA assumption with an opt-in, content-free lifecycle marker derived directly from the exact package's actual `window.devicePixelRatio`. The production-browser probe remains the accurately labeled multi-scale matrix because the hosted WebView2 runtime ignores synthetic scale flags. |
+| Hosted-runner resilience | Pass | After repeated API 36 startup pressure and clean-image build cancellations also affected unchanged or duplicate jobs, the Android connected suite gained one same-emulator retry, the synthetic delivery evidence retained its strict markers with a 60-second WebView readiness window, and the Linux clean-environment ceiling increased from 30 to 40 minutes. The exact-source aggregate passed Rust, dependency policy, all 267 frontend tests, and production builds before the known parallel site lockup case timed out; that exact case passed alone in 1.8 seconds, and every remaining documentation, geometry, package-policy, encoding, and public-surface gate then passed. |
 
 Existing React `act(...)` notices and the Vite chunk-size notice remain unchanged non-failing warnings and are outside S035.
 
@@ -23,7 +24,7 @@ Existing React `act(...)` notices and the Vite chunk-size notice remain unchange
 
 | Scope | Acceptance evidence |
 | --- | --- |
-| #171 rendered-preview compatibility | Chrome 69 source-policy assertions, focused Markdown pipeline tests, all 265 frontend tests, and the production build pass locally; exact candidate bytes remain pending hosted Windows validation. |
+| #171 rendered-preview compatibility | Chrome 69 source-policy assertions, focused Markdown pipeline tests, all 267 frontend tests, and the production build pass locally; exact candidate bytes remain pending hosted Windows validation. |
 | #171 containment and compact recovery | `DocumentErrorBoundary`, `DocumentSurface`, and `MarkdownSurface` tests cover contained failure, source recovery, fresh retry, repeated failure, and stale attempts; compiled CSS geometry proves intrinsic rows and compact actions. |
 | #171 document isolation and lifecycle | Existing and S035 tests cover sequential documents, close/reopen, restoration, and document-scoped revision/attempt keys; the expanded portable lifecycle covers minimal and governed fixtures in both orders. |
 | #171 privacy-safe diagnostics | Static failure copy, existing diagnostics allowlists, content-free schema-4 lifecycle receipts, and the repository encoding/policy gates contain no document content or native locator values. |

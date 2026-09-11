@@ -141,6 +141,9 @@ fn android_emulator_uses_supported_software_rendering() {
     let instrumentation =
         fs::read_to_string(workspace.join("scripts/run-android-instrumentation.sh"))
             .expect("Android instrumentation wrapper should be readable");
+    let connected_tests =
+        fs::read_to_string(workspace.join("scripts/run-android-connected-tests.sh"))
+            .expect("Android connected-test wrapper should be readable");
     let performance_test = fs::read_to_string(workspace.join(
         "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/performance/PerformanceInstrumentedTest.kt",
     ))
@@ -177,10 +180,19 @@ fn android_emulator_uses_supported_software_rendering() {
         "settled-memory sampling must allow a cold hosted API 36 WebView to initialize"
     );
     assert!(
-        workflow.contains(
+        connected_tests.contains(
             "-Pandroid.testInstrumentationRunnerArguments.notClass=com.shruggietech.glitchpad.performance.PerformanceInstrumentedTest",
         ),
         "provider tests must not share a process with the legacy WebView performance test"
+    );
+    assert!(
+        connected_tests
+            .contains("com.shruggietech.glitchpad.source.AndroidDeliveryInstrumentedTest",),
+        "standalone delivery tests must not share a process with the connected provider suite"
+    );
+    assert!(
+        workflow.contains("bash scripts/run-android-connected-tests.sh"),
+        "the emulator runner must invoke connected-test retries through one shell command"
     );
     let restoration = workflow
         .rfind("restoration-verify.txt")

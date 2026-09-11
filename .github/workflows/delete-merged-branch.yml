@@ -1,0 +1,101 @@
+name: delete-merged-branch
+
+on:
+  pull_request_target:
+    types: [closed]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: delete-merged-branch-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  delete:
+    if: >-
+      github.event.pull_request.merged == true && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref != github.event.repository.default_branch
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Delete unchanged merged branch atomically
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+          BASE_REPOSITORY: ${{ github.repository }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$HEAD_REPOSITORY" != "$BASE_REPOSITORY" ]]; then
+            echo "::notice title=Branch cleanup skipped::Head repository does not exactly match $BASE_REPOSITORY."
+            exit 0
+          fi
+          if [[ -z "$HEAD_REF" || "$HEAD_REF" == "$DEFAULT_BRANCH" ]]; then
+            echo "::notice title=Branch cleanup skipped::Head branch is missing or is the default branch."
+            exit 0
+          fi
+
+          remote_url="https://github.com/${BASE_REPOSITORY}.git"
+          git_directory="${RUNNER_TEMP}/branch-cleanup.git"
+          auth_value="$(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 | tr -d '\n')"
+          auth_header="AUTHORIZATION: basic ${auth_value}"
+          git init --bare --quiet "$git_directory"
+
+          run_git() {
+            git -C "$git_directory" -c "http.https://github.com/.extraheader=${auth_header}" "$@"
+          }
+
+          read_current_ref() {
+            run_git ls-remote --exit-code --refs "$remote_url" "refs/heads/${HEAD_REF}"
+          }
+
+          set +e
+          current_ref="$(read_current_ref)"
+          lookup_status=$?
+          set -e
+          if [[ $lookup_status -eq 2 ]]; then
+            echo "::notice title=Branch cleanup complete::${HEAD_REF} is already absent."
+            exit 0
+          fi
+          if [[ $lookup_status -ne 0 ]]; then
+            exit "$lookup_status"
+          fi
+
+          read -r current_sha _ <<<"$current_ref"
+          if [[ "$current_sha" != "$HEAD_SHA" ]]; then
+            echo "::notice title=Branch cleanup skipped::${HEAD_REF} moved after the pull request closed."
+            exit 0
+          fi
+
+          set +e
+          run_git push \
+            --force-with-lease="refs/heads/${HEAD_REF}:${HEAD_SHA}" \
+            "$remote_url" ":refs/heads/${HEAD_REF}"
+          push_status=$?
+          set -e
+          if [[ $push_status -eq 0 ]]; then
+            echo "::notice title=Branch cleanup complete::Deleted merged branch ${HEAD_REF}."
+            exit 0
+          fi
+
+          set +e
+          current_ref="$(read_current_ref)"
+          lookup_status=$?
+          set -e
+          if [[ $lookup_status -eq 2 ]]; then
+            echo "::notice title=Branch cleanup complete::${HEAD_REF} became absent during cleanup."
+            exit 0
+          fi
+          if [[ $lookup_status -ne 0 ]]; then
+            exit "$lookup_status"
+          fi
+          read -r current_sha _ <<<"$current_ref"
+          if [[ "$current_sha" != "$HEAD_SHA" ]]; then
+            echo "::notice title=Branch cleanup skipped::${HEAD_REF} moved during cleanup."
+            exit 0
+          fi
+          exit "$push_status"

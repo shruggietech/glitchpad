@@ -126,6 +126,7 @@ export async function checkConfiguration(
     'docs.yml',
   );
   const docsWorkflow = await readFile(docsWorkflowPath, 'utf8');
+  const parsedDocsWorkflow = parseYaml(docsWorkflow);
   for (const [label, pattern] of [
     ['pull-request build trigger', /^\s*pull_request:\s*$/m],
     ['main build trigger', /^\s*push:\s*\n\s*branches:\s*\[main\]/m],
@@ -134,14 +135,138 @@ export async function checkConfiguration(
     ['Pages artifact path', /^\s*path:\s*site\/out\s*$/m],
     ['protected Pages environment', /^\s*name:\s*github-pages\s*$/m],
     [
-      'exact publisher deployment condition',
-      /inputs\.deploy && inputs\.release_tag == 'v0\.1\.2'/,
+      'trusted main deployment condition',
+      /github\.event_name == 'push'[\s\S]*github\.ref == 'refs\/heads\/main'/,
     ],
+    [
+      'exact publisher deployment condition',
+      /inputs\.deploy[\s\S]*inputs\.release_tag == 'v0\.1\.2'/,
+    ],
+    [
+      'shared Pages deployment group',
+      /^\s*group:\s*github-pages-production\s*$/m,
+    ],
+    ['ordered Pages deployment queue', /^\s*queue:\s*max\s*$/m],
   ]) {
     if (!pattern.test(docsWorkflow)) {
       throw new Error(`Invalid docs workflow contract: missing ${label}`);
     }
   }
+  const expectedDeploymentCondition =
+    "(github.event_name == 'push' && github.ref == 'refs/heads/main') || (inputs.deploy && inputs.release_tag == 'v0.1.2')";
+  const normalizeExpression = (value) =>
+    typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : '';
+  const uploadStep = parsedDocsWorkflow.jobs?.build?.steps?.find(
+    (step) => step.name === 'Upload Pages artifact',
+  );
+  if (
+    normalizeExpression(uploadStep?.if) !== expectedDeploymentCondition ||
+    normalizeExpression(parsedDocsWorkflow.jobs?.deploy?.if) !==
+      expectedDeploymentCondition
+  )
+    throw new Error(
+      'Invalid docs workflow contract: deployment authority must be exactly trusted main or the authorized release input',
+    );
+  if (
+    JSON.stringify(parsedDocsWorkflow.jobs?.deploy?.concurrency) !==
+    JSON.stringify({ group: 'github-pages-production', queue: 'max' })
+  )
+    throw new Error(
+      'Invalid docs workflow contract: production deployments must use the shared ordered queue',
+    );
+  if (
+    JSON.stringify(parsedDocsWorkflow.jobs?.deploy?.permissions) !==
+    JSON.stringify({ contents: 'read', pages: 'write', 'id-token': 'write' })
+  )
+    throw new Error(
+      'Invalid docs workflow contract: deployment permissions must be only Pages and OIDC write',
+    );
+  const freshnessStep = parsedDocsWorkflow.jobs?.deploy?.steps?.find(
+    (step) => step.name === 'Confirm deployment revision is current',
+  );
+  for (const [label, pattern] of [
+    ['default-branch freshness lookup', /github\.rest\.repos\.getBranch/],
+    [
+      'exact deployment revision comparison',
+      /current\.data\.commit\.sha === process\.env\.CANDIDATE_SHA/,
+    ],
+    ['deployment authorization output', /core\.setOutput\('deploy'/],
+  ])
+    if (!pattern.test(freshnessStep?.with?.script ?? ''))
+      throw new Error(`Invalid docs workflow contract: missing ${label}`);
+  for (const step of parsedDocsWorkflow.jobs?.deploy?.steps?.slice(1) ?? [])
+    if (step.if !== "steps.freshness.outputs.deploy == 'true'")
+      throw new Error(
+        'Invalid docs workflow contract: every deployment and verification step must honor freshness',
+      );
+
+  const cleanupWorkflowPath = join(
+    repositoryRoot,
+    '.github',
+    'workflows',
+    'delete-merged-branch.yml',
+  );
+  const cleanupWorkflowSource = await readFile(cleanupWorkflowPath, 'utf8');
+  const cleanupWorkflow = parseYaml(cleanupWorkflowSource);
+  if (
+    JSON.stringify(cleanupWorkflow.on) !==
+    JSON.stringify({ pull_request_target: { types: ['closed'] } })
+  )
+    throw new Error(
+      'Invalid cleanup workflow contract: trigger must be only pull_request_target closed',
+    );
+  if (
+    JSON.stringify(cleanupWorkflow.permissions) !==
+    JSON.stringify({ contents: 'write' })
+  )
+    throw new Error(
+      'Invalid cleanup workflow contract: permissions must be only contents write',
+    );
+  const cleanupJob = cleanupWorkflow.jobs?.delete;
+  if (!cleanupJob || Object.keys(cleanupWorkflow.jobs).length !== 1)
+    throw new Error(
+      'Invalid cleanup workflow contract: expected one delete job',
+    );
+  if (
+    cleanupJob.steps?.length !== 1 ||
+    cleanupJob.steps[0].shell !== 'bash' ||
+    typeof cleanupJob.steps[0].run !== 'string' ||
+    cleanupJob.steps[0].uses
+  )
+    throw new Error(
+      'Invalid cleanup workflow contract: expected one trusted inline Bash step',
+    );
+  for (const [label, pattern] of [
+    ['closed pull request merged gate', /pull_request\.merged == true/],
+    ['same-repository job gate', /head\.repo\.full_name == github\.repository/],
+    [
+      'default-branch job gate',
+      /head\.ref != github\.event\.repository\.default_branch/,
+    ],
+    [
+      'case-sensitive repository guard',
+      /"\$HEAD_REPOSITORY" != "\$BASE_REPOSITORY"/,
+    ],
+    ['default-branch script guard', /"\$HEAD_REF" == "\$DEFAULT_BRANCH"/],
+    ['bare temporary repository', /git init --bare --quiet "\$git_directory"/],
+    ['isolated Git directory', /git -C "\$git_directory"/],
+    ['current reference lookup', /run_git ls-remote --exit-code --refs/],
+    ['revision observation guard', /"\$current_sha" != "\$HEAD_SHA"/],
+    [
+      'atomic revision lease',
+      /--force-with-lease="refs\/heads\/\$\{HEAD_REF\}:\$\{HEAD_SHA\}"/,
+    ],
+    ['exact reference deletion', /":refs\/heads\/\$\{HEAD_REF\}"/],
+    ['idempotent absent-ref handling', /\$lookup_status -eq 2/],
+    ['lookup error propagation', /exit "\$lookup_status"/],
+    ['push error propagation', /exit "\$push_status"/],
+  ])
+    if (!pattern.test(cleanupWorkflowSource))
+      throw new Error(`Invalid cleanup workflow contract: missing ${label}`);
+  if (/actions\/checkout@|actions\/github-script@/m.test(cleanupWorkflowSource))
+    throw new Error(
+      'Invalid cleanup workflow contract: checkout and non-atomic API deletion are prohibited',
+    );
 
   const releaseWorkflow = await readFile(
     join(repositoryRoot, '.github', 'workflows', 'release.yml'),

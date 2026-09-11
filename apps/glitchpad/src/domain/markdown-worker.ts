@@ -9,7 +9,7 @@ interface WorkerScope {
   postMessage(result: MarkdownRenderResult): void;
 }
 
-const workerScope = globalThis as unknown as WorkerScope;
+const workerScope = self as unknown as WorkerScope;
 
 workerScope.onmessage = (event) => {
   void renderMarkdown(event.data).then((result) => workerScope.postMessage(result));

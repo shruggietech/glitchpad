@@ -136,6 +136,7 @@ pub fn run() {
         desktop_delivery::drain_desktop_deliveries,
         desktop_delivery::save_desktop_source_as,
         lifecycle_probe::record_desktop_lifecycle_probe,
+        lifecycle_probe::record_desktop_device_scale_probe,
     ]);
     #[cfg(target_os = "android")]
     let builder = builder.invoke_handler(tauri::generate_handler![

@@ -45,6 +45,8 @@ import {
 interface MarkdownSurfaceProps {
   session: ShellSession;
   projectionSuppressed?: boolean;
+  recoveryAttempt?: number;
+  onEnterRecoverySource?: () => void;
   onDocumentChange: (
     id: string,
     expectedRevision: number,
@@ -241,10 +243,10 @@ function SafeTree({
               : undefined
           }
           data-footnote-ref={
-            Object.hasOwn(node.properties, 'dataFootnoteRef') ? '' : undefined
+            Object.prototype.hasOwnProperty.call(node.properties, 'dataFootnoteRef') ? '' : undefined
           }
           data-footnote-backref={
-            Object.hasOwn(node.properties, 'dataFootnoteBackref') ? '' : undefined
+            Object.prototype.hasOwnProperty.call(node.properties, 'dataFootnoteBackref') ? '' : undefined
           }
           onClick={activate}
           onKeyDown={(event) => activateOnKeyboard(event, activate)}
@@ -344,6 +346,8 @@ export const MarkdownSurface = forwardRef<
   {
     session,
     projectionSuppressed = false,
+    recoveryAttempt = 0,
+    onEnterRecoverySource,
     onDocumentChange,
     onLanguageChange,
     onMarkdownChange,
@@ -474,6 +478,7 @@ export const MarkdownSurface = forwardRef<
   }, [
     client,
     eligibility,
+    recoveryAttempt,
     session.id,
     session.revision,
     textDocument.normalized_text,
@@ -482,12 +487,14 @@ export const MarkdownSurface = forwardRef<
   useEffect(
     () => {
       const generation = ++lifecycleGeneration.current;
-      return () => queueMicrotask(() => {
-        if (ownsClient.current && lifecycleGeneration.current === generation) {
-          ownedClient.current?.dispose();
-          ownedClient.current = null;
-        }
-      });
+      return () => {
+        void Promise.resolve().then(() => {
+          if (ownsClient.current && lifecycleGeneration.current === generation) {
+            ownedClient.current?.dispose();
+            ownedClient.current = null;
+          }
+        });
+      };
     },
     [],
   );
@@ -754,7 +761,7 @@ export const MarkdownSurface = forwardRef<
         ) : status === 'failed' ? (
           <div className="markdown-failure">
             <p role="alert">Markdown preview failed safely. Source remains available.</p>
-            <button type="button" onClick={enterSourceMode}>View source</button>
+            <button type="button" onClick={onEnterRecoverySource ?? enterSourceMode}>View source</button>
           </div>
         ) : status === 'empty' ? (
           <p>This document is empty.</p>

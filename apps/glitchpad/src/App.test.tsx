@@ -82,6 +82,8 @@ describe('document foundation shell', () => {
     render(<App />);
     expect(within(screen.getByRole('region', { name: 'Document surface' })).getByText('No document is open')).toBeVisible();
     expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Menu' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Menu' }).closest('.shell-chrome')).toBeInTheDocument();
     for (const fixture of ['welcome.md', 'draft.md', 'notes.txt']) expect(screen.queryByText(fixture)).not.toBeInTheDocument();
   });
 
@@ -503,7 +505,7 @@ describe('document foundation shell', () => {
     expect(screen.getByRole('status')).toHaveTextContent(/save.*draft\.md/i);
   });
 
-  it('opens one shell-owned inspector, retargets it with the active tab, and restores active-tab focus', async () => {
+  it('opens one shell-owned inspector, retargets it with the active tab, and restores opener focus', async () => {
     render(<App sessions={initialSessions} />);
     invokeMenu('File information');
     expect(screen.getByRole('complementary', { name: 'File information' })).toHaveTextContent('welcome.md');
@@ -512,7 +514,7 @@ describe('document foundation shell', () => {
     fireEvent.click(screen.getByRole('tab', { name: /diagram\.mmd/iu }));
     expect(screen.getByRole('complementary', { name: 'File information' })).toHaveTextContent('diagram.mmd');
     fireEvent.click(screen.getByRole('button', { name: 'Close file information' }));
-    await waitFor(() => expect(screen.getByRole('tab', { name: /diagram\.mmd/iu })).toHaveFocus());
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Menu' })).toHaveFocus());
     expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
   });
 

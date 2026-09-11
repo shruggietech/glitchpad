@@ -51,9 +51,10 @@ test('repository Windows package configuration is internally consistent', async 
   });
 });
 
-test('portable lifecycle policy rejects removal of content-first release assertions', async () => {
-  const [lifecycle, workflow] = await Promise.all([
+test('Windows lifecycle policy rejects removal of content-first release assertions', async () => {
+  const [lifecycle, installerLifecycle, workflow] = await Promise.all([
     readFile(join(repositoryRoot, 'scripts', 'windows', 'test-portable-lifecycle.ps1'), 'utf8'),
+    readFile(join(repositoryRoot, 'scripts', 'windows', 'test-installer-lifecycle.ps1'), 'utf8'),
     readFile(join(repositoryRoot, '.github', 'workflows', 'windows-package.yml'), 'utf8'),
   ]);
   assert.equal(validatePortableSmokeContract(lifecycle, workflow), true);
@@ -61,19 +62,54 @@ test('portable lifecycle policy rejects removal of content-first release asserti
     () => validatePortableSmokeContract(lifecycle.replace("conditional_tabs = 'pass'", ''), workflow),
     /portable smoke lifecycle omits/u,
   );
+  assert.match(installerLifecycle, /Wait-RenderedMarkdownHeading \$associationProcess 'S035 Minimal Markdown 5E8A'/u);
 });
 
-test('desktop menu geometry stays left-anchored and independently positioned', async () => {
-  const styles = await readFile(join(repositoryRoot, 'apps', 'glitchpad', 'src', 'styles.css'), 'utf8');
+test('desktop menu geometry reserves shell chrome and keeps its popup independently positioned', async () => {
+  const [app, menu, styles] = await Promise.all([
+    readFile(join(repositoryRoot, 'apps', 'glitchpad', 'src', 'App.tsx'), 'utf8'),
+    readFile(join(repositoryRoot, 'apps', 'glitchpad', 'src', 'components', 'ApplicationMenu.tsx'), 'utf8'),
+    readFile(join(repositoryRoot, 'apps', 'glitchpad', 'src', 'styles.css'), 'utf8'),
+  ]);
+  const chrome = styles.match(/\.shell-chrome\s*\{([^}]*)\}/su)?.[1] ?? '';
   const shell = styles.match(/\.application-menu-shell\s*\{([^}]*)\}/su)?.[1] ?? '';
+  const trigger = styles.match(/\.application-menu-trigger\s*\{([^}]*)\}/su)?.[1] ?? '';
   const popup = styles.match(/\.application-menu\s*\{([^}]*)\}/su)?.[1] ?? '';
-  assert.match(shell, /left:\s*0\.5rem/u);
-  assert.doesNotMatch(shell, /right:/u);
-  assert.match(shell, /width:\s*2\.25rem/u);
+  assert.match(app, /className="shell-chrome"/u);
+  assert.match(app, /<ApplicationMenu[\s\S]*<TabStrip/u);
+  assert.match(menu, /application-menu-shell application-toolbar/u);
+  assert.match(chrome, /display:\s*grid/u);
+  assert.match(chrome, /grid-template-columns:\s*var\(--application-toolbar-size\) minmax\(0, 1fr\)/u);
+  assert.match(shell, /position:\s*relative/u);
+  assert.doesNotMatch(shell, /position:\s*absolute/u);
+  assert.match(trigger, /width:\s*100%/u);
+  assert.match(styles, /--application-toolbar-size:\s*32px/u);
+  assert.match(styles, /--application-toolbar-size:\s*44px/u);
+  assert.match(styles, /\.application-menu-glyph\s*\{[\s\S]*width:\s*18px[\s\S]*height:\s*18px/u);
   assert.match(popup, /position:\s*absolute/u);
   assert.match(popup, /left:\s*0/u);
+  assert.match(popup, /max-height:\s*calc\(100vh - var\(--shell-row-height\) - 0\.5rem\)/u);
   assert.match(styles, /@media \(forced-colors: active\)[\s\S]*\.application-menu-trigger/u);
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/u);
+});
+
+test('Markdown recovery stays intrinsic and avoids unsupported Chrome 69 globals', async () => {
+  const [documentSurface, markdownSurface, worker, styles, shellLayout] = await Promise.all([
+    readFile(join(repositoryRoot, 'apps', 'glitchpad', 'src', 'components', 'DocumentSurface.tsx'), 'utf8'),
+    readFile(join(repositoryRoot, 'apps', 'glitchpad', 'src', 'components', 'MarkdownSurface.tsx'), 'utf8'),
+    readFile(join(repositoryRoot, 'apps', 'glitchpad', 'src', 'domain', 'markdown-worker.ts'), 'utf8'),
+    readFile(join(repositoryRoot, 'apps', 'glitchpad', 'src', 'styles.css'), 'utf8'),
+    readFile(join(repositoryRoot, 'scripts', 'check-shell-layout.mjs'), 'utf8'),
+  ]);
+  assert.match(documentSurface, /Retry preview/u);
+  assert.match(documentSurface, /attempt:\s*recoveryAttempt \+ 1/u);
+  assert.match(styles, /\.markdown-failure,\s*\.document-render-failure\s*\{[^}]*grid-auto-rows:\s*max-content[^}]*align-content:\s*start/u);
+  assert.match(styles, /@media \(max-width: 640px\), \(pointer: coarse\)[\s\S]*\.document-render-failure button,[\s\S]*\.markdown-recovery-banner button\s*\{[\s\S]*min-height:\s*44px/u);
+  assert.match(shellLayout, /documentSurface\.scrollTop = 37/u);
+  assert.match(shellLayout, /before\.scrollTop > 0/u);
+  assert.doesNotMatch(markdownSurface, /Object\.hasOwn\(/u);
+  assert.doesNotMatch(markdownSurface, /queueMicrotask\(/u);
+  assert.doesNotMatch(worker, /globalThis/u);
 });
 
 test('size classification preserves exact S018 boundaries', () => {

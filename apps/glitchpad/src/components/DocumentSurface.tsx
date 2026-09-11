@@ -33,7 +33,11 @@ export const DocumentSurface = forwardRef<TextEditorHandle, DocumentSurfaceProps
   { session, canOpen = false, onOpen, labelledByTab = false, onDocumentChange, onLanguageChange, onMarkdownChange, onMermaidChange, externalLinkGateway, localAssetGateway, onOpenMetadata, onMetadataContribution },
   ref,
 ) {
-  const [markdownRecoveryKey, setMarkdownRecoveryKey] = useState<string | null>(null);
+  const [markdownRecoveries, setMarkdownRecoveries] = useState(() => new Map<string, {
+    documentKey: string;
+    attempt: number;
+    sourceMode: boolean;
+  }>());
 
   if (!session) {
     return (
@@ -50,7 +54,43 @@ export const DocumentSurface = forwardRef<TextEditorHandle, DocumentSurfaceProps
   }
 
   const currentDocumentKey = `${session.id}:${session.revision}`;
-  const projectionSuppressed = markdownRecoveryKey === currentDocumentKey;
+  const markdownRecovery = markdownRecoveries.get(session.id);
+  const recoveryAttempt = markdownRecovery?.documentKey === currentDocumentKey
+    ? markdownRecovery.attempt
+    : 0;
+  const projectionSuppressed = markdownRecovery?.documentKey === currentDocumentKey
+    && markdownRecovery.sourceMode;
+  const publishRecoveryMode = (mode: 'rendered' | 'source') => {
+    onMarkdownChange(session.id, session.revision, {
+      mode,
+      eligibility: session.markdown_document?.eligibility ?? 'full',
+      render_revision: mode === 'source'
+        ? (session.markdown_document?.render_revision ?? null)
+        : null,
+      render_status: mode === 'source' ? 'failed' : 'scheduled',
+      printable: false,
+      outline_count: 0,
+      source_selection: session.markdown_document?.source_selection ?? null,
+    });
+  };
+  const enterRecoverySource = (reset?: () => void) => {
+    setMarkdownRecoveries((current) => {
+      const next = new Map(current);
+      next.set(session.id, { documentKey: currentDocumentKey, attempt: recoveryAttempt, sourceMode: true });
+      return next;
+    });
+    publishRecoveryMode('source');
+    reset?.();
+  };
+  const retryMarkdownPreview = (reset?: () => void) => {
+    setMarkdownRecoveries((current) => {
+      const next = new Map(current);
+      next.set(session.id, { documentKey: currentDocumentKey, attempt: recoveryAttempt + 1, sourceMode: false });
+      return next;
+    });
+    publishRecoveryMode('rendered');
+    reset?.();
+  };
 
   const presentation = session.text_document ? (
     session.text_document.mode === 'refused' ? (
@@ -58,7 +98,15 @@ export const DocumentSurface = forwardRef<TextEditorHandle, DocumentSurfaceProps
     ) : session.text_document.mode === 'large_read_only' ? (
       <LargeTextSurface session={session} />
     ) : session.renderer.id === 'markdown' ? (
-      <MarkdownSurface key={session.id} ref={ref} session={session} projectionSuppressed={projectionSuppressed} onDocumentChange={onDocumentChange} onLanguageChange={onLanguageChange} onMarkdownChange={onMarkdownChange} externalLinkGateway={externalLinkGateway} localAssetGateway={localAssetGateway} onOpenMetadata={onOpenMetadata} onMetadataContribution={onMetadataContribution} />
+      <div className="markdown-recovery-layout">
+        {projectionSuppressed && (
+          <div className="markdown-recovery-banner" role="status">
+            <p>Rendered preview is paused after a contained failure. Source remains available.</p>
+            <button type="button" onClick={() => retryMarkdownPreview()}>Retry preview</button>
+          </div>
+        )}
+        <MarkdownSurface key={`${session.id}:${recoveryAttempt}`} ref={ref} session={session} projectionSuppressed={projectionSuppressed} recoveryAttempt={recoveryAttempt} onEnterRecoverySource={() => enterRecoverySource()} onDocumentChange={onDocumentChange} onLanguageChange={onLanguageChange} onMarkdownChange={onMarkdownChange} externalLinkGateway={externalLinkGateway} localAssetGateway={localAssetGateway} onOpenMetadata={onOpenMetadata} onMetadataContribution={onMetadataContribution} />
+      </div>
     ) : session.renderer.id === 'mermaid' ? (
       <MermaidSurface key={session.id} ref={ref} session={session} onDocumentChange={onDocumentChange} onLanguageChange={onLanguageChange} onMermaidChange={onMermaidChange ?? (() => undefined)} onOpenMetadata={onOpenMetadata} onMetadataContribution={onMetadataContribution} />
     ) : (
@@ -67,7 +115,7 @@ export const DocumentSurface = forwardRef<TextEditorHandle, DocumentSurfaceProps
   ) : (
     <pre className="document-content">{session.content}</pre>
   );
-  const resetKey = `${session.id}:${session.revision}:${session.renderer.id}:${session.markdown_document?.mode ?? ''}`;
+  const resetKey = `${session.id}:${session.revision}:${session.renderer.id}:${session.markdown_document?.mode ?? ''}:${recoveryAttempt}`;
 
   return (
     <section
@@ -89,21 +137,14 @@ export const DocumentSurface = forwardRef<TextEditorHandle, DocumentSurfaceProps
               <button
                 type="button"
                 onClick={() => {
-                  setMarkdownRecoveryKey(currentDocumentKey);
-                  onMarkdownChange(session.id, session.revision, {
-                    mode: 'source',
-                    eligibility: session.markdown_document?.eligibility ?? 'full',
-                    render_revision: session.markdown_document?.render_revision ?? null,
-                    render_status: 'failed',
-                    printable: false,
-                    outline_count: 0,
-                    source_selection: session.markdown_document?.source_selection ?? null,
-                  });
-                  reset();
+                  enterRecoverySource(reset);
                 }}
               >
                 View source
               </button>
+            )}
+            {session.renderer.id === 'markdown' && session.text_document && (
+              <button type="button" onClick={() => retryMarkdownPreview(reset)}>Retry preview</button>
             )}
           </div>
         )}

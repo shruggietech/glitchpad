@@ -2,6 +2,7 @@ import type { DesktopSourceSummary } from './contracts';
 import {
   createDesktopDeliveryGateway,
   nativeDesktopDeliveryAvailable,
+  reportDesktopDeviceScaleProbe,
   reportDesktopLifecycleProbe,
   type DesktopDeliveryResult,
 } from './desktop-delivery-gateway';
@@ -70,6 +71,24 @@ test('native lifecycle probes expose only event and delivery sequence', async ()
     expect(call).toHaveBeenCalledWith('record_desktop_lifecycle_probe', {
       event: 'delivery-ready',
       sequence: 7,
+    });
+  } finally {
+    if (descriptor) Object.defineProperty(window, '__TAURI_INTERNALS__', descriptor);
+    else Reflect.deleteProperty(window, '__TAURI_INTERNALS__');
+  }
+});
+
+test('native device-scale probes expose only the numeric browser scale', async () => {
+  const descriptor = Object.getOwnPropertyDescriptor(window, '__TAURI_INTERNALS__');
+  const call = vi.fn().mockResolvedValue(true);
+  try {
+    Object.defineProperty(window, '__TAURI_INTERNALS__', {
+      configurable: true,
+      value: { invoke: vi.fn(), transformCallback: vi.fn() },
+    });
+    await expect(reportDesktopDeviceScaleProbe(1.25, call)).resolves.toBe(true);
+    expect(call).toHaveBeenCalledWith('record_desktop_device_scale_probe', {
+      deviceScale: 1.25,
     });
   } finally {
     if (descriptor) Object.defineProperty(window, '__TAURI_INTERNALS__', descriptor);

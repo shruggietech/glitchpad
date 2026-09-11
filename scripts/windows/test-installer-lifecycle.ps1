@@ -3,6 +3,7 @@ param(
     [Parameter(Mandatory = $true)][string] $Installer,
     [Parameter(Mandatory = $true)][string] $Fixture,
     [Parameter(Mandatory = $true)][string] $TextFixture,
+    [Parameter(Mandatory = $true)][string] $MarkdownFixtureMinimal,
     [Parameter(Mandatory = $true)][string] $Receipt,
     [Parameter(Mandatory = $true)][string] $MarkdownFixtureA,
     [Parameter(Mandatory = $true)][string] $MarkdownFixtureB,
@@ -11,6 +12,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
+Add-Type -AssemblyName UIAutomationClient
 $installerPath = (Resolve-Path -LiteralPath $Installer).Path
 $fixturePath = (Resolve-Path -LiteralPath $Fixture).Path
 $fixtureDigest = (Get-FileHash -LiteralPath $fixturePath -Algorithm SHA256).Hash
@@ -38,6 +40,22 @@ function Get-AssociationSnapshot {
     })
 }
 
+function Wait-RenderedMarkdownHeading([Diagnostics.Process] $Process, [string] $Heading, [int] $Seconds = 20) {
+    $deadline = [DateTimeOffset]::UtcNow.AddSeconds($Seconds)
+    do {
+        if (-not $Process.HasExited) {
+            $Process.Refresh()
+            if ($Process.MainWindowHandle -ne [IntPtr]::Zero) {
+                $window = [System.Windows.Automation.AutomationElement]::FromHandle($Process.MainWindowHandle)
+                $condition = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::NameProperty, $Heading)
+                if ($window.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $condition)) { return }
+            }
+        }
+        Start-Sleep -Milliseconds 100
+    } while ([DateTimeOffset]::UtcNow -lt $deadline)
+    throw 'Installed Markdown association did not render the expected synthetic heading.'
+}
+
 $associationBefore = Get-AssociationSnapshot
 
 $install = Start-Process -FilePath $installerPath -ArgumentList '/S' -Wait -PassThru -WindowStyle Hidden
@@ -52,7 +70,14 @@ foreach ($association in $associationInstalled) {
         throw 'A governed file association does not target the installed application.'
     }
 }
-& "$PSScriptRoot/test-portable-lifecycle.ps1" -PortableRoot $installRoot -ApplicationName 'glitchpad-host.exe' -TextFixture $TextFixture -MarkdownFixtureA $MarkdownFixtureA -MarkdownFixtureB $MarkdownFixtureB -Receipt $InstalledMarkdownReceipt
+& "$PSScriptRoot/test-portable-lifecycle.ps1" -PortableRoot $installRoot -ApplicationName 'glitchpad-host.exe' -TextFixture $TextFixture -MarkdownFixtureMinimal $MarkdownFixtureMinimal -MarkdownFixtureA $MarkdownFixtureA -MarkdownFixtureB $MarkdownFixtureB -Receipt $InstalledMarkdownReceipt
+$associationProcess = Start-Process -FilePath (Resolve-Path -LiteralPath $MarkdownFixtureMinimal).Path -PassThru -WindowStyle Hidden
+try {
+    Wait-RenderedMarkdownHeading $associationProcess 'S035 Minimal Markdown 5E8A'
+}
+finally {
+    if (-not $associationProcess.HasExited) { Stop-Process -Id $associationProcess.Id -Force }
+}
 $process = Start-Process -FilePath $application -ArgumentList ('"{0}"' -f $fixturePath) -PassThru -WindowStyle Hidden
 try {
     Start-Sleep -Seconds 5
@@ -87,6 +112,7 @@ for ($index = 0; $index -lt $extensions.Count; $index += 1) {
     repair = 'pass'
     launch = 'pass'
     markdown_orders = 'pass'
+    markdown_association_launch = 'pass'
     uninstall = 'pass'
     document_preservation = 'pass'
     association_cleanup = 'pass'

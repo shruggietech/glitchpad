@@ -73,6 +73,7 @@ import {
 import {
   nativeDesktopDeliveryAvailable,
   nativeDesktopDeliveryGateway,
+  reportDesktopDeviceScaleProbe,
   reportDesktopLifecycleProbe,
   type DesktopDeliveryGateway,
   type DesktopDeliveryResult,
@@ -160,6 +161,8 @@ export function App({ sessions = [], recoveryGateway, externalLinkGateway, local
   const pendingDesktopDeliveryProbesRef = useRef(new Map<string, number[]>());
   useEffect(() => {
     void reportDesktopLifecycleProbe('shell-ready').catch(() => undefined);
+    if (/Windows/iu.test(navigator.userAgent))
+      void reportDesktopDeviceScaleProbe(window.devicePixelRatio).catch(() => undefined);
   }, []);
   const applyDesktopDeliveries = useCallback(async (results: readonly DesktopDeliveryResult[]) => {
     if (!selectedDesktopDeliveryGateway) return;

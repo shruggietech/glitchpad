@@ -27,6 +27,23 @@ fn marker_name(event: &str, sequence: Option<u64>) -> Result<String, CoreError> 
     }
 }
 
+fn device_scale_marker(device_scale: f64) -> Result<&'static str, CoreError> {
+    for (scale, marker) in [
+        (1.0, "device-scale-100.marker"),
+        (1.25, "device-scale-125.marker"),
+        (1.5, "device-scale-150.marker"),
+        (2.0, "device-scale-200.marker"),
+    ] {
+        if (device_scale - scale).abs() <= 0.01 {
+            return Ok(marker);
+        }
+    }
+    Err(probe_error(
+        CoreErrorCategory::InvalidInput,
+        "The lifecycle device scale was invalid",
+    ))
+}
+
 fn probe_root_enabled(root: &Path) -> bool {
     fs::metadata(root).is_ok_and(|metadata| metadata.is_dir())
         && fs::read(root.join("enabled.marker")).ok().as_deref() == Some(PROBE_ENABLE_MARKER)
@@ -109,6 +126,20 @@ impl LifecycleProbeState {
         };
         record_marker(root, event, sequence)
     }
+
+    fn record_device_scale(&self, device_scale: f64) -> Result<bool, CoreError> {
+        let marker = device_scale_marker(device_scale)?;
+        let Some(root) = self.root.as_deref() else {
+            return Ok(false);
+        };
+        if !probe_root_enabled(root) {
+            return Err(probe_error(
+                CoreErrorCategory::Unavailable,
+                "Lifecycle acknowledgement storage is unavailable",
+            ));
+        }
+        record_fixed_marker(root, marker)
+    }
 }
 
 /// Records a path-private, content-free lifecycle acknowledgement when native package validation opts in.
@@ -124,6 +155,20 @@ pub fn record_desktop_lifecycle_probe(
     sequence: Option<u64>,
 ) -> Result<bool, CoreError> {
     state.record(&event, sequence)
+}
+
+/// Records an allowlisted, content-free device-scale acknowledgement for Windows package validation.
+///
+/// # Errors
+///
+/// Returns a path-free error when the scale is outside the governed matrix or the opted-in probe directory cannot commit the marker.
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
+pub fn record_desktop_device_scale_probe(
+    state: tauri::State<'_, LifecycleProbeState>,
+    device_scale: f64,
+) -> Result<bool, CoreError> {
+    state.record_device_scale(device_scale)
 }
 
 #[cfg(test)]
@@ -160,6 +205,21 @@ mod tests {
         );
         assert!(record_marker(&root, "../../escape", Some(1)).is_err());
         assert!(record_marker(&root, "delivery-ready", None).is_err());
+
+        let state = LifecycleProbeState {
+            root: Some(root.clone()),
+        };
+        assert!(
+            state
+                .record_device_scale(1.25)
+                .expect("governed device scale must record")
+        );
+        assert_eq!(
+            fs::read(root.join("device-scale-125.marker"))
+                .expect("device-scale marker must be readable"),
+            b"ready\n"
+        );
+        assert!(state.record_device_scale(1.1).is_err());
 
         fs::remove_dir_all(root).expect("temporary probe root must be removed");
     }

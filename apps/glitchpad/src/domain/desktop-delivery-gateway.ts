@@ -64,6 +64,14 @@ export const reportDesktopLifecycleProbe = async (
   return call('record_desktop_lifecycle_probe', { event, sequence: sequence ?? null }) as Promise<boolean>;
 };
 
+export const reportDesktopDeviceScaleProbe = async (
+  deviceScale: number,
+  call: NativeInvoke = invoke,
+): Promise<boolean> => {
+  if (!nativeDesktopDeliveryAvailable()) return false;
+  return call('record_desktop_device_scale_probe', { deviceScale }) as Promise<boolean>;
+};
+
 const decode = (bytes: Uint8Array): { text: string; encoding: TextEncoding } => {
   const encoding = detectEncoding(bytes);
   const decoder = encoding === 'utf16_le_bom'

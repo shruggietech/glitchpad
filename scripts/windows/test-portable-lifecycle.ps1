@@ -276,58 +276,16 @@ function Assert-MenuGeometry([Diagnostics.Process] $Process, [string] $DocumentN
     if (-not $focused -or $focused.Current.Name -ne 'Menu') { throw 'Escape did not restore focus to the application menu trigger.' }
 }
 
-function Get-AvailableLoopbackPort {
-    $listener = [Net.Sockets.TcpListener]::new([Net.IPAddress]::Loopback, 0)
-    try {
-        $listener.Start()
-        return ([Net.IPEndPoint]$listener.LocalEndpoint).Port
-    }
-    finally {
-        $listener.Stop()
-    }
-}
-
-function Wait-WebViewDevToolsTarget([int] $Port) {
+function Wait-DeviceScaleMarker([string] $Path) {
     $deadline = [DateTimeOffset]::UtcNow.AddSeconds(10)
     do {
-        try {
-            $targets = @(Invoke-RestMethod -Uri ("http://127.0.0.1:{0}/json" -f $Port) -TimeoutSec 1)
-            $target = $targets | Where-Object { $_.type -eq 'page' -and $_.webSocketDebuggerUrl } | Select-Object -First 1
-            if ($target) { return $target.webSocketDebuggerUrl }
-        }
-        catch {
+        if (Test-Path -LiteralPath $Path -PathType Leaf) {
+            if ([IO.File]::ReadAllText($Path, [Text.Encoding]::UTF8) -ne "ready`n") { throw 'The packaged WebView device-scale marker was invalid.' }
+            return
         }
         Start-Sleep -Milliseconds 100
     } while ([DateTimeOffset]::UtcNow -lt $deadline)
-    throw 'The packaged WebView did not expose its requested local DevTools target.'
-}
-
-function Get-WebViewDeviceScale([string] $DebuggerUrl) {
-    $socket = [Net.WebSockets.ClientWebSocket]::new()
-    $timeout = [Threading.CancellationTokenSource]::new([TimeSpan]::FromSeconds(10))
-    try {
-        $socket.Options.SetRequestHeader('Origin', 'http://localhost')
-        $socket.ConnectAsync([Uri]$DebuggerUrl, $timeout.Token).GetAwaiter().GetResult()
-        $request = [Text.Encoding]::UTF8.GetBytes('{"id":1,"method":"Runtime.evaluate","params":{"expression":"window.devicePixelRatio","returnByValue":true}}')
-        $socket.SendAsync([ArraySegment[byte]]::new($request), [Net.WebSockets.WebSocketMessageType]::Text, $true, $timeout.Token).GetAwaiter().GetResult()
-        do {
-            $buffer = [byte[]]::new(65536)
-            $message = [Text.StringBuilder]::new()
-            do {
-                $result = $socket.ReceiveAsync([ArraySegment[byte]]::new($buffer), $timeout.Token).GetAwaiter().GetResult()
-                if ($result.MessageType -eq [Net.WebSockets.WebSocketMessageType]::Close) { throw 'The packaged WebView closed its DevTools connection before reporting device scale.' }
-                [void]$message.Append([Text.Encoding]::UTF8.GetString($buffer, 0, $result.Count))
-            } while (-not $result.EndOfMessage)
-            $response = $message.ToString() | ConvertFrom-Json
-        } while ($response.id -ne 1)
-        if ($response.result.exceptionDetails) { throw 'The packaged WebView rejected the device-scale observation.' }
-        return [double]$response.result.result.value
-    }
-    finally {
-        $socket.Abort()
-        $socket.Dispose()
-        $timeout.Dispose()
-    }
+    throw 'The packaged WebView did not record its requested device scale.'
 }
 
 $associationBefore = Get-AssociationSnapshot | ConvertTo-Json -Compress
@@ -427,18 +385,19 @@ $webviewProfiles = @(
 )
 foreach ($profile in $webviewProfiles) {
     $profileState = Join-Path ([IO.Path]::GetTempPath()) ("glitchpad-s035-profile-{0}-{1}" -f $profile.name, [Guid]::NewGuid().ToString('N'))
-    New-Item -ItemType Directory -Path $profileState -Force | Out-Null
-    $devToolsPort = Get-AvailableLoopbackPort
+    $profileProbe = Join-Path $profileState 'probe'
+    New-Item -ItemType Directory -Path $profileProbe -Force | Out-Null
+    [IO.File]::WriteAllText((Join-Path $profileProbe 'enabled.marker'), "enabled`n", [Text.UTF8Encoding]::new($false))
     $profileEnvironment = @{
         APPDATA = $profileState
         LOCALAPPDATA = $profileState
-        WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = ("{0} --remote-debugging-port={1} --remote-allow-origins=http://localhost" -f $profile.arguments, $devToolsPort)
+        GLITCHPAD_LIFECYCLE_PROBE_DIR = $profileProbe
+        WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = $profile.arguments
     }
     $profileProcess = Start-Process -FilePath $application -ArgumentList ('"{0}"' -f $markdownFixtureMinimalPath) -PassThru -WindowStyle Hidden -Environment $profileEnvironment
     try {
         Wait-NamedElement $profileProcess 'S035 Minimal Markdown 5E8A' | Out-Null
-        $observedScale = Get-WebViewDeviceScale (Wait-WebViewDevToolsTarget $devToolsPort)
-        if ([Math]::Abs($observedScale - ([double]$profile.scale)) -gt 0.01) { throw "The packaged WebView did not apply the requested device scale $($profile.scale)." }
+        Wait-DeviceScaleMarker (Join-Path $profileProbe ("device-scale-{0}.marker" -f $profile.name))
         Assert-MenuGeometry $profileProcess ([IO.Path]::GetFileName($markdownFixtureMinimalPath))
     }
     finally {

@@ -288,14 +288,7 @@ jobs:
             export NDK_HOME="${ANDROID_SDK_ROOT}/ndk/28.2.13676358"
             pnpm tauri android build --debug --apk --target x86_64 --ci --config '{"version":"0.0.1"}'
             ./crates/glitchpad-host/gen/android/gradlew --project-dir crates/glitchpad-host/gen/android :glitchpad-android-source:testDebugUnitTest --no-daemon
-            if ! ./crates/glitchpad-host/gen/android/gradlew --project-dir crates/glitchpad-host/gen/android :app:connectedUniversalDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.notClass=com.shruggietech.glitchpad.performance.PerformanceInstrumentedTest,com.shruggietech.glitchpad.source.AndroidDeliveryInstrumentedTest -PabiList=x86_64 -ParchList=x86_64 -PtargetList=x86_64 -x :app:rustBuildUniversalDebug -x :app:rustBuildX86_64Debug --no-daemon; then
-              echo "::warning::Android connected suite failed once; resetting the app processes and retrying on the same emulator."
-              adb shell am force-stop com.shruggietech.glitchpad || true
-              adb shell am force-stop com.shruggietech.glitchpad.test || true
-              adb logcat -c || true
-              sleep 2
-              ./crates/glitchpad-host/gen/android/gradlew --project-dir crates/glitchpad-host/gen/android :app:connectedUniversalDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.notClass=com.shruggietech.glitchpad.performance.PerformanceInstrumentedTest,com.shruggietech.glitchpad.source.AndroidDeliveryInstrumentedTest -PabiList=x86_64 -ParchList=x86_64 -PtargetList=x86_64 -x :app:rustBuildUniversalDebug -x :app:rustBuildX86_64Debug --no-daemon
-            fi
+            bash scripts/run-android-connected-tests.sh
             adb install -r crates/glitchpad-host/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk
             adb install -r crates/glitchpad-host/gen/android/app/build/outputs/apk/androidTest/universal/debug/app-universal-debug-androidTest.apk
             bash scripts/run-android-instrumentation.sh "$RUNNER_TEMP/delivery-evidence.txt" 'delivery_evidence=' -e class com.shruggietech.glitchpad.source.AndroidDeliveryInstrumentedTest

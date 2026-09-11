@@ -83,6 +83,7 @@ export function validateFinalReleaseHandoff({
   operatorRunbook,
   changelog,
 }) {
+  const tagInstruction = operatorRunbook.match(/^5\.\s+(.+)$/mu)?.[1] ?? '';
   if (
     !operatorRunbook.includes('S034 pull request is merged') ||
     !operatorRunbook.includes('reviewed S034 merge commit') ||
@@ -91,6 +92,11 @@ export function validateFinalReleaseHandoff({
     )
   )
     throw new Error('final handoff omits the S034 release authority');
+  if (
+    tagInstruction !==
+    'Create the annotated tag `v0.1.2` on the reviewed S034 merge commit and push only that tag.'
+  )
+    throw new Error('final handoff tag instruction does not target S034');
   for (const [source, content] of [
     ['release notes', releaseNotes],
     ['release receipt', releaseReceipt],

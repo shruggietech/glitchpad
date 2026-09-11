@@ -15,7 +15,7 @@ const finalHandoff = () => ({
   releaseReceipt:
     '| Dependency security slice | S033 |\n| Final release authority slice | S034 |\n| Included corrective issues | #167 |',
   operatorRunbook:
-    'Confirm the S034 pull request is merged after S033 issue #167. Create the annotated tag `v0.1.2` on the reviewed S034 merge commit.',
+    '1. Confirm the S034 pull request is merged after S033 issue #167 at the reviewed S034 merge commit.\n5. Create the annotated tag `v0.1.2` on the reviewed S034 merge commit and push only that tag.',
   changelog:
     'S033 (#167) patched Next.js 16.3.3 and the transitive `smol-toml` 1.7.1 resolution before release.',
 });
@@ -33,6 +33,16 @@ for (const [name, mutate, expected] of [
       );
     },
     /S034 release authority/u,
+  ],
+  [
+    'tag instruction targeting S033',
+    (handoff) => {
+      handoff.operatorRunbook = handoff.operatorRunbook.replace(
+        'on the reviewed S034 merge commit and push only that tag',
+        'on the reviewed S033 merge commit and push only that tag',
+      );
+    },
+    /tag instruction does not target S034/u,
   ],
   [
     'missing S033 traceability',

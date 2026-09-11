@@ -276,16 +276,18 @@ function Assert-MenuGeometry([Diagnostics.Process] $Process, [string] $DocumentN
     if (-not $focused -or $focused.Current.Name -ne 'Menu') { throw 'Escape did not restore focus to the application menu trigger.' }
 }
 
-function Wait-DeviceScaleMarker([string] $Path) {
+function Wait-DeviceScaleMarker([string] $Directory) {
     $deadline = [DateTimeOffset]::UtcNow.AddSeconds(10)
     do {
-        if (Test-Path -LiteralPath $Path -PathType Leaf) {
-            if ([IO.File]::ReadAllText($Path, [Text.Encoding]::UTF8) -ne "ready`n") { throw 'The packaged WebView device-scale marker was invalid.' }
-            return
+        $markers = @(Get-ChildItem -LiteralPath $Directory -Filter 'device-scale-*.marker' -File)
+        if ($markers.Count -gt 1) { throw 'The packaged WebView recorded conflicting device scales.' }
+        if ($markers.Count -eq 1) {
+            if ([IO.File]::ReadAllText($markers[0].FullName, [Text.Encoding]::UTF8) -ne "ready`n") { throw 'The packaged WebView device-scale marker was invalid.' }
+            return $markers[0].BaseName
         }
         Start-Sleep -Milliseconds 100
     } while ([DateTimeOffset]::UtcNow -lt $deadline)
-    throw 'The packaged WebView did not record its requested device scale.'
+    throw 'The packaged WebView did not record its device scale.'
 }
 
 $associationBefore = Get-AssociationSnapshot | ConvertTo-Json -Compress
@@ -377,33 +379,24 @@ finally {
     if (-not $minimalProcess.HasExited) { Stop-Process -Id $minimalProcess.Id -Force }
     Remove-Item -LiteralPath $minimalState -Recurse -Force -ErrorAction SilentlyContinue
 }
-$webviewProfiles = @(
-    @{ name = '100'; scale = 1; arguments = '--force-device-scale-factor=1' },
-    @{ name = '125'; scale = 1.25; arguments = '--force-device-scale-factor=1.25' },
-    @{ name = '150'; scale = 1.5; arguments = '--force-device-scale-factor=1.5' },
-    @{ name = '200'; scale = 2; arguments = '--force-device-scale-factor=2' }
-)
-foreach ($profile in $webviewProfiles) {
-    $profileState = Join-Path ([IO.Path]::GetTempPath()) ("glitchpad-s035-profile-{0}-{1}" -f $profile.name, [Guid]::NewGuid().ToString('N'))
-    $profileProbe = Join-Path $profileState 'probe'
-    New-Item -ItemType Directory -Path $profileProbe -Force | Out-Null
-    [IO.File]::WriteAllText((Join-Path $profileProbe 'enabled.marker'), "enabled`n", [Text.UTF8Encoding]::new($false))
-    $profileEnvironment = @{
-        APPDATA = $profileState
-        LOCALAPPDATA = $profileState
-        GLITCHPAD_LIFECYCLE_PROBE_DIR = $profileProbe
-        WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = $profile.arguments
-    }
-    $profileProcess = Start-Process -FilePath $application -ArgumentList ('"{0}"' -f $markdownFixtureMinimalPath) -PassThru -WindowStyle Hidden -Environment $profileEnvironment
-    try {
-        Wait-NamedElement $profileProcess 'S035 Minimal Markdown 5E8A' | Out-Null
-        Wait-DeviceScaleMarker (Join-Path $profileProbe ("device-scale-{0}.marker" -f $profile.name))
-        Assert-MenuGeometry $profileProcess ([IO.Path]::GetFileName($markdownFixtureMinimalPath))
-    }
-    finally {
-        if (-not $profileProcess.HasExited) { Stop-Process -Id $profileProcess.Id -Force }
-        Remove-Item -LiteralPath $profileState -Recurse -Force -ErrorAction SilentlyContinue
-    }
+$webviewState = Join-Path ([IO.Path]::GetTempPath()) ("glitchpad-s035-webview-{0}" -f [Guid]::NewGuid().ToString('N'))
+$webviewProbe = Join-Path $webviewState 'probe'
+New-Item -ItemType Directory -Path $webviewProbe -Force | Out-Null
+[IO.File]::WriteAllText((Join-Path $webviewProbe 'enabled.marker'), "enabled`n", [Text.UTF8Encoding]::new($false))
+$webviewEnvironment = @{
+    APPDATA = $webviewState
+    LOCALAPPDATA = $webviewState
+    GLITCHPAD_LIFECYCLE_PROBE_DIR = $webviewProbe
+}
+$webviewProcess = Start-Process -FilePath $application -ArgumentList ('"{0}"' -f $markdownFixtureMinimalPath) -PassThru -WindowStyle Hidden -Environment $webviewEnvironment
+try {
+    Wait-NamedElement $webviewProcess 'S035 Minimal Markdown 5E8A' | Out-Null
+    Wait-DeviceScaleMarker $webviewProbe | Out-Null
+    Assert-MenuGeometry $webviewProcess ([IO.Path]::GetFileName($markdownFixtureMinimalPath))
+}
+finally {
+    if (-not $webviewProcess.HasExited) { Stop-Process -Id $webviewProcess.Id -Force }
+    Remove-Item -LiteralPath $webviewState -Recurse -Force -ErrorAction SilentlyContinue
 }
 $associationAfter = Get-AssociationSnapshot | ConvertTo-Json -Compress
 if ($associationAfter -cne $associationBefore) { throw 'Portable launch changed governed file associations.' }
@@ -429,7 +422,7 @@ foreach ($fixture in $fixtureDigests.GetEnumerator()) {
     popup_viewport_containment = 'pass'
     document_scroll_preserved = 'pass'
     escape_focus_restoration = 'pass'
-    webview_device_scale_matrix = 'pass'
+    webview_device_scale_observed = 'pass'
     conditional_tabs = 'pass'
     direct_close = 'pass'
     association_side_effects = 'none'

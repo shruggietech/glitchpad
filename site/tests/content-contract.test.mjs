@@ -77,6 +77,15 @@ test('technical specification parser pairs numbered TOC entries and ignores fenc
   assert.match(parsed.sections[0].body, /### Nested Topic/);
 });
 
+test('technical specification parser preserves literal trailing heading hashes', () => {
+  const csharp = fixture
+    .replaceAll('First Section', 'C#')
+    .replaceAll('#1-first-section', '#1-c');
+  const parsed = parseTechnicalSpecification(csharp);
+  assert.equal(parsed.sections[0].title, 'C#');
+  assert.equal(parsed.sections[0].slug, '01-c');
+});
+
 test('documentation rendering rewrites owned fragments and preserves fenced examples', () => {
   const documentation = buildDocumentation({
     technicalSpecification: fixture,
@@ -186,6 +195,13 @@ test('generation rejects malformed numbering, mismatched anchors, and slug colli
         fixture.replace('## 1. First', '## 2. First'),
       ),
     /expected section 1, found section 2/i,
+  );
+  assert.throws(
+    () =>
+      parseTechnicalSpecification(
+        fixture.replace('First Section', '<script>First Section</script>'),
+      ),
+    /raw HTML is not allowed in documentation structure text/i,
   );
 });
 
@@ -367,4 +383,17 @@ test('generated site support maps repository-relative security guidance to the p
   );
   assert.match(project, /\[SECURITY\.md\]\(\/security\)/);
   assert.doesNotMatch(project, /\[SECURITY\.md\]\(SECURITY\.md\)/);
+});
+
+test('documentation workflow rejects stale checked generation contracts', async () => {
+  const workflow = await readFile(
+    join(repositoryRoot, '.github', 'workflows', 'docs.yml'),
+    'utf8',
+  );
+  assert.match(
+    workflow,
+    /git diff --exit-code -- site\/content\/docs\/index\.mdx/,
+  );
+  assert.match(workflow, /site\/content\/docs\/meta\.json/);
+  assert.match(workflow, /site\/lib\/generated\/documentation\.json/);
 });

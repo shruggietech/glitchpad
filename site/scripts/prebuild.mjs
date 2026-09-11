@@ -35,9 +35,13 @@ function closesFence(line, fence) {
 }
 
 function headingAt(line) {
-  const match = /^ {0,3}(#{1,6})[ \t]+(.+?)[ \t]*#*[ \t]*$/.exec(line);
+  const match = /^ {0,3}(#{1,6})[ \t]+(.*)$/.exec(line);
   if (!match) return undefined;
-  return { level: match[1].length, text: match[2].trim() };
+  const text = match[2]
+    .trimEnd()
+    .replace(/[ \t]+#+$/, '')
+    .trimEnd();
+  return { level: match[1].length, text };
 }
 
 function scanMarkdown(source) {
@@ -64,11 +68,12 @@ function scanMarkdown(source) {
 }
 
 function plainText(source) {
+  if (/[<>]/.test(source))
+    throw new Error('Raw HTML is not allowed in documentation structure text');
   return source
     .replace(/!\[([^\]]*)\]\([^)]+\)/g, '$1')
     .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
     .replace(/[`*_~]/g, '')
-    .replace(/<[^>]+>/g, '')
     .replace(/\s+/g, ' ')
     .trim();
 }

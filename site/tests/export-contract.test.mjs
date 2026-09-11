@@ -1,7 +1,15 @@
 import assert from 'node:assert/strict';
 import { access, readFile } from 'node:fs/promises';
 import test from 'node:test';
-import { auditExport } from '../scripts/audit-export.mjs';
+import { auditExport, decodeHtmlAttribute } from '../scripts/audit-export.mjs';
+
+test('HTML attribute decoding is single pass with ampersands decoded last', () => {
+  assert.equal(decodeHtmlAttribute('&quot;section&quot;'), '"section"');
+  assert.equal(
+    decodeHtmlAttribute('&amp;quot;section&amp;quot;'),
+    '&quot;section&quot;',
+  );
+});
 
 test('static export has required routes, metadata, and no remote runtime dependencies', async () => {
   assert.deepEqual(await auditExport(), []);

@@ -29,11 +29,12 @@ function htmlAttribute(source, expression) {
   return expression.exec(source)?.[1];
 }
 
-function decodeAttribute(source) {
+export function decodeHtmlAttribute(source) {
   return source
-    ?.replaceAll('&amp;', '&')
-    .replaceAll('&quot;', '"')
-    .replaceAll('&#x27;', "'");
+    ?.replaceAll('&quot;', '"')
+    .replaceAll('&#x27;', "'")
+    .replaceAll('&#39;', "'")
+    .replaceAll('&amp;', '&');
 }
 
 function hasFragment(source, fragment) {
@@ -122,19 +123,19 @@ export async function auditExport() {
   for (const section of manifest.sections) {
     const source = htmlByRoute.get(section.route);
     if (!source) continue;
-    const canonical = decodeAttribute(
+    const canonical = decodeHtmlAttribute(
       htmlAttribute(source, /<link rel="canonical" href="([^"]+)"/),
     );
-    const description = decodeAttribute(
+    const description = decodeHtmlAttribute(
       htmlAttribute(source, /<meta name="description" content="([^"]+)"/),
     );
-    const openGraphTitle = decodeAttribute(
+    const openGraphTitle = decodeHtmlAttribute(
       htmlAttribute(source, /<meta property="og:title" content="([^"]+)"/),
     );
-    const openGraphUrl = decodeAttribute(
+    const openGraphUrl = decodeHtmlAttribute(
       htmlAttribute(source, /<meta property="og:url" content="([^"]+)"/),
     );
-    const twitterTitle = decodeAttribute(
+    const twitterTitle = decodeHtmlAttribute(
       htmlAttribute(source, /<meta name="twitter:title" content="([^"]+)"/),
     );
     const expectedTitle = `${section.number}. ${section.title}`;
@@ -173,7 +174,7 @@ export async function auditExport() {
 
   for (const [route, source] of htmlByRoute) {
     const hrefs = [...source.matchAll(/\shref="([^"]+)"/g)].map((match) =>
-      decodeAttribute(match[1]),
+      decodeHtmlAttribute(match[1]),
     );
     for (const href of hrefs) {
       if (!href || href.startsWith('/_next/') || href.startsWith('data:'))

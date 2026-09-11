@@ -77,6 +77,47 @@ export function validateReleaseReadinessEvidence(readinessScript) {
   return true;
 }
 
+export function validateFinalReleaseHandoff({
+  releaseNotes,
+  releaseReceipt,
+  operatorRunbook,
+  changelog,
+}) {
+  const tagInstruction = operatorRunbook.match(/^5\.\s+(.+)$/mu)?.[1] ?? '';
+  if (
+    !operatorRunbook.includes('S034 pull request is merged') ||
+    !operatorRunbook.includes('reviewed S034 merge commit') ||
+    /reviewed S032 merge commit|S032 pull request is merged/u.test(
+      operatorRunbook,
+    )
+  )
+    throw new Error('final handoff omits the S034 release authority');
+  if (
+    tagInstruction !==
+    'Create the annotated tag `v0.1.2` on the reviewed S034 merge commit and push only that tag.'
+  )
+    throw new Error('final handoff tag instruction does not target S034');
+  for (const [source, content] of [
+    ['release notes', releaseNotes],
+    ['release receipt', releaseReceipt],
+    ['operator runbook', operatorRunbook],
+    ['changelog', changelog],
+  ]) {
+    if (!content.includes('S033'))
+      throw new Error(`${source} omits the S033 security remediation`);
+    if (!content.includes('#167'))
+      throw new Error(`${source} omits issue #167`);
+  }
+  if (!releaseReceipt.includes('S033') || !releaseReceipt.includes('S034'))
+    throw new Error('release receipt omits the final slice chain');
+  if (
+    !changelog.includes('Next.js 16.3.3') ||
+    !changelog.includes('`smol-toml` 1.7.1')
+  )
+    throw new Error('changelog omits the patched dependency versions');
+  return true;
+}
+
 export function validateGovernedClaims({
   releaseWorkflow,
   windowsContract,
@@ -187,6 +228,9 @@ export async function checkCommunityRelease(repositoryRoot = root) {
     releaseWorkflow,
     readinessScript,
     releaseNotes,
+    releaseReceipt,
+    operatorRunbook,
+    changelog,
     androidWorkflow,
     macosWorkflow,
     linuxWorkflow,
@@ -201,6 +245,9 @@ export async function checkCommunityRelease(repositoryRoot = root) {
     text(join(repositoryRoot, '.github/workflows/release.yml')),
     text(join(repositoryRoot, 'scripts/check-release-readiness.ps1')),
     text(join(repositoryRoot, 'docs/releases/v0.1.2.md')),
+    text(join(repositoryRoot, 'docs/releases/v0.1.2-receipt.md')),
+    text(join(repositoryRoot, 'docs/releases/v0.1.2-operator-runbook.md')),
+    text(join(repositoryRoot, 'CHANGELOG.md')),
     text(join(repositoryRoot, '.github/workflows/android-package.yml')),
     text(join(repositoryRoot, '.github/workflows/macos-package.yml')),
     text(join(repositoryRoot, '.github/workflows/linux-package.yml')),
@@ -211,6 +258,12 @@ export async function checkCommunityRelease(repositoryRoot = root) {
   validateReleaseContract(contract);
   validateReleaseAuthorityGate(releaseWorkflow);
   validateReleaseReadinessEvidence(readinessScript);
+  validateFinalReleaseHandoff({
+    releaseNotes,
+    releaseReceipt,
+    operatorRunbook,
+    changelog,
+  });
   validateGovernedClaims({
     releaseWorkflow,
     windowsContract,

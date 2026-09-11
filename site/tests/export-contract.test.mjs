@@ -7,6 +7,20 @@ test('static export has required routes, metadata, and no remote runtime depende
   assert.deepEqual(await auditExport(), []);
 });
 
+test('generated documentation manifest covers the complete ordered route set', async () => {
+  const manifest = JSON.parse(
+    await readFile('lib/generated/documentation.json', 'utf8'),
+  );
+  assert.equal(manifest.source, 'docs/glitchpad-technical-specification.md');
+  assert.equal(manifest.sections.length, 38);
+  assert.deepEqual(
+    manifest.sections.map(({ number }) => number),
+    Array.from({ length: 38 }, (_, index) => index + 1),
+  );
+  for (const section of manifest.sections)
+    await access(`out${section.route}.html`);
+});
+
 test('GitHub Pages markers are complete', async () => {
   await access('out/.nojekyll');
   assert.equal(await readFile('out/CNAME', 'utf8'), 'glitchpad.com\n');

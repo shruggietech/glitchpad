@@ -20,7 +20,7 @@ assert.ok(cssAsset, 'the production build must contain a CSS asset');
 const css = await readFile(join(assetDirectory, cssAsset), 'utf8');
 
 const browser = await puppeteer.launch({
-  headless: true,
+  headless: 'shell',
   args: ['--no-sandbox', '--disable-dev-shm-usage'],
 });
 let cases = 0;

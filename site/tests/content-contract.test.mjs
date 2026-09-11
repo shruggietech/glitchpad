@@ -1,5 +1,13 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import {
+  mkdir,
+  mkdtemp,
+  readFile,
+  readdir,
+  rename,
+  rm,
+  writeFile,
+} from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import test from 'node:test';
@@ -312,6 +320,66 @@ test('complete-set publication removes stale output and is deterministic', async
       projectSource: '// deterministic project facts\n',
     });
     assert.ok(!(await readdir(root)).some((name) => name.includes('staging')));
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test('publication recovery restores both outputs after an interrupted install', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'glitchpad-s036-recovery-'));
+  const docsDirectory = join(root, 'docs');
+  const generatedDirectory = join(root, 'generated');
+  try {
+    const documentation = buildDocumentation({
+      technicalSpecification: fixture,
+      workspace: { version: '1.2.3', license: 'Apache-2.0' },
+      readme: 'Glitchpad v1.2.3 is the current corrective community release.\n',
+    });
+    await publishDocumentation({
+      docsDirectory,
+      generatedDirectory,
+      documentation,
+      projectSource: '// original project facts\n',
+    });
+    const originalIndex = await readFile(
+      join(docsDirectory, 'index.mdx'),
+      'utf8',
+    );
+    const originalManifest = await readFile(
+      join(generatedDirectory, 'documentation.json'),
+      'utf8',
+    );
+
+    await rename(docsDirectory, `${docsDirectory}.s036-backup`);
+    await rename(generatedDirectory, `${generatedDirectory}.s036-backup`);
+    await mkdir(docsDirectory);
+    await writeFile(join(docsDirectory, 'index.mdx'), 'partial new docs\n');
+
+    const invalid = {
+      ...documentation,
+      files: new Map([
+        ...documentation.files,
+        ['missing/partial.mdx', 'must never publish\n'],
+      ]),
+    };
+    await assert.rejects(
+      publishDocumentation({
+        docsDirectory,
+        generatedDirectory,
+        documentation: invalid,
+        projectSource: '// changed project facts\n',
+      }),
+    );
+
+    assert.equal(
+      await readFile(join(docsDirectory, 'index.mdx'), 'utf8'),
+      originalIndex,
+    );
+    assert.equal(
+      await readFile(join(generatedDirectory, 'documentation.json'), 'utf8'),
+      originalManifest,
+    );
+    assert.ok(!(await readdir(root)).some((name) => name.includes('backup')));
   } finally {
     await rm(root, { recursive: true, force: true });
   }

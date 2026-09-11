@@ -512,12 +512,29 @@ async function pathExists(path) {
   }
 }
 
-async function restoreAbandonedBackup(target) {
-  const backup = `${target}.s036-backup`;
-  if (!(await pathExists(backup))) return;
-  if (await pathExists(target))
-    await rm(backup, { recursive: true, force: true });
-  else await rename(backup, target);
+async function recoverAbandonedPublication(targets) {
+  const states = await Promise.all(
+    targets.map(async (target) => ({
+      target,
+      backup: `${target}.s036-backup`,
+      targetExists: await pathExists(target),
+      backupExists: await pathExists(`${target}.s036-backup`),
+    })),
+  );
+  if (!states.some(({ backupExists }) => backupExists)) return;
+
+  if (states.every(({ targetExists }) => targetExists)) {
+    await Promise.all(
+      states.map(({ backup }) => rm(backup, { recursive: true, force: true })),
+    );
+    return;
+  }
+
+  for (const { target, backup, targetExists, backupExists } of states) {
+    if (!backupExists) continue;
+    if (targetExists) await rm(target, { recursive: true, force: true });
+    await rename(backup, target);
+  }
 }
 
 async function writeStagingDirectory(target, files) {
@@ -544,8 +561,7 @@ export async function publishDocumentation({
   documentation,
   projectSource,
 }) {
-  await restoreAbandonedBackup(docsTarget);
-  await restoreAbandonedBackup(generatedTarget);
+  await recoverAbandonedPublication([docsTarget, generatedTarget]);
   const manifestSource = `${JSON.stringify(documentation.manifest, null, 2)}\n`;
   const generatedFiles = new Map([
     ['documentation.json', manifestSource],

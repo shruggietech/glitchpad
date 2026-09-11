@@ -115,6 +115,7 @@ jobs:
       - name: Validate policy and run representative smoke
         run: |
           pnpm run check:performance
+          pnpm run check:shell-layout
           node scripts/run-performance.mjs --profile hosted_windows_smoke_v1 --build-id "pr-${{ github.event.pull_request.head.sha || github.sha }}" --confirm-hard-failure
 
   platform:
@@ -153,6 +154,9 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           shared-key: desktop-${{ matrix.os }}
+
+      - name: Markdown recovery and shared shell smoke
+        run: pnpm --filter @shruggietech/glitchpad exec vitest run --maxWorkers=2 src/App.test.tsx src/components/ApplicationMenu.test.tsx src/components/DocumentSurface.test.tsx src/components/MarkdownSurface.test.tsx
 
       - name: Run desktop source adapter conformance
         run: cargo test -p glitchpad-host --test desktop_source_conformance --locked

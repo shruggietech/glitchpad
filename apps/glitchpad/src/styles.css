@@ -9,6 +9,8 @@
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   --tab-row-height: 40px;
+  --shell-row-height: 32px;
+  --application-toolbar-size: 32px;
   --focus-color: var(--gl-focus);
   --editor-font-family: var(--gl-font-mono);
   --editor-font-size: 14px;
@@ -57,10 +59,25 @@ button:focus-visible,
   background: var(--gl-bg);
 }
 
+.shell-chrome {
+  position: relative;
+  z-index: 8;
+  display: grid;
+  height: var(--shell-row-height);
+  min-height: var(--shell-row-height);
+  grid-template-columns: var(--application-toolbar-size) minmax(0, 1fr);
+  border-bottom: 1px solid var(--gl-border);
+  background: var(--gl-panel);
+}
+
+.app-shell[data-has-tabs='true'] {
+  --shell-row-height: var(--tab-row-height);
+}
+
 .integrity-banner {
   position: absolute;
   z-index: 2;
-  top: 0.5rem;
+  top: calc(var(--shell-row-height) + 0.5rem);
   left: 50%;
   width: min(42rem, calc(100% - 2rem));
   padding: 0.65rem 0.85rem;
@@ -71,10 +88,6 @@ button:focus-visible,
   color: #ffd99d;
   font-size: 0.8rem;
   transform: translateX(-50%);
-}
-
-.app-shell:has(.tab-strip-shell) .integrity-banner {
-  top: calc(var(--tab-row-height) + 0.5rem);
 }
 
 .resolution-backdrop {
@@ -285,38 +298,46 @@ button:focus-visible,
 }
 
 .application-menu-shell {
-  position: absolute;
-  z-index: 8;
-  top: 0.5rem;
-  left: 0.5rem;
-  width: 2.25rem;
-  height: 2.25rem;
-}
-
-.app-shell:has(.tab-strip-shell) .application-menu-shell {
-  top: calc(var(--tab-row-height) + 0.5rem);
+  position: relative;
+  z-index: 2;
+  width: var(--application-toolbar-size);
+  height: var(--shell-row-height);
 }
 
 .application-menu-trigger {
   display: grid;
-  width: 2.25rem;
-  height: 2.25rem;
+  width: 100%;
+  height: 100%;
   place-items: center;
   padding: 0;
   border: 1px solid var(--gl-border);
-  border-radius: 0.35rem;
-  background: color-mix(in srgb, var(--gl-panel) 92%, transparent);
-  box-shadow: 0 0.25rem 1rem #0005;
+  border-width: 0 1px 0 0;
+  border-radius: 0;
+  background: transparent;
   cursor: pointer;
+}
+
+.application-menu-shell[data-menu-active='false'] .application-menu-trigger {
+  visibility: hidden;
+}
+
+.application-menu-glyph {
+  display: grid;
+  width: 18px;
+  height: 18px;
+  place-items: center;
+  overflow: hidden;
+  font-size: 16px;
+  line-height: 18px;
 }
 
 .application-menu {
   position: absolute;
-  top: calc(100% + 0.35rem);
+  top: calc(100% + 0.25rem);
   left: 0;
   display: grid;
-  width: min(19rem, calc(100vw - 1rem));
-  max-height: calc(100vh - 3.5rem);
+  width: min(19rem, calc(100vw - 0.75rem));
+  max-height: calc(100vh - var(--shell-row-height) - 0.5rem);
   overflow: auto;
   border: 1px solid var(--gl-border);
   border-radius: 0.4rem;
@@ -643,7 +664,7 @@ button:focus-visible,
 .delivery-error {
   position: absolute;
   z-index: 9;
-  top: 0.75rem;
+  top: calc(var(--shell-row-height) + 0.75rem);
   left: 50%;
   width: min(38rem, calc(100% - 5rem));
   padding: 0.65rem 0.8rem;
@@ -653,10 +674,6 @@ button:focus-visible,
   color: var(--gl-danger);
   box-shadow: 0 0.5rem 1.5rem #0008;
   transform: translateX(-50%);
-}
-
-.app-shell:has(.tab-strip-shell) .delivery-error {
-  top: calc(var(--tab-row-height) + 0.75rem);
 }
 
 .markdown-surface {
@@ -732,8 +749,51 @@ button:focus-visible,
 .markdown-failure,
 .document-render-failure {
   display: grid;
+  grid-auto-rows: max-content;
+  align-content: start;
   justify-items: start;
   gap: 0.75rem;
+}
+
+.document-render-failure {
+  padding: 0.75rem;
+}
+
+.document-render-failure p,
+.markdown-recovery-banner p {
+  margin: 0;
+}
+
+.document-render-failure button,
+.markdown-recovery-banner button {
+  min-height: 32px;
+  padding: 0.35rem 0.65rem;
+  border: 1px solid var(--gl-border);
+  border-radius: 0.3rem;
+  background: var(--gl-panel-raised);
+  cursor: pointer;
+}
+
+.markdown-recovery-layout {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.markdown-recovery-layout > .markdown-surface {
+  grid-row: 2;
+}
+
+.markdown-recovery-banner {
+  display: flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.35rem 0.75rem;
+  border-bottom: 1px solid var(--gl-border);
+  background: var(--gl-panel);
 }
 
 .markdown-print-document {
@@ -1089,10 +1149,13 @@ button:focus-visible,
 @media (max-width: 640px), (pointer: coarse) {
   :root {
     --tab-row-height: 44px;
+    --shell-row-height: 44px;
+    --application-toolbar-size: 44px;
     --command-row-height: 44px;
   }
 
   .tab-action,
+  .application-menu-trigger,
   .overflow-trigger,
   .command-button,
   .overflow-menu button,
@@ -1179,6 +1242,7 @@ button:focus-visible,
     background: var(--gl-bg);
   }
 
+  .shell-chrome,
   .tab-strip-shell,
   .command-bar {
     border-color: #cfd2d8;
@@ -1264,6 +1328,7 @@ button:focus-visible,
   background: var(--gl-bg);
 }
 
+:root[data-theme='light'] .shell-chrome,
 :root[data-theme='light'] .tab-strip-shell,
 :root[data-theme='light'] .toolbar-row,
 :root[data-theme='light'] .command-bar {
@@ -1324,6 +1389,7 @@ button:focus-visible,
   background: var(--gl-bg);
 }
 
+:root[data-theme='dark'] .shell-chrome,
 :root[data-theme='dark'] .tab-strip-shell,
 :root[data-theme='dark'] .toolbar-row,
 :root[data-theme='dark'] .command-bar {
@@ -1380,6 +1446,7 @@ button:focus-visible,
 }
 
 @media print {
+  .shell-chrome,
   .tab-strip-shell,
   .command-bar,
   .document-heading,

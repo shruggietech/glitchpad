@@ -55,6 +55,7 @@ function same(left, right) {
 export function validatePortableSmokeContract(lifecycleSource, workflowSource) {
   const lifecycleRequirements = [
     '[string] $TextFixture',
+    '[string] $MarkdownFixtureMinimal',
     '[string] $MarkdownFixtureA',
     '[string] $MarkdownFixtureB',
     "'Open file…'",
@@ -64,21 +65,30 @@ export function validatePortableSmokeContract(lifecycleSource, workflowSource) {
     'Get-TabCount $process) -ne 0',
     'Get-TabCount $process) -ne 2',
     'Close {0}',
-    "schema_version = 3",
+    "schema_version = 4",
+    'content_free = $true',
     "fixture_absence = 'pass'",
     "conditional_tabs = 'pass'",
     "direct_close = 'pass'",
     "markdown_alpha_beta = 'pass'",
     "markdown_beta_alpha = 'pass'",
+    "markdown_minimal = 'pass'",
     "blank_viewport_absence = 'pass'",
     "pending_source_absence = 'pass'",
     "active_document_identity = 'pass'",
     "menu_geometry = 'pass'",
+    "toolbar_reserved_region = 'pass'",
+    "trigger_stability = 'pass'",
+    "popup_viewport_containment = 'pass'",
+    "document_scroll_preserved = 'pass'",
+    "escape_focus_restoration = 'pass'",
+    "webview_scale_preferences_matrix = 'pass'",
+    'WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS',
   ];
   for (const requirement of lifecycleRequirements)
     if (!lifecycleSource.includes(requirement))
       fail(`portable smoke lifecycle omits ${requirement}`);
-  for (const requirement of ['-TextFixture', '-MarkdownFixtureA', '-MarkdownFixtureB', 's027-visible.txt', 's030-alpha.md', 's030-beta.md'])
+  for (const requirement of ['-TextFixture', '-MarkdownFixtureMinimal', '-MarkdownFixtureA', '-MarkdownFixtureB', 's027-visible.txt', 's035-minimal.md', 's030-alpha.md', 's030-beta.md'])
     if (!workflowSource.includes(requirement))
       fail(`Windows workflow omits ${requirement}`);
   for (const requirement of ['[S030_ALPHA_RAW_SENTINEL]: https://example.invalid/alpha', '[S030_BETA_RAW_SENTINEL]: https://example.invalid/beta', '| Alpha | Beta |', 'Footnote[^1]', 'flowchart TB', 'Wait-SafeMarkdownOutcome', 'Wait-WindowText', 'Wait-NamedButton', 'TryGetCurrentPattern', 'GetClickablePoint', 'GlitchpadNativeInput', 'SetForegroundWindow', 'mouse_event', 'Send-MarkdownDelivery'])

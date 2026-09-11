@@ -2,6 +2,7 @@
 param(
     [Parameter(Mandatory = $true)][string] $PortableRoot,
     [Parameter(Mandatory = $true)][string] $TextFixture,
+    [Parameter(Mandatory = $true)][string] $MarkdownFixtureMinimal,
     [Parameter(Mandatory = $true)][string] $MarkdownFixtureA,
     [Parameter(Mandatory = $true)][string] $MarkdownFixtureB,
     [Parameter(Mandatory = $true)][string] $Receipt,
@@ -13,10 +14,12 @@ Set-StrictMode -Version Latest
 $root = (Resolve-Path -LiteralPath $PortableRoot).Path
 $application = Join-Path $root $ApplicationName
 $textFixturePath = (Resolve-Path -LiteralPath $TextFixture).Path
+$markdownFixtureMinimalPath = (Resolve-Path -LiteralPath $MarkdownFixtureMinimal).Path
 $markdownFixtureAPath = (Resolve-Path -LiteralPath $MarkdownFixtureA).Path
 $markdownFixtureBPath = (Resolve-Path -LiteralPath $MarkdownFixtureB).Path
 $fixtureDigests = @{
     $textFixturePath = (Get-FileHash -LiteralPath $textFixturePath -Algorithm SHA256).Hash
+    $markdownFixtureMinimalPath = (Get-FileHash -LiteralPath $markdownFixtureMinimalPath -Algorithm SHA256).Hash
     $markdownFixtureAPath = (Get-FileHash -LiteralPath $markdownFixtureAPath -Algorithm SHA256).Hash
     $markdownFixtureBPath = (Get-FileHash -LiteralPath $markdownFixtureBPath -Algorithm SHA256).Hash
 }
@@ -45,6 +48,21 @@ function Get-WindowRoot([Diagnostics.Process] $Process) {
 function Find-NamedElement([System.Windows.Automation.AutomationElement] $Window, [string] $Name) {
     $condition = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::NameProperty, $Name)
     return $Window.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $condition)
+}
+
+function Find-LargestNamedElement([System.Windows.Automation.AutomationElement] $Window, [string] $Name) {
+    $condition = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::NameProperty, $Name)
+    $largest = $null
+    $largestArea = 0
+    foreach ($element in $Window.FindAll([System.Windows.Automation.TreeScope]::Descendants, $condition)) {
+        $bounds = $element.Current.BoundingRectangle
+        $area = $bounds.Width * $bounds.Height
+        if ($area -gt $largestArea) {
+            $largest = $element
+            $largestArea = $area
+        }
+    }
+    return $largest
 }
 
 function Wait-NamedElement([Diagnostics.Process] $Process, [string] $Name, [int] $Seconds = 20) {
@@ -196,9 +214,20 @@ function Close-Document([Diagnostics.Process] $Process, [string] $Path) {
     Invoke-NamedButton $Process ("Close {0}" -f [IO.Path]::GetFileName($Path))
 }
 
-function Assert-MenuGeometry([Diagnostics.Process] $Process) {
+function Assert-MenuGeometry([Diagnostics.Process] $Process, [string] $DocumentName) {
     $trigger = Wait-NamedButton $Process 'Menu'
     $before = $trigger.Current.BoundingRectangle
+    if ($before.Width -lt 31 -or $before.Height -lt 31) { throw 'Menu trigger is smaller than the compact desktop target.' }
+    $window = Get-WindowRoot $Process
+    $document = Find-LargestNamedElement $window $DocumentName
+    if (-not $document) { throw 'The active document client region could not be measured.' }
+    $documentBefore = $document.Current.BoundingRectangle
+    if ($before.Bottom -gt ($documentBefore.Top + 1)) { throw 'Persistent application toolbar intersects the document client region.' }
+    $scrollPatternObject = $null
+    $scrollBefore = $null
+    if ($document.TryGetCurrentPattern([System.Windows.Automation.ScrollPattern]::Pattern, [ref]$scrollPatternObject)) {
+        $scrollBefore = @(([System.Windows.Automation.ScrollPattern]$scrollPatternObject).Current.HorizontalScrollPercent, ([System.Windows.Automation.ScrollPattern]$scrollPatternObject).Current.VerticalScrollPercent)
+    }
     Invoke-NamedButton $Process 'Menu'
     $menu = Wait-NamedElement $Process 'Glitchpad menu'
     $during = (Wait-NamedButton $Process 'Menu').Current.BoundingRectangle
@@ -206,6 +235,14 @@ function Assert-MenuGeometry([Diagnostics.Process] $Process) {
         if ([Math]::Abs($before.$field - $during.$field) -gt 1) { throw "Menu trigger moved while disclosed ($field)." }
     }
     $window = Get-WindowRoot $Process
+    $windowBounds = $window.Current.BoundingRectangle
+    $menuBounds = $menu.Current.BoundingRectangle
+    if ($menuBounds.Top -lt ($during.Bottom - 1)) { throw 'Application menu popup covers its trigger.' }
+    if ($menuBounds.Left -lt ($windowBounds.Left - 1) -or $menuBounds.Right -gt ($windowBounds.Right + 1) -or $menuBounds.Bottom -gt ($windowBounds.Bottom + 1)) { throw 'Application menu popup escaped the application viewport.' }
+    $documentDuring = (Find-LargestNamedElement $window $DocumentName).Current.BoundingRectangle
+    foreach ($field in @('X', 'Y', 'Width', 'Height')) {
+        if ([Math]::Abs($documentBefore.$field - $documentDuring.$field) -gt 1) { throw "Document client reflowed while the menu was disclosed ($field)." }
+    }
     $scrollCondition = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::ScrollBar)
     foreach ($scrollbar in $window.FindAll([System.Windows.Automation.TreeScope]::Descendants, $scrollCondition)) {
         $scrollRect = $scrollbar.Current.BoundingRectangle
@@ -214,7 +251,8 @@ function Assert-MenuGeometry([Diagnostics.Process] $Process) {
             if ($intersects) { throw 'Application menu intersects a document scrollbar hit region.' }
         }
     }
-    Invoke-NamedButton $Process 'Menu'
+    [GlitchpadNativeInput]::SetForegroundWindow($Process.MainWindowHandle) | Out-Null
+    [System.Windows.Forms.SendKeys]::SendWait('{ESC}')
     $deadline = [DateTimeOffset]::UtcNow.AddSeconds(5)
     do { Start-Sleep -Milliseconds 25; $window = Get-WindowRoot $Process } while ((Find-NamedElement $window 'Glitchpad menu') -and [DateTimeOffset]::UtcNow -lt $deadline)
     if (Find-NamedElement $window 'Glitchpad menu') { throw 'Application menu did not close.' }
@@ -222,6 +260,20 @@ function Assert-MenuGeometry([Diagnostics.Process] $Process) {
     foreach ($field in @('X', 'Y', 'Width', 'Height')) {
         if ([Math]::Abs($before.$field - $after.$field) -gt 1) { throw "Menu trigger moved after disclosure ($field)." }
     }
+    $documentAfterElement = Find-LargestNamedElement (Get-WindowRoot $Process) $DocumentName
+    $documentAfter = $documentAfterElement.Current.BoundingRectangle
+    foreach ($field in @('X', 'Y', 'Width', 'Height')) {
+        if ([Math]::Abs($documentBefore.$field - $documentAfter.$field) -gt 1) { throw "Document client changed after menu disclosure ($field)." }
+    }
+    if ($scrollBefore) {
+        $scrollAfterObject = $null
+        if ($documentAfterElement.TryGetCurrentPattern([System.Windows.Automation.ScrollPattern]::Pattern, [ref]$scrollAfterObject)) {
+            $scrollAfter = @(([System.Windows.Automation.ScrollPattern]$scrollAfterObject).Current.HorizontalScrollPercent, ([System.Windows.Automation.ScrollPattern]$scrollAfterObject).Current.VerticalScrollPercent)
+            if ($scrollBefore[0] -ne $scrollAfter[0] -or $scrollBefore[1] -ne $scrollAfter[1]) { throw 'Menu disclosure changed document scroll position.' }
+        }
+    }
+    $focused = [System.Windows.Automation.AutomationElement]::FocusedElement
+    if (-not $focused -or $focused.Current.Name -ne 'Menu') { throw 'Escape did not restore focus to the application menu trigger.' }
 }
 
 $associationBefore = Get-AssociationSnapshot | ConvertTo-Json -Compress
@@ -269,7 +321,7 @@ try {
     Wait-NamedElement $process ([IO.Path]::GetFileName($markdownFixtureBPath)) | Out-Null
     Wait-NamedElement $process 'S030 Markdown Beta 9D4E' | Out-Null
     Wait-NamedElement $process 's030-beta.md diagram 1' | Out-Null
-    Assert-MenuGeometry $process
+    Assert-MenuGeometry $process ([IO.Path]::GetFileName($markdownFixtureBPath))
     if ((Get-TabCount $process) -ne 3) { throw 'Three delivered documents did not expose exactly three tabs.' }
     Close-Document $process $markdownFixtureBPath
     Close-Document $process $markdownFixtureAPath
@@ -301,23 +353,67 @@ finally {
     if (-not $reverseProcess.HasExited) { Stop-Process -Id $reverseProcess.Id -Force }
     Remove-Item -LiteralPath $reverseState -Recurse -Force -ErrorAction SilentlyContinue
 }
+$minimalState = Join-Path ([IO.Path]::GetTempPath()) ("glitchpad-s035-minimal-{0}" -f [Guid]::NewGuid().ToString('N'))
+New-Item -ItemType Directory -Path $minimalState -Force | Out-Null
+$minimalEnvironment = @{ APPDATA = $minimalState; LOCALAPPDATA = $minimalState }
+$minimalProcess = Start-Process -FilePath $application -ArgumentList ('"{0}"' -f $markdownFixtureMinimalPath) -PassThru -WindowStyle Hidden -Environment $minimalEnvironment
+try {
+    Wait-NamedElement $minimalProcess 'S035 Minimal Markdown 5E8A' | Out-Null
+    if ((Get-TabCount $minimalProcess) -ne 0) { throw 'A single minimal Markdown document exposed tab chrome.' }
+}
+finally {
+    if (-not $minimalProcess.HasExited) { Stop-Process -Id $minimalProcess.Id -Force }
+    Remove-Item -LiteralPath $minimalState -Recurse -Force -ErrorAction SilentlyContinue
+}
+$webviewProfiles = @(
+    @{ name = '100-light-motion'; arguments = '--force-device-scale-factor=1' },
+    @{ name = '125-dark-motion'; arguments = '--force-device-scale-factor=1.25 --force-dark-mode' },
+    @{ name = '150-light-forced-reduced'; arguments = '--force-device-scale-factor=1.5 --force-high-contrast --force-prefers-reduced-motion' },
+    @{ name = '200-dark-forced-reduced'; arguments = '--force-device-scale-factor=2 --force-dark-mode --force-high-contrast --force-prefers-reduced-motion' }
+)
+foreach ($profile in $webviewProfiles) {
+    $profileState = Join-Path ([IO.Path]::GetTempPath()) ("glitchpad-s035-profile-{0}-{1}" -f $profile.name, [Guid]::NewGuid().ToString('N'))
+    New-Item -ItemType Directory -Path $profileState -Force | Out-Null
+    $profileEnvironment = @{
+        APPDATA = $profileState
+        LOCALAPPDATA = $profileState
+        WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = $profile.arguments
+    }
+    $profileProcess = Start-Process -FilePath $application -ArgumentList ('"{0}"' -f $markdownFixtureMinimalPath) -PassThru -WindowStyle Hidden -Environment $profileEnvironment
+    try {
+        Wait-NamedElement $profileProcess 'S035 Minimal Markdown 5E8A' | Out-Null
+        Assert-MenuGeometry $profileProcess ([IO.Path]::GetFileName($markdownFixtureMinimalPath))
+    }
+    finally {
+        if (-not $profileProcess.HasExited) { Stop-Process -Id $profileProcess.Id -Force }
+        Remove-Item -LiteralPath $profileState -Recurse -Force -ErrorAction SilentlyContinue
+    }
+}
 $associationAfter = Get-AssociationSnapshot | ConvertTo-Json -Compress
 if ($associationAfter -cne $associationBefore) { throw 'Portable launch changed governed file associations.' }
 foreach ($fixture in $fixtureDigests.GetEnumerator()) {
     if ((Get-FileHash -LiteralPath $fixture.Key -Algorithm SHA256).Hash -ne $fixture.Value) { throw 'Portable lifecycle modified a user document fixture.' }
 }
 [ordered]@{
-    schema_version = 3
+    schema_version = 4
+    content_free = $true
     clean_launch = 'pass'
     fixture_absence = 'pass'
     text_delivery = 'pass'
     markdown_delivery = 'pass'
+    markdown_minimal = 'pass'
     markdown_alpha_beta = 'pass'
     markdown_beta_alpha = 'pass'
     blank_viewport_absence = 'pass'
     pending_source_absence = 'pass'
     active_document_identity = 'pass'
     menu_geometry = 'pass'
+    toolbar_reserved_region = 'pass'
+    trigger_stability = 'pass'
+    popup_viewport_containment = 'pass'
+    document_scroll_preserved = 'pass'
+    escape_focus_restoration = 'pass'
+    webview_scale_preferences_matrix = 'pass'
     conditional_tabs = 'pass'
     direct_close = 'pass'
     association_side_effects = 'none'

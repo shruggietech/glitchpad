@@ -488,8 +488,9 @@ export function App({ sessions = [], recoveryGateway, externalLinkGateway, local
     setInspectorOpen(false);
     const opener = metadataOpenerRef.current;
     requestAnimationFrame(() => {
-      if (opener?.isConnected) opener.focus();
-      else if (state.activeId) document.getElementById(`tab-${state.activeId}`)?.focus();
+      if (opener?.isConnected && !opener.matches('.application-menu-trigger')) opener.focus();
+      else if (state.activeId && document.getElementById(`tab-${state.activeId}`)) document.getElementById(`tab-${state.activeId}`)?.focus();
+      else if (opener?.isConnected) opener.focus();
     });
   };
 
@@ -504,7 +505,9 @@ export function App({ sessions = [], recoveryGateway, externalLinkGateway, local
   const closeApplicationPanel = () => {
     windowProjectionChangedRef.current = true;
     setApplicationPanel('closed');
-    requestAnimationFrame(() => applicationOpenerRef.current?.focus());
+    requestAnimationFrame(() => {
+      if (applicationOpenerRef.current?.isConnected) applicationOpenerRef.current.focus();
+    });
   };
 
   const invoke = (command: CommandDescriptor, opener: HTMLButtonElement) => {
@@ -681,10 +684,10 @@ export function App({ sessions = [], recoveryGateway, externalLinkGateway, local
   };
 
   return (
-    <main className="app-shell" data-performance-ready="true" onKeyDown={handleShellKey}>
-      <TabStrip state={state} dispatch={dispatch} />
-      {activeSession && applicationPanel === 'closed' && !inspectorOpen && (
+    <main className="app-shell" data-has-tabs={state.sessions.length > 1 ? 'true' : 'false'} data-performance-ready="true" onKeyDown={handleShellKey}>
+      <div className="shell-chrome" data-has-tabs={state.sessions.length > 1 ? 'true' : 'false'}>
         <ApplicationMenu
+          active={applicationPanel === 'closed' && !inspectorOpen}
           commands={commands}
           canOpen={Boolean(selectedDesktopDeliveryGateway)}
           onOpen={chooseDesktopSources}
@@ -692,7 +695,8 @@ export function App({ sessions = [], recoveryGateway, externalLinkGateway, local
           onPreferences={(opener) => openApplicationPanel('preferences', opener)}
           onDiagnostics={(opener) => openApplicationPanel('diagnostics', opener)}
         />
-      )}
+        <TabStrip state={state} dispatch={dispatch} />
+      </div>
       {deliveryError && <aside className="delivery-error" role="alert">{deliveryError}</aside>}
       {activeSession &&
         (integrityOf(activeSession) === 'conflicted' ||

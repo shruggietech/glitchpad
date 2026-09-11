@@ -3,6 +3,7 @@ param(
     [Parameter(Mandatory = $true)][string] $Installer,
     [Parameter(Mandatory = $true)][string] $Fixture,
     [Parameter(Mandatory = $true)][string] $TextFixture,
+    [Parameter(Mandatory = $true)][string] $MarkdownFixtureMinimal,
     [Parameter(Mandatory = $true)][string] $Receipt,
     [Parameter(Mandatory = $true)][string] $MarkdownFixtureA,
     [Parameter(Mandatory = $true)][string] $MarkdownFixtureB,
@@ -52,7 +53,15 @@ foreach ($association in $associationInstalled) {
         throw 'A governed file association does not target the installed application.'
     }
 }
-& "$PSScriptRoot/test-portable-lifecycle.ps1" -PortableRoot $installRoot -ApplicationName 'glitchpad-host.exe' -TextFixture $TextFixture -MarkdownFixtureA $MarkdownFixtureA -MarkdownFixtureB $MarkdownFixtureB -Receipt $InstalledMarkdownReceipt
+& "$PSScriptRoot/test-portable-lifecycle.ps1" -PortableRoot $installRoot -ApplicationName 'glitchpad-host.exe' -TextFixture $TextFixture -MarkdownFixtureMinimal $MarkdownFixtureMinimal -MarkdownFixtureA $MarkdownFixtureA -MarkdownFixtureB $MarkdownFixtureB -Receipt $InstalledMarkdownReceipt
+$associationProcess = Start-Process -FilePath (Resolve-Path -LiteralPath $MarkdownFixtureMinimal).Path -PassThru -WindowStyle Hidden
+try {
+    Start-Sleep -Seconds 5
+    if ($associationProcess.HasExited -and $associationProcess.ExitCode -ne 0) { throw 'Installed Markdown association launch failed.' }
+}
+finally {
+    if (-not $associationProcess.HasExited) { Stop-Process -Id $associationProcess.Id -Force }
+}
 $process = Start-Process -FilePath $application -ArgumentList ('"{0}"' -f $fixturePath) -PassThru -WindowStyle Hidden
 try {
     Start-Sleep -Seconds 5
@@ -87,6 +96,7 @@ for ($index = 0; $index -lt $extensions.Count; $index += 1) {
     repair = 'pass'
     launch = 'pass'
     markdown_orders = 'pass'
+    markdown_association_launch = 'pass'
     uninstall = 'pass'
     document_preservation = 'pass'
     association_cleanup = 'pass'

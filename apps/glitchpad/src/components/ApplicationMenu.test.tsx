@@ -37,6 +37,26 @@ describe('ApplicationMenu', () => {
     expect(trigger).toHaveFocus();
   });
 
+  it('focuses the first enabled item when earlier commands are disabled', () => {
+    const disabled = { ...command, id: 'save' as const, label: 'Save', enabled: false };
+    render(<ApplicationMenu commands={[disabled, command]} canOpen={false} onOpen={vi.fn()} onInvoke={vi.fn()} onPreferences={vi.fn()} onDiagnostics={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
+
+    expect(screen.getByRole('menuitem', { name: /^Search/u })).toHaveFocus();
+  });
+
+  it('keeps an inactive trigger connected without exposing it to interaction', () => {
+    const { rerender } = render(<ApplicationMenu active commands={[command]} canOpen onOpen={vi.fn()} onInvoke={vi.fn()} onPreferences={vi.fn()} onDiagnostics={vi.fn()} />);
+    const trigger = screen.getByRole('button', { name: 'Menu' });
+
+    rerender(<ApplicationMenu active={false} commands={[command]} canOpen onOpen={vi.fn()} onInvoke={vi.fn()} onPreferences={vi.fn()} onDiagnostics={vi.fn()} />);
+
+    expect(trigger).toBeInTheDocument();
+    expect(trigger).toBeDisabled();
+    expect(trigger).toHaveAttribute('aria-hidden', 'true');
+  });
+
   it('keeps a fixed trigger wrapper while the popup is disclosed', async () => {
     const { container } = render(<ApplicationMenu commands={[command]} canOpen onOpen={vi.fn()} onInvoke={vi.fn()} onPreferences={vi.fn()} onDiagnostics={vi.fn()} />);
     const trigger = screen.getByRole('button', { name: 'Menu' });

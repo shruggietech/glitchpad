@@ -82,6 +82,8 @@ describe('document foundation shell', () => {
     render(<App />);
     expect(within(screen.getByRole('region', { name: 'Document surface' })).getByText('No document is open')).toBeVisible();
     expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Menu' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Menu' }).closest('.shell-chrome')).toBeInTheDocument();
     for (const fixture of ['welcome.md', 'draft.md', 'notes.txt']) expect(screen.queryByText(fixture)).not.toBeInTheDocument();
   });
 

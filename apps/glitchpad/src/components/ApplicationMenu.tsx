@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { CommandDescriptor } from '../domain/commands';
 
 interface ApplicationMenuProps {
+  active?: boolean;
   commands: CommandDescriptor[];
   canOpen: boolean;
   onOpen: () => void;
@@ -11,15 +12,19 @@ interface ApplicationMenuProps {
   onDiagnostics: (opener: HTMLButtonElement) => void;
 }
 
-export function ApplicationMenu({ commands, canOpen, onOpen, onInvoke, onPreferences, onDiagnostics }: ApplicationMenuProps) {
+export function ApplicationMenu({ active = true, commands, canOpen, onOpen, onInvoke, onPreferences, onDiagnostics }: ApplicationMenuProps) {
   const [open, setOpen] = useState(false);
   const shellRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
-  const firstItemRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (open) firstItemRef.current?.focus();
+    if (open) menuRef.current?.querySelector<HTMLButtonElement>('[role="menuitem"]:not(:disabled)')?.focus();
   }, [open]);
+
+  useEffect(() => {
+    if (!active) setOpen(false);
+  }, [active]);
 
   useEffect(() => {
     if (!open) return;
@@ -40,8 +45,9 @@ export function ApplicationMenu({ commands, canOpen, onOpen, onInvoke, onPrefere
 
   return (
     <div
-      className="application-menu-shell"
+      className="application-menu-shell application-toolbar"
       ref={shellRef}
+      data-menu-active={active ? 'true' : 'false'}
       data-menu-open={open ? 'true' : 'false'}
       onBlur={(event) => {
         if (!open || shellRef.current?.contains(event.relatedTarget)) return;
@@ -55,16 +61,20 @@ export function ApplicationMenu({ commands, canOpen, onOpen, onInvoke, onPrefere
         aria-label="Menu"
         aria-haspopup="menu"
         aria-expanded={open}
+        aria-hidden={!active}
+        disabled={!active}
+        tabIndex={active ? 0 : -1}
         ref={triggerRef}
         onClick={() => setOpen((current) => !current)}
       >
-        <span aria-hidden="true">☰</span>
+        <span className="application-menu-glyph" aria-hidden="true">☰</span>
       </button>
       {open && (
         <div
           className="application-menu"
           role="menu"
           aria-label="Glitchpad menu"
+          ref={menuRef}
           onKeyDown={(event) => {
             if (event.key !== 'Escape') return;
             event.preventDefault();
@@ -73,14 +83,13 @@ export function ApplicationMenu({ commands, canOpen, onOpen, onInvoke, onPrefere
           }}
         >
           {canOpen && (
-            <button ref={firstItemRef} type="button" role="menuitem" onClick={() => invoke(() => onOpen())}>
+            <button type="button" role="menuitem" onClick={() => invoke(() => onOpen())}>
               Open…
             </button>
           )}
           {commands.length > 0 && <div className="application-menu-separator" role="separator" />}
-          {commands.map((command, index) => (
+          {commands.map((command) => (
             <button
-              ref={!canOpen && index === 0 ? firstItemRef : undefined}
               type="button"
               role="menuitem"
               key={command.id}

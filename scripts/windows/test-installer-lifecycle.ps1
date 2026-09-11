@@ -12,6 +12,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
+Add-Type -AssemblyName UIAutomationClient
 $installerPath = (Resolve-Path -LiteralPath $Installer).Path
 $fixturePath = (Resolve-Path -LiteralPath $Fixture).Path
 $fixtureDigest = (Get-FileHash -LiteralPath $fixturePath -Algorithm SHA256).Hash
@@ -39,6 +40,22 @@ function Get-AssociationSnapshot {
     })
 }
 
+function Wait-RenderedMarkdownHeading([Diagnostics.Process] $Process, [string] $Heading, [int] $Seconds = 20) {
+    $deadline = [DateTimeOffset]::UtcNow.AddSeconds($Seconds)
+    do {
+        if (-not $Process.HasExited) {
+            $Process.Refresh()
+            if ($Process.MainWindowHandle -ne [IntPtr]::Zero) {
+                $window = [System.Windows.Automation.AutomationElement]::FromHandle($Process.MainWindowHandle)
+                $condition = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::NameProperty, $Heading)
+                if ($window.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $condition)) { return }
+            }
+        }
+        Start-Sleep -Milliseconds 100
+    } while ([DateTimeOffset]::UtcNow -lt $deadline)
+    throw 'Installed Markdown association did not render the expected synthetic heading.'
+}
+
 $associationBefore = Get-AssociationSnapshot
 
 $install = Start-Process -FilePath $installerPath -ArgumentList '/S' -Wait -PassThru -WindowStyle Hidden
@@ -56,8 +73,7 @@ foreach ($association in $associationInstalled) {
 & "$PSScriptRoot/test-portable-lifecycle.ps1" -PortableRoot $installRoot -ApplicationName 'glitchpad-host.exe' -TextFixture $TextFixture -MarkdownFixtureMinimal $MarkdownFixtureMinimal -MarkdownFixtureA $MarkdownFixtureA -MarkdownFixtureB $MarkdownFixtureB -Receipt $InstalledMarkdownReceipt
 $associationProcess = Start-Process -FilePath (Resolve-Path -LiteralPath $MarkdownFixtureMinimal).Path -PassThru -WindowStyle Hidden
 try {
-    Start-Sleep -Seconds 5
-    if ($associationProcess.HasExited -and $associationProcess.ExitCode -ne 0) { throw 'Installed Markdown association launch failed.' }
+    Wait-RenderedMarkdownHeading $associationProcess 'S035 Minimal Markdown 5E8A'
 }
 finally {
     if (-not $associationProcess.HasExited) { Stop-Process -Id $associationProcess.Id -Force }

@@ -214,10 +214,16 @@ function Close-Document([Diagnostics.Process] $Process, [string] $Path) {
     Invoke-NamedButton $Process ("Close {0}" -f [IO.Path]::GetFileName($Path))
 }
 
-function Assert-MenuGeometry([Diagnostics.Process] $Process, [string] $DocumentName) {
+function Assert-MenuGeometry([Diagnostics.Process] $Process, [string] $DocumentName, [double] $ExpectedScale = 0) {
     $trigger = Wait-NamedButton $Process 'Menu'
     $before = $trigger.Current.BoundingRectangle
     if ($before.Width -lt 31 -or $before.Height -lt 31) { throw 'Menu trigger is smaller than the compact desktop target.' }
+    if ($ExpectedScale -gt 0) {
+        $expectedTarget = 32 * $ExpectedScale
+        if ([Math]::Abs($before.Width - $expectedTarget) -gt 2 -or [Math]::Abs($before.Height - $expectedTarget) -gt 2) {
+            throw "Menu trigger did not reflect the requested WebView scale $ExpectedScale."
+        }
+    }
     $window = Get-WindowRoot $Process
     $document = Find-LargestNamedElement $window $DocumentName
     if (-not $document) { throw 'The active document client region could not be measured.' }
@@ -366,10 +372,10 @@ finally {
     Remove-Item -LiteralPath $minimalState -Recurse -Force -ErrorAction SilentlyContinue
 }
 $webviewProfiles = @(
-    @{ name = '100-light-motion'; arguments = '--force-device-scale-factor=1' },
-    @{ name = '125-dark-motion'; arguments = '--force-device-scale-factor=1.25 --force-dark-mode' },
-    @{ name = '150-light-forced-reduced'; arguments = '--force-device-scale-factor=1.5 --force-high-contrast --force-prefers-reduced-motion' },
-    @{ name = '200-dark-forced-reduced'; arguments = '--force-device-scale-factor=2 --force-dark-mode --force-high-contrast --force-prefers-reduced-motion' }
+    @{ name = '100'; scale = 1; arguments = '--force-device-scale-factor=1' },
+    @{ name = '125'; scale = 1.25; arguments = '--force-device-scale-factor=1.25' },
+    @{ name = '150'; scale = 1.5; arguments = '--force-device-scale-factor=1.5' },
+    @{ name = '200'; scale = 2; arguments = '--force-device-scale-factor=2' }
 )
 foreach ($profile in $webviewProfiles) {
     $profileState = Join-Path ([IO.Path]::GetTempPath()) ("glitchpad-s035-profile-{0}-{1}" -f $profile.name, [Guid]::NewGuid().ToString('N'))
@@ -382,7 +388,7 @@ foreach ($profile in $webviewProfiles) {
     $profileProcess = Start-Process -FilePath $application -ArgumentList ('"{0}"' -f $markdownFixtureMinimalPath) -PassThru -WindowStyle Hidden -Environment $profileEnvironment
     try {
         Wait-NamedElement $profileProcess 'S035 Minimal Markdown 5E8A' | Out-Null
-        Assert-MenuGeometry $profileProcess ([IO.Path]::GetFileName($markdownFixtureMinimalPath))
+        Assert-MenuGeometry $profileProcess ([IO.Path]::GetFileName($markdownFixtureMinimalPath)) ([double]$profile.scale)
     }
     finally {
         if (-not $profileProcess.HasExited) { Stop-Process -Id $profileProcess.Id -Force }
@@ -413,7 +419,7 @@ foreach ($fixture in $fixtureDigests.GetEnumerator()) {
     popup_viewport_containment = 'pass'
     document_scroll_preserved = 'pass'
     escape_focus_restoration = 'pass'
-    webview_scale_preferences_matrix = 'pass'
+    webview_scale_matrix = 'pass'
     conditional_tabs = 'pass'
     direct_close = 'pass'
     association_side_effects = 'none'

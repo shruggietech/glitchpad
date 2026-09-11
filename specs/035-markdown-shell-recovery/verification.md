@@ -14,6 +14,7 @@
 | Complete repository gate | Pass | `cargo xtask check` exited successfully across Rust formatting, Clippy, 63 core tests, 48 host tests, all remaining native suites, dependency policy, frontend lint/type checking, 265 frontend tests, production builds, site/docs, package policies, geometry, and encoding. An earlier aggregate returned a transient late frontend exit after printing passing tests and build output; an identical isolated frontend gate and the final clean aggregate both exited successfully. |
 | Repository diff integrity | Pass | `git diff --check` returned clean before final publication. |
 | Encoding integrity | Pass | 923 tracked text files passed UTF-8 without BOM and common mojibake-marker validation. |
+| First automated-review remediation | Pass | 31 targeted frontend tests, ESLint, TypeScript, 12 Windows policy tests, and both lifecycle-script parsers passed after independently keying recovery state, restoring menu-opener focus, measuring requested WebView scale, and asserting rendered association content. |
 
 Existing React `act(...)` notices and the Vite chunk-size notice remain unchanged non-failing warnings and are outside S035.
 
@@ -33,4 +34,4 @@ Existing React `act(...)` notices and the Vite chunk-size notice remain unchange
 
 ## Hosted evidence
 
-Pending the official pull request. T020 and T021 remain open until CI, final-byte Windows package evidence, review responses, UTF-8 and mojibake checks, and issue reconciliation are complete.
+PR #173 is open. T020 and T021 remain open until refreshed CI, final-byte Windows package evidence, the permitted second automated review, and issue reconciliation are complete.

@@ -33,11 +33,11 @@ export const DocumentSurface = forwardRef<TextEditorHandle, DocumentSurfaceProps
   { session, canOpen = false, onOpen, labelledByTab = false, onDocumentChange, onLanguageChange, onMarkdownChange, onMermaidChange, externalLinkGateway, localAssetGateway, onOpenMetadata, onMetadataContribution },
   ref,
 ) {
-  const [markdownRecovery, setMarkdownRecovery] = useState<{
+  const [markdownRecoveries, setMarkdownRecoveries] = useState(() => new Map<string, {
     documentKey: string;
     attempt: number;
     sourceMode: boolean;
-  } | null>(null);
+  }>());
 
   if (!session) {
     return (
@@ -54,6 +54,7 @@ export const DocumentSurface = forwardRef<TextEditorHandle, DocumentSurfaceProps
   }
 
   const currentDocumentKey = `${session.id}:${session.revision}`;
+  const markdownRecovery = markdownRecoveries.get(session.id);
   const recoveryAttempt = markdownRecovery?.documentKey === currentDocumentKey
     ? markdownRecovery.attempt
     : 0;
@@ -73,12 +74,20 @@ export const DocumentSurface = forwardRef<TextEditorHandle, DocumentSurfaceProps
     });
   };
   const enterRecoverySource = (reset?: () => void) => {
-    setMarkdownRecovery({ documentKey: currentDocumentKey, attempt: recoveryAttempt, sourceMode: true });
+    setMarkdownRecoveries((current) => {
+      const next = new Map(current);
+      next.set(session.id, { documentKey: currentDocumentKey, attempt: recoveryAttempt, sourceMode: true });
+      return next;
+    });
     publishRecoveryMode('source');
     reset?.();
   };
   const retryMarkdownPreview = (reset?: () => void) => {
-    setMarkdownRecovery({ documentKey: currentDocumentKey, attempt: recoveryAttempt + 1, sourceMode: false });
+    setMarkdownRecoveries((current) => {
+      const next = new Map(current);
+      next.set(session.id, { documentKey: currentDocumentKey, attempt: recoveryAttempt + 1, sourceMode: false });
+      return next;
+    });
     publishRecoveryMode('rendered');
     reset?.();
   };

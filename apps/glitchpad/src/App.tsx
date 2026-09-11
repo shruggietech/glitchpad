@@ -488,9 +488,8 @@ export function App({ sessions = [], recoveryGateway, externalLinkGateway, local
     setInspectorOpen(false);
     const opener = metadataOpenerRef.current;
     requestAnimationFrame(() => {
-      if (opener?.isConnected && !opener.matches('.application-menu-trigger')) opener.focus();
+      if (opener?.isConnected) opener.focus();
       else if (state.activeId && document.getElementById(`tab-${state.activeId}`)) document.getElementById(`tab-${state.activeId}`)?.focus();
-      else if (opener?.isConnected) opener.focus();
     });
   };
 

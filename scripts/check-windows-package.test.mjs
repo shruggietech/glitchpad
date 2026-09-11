@@ -51,9 +51,10 @@ test('repository Windows package configuration is internally consistent', async 
   });
 });
 
-test('portable lifecycle policy rejects removal of content-first release assertions', async () => {
-  const [lifecycle, workflow] = await Promise.all([
+test('Windows lifecycle policy rejects removal of content-first release assertions', async () => {
+  const [lifecycle, installerLifecycle, workflow] = await Promise.all([
     readFile(join(repositoryRoot, 'scripts', 'windows', 'test-portable-lifecycle.ps1'), 'utf8'),
+    readFile(join(repositoryRoot, 'scripts', 'windows', 'test-installer-lifecycle.ps1'), 'utf8'),
     readFile(join(repositoryRoot, '.github', 'workflows', 'windows-package.yml'), 'utf8'),
   ]);
   assert.equal(validatePortableSmokeContract(lifecycle, workflow), true);
@@ -61,6 +62,7 @@ test('portable lifecycle policy rejects removal of content-first release asserti
     () => validatePortableSmokeContract(lifecycle.replace("conditional_tabs = 'pass'", ''), workflow),
     /portable smoke lifecycle omits/u,
   );
+  assert.match(installerLifecycle, /Wait-RenderedMarkdownHeading \$associationProcess 'S035 Minimal Markdown 5E8A'/u);
 });
 
 test('desktop menu geometry reserves shell chrome and keeps its popup independently positioned', async () => {

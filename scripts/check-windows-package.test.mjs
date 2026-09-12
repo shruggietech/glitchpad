@@ -98,6 +98,10 @@ test('Windows lifecycle policy rejects removal of content-first release assertio
     /Windows Markdown lifecycle omits/u,
   );
   assert.throws(
+    () => validatePortableSmokeContract(lifecycle.replace('Wait-FileText $Path $savedText', ''), workflow),
+    /Windows Markdown lifecycle omits/u,
+  );
+  assert.throws(
     () => validatePortableSmokeContract(lifecycle.replace('$bounds = $Element.Current.BoundingRectangle', ''), workflow),
     /Windows Markdown lifecycle omits/u,
   );

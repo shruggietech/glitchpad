@@ -116,6 +116,7 @@
 - [x] T039 Resolve menu commands to actionable named Button controls instead of same-name text descendants and enforce control selection in package policy
 - [x] T040 Resolve WebView menu commands from named text descendants to the first visible, nonzero Invoke-capable accessibility ancestor and enforce tree-walk selection in package policy
 - [x] T041 Activate resolved WebView menu commands through a deterministic real click without an ambiguous Invoke call that can apply the action before throwing, and enforce click-only menu activation in package policy
+- [x] T042 Verify Ctrl+S durability from exact persisted file bytes instead of a transient WebView accessibility status announcement, and enforce byte-level save polling in package policy
 
 ---
 

@@ -176,6 +176,15 @@ function Wait-WindowText([Diagnostics.Process] $Process, [string] $Text, [int] $
     throw "Portable UI did not expose text '$Text'."
 }
 
+function Wait-FileText([string] $Path, [string] $ExpectedText, [int] $Seconds = 10) {
+    $deadline = [DateTimeOffset]::UtcNow.AddSeconds($Seconds)
+    do {
+        if ((Test-Path -LiteralPath $Path -PathType Leaf) -and [IO.File]::ReadAllText($Path, [Text.Encoding]::UTF8) -ceq $ExpectedText) { return }
+        Start-Sleep -Milliseconds 50
+    } while ([DateTimeOffset]::UtcNow -lt $deadline)
+    throw "Packaged save did not persist expected content to '$Path'."
+}
+
 function Wait-SafeMarkdownOutcome([Diagnostics.Process] $Process, [string] $ExpectedHeading, [string] $RawSentinel, [int] $Seconds = 20) {
     $deadline = [DateTimeOffset]::UtcNow.AddSeconds($Seconds)
     do {
@@ -300,7 +309,7 @@ function Exercise-MarkdownEditSavePreview([Diagnostics.Process] $Process, [strin
     [System.Windows.Forms.SendKeys]::SendWait($savedText)
     Wait-WindowText $Process $savedText
     [System.Windows.Forms.SendKeys]::SendWait('^s')
-    Wait-WindowText $Process ("{0} saved durably." -f $name)
+    Wait-FileText $Path $savedText
     Invoke-MenuCommand $Process 'Preview'
     Wait-SafeMarkdownOutcome $Process $savedText 'S038_EDIT_RAW_SENTINEL'
     if ([IO.File]::ReadAllText($Path, [Text.Encoding]::UTF8) -ne $savedText) {

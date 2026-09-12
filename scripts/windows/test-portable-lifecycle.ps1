@@ -16,11 +16,21 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-function Get-RequiredDictionaryValue([Collections.IDictionary] $Dictionary, [string] $Key) {
-    foreach ($entry in $Dictionary.GetEnumerator()) {
-        if ([string]::Equals([string]$entry.Key, $Key, [StringComparison]::Ordinal)) { return $entry.Value }
+function Get-RequiredDictionaryValue([Collections.IDictionary] $Dictionary, [string[]] $Path) {
+    $current = [object]$Dictionary
+    foreach ($key in $Path) {
+        if ($current -isnot [Collections.IDictionary]) { throw "Required receipt path '$($Path -join '.')' is invalid." }
+        $found = $false
+        foreach ($entry in ([Collections.IDictionary]$current).GetEnumerator()) {
+            if ([string]::Equals([string]$entry.Key, $key, [StringComparison]::Ordinal)) {
+                $current = $entry.Value
+                $found = $true
+                break
+            }
+        }
+        if (-not $found) { throw "Required receipt path '$($Path -join '.')' is missing." }
     }
-    throw "Required receipt key '$Key' is missing."
+    return $current
 }
 
 $root = (Resolve-Path -LiteralPath $PortableRoot).Path
@@ -31,10 +41,8 @@ if ($manifestSourceCommit -cnotmatch '^[a-f0-9]{40}$') { throw 'Package manifest
 $manifestDigest = (Get-FileHash -LiteralPath $manifestPath -Algorithm SHA256).Hash.ToLowerInvariant()
 $scaleMatrixReceiptPath = (Resolve-Path -LiteralPath $ScaleMatrixReceipt).Path
 $scaleMatrix = Get-Content -LiteralPath $scaleMatrixReceiptPath -Raw | ConvertFrom-Json -AsHashtable
-$scaleAuthority = Get-RequiredDictionaryValue $scaleMatrix 'evidence_authority'
-if ($scaleAuthority -isnot [Collections.IDictionary]) { throw 'Scale matrix receipt evidence authority is missing.' }
 if ([string](Get-RequiredDictionaryValue $scaleMatrix 'candidate_manifest_sha256') -cne $manifestDigest) { throw 'Scale matrix receipt does not bind the exact package manifest.' }
-if ([string](Get-RequiredDictionaryValue $scaleAuthority 'source_commit') -cne $manifestSourceCommit) { throw 'Scale matrix receipt source commit is stale.' }
+if ([string](Get-RequiredDictionaryValue $scaleMatrix @('evidence_authority', 'source_commit')) -cne $manifestSourceCommit) { throw 'Scale matrix receipt source commit is stale.' }
 if ((Get-RequiredDictionaryValue $scaleMatrix 'content_free') -ne $true) { throw 'Scale matrix receipt is not content-free.' }
 foreach ($scale in @(100, 125, 150, 200)) {
     $property = "geometry_scale_$scale"

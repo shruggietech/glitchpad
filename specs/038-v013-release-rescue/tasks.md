@@ -110,7 +110,7 @@
 - [x] T033 Install the pinned Puppeteer headless-shell browser before the Windows scale proof and add a policy regression that rejects omission in `.github/workflows/windows-package.yml`, `scripts/check-windows-package.mjs`, and `scripts/check-windows-package.test.mjs`
 - [x] T034 Run focused workflow, release-policy, Windows-package, documentation, formatting, encoding, and diff-integrity checks after second-round convergence and record the local evidence in `specs/038-v013-release-rescue/verification.md`
 - [x] T035 Replace strict nested member access for Windows scale receipts with explicit hashtable schema extraction and require the portable lifecycle contract in `scripts/windows/test-portable-lifecycle.ps1`, `scripts/check-windows-package.mjs`, and `scripts/check-windows-package.test.mjs`
-- [x] T036 Eliminate runner-version-sensitive PowerShell ordered-dictionary index access for every Windows receipt value through a strict ordinal key resolver and add a regression that rejects removing it
+- [x] T036 Eliminate runner-version-sensitive PowerShell ordered-dictionary index and nested pipeline access for every Windows receipt value through a strict ordinal path resolver and add a regression that rejects removing it
 
 ---
 

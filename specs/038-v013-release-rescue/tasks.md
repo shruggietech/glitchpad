@@ -113,6 +113,7 @@
 - [x] T036 Eliminate runner-version-sensitive PowerShell JSON projection for every Windows receipt value through typed `System.Text.Json` property reads and add regressions that reject removing exact schema access
 - [x] T037 Fall back from a failing advertised UI Automation Invoke pattern to the governed focused clickable-point path for Windows buttons and menu commands, and enforce the fallback in package policy
 - [x] T038 Fall back from absent UI Automation clickable points to the center of validated visible element bounds and enforce the geometry path in package policy
+- [x] T039 Resolve menu commands to actionable named Button controls instead of same-name text descendants and enforce control selection in package policy
 
 ---
 

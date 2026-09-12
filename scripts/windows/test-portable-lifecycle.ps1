@@ -260,7 +260,7 @@ function Invoke-NamedButton([Diagnostics.Process] $Process, [string] $Name) {
 
 function Invoke-MenuCommand([Diagnostics.Process] $Process, [string] $Name) {
     Invoke-NamedButton $Process 'Menu'
-    $item = Wait-NamedElement $Process $Name
+    $item = Wait-NamedButton $Process $Name
     Invoke-AutomationElement $Process $item $Name
 }
 

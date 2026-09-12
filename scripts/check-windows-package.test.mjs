@@ -97,6 +97,10 @@ test('Windows lifecycle policy rejects removal of content-first release assertio
     () => validatePortableSmokeContract(lifecycle.replace('$bounds = $Element.Current.BoundingRectangle', ''), workflow),
     /Windows Markdown lifecycle omits/u,
   );
+  assert.throws(
+    () => validatePortableSmokeContract(lifecycle.replace('$item = Wait-NamedButton $Process $Name', '$item = Wait-NamedElement $Process $Name'), workflow),
+    /Windows Markdown lifecycle omits/u,
+  );
   assert.match(installerLifecycle, /Wait-RenderedMarkdownHeading \$associationProcess 'S035 Minimal Markdown 5E8A'/u);
 });
 

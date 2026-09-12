@@ -12,7 +12,7 @@ Receipts must not contain document bodies, private filenames, native paths, link
 
 ## Windows Contract
 
-Both the NSIS installer and portable ZIP must be tested as exact final artifacts. Evidence must cover clean launch; in-application Open; file association; command-line delivery; delivery to an already-running process; minimal and representative Markdown rendering; source editing and safe save; return to preview; one deterministic contained failure followed by source and successful retry; reserved shell/menu geometry at 100, 125, 150, and 200 percent governed scales; clean shutdown; uninstall or unpack cleanup; and absence of orphaned processes.
+Both the NSIS installer and portable ZIP must be tested as exact final artifacts. Evidence must cover clean launch; in-application Open; file association; command-line delivery; delivery to an already-running process; minimal and representative Markdown rendering; source editing and safe save; return to preview; one opt-in deterministic failure produced by the packaged host and UI followed by contained source recovery and successful retry; distinct reserved shell/menu geometry results at 100, 125, 150, and 200 percent governed scales; clean shutdown; uninstall or unpack cleanup; and absence of orphaned processes. Tag workflows must promote the truthful final manifest before any practical-use receipt hashes it.
 
 ## macOS Contract
 

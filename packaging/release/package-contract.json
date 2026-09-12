@@ -39,11 +39,15 @@
       "markdown_delivery",
       "markdown_minimal",
       "markdown_edit_save_preview",
-      "document_scoped_recovery_contract",
+      "document_scoped_recovery",
       "markdown_alpha_beta",
       "markdown_beta_alpha",
       "menu_geometry",
       "toolbar_reserved_region",
+      "geometry_scale_100",
+      "geometry_scale_125",
+      "geometry_scale_150",
+      "geometry_scale_200",
       "document_preservation"
     ],
     "macos": [

@@ -20,8 +20,8 @@
 3. Reconfirm the v0.1.2 immutable baseline.
 4. Create one annotated `v0.1.3` tag on the reviewed merge commit and push that exact tag.
 5. Require all four platform package workflows to succeed for the tag source.
-6. Require release assembly to reconcile the complete package and evidence inventory, including practical-use receipts.
-7. Publish one immutable v0.1.3 GitHub release and perform the release-authorized documentation deployment.
+6. Require release assembly to reconcile the complete package and evidence inventory, including practical-use receipts bound after final tag-manifest promotion, real packaged Windows recovery, and all four governed Windows scale results.
+7. Publish one immutable v0.1.3 GitHub release, then and only then perform the release-authorized documentation deployment.
 8. Verify release assets, public release metadata, production deployment revision, and primary installation instructions.
 9. Reconfirm that v0.1.2 is unchanged.
 

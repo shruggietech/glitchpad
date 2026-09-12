@@ -5,10 +5,12 @@ param(
     [Parameter(Mandatory = $true)][string] $TextFixture,
     [Parameter(Mandatory = $true)][string] $MarkdownFixtureMinimal,
     [Parameter(Mandatory = $true)][string] $MarkdownFixtureEditable,
+    [Parameter(Mandatory = $true)][string] $MarkdownFixtureRecovery,
     [Parameter(Mandatory = $true)][string] $Receipt,
     [Parameter(Mandatory = $true)][string] $MarkdownFixtureA,
     [Parameter(Mandatory = $true)][string] $MarkdownFixtureB,
     [Parameter(Mandatory = $true)][string] $Manifest,
+    [Parameter(Mandatory = $true)][string] $ScaleMatrixReceipt,
     [Parameter(Mandatory = $true)][string] $InstalledMarkdownReceipt
 )
 
@@ -72,7 +74,7 @@ foreach ($association in $associationInstalled) {
         throw 'A governed file association does not target the installed application.'
     }
 }
-& "$PSScriptRoot/test-portable-lifecycle.ps1" -PortableRoot $installRoot -ApplicationName 'glitchpad-host.exe' -TextFixture $TextFixture -MarkdownFixtureMinimal $MarkdownFixtureMinimal -MarkdownFixtureEditable $MarkdownFixtureEditable -MarkdownFixtureA $MarkdownFixtureA -MarkdownFixtureB $MarkdownFixtureB -Manifest $Manifest -Receipt $InstalledMarkdownReceipt
+& "$PSScriptRoot/test-portable-lifecycle.ps1" -PortableRoot $installRoot -ApplicationName 'glitchpad-host.exe' -TextFixture $TextFixture -MarkdownFixtureMinimal $MarkdownFixtureMinimal -MarkdownFixtureEditable $MarkdownFixtureEditable -MarkdownFixtureRecovery $MarkdownFixtureRecovery -MarkdownFixtureA $MarkdownFixtureA -MarkdownFixtureB $MarkdownFixtureB -Manifest $Manifest -ScaleMatrixReceipt $ScaleMatrixReceipt -Receipt $InstalledMarkdownReceipt
 $associationProcess = Start-Process -FilePath (Resolve-Path -LiteralPath $MarkdownFixtureMinimal).Path -PassThru -WindowStyle Hidden
 try {
     Wait-RenderedMarkdownHeading $associationProcess 'S035 Minimal Markdown 5E8A'

@@ -71,6 +71,7 @@ import {
   type AndroidDeliveryGateway,
 } from './domain/android-delivery-gateway';
 import {
+  consumeDesktopMarkdownFailureProbe,
   nativeDesktopDeliveryAvailable,
   nativeDesktopDeliveryGateway,
   reportDesktopDeviceScaleProbe,
@@ -97,6 +98,7 @@ export function App({ sessions = [], recoveryGateway, externalLinkGateway, local
   const [state, dispatch] = useReducer(tabReducer, sessions, createTabState);
   const [commandStatus, setCommandStatus] = useState('');
   const [deliveryError, setDeliveryError] = useState('');
+  const [markdownFailureProbe, setMarkdownFailureProbe] = useState(false);
   const [inspectorOpen, setInspectorOpen] = useState(false);
   const [applicationPanel, setApplicationPanel] = useState<'closed' | 'preferences' | 'diagnostics'>('closed');
   const [metadataReadySessionId, setMetadataReadySessionId] = useState<string | null>(null);
@@ -163,6 +165,11 @@ export function App({ sessions = [], recoveryGateway, externalLinkGateway, local
     void reportDesktopLifecycleProbe('shell-ready').catch(() => undefined);
     if (/Windows/iu.test(navigator.userAgent))
       void reportDesktopDeviceScaleProbe(window.devicePixelRatio).catch(() => undefined);
+    void consumeDesktopMarkdownFailureProbe()
+      .then((requested) => {
+        if (requested) setMarkdownFailureProbe(true);
+      })
+      .catch(() => undefined);
   }, []);
   const applyDesktopDeliveries = useCallback(async (results: readonly DesktopDeliveryResult[]) => {
     if (!selectedDesktopDeliveryGateway) return;
@@ -723,6 +730,7 @@ export function App({ sessions = [], recoveryGateway, externalLinkGateway, local
         <DocumentSurface
           ref={editorRef}
           session={activeSession}
+          markdownFailureProbe={markdownFailureProbe}
           canOpen={Boolean(selectedDesktopDeliveryGateway)}
           onOpen={chooseDesktopSources}
           labelledByTab={state.sessions.length > 1}

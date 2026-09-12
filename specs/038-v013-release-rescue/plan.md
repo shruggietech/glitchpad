@@ -128,11 +128,11 @@ Update product and specification versions, Android version code, active package 
 
 ### Phase 2: Make Practical Use a Release Gate
 
-Retain S035’s exact Windows installer/portable Markdown delivery and recovery coverage, verify shared desktop and Android lifecycles, and extend release assembly and policy checks so the final artifact set cannot publish without matching privacy-safe practical-use receipts from the exact package revision.
+Retain S035’s exact Windows installer/portable Markdown delivery coverage, add an opt-in packaged failure that proves contained source-and-retry recovery in the final executable, record separate 100, 125, 150, and 200 percent geometry results, verify shared desktop and Android lifecycles, and extend release assembly and policy checks so the final artifact set cannot publish without matching privacy-safe practical-use receipts bound to the exact final package manifest.
 
 ### Phase 3: Reconcile Documentation and Handoff
 
-Write v0.1.3 release notes, receipt, and operator runbook; reconcile the technical specification, changelog, README, support/security policies, website metadata, and publication workflow; and document the reviewed merge commit placeholder as the only eventual tag authority.
+Write v0.1.3 release notes, receipt, and operator runbook; reconcile the technical specification, changelog, README, support/security policies, website metadata, and publication workflow; restrict production site deployment to the release-authorized handoff after the GitHub release exists; and document the reviewed merge commit placeholder as the only eventual tag authority.
 
 ### Phase 4: Validate and Review
 

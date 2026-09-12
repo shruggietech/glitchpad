@@ -135,10 +135,6 @@ export async function checkConfiguration(
     ['Pages artifact path', /^\s*path:\s*site\/out\s*$/m],
     ['protected Pages environment', /^\s*name:\s*github-pages\s*$/m],
     [
-      'trusted main deployment condition',
-      /github\.event_name == 'push'[\s\S]*github\.ref == 'refs\/heads\/main'/,
-    ],
-    [
       'exact publisher deployment condition',
       /inputs\.deploy[\s\S]*inputs\.release_tag == 'v0\.1\.3'/,
     ],
@@ -153,7 +149,7 @@ export async function checkConfiguration(
     }
   }
   const expectedDeploymentCondition =
-    "(github.event_name == 'push' && github.ref == 'refs/heads/main') || (inputs.deploy && inputs.release_tag == 'v0.1.3')";
+    "inputs.deploy && inputs.release_tag == 'v0.1.3'";
   const normalizeExpression = (value) =>
     typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : '';
   const uploadStep = parsedDocsWorkflow.jobs?.build?.steps?.find(
@@ -165,7 +161,7 @@ export async function checkConfiguration(
       expectedDeploymentCondition
   )
     throw new Error(
-      'Invalid docs workflow contract: deployment authority must be exactly trusted main or the authorized release input',
+      'Invalid docs workflow contract: deployment authority must be exactly the authorized release input',
     );
   if (
     JSON.stringify(parsedDocsWorkflow.jobs?.deploy?.concurrency) !==

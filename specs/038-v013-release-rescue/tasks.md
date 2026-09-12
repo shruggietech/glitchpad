@@ -89,6 +89,18 @@
 
 ---
 
+## Phase 7: Automated Review Convergence
+
+**Purpose**: Close every first-round review gap without weakening the publication boundary.
+
+- [x] T026 Reorder Windows tag-manifest promotion ahead of practical-use receipt generation and enforce the ordering in `.github/workflows/windows-package.yml`, `scripts/check-windows-package.mjs`, and `scripts/check-windows-package.test.mjs`
+- [x] T027 Add a fixed, opt-in, content-free lifecycle probe that drives a real packaged Markdown failure through contained source recovery and successful preview retry in `crates/glitchpad-host/src/lifecycle_probe.rs`, `apps/glitchpad/src/`, and `scripts/windows/test-*-lifecycle.ps1`
+- [x] T028 Emit and consume exact-manifest-bound geometry evidence for each governed 100, 125, 150, and 200 percent display scale in `scripts/check-shell-layout.mjs`, the Windows workflow, package contracts, and aggregate release validation
+- [x] T029 Restrict Pages upload and deployment to the exact release-authorized reusable-workflow input and update public-release policy, release documentation, and the explicit S037 deviation record in `.github/workflows/docs.yml`, `scripts/check-public-release*`, `scripts/check-config.mjs`, `site/README.md`, `docs/releases/`, and `specs/038-v013-release-rescue/`
+- [x] T030 Re-run focused review-remediation checks, the complete `cargo xtask check` gate, encoding and diff-integrity checks, and frozen-release checks, then record the local evidence in `specs/038-v013-release-rescue/verification.md`
+
+---
+
 ## Dependencies and Execution Order
 
 ### Phase Dependencies
@@ -99,6 +111,7 @@
 - User Story 2 depends on User Story 1 because aggregate evidence consumes the Windows receipt contract; macOS, Linux, and Android identity work marked `[P]` may proceed independently.
 - User Story 3 depends on the final package inventory and evidence model from User Story 2.
 - Phase 6 depends on all three user stories.
+- Phase 7 is append-only review convergence and depends on the first automated review of the published pull request.
 
 ### User Story Dependencies
 

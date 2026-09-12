@@ -10,7 +10,7 @@ All notable changes to Glitchpad are documented in this file. The format follows
 
 - Published the technical specification as navigable section pages while preserving one normative source and validating every generated section against it.
 - Automated post-merge documentation publication and merged-branch cleanup with explicit concurrency, provenance, and failure-reporting controls.
-- Bound desktop practical-use receipts to the exact candidate package manifests and required content-free evidence before release assembly.
+- Bound desktop practical-use receipts to the exact final package manifests, including packaged Markdown failure recovery and separate 100, 125, 150, and 200 percent shell-geometry results, and required content-free evidence before release assembly.
 
 ### Fixed
 

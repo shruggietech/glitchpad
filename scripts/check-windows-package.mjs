@@ -55,10 +55,12 @@ export function validatePortableSmokeContract(lifecycleSource, workflowSource) {
   const lifecycleRequirements = [
     '[string] $TextFixture',
     '[string] $MarkdownFixtureMinimal',
+    '[string] $MarkdownFixtureRecovery',
     '[string] $MarkdownFixtureA',
     '[string] $MarkdownFixtureB',
     '[string] $MarkdownFixtureEditable',
     '[string] $Manifest',
+    '[string] $ScaleMatrixReceipt',
     "'Open file…'",
     "'S027 TXT CONTENT 7E5A'",
     "'S030 Markdown Alpha 2B7C'",
@@ -80,12 +82,16 @@ export function validatePortableSmokeContract(lifecycleSource, workflowSource) {
     "markdown_beta_alpha = 'pass'",
     "markdown_minimal = 'pass'",
     "markdown_edit_save_preview = 'pass'",
-    "document_scoped_recovery_contract = 'pass'",
+    "document_scoped_recovery = 'pass'",
     "blank_viewport_absence = 'pass'",
     "pending_source_absence = 'pass'",
     "active_document_identity = 'pass'",
     "menu_geometry = 'pass'",
     "toolbar_reserved_region = 'pass'",
+    "geometry_scale_100 = 'pass'",
+    "geometry_scale_125 = 'pass'",
+    "geometry_scale_150 = 'pass'",
+    "geometry_scale_200 = 'pass'",
     "trigger_stability = 'pass'",
     "popup_viewport_containment = 'pass'",
     "document_scroll_preserved = 'pass'",
@@ -98,15 +104,20 @@ export function validatePortableSmokeContract(lifecycleSource, workflowSource) {
   for (const requirement of lifecycleRequirements)
     if (!lifecycleSource.includes(requirement))
       fail(`portable smoke lifecycle omits ${requirement}`);
-  for (const requirement of ['-TextFixture', '-MarkdownFixtureMinimal', '-MarkdownFixtureEditable', '-MarkdownFixtureA', '-MarkdownFixtureB', '-Manifest', 'windows-package-manifest.json', 's027-visible.txt', 's035-minimal.md', 's038-installed-editable.md', 's038-portable-editable.md', 's030-alpha.md', 's030-beta.md'])
+  for (const requirement of ['-TextFixture', '-MarkdownFixtureMinimal', '-MarkdownFixtureEditable', '-MarkdownFixtureRecovery', '-MarkdownFixtureA', '-MarkdownFixtureB', '-Manifest', '-ScaleMatrixReceipt', 'windows-package-manifest.json', 'shell-layout-scale-receipt.json', 's027-visible.txt', 's035-minimal.md', 's038-installed-editable.md', 's038-portable-editable.md', 's038-installed-recovery.md', 's038-portable-recovery.md', 's030-alpha.md', 's030-beta.md'])
     if (!workflowSource.includes(requirement))
       fail(`Windows workflow omits ${requirement}`);
-  for (const requirement of ['[S030_ALPHA_RAW_SENTINEL]: https://example.invalid/alpha', '[S030_BETA_RAW_SENTINEL]: https://example.invalid/beta', '| Alpha | Beta |', 'Footnote[^1]', 'flowchart TB', 'Wait-SafeMarkdownOutcome', 'Wait-WindowText', 'Wait-NamedButton', 'TryGetCurrentPattern', 'GetClickablePoint', 'GlitchpadNativeInput', 'SetForegroundWindow', 'mouse_event', 'Send-MarkdownDelivery', 'Exercise-MarkdownEditSavePreview', "Invoke-MenuCommand $Process 'Edit source'", "Invoke-MenuCommand $Process 'Preview'", "[System.Windows.Forms.SendKeys]::SendWait('^s')", 'saved durably.', 'DocumentSurface.test.tsx', 'MarkdownSurface.test.tsx'])
+  for (const requirement of ['[S030_ALPHA_RAW_SENTINEL]: https://example.invalid/alpha', '[S030_BETA_RAW_SENTINEL]: https://example.invalid/beta', 'S038_RECOVERY_RAW_SENTINEL', '| Alpha | Beta |', 'Footnote[^1]', 'flowchart TB', 'Wait-SafeMarkdownOutcome', 'Wait-WindowText', 'Wait-NamedButton', 'TryGetCurrentPattern', 'GetClickablePoint', 'GlitchpadNativeInput', 'SetForegroundWindow', 'mouse_event', 'Send-MarkdownDelivery', 'Exercise-MarkdownEditSavePreview', 'Exercise-MarkdownRecovery', 'markdown-failure-request.marker', 'markdown-failure-consumed.marker', "Invoke-MenuCommand $Process 'Edit source'", "Invoke-MenuCommand $Process 'Preview'", "[System.Windows.Forms.SendKeys]::SendWait('^s')", 'saved durably.', 'DocumentSurface.test.tsx', 'MarkdownSurface.test.tsx'])
     if (!`${lifecycleSource}\n${workflowSource}`.includes(requirement))
       fail(`Windows Markdown lifecycle omits ${requirement}`);
   for (const requirement of ['-InstalledMarkdownReceipt', 'installed-markdown-lifecycle-receipt.json'])
     if (!workflowSource.includes(requirement))
       fail(`Windows installed lifecycle omits ${requirement}`);
+  const promotionIndex = workflowSource.indexOf('- name: Promote truthful community evidence');
+  const scaleIndex = workflowSource.indexOf('- name: Prove governed display-scale geometry');
+  const lifecycleIndex = workflowSource.indexOf('- name: Exercise installed and portable lifecycles');
+  if (promotionIndex < 0 || scaleIndex <= promotionIndex || lifecycleIndex <= scaleIndex)
+    fail('Windows official manifest promotion and receipt binding are out of order');
   return true;
 }
 
@@ -144,6 +155,11 @@ export async function checkWindowsConfiguration(
     installerHooks,
     portableLifecycle,
     windowsWorkflow,
+    shellLayoutSource,
+    lifecycleProbeSource,
+    applicationSource,
+    markdownSurfaceSource,
+    desktopGatewaySource,
   ] = await Promise.all([
     json(join(repositoryRoot, 'packaging', 'desktop', 'capabilities.json')),
     json(join(packagingRoot, 'package-contract.json')),
@@ -181,9 +197,24 @@ export async function checkWindowsConfiguration(
     ),
     readFile(join(repositoryRoot, 'scripts', 'windows', 'test-portable-lifecycle.ps1'), 'utf8'),
     readFile(join(repositoryRoot, '.github', 'workflows', 'windows-package.yml'), 'utf8'),
+    readFile(join(repositoryRoot, 'scripts', 'check-shell-layout.mjs'), 'utf8'),
+    readFile(join(repositoryRoot, 'crates', 'glitchpad-host', 'src', 'lifecycle_probe.rs'), 'utf8'),
+    readFile(join(repositoryRoot, 'apps', 'glitchpad', 'src', 'App.tsx'), 'utf8'),
+    readFile(join(repositoryRoot, 'apps', 'glitchpad', 'src', 'components', 'MarkdownSurface.tsx'), 'utf8'),
+    readFile(join(repositoryRoot, 'apps', 'glitchpad', 'src', 'domain', 'desktop-delivery-gateway.ts'), 'utf8'),
   ]);
 
   validatePortableSmokeContract(portableLifecycle, windowsWorkflow);
+  for (const [source, marker] of [
+    [shellLayoutSource, 'candidate_manifest_sha256'],
+    [shellLayoutSource, 'geometry_scale_${scale}'],
+    [lifecycleProbeSource, 'consume_desktop_markdown_failure_probe'],
+    [applicationSource, 'consumeDesktopMarkdownFailureProbe'],
+    [markdownSurfaceSource, 'LifecycleMarkdownFailure'],
+    [desktopGatewaySource, "call('consume_desktop_markdown_failure_probe')"],
+  ])
+    if (!source.includes(marker))
+      fail(`Windows practical-use probe omits ${marker}`);
 
   if (capabilities.schema_version !== 1 || capabilities.release !== '0.1.3')
     fail('capability inventory version is not v0.1.3 schema 1');
@@ -241,6 +272,14 @@ export async function checkWindowsConfiguration(
     !contract.official.required_evidence.includes('community-trust-evidence.json')
   )
     fail('official unsigned community trust is not governed');
+  for (const name of [
+    'shell-layout-scale-receipt.json',
+    'installer-lifecycle-receipt.json',
+    'installed-markdown-lifecycle-receipt.json',
+    'portable-lifecycle-receipt.json',
+  ])
+    if (!contract.official.required_evidence.includes(name))
+      fail(`official evidence omits ${name}`);
 
   if (
     tauri.version !== contract.candidate_version ||

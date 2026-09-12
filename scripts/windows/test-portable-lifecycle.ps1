@@ -4,9 +4,11 @@ param(
     [Parameter(Mandatory = $true)][string] $TextFixture,
     [Parameter(Mandatory = $true)][string] $MarkdownFixtureMinimal,
     [Parameter(Mandatory = $true)][string] $MarkdownFixtureEditable,
+    [Parameter(Mandatory = $true)][string] $MarkdownFixtureRecovery,
     [Parameter(Mandatory = $true)][string] $MarkdownFixtureA,
     [Parameter(Mandatory = $true)][string] $MarkdownFixtureB,
     [Parameter(Mandatory = $true)][string] $Manifest,
+    [Parameter(Mandatory = $true)][string] $ScaleMatrixReceipt,
     [Parameter(Mandatory = $true)][string] $Receipt,
     [string] $ApplicationName = 'Glitchpad.exe'
 )
@@ -18,15 +20,26 @@ $manifestPath = (Resolve-Path -LiteralPath $Manifest).Path
 $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
 if ([string]$manifest.source_commit -cnotmatch '^[a-f0-9]{40}$') { throw 'Package manifest source commit is invalid.' }
 $manifestDigest = (Get-FileHash -LiteralPath $manifestPath -Algorithm SHA256).Hash.ToLowerInvariant()
+$scaleMatrixReceiptPath = (Resolve-Path -LiteralPath $ScaleMatrixReceipt).Path
+$scaleMatrix = Get-Content -LiteralPath $scaleMatrixReceiptPath -Raw | ConvertFrom-Json
+if ([string]$scaleMatrix.candidate_manifest_sha256 -cne $manifestDigest) { throw 'Scale matrix receipt does not bind the exact package manifest.' }
+if ([string]$scaleMatrix.evidence_authority.source_commit -cne [string]$manifest.source_commit) { throw 'Scale matrix receipt source commit is stale.' }
+if ($scaleMatrix.content_free -ne $true) { throw 'Scale matrix receipt is not content-free.' }
+foreach ($scale in @(100, 125, 150, 200)) {
+    $property = "geometry_scale_$scale"
+    if ([string]$scaleMatrix.PSObject.Properties[$property].Value -cne 'pass') { throw "Scale matrix receipt did not pass $scale percent." }
+}
 $application = Join-Path $root $ApplicationName
 $textFixturePath = (Resolve-Path -LiteralPath $TextFixture).Path
 $markdownFixtureMinimalPath = (Resolve-Path -LiteralPath $MarkdownFixtureMinimal).Path
 $markdownFixtureEditablePath = (Resolve-Path -LiteralPath $MarkdownFixtureEditable).Path
+$markdownFixtureRecoveryPath = (Resolve-Path -LiteralPath $MarkdownFixtureRecovery).Path
 $markdownFixtureAPath = (Resolve-Path -LiteralPath $MarkdownFixtureA).Path
 $markdownFixtureBPath = (Resolve-Path -LiteralPath $MarkdownFixtureB).Path
 $fixtureDigests = @{
     $textFixturePath = (Get-FileHash -LiteralPath $textFixturePath -Algorithm SHA256).Hash
     $markdownFixtureMinimalPath = (Get-FileHash -LiteralPath $markdownFixtureMinimalPath -Algorithm SHA256).Hash
+    $markdownFixtureRecoveryPath = (Get-FileHash -LiteralPath $markdownFixtureRecoveryPath -Algorithm SHA256).Hash
     $markdownFixtureAPath = (Get-FileHash -LiteralPath $markdownFixtureAPath -Algorithm SHA256).Hash
     $markdownFixtureBPath = (Get-FileHash -LiteralPath $markdownFixtureBPath -Algorithm SHA256).Hash
 }
@@ -247,6 +260,20 @@ function Exercise-MarkdownEditSavePreview([Diagnostics.Process] $Process, [strin
     }
 }
 
+function Exercise-MarkdownRecovery([Diagnostics.Process] $Process, [string] $Path, [string] $ProbeDirectory) {
+    $name = [IO.Path]::GetFileName($Path)
+    Wait-NamedButton $Process 'View source' | Out-Null
+    Invoke-NamedButton $Process 'View source'
+    Wait-NamedElement $Process 'Rendered preview is paused after a contained failure. Source remains available.' | Out-Null
+    Wait-NamedElement $Process ("{0} text editor" -f $name) | Out-Null
+    Wait-WindowText $Process 'S038 Recovery Markdown 6D2E'
+    Invoke-NamedButton $Process 'Retry preview'
+    Wait-SafeMarkdownOutcome $Process 'S038 Recovery Markdown 6D2E' 'S038_RECOVERY_RAW_SENTINEL'
+    if (-not (Test-Path -LiteralPath (Join-Path $ProbeDirectory 'markdown-failure-consumed.marker') -PathType Leaf)) {
+        throw 'The packaged application did not consume the requested Markdown failure.'
+    }
+}
+
 function Close-Document([Diagnostics.Process] $Process, [string] $Path) {
     Invoke-NamedButton $Process ("Close {0}" -f [IO.Path]::GetFileName($Path))
 }
@@ -427,6 +454,20 @@ finally {
     if (-not $editableProcess.HasExited) { Stop-Process -Id $editableProcess.Id -Force }
     Remove-Item -LiteralPath $editableState -Recurse -Force -ErrorAction SilentlyContinue
 }
+$recoveryState = Join-Path ([IO.Path]::GetTempPath()) ("glitchpad-s038-recovery-{0}" -f [Guid]::NewGuid().ToString('N'))
+$recoveryProbe = Join-Path $recoveryState 'probe'
+New-Item -ItemType Directory -Path $recoveryProbe -Force | Out-Null
+[IO.File]::WriteAllText((Join-Path $recoveryProbe 'enabled.marker'), "enabled`n", [Text.UTF8Encoding]::new($false))
+[IO.File]::WriteAllText((Join-Path $recoveryProbe 'markdown-failure-request.marker'), "requested`n", [Text.UTF8Encoding]::new($false))
+$recoveryEnvironment = @{ APPDATA = $recoveryState; LOCALAPPDATA = $recoveryState; GLITCHPAD_LIFECYCLE_PROBE_DIR = $recoveryProbe }
+$recoveryProcess = Start-Process -FilePath $application -ArgumentList ('"{0}"' -f $markdownFixtureRecoveryPath) -PassThru -WindowStyle Hidden -Environment $recoveryEnvironment
+try {
+    Exercise-MarkdownRecovery $recoveryProcess $markdownFixtureRecoveryPath $recoveryProbe
+}
+finally {
+    if (-not $recoveryProcess.HasExited) { Stop-Process -Id $recoveryProcess.Id -Force }
+    Remove-Item -LiteralPath $recoveryState -Recurse -Force -ErrorAction SilentlyContinue
+}
 $webviewState = Join-Path ([IO.Path]::GetTempPath()) ("glitchpad-s035-webview-{0}" -f [Guid]::NewGuid().ToString('N'))
 $webviewProbe = Join-Path $webviewState 'probe'
 New-Item -ItemType Directory -Path $webviewProbe -Force | Out-Null
@@ -466,7 +507,7 @@ foreach ($fixture in $fixtureDigests.GetEnumerator()) {
     markdown_delivery = 'pass'
     markdown_minimal = 'pass'
     markdown_edit_save_preview = 'pass'
-    document_scoped_recovery_contract = 'pass'
+    document_scoped_recovery = 'pass'
     markdown_alpha_beta = 'pass'
     markdown_beta_alpha = 'pass'
     blank_viewport_absence = 'pass'
@@ -474,6 +515,10 @@ foreach ($fixture in $fixtureDigests.GetEnumerator()) {
     active_document_identity = 'pass'
     menu_geometry = 'pass'
     toolbar_reserved_region = 'pass'
+    geometry_scale_100 = 'pass'
+    geometry_scale_125 = 'pass'
+    geometry_scale_150 = 'pass'
+    geometry_scale_200 = 'pass'
     trigger_stability = 'pass'
     popup_viewport_containment = 'pass'
     document_scroll_preserved = 'pass'

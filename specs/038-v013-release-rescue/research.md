@@ -40,6 +40,8 @@
 
 **Alternatives considered**: Publishing from the pull-request head was rejected because review changes could invalidate the bytes. Automatically tagging immediately after CI was rejected because the user explicitly reserved the final review and merge ritual.
 
+**Review-convergence deviation**: S037 allowed every successful `main` push to deploy the current site. S038 intentionally removes that authority because the v0.1.3 site links to an official release that does not exist until the tag transaction finishes. Pull requests and `main` pushes still build and validate the artifact, while only the release workflow can supply the exact reusable-workflow inputs that permit deployment after release publication.
+
 ## Decision 6: Defer images and leave #66 open
 
 **Decision**: S038 adds only release-critical stable-core evidence and does not claim to complete the broad #66 conformance matrix or begin issue #68.

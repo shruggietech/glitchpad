@@ -56,22 +56,24 @@ The following records remain frozen: `docs/releases/v0.1.2.md`, `docs/releases/v
 | Gate | Result | Evidence |
 | --- | --- | --- |
 | Spec quality | Pass | 16 of 16 checklist items checked |
-| Cross-artifact analysis | Pass | 24 requirements, 12 buildable outcomes, 13 acceptance scenarios, and 25 tasks mapped with zero findings |
+| Cross-artifact analysis | Pass | The initial 24 requirements, 12 buildable outcomes, 13 acceptance scenarios, and 25 tasks mapped with zero findings; first-round review then produced five append-only convergence tasks T026-T030, all completed and mapped to FR-008 through FR-011, FR-014, FR-016, FR-019, FR-021, and SC-002 through SC-005 |
 | Red-phase focused release contracts | Expected failure | 51 tests ran; 17 failed for unimplemented v0.1.3 identity, S038 handoff, active public authority, and practical-use receipt validation while 34 existing guards passed |
 | Rust workspace compilation | Pass | `cargo check --workspace --all-targets` completed for v0.1.3 and refreshed only the four workspace package entries in `Cargo.lock` |
 | Focused Windows release contracts | Pass | 77 release, public, assembly, Android, and Windows tests passed after the receipt schema and exact-manifest binding were implemented; both Windows lifecycle scripts parsed successfully in PowerShell |
 | Cross-platform package contracts | Pass | 118 Windows, macOS, Linux, Android, aggregate assembly, promotion, and public-authority tests passed |
 | Documentation generation | Pass | The generator produced the introduction, 38 ordered specification sections, compatibility route, and repository-derived facts; all 18 site unit and export-contract tests passed after advancing the revision-date assertion |
-| Spec Kit convergence | Pass | A second requirement-to-task audit found every S038 acceptance requirement covered by T001-T025; no append-only convergence tasks were required |
+| Initial Spec Kit convergence | Pass | The pre-review requirement-to-task audit found every S038 acceptance requirement covered by T001-T025 |
+| First automated review | Required changes | Four valid gaps were identified: Windows tag promotion occurred after receipts hashed the manifest, recovery evidence did not drive the packaged failure path, `main` could deploy release copy before v0.1.3 existed, and geometry evidence did not report each governed scale independently |
+| Review-remediation convergence | Pass | T026-T030 moved tag promotion ahead of receipt creation, added a fixed one-shot packaged recovery probe and UI regression, emitted exact-manifest-bound 100/125/150/200 scale results across 48 production-CSS cases, restricted deployment to the release workflow after publication, and recorded the explicit S037 deviation |
 | Diff and ignore hygiene | Pass | Ignore authorities were unchanged, the tracked and untracked inventory contains only S038 sources and generated authorities, and `git diff --check` passed |
 | Focused release and package regression | Pass | The v0.1.3 application production build, 20 performance and provenance tests, and PowerShell parsing for both modified Windows lifecycle scripts passed; the final post-review run passed 43 Windows and aggregate release tests plus both live policy validators |
-| Complete repository gate | Pass | `cargo xtask check` exited 0 through `scripts/invoke-docker-hidden.ps1`; Rust format, Clippy, workspace tests, cargo-deny, 267 frontend tests, production builds, browser tests, package policies, public release checks, documentation format and links, 46 Mermaid renders, version consistency, and public-surface checks all passed |
+| Complete repository gate | Pass | The post-remediation `cargo xtask check` exited 0 through `scripts/invoke-docker-hidden.ps1`; Rust format, Clippy, workspace tests, cargo-deny, 268 frontend tests, production builds, browser tests, package policies, public release checks, documentation format and links, 46 Mermaid renders, version consistency, and public-surface checks all passed |
 | Encoding and corruption | Pass | The complete gate validated 955 text files as UTF-8 without BOM or common mojibake markers |
 | Final diff integrity | Pass | `git diff --check` exited 0 after the last implementation change |
 | Post-gate diff review | Pass | Manual review separated the installed and portable editable Markdown fixtures so each exact package lifecycle begins from pristine content, then hardened receipt sanitization against case-shifted sensitive keys and failure markers nested in arrays; focused policy and configuration gates passed after both corrections |
 | Frozen v0.1.2 comparison | Pass | The peeled tag remains `1d9b227b6ec6b343eac7d69578376a4c26ec45d7`; release database ID, publication state and timestamp, and all 14 asset names, sizes, and update timestamps match the captured baseline |
-| Final pre-publication boundary | Pass | Local and remote `v0.1.3` tags remain absent and the GitHub releases API returns 404 for `v0.1.3`; no tag, release, or release-authorized deployment was created during S038 |
+| Final pre-publication boundary | Pass | Rechecked on 2026-09-12: local and remote `v0.1.3` tags remain absent and the GitHub releases API returns 404 for `v0.1.3`; no tag, release, or release-authorized deployment was created during S038 |
 
 ## Final Pre-Publication State
 
-Revalidated after implementation and the complete repository gate on 2026-09-11. The reviewed branch contains only release-candidate source and evidence authorities. Official publication remains reserved for the owner-approved post-merge ritual in `docs/releases/v0.1.3-operator-runbook.md`.
+Revalidated after first-round automated review remediation and the complete repository gate on 2026-09-12. The reviewed branch contains only release-candidate source and evidence authorities. Official publication remains reserved for the owner-approved post-merge ritual in `docs/releases/v0.1.3-operator-runbook.md`.

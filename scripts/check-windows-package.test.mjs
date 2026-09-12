@@ -62,8 +62,16 @@ test('Windows lifecycle policy rejects removal of content-first release assertio
     /portable smoke lifecycle omits/u,
   );
   assert.throws(
+    () => validatePortableSmokeContract(lifecycle.replace("geometry_scale_125 = 'pass'", ''), workflow),
+    /portable smoke lifecycle omits/u,
+  );
+  assert.throws(
     () => validatePortableSmokeContract(lifecycle, workflow.replaceAll('s038-installed-editable.md', 's038-portable-editable.md')),
     /Windows workflow omits/u,
+  );
+  assert.throws(
+    () => validatePortableSmokeContract(lifecycle, workflow.replace('- name: Promote truthful community evidence', '- name: Late community evidence promotion')),
+    /promotion and receipt binding are out of order/u,
   );
   assert.match(installerLifecycle, /Wait-RenderedMarkdownHeading \$associationProcess 'S035 Minimal Markdown 5E8A'/u);
 });
@@ -112,6 +120,9 @@ test('Markdown recovery stays intrinsic and avoids unsupported Chrome 69 globals
   assert.match(shellLayout, /before\.scrollTop > 0/u);
   assert.doesNotMatch(markdownSurface, /Object\.hasOwn\(/u);
   assert.doesNotMatch(markdownSurface, /queueMicrotask\(/u);
+  assert.match(documentSurface, /lifecycleFailureProbe/u);
+  assert.match(markdownSurface, /LifecycleMarkdownFailure/u);
+  assert.match(markdownSurface, /lifecycleFailureProbe && recoveryAttempt === 0/u);
   assert.doesNotMatch(worker, /globalThis/u);
 });
 

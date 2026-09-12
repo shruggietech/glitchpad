@@ -10,7 +10,7 @@ export const currentTag = `v${currentVersion}`;
 export const releaseUrl =
   'https://github.com/ShruggieTech/glitchpad/releases/tag/v0.1.3';
 const deploymentCondition =
-  "(github.event_name == 'push' && github.ref == 'refs/heads/main') || (inputs.deploy && inputs.release_tag == 'v0.1.3')";
+  "inputs.deploy && inputs.release_tag == 'v0.1.3'";
 
 function normalizeExpression(value) {
   return typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : '';
@@ -141,8 +141,6 @@ export function verifyPublicSources(sources) {
   if (!/workflow_call:\s*\n\s*inputs:/.test(workflow))
     problems.push('docs workflow is not reusable by the release publisher');
   for (const expected of [
-    "github.event_name == 'push'",
-    "github.ref == 'refs/heads/main'",
     'inputs.deploy',
     "inputs.release_tag == 'v0.1.3'",
     'group: github-pages-production',

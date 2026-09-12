@@ -4,7 +4,7 @@
 
 **Created**: 2026-09-11
 
-**Status**: Ready for Planning
+**Status**: Implementation complete; external review in progress
 
 **Input**: User description: "Prepare S038 as a verified v0.1.3 corrective release that makes the post-v0.1.2 Markdown recovery and reserved-shell fixes available in official packages, proves the exact packaged application is practically usable, preserves v0.1.2 immutability, publishes a reviewed pull request under autopilot, and stops for the owner merge ritual after CI and two review rounds are satisfied."
 

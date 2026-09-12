@@ -82,14 +82,14 @@ for (const [name, mutate, expected] of [
     /primary navigation contains Support or Security/,
   ],
   [
-    'pull request deployment authority',
+    'premature main deployment authority',
     (sources) => {
       sources.workflow = sources.workflow.replaceAll(
-        "github.event_name == 'push'",
-        "github.event_name == 'pull_request'",
+        "inputs.deploy && inputs.release_tag == 'v0.1.3'",
+        "(github.event_name == 'push' && github.ref == 'refs/heads/main') || (inputs.deploy && inputs.release_tag == 'v0.1.3')",
       );
     },
-    /exact trusted deployment authority|missing github\.event_name == 'push'/,
+    /exact trusted deployment authority/,
   ],
   [
     'stale deployment guard',

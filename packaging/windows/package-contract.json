@@ -34,7 +34,11 @@
       "windows-package-manifest.json",
       "glitchpad-windows.cdx.json",
       "provenance.json",
-      "community-trust-evidence.json"
+      "community-trust-evidence.json",
+      "shell-layout-scale-receipt.json",
+      "installer-lifecycle-receipt.json",
+      "installed-markdown-lifecycle-receipt.json",
+      "portable-lifecycle-receipt.json"
     ]
   }
 }

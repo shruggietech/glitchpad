@@ -1,5 +1,6 @@
 import type { DesktopSourceSummary } from './contracts';
 import {
+  consumeDesktopMarkdownFailureProbe,
   createDesktopDeliveryGateway,
   nativeDesktopDeliveryAvailable,
   reportDesktopDeviceScaleProbe,
@@ -90,6 +91,22 @@ test('native device-scale probes expose only the numeric browser scale', async (
     expect(call).toHaveBeenCalledWith('record_desktop_device_scale_probe', {
       deviceScale: 1.25,
     });
+  } finally {
+    if (descriptor) Object.defineProperty(window, '__TAURI_INTERNALS__', descriptor);
+    else Reflect.deleteProperty(window, '__TAURI_INTERNALS__');
+  }
+});
+
+test('native Markdown failure probes expose no document data', async () => {
+  const descriptor = Object.getOwnPropertyDescriptor(window, '__TAURI_INTERNALS__');
+  const call = vi.fn().mockResolvedValue(true);
+  try {
+    Object.defineProperty(window, '__TAURI_INTERNALS__', {
+      configurable: true,
+      value: { invoke: vi.fn(), transformCallback: vi.fn() },
+    });
+    await expect(consumeDesktopMarkdownFailureProbe(call)).resolves.toBe(true);
+    expect(call).toHaveBeenCalledWith('consume_desktop_markdown_failure_probe');
   } finally {
     if (descriptor) Object.defineProperty(window, '__TAURI_INTERNALS__', descriptor);
     else Reflect.deleteProperty(window, '__TAURI_INTERNALS__');

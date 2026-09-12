@@ -9,6 +9,7 @@ use glitchpad_core::contracts::{CoreError, CoreErrorCategory};
 
 const PROBE_DIRECTORY_ENVIRONMENT: &str = "GLITCHPAD_LIFECYCLE_PROBE_DIR";
 const PROBE_ENABLE_MARKER: &[u8] = b"enabled\n";
+const MARKDOWN_FAILURE_REQUEST: &[u8] = b"requested\n";
 
 fn probe_error(category: CoreErrorCategory, summary: &str) -> CoreError {
     CoreError::new(category, summary, false, true)
@@ -140,6 +141,40 @@ impl LifecycleProbeState {
         }
         record_fixed_marker(root, marker)
     }
+
+    fn consume_markdown_failure(&self) -> Result<bool, CoreError> {
+        let Some(root) = self.root.as_deref() else {
+            return Ok(false);
+        };
+        if !probe_root_enabled(root) {
+            return Err(probe_error(
+                CoreErrorCategory::Unavailable,
+                "Lifecycle acknowledgement storage is unavailable",
+            ));
+        }
+        let request = root.join("markdown-failure-request.marker");
+        match fs::read(&request) {
+            Ok(value) if value == MARKDOWN_FAILURE_REQUEST => {
+                fs::remove_file(request).map_err(|_| {
+                    probe_error(
+                        CoreErrorCategory::Unavailable,
+                        "The lifecycle Markdown failure request could not be consumed",
+                    )
+                })?;
+                record_fixed_marker(root, "markdown-failure-consumed.marker")?;
+                Ok(true)
+            }
+            Ok(_) => Err(probe_error(
+                CoreErrorCategory::InvalidInput,
+                "The lifecycle Markdown failure request was invalid",
+            )),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(false),
+            Err(_) => Err(probe_error(
+                CoreErrorCategory::Unavailable,
+                "The lifecycle Markdown failure request could not be read",
+            )),
+        }
+    }
 }
 
 /// Records a path-private, content-free lifecycle acknowledgement when native package validation opts in.
@@ -169,6 +204,19 @@ pub fn record_desktop_device_scale_probe(
     device_scale: f64,
 ) -> Result<bool, CoreError> {
     state.record_device_scale(device_scale)
+}
+
+/// Consumes one explicitly enabled, content-free Markdown failure request for packaged lifecycle validation.
+///
+/// # Errors
+///
+/// Returns a path-free error when the opt-in probe root or fixed request marker is invalid.
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
+pub fn consume_desktop_markdown_failure_probe(
+    state: tauri::State<'_, LifecycleProbeState>,
+) -> Result<bool, CoreError> {
+    state.consume_markdown_failure()
 }
 
 #[cfg(test)]
@@ -220,6 +268,26 @@ mod tests {
             b"ready\n"
         );
         assert!(state.record_device_scale(1.1).is_err());
+        fs::write(
+            root.join("markdown-failure-request.marker"),
+            MARKDOWN_FAILURE_REQUEST,
+        )
+        .expect("Markdown failure request must be written");
+        assert!(
+            state
+                .consume_markdown_failure()
+                .expect("Markdown failure request must be consumed")
+        );
+        assert!(
+            !state
+                .consume_markdown_failure()
+                .expect("consumed Markdown failure request must be one-shot")
+        );
+        assert_eq!(
+            fs::read(root.join("markdown-failure-consumed.marker"))
+                .expect("Markdown failure consumption marker must be readable"),
+            b"ready\n"
+        );
 
         fs::remove_dir_all(root).expect("temporary probe root must be removed");
     }

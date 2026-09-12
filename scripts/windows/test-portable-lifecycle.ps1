@@ -308,7 +308,7 @@ function Exercise-MarkdownEditSavePreview([Diagnostics.Process] $Process, [strin
     [System.Windows.Forms.SendKeys]::SendWait('^a')
     [System.Windows.Forms.SendKeys]::SendWait($savedText)
     Wait-WindowText $Process $savedText
-    [System.Windows.Forms.SendKeys]::SendWait('^s')
+    Invoke-MenuCommand $Process 'Save'
     Wait-FileText $Path $savedText
     Invoke-MenuCommand $Process 'Preview'
     Wait-SafeMarkdownOutcome $Process $savedText 'S038_EDIT_RAW_SENTINEL'

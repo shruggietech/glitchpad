@@ -72,7 +72,7 @@ export function validatePortableSmokeContract(lifecycleSource, workflowSource) {
     'candidate_manifest_sha256 = $manifestDigest',
     'evidence_authority = [ordered]@{',
     "kind = 'github_actions_workflow'",
-    "workflow_identity = [string]$manifest['workflow_identity']",
+    "workflow_identity = [string](Get-RequiredDictionaryValue $manifest 'workflow_identity')",
     'source_commit = $manifestSourceCommit',
     'content_free = $true',
     "fixture_absence = 'pass'",
@@ -107,7 +107,7 @@ export function validatePortableSmokeContract(lifecycleSource, workflowSource) {
   for (const requirement of ['-TextFixture', '-MarkdownFixtureMinimal', '-MarkdownFixtureEditable', '-MarkdownFixtureRecovery', '-MarkdownFixtureA', '-MarkdownFixtureB', '-Manifest', '-ScaleMatrixReceipt', 'windows-package-manifest.json', 'shell-layout-scale-receipt.json', 's027-visible.txt', 's035-minimal.md', 's038-installed-editable.md', 's038-portable-editable.md', 's038-installed-recovery.md', 's038-portable-recovery.md', 's030-alpha.md', 's030-beta.md'])
     if (!workflowSource.includes(requirement))
       fail(`Windows workflow omits ${requirement}`);
-  for (const requirement of ['[S030_ALPHA_RAW_SENTINEL]: https://example.invalid/alpha', '[S030_BETA_RAW_SENTINEL]: https://example.invalid/beta', 'S038_RECOVERY_RAW_SENTINEL', '| Alpha | Beta |', 'Footnote[^1]', 'flowchart TB', 'Wait-SafeMarkdownOutcome', 'Wait-WindowText', 'Wait-NamedButton', 'TryGetCurrentPattern', 'GetClickablePoint', 'GlitchpadNativeInput', 'SetForegroundWindow', 'mouse_event', 'Send-MarkdownDelivery', 'Exercise-MarkdownEditSavePreview', 'Exercise-MarkdownRecovery', 'markdown-failure-request.marker', 'markdown-failure-consumed.marker', 'ConvertFrom-Json -AsHashtable', "[string]($manifest['source_commit'])", "[string]($scaleMatrix['candidate_manifest_sha256'])", "[string]($scaleAuthority['source_commit'])", '[string]($scaleMatrix[$property])', "Invoke-MenuCommand $Process 'Edit source'", "Invoke-MenuCommand $Process 'Preview'", "[System.Windows.Forms.SendKeys]::SendWait('^s')", 'saved durably.', 'DocumentSurface.test.tsx', 'MarkdownSurface.test.tsx'])
+  for (const requirement of ['[S030_ALPHA_RAW_SENTINEL]: https://example.invalid/alpha', '[S030_BETA_RAW_SENTINEL]: https://example.invalid/beta', 'S038_RECOVERY_RAW_SENTINEL', '| Alpha | Beta |', 'Footnote[^1]', 'flowchart TB', 'Wait-SafeMarkdownOutcome', 'Wait-WindowText', 'Wait-NamedButton', 'TryGetCurrentPattern', 'GetClickablePoint', 'GlitchpadNativeInput', 'SetForegroundWindow', 'mouse_event', 'Send-MarkdownDelivery', 'Exercise-MarkdownEditSavePreview', 'Exercise-MarkdownRecovery', 'markdown-failure-request.marker', 'markdown-failure-consumed.marker', 'ConvertFrom-Json -AsHashtable', 'Get-RequiredDictionaryValue', "Get-RequiredDictionaryValue $manifest 'source_commit'", "Get-RequiredDictionaryValue $scaleMatrix 'candidate_manifest_sha256'", "Get-RequiredDictionaryValue $scaleAuthority 'source_commit'", 'Get-RequiredDictionaryValue $scaleMatrix $property', "Get-RequiredDictionaryValue $manifest 'workflow_identity'", "Invoke-MenuCommand $Process 'Edit source'", "Invoke-MenuCommand $Process 'Preview'", "[System.Windows.Forms.SendKeys]::SendWait('^s')", 'saved durably.', 'DocumentSurface.test.tsx', 'MarkdownSurface.test.tsx'])
     if (!`${lifecycleSource}\n${workflowSource}`.includes(requirement))
       fail(`Windows Markdown lifecycle omits ${requirement}`);
   for (const requirement of ['-InstalledMarkdownReceipt', 'installed-markdown-lifecycle-receipt.json'])

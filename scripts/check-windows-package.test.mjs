@@ -86,8 +86,8 @@ test('Windows lifecycle policy rejects removal of content-first release assertio
     /Windows Markdown lifecycle omits/u,
   );
   assert.throws(
-    () => validatePortableSmokeContract(lifecycle.replace("[string]($manifest['source_commit'])", "[string]$manifest['source_commit']"), workflow),
-    /Windows Markdown lifecycle omits/u,
+    () => validatePortableSmokeContract(lifecycle.replaceAll('Get-RequiredDictionaryValue', 'Get-AmbiguousDictionaryValue'), workflow),
+    /portable smoke lifecycle omits/u,
   );
   assert.match(installerLifecycle, /Wait-RenderedMarkdownHeading \$associationProcess 'S035 Minimal Markdown 5E8A'/u);
 });

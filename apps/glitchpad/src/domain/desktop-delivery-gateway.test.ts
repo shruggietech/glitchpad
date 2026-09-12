@@ -254,7 +254,7 @@ test('Save sends exact bytes and revision guards to the native source command', 
     return Promise.resolve({
       operation_id: '1',
       source_id: source.source_id,
-      accepted_session_revision: 1,
+      accepted_session_revision: 2,
       previous_external_revision: source.external_revision,
       new_external_revision: source.external_revision,
       byte_count: bytes.length,
@@ -262,9 +262,13 @@ test('Save sends exact bytes and revision guards to the native source command', 
     });
   });
   const gateway = createDesktopDeliveryGateway(call, () => Promise.resolve(() => undefined));
-  await gateway.save(session!);
-  expect(call).toHaveBeenCalledOnce();
-  const [command, args] = call.mock.calls[0];
+  await gateway.save({ ...session!, revision: 2 });
+  expect(call).toHaveBeenCalledTimes(2);
+  expect(call.mock.calls[0]).toEqual([
+    'note_source_session_revision',
+    { sourceId: source.source_id, revision: 2 },
+  ]);
+  const [command, args] = call.mock.calls[1];
   const request = args?.request as {
     operation_id: string;
     source_id: string;
@@ -276,6 +280,6 @@ test('Save sends exact bytes and revision guards to the native source command', 
   expect(request.operation_id).toMatch(/^\d+$/u);
   expect(request.source_id).toBe(source.source_id);
   expect(request.expected_external_revision).toEqual(source.external_revision);
-  expect(request.expected_session_revision).toBe(1);
+  expect(request.expected_session_revision).toBe(2);
   expect(request.bytes).toEqual([...bytes]);
 });

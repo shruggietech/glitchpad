@@ -129,6 +129,7 @@ pub fn run() {
         source::start_source_watch,
         source::drain_source_events,
         source::revalidate_source,
+        source::note_source_session_revision,
         source::save_source,
         source::close_source,
         desktop_delivery::close_desktop_source,

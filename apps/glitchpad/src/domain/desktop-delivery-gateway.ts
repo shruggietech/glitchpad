@@ -176,6 +176,10 @@ export const createDesktopDeliveryGateway = (
       throw new Error('Desktop Save requires an open writable source');
     const serialized = serializeTextDocument(session.text_document, session.revision, session.revision);
     if (!serialized.ok) throw new Error(`Desktop Save serialization failed: ${serialized.reason}`);
+    await call('note_source_session_revision', {
+      sourceId: session.source_id,
+      revision: session.revision,
+    });
     return call('save_source', {
       request: {
         operation_id: saveOperationId(),

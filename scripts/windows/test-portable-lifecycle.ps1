@@ -18,19 +18,19 @@ Set-StrictMode -Version Latest
 $root = (Resolve-Path -LiteralPath $PortableRoot).Path
 $manifestPath = (Resolve-Path -LiteralPath $Manifest).Path
 $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json -AsHashtable
-$manifestSourceCommit = [string]$manifest['source_commit']
+$manifestSourceCommit = [string]($manifest['source_commit'])
 if ($manifestSourceCommit -cnotmatch '^[a-f0-9]{40}$') { throw 'Package manifest source commit is invalid.' }
 $manifestDigest = (Get-FileHash -LiteralPath $manifestPath -Algorithm SHA256).Hash.ToLowerInvariant()
 $scaleMatrixReceiptPath = (Resolve-Path -LiteralPath $ScaleMatrixReceipt).Path
 $scaleMatrix = Get-Content -LiteralPath $scaleMatrixReceiptPath -Raw | ConvertFrom-Json -AsHashtable
 $scaleAuthority = $scaleMatrix['evidence_authority']
 if ($scaleAuthority -isnot [Collections.IDictionary]) { throw 'Scale matrix receipt evidence authority is missing.' }
-if ([string]$scaleMatrix['candidate_manifest_sha256'] -cne $manifestDigest) { throw 'Scale matrix receipt does not bind the exact package manifest.' }
-if ([string]$scaleAuthority['source_commit'] -cne $manifestSourceCommit) { throw 'Scale matrix receipt source commit is stale.' }
+if ([string]($scaleMatrix['candidate_manifest_sha256']) -cne $manifestDigest) { throw 'Scale matrix receipt does not bind the exact package manifest.' }
+if ([string]($scaleAuthority['source_commit']) -cne $manifestSourceCommit) { throw 'Scale matrix receipt source commit is stale.' }
 if ($scaleMatrix['content_free'] -ne $true) { throw 'Scale matrix receipt is not content-free.' }
 foreach ($scale in @(100, 125, 150, 200)) {
     $property = "geometry_scale_$scale"
-    if ([string]$scaleMatrix[$property] -cne 'pass') { throw "Scale matrix receipt did not pass $scale percent." }
+    if ([string]($scaleMatrix[$property]) -cne 'pass') { throw "Scale matrix receipt did not pass $scale percent." }
 }
 $application = Join-Path $root $ApplicationName
 $textFixturePath = (Resolve-Path -LiteralPath $TextFixture).Path

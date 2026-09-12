@@ -85,6 +85,10 @@ test('Windows lifecycle policy rejects removal of content-first release assertio
     () => validatePortableSmokeContract(lifecycle.replaceAll('ConvertFrom-Json -AsHashtable', 'ConvertFrom-Json'), workflow),
     /Windows Markdown lifecycle omits/u,
   );
+  assert.throws(
+    () => validatePortableSmokeContract(lifecycle.replace("[string]($manifest['source_commit'])", "[string]$manifest['source_commit']"), workflow),
+    /Windows Markdown lifecycle omits/u,
+  );
   assert.match(installerLifecycle, /Wait-RenderedMarkdownHeading \$associationProcess 'S035 Minimal Markdown 5E8A'/u);
 });
 

@@ -102,7 +102,11 @@ test('Windows lifecycle policy rejects removal of content-first release assertio
     /Windows Markdown lifecycle omits/u,
   );
   assert.throws(
-    () => validatePortableSmokeContract(lifecycle.replace("Invoke-MenuCommand $Process 'Save'", ''), workflow),
+    () => validatePortableSmokeContract(lifecycle.replace("Invoke-MenuCommand $Process 'Save' 'Ctrl+S'", ''), workflow),
+    /Windows Markdown lifecycle omits/u,
+  );
+  assert.throws(
+    () => validatePortableSmokeContract(lifecycle.replace("[Regex]::Escape($Shortcut)", ''), workflow),
     /Windows Markdown lifecycle omits/u,
   );
   assert.throws(

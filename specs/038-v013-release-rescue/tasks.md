@@ -118,6 +118,7 @@
 - [x] T041 Activate resolved WebView menu commands through a deterministic real click without an ambiguous Invoke call that can apply the action before throwing, and enforce click-only menu activation in package policy
 - [x] T042 Verify Ctrl+S durability from exact persisted file bytes instead of a transient WebView accessibility status announcement, and enforce byte-level save polling in package policy
 - [x] T043 Drive exact-package durability through the application's explicit Save menu command after simulated Ctrl+S failed to reach the packaged handler, then retain exact byte and preview verification
+- [x] T044 Resolve shortcut-bearing WebView menu-item names by their exact label-plus-shortcut accessible name before walking to a clickable ancestor, preserving strict Save-command targeting
 
 ---
 

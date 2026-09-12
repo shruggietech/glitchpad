@@ -227,20 +227,34 @@ function Wait-NamedButton([Diagnostics.Process] $Process, [string] $Name, [int] 
     throw "Portable UI did not expose button '$Name'."
 }
 
-function Wait-ActionableNamedElement([Diagnostics.Process] $Process, [string] $Name, [int] $Seconds = 10) {
+function Wait-ActionableNamedElement([Diagnostics.Process] $Process, [string] $Name, [string] $Shortcut = '', [int] $Seconds = 10) {
     $deadline = [DateTimeOffset]::UtcNow.AddSeconds($Seconds)
     do {
         $window = Get-WindowRoot $Process
         if ($window) {
-            $element = Find-NamedElement $window $Name
-            while ($element) {
-                try {
-                    $bounds = $element.Current.BoundingRectangle
-                    $patternObject = $null
-                    if (-not $element.Current.IsOffscreen -and $bounds.Width -gt 0 -and $bounds.Height -gt 0 -and $element.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern, [ref]$patternObject)) { return $element }
-                    $element = [System.Windows.Automation.TreeWalker]::ControlViewWalker.GetParent($element)
+            $candidates = [Collections.Generic.List[System.Windows.Automation.AutomationElement]]::new()
+            $exact = Find-NamedElement $window $Name
+            if ($exact) { $candidates.Add($exact) }
+            if ($Shortcut) {
+                $shortcutName = '^{0}\s*{1}$' -f [Regex]::Escape($Name), [Regex]::Escape($Shortcut)
+                foreach ($candidate in $window.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)) {
+                    try {
+                        if ($candidate.Current.Name -match $shortcutName) { $candidates.Add($candidate) }
+                    }
+                    catch { continue }
                 }
-                catch { break }
+            }
+            foreach ($candidate in $candidates) {
+                $element = $candidate
+                while ($element) {
+                    try {
+                        $bounds = $element.Current.BoundingRectangle
+                        $patternObject = $null
+                        if (-not $element.Current.IsOffscreen -and $bounds.Width -gt 0 -and $bounds.Height -gt 0 -and $element.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern, [ref]$patternObject)) { return $element }
+                        $element = [System.Windows.Automation.TreeWalker]::ControlViewWalker.GetParent($element)
+                    }
+                    catch { break }
+                }
             }
         }
         Start-Sleep -Milliseconds 50
@@ -291,9 +305,9 @@ function Invoke-NamedButton([Diagnostics.Process] $Process, [string] $Name) {
     Invoke-AutomationElement $Process $button $Name
 }
 
-function Invoke-MenuCommand([Diagnostics.Process] $Process, [string] $Name) {
+function Invoke-MenuCommand([Diagnostics.Process] $Process, [string] $Name, [string] $Shortcut = '') {
     Invoke-NamedButton $Process 'Menu'
-    $item = Wait-ActionableNamedElement $Process $Name
+    $item = Wait-ActionableNamedElement $Process $Name $Shortcut
     Click-AutomationElement $Process $item $Name
 }
 
@@ -308,7 +322,7 @@ function Exercise-MarkdownEditSavePreview([Diagnostics.Process] $Process, [strin
     [System.Windows.Forms.SendKeys]::SendWait('^a')
     [System.Windows.Forms.SendKeys]::SendWait($savedText)
     Wait-WindowText $Process $savedText
-    Invoke-MenuCommand $Process 'Save'
+    Invoke-MenuCommand $Process 'Save' 'Ctrl+S'
     Wait-FileText $Path $savedText
     Invoke-MenuCommand $Process 'Preview'
     Wait-SafeMarkdownOutcome $Process $savedText 'S038_EDIT_RAW_SENTINEL'

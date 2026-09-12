@@ -73,6 +73,14 @@ test('Windows lifecycle policy rejects removal of content-first release assertio
     () => validatePortableSmokeContract(lifecycle, workflow.replace('- name: Promote truthful community evidence', '- name: Late community evidence promotion')),
     /promotion and receipt binding are out of order/u,
   );
+  assert.throws(
+    () => validatePortableSmokeContract(lifecycle, workflow.replace('puppeteer browsers install chrome-headless-shell', 'echo browser unavailable')),
+    /Windows final-byte validation omits/u,
+  );
+  assert.throws(
+    () => validatePortableSmokeContract(lifecycle, workflow.replace('--official --artifact-root artifacts/windows', '')),
+    /Windows final-byte validation omits/u,
+  );
   assert.match(installerLifecycle, /Wait-RenderedMarkdownHeading \$associationProcess 'S035 Minimal Markdown 5E8A'/u);
 });
 

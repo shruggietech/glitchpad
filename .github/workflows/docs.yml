@@ -5,6 +5,17 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+    inputs:
+      deploy:
+        description: Retry deployment of the already-published release site
+        required: false
+        type: boolean
+        default: false
+      release_tag:
+        description: Exact already-published release tag
+        required: false
+        type: string
+        default: ''
   workflow_call:
     inputs:
       deploy:
@@ -29,9 +40,18 @@ jobs:
   build:
     name: Build and test static site
     runs-on: ubuntu-latest
+    outputs:
+      release_authorized: ${{ steps.release_authority.outputs.authorized }}
+      source_revision: ${{ steps.source_revision.outputs.revision }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.deploy && inputs.release_tag == 'v0.1.3' && inputs.release_tag || github.ref }}
+
+      - name: Capture site source revision
+        id: source_revision
+        run: echo "revision=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -57,13 +77,34 @@ jobs:
       - name: Build and test public site
         run: pnpm check:site
         env:
-          GLITCHPAD_SOURCE_REVISION: ${{ github.sha }}
+          GLITCHPAD_SOURCE_REVISION: ${{ steps.source_revision.outputs.revision }}
 
       - name: Verify generated documentation contracts are committed
         run: git diff --exit-code -- site/content/docs/index.mdx site/content/docs/meta.json site/lib/generated/documentation.json
 
-      - name: Upload Pages artifact
+      - name: Confirm published release authority
+        id: release_authority
         if: inputs.deploy && inputs.release_tag == 'v0.1.3'
+        uses: actions/github-script@v8
+        env:
+          CANDIDATE_SHA: ${{ steps.source_revision.outputs.revision }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const release = await github.rest.repos.getReleaseByTag({ owner, repo, tag: process.env.RELEASE_TAG });
+            if (release.data.draft || release.data.prerelease) throw new Error('Release-site deployment requires a published stable release.');
+            let object = (await github.rest.git.getRef({ owner, repo, ref: `tags/${process.env.RELEASE_TAG}` })).data.object;
+            for (let depth = 0; object.type === 'tag' && depth < 5; depth += 1) {
+              object = (await github.rest.git.getTag({ owner, repo, tag_sha: object.sha })).data.object;
+            }
+            if (object.type !== 'commit' || object.sha !== process.env.CANDIDATE_SHA) {
+              throw new Error('Release-site source does not match the published release tag commit.');
+            }
+            core.setOutput('authorized', 'true');
+
+      - name: Upload Pages artifact
+        if: inputs.deploy && inputs.release_tag == 'v0.1.3' && steps.release_authority.outputs.authorized == 'true'
         uses: actions/upload-pages-artifact@v5
         with:
           path: site/out
@@ -71,7 +112,7 @@ jobs:
   deploy:
     name: Deploy to GitHub Pages
     needs: build
-    if: inputs.deploy && inputs.release_tag == 'v0.1.3'
+    if: inputs.deploy && inputs.release_tag == 'v0.1.3' && needs.build.outputs.release_authorized == 'true'
     runs-on: ubuntu-latest
     concurrency:
       group: github-pages-production
@@ -84,34 +125,17 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Confirm deployment revision is current
-        id: freshness
-        uses: actions/github-script@v8
-        env:
-          CANDIDATE_SHA: ${{ github.sha }}
-        with:
-          script: |
-            const { owner, repo } = context.repo;
-            const branch = context.payload.repository?.default_branch ?? 'main';
-            const current = await github.rest.repos.getBranch({ owner, repo, branch });
-            const deploy = current.data.commit.sha === process.env.CANDIDATE_SHA;
-            core.setOutput('deploy', String(deploy));
-            if (!deploy) {
-              core.notice(`Skipping stale site revision ${process.env.CANDIDATE_SHA}; ${branch} is ${current.data.commit.sha}.`);
-            }
-
       - name: Checkout verifier
-        if: steps.freshness.outputs.deploy == 'true'
         uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.release_tag }}
 
       - name: Deploy
-        if: steps.freshness.outputs.deploy == 'true'
         id: deployment
         uses: actions/deploy-pages@v5
 
       - name: Verify production deployment
-        if: steps.freshness.outputs.deploy == 'true'
         run: node scripts/verify-site-deployment.mjs
         env:
           GLITCHPAD_EXPECTED_VERSION: 0.1.3
-          GLITCHPAD_EXPECTED_REVISION: ${{ github.sha }}
+          GLITCHPAD_EXPECTED_REVISION: ${{ needs.build.outputs.source_revision }}

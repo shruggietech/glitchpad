@@ -101,6 +101,17 @@
 
 ---
 
+## Phase 8: Second-Round Review and CI Convergence
+
+**Purpose**: Address the final permitted review round and observed Windows runner failure without another review trigger.
+
+- [x] T031 Split Windows candidate and official final-byte validation so tag-promoted manifests use `--official --artifact-root artifacts/windows`, and require that contract in `.github/workflows/windows-package.yml`, `scripts/check-windows-package.mjs`, and `scripts/check-windows-package.test.mjs`
+- [x] T032 Replace the skippable default-branch freshness check with exact published-release/tag-commit authorization and provide a guarded manual site retry in `.github/workflows/docs.yml`, `scripts/check-public-release*`, `scripts/check-config.mjs`, `site/README.md`, and the v0.1.3 handoff documentation
+- [x] T033 Install the pinned Puppeteer headless-shell browser before the Windows scale proof and add a policy regression that rejects omission in `.github/workflows/windows-package.yml`, `scripts/check-windows-package.mjs`, and `scripts/check-windows-package.test.mjs`
+- [x] T034 Run focused workflow, release-policy, Windows-package, documentation, formatting, encoding, and diff-integrity checks after second-round convergence and record the local evidence in `specs/038-v013-release-rescue/verification.md`
+
+---
+
 ## Dependencies and Execution Order
 
 ### Phase Dependencies
@@ -112,6 +123,7 @@
 - User Story 3 depends on the final package inventory and evidence model from User Story 2.
 - Phase 6 depends on all three user stories.
 - Phase 7 is append-only review convergence and depends on the first automated review of the published pull request.
+- Phase 8 is append-only convergence for the single permitted second automated review and the first updated-commit CI result.
 
 ### User Story Dependencies
 

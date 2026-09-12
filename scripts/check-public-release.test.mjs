@@ -92,14 +92,24 @@ for (const [name, mutate, expected] of [
     /exact trusted deployment authority/,
   ],
   [
-    'stale deployment guard',
+    'missing published release authority',
     (sources) => {
       sources.workflow = sources.workflow.replace(
-        'github.rest.repos.getBranch',
+        'github.rest.repos.getReleaseByTag',
         'github.rest.repos.getCommit',
       );
     },
-    /missing github\.rest\.repos\.getBranch/,
+    /missing github\.rest\.repos\.getReleaseByTag/,
+  ],
+  [
+    'missing post-release retry entry point',
+    (sources) => {
+      sources.workflow = sources.workflow.replace(
+        'workflow_dispatch:\n    inputs:',
+        'workflow_dispatch:',
+      );
+    },
+    /authorized post-release retry entry point/,
   ],
   [
     'missing publisher deployment handoff',

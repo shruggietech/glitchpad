@@ -113,6 +113,14 @@ export function validatePortableSmokeContract(lifecycleSource, workflowSource) {
   for (const requirement of ['-InstalledMarkdownReceipt', 'installed-markdown-lifecycle-receipt.json'])
     if (!workflowSource.includes(requirement))
       fail(`Windows installed lifecycle omits ${requirement}`);
+  for (const requirement of [
+    'puppeteer browsers install chrome-headless-shell',
+    '- name: Validate candidate final bytes',
+    '- name: Validate official final bytes',
+    '--official --artifact-root artifacts/windows',
+  ])
+    if (!workflowSource.includes(requirement))
+      fail(`Windows final-byte validation omits ${requirement}`);
   const promotionIndex = workflowSource.indexOf('- name: Promote truthful community evidence');
   const scaleIndex = workflowSource.indexOf('- name: Prove governed display-scale geometry');
   const lifecycleIndex = workflowSource.indexOf('- name: Exercise installed and portable lifecycles');

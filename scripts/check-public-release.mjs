@@ -9,8 +9,10 @@ export const currentVersion = '0.1.3';
 export const currentTag = `v${currentVersion}`;
 export const releaseUrl =
   'https://github.com/ShruggieTech/glitchpad/releases/tag/v0.1.3';
+const uploadCondition =
+  "inputs.deploy && inputs.release_tag == 'v0.1.3' && steps.release_authority.outputs.authorized == 'true'";
 const deploymentCondition =
-  "inputs.deploy && inputs.release_tag == 'v0.1.3'";
+  "inputs.deploy && inputs.release_tag == 'v0.1.3' && needs.build.outputs.release_authorized == 'true'";
 
 function normalizeExpression(value) {
   return typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : '';
@@ -140,15 +142,21 @@ export function verifyPublicSources(sources) {
     problems.push('docs workflow is not triggered by main pushes');
   if (!/workflow_call:\s*\n\s*inputs:/.test(workflow))
     problems.push('docs workflow is not reusable by the release publisher');
+  if (!/workflow_dispatch:\s*\n\s*inputs:/.test(workflow))
+    problems.push('docs workflow lacks an authorized post-release retry entry point');
   for (const expected of [
     'inputs.deploy',
     "inputs.release_tag == 'v0.1.3'",
     'group: github-pages-production',
     'queue: max',
-    'Confirm deployment revision is current',
-    'github.rest.repos.getBranch',
-    'current.data.commit.sha === process.env.CANDIDATE_SHA',
-    "steps.freshness.outputs.deploy == 'true'",
+    'Confirm published release authority',
+    'github.rest.repos.getReleaseByTag',
+    'github.rest.git.getRef',
+    'github.rest.git.getTag',
+    "object.type !== 'commit' || object.sha !== process.env.CANDIDATE_SHA",
+    "core.setOutput('authorized', 'true')",
+    "ref: ${{ inputs.deploy && inputs.release_tag == 'v0.1.3' && inputs.release_tag || github.ref }}",
+    'GLITCHPAD_EXPECTED_REVISION: ${{ needs.build.outputs.source_revision }}',
   ])
     requireText(problems, '.github/workflows/docs.yml', workflow, expected);
   try {
@@ -157,7 +165,7 @@ export function verifyPublicSources(sources) {
       (step) => step.name === 'Upload Pages artifact',
     );
     if (
-      normalizeExpression(uploadStep?.if) !== deploymentCondition ||
+      normalizeExpression(uploadStep?.if) !== uploadCondition ||
       normalizeExpression(parsedWorkflow.jobs?.deploy?.if) !==
         deploymentCondition
     )

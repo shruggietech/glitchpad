@@ -131,6 +131,7 @@ export async function checkConfiguration(
     ['pull-request build trigger', /^\s*pull_request:\s*$/m],
     ['main build trigger', /^\s*push:\s*\n\s*branches:\s*\[main\]/m],
     ['reusable release entry point', /^\s*workflow_call:\s*\n\s*inputs:/m],
+    ['post-release retry entry point', /^\s*workflow_dispatch:\s*\n\s*inputs:/m],
     ['read-only default permission', /^permissions:\s*\n\s*contents:\s*read/m],
     ['Pages artifact path', /^\s*path:\s*site\/out\s*$/m],
     ['protected Pages environment', /^\s*name:\s*github-pages\s*$/m],
@@ -148,15 +149,17 @@ export async function checkConfiguration(
       throw new Error(`Invalid docs workflow contract: missing ${label}`);
     }
   }
+  const expectedUploadCondition =
+    "inputs.deploy && inputs.release_tag == 'v0.1.3' && steps.release_authority.outputs.authorized == 'true'";
   const expectedDeploymentCondition =
-    "inputs.deploy && inputs.release_tag == 'v0.1.3'";
+    "inputs.deploy && inputs.release_tag == 'v0.1.3' && needs.build.outputs.release_authorized == 'true'";
   const normalizeExpression = (value) =>
     typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : '';
   const uploadStep = parsedDocsWorkflow.jobs?.build?.steps?.find(
     (step) => step.name === 'Upload Pages artifact',
   );
   if (
-    normalizeExpression(uploadStep?.if) !== expectedDeploymentCondition ||
+    normalizeExpression(uploadStep?.if) !== expectedUploadCondition ||
     normalizeExpression(parsedDocsWorkflow.jobs?.deploy?.if) !==
       expectedDeploymentCondition
   )
@@ -177,24 +180,33 @@ export async function checkConfiguration(
     throw new Error(
       'Invalid docs workflow contract: deployment permissions must be only Pages and OIDC write',
     );
-  const freshnessStep = parsedDocsWorkflow.jobs?.deploy?.steps?.find(
-    (step) => step.name === 'Confirm deployment revision is current',
+  const releaseAuthorityStep = parsedDocsWorkflow.jobs?.build?.steps?.find(
+    (step) => step.name === 'Confirm published release authority',
   );
   for (const [label, pattern] of [
-    ['default-branch freshness lookup', /github\.rest\.repos\.getBranch/],
+    ['published-release lookup', /github\.rest\.repos\.getReleaseByTag/],
+    ['release-tag lookup', /github\.rest\.git\.getRef/],
+    ['annotated-tag peeling', /github\.rest\.git\.getTag/],
     [
-      'exact deployment revision comparison',
-      /current\.data\.commit\.sha === process\.env\.CANDIDATE_SHA/,
+      'exact published-tag revision comparison',
+      /object\.type !== 'commit' \|\| object\.sha !== process\.env\.CANDIDATE_SHA/,
     ],
-    ['deployment authorization output', /core\.setOutput\('deploy'/],
+    [
+      'deployment authorization output',
+      /core\.setOutput\('authorized', 'true'\)/,
+    ],
   ])
-    if (!pattern.test(freshnessStep?.with?.script ?? ''))
+    if (!pattern.test(releaseAuthorityStep?.with?.script ?? ''))
       throw new Error(`Invalid docs workflow contract: missing ${label}`);
-  for (const step of parsedDocsWorkflow.jobs?.deploy?.steps?.slice(1) ?? [])
-    if (step.if !== "steps.freshness.outputs.deploy == 'true'")
-      throw new Error(
-        'Invalid docs workflow contract: every deployment and verification step must honor freshness',
-      );
+  if (
+    parsedDocsWorkflow.jobs?.build?.outputs?.release_authorized !==
+      '${{ steps.release_authority.outputs.authorized }}' ||
+    parsedDocsWorkflow.jobs?.build?.outputs?.source_revision !==
+      '${{ steps.source_revision.outputs.revision }}'
+  )
+    throw new Error(
+      'Invalid docs workflow contract: published release authority outputs are not propagated',
+    );
 
   const cleanupWorkflowPath = join(
     repositoryRoot,

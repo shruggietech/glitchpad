@@ -6,7 +6,7 @@ Run `pnpm --filter @shruggietech/glitchpad-site dev` for local authoring and `pn
 
 ## Publication control
 
-Pull requests and pushes to `main` build and validate the static artifact without deploying it. The exact v0.1.3 release workflow calls the reusable `docs` workflow with its release-only deployment inputs after the GitHub release is published. A maintainer must approve the protected `github-pages` environment if configured and confirm that the repository's Pages source is GitHub Actions.
+Pull requests and pushes to `main` build and validate the static artifact without deploying it. The exact v0.1.3 release workflow calls the reusable `docs` workflow with its release-only deployment inputs after the GitHub release is published. If that deployment fails, a maintainer may dispatch the `docs` workflow with `deploy=true` and `release_tag=v0.1.3`; the workflow checks out that tag and refuses deployment unless the non-draft GitHub release exists and resolves to the same commit. A maintainer must approve the protected `github-pages` environment if configured and confirm that the repository's Pages source is GitHub Actions.
 
 Production is published from the `shruggietech/glitchpad` GitHub Actions Pages site. The `github-pages` environment accepts deployments only from `main`; `glitchpad.com` is verified for the `shruggietech` organization, attached as the repository custom domain, and protected by the persistent `_github-pages-challenge-shruggietech.glitchpad.com` TXT record. HTTPS is enforced with certificate coverage for the apex and `www`, and `www` redirects to the canonical `https://glitchpad.com` host.
 

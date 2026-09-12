@@ -22,11 +22,11 @@ const sourceCommit = 'b'.repeat(40);
 function candidate() {
   return {
     schema_version: 1,
-    version: '0.1.2',
+    version: '0.1.3',
     platform: 'windows',
     architecture: 'x86_64',
     source_commit: sourceCommit,
-    workflow_identity: 'shruggietech/glitchpad/.github/workflows/windows-package.yml@refs/tags/v0.1.2',
+    workflow_identity: 'shruggietech/glitchpad/.github/workflows/windows-package.yml@refs/tags/v0.1.3',
     official: false,
     gate_status: 'candidate_valid',
     artifacts: contract.artifacts.map((artifact) => ({
@@ -50,7 +50,6 @@ test('repository Windows package configuration is internally consistent', async 
     artifactCount: 2,
   });
 });
-
 test('Windows lifecycle policy rejects removal of content-first release assertions', async () => {
   const [lifecycle, installerLifecycle, workflow] = await Promise.all([
     readFile(join(repositoryRoot, 'scripts', 'windows', 'test-portable-lifecycle.ps1'), 'utf8'),
@@ -61,6 +60,10 @@ test('Windows lifecycle policy rejects removal of content-first release assertio
   assert.throws(
     () => validatePortableSmokeContract(lifecycle.replace("conditional_tabs = 'pass'", ''), workflow),
     /portable smoke lifecycle omits/u,
+  );
+  assert.throws(
+    () => validatePortableSmokeContract(lifecycle, workflow.replaceAll('s038-installed-editable.md', 's038-portable-editable.md')),
+    /Windows workflow omits/u,
   );
   assert.match(installerLifecycle, /Wait-RenderedMarkdownHeading \$associationProcess 'S035 Minimal Markdown 5E8A'/u);
 });
@@ -132,7 +135,7 @@ test('a self-asserted official manifest cannot bypass live verification', () => 
   evidence.official = true;
   evidence.gate_status = 'official_valid';
   evidence.event = 'push_tag';
-  evidence.tag = 'v0.1.2';
+  evidence.tag = 'v0.1.3';
   evidence.evidence_files = [...contract.official.required_evidence];
   evidence.artifacts = evidence.artifacts.map((artifact) => ({
     ...artifact,
@@ -154,7 +157,7 @@ test('official community mode binds unsigned final bytes and recorded trust evid
     evidence.official = true;
     evidence.gate_status = 'official_valid';
     evidence.event = 'push_tag';
-    evidence.tag = 'v0.1.2';
+    evidence.tag = 'v0.1.3';
     evidence.evidence_files = [...contract.official.required_evidence];
     for (const artifact of evidence.artifacts) {
       const bytes = Buffer.from(artifact.kind);
@@ -203,7 +206,7 @@ test('official community mode binds unsigned final bytes and recorded trust evid
         properties: [{ name: 'glitchpad:source_commit', value: evidence.source_commit }],
       },
       components: [
-        { 'bom-ref': 'pkg:cargo/glitchpad-core@0.1.2' },
+        { 'bom-ref': 'pkg:cargo/glitchpad-core@0.1.3' },
         { 'bom-ref': 'pkg:npm/react@19.2.8' },
       ],
     }));
@@ -284,7 +287,7 @@ test('missing notices, bad size results, and secret-shaped evidence fail closed'
 
 test('Windows SBOM combines Cargo and transitive production JavaScript dependencies', () => {
   const bom = generateWindowsSbom(
-    { packages: [{ name: 'glitchpad-core', version: '0.1.2', source: null, license: 'Apache-2.0' }] },
+    { packages: [{ name: 'glitchpad-core', version: '0.1.3', source: null, license: 'Apache-2.0' }] },
     [{ dependencies: { react: { version: '19.2.4', dependencies: { scheduler: { version: '0.27.0' } } } } }],
     sourceCommit,
   );

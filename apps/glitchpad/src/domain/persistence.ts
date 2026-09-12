@@ -191,8 +191,8 @@ export const projectSessionState = (
 };
 
 export const diagnosticEnvironment = (): DiagnosticEnvironment => ({
-  product_version: '0.1.2',
-  specification_version: '0.1.2',
+  product_version: '0.1.3',
+  specification_version: '0.1.3',
   platform: /android/iu.test(navigator.userAgent)
     ? 'android'
     : /windows/iu.test(navigator.userAgent)
@@ -204,6 +204,6 @@ export const diagnosticEnvironment = (): DiagnosticEnvironment => ({
           : 'unknown',
   architecture: 'unknown',
   webview_version: null,
-  core_version: '0.1.2',
+  core_version: '0.1.3',
   build_commit: null,
 });

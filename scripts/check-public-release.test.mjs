@@ -17,6 +17,15 @@ test('repository public release sources satisfy the current authority', async ()
   assert.match(sources.readme, /Android 7\.0\+/u);
 });
 
+test('active public authority rejects the legacy v0.1.2 identity', async () => {
+  const sources = await loadPublicSources();
+  const errors = verifyPublicSources({
+    ...sources,
+    readme: sources.readme.replaceAll('0.1.3', '0.1.2'),
+  });
+  assert.match(errors.join('\n'), /0\.1\.3|current release identity/u);
+});
+
 for (const [name, mutate, expected] of [
   [
     'stale availability',
@@ -59,11 +68,11 @@ for (const [name, mutate, expected] of [
     'stale specification date',
     (sources) => {
       sources.specification = sources.specification.replace(
-        '| Updated | 2026-09-09 |',
+        '| Updated | 2026-09-11 |',
         '| Updated | 2026-08-30 |',
       );
     },
-    /missing \| Updated \| 2026-09-09/,
+    /missing \| Updated \| 2026-09-11/,
   ],
   [
     'primary support navigation',

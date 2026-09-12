@@ -11,73 +11,66 @@ import {
 
 const finalHandoff = () => ({
   releaseNotes:
-    'S033 dependency security maintenance resolves issue #167 before the S034 release boundary.',
+    'S035 resolves installed-package issues #171 and #172 before the S038 release boundary.',
   releaseReceipt:
-    '| Dependency security slice | S033 |\n| Final release authority slice | S034 |\n| Included corrective issues | #167 |',
+    '| Practical-use recovery slice | S035 |\n| Final release authority slice | S038 |\n| Included corrective issues | #171 and #172 |',
   operatorRunbook:
-    '1. Confirm the S034 pull request is merged after S033 issue #167 at the reviewed S034 merge commit.\n5. Create the annotated tag `v0.1.2` on the reviewed S034 merge commit and push only that tag.',
+    '1. Confirm the S038 pull request is merged after S035 issues #171 and #172 at the reviewed S038 merge commit.\n5. Create the annotated tag `v0.1.3` on the reviewed S038 merge commit and push only that tag.',
   changelog:
-    'S033 (#167) patched Next.js 16.3.3 and the transitive `smol-toml` 1.7.1 resolution before release.',
+    'S035 fixed installed-package Markdown recovery (#171) and reserved shell chrome (#172) before release.',
 });
 
-test('accepts the final S034 release handoff', () =>
+test('accepts the final S038 release handoff', () =>
   assert.equal(validateFinalReleaseHandoff(finalHandoff()), true));
 
 for (const [name, mutate, expected] of [
   [
-    'stale S032 tag target',
+    'stale S034 tag target',
     (handoff) => {
       handoff.operatorRunbook = handoff.operatorRunbook.replaceAll(
+        'S038',
         'S034',
-        'S032',
       );
     },
-    /S034 release authority/u,
+    /S038 release authority/u,
   ],
   [
-    'tag instruction targeting S033',
+    'tag instruction targeting S035',
     (handoff) => {
       handoff.operatorRunbook = handoff.operatorRunbook.replace(
-        'on the reviewed S034 merge commit and push only that tag',
-        'on the reviewed S033 merge commit and push only that tag',
+        'on the reviewed S038 merge commit and push only that tag',
+        'on the reviewed S035 merge commit and push only that tag',
       );
     },
-    /tag instruction does not target S034/u,
+    /tag instruction does not target S038/u,
   ],
   [
-    'missing S033 traceability',
+    'missing S035 traceability',
     (handoff) => {
-      handoff.releaseNotes = handoff.releaseNotes.replace('S033', 'S032');
+      handoff.releaseNotes = handoff.releaseNotes.replace('S035', 'S034');
     },
-    /S033 security remediation/u,
+    /S035 practical-use remediation/u,
   ],
   [
-    'missing issue 167 traceability',
+    'missing issue 171 traceability',
     (handoff) => {
-      handoff.releaseReceipt = handoff.releaseReceipt.replace('#167', '#166');
+      handoff.releaseReceipt = handoff.releaseReceipt.replace('#171', '#170');
     },
-    /issue #167/u,
+    /issue #171/u,
   ],
   [
-    'missing S033 traceability from the operator runbook',
+    'missing issue 172 traceability from the operator runbook',
     (handoff) => {
-      handoff.operatorRunbook = handoff.operatorRunbook.replace('S033', 'S032');
+      handoff.operatorRunbook = handoff.operatorRunbook.replace('#172', '#170');
     },
-    /operator runbook omits the S033 security remediation/u,
+    /operator runbook omits issue #172/u,
   ],
   [
-    'missing issue 167 traceability from the changelog',
+    'missing issue 172 traceability from the changelog',
     (handoff) => {
-      handoff.changelog = handoff.changelog.replace('#167', '#166');
+      handoff.changelog = handoff.changelog.replace('#172', '#170');
     },
-    /changelog omits issue #167/u,
-  ],
-  [
-    'missing patched dependency record',
-    (handoff) => {
-      handoff.changelog = 'S033 (#167) dependency maintenance completed.';
-    },
-    /patched dependency versions/u,
+    /changelog omits issue #172/u,
   ],
 ]) {
   test(`rejects a final handoff with ${name}`, () => {
@@ -89,12 +82,12 @@ for (const [name, mutate, expected] of [
 
 const contract = () => ({
   schema_version: 1,
-  version: '0.1.2',
-  tag: 'v0.1.2',
+  version: '0.1.3',
+  tag: 'v0.1.3',
   repository: 'shruggietech/glitchpad',
   artifacts: Array.from(
     { length: 8 },
-    (_, index) => `glitchpad-0.1.2-${index}`,
+    (_, index) => `glitchpad-0.1.3-${index}`,
   ),
   trust_states: {
     windows: 'unsigned_community',
@@ -103,17 +96,76 @@ const contract = () => ({
     android: 'stable_project_key',
   },
   manual_validation: 'deferred_post_release_issue_66',
+  practical_use_evidence: {
+    windows: [
+      'installed-markdown-lifecycle-receipt.json',
+      'portable-lifecycle-receipt.json',
+    ],
+    macos: ['clean-host-arm64.json', 'clean-host-x86_64.json'],
+    linux: [
+      'clean-ubuntu-22.04-appimage.json',
+      'clean-ubuntu-22.04-deb.json',
+      'clean-ubuntu-24.04-appimage.json',
+      'clean-ubuntu-24.04-deb.json',
+    ],
+  },
+  practical_use_required_passes: {
+    windows: [
+      'clean_launch',
+      'text_delivery',
+      'markdown_delivery',
+      'markdown_minimal',
+      'markdown_edit_save_preview',
+      'document_scoped_recovery_contract',
+      'markdown_alpha_beta',
+      'markdown_beta_alpha',
+      'menu_geometry',
+      'toolbar_reserved_region',
+      'document_preservation',
+    ],
+    macos: [
+      'automated.mount',
+      'automated.copy',
+      'automated.launch',
+      'automated.finder_delivery',
+      'automated.running_instance_delivery',
+      'automated.read',
+      'automated.edit',
+      'automated.save',
+      'automated.recovery',
+      'automated.remove',
+      'automated.cleanup',
+      'automated.universal_architecture',
+    ],
+    linux: [
+      'automated.artifact_integrity',
+      'automated.install_or_extract',
+      'automated.desktop_registration',
+      'automated.mime_registration',
+      'automated.launch',
+      'automated.startup_delivery',
+      'automated.running_instance_delivery',
+      'automated.read',
+      'automated.edit',
+      'automated.save',
+      'automated.metadata',
+      'automated.recovery',
+      'automated.remove',
+      'automated.registration_cleanup',
+      'automated.document_preservation',
+    ],
+  },
 });
 
 test('accepts the exact community release inventory', () =>
   assert.equal(validateReleaseContract(contract()), true));
-test('rejects the stale v0.1.1 release identity', () =>
+test('rejects the stale v0.1.2 release identity', () =>
   assert.throws(
     () =>
       validateReleaseContract({
         ...contract(),
-        version: '0.1.1',
-        tag: 'v0.1.1',
+        version: '0.1.2',
+        tag: 'v0.1.2',
       }),
     /release identity/u,
   ));
@@ -130,7 +182,7 @@ test('rejects paid desktop credentials', () =>
   assert.throws(
     () =>
       validateGovernedClaims({
-        releaseWorkflow: "workflow_dispatch:\n- 'v0.1.2'\nAPPLE_API_KEY",
+        releaseWorkflow: "workflow_dispatch:\n- 'v0.1.3'\nAPPLE_API_KEY",
         windowsContract: {
           official: {
             trust_state: 'unsigned_community',

@@ -9,7 +9,7 @@
 
 **A fast, cross-platform viewer and editor for local files.**
 
-[![CI](https://github.com/ShruggieTech/glitchpad/actions/workflows/ci.yml/badge.svg)](https://github.com/ShruggieTech/glitchpad/actions/workflows/ci.yml) [![CodeQL](https://github.com/ShruggieTech/glitchpad/actions/workflows/codeql.yml/badge.svg)](https://github.com/ShruggieTech/glitchpad/actions/workflows/codeql.yml) [![Version](https://img.shields.io/badge/version-0.1.2-6f42c1)](https://github.com/ShruggieTech/glitchpad/releases) [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE) [![Status](https://img.shields.io/badge/status-community%20release-green)](#status)
+[![CI](https://github.com/ShruggieTech/glitchpad/actions/workflows/ci.yml/badge.svg)](https://github.com/ShruggieTech/glitchpad/actions/workflows/ci.yml) [![CodeQL](https://github.com/ShruggieTech/glitchpad/actions/workflows/codeql.yml/badge.svg)](https://github.com/ShruggieTech/glitchpad/actions/workflows/codeql.yml) [![Version](https://img.shields.io/badge/version-0.1.3-6f42c1)](https://github.com/ShruggieTech/glitchpad/releases) [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE) [![Status](https://img.shields.io/badge/status-community%20release-green)](#status)
 
 </div>
 
@@ -17,25 +17,25 @@ Glitchpad is a minimal desktop and Android application for opening, inspecting, 
 
 ## Status
 
-Glitchpad v0.1.2 is the current corrective community release, with installable packages for Windows, macOS, Linux, and Android. It replaces the initial v0.1.0 packages with the content-first interface corrections from S027. Windows packages are unsigned and the macOS DMG is not Apple-notarized; see the [release notes](docs/releases/v0.1.2.md) for integrity checks and platform guidance.
+Glitchpad v0.1.3 is the current corrective community release, with installable packages for Windows, macOS, Linux, and Android. It carries forward the content-first interface from S027 and adds the S035 fixes that keep Markdown recoverable across every open path while reserving application chrome from document overlap. Windows packages are unsigned and the macOS DMG is not Apple-notarized; see the [release notes](docs/releases/v0.1.3.md) for integrity checks and platform guidance.
 
 The specification version remains in lockstep with the latest official application release. Every release requires a documentation reconciliation pass before publication.
 
 ## Current and planned capabilities
 
-- Markdown viewing and in-place editing, including Mermaid diagram source, preview, and validation (available in v0.1.2).
-- Plain-text and supported source-code viewing and editing with language detection and syntax highlighting (available in v0.1.2).
+- Markdown viewing and in-place editing, including Mermaid diagram source, preview, and validation (available in v0.1.3).
+- Plain-text and supported source-code viewing and editing with language detection and syntax highlighting (available in v0.1.3).
 - Image viewing and inspection, including WebP, SVG, and multi-image ICO containers.
 - PDF viewing with page navigation, document outlines, search, and metadata.
 - DOCX and OpenDocument viewing through a safe, read-only rendering pipeline.
-- A compact metadata inspector for supported text-family filesystem and document properties (available in v0.1.2); image metadata is planned.
-- Small, keyboard-friendly tabs without workspace or project-management UI (available in v0.1.2).
+- A compact metadata inspector for supported text-family filesystem and document properties (available in v0.1.3); image metadata is planned.
+- Small, keyboard-friendly tabs without workspace or project-management UI (available in v0.1.3).
 
 Capability claims are promoted from planned to implemented only after their specification, implementation, tests, and platform evidence land together.
 
 ## Supported platforms
 
-| Platform | v0.1.2 baseline | Distribution status |
+| Platform | v0.1.3 baseline | Distribution status |
 | --- | --- | --- |
 | Windows 11 x86_64 | Tauri desktop host | Unsigned NSIS installer and portable ZIP |
 | macOS 13+ universal | Tauri desktop host | Ad-hoc-signed application in a non-notarized DMG |

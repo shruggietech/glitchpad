@@ -14,7 +14,6 @@ const execFileAsync = promisify(execFile);
 function fail(message) {
   throw new Error(`Invalid Windows package contract: ${message}`);
 }
-
 async function json(path) {
   return JSON.parse(await readFile(path, 'utf8'));
 }
@@ -58,6 +57,8 @@ export function validatePortableSmokeContract(lifecycleSource, workflowSource) {
     '[string] $MarkdownFixtureMinimal',
     '[string] $MarkdownFixtureA',
     '[string] $MarkdownFixtureB',
+    '[string] $MarkdownFixtureEditable',
+    '[string] $Manifest',
     "'Open file…'",
     "'S027 TXT CONTENT 7E5A'",
     "'S030 Markdown Alpha 2B7C'",
@@ -65,7 +66,12 @@ export function validatePortableSmokeContract(lifecycleSource, workflowSource) {
     'Get-TabCount $process) -ne 0',
     'Get-TabCount $process) -ne 2',
     'Close {0}',
-    "schema_version = 4",
+    "schema_version = 5",
+    'candidate_manifest_sha256 = $manifestDigest',
+    'evidence_authority = [ordered]@{',
+    "kind = 'github_actions_workflow'",
+    'workflow_identity = [string]$manifest.workflow_identity',
+    'source_commit = [string]$manifest.source_commit',
     'content_free = $true',
     "fixture_absence = 'pass'",
     "conditional_tabs = 'pass'",
@@ -73,6 +79,8 @@ export function validatePortableSmokeContract(lifecycleSource, workflowSource) {
     "markdown_alpha_beta = 'pass'",
     "markdown_beta_alpha = 'pass'",
     "markdown_minimal = 'pass'",
+    "markdown_edit_save_preview = 'pass'",
+    "document_scoped_recovery_contract = 'pass'",
     "blank_viewport_absence = 'pass'",
     "pending_source_absence = 'pass'",
     "active_document_identity = 'pass'",
@@ -90,10 +98,10 @@ export function validatePortableSmokeContract(lifecycleSource, workflowSource) {
   for (const requirement of lifecycleRequirements)
     if (!lifecycleSource.includes(requirement))
       fail(`portable smoke lifecycle omits ${requirement}`);
-  for (const requirement of ['-TextFixture', '-MarkdownFixtureMinimal', '-MarkdownFixtureA', '-MarkdownFixtureB', 's027-visible.txt', 's035-minimal.md', 's030-alpha.md', 's030-beta.md'])
+  for (const requirement of ['-TextFixture', '-MarkdownFixtureMinimal', '-MarkdownFixtureEditable', '-MarkdownFixtureA', '-MarkdownFixtureB', '-Manifest', 'windows-package-manifest.json', 's027-visible.txt', 's035-minimal.md', 's038-installed-editable.md', 's038-portable-editable.md', 's030-alpha.md', 's030-beta.md'])
     if (!workflowSource.includes(requirement))
       fail(`Windows workflow omits ${requirement}`);
-  for (const requirement of ['[S030_ALPHA_RAW_SENTINEL]: https://example.invalid/alpha', '[S030_BETA_RAW_SENTINEL]: https://example.invalid/beta', '| Alpha | Beta |', 'Footnote[^1]', 'flowchart TB', 'Wait-SafeMarkdownOutcome', 'Wait-WindowText', 'Wait-NamedButton', 'TryGetCurrentPattern', 'GetClickablePoint', 'GlitchpadNativeInput', 'SetForegroundWindow', 'mouse_event', 'Send-MarkdownDelivery'])
+  for (const requirement of ['[S030_ALPHA_RAW_SENTINEL]: https://example.invalid/alpha', '[S030_BETA_RAW_SENTINEL]: https://example.invalid/beta', '| Alpha | Beta |', 'Footnote[^1]', 'flowchart TB', 'Wait-SafeMarkdownOutcome', 'Wait-WindowText', 'Wait-NamedButton', 'TryGetCurrentPattern', 'GetClickablePoint', 'GlitchpadNativeInput', 'SetForegroundWindow', 'mouse_event', 'Send-MarkdownDelivery', 'Exercise-MarkdownEditSavePreview', "Invoke-MenuCommand $Process 'Edit source'", "Invoke-MenuCommand $Process 'Preview'", "[System.Windows.Forms.SendKeys]::SendWait('^s')", 'saved durably.', 'DocumentSurface.test.tsx', 'MarkdownSurface.test.tsx'])
     if (!`${lifecycleSource}\n${workflowSource}`.includes(requirement))
       fail(`Windows Markdown lifecycle omits ${requirement}`);
   for (const requirement of ['-InstalledMarkdownReceipt', 'installed-markdown-lifecycle-receipt.json'])
@@ -177,8 +185,8 @@ export async function checkWindowsConfiguration(
 
   validatePortableSmokeContract(portableLifecycle, windowsWorkflow);
 
-  if (capabilities.schema_version !== 1 || capabilities.release !== '0.1.2')
-    fail('capability inventory version is not v0.1.2 schema 1');
+  if (capabilities.schema_version !== 1 || capabilities.release !== '0.1.3')
+    fail('capability inventory version is not v0.1.3 schema 1');
   const configured = uniqueExtensions(capabilities.families);
   const expectedBase = ['markdown', 'md', 'mermaid', 'mmd', 'txt'];
   for (const extension of expectedBase)

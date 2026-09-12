@@ -445,7 +445,7 @@ test('official receipt filenames bind each Ubuntu and package-form matrix slot',
 test('Debian control metadata requires canonical runtime dependency families', () => {
   const valid = [
     'Package: glitchpad',
-    'Version: 0.1.2',
+    'Version: 0.1.3',
     'Architecture: amd64',
     'Depends: libwebkit2gtk-4.1-0 (>= 2.40), libgtk-3-0 | libgtk-3-0t64',
   ].join('\n');
@@ -513,7 +513,7 @@ test('Linux SBOM uses the shared deterministic desktop component model', () => {
   const bom = generateLinuxSbom(
     {
       packages: [
-        { name: 'glitchpad-host', version: '0.1.2', license: 'Apache-2.0' },
+        { name: 'glitchpad-host', version: '0.1.3', license: 'Apache-2.0' },
       ],
     },
     [{ dependencies: { react: { version: '19.0.0', license: 'MIT' } } }],

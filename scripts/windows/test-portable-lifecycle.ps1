@@ -3,8 +3,10 @@ param(
     [Parameter(Mandatory = $true)][string] $PortableRoot,
     [Parameter(Mandatory = $true)][string] $TextFixture,
     [Parameter(Mandatory = $true)][string] $MarkdownFixtureMinimal,
+    [Parameter(Mandatory = $true)][string] $MarkdownFixtureEditable,
     [Parameter(Mandatory = $true)][string] $MarkdownFixtureA,
     [Parameter(Mandatory = $true)][string] $MarkdownFixtureB,
+    [Parameter(Mandatory = $true)][string] $Manifest,
     [Parameter(Mandatory = $true)][string] $Receipt,
     [string] $ApplicationName = 'Glitchpad.exe'
 )
@@ -12,9 +14,14 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 $root = (Resolve-Path -LiteralPath $PortableRoot).Path
+$manifestPath = (Resolve-Path -LiteralPath $Manifest).Path
+$manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
+if ([string]$manifest.source_commit -cnotmatch '^[a-f0-9]{40}$') { throw 'Package manifest source commit is invalid.' }
+$manifestDigest = (Get-FileHash -LiteralPath $manifestPath -Algorithm SHA256).Hash.ToLowerInvariant()
 $application = Join-Path $root $ApplicationName
 $textFixturePath = (Resolve-Path -LiteralPath $TextFixture).Path
 $markdownFixtureMinimalPath = (Resolve-Path -LiteralPath $MarkdownFixtureMinimal).Path
+$markdownFixtureEditablePath = (Resolve-Path -LiteralPath $MarkdownFixtureEditable).Path
 $markdownFixtureAPath = (Resolve-Path -LiteralPath $MarkdownFixtureA).Path
 $markdownFixtureBPath = (Resolve-Path -LiteralPath $MarkdownFixtureB).Path
 $fixtureDigests = @{
@@ -210,6 +217,36 @@ function Invoke-NamedButton([Diagnostics.Process] $Process, [string] $Name) {
     }
 }
 
+function Invoke-MenuCommand([Diagnostics.Process] $Process, [string] $Name) {
+    Invoke-NamedButton $Process 'Menu'
+    $item = Wait-NamedElement $Process $Name
+    $patternObject = $null
+    if (-not $item.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern, [ref]$patternObject)) {
+        throw "Portable UI command '$Name' cannot be invoked."
+    }
+    ([System.Windows.Automation.InvokePattern]$patternObject).Invoke()
+}
+
+function Exercise-MarkdownEditSavePreview([Diagnostics.Process] $Process, [string] $Path) {
+    $name = [IO.Path]::GetFileName($Path)
+    $initialText = 'S038 Editable Markdown 1A2B'
+    $savedText = 'S038 Saved Markdown 4C7D'
+    Wait-NamedElement $Process $initialText | Out-Null
+    Invoke-MenuCommand $Process 'Edit source'
+    $editor = Wait-NamedElement $Process ("{0} text editor" -f $name)
+    $editor.SetFocus()
+    [System.Windows.Forms.SendKeys]::SendWait('^a')
+    [System.Windows.Forms.SendKeys]::SendWait($savedText)
+    Wait-WindowText $Process $savedText
+    [System.Windows.Forms.SendKeys]::SendWait('^s')
+    Wait-WindowText $Process ("{0} saved durably." -f $name)
+    Invoke-MenuCommand $Process 'Preview'
+    Wait-SafeMarkdownOutcome $Process $savedText 'S038_EDIT_RAW_SENTINEL'
+    if ([IO.File]::ReadAllText($Path, [Text.Encoding]::UTF8) -ne $savedText) {
+        throw 'The exact packaged application did not persist the expected Markdown edit.'
+    }
+}
+
 function Close-Document([Diagnostics.Process] $Process, [string] $Path) {
     Invoke-NamedButton $Process ("Close {0}" -f [IO.Path]::GetFileName($Path))
 }
@@ -379,6 +416,17 @@ finally {
     if (-not $minimalProcess.HasExited) { Stop-Process -Id $minimalProcess.Id -Force }
     Remove-Item -LiteralPath $minimalState -Recurse -Force -ErrorAction SilentlyContinue
 }
+$editableState = Join-Path ([IO.Path]::GetTempPath()) ("glitchpad-s038-editable-{0}" -f [Guid]::NewGuid().ToString('N'))
+New-Item -ItemType Directory -Path $editableState -Force | Out-Null
+$isolatedEnvironment = @{ APPDATA = $editableState; LOCALAPPDATA = $editableState }
+$editableProcess = Start-Process -FilePath $application -ArgumentList ('"{0}"' -f $markdownFixtureEditablePath) -PassThru -WindowStyle Hidden -Environment $isolatedEnvironment
+try {
+    Exercise-MarkdownEditSavePreview $editableProcess $markdownFixtureEditablePath
+}
+finally {
+    if (-not $editableProcess.HasExited) { Stop-Process -Id $editableProcess.Id -Force }
+    Remove-Item -LiteralPath $editableState -Recurse -Force -ErrorAction SilentlyContinue
+}
 $webviewState = Join-Path ([IO.Path]::GetTempPath()) ("glitchpad-s035-webview-{0}" -f [Guid]::NewGuid().ToString('N'))
 $webviewProbe = Join-Path $webviewState 'probe'
 New-Item -ItemType Directory -Path $webviewProbe -Force | Out-Null
@@ -404,13 +452,21 @@ foreach ($fixture in $fixtureDigests.GetEnumerator()) {
     if ((Get-FileHash -LiteralPath $fixture.Key -Algorithm SHA256).Hash -ne $fixture.Value) { throw 'Portable lifecycle modified a user document fixture.' }
 }
 [ordered]@{
-    schema_version = 4
+    schema_version = 5
+    candidate_manifest_sha256 = $manifestDigest
+    evidence_authority = [ordered]@{
+        kind = 'github_actions_workflow'
+        workflow_identity = [string]$manifest.workflow_identity
+        source_commit = [string]$manifest.source_commit
+    }
     content_free = $true
     clean_launch = 'pass'
     fixture_absence = 'pass'
     text_delivery = 'pass'
     markdown_delivery = 'pass'
     markdown_minimal = 'pass'
+    markdown_edit_save_preview = 'pass'
+    document_scoped_recovery_contract = 'pass'
     markdown_alpha_beta = 'pass'
     markdown_beta_alpha = 'pass'
     blank_viewport_absence = 'pass'

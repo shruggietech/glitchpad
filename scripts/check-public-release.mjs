@@ -5,12 +5,12 @@ import { fileURLToPath } from 'node:url';
 import { parse as parseYaml } from 'yaml';
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-export const currentVersion = '0.1.2';
+export const currentVersion = '0.1.3';
 export const currentTag = `v${currentVersion}`;
 export const releaseUrl =
-  'https://github.com/ShruggieTech/glitchpad/releases/tag/v0.1.2';
+  'https://github.com/ShruggieTech/glitchpad/releases/tag/v0.1.3';
 const deploymentCondition =
-  "(github.event_name == 'push' && github.ref == 'refs/heads/main') || (inputs.deploy && inputs.release_tag == 'v0.1.2')";
+  "(github.event_name == 'push' && github.ref == 'refs/heads/main') || (inputs.deploy && inputs.release_tag == 'v0.1.3')";
 
 function normalizeExpression(value) {
   return typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : '';
@@ -102,7 +102,7 @@ export function verifyPublicSources(sources) {
     `| Specification version | ${currentVersion} |`,
     `| Product version | ${currentVersion} |`,
     '| Issued | 2026-08-30 |',
-    '| Updated | 2026-09-09 |',
+    '| Updated | 2026-09-11 |',
     '`Issued` records the date this specification was first published.',
     '`Updated` records the effective date of the current specification text',
   ])
@@ -123,7 +123,7 @@ export function verifyPublicSources(sources) {
     problems.push(
       'technical specification revision history is not chronological',
     );
-  if (revisionDates.at(-1) !== '2026-09-09')
+  if (revisionDates.at(-1) !== '2026-09-11')
     problems.push(
       'technical specification Updated date does not match latest revision',
     );
@@ -144,7 +144,7 @@ export function verifyPublicSources(sources) {
     "github.event_name == 'push'",
     "github.ref == 'refs/heads/main'",
     'inputs.deploy',
-    "inputs.release_tag == 'v0.1.2'",
+    "inputs.release_tag == 'v0.1.3'",
     'group: github-pages-production',
     'queue: max',
     'Confirm deployment revision is current',
@@ -175,7 +175,7 @@ export function verifyPublicSources(sources) {
     'needs: publish',
     'uses: ./.github/workflows/docs.yml',
     'deploy: true',
-    'release_tag: v0.1.2',
+    'release_tag: v0.1.3',
   ])
     requireText(
       problems,

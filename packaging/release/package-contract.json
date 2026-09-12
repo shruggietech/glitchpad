@@ -1,23 +1,82 @@
 {
   "schema_version": 1,
-  "version": "0.1.2",
-  "tag": "v0.1.2",
+  "version": "0.1.3",
+  "tag": "v0.1.3",
   "repository": "shruggietech/glitchpad",
   "artifacts": [
-    "glitchpad-0.1.2-windows-x86_64-setup.exe",
-    "glitchpad-0.1.2-windows-x86_64.zip",
-    "glitchpad-0.1.2-macos-universal.dmg",
-    "glitchpad-0.1.2-linux-x86_64.AppImage",
-    "glitchpad-0.1.2-linux-x86_64.deb",
-    "glitchpad-0.1.2-android-universal.apk",
-    "glitchpad-0.1.2-android-arm64.apk",
-    "glitchpad-0.1.2-android-universal.aab"
+    "glitchpad-0.1.3-windows-x86_64-setup.exe",
+    "glitchpad-0.1.3-windows-x86_64.zip",
+    "glitchpad-0.1.3-macos-universal.dmg",
+    "glitchpad-0.1.3-linux-x86_64.AppImage",
+    "glitchpad-0.1.3-linux-x86_64.deb",
+    "glitchpad-0.1.3-android-universal.apk",
+    "glitchpad-0.1.3-android-arm64.apk",
+    "glitchpad-0.1.3-android-universal.aab"
   ],
   "trust_states": {
     "windows": "unsigned_community",
     "macos": "adhoc_non_notarized_community",
     "linux": "repository_attested",
     "android": "stable_project_key"
+  },
+  "practical_use_evidence": {
+    "windows": [
+      "installed-markdown-lifecycle-receipt.json",
+      "portable-lifecycle-receipt.json"
+    ],
+    "macos": ["clean-host-arm64.json", "clean-host-x86_64.json"],
+    "linux": [
+      "clean-ubuntu-22.04-appimage.json",
+      "clean-ubuntu-22.04-deb.json",
+      "clean-ubuntu-24.04-appimage.json",
+      "clean-ubuntu-24.04-deb.json"
+    ]
+  },
+  "practical_use_required_passes": {
+    "windows": [
+      "clean_launch",
+      "text_delivery",
+      "markdown_delivery",
+      "markdown_minimal",
+      "markdown_edit_save_preview",
+      "document_scoped_recovery_contract",
+      "markdown_alpha_beta",
+      "markdown_beta_alpha",
+      "menu_geometry",
+      "toolbar_reserved_region",
+      "document_preservation"
+    ],
+    "macos": [
+      "automated.mount",
+      "automated.copy",
+      "automated.launch",
+      "automated.finder_delivery",
+      "automated.running_instance_delivery",
+      "automated.read",
+      "automated.edit",
+      "automated.save",
+      "automated.recovery",
+      "automated.remove",
+      "automated.cleanup",
+      "automated.universal_architecture"
+    ],
+    "linux": [
+      "automated.artifact_integrity",
+      "automated.install_or_extract",
+      "automated.desktop_registration",
+      "automated.mime_registration",
+      "automated.launch",
+      "automated.startup_delivery",
+      "automated.running_instance_delivery",
+      "automated.read",
+      "automated.edit",
+      "automated.save",
+      "automated.metadata",
+      "automated.recovery",
+      "automated.remove",
+      "automated.registration_cleanup",
+      "automated.document_preservation"
+    ]
   },
   "manual_validation": "deferred_post_release_issue_66"
 }

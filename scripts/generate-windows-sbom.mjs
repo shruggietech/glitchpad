@@ -9,7 +9,7 @@ export function generateDesktopSbom(
   metadata,
   pnpmListing,
   sourceCommit,
-  { platform, version = '0.1.2' } = {},
+  { platform, version = '0.1.3' } = {},
 ) {
   if (!/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/u.test(sourceCommit))
     throw new Error('Desktop SBOM requires the exact source commit');

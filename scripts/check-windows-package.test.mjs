@@ -90,7 +90,11 @@ test('Windows lifecycle policy rejects removal of content-first release assertio
     /Windows Markdown lifecycle omits/u,
   );
   assert.throws(
-    () => validatePortableSmokeContract(lifecycle.replace('catch { $invokeFailure = $_.Exception.Message }', ''), workflow),
+    () => validatePortableSmokeContract(lifecycle.replace('Click-AutomationElement $Process $item $Name', 'Invoke-AutomationElement $Process $item $Name'), workflow),
+    /Windows Markdown lifecycle omits/u,
+  );
+  assert.throws(
+    () => validatePortableSmokeContract(lifecycle.replace('catch { }', ''), workflow),
     /Windows Markdown lifecycle omits/u,
   );
   assert.throws(

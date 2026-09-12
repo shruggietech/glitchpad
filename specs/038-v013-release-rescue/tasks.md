@@ -115,6 +115,7 @@
 - [x] T038 Fall back from absent UI Automation clickable points to the center of validated visible element bounds and enforce the geometry path in package policy
 - [x] T039 Resolve menu commands to actionable named Button controls instead of same-name text descendants and enforce control selection in package policy
 - [x] T040 Resolve WebView menu commands from named text descendants to the first visible, nonzero Invoke-capable accessibility ancestor and enforce tree-walk selection in package policy
+- [x] T041 Activate resolved WebView menu commands through a deterministic real click without an ambiguous Invoke call that can apply the action before throwing, and enforce click-only menu activation in package policy
 
 ---
 

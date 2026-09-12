@@ -239,17 +239,8 @@ function Wait-ActionableNamedElement([Diagnostics.Process] $Process, [string] $N
     throw "Portable UI did not expose actionable element '$Name'."
 }
 
-function Invoke-AutomationElement([Diagnostics.Process] $Process, [System.Windows.Automation.AutomationElement] $Element, [string] $Description) {
-    $patternObject = $null
-    $invokeFailure = $null
-    if ($Element.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern, [ref]$patternObject)) {
-        try {
-            ([System.Windows.Automation.InvokePattern]$patternObject).Invoke()
-            return
-        }
-        catch { $invokeFailure = $_.Exception.Message }
-    }
-    if ($Element.Current.IsOffscreen) { throw "Portable UI element '$Description' is offscreen and cannot be activated after UI Automation invocation failed: $invokeFailure" }
+function Click-AutomationElement([Diagnostics.Process] $Process, [System.Windows.Automation.AutomationElement] $Element, [string] $Description) {
+    if ($Element.Current.IsOffscreen) { throw "Portable UI element '$Description' is offscreen and cannot be clicked." }
     try {
         $point = $Element.GetClickablePoint()
         $clickX = $point.X
@@ -274,6 +265,18 @@ function Invoke-AutomationElement([Diagnostics.Process] $Process, [System.Window
     }
 }
 
+function Invoke-AutomationElement([Diagnostics.Process] $Process, [System.Windows.Automation.AutomationElement] $Element, [string] $Description) {
+    $patternObject = $null
+    if ($Element.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern, [ref]$patternObject)) {
+        try {
+            ([System.Windows.Automation.InvokePattern]$patternObject).Invoke()
+            return
+        }
+        catch { }
+    }
+    Click-AutomationElement $Process $Element $Description
+}
+
 function Invoke-NamedButton([Diagnostics.Process] $Process, [string] $Name) {
     $button = Wait-NamedButton $Process $Name
     Invoke-AutomationElement $Process $button $Name
@@ -282,7 +285,7 @@ function Invoke-NamedButton([Diagnostics.Process] $Process, [string] $Name) {
 function Invoke-MenuCommand([Diagnostics.Process] $Process, [string] $Name) {
     Invoke-NamedButton $Process 'Menu'
     $item = Wait-ActionableNamedElement $Process $Name
-    Invoke-AutomationElement $Process $item $Name
+    Click-AutomationElement $Process $item $Name
 }
 
 function Exercise-MarkdownEditSavePreview([Diagnostics.Process] $Process, [string] $Path) {

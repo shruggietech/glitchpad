@@ -112,6 +112,7 @@
 - [x] T035 Replace strict nested member access for Windows scale receipts with explicit schema extraction and require the portable lifecycle contract in `scripts/windows/test-portable-lifecycle.ps1`, `scripts/check-windows-package.mjs`, and `scripts/check-windows-package.test.mjs`
 - [x] T036 Eliminate runner-version-sensitive PowerShell JSON projection for every Windows receipt value through typed `System.Text.Json` property reads and add regressions that reject removing exact schema access
 - [x] T037 Fall back from a failing advertised UI Automation Invoke pattern to the governed focused clickable-point path for Windows buttons and menu commands, and enforce the fallback in package policy
+- [x] T038 Fall back from absent UI Automation clickable points to the center of validated visible element bounds and enforce the geometry path in package policy
 
 ---
 

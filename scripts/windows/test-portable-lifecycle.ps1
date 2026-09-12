@@ -229,11 +229,21 @@ function Invoke-AutomationElement([Diagnostics.Process] $Process, [System.Window
         catch { $invokeFailure = $_.Exception.Message }
     }
     if ($Element.Current.IsOffscreen) { throw "Portable UI element '$Description' is offscreen and cannot be activated after UI Automation invocation failed: $invokeFailure" }
-    $point = $Element.GetClickablePoint()
+    try {
+        $point = $Element.GetClickablePoint()
+        $clickX = $point.X
+        $clickY = $point.Y
+    }
+    catch {
+        $bounds = $Element.Current.BoundingRectangle
+        if ($bounds.Width -le 0 -or $bounds.Height -le 0) { throw "Portable UI element '$Description' has no usable click geometry." }
+        $clickX = $bounds.X + ($bounds.Width / 2)
+        $clickY = $bounds.Y + ($bounds.Height / 2)
+    }
     $previousCursor = [System.Windows.Forms.Cursor]::Position
     try {
         [GlitchpadNativeInput]::SetForegroundWindow($Process.MainWindowHandle) | Out-Null
-        [GlitchpadNativeInput]::SetCursorPos([Math]::Round($point.X), [Math]::Round($point.Y)) | Out-Null
+        [GlitchpadNativeInput]::SetCursorPos([Math]::Round($clickX), [Math]::Round($clickY)) | Out-Null
         Start-Sleep -Milliseconds 50
         [GlitchpadNativeInput]::mouse_event(0x0002, 0, 0, 0, [UIntPtr]::Zero)
         [GlitchpadNativeInput]::mouse_event(0x0004, 0, 0, 0, [UIntPtr]::Zero)

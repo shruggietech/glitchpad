@@ -1,4 +1,4 @@
-import { forwardRef, useState } from 'react';
+import { forwardRef, useEffect, useState } from 'react';
 
 import type { LanguageDecision, MarkdownDocumentState, MermaidDocumentState, ShellSession, TextDocumentState } from '../domain/contracts';
 import type { MarkdownExternalLinkGateway, MarkdownLocalAssetGateway } from '../domain/markdown-gateway';
@@ -11,6 +11,7 @@ import { DocumentErrorBoundary } from './DocumentErrorBoundary';
 
 interface DocumentSurfaceProps {
   session: ShellSession | null;
+  markdownFailureProbe?: boolean;
   canOpen?: boolean;
   onOpen?: () => void;
   labelledByTab?: boolean;
@@ -30,7 +31,7 @@ interface DocumentSurfaceProps {
 }
 
 export const DocumentSurface = forwardRef<TextEditorHandle, DocumentSurfaceProps>(function DocumentSurface(
-  { session, canOpen = false, onOpen, labelledByTab = false, onDocumentChange, onLanguageChange, onMarkdownChange, onMermaidChange, externalLinkGateway, localAssetGateway, onOpenMetadata, onMetadataContribution },
+  { session, markdownFailureProbe = false, canOpen = false, onOpen, labelledByTab = false, onDocumentChange, onLanguageChange, onMarkdownChange, onMermaidChange, externalLinkGateway, localAssetGateway, onOpenMetadata, onMetadataContribution },
   ref,
 ) {
   const [markdownRecoveries, setMarkdownRecoveries] = useState(() => new Map<string, {
@@ -38,6 +39,16 @@ export const DocumentSurface = forwardRef<TextEditorHandle, DocumentSurfaceProps
     attempt: number;
     sourceMode: boolean;
   }>());
+  const [lifecycleFailureDocument, setLifecycleFailureDocument] = useState<string | null>(null);
+  const sessionDocumentKey = session ? `${session.id}:${session.revision}` : null;
+  useEffect(() => {
+    if (
+      markdownFailureProbe
+      && lifecycleFailureDocument === null
+      && sessionDocumentKey
+      && session?.renderer.id === 'markdown'
+    ) setLifecycleFailureDocument(sessionDocumentKey);
+  }, [lifecycleFailureDocument, markdownFailureProbe, session?.renderer.id, sessionDocumentKey]);
 
   if (!session) {
     return (
@@ -53,7 +64,7 @@ export const DocumentSurface = forwardRef<TextEditorHandle, DocumentSurfaceProps
     );
   }
 
-  const currentDocumentKey = `${session.id}:${session.revision}`;
+  const currentDocumentKey = sessionDocumentKey!;
   const markdownRecovery = markdownRecoveries.get(session.id);
   const recoveryAttempt = markdownRecovery?.documentKey === currentDocumentKey
     ? markdownRecovery.attempt
@@ -105,7 +116,7 @@ export const DocumentSurface = forwardRef<TextEditorHandle, DocumentSurfaceProps
             <button type="button" onClick={() => retryMarkdownPreview()}>Retry preview</button>
           </div>
         )}
-        <MarkdownSurface key={`${session.id}:${recoveryAttempt}`} ref={ref} session={session} projectionSuppressed={projectionSuppressed} recoveryAttempt={recoveryAttempt} onEnterRecoverySource={() => enterRecoverySource()} onDocumentChange={onDocumentChange} onLanguageChange={onLanguageChange} onMarkdownChange={onMarkdownChange} externalLinkGateway={externalLinkGateway} localAssetGateway={localAssetGateway} onOpenMetadata={onOpenMetadata} onMetadataContribution={onMetadataContribution} />
+        <MarkdownSurface key={`${session.id}:${recoveryAttempt}`} ref={ref} session={session} projectionSuppressed={projectionSuppressed} recoveryAttempt={recoveryAttempt} lifecycleFailureProbe={lifecycleFailureDocument === currentDocumentKey} onEnterRecoverySource={() => enterRecoverySource()} onDocumentChange={onDocumentChange} onLanguageChange={onLanguageChange} onMarkdownChange={onMarkdownChange} externalLinkGateway={externalLinkGateway} localAssetGateway={localAssetGateway} onOpenMetadata={onOpenMetadata} onMetadataContribution={onMetadataContribution} />
       </div>
     ) : session.renderer.id === 'mermaid' ? (
       <MermaidSurface key={session.id} ref={ref} session={session} onDocumentChange={onDocumentChange} onLanguageChange={onLanguageChange} onMermaidChange={onMermaidChange ?? (() => undefined)} onOpenMetadata={onOpenMetadata} onMetadataContribution={onMetadataContribution} />

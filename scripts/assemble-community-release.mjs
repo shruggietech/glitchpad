@@ -25,6 +25,35 @@ async function files(root) {
   ).flat();
 }
 
+const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex');
+
+const prohibitedEvidenceFields = new Set([
+  'document_content',
+  'document_body',
+  'private_filename',
+  'private_path',
+  'link_destination',
+  'embedded_metadata',
+]);
+
+function entries(value) {
+  if (Array.isArray(value))
+    return value.flatMap((child, index) => [
+      [String(index), child],
+      ...entries(child),
+    ]);
+  if (value && typeof value === 'object')
+    return Object.entries(value).flatMap(([key, child]) => [
+      [key, child],
+      ...entries(child),
+    ]);
+  return [];
+}
+
+function valueAtPath(value, path) {
+  return path.split('.').reduce((current, key) => current?.[key], value);
+}
+
 export async function assembleCommunityRelease({
   input,
   output,
@@ -44,13 +73,16 @@ export async function assembleCommunityRelease({
     linux: 'linux-package-manifest.json',
     android: 'android-package-manifest.json',
   };
+  const platformManifests = new Map();
   for (const [platform, name] of Object.entries(manifestNames)) {
     const matches = available.filter(
       (path) => basename(path) === name && path.includes(platform),
     );
     if (matches.length !== 1)
       throw new Error(`expected exactly one ${platform} package manifest`);
-    const platformManifest = JSON.parse(await readFile(matches[0], 'utf8'));
+    const platformManifestBytes = await readFile(matches[0]);
+    const platformManifest = JSON.parse(platformManifestBytes.toString('utf8'));
+    platformManifests.set(platform, platformManifestBytes);
     if (platformManifest.source_commit !== sourceCommit)
       throw new Error(`${platform} source commit is stale`);
     if (platform === 'android') {
@@ -82,6 +114,78 @@ export async function assembleCommunityRelease({
         throw new Error(`${platform} community trust evidence is invalid`);
     }
   }
+  const practicalUseEvidence = contract.practical_use_evidence;
+  const practicalUseRequiredPasses = contract.practical_use_required_passes;
+  if (
+    !practicalUseEvidence ||
+    Object.keys(practicalUseEvidence).sort().join(',') !== 'linux,macos,windows'
+  )
+    throw new Error('practical-use evidence contract is invalid');
+  if (
+    !practicalUseRequiredPasses ||
+    Object.keys(practicalUseRequiredPasses).sort().join(',') !==
+      'linux,macos,windows'
+  )
+    throw new Error('practical-use required-pass contract is invalid');
+  for (const [platform, names] of Object.entries(practicalUseEvidence)) {
+    if (
+      !Array.isArray(names) ||
+      names.length === 0 ||
+      new Set(names).size !== names.length
+    )
+      throw new Error(`${platform} practical-use evidence contract is invalid`);
+    const requiredPasses = practicalUseRequiredPasses[platform];
+    if (
+      !Array.isArray(requiredPasses) ||
+      requiredPasses.length === 0 ||
+      new Set(requiredPasses).size !== requiredPasses.length
+    )
+      throw new Error(`${platform} practical-use required passes are invalid`);
+    for (const name of names) {
+      const matches = available.filter(
+        (path) => basename(path) === name && path.includes(platform),
+      );
+      if (matches.length !== 1)
+        throw new Error(
+          `${platform} practical-use evidence ${name} is missing or duplicated`,
+        );
+      const receipt = JSON.parse(await readFile(matches[0], 'utf8'));
+      if (receipt.evidence_authority?.source_commit !== sourceCommit)
+        throw new Error(
+          `${platform} practical-use evidence has a stale source commit`,
+        );
+      if (
+        receipt.candidate_manifest_sha256 !==
+        sha256(platformManifests.get(platform))
+      )
+        throw new Error(
+          `${platform} practical-use evidence has a stale manifest digest`,
+        );
+      if (receipt.content_free !== true)
+        throw new Error(
+          `${platform} practical-use evidence is not content-free`,
+        );
+      for (const [key, value] of entries(receipt)) {
+        if (prohibitedEvidenceFields.has(key.toLowerCase()))
+          throw new Error(
+            `${platform} practical-use evidence contains prohibited field ${key}`,
+          );
+        if (
+          typeof value === 'string' &&
+          /(?:^|[^a-z])fail(?:ed|ure)?(?:$|[^a-z])/iu.test(value)
+        )
+          throw new Error(
+            `${platform} practical-use evidence contains a failed practical-use result`,
+          );
+      }
+      for (const path of requiredPasses) {
+        if (valueAtPath(receipt, path) !== 'pass')
+          throw new Error(
+            `${platform} practical-use evidence lacks required pass ${path}`,
+          );
+      }
+    }
+  }
   await mkdir(output, { recursive: true });
   const artifacts = [];
   for (const name of contract.artifacts) {
@@ -96,7 +200,7 @@ export async function assembleCommunityRelease({
     artifacts.push({
       name,
       bytes: bytes.length,
-      sha256: createHash('sha256').update(bytes).digest('hex'),
+      sha256: sha256(bytes),
       source_commit: sourceCommit,
     });
   }
@@ -110,8 +214,10 @@ export async function assembleCommunityRelease({
     source_commit: sourceCommit,
     artifacts,
     trust_states: contract.trust_states,
+    practical_use_evidence: practicalUseEvidence,
+    practical_use_required_passes: practicalUseRequiredPasses,
     evidence_bundles: Object.keys(contract.trust_states).map(
-      (platform) => `glitchpad-0.1.2-${platform}-evidence.tar.gz`,
+      (platform) => `glitchpad-${contract.version}-${platform}-evidence.tar.gz`,
     ),
   };
   await writeFile(join(output, 'SHA256SUMS'), sums, 'utf8');

@@ -152,7 +152,7 @@ test('canonical technical specification produces exactly 38 ordered focused page
   );
   assert.match(
     documentation.files.get('index.mdx'),
-    /\| Updated \| 2026-09-09 \|/,
+    /\| Updated \| 2026-09-11 \|/,
   );
   assert.doesNotMatch(
     [...documentation.files.values()].join('\n'),
@@ -398,7 +398,7 @@ test('landing copy keeps the current release, canonical brand, and navigation co
     join(siteRoot, 'components', 'footer.tsx'),
     'utf8',
   );
-  assert.match(home, /v0\.1\.2 community release/i);
+  assert.match(home, /v0\.1\.3 community release/i);
   assert.match(home, /View your files\./);
   assert.match(
     home,

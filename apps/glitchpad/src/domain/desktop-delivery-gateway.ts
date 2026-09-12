@@ -72,6 +72,13 @@ export const reportDesktopDeviceScaleProbe = async (
   return call('record_desktop_device_scale_probe', { deviceScale }) as Promise<boolean>;
 };
 
+export const consumeDesktopMarkdownFailureProbe = async (
+  call: NativeInvoke = invoke,
+): Promise<boolean> => {
+  if (!nativeDesktopDeliveryAvailable()) return false;
+  return call('consume_desktop_markdown_failure_probe') as Promise<boolean>;
+};
+
 const decode = (bytes: Uint8Array): { text: string; encoding: TextEncoding } => {
   const encoding = detectEncoding(bytes);
   const decoder = encoding === 'utf16_le_bom'
@@ -169,6 +176,10 @@ export const createDesktopDeliveryGateway = (
       throw new Error('Desktop Save requires an open writable source');
     const serialized = serializeTextDocument(session.text_document, session.revision, session.revision);
     if (!serialized.ok) throw new Error(`Desktop Save serialization failed: ${serialized.reason}`);
+    await call('note_source_session_revision', {
+      sourceId: session.source_id,
+      revision: session.revision,
+    });
     return call('save_source', {
       request: {
         operation_id: saveOperationId(),

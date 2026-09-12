@@ -4,6 +4,19 @@ All notable changes to Glitchpad are documented in this file. The format follows
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-09-11
+
+### Changed
+
+- Published the technical specification as navigable section pages while preserving one normative source and validating every generated section against it.
+- Automated post-merge documentation publication and merged-branch cleanup with explicit concurrency, provenance, and failure-reporting controls.
+- Bound desktop practical-use receipts to the exact final package manifests, including packaged Markdown failure recovery and separate 100, 125, 150, and 200 percent shell-geometry results, and required content-free evidence before release assembly.
+
+### Fixed
+
+- S035 (#171) restored Markdown recovery for every file-opening path, including native association delivery, and prevented stale or failed render work from blanking the document.
+- S035 (#172) reserved shell chrome so the compact application menu and document controls no longer overlap scrollable content.
+
 ## [0.1.2] - 2026-09-09
 
 ### Changed

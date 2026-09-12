@@ -2,7 +2,7 @@ export function Footer() {
   return (
     <footer className="site-footer">
       <p>
-        Glitchpad v0.1.2 is an installable community release. A ShruggieTech
+        Glitchpad v0.1.3 is an installable community release. A ShruggieTech
         project.
       </p>
       <nav aria-label="Footer">

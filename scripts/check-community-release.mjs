@@ -9,8 +9,8 @@ const text = async (path) => readFile(path, 'utf8');
 export function validateReleaseContract(contract) {
   if (
     contract.schema_version !== 1 ||
-    contract.version !== '0.1.2' ||
-    contract.tag !== 'v0.1.2' ||
+    contract.version !== '0.1.3' ||
+    contract.tag !== 'v0.1.3' ||
     contract.repository !== 'shruggietech/glitchpad'
   )
     throw new Error('release identity is invalid');
@@ -20,7 +20,7 @@ export function validateReleaseContract(contract) {
     new Set(contract.artifacts).size !== 8
   )
     throw new Error('release must declare exactly eight unique artifacts');
-  if (contract.artifacts.some((name) => !name.includes('0.1.2')))
+  if (contract.artifacts.some((name) => !name.includes('0.1.3')))
     throw new Error('artifact version is stale');
   const expectedTrust = {
     windows: 'unsigned_community',
@@ -30,6 +30,79 @@ export function validateReleaseContract(contract) {
   };
   if (JSON.stringify(contract.trust_states) !== JSON.stringify(expectedTrust))
     throw new Error('release trust states are invalid');
+  const expectedPracticalUseEvidence = {
+    windows: [
+      'installed-markdown-lifecycle-receipt.json',
+      'portable-lifecycle-receipt.json',
+    ],
+    macos: ['clean-host-arm64.json', 'clean-host-x86_64.json'],
+    linux: [
+      'clean-ubuntu-22.04-appimage.json',
+      'clean-ubuntu-22.04-deb.json',
+      'clean-ubuntu-24.04-appimage.json',
+      'clean-ubuntu-24.04-deb.json',
+    ],
+  };
+  const expectedPracticalUseRequiredPasses = {
+    windows: [
+      'clean_launch',
+      'text_delivery',
+      'markdown_delivery',
+      'markdown_minimal',
+      'markdown_edit_save_preview',
+      'document_scoped_recovery',
+      'markdown_alpha_beta',
+      'markdown_beta_alpha',
+      'menu_geometry',
+      'toolbar_reserved_region',
+      'geometry_scale_100',
+      'geometry_scale_125',
+      'geometry_scale_150',
+      'geometry_scale_200',
+      'document_preservation',
+    ],
+    macos: [
+      'automated.mount',
+      'automated.copy',
+      'automated.launch',
+      'automated.finder_delivery',
+      'automated.running_instance_delivery',
+      'automated.read',
+      'automated.edit',
+      'automated.save',
+      'automated.recovery',
+      'automated.remove',
+      'automated.cleanup',
+      'automated.universal_architecture',
+    ],
+    linux: [
+      'automated.artifact_integrity',
+      'automated.install_or_extract',
+      'automated.desktop_registration',
+      'automated.mime_registration',
+      'automated.launch',
+      'automated.startup_delivery',
+      'automated.running_instance_delivery',
+      'automated.read',
+      'automated.edit',
+      'automated.save',
+      'automated.metadata',
+      'automated.recovery',
+      'automated.remove',
+      'automated.registration_cleanup',
+      'automated.document_preservation',
+    ],
+  };
+  if (
+    JSON.stringify(contract.practical_use_evidence) !==
+    JSON.stringify(expectedPracticalUseEvidence)
+  )
+    throw new Error('practical-use evidence inventory is invalid');
+  if (
+    JSON.stringify(contract.practical_use_required_passes) !==
+    JSON.stringify(expectedPracticalUseRequiredPasses)
+  )
+    throw new Error('practical-use required-pass inventory is invalid');
   if (contract.manual_validation !== 'deferred_post_release_issue_66')
     throw new Error('manual validation policy is invalid');
   return true;
@@ -85,36 +158,38 @@ export function validateFinalReleaseHandoff({
 }) {
   const tagInstruction = operatorRunbook.match(/^5\.\s+(.+)$/mu)?.[1] ?? '';
   if (
-    !operatorRunbook.includes('S034 pull request is merged') ||
-    !operatorRunbook.includes('reviewed S034 merge commit') ||
-    /reviewed S032 merge commit|S032 pull request is merged/u.test(
+    !operatorRunbook.includes('S038 pull request is merged') ||
+    !operatorRunbook.includes('reviewed S038 merge commit') ||
+    /reviewed S034 merge commit|S034 pull request is merged/u.test(
       operatorRunbook,
     )
   )
-    throw new Error('final handoff omits the S034 release authority');
+    throw new Error('final handoff omits the S038 release authority');
   if (
     tagInstruction !==
-    'Create the annotated tag `v0.1.2` on the reviewed S034 merge commit and push only that tag.'
+    'Create the annotated tag `v0.1.3` on the reviewed S038 merge commit and push only that tag.'
   )
-    throw new Error('final handoff tag instruction does not target S034');
+    throw new Error('final handoff tag instruction does not target S038');
   for (const [source, content] of [
     ['release notes', releaseNotes],
     ['release receipt', releaseReceipt],
     ['operator runbook', operatorRunbook],
     ['changelog', changelog],
   ]) {
-    if (!content.includes('S033'))
-      throw new Error(`${source} omits the S033 security remediation`);
-    if (!content.includes('#167'))
-      throw new Error(`${source} omits issue #167`);
+    if (!content.includes('S035'))
+      throw new Error(`${source} omits the S035 practical-use remediation`);
+    if (!content.includes('#171'))
+      throw new Error(`${source} omits issue #171`);
+    if (!content.includes('#172'))
+      throw new Error(`${source} omits issue #172`);
   }
-  if (!releaseReceipt.includes('S033') || !releaseReceipt.includes('S034'))
+  if (!releaseReceipt.includes('S035') || !releaseReceipt.includes('S038'))
     throw new Error('release receipt omits the final slice chain');
   if (
-    !changelog.includes('Next.js 16.3.3') ||
-    !changelog.includes('`smol-toml` 1.7.1')
+    !changelog.includes('Markdown recovery') ||
+    !changelog.includes('reserved shell chrome')
   )
-    throw new Error('changelog omits the patched dependency versions');
+    throw new Error('changelog omits the practical-use corrections');
   return true;
 }
 
@@ -135,7 +210,7 @@ export function validateGovernedClaims({
   if (forbidden.some((value) => releaseWorkflow.includes(value)))
     throw new Error('paid desktop authority remains in the release workflow');
   if (
-    !releaseWorkflow.includes("- 'v0.1.2'") ||
+    !releaseWorkflow.includes("- 'v0.1.3'") ||
     !releaseWorkflow.includes('workflow_dispatch:')
   )
     throw new Error('release event guards are incomplete');
@@ -244,9 +319,9 @@ export async function checkCommunityRelease(repositoryRoot = root) {
     loadJson(join(repositoryRoot, 'packaging/android/package-contract.json')),
     text(join(repositoryRoot, '.github/workflows/release.yml')),
     text(join(repositoryRoot, 'scripts/check-release-readiness.ps1')),
-    text(join(repositoryRoot, 'docs/releases/v0.1.2.md')),
-    text(join(repositoryRoot, 'docs/releases/v0.1.2-receipt.md')),
-    text(join(repositoryRoot, 'docs/releases/v0.1.2-operator-runbook.md')),
+    text(join(repositoryRoot, 'docs/releases/v0.1.3.md')),
+    text(join(repositoryRoot, 'docs/releases/v0.1.3-receipt.md')),
+    text(join(repositoryRoot, 'docs/releases/v0.1.3-operator-runbook.md')),
     text(join(repositoryRoot, 'CHANGELOG.md')),
     text(join(repositoryRoot, '.github/workflows/android-package.yml')),
     text(join(repositoryRoot, '.github/workflows/macos-package.yml')),
@@ -287,5 +362,5 @@ export async function checkCommunityRelease(repositoryRoot = root) {
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   await checkCommunityRelease();
-  console.log('v0.1.2 community release policy is internally consistent.');
+  console.log('v0.1.3 community release policy is internally consistent.');
 }

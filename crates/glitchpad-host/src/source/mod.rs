@@ -142,6 +142,16 @@ pub(crate) fn revalidate_source(
 
 #[tauri::command]
 #[allow(clippy::needless_pass_by_value)]
+pub(crate) fn note_source_session_revision(
+    host: tauri::State<'_, DesktopSourceHost>,
+    source_id: SourceId,
+    revision: u64,
+) -> Result<(), CoreError> {
+    host.note_session_revision(&source_id, revision)
+}
+
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
 pub(crate) fn save_source(
     host: tauri::State<'_, DesktopSourceHost>,
     request: SaveRequest,
@@ -373,7 +383,16 @@ impl DesktopSourceHost {
         source_id: &SourceId,
         revision: u64,
     ) -> Result<(), CoreError> {
-        self.record_mut(source_id)?.session_revision = revision;
+        let mut record = self.record_mut(source_id)?;
+        if revision < record.session_revision {
+            return Err(CoreError::new(
+                CoreErrorCategory::StaleSession,
+                "The document session revision cannot move backward",
+                false,
+                true,
+            ));
+        }
+        record.session_revision = revision;
         Ok(())
     }
 
@@ -1877,6 +1896,12 @@ pub(crate) mod tests {
             .expect("acquire source");
         host.note_session_revision(&summary.source_id, 2)
             .expect("record session revision");
+        assert_eq!(
+            host.note_session_revision(&summary.source_id, 1)
+                .expect_err("reject regressed session revision")
+                .category,
+            CoreErrorCategory::StaleSession
+        );
         let request = |expected_session_revision, bytes| SaveRequest {
             operation_id: glitchpad_core::source::SaveOperationId(3),
             source_id: summary.source_id.clone(),

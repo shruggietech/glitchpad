@@ -17,6 +17,15 @@ test('repository public release sources satisfy the current authority', async ()
   assert.match(sources.readme, /Android 7\.0\+/u);
 });
 
+test('active public authority rejects the legacy v0.1.2 identity', async () => {
+  const sources = await loadPublicSources();
+  const errors = verifyPublicSources({
+    ...sources,
+    readme: sources.readme.replaceAll('0.1.3', '0.1.2'),
+  });
+  assert.match(errors.join('\n'), /0\.1\.3|current release identity/u);
+});
+
 for (const [name, mutate, expected] of [
   [
     'stale availability',
@@ -59,11 +68,11 @@ for (const [name, mutate, expected] of [
     'stale specification date',
     (sources) => {
       sources.specification = sources.specification.replace(
-        '| Updated | 2026-09-09 |',
+        '| Updated | 2026-09-11 |',
         '| Updated | 2026-08-30 |',
       );
     },
-    /missing \| Updated \| 2026-09-09/,
+    /missing \| Updated \| 2026-09-11/,
   ],
   [
     'primary support navigation',
@@ -73,24 +82,34 @@ for (const [name, mutate, expected] of [
     /primary navigation contains Support or Security/,
   ],
   [
-    'pull request deployment authority',
+    'premature main deployment authority',
     (sources) => {
       sources.workflow = sources.workflow.replaceAll(
-        "github.event_name == 'push'",
-        "github.event_name == 'pull_request'",
+        "inputs.deploy && inputs.release_tag == 'v0.1.3'",
+        "(github.event_name == 'push' && github.ref == 'refs/heads/main') || (inputs.deploy && inputs.release_tag == 'v0.1.3')",
       );
     },
-    /exact trusted deployment authority|missing github\.event_name == 'push'/,
+    /exact trusted deployment authority/,
   ],
   [
-    'stale deployment guard',
+    'missing published release authority',
     (sources) => {
       sources.workflow = sources.workflow.replace(
-        'github.rest.repos.getBranch',
+        'github.rest.repos.getReleaseByTag',
         'github.rest.repos.getCommit',
       );
     },
-    /missing github\.rest\.repos\.getBranch/,
+    /missing github\.rest\.repos\.getReleaseByTag/,
+  ],
+  [
+    'missing post-release retry entry point',
+    (sources) => {
+      sources.workflow = sources.workflow.replace(
+        'workflow_dispatch:\n    inputs:',
+        'workflow_dispatch:',
+      );
+    },
+    /authorized post-release retry entry point/,
   ],
   [
     'missing publisher deployment handoff',

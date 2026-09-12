@@ -3,23 +3,53 @@ param(
     [Parameter(Mandatory = $true)][string] $PortableRoot,
     [Parameter(Mandatory = $true)][string] $TextFixture,
     [Parameter(Mandatory = $true)][string] $MarkdownFixtureMinimal,
+    [Parameter(Mandatory = $true)][string] $MarkdownFixtureEditable,
+    [Parameter(Mandatory = $true)][string] $MarkdownFixtureRecovery,
     [Parameter(Mandatory = $true)][string] $MarkdownFixtureA,
     [Parameter(Mandatory = $true)][string] $MarkdownFixtureB,
+    [Parameter(Mandatory = $true)][string] $Manifest,
+    [Parameter(Mandatory = $true)][string] $ScaleMatrixReceipt,
     [Parameter(Mandatory = $true)][string] $Receipt,
     [string] $ApplicationName = 'Glitchpad.exe'
 )
 
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
+
 $root = (Resolve-Path -LiteralPath $PortableRoot).Path
+$manifestPath = (Resolve-Path -LiteralPath $Manifest).Path
+$manifestDocument = [System.Text.Json.JsonDocument]::Parse([IO.File]::ReadAllText($manifestPath))
+try {
+    $manifestSourceCommit = $manifestDocument.RootElement.GetProperty('source_commit').GetString()
+    $manifestWorkflowIdentity = $manifestDocument.RootElement.GetProperty('workflow_identity').GetString()
+}
+finally { $manifestDocument.Dispose() }
+if ($manifestSourceCommit -cnotmatch '^[a-f0-9]{40}$') { throw 'Package manifest source commit is invalid.' }
+if ([string]::IsNullOrWhiteSpace($manifestWorkflowIdentity)) { throw 'Package manifest workflow identity is invalid.' }
+$manifestDigest = (Get-FileHash -LiteralPath $manifestPath -Algorithm SHA256).Hash.ToLowerInvariant()
+$scaleMatrixReceiptPath = (Resolve-Path -LiteralPath $ScaleMatrixReceipt).Path
+$scaleMatrixDocument = [System.Text.Json.JsonDocument]::Parse([IO.File]::ReadAllText($scaleMatrixReceiptPath))
+try {
+    if ($scaleMatrixDocument.RootElement.GetProperty('candidate_manifest_sha256').GetString() -cne $manifestDigest) { throw 'Scale matrix receipt does not bind the exact package manifest.' }
+    if ($scaleMatrixDocument.RootElement.GetProperty('evidence_authority').GetProperty('source_commit').GetString() -cne $manifestSourceCommit) { throw 'Scale matrix receipt source commit is stale.' }
+    if (-not $scaleMatrixDocument.RootElement.GetProperty('content_free').GetBoolean()) { throw 'Scale matrix receipt is not content-free.' }
+    foreach ($scale in @(100, 125, 150, 200)) {
+        $property = "geometry_scale_$scale"
+        if ($scaleMatrixDocument.RootElement.GetProperty($property).GetString() -cne 'pass') { throw "Scale matrix receipt did not pass $scale percent." }
+    }
+}
+finally { $scaleMatrixDocument.Dispose() }
 $application = Join-Path $root $ApplicationName
 $textFixturePath = (Resolve-Path -LiteralPath $TextFixture).Path
 $markdownFixtureMinimalPath = (Resolve-Path -LiteralPath $MarkdownFixtureMinimal).Path
+$markdownFixtureEditablePath = (Resolve-Path -LiteralPath $MarkdownFixtureEditable).Path
+$markdownFixtureRecoveryPath = (Resolve-Path -LiteralPath $MarkdownFixtureRecovery).Path
 $markdownFixtureAPath = (Resolve-Path -LiteralPath $MarkdownFixtureA).Path
 $markdownFixtureBPath = (Resolve-Path -LiteralPath $MarkdownFixtureB).Path
 $fixtureDigests = @{
     $textFixturePath = (Get-FileHash -LiteralPath $textFixturePath -Algorithm SHA256).Hash
     $markdownFixtureMinimalPath = (Get-FileHash -LiteralPath $markdownFixtureMinimalPath -Algorithm SHA256).Hash
+    $markdownFixtureRecoveryPath = (Get-FileHash -LiteralPath $markdownFixtureRecoveryPath -Algorithm SHA256).Hash
     $markdownFixtureAPath = (Get-FileHash -LiteralPath $markdownFixtureAPath -Algorithm SHA256).Hash
     $markdownFixtureBPath = (Get-FileHash -LiteralPath $markdownFixtureBPath -Algorithm SHA256).Hash
 }
@@ -146,6 +176,15 @@ function Wait-WindowText([Diagnostics.Process] $Process, [string] $Text, [int] $
     throw "Portable UI did not expose text '$Text'."
 }
 
+function Wait-FileText([string] $Path, [string] $ExpectedText, [int] $Seconds = 10) {
+    $deadline = [DateTimeOffset]::UtcNow.AddSeconds($Seconds)
+    do {
+        if ((Test-Path -LiteralPath $Path -PathType Leaf) -and [IO.File]::ReadAllText($Path, [Text.Encoding]::UTF8) -ceq $ExpectedText) { return }
+        Start-Sleep -Milliseconds 50
+    } while ([DateTimeOffset]::UtcNow -lt $deadline)
+    throw "Packaged save did not persist expected content to '$Path'."
+}
+
 function Wait-SafeMarkdownOutcome([Diagnostics.Process] $Process, [string] $ExpectedHeading, [string] $RawSentinel, [int] $Seconds = 20) {
     $deadline = [DateTimeOffset]::UtcNow.AddSeconds($Seconds)
     do {
@@ -188,25 +227,121 @@ function Wait-NamedButton([Diagnostics.Process] $Process, [string] $Name, [int] 
     throw "Portable UI did not expose button '$Name'."
 }
 
-function Invoke-NamedButton([Diagnostics.Process] $Process, [string] $Name) {
-    $button = Wait-NamedButton $Process $Name
-    $patternObject = $null
-    if ($button.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern, [ref]$patternObject)) {
-        ([System.Windows.Automation.InvokePattern]$patternObject).Invoke()
-        return
+function Wait-ActionableNamedElement([Diagnostics.Process] $Process, [string] $Name, [string] $Shortcut = '', [int] $Seconds = 10) {
+    $deadline = [DateTimeOffset]::UtcNow.AddSeconds($Seconds)
+    do {
+        $window = Get-WindowRoot $Process
+        if ($window) {
+            $candidates = [Collections.Generic.List[System.Windows.Automation.AutomationElement]]::new()
+            $exact = Find-NamedElement $window $Name
+            if ($exact) { $candidates.Add($exact) }
+            if ($Shortcut) {
+                $shortcutName = '^{0}\s*{1}$' -f [Regex]::Escape($Name), [Regex]::Escape($Shortcut)
+                foreach ($candidate in $window.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)) {
+                    try {
+                        if ($candidate.Current.Name -match $shortcutName) { $candidates.Add($candidate) }
+                    }
+                    catch { continue }
+                }
+            }
+            foreach ($candidate in $candidates) {
+                $element = $candidate
+                while ($element) {
+                    try {
+                        $bounds = $element.Current.BoundingRectangle
+                        $patternObject = $null
+                        if (-not $element.Current.IsOffscreen -and $bounds.Width -gt 0 -and $bounds.Height -gt 0 -and $element.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern, [ref]$patternObject)) { return $element }
+                        $element = [System.Windows.Automation.TreeWalker]::ControlViewWalker.GetParent($element)
+                    }
+                    catch { break }
+                }
+            }
+        }
+        Start-Sleep -Milliseconds 50
+    } while ([DateTimeOffset]::UtcNow -lt $deadline)
+    throw "Portable UI did not expose actionable element '$Name'."
+}
+
+function Click-AutomationElement([Diagnostics.Process] $Process, [System.Windows.Automation.AutomationElement] $Element, [string] $Description) {
+    if ($Element.Current.IsOffscreen) { throw "Portable UI element '$Description' is offscreen and cannot be clicked." }
+    try {
+        $point = $Element.GetClickablePoint()
+        $clickX = $point.X
+        $clickY = $point.Y
     }
-    if ($button.Current.IsOffscreen) { throw "Portable UI button '$Name' is offscreen and cannot be activated." }
-    $point = $button.GetClickablePoint()
+    catch {
+        $bounds = $Element.Current.BoundingRectangle
+        if ($bounds.Width -le 0 -or $bounds.Height -le 0) { throw "Portable UI element '$Description' has no usable click geometry." }
+        $clickX = $bounds.X + ($bounds.Width / 2)
+        $clickY = $bounds.Y + ($bounds.Height / 2)
+    }
     $previousCursor = [System.Windows.Forms.Cursor]::Position
     try {
         [GlitchpadNativeInput]::SetForegroundWindow($Process.MainWindowHandle) | Out-Null
-        [GlitchpadNativeInput]::SetCursorPos([Math]::Round($point.X), [Math]::Round($point.Y)) | Out-Null
+        [GlitchpadNativeInput]::SetCursorPos([Math]::Round($clickX), [Math]::Round($clickY)) | Out-Null
         Start-Sleep -Milliseconds 50
         [GlitchpadNativeInput]::mouse_event(0x0002, 0, 0, 0, [UIntPtr]::Zero)
         [GlitchpadNativeInput]::mouse_event(0x0004, 0, 0, 0, [UIntPtr]::Zero)
     }
     finally {
         [GlitchpadNativeInput]::SetCursorPos($previousCursor.X, $previousCursor.Y) | Out-Null
+    }
+}
+
+function Invoke-AutomationElement([Diagnostics.Process] $Process, [System.Windows.Automation.AutomationElement] $Element, [string] $Description) {
+    $patternObject = $null
+    if ($Element.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern, [ref]$patternObject)) {
+        try {
+            ([System.Windows.Automation.InvokePattern]$patternObject).Invoke()
+            return
+        }
+        catch { }
+    }
+    Click-AutomationElement $Process $Element $Description
+}
+
+function Invoke-NamedButton([Diagnostics.Process] $Process, [string] $Name) {
+    $button = Wait-NamedButton $Process $Name
+    Invoke-AutomationElement $Process $button $Name
+}
+
+function Invoke-MenuCommand([Diagnostics.Process] $Process, [string] $Name, [string] $Shortcut = '') {
+    Invoke-NamedButton $Process 'Menu'
+    $item = Wait-ActionableNamedElement $Process $Name $Shortcut
+    Click-AutomationElement $Process $item $Name
+}
+
+function Exercise-MarkdownEditSavePreview([Diagnostics.Process] $Process, [string] $Path) {
+    $name = [IO.Path]::GetFileName($Path)
+    $initialText = 'S038 Editable Markdown 1A2B'
+    $savedText = 'S038 Saved Markdown 4C7D'
+    Wait-NamedElement $Process $initialText | Out-Null
+    Invoke-MenuCommand $Process 'Edit source'
+    $editor = Wait-NamedElement $Process ("{0} text editor" -f $name)
+    $editor.SetFocus()
+    [System.Windows.Forms.SendKeys]::SendWait('^a')
+    [System.Windows.Forms.SendKeys]::SendWait($savedText)
+    Wait-WindowText $Process $savedText
+    Invoke-MenuCommand $Process 'Save' 'Ctrl+S'
+    Wait-FileText $Path $savedText
+    Invoke-MenuCommand $Process 'Preview'
+    Wait-SafeMarkdownOutcome $Process $savedText 'S038_EDIT_RAW_SENTINEL'
+    if ([IO.File]::ReadAllText($Path, [Text.Encoding]::UTF8) -ne $savedText) {
+        throw 'The exact packaged application did not persist the expected Markdown edit.'
+    }
+}
+
+function Exercise-MarkdownRecovery([Diagnostics.Process] $Process, [string] $Path, [string] $ProbeDirectory) {
+    $name = [IO.Path]::GetFileName($Path)
+    Wait-NamedButton $Process 'View source' | Out-Null
+    Invoke-NamedButton $Process 'View source'
+    Wait-NamedElement $Process 'Rendered preview is paused after a contained failure. Source remains available.' | Out-Null
+    Wait-NamedElement $Process ("{0} text editor" -f $name) | Out-Null
+    Wait-WindowText $Process 'S038 Recovery Markdown 6D2E'
+    Invoke-NamedButton $Process 'Retry preview'
+    Wait-SafeMarkdownOutcome $Process 'S038 Recovery Markdown 6D2E' 'S038_RECOVERY_RAW_SENTINEL'
+    if (-not (Test-Path -LiteralPath (Join-Path $ProbeDirectory 'markdown-failure-consumed.marker') -PathType Leaf)) {
+        throw 'The packaged application did not consume the requested Markdown failure.'
     }
 }
 
@@ -379,6 +514,31 @@ finally {
     if (-not $minimalProcess.HasExited) { Stop-Process -Id $minimalProcess.Id -Force }
     Remove-Item -LiteralPath $minimalState -Recurse -Force -ErrorAction SilentlyContinue
 }
+$editableState = Join-Path ([IO.Path]::GetTempPath()) ("glitchpad-s038-editable-{0}" -f [Guid]::NewGuid().ToString('N'))
+New-Item -ItemType Directory -Path $editableState -Force | Out-Null
+$isolatedEnvironment = @{ APPDATA = $editableState; LOCALAPPDATA = $editableState }
+$editableProcess = Start-Process -FilePath $application -ArgumentList ('"{0}"' -f $markdownFixtureEditablePath) -PassThru -WindowStyle Hidden -Environment $isolatedEnvironment
+try {
+    Exercise-MarkdownEditSavePreview $editableProcess $markdownFixtureEditablePath
+}
+finally {
+    if (-not $editableProcess.HasExited) { Stop-Process -Id $editableProcess.Id -Force }
+    Remove-Item -LiteralPath $editableState -Recurse -Force -ErrorAction SilentlyContinue
+}
+$recoveryState = Join-Path ([IO.Path]::GetTempPath()) ("glitchpad-s038-recovery-{0}" -f [Guid]::NewGuid().ToString('N'))
+$recoveryProbe = Join-Path $recoveryState 'probe'
+New-Item -ItemType Directory -Path $recoveryProbe -Force | Out-Null
+[IO.File]::WriteAllText((Join-Path $recoveryProbe 'enabled.marker'), "enabled`n", [Text.UTF8Encoding]::new($false))
+[IO.File]::WriteAllText((Join-Path $recoveryProbe 'markdown-failure-request.marker'), "requested`n", [Text.UTF8Encoding]::new($false))
+$recoveryEnvironment = @{ APPDATA = $recoveryState; LOCALAPPDATA = $recoveryState; GLITCHPAD_LIFECYCLE_PROBE_DIR = $recoveryProbe }
+$recoveryProcess = Start-Process -FilePath $application -ArgumentList ('"{0}"' -f $markdownFixtureRecoveryPath) -PassThru -WindowStyle Hidden -Environment $recoveryEnvironment
+try {
+    Exercise-MarkdownRecovery $recoveryProcess $markdownFixtureRecoveryPath $recoveryProbe
+}
+finally {
+    if (-not $recoveryProcess.HasExited) { Stop-Process -Id $recoveryProcess.Id -Force }
+    Remove-Item -LiteralPath $recoveryState -Recurse -Force -ErrorAction SilentlyContinue
+}
 $webviewState = Join-Path ([IO.Path]::GetTempPath()) ("glitchpad-s035-webview-{0}" -f [Guid]::NewGuid().ToString('N'))
 $webviewProbe = Join-Path $webviewState 'probe'
 New-Item -ItemType Directory -Path $webviewProbe -Force | Out-Null
@@ -404,13 +564,21 @@ foreach ($fixture in $fixtureDigests.GetEnumerator()) {
     if ((Get-FileHash -LiteralPath $fixture.Key -Algorithm SHA256).Hash -ne $fixture.Value) { throw 'Portable lifecycle modified a user document fixture.' }
 }
 [ordered]@{
-    schema_version = 4
+    schema_version = 5
+    candidate_manifest_sha256 = $manifestDigest
+    evidence_authority = [ordered]@{
+        kind = 'github_actions_workflow'
+        workflow_identity = $manifestWorkflowIdentity
+        source_commit = $manifestSourceCommit
+    }
     content_free = $true
     clean_launch = 'pass'
     fixture_absence = 'pass'
     text_delivery = 'pass'
     markdown_delivery = 'pass'
     markdown_minimal = 'pass'
+    markdown_edit_save_preview = 'pass'
+    document_scoped_recovery = 'pass'
     markdown_alpha_beta = 'pass'
     markdown_beta_alpha = 'pass'
     blank_viewport_absence = 'pass'
@@ -418,6 +586,10 @@ foreach ($fixture in $fixtureDigests.GetEnumerator()) {
     active_document_identity = 'pass'
     menu_geometry = 'pass'
     toolbar_reserved_region = 'pass'
+    geometry_scale_100 = 'pass'
+    geometry_scale_125 = 'pass'
+    geometry_scale_150 = 'pass'
+    geometry_scale_200 = 'pass'
     trigger_stability = 'pass'
     popup_viewport_containment = 'pass'
     document_scroll_preserved = 'pass'

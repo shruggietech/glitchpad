@@ -32,7 +32,7 @@ export function generateAndroidSbom(
   sourceCommit,
   gradleReport,
   artifactDigests,
-  { version = '0.1.2' } = {},
+  { version = '0.1.3' } = {},
 ) {
   const base = generateDesktopSbom(metadata, pnpmListing, sourceCommit, {
     platform: 'Android',

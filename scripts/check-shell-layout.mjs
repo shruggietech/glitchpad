@@ -1,11 +1,26 @@
 import assert from 'node:assert/strict';
-import { readFile, readdir } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { readFile, readdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import puppeteer from 'puppeteer';
 
 const repositoryRoot = fileURLToPath(new URL('../', import.meta.url));
+const argument = (name) => {
+  const index = process.argv.indexOf(name);
+  return index >= 0 ? (process.argv[index + 1] ?? '') : '';
+};
+const receiptPath = argument('--receipt');
+const manifestPath = argument('--manifest');
+const sourceCommit = argument('--source-commit');
+const receiptRequested = Boolean(receiptPath || manifestPath || sourceCommit);
+if (receiptRequested && (!receiptPath || !manifestPath || !/^[a-f0-9]{40}$/u.test(sourceCommit)))
+  throw new Error('scale receipt requires receipt, manifest, and source commit arguments');
+const manifestBytes = receiptRequested ? await readFile(manifestPath) : null;
+const manifest = manifestBytes ? JSON.parse(manifestBytes.toString('utf8')) : null;
+if (manifest && manifest.source_commit !== sourceCommit)
+  throw new Error('scale receipt manifest source commit is stale');
 const assetDirectory = join(
   repositoryRoot,
   'apps',
@@ -24,6 +39,12 @@ const browser = await puppeteer.launch({
   args: ['--no-sandbox', '--disable-dev-shm-usage'],
 });
 let cases = 0;
+const scaleCases = new Map([
+  [100, 0],
+  [125, 0],
+  [150, 0],
+  [200, 0],
+]);
 try {
   const page = await browser.newPage();
   const client = await page.createCDPSession();
@@ -257,6 +278,8 @@ try {
             'keyboard dismissal must preserve document scroll position',
           );
           cases += 1;
+          const scale = Math.round(deviceScaleFactor * 100);
+          scaleCases.set(scale, (scaleCases.get(scale) ?? 0) + 1);
           variant += 1;
         }
       }
@@ -269,3 +292,29 @@ try {
 process.stdout.write(
   `Shell layout geometry passed ${cases} production-CSS cases.\n`,
 );
+if (receiptRequested && manifestBytes && manifest) {
+  const results = Object.fromEntries(
+    [...scaleCases].map(([scale, count]) => [
+      `geometry_scale_${scale}`,
+      count === 12 ? 'pass' : 'fail',
+    ]),
+  );
+  assert.ok(Object.values(results).every((result) => result === 'pass'));
+  await writeFile(
+    receiptPath,
+    `${JSON.stringify({
+      schema_version: 1,
+      candidate_manifest_sha256: createHash('sha256').update(manifestBytes).digest('hex'),
+      evidence_authority: {
+        kind: 'github_actions_workflow',
+        workflow_identity: manifest.workflow_identity,
+        source_commit: sourceCommit,
+      },
+      content_free: true,
+      ...results,
+      case_count: cases,
+      completed_utc: new Date().toISOString(),
+    }, null, 2)}\n`,
+    'utf8',
+  );
+}

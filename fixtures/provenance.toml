@@ -154,10 +154,10 @@ source = "Original Glitchpad S018 performance budget catalog"
 author = "ShruggieTech contributors"
 license = "Apache-2.0"
 redistribution = true
-sha256 = "8fe02476b92e38fdb9685b30bed1e298a5bbf9640a8077a7058ab4650c95e35c"
+sha256 = "4df86b4676cf1285b903f060deeb5b46c2c27e913cb9d696d728a38b86b138d4"
 sensitivity_review = "Synthetic metric and profile declarations only; no production, personal, path, or document data"
 format = "JSON"
-purpose = "Versioned v0.1.2 thresholds, evidence applicability, scenarios, and reference-profile policy"
+purpose = "Versioned v0.1.3 thresholds, evidence applicability, scenarios, and reference-profile policy"
 expected_result = "Every required performance metric classifies exact targets, warnings, hard failures, and inactive package evidence deterministically"
 
 [[fixture]]
@@ -166,7 +166,7 @@ source = "Original Glitchpad S018 performance scenario corpus"
 author = "ShruggieTech contributors"
 license = "Apache-2.0"
 redistribution = true
-sha256 = "004272aa68739065cfeed717620cac6d0a76057de1c507e06dc6754281201bfa"
+sha256 = "df71279138acfabc81a532d9726fcd6c7a35b61c91c76dbe0fec0eab3798e710"
 sensitivity_review = "Synthetic recipes, boundaries, operation names, and forbidden key names only; no production or personal data"
 format = "JSON"
 purpose = "Deterministic generated workloads, exact renderer boundaries, cancellation coverage, and resource ownership kinds"

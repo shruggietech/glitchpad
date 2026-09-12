@@ -238,7 +238,7 @@ fn package(repository: &Path) -> Result<(), String> {
     run(repository, "pnpm", ["run", "build"])?;
     run(repository, "cargo", ["build", "--workspace", "--locked"])?;
     println!(
-        "Development artifacts built. Official distribution remains restricted to the v0.1.2 tag workflow."
+        "Development artifacts built. Official distribution remains restricted to the v0.1.3 tag workflow."
     );
     Ok(())
 }

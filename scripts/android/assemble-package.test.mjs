@@ -31,22 +31,22 @@ test('assembly copies exact final bytes and emits canonical checksums and manife
   const output = join(root, 'out');
   const result = await assembleAndroidPackage({
     contract: {
-      candidate_version: '0.1.2',
+      candidate_version: '0.1.3',
       artifacts: [
         {
           role: 'universal',
           kind: 'apk',
-          name: 'glitchpad-0.1.2-android-universal.apk',
+          name: 'glitchpad-0.1.3-android-universal.apk',
         },
         {
           role: 'arm64',
           kind: 'apk',
-          name: 'glitchpad-0.1.2-android-arm64.apk',
+          name: 'glitchpad-0.1.3-android-arm64.apk',
         },
         {
           role: 'play',
           kind: 'aab',
-          name: 'glitchpad-0.1.2-android-universal.aab',
+          name: 'glitchpad-0.1.3-android-universal.aab',
         },
       ],
       candidate_trust: { publication_status: 'blocked_candidate' },
@@ -60,7 +60,7 @@ test('assembly copies exact final bytes and emits canonical checksums and manife
   assert.equal(result.artifacts.length, 3);
   assert.match(
     await readFile(join(output, 'SHA256SUMS'), 'utf8'),
-    /glitchpad-0\.1\.2-android-arm64\.apk/u,
+    /glitchpad-0\.1\.3-android-arm64\.apk/u,
   );
   const manifest = JSON.parse(
     await readFile(join(output, 'android-package-manifest.json'), 'utf8'),

@@ -46,6 +46,7 @@ interface MarkdownSurfaceProps {
   session: ShellSession;
   projectionSuppressed?: boolean;
   recoveryAttempt?: number;
+  lifecycleFailureProbe?: boolean;
   onEnterRecoverySource?: () => void;
   onDocumentChange: (
     id: string,
@@ -78,6 +79,10 @@ interface SafeTreeProps {
   onLocalLink: (candidate: LinkCandidate) => void;
   localAssetGateway: MarkdownLocalAssetGateway;
   onMermaidSource: (range: SourceRange | null) => void;
+}
+
+function LifecycleMarkdownFailure(): null {
+  throw new Error('Lifecycle Markdown preview failure probe');
 }
 
 const safeClassName = (value: unknown): string | undefined => {
@@ -347,6 +352,7 @@ export const MarkdownSurface = forwardRef<
     session,
     projectionSuppressed = false,
     recoveryAttempt = 0,
+    lifecycleFailureProbe = false,
     onEnterRecoverySource,
     onDocumentChange,
     onLanguageChange,
@@ -687,6 +693,7 @@ export const MarkdownSurface = forwardRef<
 
   return (
     <div className="markdown-surface">
+      {lifecycleFailureProbe && recoveryAttempt === 0 && <LifecycleMarkdownFailure />}
       <span className="visually-hidden" aria-live="polite">
         {status === 'scheduled' || status === 'rendering'
           ? 'Rendering preview'

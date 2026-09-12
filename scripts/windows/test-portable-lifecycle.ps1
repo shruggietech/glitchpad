@@ -16,38 +16,29 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-function Get-RequiredJsonValue([object] $Document, [string[]] $Path) {
-    $current = $Document
-    foreach ($key in $Path) {
-        if ($null -eq $current) { throw "Required receipt path '$($Path -join '.')' is invalid." }
-        $property = $null
-        foreach ($candidate in $current.PSObject.Properties) {
-            if ([string]::Equals([string]$candidate.Name, $key, [StringComparison]::Ordinal)) {
-                $property = $candidate
-                break
-            }
-        }
-        if ($null -eq $property) { throw "Required receipt path '$($Path -join '.')' is missing." }
-        $current = $property.Value
-    }
-    return $current
-}
-
 $root = (Resolve-Path -LiteralPath $PortableRoot).Path
 $manifestPath = (Resolve-Path -LiteralPath $Manifest).Path
-$manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
-$manifestSourceCommit = [string](Get-RequiredJsonValue $manifest 'source_commit')
+$manifestDocument = [System.Text.Json.JsonDocument]::Parse([IO.File]::ReadAllText($manifestPath))
+try {
+    $manifestSourceCommit = $manifestDocument.RootElement.GetProperty('source_commit').GetString()
+    $manifestWorkflowIdentity = $manifestDocument.RootElement.GetProperty('workflow_identity').GetString()
+}
+finally { $manifestDocument.Dispose() }
 if ($manifestSourceCommit -cnotmatch '^[a-f0-9]{40}$') { throw 'Package manifest source commit is invalid.' }
+if ([string]::IsNullOrWhiteSpace($manifestWorkflowIdentity)) { throw 'Package manifest workflow identity is invalid.' }
 $manifestDigest = (Get-FileHash -LiteralPath $manifestPath -Algorithm SHA256).Hash.ToLowerInvariant()
 $scaleMatrixReceiptPath = (Resolve-Path -LiteralPath $ScaleMatrixReceipt).Path
-$scaleMatrix = Get-Content -LiteralPath $scaleMatrixReceiptPath -Raw | ConvertFrom-Json
-if ([string](Get-RequiredJsonValue $scaleMatrix 'candidate_manifest_sha256') -cne $manifestDigest) { throw 'Scale matrix receipt does not bind the exact package manifest.' }
-if ([string](Get-RequiredJsonValue $scaleMatrix @('evidence_authority', 'source_commit')) -cne $manifestSourceCommit) { throw 'Scale matrix receipt source commit is stale.' }
-if ((Get-RequiredJsonValue $scaleMatrix 'content_free') -ne $true) { throw 'Scale matrix receipt is not content-free.' }
-foreach ($scale in @(100, 125, 150, 200)) {
-    $property = "geometry_scale_$scale"
-    if ([string](Get-RequiredJsonValue $scaleMatrix $property) -cne 'pass') { throw "Scale matrix receipt did not pass $scale percent." }
+$scaleMatrixDocument = [System.Text.Json.JsonDocument]::Parse([IO.File]::ReadAllText($scaleMatrixReceiptPath))
+try {
+    if ($scaleMatrixDocument.RootElement.GetProperty('candidate_manifest_sha256').GetString() -cne $manifestDigest) { throw 'Scale matrix receipt does not bind the exact package manifest.' }
+    if ($scaleMatrixDocument.RootElement.GetProperty('evidence_authority').GetProperty('source_commit').GetString() -cne $manifestSourceCommit) { throw 'Scale matrix receipt source commit is stale.' }
+    if (-not $scaleMatrixDocument.RootElement.GetProperty('content_free').GetBoolean()) { throw 'Scale matrix receipt is not content-free.' }
+    foreach ($scale in @(100, 125, 150, 200)) {
+        $property = "geometry_scale_$scale"
+        if ($scaleMatrixDocument.RootElement.GetProperty($property).GetString() -cne 'pass') { throw "Scale matrix receipt did not pass $scale percent." }
+    }
 }
+finally { $scaleMatrixDocument.Dispose() }
 $application = Join-Path $root $ApplicationName
 $textFixturePath = (Resolve-Path -LiteralPath $TextFixture).Path
 $markdownFixtureMinimalPath = (Resolve-Path -LiteralPath $MarkdownFixtureMinimal).Path
@@ -516,7 +507,7 @@ foreach ($fixture in $fixtureDigests.GetEnumerator()) {
     candidate_manifest_sha256 = $manifestDigest
     evidence_authority = [ordered]@{
         kind = 'github_actions_workflow'
-        workflow_identity = [string](Get-RequiredJsonValue $manifest 'workflow_identity')
+        workflow_identity = $manifestWorkflowIdentity
         source_commit = $manifestSourceCommit
     }
     content_free = $true

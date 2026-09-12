@@ -218,15 +218,18 @@ function Wait-NamedButton([Diagnostics.Process] $Process, [string] $Name, [int] 
     throw "Portable UI did not expose button '$Name'."
 }
 
-function Invoke-NamedButton([Diagnostics.Process] $Process, [string] $Name) {
-    $button = Wait-NamedButton $Process $Name
+function Invoke-AutomationElement([Diagnostics.Process] $Process, [System.Windows.Automation.AutomationElement] $Element, [string] $Description) {
     $patternObject = $null
-    if ($button.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern, [ref]$patternObject)) {
-        ([System.Windows.Automation.InvokePattern]$patternObject).Invoke()
-        return
+    $invokeFailure = $null
+    if ($Element.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern, [ref]$patternObject)) {
+        try {
+            ([System.Windows.Automation.InvokePattern]$patternObject).Invoke()
+            return
+        }
+        catch { $invokeFailure = $_.Exception.Message }
     }
-    if ($button.Current.IsOffscreen) { throw "Portable UI button '$Name' is offscreen and cannot be activated." }
-    $point = $button.GetClickablePoint()
+    if ($Element.Current.IsOffscreen) { throw "Portable UI element '$Description' is offscreen and cannot be activated after UI Automation invocation failed: $invokeFailure" }
+    $point = $Element.GetClickablePoint()
     $previousCursor = [System.Windows.Forms.Cursor]::Position
     try {
         [GlitchpadNativeInput]::SetForegroundWindow($Process.MainWindowHandle) | Out-Null
@@ -240,14 +243,15 @@ function Invoke-NamedButton([Diagnostics.Process] $Process, [string] $Name) {
     }
 }
 
+function Invoke-NamedButton([Diagnostics.Process] $Process, [string] $Name) {
+    $button = Wait-NamedButton $Process $Name
+    Invoke-AutomationElement $Process $button $Name
+}
+
 function Invoke-MenuCommand([Diagnostics.Process] $Process, [string] $Name) {
     Invoke-NamedButton $Process 'Menu'
     $item = Wait-NamedElement $Process $Name
-    $patternObject = $null
-    if (-not $item.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern, [ref]$patternObject)) {
-        throw "Portable UI command '$Name' cannot be invoked."
-    }
-    ([System.Windows.Automation.InvokePattern]$patternObject).Invoke()
+    Invoke-AutomationElement $Process $item $Name
 }
 
 function Exercise-MarkdownEditSavePreview([Diagnostics.Process] $Process, [string] $Path) {

@@ -89,6 +89,10 @@ test('Windows lifecycle policy rejects removal of content-first release assertio
     () => validatePortableSmokeContract(lifecycle.replaceAll("GetProperty('source_commit').GetString()", "GetProperty('sourceCommit').GetString()"), workflow),
     /Windows Markdown lifecycle omits/u,
   );
+  assert.throws(
+    () => validatePortableSmokeContract(lifecycle.replace('catch { $invokeFailure = $_.Exception.Message }', ''), workflow),
+    /Windows Markdown lifecycle omits/u,
+  );
   assert.match(installerLifecycle, /Wait-RenderedMarkdownHeading \$associationProcess 'S035 Minimal Markdown 5E8A'/u);
 });
 

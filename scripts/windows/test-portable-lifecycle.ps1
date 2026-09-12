@@ -218,6 +218,27 @@ function Wait-NamedButton([Diagnostics.Process] $Process, [string] $Name, [int] 
     throw "Portable UI did not expose button '$Name'."
 }
 
+function Wait-ActionableNamedElement([Diagnostics.Process] $Process, [string] $Name, [int] $Seconds = 10) {
+    $deadline = [DateTimeOffset]::UtcNow.AddSeconds($Seconds)
+    do {
+        $window = Get-WindowRoot $Process
+        if ($window) {
+            $element = Find-NamedElement $window $Name
+            while ($element) {
+                try {
+                    $bounds = $element.Current.BoundingRectangle
+                    $patternObject = $null
+                    if (-not $element.Current.IsOffscreen -and $bounds.Width -gt 0 -and $bounds.Height -gt 0 -and $element.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern, [ref]$patternObject)) { return $element }
+                    $element = [System.Windows.Automation.TreeWalker]::ControlViewWalker.GetParent($element)
+                }
+                catch { break }
+            }
+        }
+        Start-Sleep -Milliseconds 50
+    } while ([DateTimeOffset]::UtcNow -lt $deadline)
+    throw "Portable UI did not expose actionable element '$Name'."
+}
+
 function Invoke-AutomationElement([Diagnostics.Process] $Process, [System.Windows.Automation.AutomationElement] $Element, [string] $Description) {
     $patternObject = $null
     $invokeFailure = $null
@@ -260,7 +281,7 @@ function Invoke-NamedButton([Diagnostics.Process] $Process, [string] $Name) {
 
 function Invoke-MenuCommand([Diagnostics.Process] $Process, [string] $Name) {
     Invoke-NamedButton $Process 'Menu'
-    $item = Wait-NamedButton $Process $Name
+    $item = Wait-ActionableNamedElement $Process $Name
     Invoke-AutomationElement $Process $item $Name
 }
 

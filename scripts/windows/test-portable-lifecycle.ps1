@@ -16,37 +16,37 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-function Get-RequiredDictionaryValue([Collections.IDictionary] $Dictionary, [string[]] $Path) {
-    $current = [object]$Dictionary
+function Get-RequiredJsonValue([object] $Document, [string[]] $Path) {
+    $current = $Document
     foreach ($key in $Path) {
-        if ($current -isnot [Collections.IDictionary]) { throw "Required receipt path '$($Path -join '.')' is invalid." }
-        $found = $false
-        foreach ($entry in ([Collections.IDictionary]$current).GetEnumerator()) {
-            if ([string]::Equals([string]$entry.Key, $key, [StringComparison]::Ordinal)) {
-                $current = $entry.Value
-                $found = $true
+        if ($null -eq $current) { throw "Required receipt path '$($Path -join '.')' is invalid." }
+        $property = $null
+        foreach ($candidate in $current.PSObject.Properties) {
+            if ([string]::Equals([string]$candidate.Name, $key, [StringComparison]::Ordinal)) {
+                $property = $candidate
                 break
             }
         }
-        if (-not $found) { throw "Required receipt path '$($Path -join '.')' is missing." }
+        if ($null -eq $property) { throw "Required receipt path '$($Path -join '.')' is missing." }
+        $current = $property.Value
     }
     return $current
 }
 
 $root = (Resolve-Path -LiteralPath $PortableRoot).Path
 $manifestPath = (Resolve-Path -LiteralPath $Manifest).Path
-$manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json -AsHashtable
-$manifestSourceCommit = [string](Get-RequiredDictionaryValue $manifest 'source_commit')
+$manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
+$manifestSourceCommit = [string](Get-RequiredJsonValue $manifest 'source_commit')
 if ($manifestSourceCommit -cnotmatch '^[a-f0-9]{40}$') { throw 'Package manifest source commit is invalid.' }
 $manifestDigest = (Get-FileHash -LiteralPath $manifestPath -Algorithm SHA256).Hash.ToLowerInvariant()
 $scaleMatrixReceiptPath = (Resolve-Path -LiteralPath $ScaleMatrixReceipt).Path
-$scaleMatrix = Get-Content -LiteralPath $scaleMatrixReceiptPath -Raw | ConvertFrom-Json -AsHashtable
-if ([string](Get-RequiredDictionaryValue $scaleMatrix 'candidate_manifest_sha256') -cne $manifestDigest) { throw 'Scale matrix receipt does not bind the exact package manifest.' }
-if ([string](Get-RequiredDictionaryValue $scaleMatrix @('evidence_authority', 'source_commit')) -cne $manifestSourceCommit) { throw 'Scale matrix receipt source commit is stale.' }
-if ((Get-RequiredDictionaryValue $scaleMatrix 'content_free') -ne $true) { throw 'Scale matrix receipt is not content-free.' }
+$scaleMatrix = Get-Content -LiteralPath $scaleMatrixReceiptPath -Raw | ConvertFrom-Json
+if ([string](Get-RequiredJsonValue $scaleMatrix 'candidate_manifest_sha256') -cne $manifestDigest) { throw 'Scale matrix receipt does not bind the exact package manifest.' }
+if ([string](Get-RequiredJsonValue $scaleMatrix @('evidence_authority', 'source_commit')) -cne $manifestSourceCommit) { throw 'Scale matrix receipt source commit is stale.' }
+if ((Get-RequiredJsonValue $scaleMatrix 'content_free') -ne $true) { throw 'Scale matrix receipt is not content-free.' }
 foreach ($scale in @(100, 125, 150, 200)) {
     $property = "geometry_scale_$scale"
-    if ([string](Get-RequiredDictionaryValue $scaleMatrix $property) -cne 'pass') { throw "Scale matrix receipt did not pass $scale percent." }
+    if ([string](Get-RequiredJsonValue $scaleMatrix $property) -cne 'pass') { throw "Scale matrix receipt did not pass $scale percent." }
 }
 $application = Join-Path $root $ApplicationName
 $textFixturePath = (Resolve-Path -LiteralPath $TextFixture).Path
@@ -516,7 +516,7 @@ foreach ($fixture in $fixtureDigests.GetEnumerator()) {
     candidate_manifest_sha256 = $manifestDigest
     evidence_authority = [ordered]@{
         kind = 'github_actions_workflow'
-        workflow_identity = [string](Get-RequiredDictionaryValue $manifest 'workflow_identity')
+        workflow_identity = [string](Get-RequiredJsonValue $manifest 'workflow_identity')
         source_commit = $manifestSourceCommit
     }
     content_free = $true

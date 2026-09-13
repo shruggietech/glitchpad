@@ -233,7 +233,7 @@ for (const [name, mutate, expected] of [
     (receipt) => {
       receipt.markdown_delivery = 'failed';
     },
-    /failed practical-use result/u,
+    /required pass markdown_delivery/u,
   ],
   [
     'privacy-bearing field',
@@ -248,13 +248,6 @@ for (const [name, mutate, expected] of [
       receipt.Document_Content = '# private document';
     },
     /prohibited field/u,
-  ],
-  [
-    'failed practical result nested in an array',
-    (receipt) => {
-      receipt.additional_results = ['pass', 'hard_failure'];
-    },
-    /failed practical-use result/u,
   ],
 ]) {
   test(`rejects ${name}`, async () => {
@@ -275,3 +268,22 @@ for (const [name, mutate, expected] of [
     );
   });
 }
+
+test('preserves a disclosed non-gating failure when every required result passes', async () => {
+  const fixture = await releaseFixture();
+  const target = fixture.receipts.get('macos/clean-host-x86_64.json');
+  target.receipt.performance = {
+    cold_startup_p95_ms: 3229,
+    cold_startup_classification: 'failure',
+  };
+  await writeFile(target.path, JSON.stringify(target.receipt));
+
+  const manifest = await assembleCommunityRelease({
+    input: fixture.input,
+    output: fixture.output,
+    sourceCommit,
+    contractPath: fixture.contractPath,
+  });
+
+  assert.deepEqual(manifest.practical_use_evidence, practicalUseEvidence);
+});

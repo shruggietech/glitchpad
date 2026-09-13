@@ -308,6 +308,31 @@ test('Hosted Mermaid validation selects the installed headless shell', async () 
   assert.ok(configuration.args.includes('--no-sandbox'));
 });
 
+test('Android delivery instrumentation gets a bounded clean-state retry without erasing restoration evidence', async () => {
+  const runner = await readFile(
+    join(repositoryRoot, 'scripts', 'run-android-instrumentation.sh'),
+    'utf8',
+  );
+  const workflow = await readFile(
+    join(repositoryRoot, '.github', 'workflows', 'ci.yml'),
+    'utf8',
+  );
+
+  assert.match(runner, /for attempt in 1 2; do/u);
+  assert.match(
+    runner,
+    /ANDROID_INSTRUMENTATION_RESET_APP_DATA:-false.*pm clear com\.shruggietech\.glitchpad/su,
+  );
+  assert.match(
+    workflow,
+    /ANDROID_INSTRUMENTATION_RESET_APP_DATA=true bash scripts\/run-android-instrumentation\.sh[^\n]+delivery_evidence=/u,
+  );
+  assert.doesNotMatch(
+    workflow,
+    /ANDROID_INSTRUMENTATION_RESET_APP_DATA=true[^\n]+RestorationInstrumentedTest/u,
+  );
+});
+
 for (const [label, source] of [
   ['package manager', 'await pnpm();'],
   ['PowerShell', 'await powershell();'],

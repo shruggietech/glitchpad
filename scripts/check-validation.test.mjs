@@ -333,6 +333,24 @@ test('Android delivery instrumentation gets a bounded clean-state retry without 
   );
 });
 
+test('Android connected tests preserve crash evidence and retry from clean app state', async () => {
+  const runner = await readFile(
+    join(repositoryRoot, 'scripts', 'run-android-connected-tests.sh'),
+    'utf8',
+  );
+
+  assert.match(runner, /for attempt in 1 2; do/u);
+  assert.match(
+    runner,
+    /adb logcat -d -t 4000 > "\$logcat_output" 2>&1 \|\| true/u,
+  );
+  assert.match(
+    runner,
+    /pm clear com\.shruggietech\.glitchpad[\s\S]+pm clear com\.shruggietech\.glitchpad\.test/u,
+  );
+  assert.match(runner, /adb wait-for-device[\s\S]+sleep 3/u);
+});
+
 for (const [label, source] of [
   ['package manager', 'await pnpm();'],
   ['PowerShell', 'await powershell();'],

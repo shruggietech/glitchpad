@@ -22,7 +22,15 @@ for attempt in 1 2; do
   if grep -Fq "$marker" "$output" || grep -Fq "$marker" "$logcat_output"; then
     exit 0
   fi
-  sleep 2
+  if (( attempt < 2 )); then
+    echo "::warning::Android instrumentation marker was absent on attempt ${attempt}; resetting the test processes before retrying."
+    if [[ "${ANDROID_INSTRUMENTATION_RESET_APP_DATA:-false}" == "true" ]]; then
+      adb shell pm clear com.shruggietech.glitchpad || true
+      adb shell pm clear com.shruggietech.glitchpad.test || true
+    fi
+    adb wait-for-device
+    sleep 3
+  fi
 done
 
 exit 1

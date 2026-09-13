@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import test from 'node:test';
 
-import { collectPerformance, collectWithHardFailureConfirmation, isAllowedRequest, parseArguments } from './run-performance.mjs';
+import { collectPerformance, collectWithHardFailureConfirmation, isAllowedRequest, measureNavigation, parseArguments } from './run-performance.mjs';
 
 test('collector arguments are explicit and bounded', () => {
   assert.deepEqual(parseArguments(['--profile', 'hosted_windows_smoke_v1', '--build-id', 'abc', '--skip-build']), {
@@ -63,6 +63,51 @@ test('navigation timing records readiness on the browser navigation clock', asyn
   assert.match(source, /document\.querySelector\(readySelector\) \? performance\.now\(\) : false/u);
   assert.match(source, /chromium-navigation-ready-v2/u);
   assert.doesNotMatch(source, /values\.push\(performance\.now\(\) - started\)/u);
+});
+
+test('navigation sampling retries one selector miss in a fresh bounded context', async () => {
+  let attempts = 0;
+  let closes = 0;
+  const browser = {
+    createBrowserContext: async () => ({
+      newPage: async () => ({
+        on: () => {},
+        evaluateOnNewDocument: async () => {},
+        goto: async () => {},
+        waitForFunction: async () => {
+          attempts += 1;
+          if (attempts === 1) throw new Error('transient_selector_timeout');
+          return { jsonValue: async () => 37, dispose: async () => {} };
+        },
+      }),
+      close: async () => { closes += 1; },
+    }),
+  };
+
+  assert.deepEqual(await measureNavigation(browser, 'http://127.0.0.1:1234', '.ready', null, 1), [37]);
+  assert.equal(attempts, 2);
+  assert.equal(closes, 2);
+});
+
+test('navigation sampling fails after exactly two selector misses', async () => {
+  let attempts = 0;
+  const browser = {
+    createBrowserContext: async () => ({
+      newPage: async () => ({
+        on: () => {},
+        evaluateOnNewDocument: async () => {},
+        goto: async () => {},
+        waitForFunction: async () => {
+          attempts += 1;
+          throw new Error('persistent_selector_timeout');
+        },
+      }),
+      close: async () => {},
+    }),
+  };
+
+  await assert.rejects(measureNavigation(browser, 'http://127.0.0.1:1234', '.ready', null, 1), /performance_selector_failed/u);
+  assert.equal(attempts, 2);
 });
 
 test('artifact collection measures an actual file and rejects absence', async () => {

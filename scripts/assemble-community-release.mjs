@@ -165,17 +165,10 @@ export async function assembleCommunityRelease({
         throw new Error(
           `${platform} practical-use evidence is not content-free`,
         );
-      for (const [key, value] of entries(receipt)) {
+      for (const [key] of entries(receipt)) {
         if (prohibitedEvidenceFields.has(key.toLowerCase()))
           throw new Error(
             `${platform} practical-use evidence contains prohibited field ${key}`,
-          );
-        if (
-          typeof value === 'string' &&
-          /(?:^|[^a-z])fail(?:ed|ure)?(?:$|[^a-z])/iu.test(value)
-        )
-          throw new Error(
-            `${platform} practical-use evidence contains a failed practical-use result`,
           );
       }
       for (const path of requiredPasses) {

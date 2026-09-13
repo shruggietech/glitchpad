@@ -112,35 +112,43 @@ const startServer = async () => {
 
 const closeServer = (server) => new Promise((resolvePromise) => server.close(resolvePromise));
 
-const measureNavigation = async (browser, origin, selector, prepare = null, samples = 5) => {
+export const measureNavigation = async (browser, origin, selector, prepare = null, samples = 5) => {
   const values = [];
   for (let index = 0; index < samples; index += 1) {
-    const context = await browser.createBrowserContext();
-    const page = await context.newPage();
-    const external = [];
-    page.on('request', (request) => {
-      if (!isAllowedRequest(request.url(), origin)) external.push(request.url());
-    });
-    await page.evaluateOnNewDocument(() => {
-      Object.defineProperty(window, '__TAURI_INTERNALS__', {
-        configurable: false,
-        value: {
-          invoke: () => Promise.reject(new Error('native_unavailable')),
-        },
+    let sample;
+    let lastError;
+    for (let attempt = 1; attempt <= 2; attempt += 1) {
+      const context = await browser.createBrowserContext();
+      const page = await context.newPage();
+      const external = [];
+      page.on('request', (request) => {
+        if (!isAllowedRequest(request.url(), origin)) external.push(request.url());
       });
-    });
-    try {
-      await page.goto(origin, { waitUntil: 'domcontentloaded' });
-      if (prepare) await prepare(page);
-      const readyAt = await page.waitForFunction((readySelector) => (document.querySelector(readySelector) ? performance.now() : false), { timeout: 10_000 }, selector);
-      values.push(await readyAt.jsonValue());
-      await readyAt.dispose();
-    } catch (error) {
-      await context.close();
-      throw new Error('performance_selector_failed', { cause: error });
+      await page.evaluateOnNewDocument(() => {
+        Object.defineProperty(window, '__TAURI_INTERNALS__', {
+          configurable: false,
+          value: {
+            invoke: () => Promise.reject(new Error('native_unavailable')),
+          },
+        });
+      });
+      try {
+        await page.goto(origin, { waitUntil: 'domcontentloaded' });
+        if (prepare) await prepare(page);
+        const readyAt = await page.waitForFunction((readySelector) => (document.querySelector(readySelector) ? performance.now() : false), { timeout: 10_000 }, selector);
+        sample = await readyAt.jsonValue();
+        await readyAt.dispose();
+        if (external.length) throw new Error('performance_external_request');
+      } catch (error) {
+        if (error instanceof Error && error.message === 'performance_external_request') throw error;
+        lastError = error;
+      } finally {
+        await context.close();
+      }
+      if (sample !== undefined) break;
     }
-    await context.close();
-    if (external.length) throw new Error('performance_external_request');
+    if (sample === undefined) throw new Error('performance_selector_failed', { cause: lastError });
+    values.push(sample);
   }
   return values;
 };

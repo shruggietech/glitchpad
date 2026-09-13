@@ -15,13 +15,26 @@ run_connected_suite() {
     --no-daemon
 }
 
-if run_connected_suite; then
-  exit 0
-fi
+log_dir="${RUNNER_TEMP:-${TMPDIR:-/tmp}}"
 
-echo "::warning::Android connected suite failed once; resetting the app processes and retrying on the same emulator."
-adb shell am force-stop com.shruggietech.glitchpad || true
-adb shell am force-stop com.shruggietech.glitchpad.test || true
-adb logcat -c || true
-sleep 2
-run_connected_suite
+for attempt in 1 2; do
+  adb logcat -c || true
+  if run_connected_suite; then
+    exit 0
+  fi
+
+  logcat_output="${log_dir}/connected-suite-attempt-${attempt}-logcat.txt"
+  adb logcat -d -t 4000 > "$logcat_output" 2>&1 || true
+
+  if (( attempt < 2 )); then
+    echo "::warning::Android connected suite failed once; clearing app state before retrying on the same emulator."
+    adb shell am force-stop com.shruggietech.glitchpad || true
+    adb shell am force-stop com.shruggietech.glitchpad.test || true
+    adb shell pm clear com.shruggietech.glitchpad || true
+    adb shell pm clear com.shruggietech.glitchpad.test || true
+    adb wait-for-device
+    sleep 3
+  fi
+done
+
+exit 1

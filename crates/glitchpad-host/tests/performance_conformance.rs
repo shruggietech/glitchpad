@@ -191,6 +191,18 @@ fn android_emulator_uses_supported_software_rendering() {
         "standalone delivery tests must not share a process with the connected provider suite"
     );
     assert!(
+        connected_tests.contains("for attempt in 1 2; do"),
+        "connected-test recovery must remain bounded to one retry"
+    );
+    assert!(
+        connected_tests.contains("adb shell pm clear com.shruggietech.glitchpad"),
+        "connected-test recovery must clear app state after an instrumentation-process crash"
+    );
+    assert!(
+        connected_tests.contains("connected-suite-attempt-${attempt}-logcat.txt"),
+        "failed connected-test attempts must preserve logcat evidence in the runner temp directory"
+    );
+    assert!(
         workflow.contains("bash scripts/run-android-connected-tests.sh"),
         "the emulator runner must invoke connected-test retries through one shell command"
     );

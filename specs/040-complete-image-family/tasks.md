@@ -85,3 +85,7 @@ Prove safe SVG first, incremental paused animation next, then independent ICO en
 ## Phase 10: Convergence
 
 - [x] T038 Admit transient encoded animation buffers before preflight allocation, bound sanitized vector capacity, and retain encoded data without a Vec-to-Arc payload copy per FR-008 and plan: peak-memory admission (partial).
+
+## Phase 11: Convergence
+
+- [ ] T039 Exercise the real Android selected-entry native/provider export round trip, chooser cancellation, original identity and existing-destination refusal on API 24/36, and compare independent PNG/DIB golden pixels per FR-021, SC-003, SC-006 and T026 (partial).

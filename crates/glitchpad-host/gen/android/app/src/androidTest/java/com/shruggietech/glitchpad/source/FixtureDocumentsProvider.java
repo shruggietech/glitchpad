@@ -138,7 +138,7 @@ public final class FixtureDocumentsProvider extends DocumentsProvider {
   @Override
   public String createDocument(String parentDocumentId, String mimeType, String displayName)
       throws FileNotFoundException {
-    if (!ROOT_ID.equals(parentDocumentId) || !"text/plain".equals(mimeType)) {
+    if (!ROOT_ID.equals(parentDocumentId) || !("text/plain".equals(mimeType) || "image/png".equals(mimeType))) {
       throw new FileNotFoundException(parentDocumentId);
     }
     String safeName = safeName(displayName);

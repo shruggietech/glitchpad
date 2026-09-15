@@ -1,7 +1,11 @@
 package com.shruggietech.glitchpad.source
 
+import android.app.Activity
+import android.app.Instrumentation.ActivityResult
 import android.content.ComponentName
 import android.content.Intent
+import android.content.IntentFilter
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.SystemClock
 import android.provider.DocumentsContract
@@ -15,9 +19,11 @@ import com.shruggietech.glitchpad.MainActivity
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
+import java.util.UUID
 import org.json.JSONObject
 import org.junit.After
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -31,7 +37,7 @@ class AndroidDeliveryInstrumentedTest {
   @After
   fun revokeFixtureGrants() {
     grantedUris.forEach { uri ->
-      instrumentation.context.revokeUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+      instrumentation.context.revokeUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
     }
     grantedUris.clear()
   }
@@ -77,6 +83,7 @@ class AndroidDeliveryInstrumentedTest {
         waitForBodyText(scenario, "Export selected entry as PNG", "dib", "duplicate")
         evaluate(scenario, "(()=>{window.__s040PreviousPreview=document.querySelector('.image-preview').src;const entries=document.querySelector('select[aria-label=\"Icon entry\"]');entries.value='1';entries.dispatchEvent(new Event('change',{bubbles:true}));return true;})()")
         waitForImagePixels(scenario, name, true)
+        verifySelectedIconExport(scenario, uri, before)
       }
       assertTrue("image-family preview changed original provider bytes", before.contentEquals(resolver.openInputStream(uri)!!.use { it.readBytes() }))
     }
@@ -97,6 +104,45 @@ class AndroidDeliveryInstrumentedTest {
       .addCategory(Intent.CATEGORY_DEFAULT)
       .setDataAndType(uri, mediaType)
       .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+
+  private fun exportChoice(scenario: ActivityScenario<MainActivity>, result: ActivityResult, expected: String) {
+    val filter = IntentFilter(Intent.ACTION_CREATE_DOCUMENT).apply {
+      addCategory(Intent.CATEGORY_OPENABLE)
+      addDataType("image/png")
+    }
+    val monitor = instrumentation.addMonitor(filter, result, true)
+    try {
+      evaluate(scenario, "(()=>{const button=Array.from(document.querySelectorAll('button')).find(b=>b.textContent==='Export selected entry as PNG');button.click();return true;})()")
+      waitForBodyText(scenario, expected)
+      assertEquals("explicit native PNG chooser must be invoked exactly once", 1, monitor.hits)
+    } finally { instrumentation.removeMonitor(monitor) }
+  }
+
+  private fun verifySelectedIconExport(scenario: ActivityScenario<MainActivity>, original: Uri, before: ByteArray) {
+    val root = grant(documentUri("fixture-root"))
+    val created = requireNotNull(DocumentsContract.createDocument(resolver, root, "image/png", "s040-export-${UUID.randomUUID()}.png"))
+    val destination = grant(created)
+    fun chosen(uri: Uri) = ActivityResult(Activity.RESULT_OK, Intent().setData(uri).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION))
+    try {
+      exportChoice(scenario, ActivityResult(Activity.RESULT_CANCELED, Intent()), "Export cancelled.")
+      assertTrue("cancelled chooser must leave destination empty", resolver.openInputStream(destination)!!.use { it.readBytes() }.isEmpty())
+      exportChoice(scenario, chosen(original), "Export could not complete safely.")
+      assertTrue("original chooser destination must remain unchanged", before.contentEquals(resolver.openInputStream(original)!!.use { it.readBytes() }))
+      exportChoice(scenario, chosen(destination), "Selected entry exported as PNG.")
+      val bytes = resolver.openInputStream(destination)!!.use { it.readBytes() }
+      assertTrue("selected export must be a PNG", bytes.copyOfRange(0, 8).contentEquals(byteArrayOf(137.toByte(),80,78,71,13,10,26,10)))
+      val bitmap = requireNotNull(BitmapFactory.decodeByteArray(bytes, 0, bytes.size))
+      val expected = resolver.openInputStream(grant(documentUri("original.png")))!!.use { requireNotNull(BitmapFactory.decodeStream(it)) }
+      assertEquals(4, bitmap.width)
+      assertEquals(3, bitmap.height)
+      for (y in 0 until 3) for (x in 0 until 4) assertEquals("selected DIB pixels must match independent PNG fixture", expected.getPixel(x,y), bitmap.getPixel(x,y))
+      bitmap.recycle(); expected.recycle()
+      exportChoice(scenario, chosen(destination), "Export could not complete safely.")
+      assertTrue("existing destination conflict must preserve complete bytes", bytes.contentEquals(resolver.openInputStream(destination)!!.use { it.readBytes() }))
+      assertTrue("generated export must preserve original source", before.contentEquals(resolver.openInputStream(original)!!.use { it.readBytes() }))
+      println("image_export_evidence=cancel:pass,original_denied:pass,selected_dib_png:pass,existing_conflict:pass,source_unchanged:pass,api:${android.os.Build.VERSION.SDK_INT}")
+    } finally { DocumentsContract.deleteDocument(resolver, destination) }
+  }
 
   @Suppress("DEPRECATION")
   private fun glitchpadComponent(intent: Intent): ComponentName? =

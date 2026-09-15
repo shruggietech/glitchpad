@@ -321,6 +321,7 @@ fn original_family_corpus_preserves_dimensions_and_independent_dib_entries() {
         if name == "entries.ico" {
             let dib = decode(&bytes, 1).unwrap();
             assert_eq!(dib.preview.descriptor.display_width, 4);
+            assert_eq!(pixels(&dib), pixels(&result));
             assert!(decode(&bytes, 3).is_err());
             let ImageFamilyState::Ico { entries, .. } = result.state else {
                 panic!("wrong family")

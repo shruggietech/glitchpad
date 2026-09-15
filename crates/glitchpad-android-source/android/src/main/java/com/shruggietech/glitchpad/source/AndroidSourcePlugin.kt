@@ -32,6 +32,7 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
   private val pending = ArrayBlockingQueue<DeliveryCandidate>(MAX_PENDING_DELIVERIES)
   private val rejections = ArrayBlockingQueue<String>(MAX_PENDING_REJECTIONS)
   private val sources = ConcurrentHashMap<String, NativeSource>()
+  private val imageExports = ConcurrentHashMap<String, java.util.concurrent.atomic.AtomicBoolean>()
   private val streams = ConcurrentHashMap<String, NativeStream>()
   private val restoration = RestorationStore(activity)
   private val initialIntentConsumed = AtomicBoolean(false)
@@ -238,6 +239,79 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
           Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION,
       )
     startActivityForResult(invoke, intent, "saveAsResult")
+  }
+
+  @Command
+  fun exportImage(invoke: Invoke) {
+    val args = invoke.parseArgs(ImageExportArgs::class.java)
+    if ((args.bytes?.size ?: 0) !in 8..(8 * 1024 * 1024) || !args.sourceSha256.matches(Regex("[0-9a-f]{64}"))) return invoke.reject("budget_exceeded")
+    if (!sources.containsKey(args.bridgeToken) || imageExports.isNotEmpty()) return invoke.reject("source_not_found")
+    imageExports[args.requestId] = java.util.concurrent.atomic.AtomicBoolean(false)
+    val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
+      .setType("image/png").putExtra(Intent.EXTRA_TITLE, "selected-icon-entry.png")
+      .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+    startActivityForResult(invoke, intent, "exportImageResult")
+  }
+
+  @Command
+  fun cancelImageExport(invoke: Invoke) {
+    val args = invoke.parseArgs(ImageExportCancelArgs::class.java)
+    imageExports[args.requestId]?.set(true)
+    invoke.resolve()
+  }
+
+  @ActivityCallback
+  fun exportImageResult(invoke: Invoke, result: ActivityResult) {
+    val args = invoke.parseArgs(ImageExportArgs::class.java)
+    val cancelled = imageExports[args.requestId] ?: return invoke.reject("source_not_found")
+    if (result.resultCode == Activity.RESULT_CANCELED || cancelled.get()) {
+      imageExports.remove(args.requestId)
+      return invoke.resolve(JSObject().put("exported", false).put("byteCount", 0))
+    }
+    if (result.resultCode != Activity.RESULT_OK) { imageExports.remove(args.requestId); return invoke.reject("picker_failed") }
+    val bytes = args.bytes?.map(Int::toByte)?.toByteArray() ?: ByteArray(0)
+    ioExecutor.execute {
+      var started = false
+      var destination: Uri? = null
+      runCatching {
+        val source = sources[args.bridgeToken] ?: throw IllegalStateException("source_not_found")
+        val candidate = DeliveryPolicy.pickerResult(result.data, DeliveryKind.CREATE_RESULT).getOrThrow()
+        destination = candidate.uri
+        if (!DocumentsContract.isDocumentUri(activity, source.uri) || !DocumentsContract.isDocumentUri(activity, candidate.uri)) throw IllegalStateException("independent_destination_required")
+        ImageExportPolicy.destination(source.uri.authority, DocumentsContract.getDocumentId(source.uri), candidate.uri.authority, DocumentsContract.getDocumentId(candidate.uri), queryMetadata(candidate.uri).size)
+        val digest = java.security.MessageDigest.getInstance("SHA-256")
+        activity.contentResolver.openInputStream(source.uri)?.use { input ->
+          val chunk = ByteArray(1024 * 1024)
+          var total = 0L
+          while (true) {
+            if (cancelled.get()) throw IllegalStateException("export_cancelled")
+            val count = input.read(chunk)
+            if (count < 0) break
+            total += count
+            if (total > 128L * 1024 * 1024) throw IllegalStateException("budget_exceeded")
+            digest.update(chunk, 0, count)
+          }
+        } ?: throw IllegalStateException("provider_unavailable")
+        val hash = digest.digest().joinToString("") { "%02x".format(it.toInt() and 255) }
+        ImageExportPolicy.source(args.sourceSha256, hash, cancelled.get(), sources.containsKey(args.bridgeToken))
+        if (queryMetadata(candidate.uri).size != 0L) throw IllegalStateException("destination_conflict")
+        activity.contentResolver.openFileDescriptor(candidate.uri, "w", CancellationSignal())?.use { descriptor ->
+          started = true
+          java.io.FileOutputStream(descriptor.fileDescriptor).use { output -> output.write(bytes); output.flush(); descriptor.fileDescriptor.sync() }
+          descriptor.checkError()
+        } ?: throw IllegalStateException("provider_unavailable")
+        if (cancelled.get()) throw IllegalStateException("export_cancelled")
+        val observed = activity.contentResolver.openInputStream(candidate.uri)?.use { ImageExportPolicy.readGenerated(it) } ?: throw IllegalStateException("provider_unavailable")
+        ImageExportPolicy.verified(bytes, observed, cancelled.get())
+        bytes.size
+      }.onSuccess { invoke.resolve(JSObject().put("exported", true).put("byteCount", it)) }
+        .onFailure {
+          // Never delete a refused original/alias. Cleanup is limited to an independent destination we wrote.
+          if (started) destination?.let { uri -> runCatching { DocumentsContract.deleteDocument(activity.contentResolver, uri) } }
+          invoke.reject(code(it))
+        }
+      imageExports.remove(args.requestId)
+    }
   }
 
   @ActivityCallback

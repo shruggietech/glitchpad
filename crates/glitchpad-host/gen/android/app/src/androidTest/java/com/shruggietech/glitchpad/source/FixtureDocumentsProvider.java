@@ -50,8 +50,7 @@ public final class FixtureDocumentsProvider extends DocumentsProvider {
     writeFixture(directory, "diagram.mmd", "flowchart LR\nSource --> Session\n");
     writeFixture(directory, "resolver-cold.md", "# S031 cold delivery\n\nS031_COLD_MARKER_4F2A\n");
     writeFixture(directory, "resolver-warm.txt", "S031_WARM_MARKER_7C9D\n");
-    for (String extension : new String[] {"png", "jpg", "webp", "bmp", "tiff"}) {
-      String name = "original." + extension;
+    for (String name : new String[] {"original.png", "original.jpg", "original.webp", "original.bmp", "original.tiff", "original.gif", "animated.webp", "original.svg", "entries.ico", "hostile.svg"}) {
       try (java.io.InputStream input = getContext().getAssets().open(name);
           FileOutputStream output = new FileOutputStream(new File(directory, name))) {
         byte[] buffer = new byte[4096];

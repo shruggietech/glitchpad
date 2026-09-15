@@ -253,7 +253,7 @@ export const tabReducer = (state: TabState, action: TabAction): TabState => {
           source: { ...target.source, byte_length: action.source.external_revision.byte_length },
           external_revision: action.source.external_revision,
           source_state: 'available' as const,
-          image_document: { ...target.image_document, descriptor: null, metadata: null, status: 'idle' as const },
+          image_document: { ...target.image_document, descriptor: null, metadata: null, family_state: null, selection: null, status: 'idle' as const },
           metadata: undefined,
         };
         const metadata = mergeSourceMetadataSnapshot(refreshed, projectSessionMetadata(refreshed), action.source);
@@ -281,7 +281,7 @@ export const tabReducer = (state: TabState, action: TabAction): TabState => {
       if (target.image_document) {
         if (target.source_state === 'unavailable') return state;
         const unavailable = { ...target, revision: target.revision + 1, source_state: 'unavailable' as const,
-          image_document: { ...target.image_document, descriptor: null, metadata: null, status: 'failed' as const }, metadata: undefined };
+          image_document: { ...target.image_document, descriptor: null, metadata: null, family_state: null, selection: null, status: 'failed' as const }, metadata: undefined };
         return { ...state, sessions: state.sessions.map(s => s.id === target.id ? { ...unavailable, metadata: markSourceMetadataUnavailable(unavailable, projectSessionMetadata(unavailable)) } : s) };
       }
       const snapshot = target.metadata ?? projectSessionMetadata(target);

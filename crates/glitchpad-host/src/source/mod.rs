@@ -1100,6 +1100,101 @@ impl DesktopSourceHost {
         persistence::save_as(path, bytes)
     }
 
+    /// Observes an export destination without granting permission to replace the original.
+    ///
+    /// # Errors
+    /// Refuses stale sources, original aliases, symlinks, non-files, and weak identities.
+    pub fn prepare_image_export_destination(
+        &self,
+        source: &SourceId,
+        expected: &ExternalRevision,
+        path: &Path,
+    ) -> Result<Option<ExternalRevision>, CoreError> {
+        if !self.image_revision_matches(source, expected)? {
+            return Err(CoreError::new(
+                CoreErrorCategory::Conflict,
+                "The icon source changed",
+                true,
+                true,
+            ));
+        }
+        match fs::symlink_metadata(path) {
+            Ok(metadata) => {
+                if metadata.file_type().is_symlink() || !metadata.is_file() {
+                    return Err(CoreError::new(
+                        CoreErrorCategory::InvalidInput,
+                        "The export destination must be an independent regular file",
+                        false,
+                        true,
+                    ));
+                }
+                let (identity, revision) = observe_revision(path)?;
+                if identity.contract.strength != IdentityStrength::Strong
+                    || expected.identity.strength != IdentityStrength::Strong
+                    || identity.contract == expected.identity
+                {
+                    return Err(CoreError::new(
+                        CoreErrorCategory::CapabilityDenied,
+                        "Export cannot replace the original icon or an alias",
+                        false,
+                        true,
+                    ));
+                }
+                Ok(Some(revision))
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(None),
+            Err(error) => Err(safe_io_error(&error, "image_export_destination")),
+        }
+    }
+
+    /// Commits generated pixels only against the source and destination observed for this export.
+    ///
+    /// # Errors
+    /// Prevents original replacement, stale permission, cancellation, and partial destinations.
+    #[allow(clippy::too_many_arguments)] // Source and observed destination are independent native commit guards.
+    pub fn export_image_png(
+        &self,
+        source: &SourceId,
+        expected: &ExternalRevision,
+        path: &Path,
+        destination: Option<&ExternalRevision>,
+        bytes: &[u8],
+        cancel: &std::sync::atomic::AtomicBool,
+    ) -> Result<DurabilityGuarantee, CoreError> {
+        if bytes.len() > glitchpad_core::images::MAX_IMAGE_PNG_BYTES
+            || !bytes.starts_with(b"\x89PNG\r\n\x1a\n")
+        {
+            return Err(budget_error(
+                "The generated PNG is invalid or exceeds its limit",
+            ));
+        }
+        let validate = || {
+            if cancel.load(std::sync::atomic::Ordering::Acquire) {
+                return Err(CoreError::new(
+                    CoreErrorCategory::StaleSession,
+                    "Export was cancelled",
+                    true,
+                    true,
+                ));
+            }
+            if self
+                .prepare_image_export_destination(source, expected, path)?
+                .as_ref()
+                != destination
+            {
+                return Err(CoreError::new(
+                    CoreErrorCategory::Conflict,
+                    "The export destination changed",
+                    true,
+                    true,
+                ));
+            }
+            Ok(())
+        };
+        validate()?;
+        persistence::export_generated(path, bytes, destination, validate)
+    }
+
     /// Invalidates a source and all leases derived from it.
     ///
     /// # Errors
@@ -1257,7 +1352,7 @@ impl DesktopSourceHost {
             ));
         }
         let maximum = if probe {
-            16
+            4096
         } else {
             glitchpad_core::images::MAX_IMAGE_SOURCE_BYTES
         };
@@ -1827,6 +1922,104 @@ pub(crate) mod tests {
         fn drop(&mut self) {
             let _ = fs::remove_dir_all(&self.directory);
         }
+    }
+
+    #[test]
+    fn png_export_denies_original_aliases_stale_revision_and_destination_conflicts() {
+        let file = TemporarySource::new(b"original icon");
+        let alias = file.directory.join("alias.png");
+        fs::hard_link(file.path(), &alias).unwrap();
+        let host = DesktopSourceHost::new();
+        let source = host.acquire(DesktopDelivery::dialog(file.path())).unwrap();
+        let cancel = std::sync::atomic::AtomicBool::new(false);
+        let png = b"\x89PNG\r\n\x1a\ngenerated pixels";
+        assert!(
+            host.prepare_image_export_destination(
+                &source.source_id,
+                &source.external_revision,
+                file.path()
+            )
+            .is_err()
+        );
+        assert!(
+            host.prepare_image_export_destination(
+                &source.source_id,
+                &source.external_revision,
+                &alias
+            )
+            .is_err()
+        );
+        let destination = file.directory.join("entry.png");
+        assert!(
+            host.prepare_image_export_destination(
+                &source.source_id,
+                &source.external_revision,
+                &destination
+            )
+            .unwrap()
+            .is_none()
+        );
+        fs::write(&destination, b"concurrent writer").unwrap();
+        assert!(
+            host.export_image_png(
+                &source.source_id,
+                &source.external_revision,
+                &destination,
+                None,
+                png,
+                &cancel
+            )
+            .is_err()
+        );
+        assert_eq!(fs::read(&destination).unwrap(), b"concurrent writer");
+        let observed = host
+            .prepare_image_export_destination(
+                &source.source_id,
+                &source.external_revision,
+                &destination,
+            )
+            .unwrap();
+        fs::write(&destination, b"new concurrent writer").unwrap();
+        assert!(
+            host.export_image_png(
+                &source.source_id,
+                &source.external_revision,
+                &destination,
+                observed.as_ref(),
+                png,
+                &cancel
+            )
+            .is_err()
+        );
+        fs::remove_file(&destination).unwrap();
+        host.export_image_png(
+            &source.source_id,
+            &source.external_revision,
+            &destination,
+            None,
+            png,
+            &cancel,
+        )
+        .unwrap();
+        assert_eq!(fs::read(&destination).unwrap(), png);
+        assert_eq!(fs::read(file.path()).unwrap(), b"original icon");
+        fs::write(file.path(), b"changed icon").unwrap();
+        assert!(
+            host.prepare_image_export_destination(
+                &source.source_id,
+                &source.external_revision,
+                &destination
+            )
+            .is_err()
+        );
+        assert_eq!(fs::read(&destination).unwrap(), png);
+        assert!(fs::read_dir(&file.directory).unwrap().all(|entry| {
+            !entry
+                .unwrap()
+                .file_name()
+                .to_string_lossy()
+                .starts_with(".glitchpad-export-")
+        }));
     }
 
     #[test]

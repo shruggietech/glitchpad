@@ -102,3 +102,19 @@ pub struct SaveAsResponse {
     pub delivery: BridgeDelivery,
     pub byte_count: u64,
 }
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImageExportRequest<'a> {
+    pub bridge_token: &'a str,
+    pub request_id: &'a str,
+    pub source_sha256: &'a str,
+    pub bytes: &'a [u8],
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImageExportResponse {
+    pub exported: bool,
+    pub byte_count: u64,
+}

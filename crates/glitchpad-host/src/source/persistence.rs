@@ -64,6 +64,68 @@ pub(super) fn save_as(path: &Path, bytes: &[u8]) -> Result<DurabilityGuarantee, 
     Ok(platform_guarantee())
 }
 
+struct Cleanup(std::path::PathBuf);
+impl Drop for Cleanup {
+    fn drop(&mut self) {
+        let _ = fs::remove_file(&self.0);
+    }
+}
+
+pub(super) fn export_generated<F: Fn() -> Result<(), CoreError>>(
+    path: &Path,
+    bytes: &[u8],
+    destination: Option<&ExternalRevision>,
+    validate: F,
+) -> Result<DurabilityGuarantee, CoreError> {
+    if let Some(revision) = destination {
+        return replace_with_revision_check(path, bytes, revision, |path| {
+            validate()?;
+            observe_revision(path).map(|(_, revision)| revision)
+        });
+    }
+    // Linking an independent staged file creates a complete destination atomically and
+    // fails if another writer creates the chosen name. Rename would silently overwrite it.
+    let parent = path.parent().ok_or_else(|| {
+        CoreError::new(
+            CoreErrorCategory::InvalidInput,
+            "The export destination has no parent",
+            false,
+            true,
+        )
+    })?;
+    let temporary = parent.join(format!(".glitchpad-export-{}.tmp", uuid::Uuid::new_v4()));
+    let mut file = fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&temporary)
+        .map_err(|e| safe_io_error(&e, "image_export_stage"))?;
+    let cleanup = Cleanup(temporary);
+    file.write_all(bytes)
+        .and_then(|()| file.flush())
+        .and_then(|()| file.sync_all())
+        .map_err(|e| safe_io_error(&e, "image_export_stage_write"))?;
+    validate()?;
+    fs::hard_link(&cleanup.0, path).map_err(|e| {
+        if e.kind() == std::io::ErrorKind::AlreadyExists {
+            CoreError::new(
+                CoreErrorCategory::Conflict,
+                "The export destination was created by another writer",
+                true,
+                true,
+            )
+        } else {
+            safe_io_error(&e, "image_export_commit")
+        }
+    })?;
+    drop(file);
+    drop(cleanup);
+    #[cfg(unix)]
+    if sync_parent_after_commit(path).is_err() {
+        return Ok(DurabilityGuarantee::AtomicFile);
+    }
+    Ok(platform_guarantee())
+}
+
 fn replace_with_revision_check<F>(
     path: &Path,
     bytes: &[u8],

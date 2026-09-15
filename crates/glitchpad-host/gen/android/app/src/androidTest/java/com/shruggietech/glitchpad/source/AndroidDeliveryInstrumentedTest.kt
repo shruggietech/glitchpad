@@ -62,6 +62,28 @@ class AndroidDeliveryInstrumentedTest {
       val after = resolver.openInputStream(uri)!!.use { it.readBytes() }
       assertTrue("raster preview changed original provider bytes", before.contentEquals(after))
     }
+    for (name in listOf("original.gif", "animated.webp", "original.svg", "entries.ico")) {
+      val uri = grant(documentUri(name))
+      val before = resolver.openInputStream(uri)!!.use { it.readBytes() }
+      clientContext.startActivity(viewIntent(uri, "image/*").setComponent(component).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+      waitForImagePixels(scenario, name)
+      if (name.endsWith("gif") || name == "animated.webp") {
+        waitForBodyText(scenario, "Play", "Next frame")
+        evaluate(scenario, "(()=>{window.__s040PreviousPreview=document.querySelector('.image-preview').src;const next=Array.from(document.querySelectorAll('button')).find(b=>b.textContent==='Next frame');next.click();return true;})()")
+        waitForImagePixels(scenario, name, true)
+        waitForBodyText(scenario, "of " + if (name.endsWith("gif")) "4" else "2")
+      }
+      if (name.endsWith("ico")) {
+        waitForBodyText(scenario, "Export selected entry as PNG", "dib", "duplicate")
+        evaluate(scenario, "(()=>{window.__s040PreviousPreview=document.querySelector('.image-preview').src;const entries=document.querySelector('select[aria-label=\"Icon entry\"]');entries.value='1';entries.dispatchEvent(new Event('change',{bubbles:true}));return true;})()")
+        waitForImagePixels(scenario, name, true)
+      }
+      assertTrue("image-family preview changed original provider bytes", before.contentEquals(resolver.openInputStream(uri)!!.use { it.readBytes() }))
+    }
+    val hostile = grant(documentUri("hostile.svg"))
+    clientContext.startActivity(viewIntent(hostile, "image/*").setComponent(component).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    waitForBodyText(scenario, "hostile.svg", "Image preview unavailable")
+    println("image_family_evidence=gif:pass,animated_webp:pass,svg:pass,ico_png_dib:pass,hostile_svg:refused,source_unchanged:pass,api:${android.os.Build.VERSION.SDK_INT}")
     println("image_evidence=png:pass,jpeg:pass,webp:pass,bmp:pass,tiff:pass,source_unchanged:pass,api:${android.os.Build.VERSION.SDK_INT}")
     println("delivery_evidence=cold:pass,warm:pass,api:${android.os.Build.VERSION.SDK_INT}")
     System.out.flush()
@@ -120,7 +142,15 @@ class AndroidDeliveryInstrumentedTest {
     return if (latch.await(2, TimeUnit.SECONDS)) result.get() else null
   }
 
-  private fun waitForImagePixels(scenario: ActivityScenario<MainActivity>, expectedName: String) {
+  private fun evaluate(scenario: ActivityScenario<MainActivity>, script: String) {
+    val view = AtomicReference<WebView?>()
+    scenario.onActivity { view.set(findWebView(it.window.decorView)) }
+    val latch = CountDownLatch(1)
+    instrumentation.runOnMainSync { requireNotNull(view.get()).evaluateJavascript(script) { latch.countDown() } }
+    assertTrue("WebView image control did not complete", latch.await(2, TimeUnit.SECONDS))
+  }
+
+  private fun waitForImagePixels(scenario: ActivityScenario<MainActivity>, expectedName: String, changed: Boolean = false) {
     val deadline = SystemClock.elapsedRealtime() + 30_000L
     val expectedLiteral = JSONObject.quote(expectedName)
     var latest = "no WebView evidence"
@@ -131,7 +161,7 @@ class AndroidDeliveryInstrumentedTest {
       val latch = CountDownLatch(1)
       view.get()?.let { webView ->
         instrumentation.runOnMainSync {
-          webView.evaluateJavascript("(()=>{const image=document.querySelector('.image-preview');const background=document.querySelector('select[aria-label=\"Image background\"]');const status=document.querySelector('.image-status');const matches=!!image && image.alt===$expectedLiteral;const blob=!!image && image.src.startsWith('blob:');return {pass:!!background && matches && image.complete && image.naturalWidth===4 && image.naturalHeight===3 && blob,matches:matches,complete:!!image && image.complete,width:image ? image.naturalWidth : 0,height:image ? image.naturalHeight : 0,blob:blob,background:!!background,status:status ? status.textContent.slice(0,256) : ''};})()") {
+          webView.evaluateJavascript("(()=>{const image=document.querySelector('.image-preview');const background=document.querySelector('select[aria-label=\"Image background\"]');const status=document.querySelector('.image-status');const matches=!!image && image.alt===$expectedLiteral;const blob=!!image && image.src.startsWith('blob:');const changed=!$changed || (!!image && image.src!==window.__s040PreviousPreview);return {pass:changed && !!background && matches && image.complete && image.naturalWidth===4 && image.naturalHeight===3 && blob,matches:matches,complete:!!image && image.complete,width:image ? image.naturalWidth : 0,height:image ? image.naturalHeight : 0,blob:blob,background:!!background,status:status ? status.textContent.slice(0,256) : ''};})()") {
             result.set(it ?: "")
             latch.countDown()
           }

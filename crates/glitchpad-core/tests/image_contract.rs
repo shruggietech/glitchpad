@@ -10,8 +10,7 @@ fn every_family_has_explicit_read_only_capabilities() {
     ] {
         let actions = family_capabilities(family);
         assert!(!actions.edit && !actions.save);
-        assert_eq!(actions.view, family == ImageFamily::Raster);
-        assert!(!actions.animate && !actions.select_entry && !actions.export_entry);
+        assert!(actions.view && actions.zoom && actions.inspect_metadata);
     }
 }
 

@@ -8,9 +8,9 @@ import puppeteer from 'puppeteer';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const manifest = JSON.parse(await readFile(join(root, 'fixtures/images/manifest.json'), 'utf8'));
 assert.equal(manifest.license, 'Apache-2.0');
-assert.equal(manifest.files.length, 13);
+assert.equal(manifest.files.length, 18);
 for (const file of manifest.files) {
-  assert.match(file.name, /^(?:original\.(?:png|jpg|webp|bmp|tiff)|orientation-[1-8]\.jpg)$/u);
+  assert.match(file.name, /^(?:original\.(?:png|jpg|webp|bmp|tiff|gif|svg)|orientation-[1-8]\.jpg|animated\.webp|entries\.ico|hostile\.svg)$/u);
   const bytes = await readFile(join(root, 'fixtures/images', file.name));
   assert.equal(bytes.length, file.bytes);
   assert.equal(createHash('sha256').update(bytes).digest('hex'), file.sha256);
@@ -28,8 +28,11 @@ try {
   });
   for (const viewport of [{ width: 320, height: 240 }, { width: 360, height: 640 }, { width: 480, height: 360 }, { width: 1280, height: 720 }]) {
     for (const touch of [false, true]) {
+      for (const family of ['raster', 'svg', 'animation', 'ico']) {
+      const controls = family === 'animation' ? '<span class="image-family-actions"><button>Play</button><button>Previous frame</button><button>Next frame</button><label>Frame <input type="number" value="1" min="1" max="4"></label><output>of 4; 40 ms; 2 loops</output></span>' : family === 'ico' ? '<span class="image-family-actions"><label>Entry <select><option>1: 4 × 3, png, 32 bit</option><option>2: 4 × 3, dib, 24 bit</option></select></label><button>Export selected entry as PNG</button></span>' : '';
+      const limitation = family === 'svg' || family === 'animation' ? '<p class="image-limitation">Bounded native preview policy; file information contains details.</p>' : '';
       await page.setViewport({ ...viewport, hasTouch: touch, isMobile: touch });
-      await page.setContent(`<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{height:100%;margin:0}*{box-sizing:border-box}button,select{font:inherit;padding:4px}.document-surface{height:calc(100% - 32px)}${css}</style></head><body><header style="height:32px">File menu</header><main class="document-surface"><div class="image-layout"><div class="image-actions"><button>Fit</button><button>Actual size</button><button aria-label="Zoom out">−</button><output>100%</output><button aria-label="Zoom in">+</button><button>Reset view</button><label>Image background<select><option>Checkerboard</option></select></label><button>File information</button></div><div class="image-pane image-background-checker"><img class="image-preview" alt="Original fixture" style="width:4px;height:3px;transform:translate(-50%,-50%)"></div></div></main></body></html>`);
+      await page.setContent(`<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{height:100%;margin:0}*{box-sizing:border-box}button,select,input{font:inherit;padding:4px}.document-surface{height:calc(100% - 32px)}${css}</style></head><body><header style="height:32px">File menu</header><main class="document-surface"><div class="image-layout"><div class="image-actions"><button>Fit</button><button>Actual size</button><button aria-label="Zoom out">−</button><output>100%</output><button aria-label="Zoom in">+</button><button>Reset view</button><label>Image background<select><option>Checkerboard</option></select></label><button>File information</button>${controls}</div><div class="image-pane image-background-checker"><img class="image-preview" alt="Original fixture" style="width:4px;height:3px;transform:translate(-50%,-50%)"></div>${limitation}</div></main></body></html>`);
       await page.evaluate(bytes => {
         document.querySelector('img').src = URL.createObjectURL(new Blob([Uint8Array.from(bytes)], { type: 'image/png' }));
       }, png);
@@ -38,9 +41,9 @@ try {
         const actions = document.querySelector('.image-actions').getBoundingClientRect();
         const pane = document.querySelector('.image-pane').getBoundingClientRect();
         const button = document.querySelector('button').getBoundingClientRect();
-        return { pane: pane.height, actions: actions.height, width: document.documentElement.scrollWidth, viewport: innerWidth, target: button.height };
+        return { pane: pane.height, actions: actions.height, layout: document.querySelector('.image-layout').getBoundingClientRect().height, width: document.documentElement.scrollWidth, viewport: innerWidth, target: button.height };
       });
-      assert.ok(dimensions.pane / (dimensions.pane + dimensions.actions) >= 0.70, 'image must own the document viewport');
+      assert.ok(dimensions.pane / dimensions.layout >= 0.70, `${family} image must own the document viewport`);
       assert.equal(dimensions.width, dimensions.viewport, 'toolbar must not cause page overflow');
       if (touch) assert.ok(dimensions.target >= 44, 'touch actions require reachable targets');
       await page.keyboard.press('Tab');
@@ -48,6 +51,7 @@ try {
       for (let n = 0; n < 8; n++) await page.keyboard.press('Tab');
       await page.evaluate(() => URL.revokeObjectURL(document.querySelector('img').src));
       cases++;
+      }
     }
   }
 } finally { await browser.close(); }

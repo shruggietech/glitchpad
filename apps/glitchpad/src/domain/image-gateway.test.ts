@@ -9,6 +9,17 @@ const session = () => {
 };
 
 describe('native image gateway', () => {
+  it('exports a selected source-bound entry without browser bytes or destination authority', async () => {
+    const image = session();
+    image.image_document!.family_state = { family: 'ico', selected_entry: 0, selected_entry_export: true, entries: [{ index: 0, width: 1, height: 1, bits_per_pixel: 32, encoded_bytes: 64, encoding: 'png', alpha: true, failure: null, duplicate_of: null, preview: 'full' }] };
+    const call = vi.fn(() => Promise.resolve({ status: 'exported', durability: 'atomic_file' }));
+    expect(await createImageGateway(call).exportEntry!(image, new AbortController().signal)).toEqual({ status: 'exported', durability: 'atomic_file' });
+    const [command,args] = call.mock.calls[0] as unknown as [string,Record<string,unknown>];
+    expect(command).toBe('export_image_entry');
+    expect(Object.keys(args).sort()).toEqual(['entry','expectedRevision','requestId','sourceId']);
+    expect(args.entry).toBe(0);
+    expect(args.sourceId).toBe('opaque');
+  });
   it('uses only registered source authority for content identification', async () => {
     const call = vi.fn(() => Promise.resolve('png'));
     const image = session();

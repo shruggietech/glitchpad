@@ -10,6 +10,10 @@ publish = false
 
 [dependencies]
 image.workspace = true
+gif.workspace = true
+image-webp.workspace = true
+resvg.workspace = true
+roxmltree.workspace = true
 kamadak-exif.workspace = true
 quick-xml.workspace = true
 schemars.workspace = true

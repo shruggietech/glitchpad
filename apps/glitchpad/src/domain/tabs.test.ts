@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { ShellSession } from './contracts';
 import { createTabState, projectTabs, tabReducer } from './tabs';
 import { projectSessionMetadata, type MetadataContribution } from './metadata';
+import { createImageSession } from './image-contract';
 
 const sessions = (count: number): ShellSession[] =>
   Array.from({ length: count }, (_, index) => ({
@@ -336,6 +337,25 @@ describe('tab state', () => {
     expect(updated.sessions[0]?.metadata?.external_revision).toEqual(observed);
     expect(updated.sessions[0]?.metadata?.facts.find(({ key }) => key === 'derived.sha256')?.availability).toBe('not_provided');
     expect(updated.sessions[0]?.metadata?.facts.find(({ key }) => key === 'host.display_name')?.value).toEqual({ kind: 'text', value: 'renamed.txt' });
+  });
+
+  it('invalidates image selection and export facts atomically on refresh or permission loss', () => {
+    const source = sessions(1)[0].source;
+    const revision = { identity: source.identity, byte_length: 10, modified_unix_nanos: '1', change_token: 'old' };
+    const image = createImageSession(source, 'opaque', revision, 'ico', 'test');
+    image.image_document!.selection = 2;
+    image.image_document!.viewport = { mode: 'actual', zoom: 2, pan_x: 4, pan_y: 5, background: 'dark' };
+    image.image_document!.family_state = { family: 'ico', entries: [], selected_entry: 2, selected_entry_export: true };
+    const observed = { ...revision, change_token: 'new', byte_length: 12 };
+    const refreshed = tabReducer(createTabState([image]), { type: 'refresh_metadata', id: image.id, expectedRevision: 1, expectedExternalRevision: revision, source: {
+      source_id: 'opaque', external_revision: observed, display_name: 'icon.ico', source_kind: 'file', byte_length: '12', modified_unix_nanos: '1', created_unix_nanos: null, accessed_unix_nanos: null, write_state: 'read_only', identity_confidence: 'strong',
+    } });
+    expect(refreshed.sessions[0]).toMatchObject({ id: image.id, revision: 2, external_revision: observed, dirty: false, image_document: { selection: null, family_state: null, descriptor: null, metadata: null, viewport: image.image_document!.viewport } });
+    const stale = tabReducer(refreshed, { type: 'update_image', id: image.id, expectedRevision: 1, image: image.image_document! });
+    expect(stale).toBe(refreshed);
+    const unavailable = tabReducer(refreshed, { type: 'metadata_unavailable', id: image.id, expectedRevision: 2, sourceId: 'opaque' });
+    expect(unavailable.sessions[0]).toMatchObject({ revision: 3, source_state: 'unavailable', image_document: { selection: null, family_state: null, status: 'failed' } });
+    expect(tabReducer(unavailable, { type: 'metadata_unavailable', id: image.id, expectedRevision: 3, sourceId: 'opaque' })).toBe(unavailable);
   });
 
   it('marks cached source and integrity facts unavailable after observation fails', () => {

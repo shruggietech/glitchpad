@@ -1,0 +1,33 @@
+# Verification: S040 Complete Image-Family Capability
+
+**Started**: 2026-09-15
+
+## Specification and Design
+
+Spec Kit feature/template resolution, setup-plan and setup-tasks commands completed through the hidden Docker launcher. Specification quality is 16/16 pass: four user stories, 16 acceptance scenarios, 24 functional requirements and seven measurable outcomes. Initial/post-design constitution checks evaluate all eight principles with no exception. No extension hooks or separate autopilot file are installed.
+
+Mandated dependency and integration research agents inspected owned decoder APIs, SVG resolver/default-feature traps, actual ICO dimension admission, and original-source export exclusion. Dated decisions are recorded before implementation in [plan.md](plan.md) and [research.md](research.md).
+
+## Scope Traceability
+
+Issues #70/#71/#72/#74 are fully included and must meet every criterion before handoff. #75/#76/#66 and later PDF/office milestones remain incomplete. Official version/public support/associations/intents stay 0.1.3. No merge or release is authorized by this receipt.
+
+## Execution and External Review Ledger
+
+Implementation is complete. Official publication, external reviews and latest-head hosted results are pending. No review request has been posted for S040. Maximum explicit follow-up review requests: one.
+
+## Implementation Decisions and Focused Evidence
+
+The native common-capability test failed against S039 before implementation (one failure, one policy pass). The browser inert-SVG result regression also failed against the S039 validator before extension. Focused native tests now verify inert vector pixels, hostile SVG refusal, node/depth/text ceilings, GIF disposal/transparency/backward replay/frame-count refusal, animated WebP alpha/loop restart, independent ICO PNG/DIB/duplicate/corrupt entries and the approved font digest. Native export tests cover original/hard-link aliases, stale source revisions, destination conflicts, complete commits and staging cleanup. Browser tests cover paused startup, sequential stepping, native eviction scope, export cancellation and bounded presentation projection. The full initial gate reached dependency audit and correctly refused the unmaintained 0.47 font stack; maintained resvg/usvg 0.48.1 replaces that stack without suppression. Cargo deny advisories, bans, licenses and sources all pass; neither flagged package remains in the lock. All four notice bundles include the complete obligations for the 31-package graph delta and the approved Geist OFL.
+
+Task-plan filename consolidation is explicit: T006/T009/T014 tests live together in `crates/glitchpad-core/tests/image_family_decode.rs`; T007/T015 share `crates/glitchpad-core/src/image_family.rs`; T010 lives in its `image_family/animation.rs` submodule. Shared classification and checked PNG delivery justify this consolidation. Issue/scenario ownership remains unchanged.
+
+The original 13 raster digests are retained and the corpus has 18 original fixtures. All 32 family/viewport/touch layout cases pass with >=70% image-pane coverage, >=44px touch actions and no page overflow. Family controls share one horizontal toolbar; bounded policy text remains inspectable in file information.
+
+## Local Validation and Artifact Analysis
+
+The complete `cargo xtask check` finished with exit 0: native workspace tests and clippy, Cargo deny, frontend lint/types/tests/build, original fixture digests, image/shell/layout/metadata/security/performance/package checks, browser delivery/accessibility, configuration, documentation format/lint/links, 47 rendered Mermaid diagrams, official version consistency and UTF-8/BOM/mojibake checks. The confirmation run also finished with exit 0 and includes the new motion/readback regressions. A final focused surface run verifies the clarified original loop-fact label. Native host unit tests pass 56/56, desktop source conformance passes 16/16, native family tests pass 10/10, and frontend tests pass 295/295 across 51 files. Actual Android Kotlin/provider/WebView and Windows/macOS fidelity remain required hosted evidence, never inferred from Linux.
+
+Read-only Spec Kit analyze checked 24 functional requirements, seven buildable outcomes, 16 acceptance scenarios, all 36 tasks and eight constitution principles: 100% mapped coverage, zero ambiguity/duplication/critical findings and no unmapped task. Convergence found one partial evidence gap (dynamic reduced-motion change), appended T036 under Phase 8 without rewriting existing tasks, and implementation added the passing no-subsequent-frame regression. Reassessment finds no remaining application-code gap; publication/review/hosted receipt tasks remain explicitly pending.
+
+The final Android readback audit identified that Kotlin `readBytes(size)` is an allocation hint rather than a byte ceiling. A checked streaming reader now refuses oversized provider readback, with a separate unit regression. Android export deliberately refuses unknown-size or nonempty provider destinations rather than guessing original independence or overwrite consent; its truthful durability is recoverable/non-atomic. Desktop generated export uses exclusive complete-file publication or observed-conflict-checked atomic replacement and never source Save.

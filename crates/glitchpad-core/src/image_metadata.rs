@@ -265,7 +265,7 @@ pub fn extract_image_metadata(bytes: &[u8]) -> ImageMetadataReport {
     } else if bytes.starts_with(b"II*\0") || bytes.starts_with(b"MM\0*") {
         // TIFF offsets refer to the original source. Walk bounded IFD entries rather than
         // feeding the full (potentially 128 MiB) pixel container to the Exif library.
-        tiff_metadata(&mut report, bytes, &mut total, &mut block);
+        tiff_metadata(&mut report, bytes, &mut total, &mut block, false);
     }
     if report.observations.is_empty() && report.statuses.is_empty() {
         report.status("embedded_metadata_not_provided");
@@ -342,6 +342,9 @@ fn exif_key(tag: u16) -> Option<(&'static str, &'static str)> {
 }
 
 fn exif_metadata(report: &mut ImageMetadataReport, bytes: &[u8], block: u32) {
+    let mut total = 0;
+    let mut ifd_block = block;
+    tiff_metadata(report, bytes, &mut total, &mut ifd_block, true);
     let parsed = exif::Reader::new()
         .continue_on_error(true)
         .read_raw(bytes.to_vec())
@@ -355,49 +358,6 @@ fn exif_metadata(report: &mut ImageMetadataReport, bytes: &[u8], block: u32) {
         .and_then(|f| f.value.get_uint(0))
         .and_then(|n| u8::try_from(n).ok())
         .filter(|n| (1..=8).contains(n));
-    for field in parsed.fields().take(4096) {
-        if field.tag.0 == exif::Context::Gps {
-            report.observe("image.location", "exif", "GPS", block, None);
-            continue;
-        }
-        if field.ifd_num != exif::In::PRIMARY {
-            report.unknown();
-            continue;
-        }
-        let Some((key, tag)) = exif_key(field.tag.1) else {
-            report.unknown();
-            continue;
-        };
-        let value = match &field.value {
-            exif::Value::Ascii(values) if values.len() == 1 => {
-                values.first().and_then(|v| text_value(v))
-            }
-            exif::Value::Rational(values)
-                if !values.is_empty() && values.len() <= 64 && values[0].denom != 0 =>
-            {
-                let decimal = format!(
-                    "{:.8}",
-                    f64::from(values[0].num) / f64::from(values[0].denom)
-                );
-                Some((
-                    MetadataValue::Decimal(decimal),
-                    ImageOriginalValue::Rational(values.iter().map(|v| (v.num, v.denom)).collect()),
-                ))
-            }
-            value => value
-                .iter_uint()
-                .filter(|values| values.len() <= 64)
-                .and_then(|values| {
-                    let originals = values.map(u64::from).collect::<Vec<_>>();
-                    let n = originals.first()?;
-                    Some((
-                        MetadataValue::Integer(n.to_string()),
-                        ImageOriginalValue::Unsigned(originals),
-                    ))
-                }),
-        };
-        report.observe(key, "exif", tag, block, value);
-    }
     let start = parsed
         .get_field(exif::Tag::JPEGInterchangeFormat, exif::In::THUMBNAIL)
         .and_then(|f| f.value.get_uint(0))
@@ -746,6 +706,7 @@ fn tiff_metadata(
     bytes: &[u8],
     total: &mut usize,
     block: &mut u32,
+    primary_only: bool,
 ) {
     let little = bytes.starts_with(b"II");
     let read16 = |offset: usize| {
@@ -774,18 +735,20 @@ fn tiff_metadata(
     // Classify the graph before publishing any value: aliases must not make GPS
     // sensitivity depend on whether an ordinary pointer was traversed first.
     let mut sensitivity = std::collections::BTreeMap::new();
-    let mut classify = vec![(first, false)];
+    let mut classify = vec![(first, false, true)];
     let mut classified_entries = 0usize;
-    while let Some((offset, gps)) = classify.pop() {
+    while let Some((offset, mut gps, mut primary)) = classify.pop() {
         if offset == 0 {
             continue;
         }
-        if let Some(previous) = sensitivity.get(&offset)
-            && (*previous || !gps)
-        {
-            continue;
+        if let Some((previous_gps, previous_primary)) = sensitivity.get(&offset) {
+            if (*previous_gps || !gps) && (*previous_primary || !primary) {
+                continue;
+            }
+            gps |= previous_gps;
+            primary |= previous_primary;
         }
-        sensitivity.insert(offset, gps);
+        sensitivity.insert(offset, (gps, primary));
         if sensitivity.len() > 32 {
             report.status("tiff_ifd_limit");
             return;
@@ -812,7 +775,7 @@ fn tiff_metadata(
                 return;
             };
             if matches!(tag, 0x8769 | 0x8825) {
-                classify.push((pointer, gps || tag == 0x8825));
+                classify.push((pointer, gps || tag == 0x8825, primary));
             }
         }
         let Some(next) = count
@@ -823,13 +786,13 @@ fn tiff_metadata(
             report.status("tiff_metadata_truncated");
             return;
         };
-        classify.push((next, gps));
+        classify.push((next, gps, false));
     }
-    let mut pending = vec![(first, false)];
+    let mut pending = vec![first];
     let mut visited = std::collections::BTreeSet::new();
     let mut entries = 0usize;
-    while let Some((offset, inherited_gps)) = pending.pop() {
-        let gps = inherited_gps || sensitivity.get(&offset).copied().unwrap_or(false);
+    while let Some(offset) = pending.pop() {
+        let (gps, primary) = sensitivity.get(&offset).copied().unwrap_or((false, false));
         if offset == 0 {
             continue;
         }
@@ -867,14 +830,14 @@ fn tiff_metadata(
                 break;
             };
             if matches!(tag, 0x8769 | 0x8825) {
-                pending.push((pointer, gps || tag == 0x8825));
+                pending.push(pointer);
                 continue;
             }
             if gps {
                 report.observe("image.location", "exif", "GPS", *block, None);
                 continue;
             }
-            if tag == 0x0112 && offset != first {
+            if (primary_only && !primary) || (tag == 0x0112 && offset != first) {
                 report.unknown();
                 continue;
             }
@@ -939,7 +902,7 @@ fn tiff_metadata(
             .and_then(|n| offset.checked_add(2)?.checked_add(n))
             .and_then(read32)
         {
-            pending.push((next, gps));
+            pending.push(next);
         }
         *block += 1;
     }

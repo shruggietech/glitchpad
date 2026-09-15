@@ -12,7 +12,7 @@
 
 **Decision**: Use `kamadak-exif` 0.6.1 (BSD-2-Clause) and `quick-xml` 0.42.0 (MIT). Explicitly add reviewed BSD-2-Clause to the license allowlist and generated notices. [EXIF license](https://github.com/kamadak/exif-rs/blob/master/LICENSE), [XML manifest](https://github.com/tafia/quick-xml/blob/v0.42.0/Cargo.toml).
 
-**Rationale**: Bounded EXIF blocks and an event-driven declared XMP subset support independent metadata failure without unrestricted XML or image-container APIs.
+**Rationale**: Bounded EXIF blocks and an event-driven declared XMP subset support independent metadata failure without unrestricted XML or image-container APIs. Published EXIF facts use the application-owned GPS-aware TIFF graph walker; `kamadak-exif` is retained only for independently bounded private thumbnail extraction because library field-context labels cannot preserve sensitivity across shared IFD offsets.
 
 ## Allocation and cancellation findings
 

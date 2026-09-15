@@ -98,3 +98,7 @@ First prove US1's five-codec read-only preview end-to-end; then add independentl
 ## Phase 9: Convergence
 
 - [x] T042 Restrict TIFF preview orientation to its primary IFD so later-page tags cannot rotate the first-page preview, and verify unchanged expected first-page pixels with a failure-first test (FR-009, FR-011; US1/AC2).
+
+## Phase 10: Convergence
+
+- [x] T043 Apply the bounded GPS-aware IFD graph classification to embedded EXIF facts across JPEG/PNG/WebP, retain primary-only facts and private thumbnail extraction, and prove that shared GPS-linked EXIF capture-time payloads never serialize (FR-014; US2/AC2).

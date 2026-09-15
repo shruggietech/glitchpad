@@ -248,3 +248,23 @@ fn gps_tiff_descendants_siblings_and_shared_ifds_never_expose_values() {
         }
     }
 }
+
+#[test]
+fn gps_linked_capture_time_in_jpeg_exif_is_redacted() {
+    let secret = b"PRIVATE LOCATION\0";
+    let mut tiff = vec![0; 100];
+    tiff[..8].copy_from_slice(b"II*\0\x08\0\0\0");
+    put_ifd(&mut tiff, 8, &[(0x8825, 4, 1, 38), (0x8769, 4, 1, 56)], 0);
+    put_ifd(&mut tiff, 38, &[(0x8769, 4, 1, 56)], 0);
+    put_ifd(
+        &mut tiff,
+        56,
+        &[(0x9003, 2, u32::try_from(secret.len()).unwrap(), 100)],
+        0,
+    );
+    tiff.extend_from_slice(secret);
+    let mut payload = b"Exif\0\0".to_vec();
+    payload.extend_from_slice(&tiff);
+    let report = extract_image_metadata(&jpeg_block(0xe1, &payload));
+    assert!(!serde_json::to_string(&report).unwrap().contains("PRIVATE"));
+}

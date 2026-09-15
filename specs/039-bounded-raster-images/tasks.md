@@ -107,3 +107,8 @@ First prove US1's five-codec read-only preview end-to-end; then add independentl
 
 - [x] T044 Correct hosted Android image evidence to check the visible background label separately from its accessible selector name, retaining strict inert pixel and unchanged-source assertions (FR-019; SC-001; partial).
 - [x] T045 Separate Android APK/provider compilation from emulator execution and suppress unrelated Google service startup in the ephemeral validation emulator, retaining the complete provider/delivery/restoration/performance gates and existing retry limits (FR-019; SC-001, SC-002; partial).
+
+## Phase 12: Convergence
+
+- [x] T046 Use the official AOSP API 36 emulator image and precompile the instrumentation APK before emulator startup, preserving API 24 Chrome coverage and every provider/delivery/restoration/performance gate (FR-019; SC-001, SC-002; partial).
+- [x] T047 Require each Android raster preview to match its delivered source filename and emit bounded pixel/status diagnostics on failure without logging raw source bytes or provider URIs (FR-019; SC-001; partial).

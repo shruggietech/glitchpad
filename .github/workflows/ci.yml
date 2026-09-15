@@ -283,13 +283,16 @@ jobs:
           export NDK_HOME="${ANDROID_SDK_ROOT}/ndk/28.2.13676358"
           pnpm tauri android build --debug --apk --target x86_64 --ci --config '{"version":"0.0.1"}'
           ./crates/glitchpad-host/gen/android/gradlew --project-dir crates/glitchpad-host/gen/android :glitchpad-android-source:testDebugUnitTest --no-daemon
+          ./crates/glitchpad-host/gen/android/gradlew --project-dir crates/glitchpad-host/gen/android :app:assembleUniversalDebugAndroidTest -PabiList=x86_64 -ParchList=x86_64 -PtargetList=x86_64 -x :app:rustBuildUniversalDebug -x :app:rustBuildX86_64Debug --no-daemon
 
       - name: Run provider, resolver, delivery, and restoration evidence
         uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2
         with:
           api-level: ${{ matrix.api-level }}
           arch: x86_64
-          target: google_apis
+          # Keep API 24's older Chrome coverage. API 36 uses the official AOSP image
+          # to exercise offline framework behavior without Google first-boot work.
+          target: ${{ matrix.api-level == 36 && 'default' || 'google_apis' }}
           cores: 4
           emulator-boot-timeout: 900
           disable-animations: true

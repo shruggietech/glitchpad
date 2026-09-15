@@ -15,6 +15,7 @@ import com.shruggietech.glitchpad.MainActivity
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
+import org.json.JSONObject
 import org.junit.After
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -57,7 +58,7 @@ class AndroidDeliveryInstrumentedTest {
       // image associations and public ACTION_VIEW intent filters stay deferred.
       clientContext.startActivity(viewIntent(uri, "image/*").setComponent(component).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
       waitForBodyText(scenario, "original.$extension", "Actual size", "Background")
-      waitForImagePixels(scenario)
+      waitForImagePixels(scenario, "original.$extension")
       val after = resolver.openInputStream(uri)!!.use { it.readBytes() }
       assertTrue("raster preview changed original provider bytes", before.contentEquals(after))
     }
@@ -119,8 +120,10 @@ class AndroidDeliveryInstrumentedTest {
     return if (latch.await(2, TimeUnit.SECONDS)) result.get() else null
   }
 
-  private fun waitForImagePixels(scenario: ActivityScenario<MainActivity>) {
+  private fun waitForImagePixels(scenario: ActivityScenario<MainActivity>, expectedName: String) {
     val deadline = SystemClock.elapsedRealtime() + 30_000L
+    val expectedLiteral = JSONObject.quote(expectedName)
+    var latest = "no WebView evidence"
     while (SystemClock.elapsedRealtime() < deadline) {
       val view = AtomicReference<WebView?>()
       scenario.onActivity { view.set(findWebView(it.window.decorView)) }
@@ -128,16 +131,19 @@ class AndroidDeliveryInstrumentedTest {
       val latch = CountDownLatch(1)
       view.get()?.let { webView ->
         instrumentation.runOnMainSync {
-          webView.evaluateJavascript("(()=>{const image=document.querySelector('.image-preview');const background=document.querySelector('select[aria-label=\"Image background\"]');return !!background && !!image && image.complete && image.naturalWidth===4 && image.naturalHeight===3 && image.src.startsWith('blob:');})()") {
+          webView.evaluateJavascript("(()=>{const image=document.querySelector('.image-preview');const background=document.querySelector('select[aria-label=\"Image background\"]');const status=document.querySelector('.image-status');const matches=!!image && image.alt===$expectedLiteral;const blob=!!image && image.src.startsWith('blob:');return {pass:!!background && matches && image.complete && image.naturalWidth===4 && image.naturalHeight===3 && blob,matches:matches,complete:!!image && image.complete,width:image ? image.naturalWidth : 0,height:image ? image.naturalHeight : 0,blob:blob,background:!!background,status:status ? status.textContent.slice(0,256) : ''};})()") {
             result.set(it ?: "")
             latch.countDown()
           }
         }
-        if (latch.await(2, TimeUnit.SECONDS) && result.get() == "true") return
+        if (latch.await(2, TimeUnit.SECONDS)) {
+          latest = result.get()
+          if (latest.startsWith("{") && JSONObject(latest).optBoolean("pass")) return
+        }
       }
       SystemClock.sleep(100L)
     }
-    throw AssertionError("bounded raster did not produce the expected inert image pixels")
+    throw AssertionError("bounded raster did not produce the expected inert image pixels for $expectedName; $latest")
   }
 
   private fun findWebView(view: View): WebView? {

@@ -1,4 +1,6 @@
 import { execFileSync } from 'node:child_process';
+import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { describe, it } from 'vitest';
 
 describe('Chrome 69 runtime compatibility', () => {
@@ -10,7 +12,7 @@ describe('Chrome 69 runtime compatibility', () => {
 
       delete String.prototype.replaceAll;
       delete Array.prototype.at;
-      await import(${JSON.stringify(new URL('./runtime-polyfills.ts', import.meta.url).href)});
+      await import(${JSON.stringify(pathToFileURL(resolve('src/runtime-polyfills.ts')).href)});
 
       assert.equal('utf_8 utf_8'.replaceAll('_', ' '), 'utf 8 utf 8');
       assert.equal('a.b.a'.replaceAll('.', '$&'), 'a.b.a');

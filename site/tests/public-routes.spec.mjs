@@ -77,10 +77,10 @@ test('documentation navigation follows canonical order and excludes the legacy r
   const previous = documentation.sections[17];
   const next = documentation.sections[19];
   await expect(
-    page.locator(`[role="main"] a[href="${previous.route}"]`).last(),
+    page.getByRole('main').locator(`a[href="${previous.route}"]`).last(),
   ).toHaveAttribute('href', previous.route);
   await expect(
-    page.locator(`[role="main"] a[href="${next.route}"]`).last(),
+    page.getByRole('main').locator(`a[href="${next.route}"]`).last(),
   ).toHaveAttribute('href', next.route);
 });
 

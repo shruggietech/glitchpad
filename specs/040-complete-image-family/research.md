@@ -51,3 +51,7 @@ Adversarial reassessment found that returning a container failure for one bad en
 ## 2026-09-15: Animation encoded-buffer admission
 
 Peak reassessment found that vector growth and conversion to `Arc<[u8]>` could temporarily add an uncounted encoded copy. Before correction, the decision is to reserve at most the source length for sanitized bytes, keep the vector allocation behind an immutable `Arc<Vec<u8>>` cursor wrapper without copying its payload, and conservatively admit three encoded buffers (including Android source-cache/read coexistence) plus existing fixed, surface and delivery overhead. Reject insufficient encoded headroom before allocating the sanitized vector, then apply full surface admission with that extra encoded buffer reserved.
+
+## 2026-09-15: Non-truncating Android export descriptor
+
+The [Android ContentResolver contract](https://developer.android.com/reference/android/content/ContentResolver) permits provider-specific truncation for `w` and identifies `rw` as a seekable descriptor. Before correction, the generated export decision is to open with `rw`, reject any actual nonzero/unknown descriptor size, and recheck cancellation/source registration immediately before writing. Providers without a verifiable empty seekable destination fail safely. This does not change general source Save As. A controlled provider with deliberately misreported zero size supplies real conflict-preservation evidence.

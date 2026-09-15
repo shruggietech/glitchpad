@@ -122,6 +122,9 @@ class AndroidDeliveryInstrumentedTest {
     val root = grant(documentUri("fixture-root"))
     val created = requireNotNull(DocumentsContract.createDocument(resolver, root, "image/png", "s040-export-${UUID.randomUUID()}.png"))
     val destination = grant(created)
+    val misreported = grant(requireNotNull(DocumentsContract.createDocument(resolver, root, "image/png", "s040-misreported-${UUID.randomUUID()}.png")))
+    val concurrent = "existing provider bytes".toByteArray(Charsets.UTF_8)
+    resolver.openOutputStream(misreported, "w")!!.use { it.write(concurrent) }
     fun chosen(uri: Uri) = ActivityResult(Activity.RESULT_OK, Intent().setData(uri).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION))
     try {
       exportChoice(scenario, ActivityResult(Activity.RESULT_CANCELED, Intent()), "Export cancelled.")
@@ -137,11 +140,14 @@ class AndroidDeliveryInstrumentedTest {
       assertEquals(3, bitmap.height)
       for (y in 0 until 3) for (x in 0 until 4) assertEquals("selected DIB pixels must match independent PNG fixture", expected.getPixel(x,y), bitmap.getPixel(x,y))
       bitmap.recycle(); expected.recycle()
+      exportChoice(scenario, chosen(misreported), "Export could not complete safely.")
+      assertTrue("misreported-size destination must survive without truncation", concurrent.contentEquals(resolver.openInputStream(misreported)!!.use { it.readBytes() }))
+      exportChoice(scenario, ActivityResult(Activity.RESULT_CANCELED, Intent()), "Export cancelled.")
       exportChoice(scenario, chosen(destination), "Export could not complete safely.")
       assertTrue("existing destination conflict must preserve complete bytes", bytes.contentEquals(resolver.openInputStream(destination)!!.use { it.readBytes() }))
       assertTrue("generated export must preserve original source", before.contentEquals(resolver.openInputStream(original)!!.use { it.readBytes() }))
-      println("image_export_evidence=cancel:pass,original_denied:pass,selected_dib_png:pass,existing_conflict:pass,source_unchanged:pass,api:${android.os.Build.VERSION.SDK_INT}")
-    } finally { DocumentsContract.deleteDocument(resolver, destination) }
+      println("image_export_evidence=cancel:pass,original_denied:pass,selected_dib_png:pass,existing_conflict:pass,misreported_size:pass,source_unchanged:pass,api:${android.os.Build.VERSION.SDK_INT}")
+    } finally { DocumentsContract.deleteDocument(resolver, destination); DocumentsContract.deleteDocument(resolver, misreported) }
   }
 
   @Suppress("DEPRECATION")

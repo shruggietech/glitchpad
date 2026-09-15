@@ -297,7 +297,9 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
         val hash = digest.digest().joinToString("") { "%02x".format(it.toInt() and 255) }
         ImageExportPolicy.source(args.sourceSha256, hash, cancelled.get(), sources.containsKey(args.bridgeToken))
         if (queryMetadata(candidate.uri).size != 0L) throw IllegalStateException("destination_conflict")
-        activity.contentResolver.openFileDescriptor(candidate.uri, "w", CancellationSignal())?.use { descriptor ->
+        activity.contentResolver.openFileDescriptor(candidate.uri, "rw", CancellationSignal())?.use { descriptor ->
+          if (descriptor.statSize != 0L) throw IllegalStateException("destination_conflict")
+          if (cancelled.get() || !sources.containsKey(args.bridgeToken)) throw IllegalStateException("export_cancelled")
           started = true
           java.io.FileOutputStream(descriptor.fileDescriptor).use { output -> output.write(bytes); output.flush(); descriptor.fileDescriptor.sync() }
           descriptor.checkError()

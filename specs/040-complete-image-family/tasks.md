@@ -89,3 +89,7 @@ Prove safe SVG first, incremental paused animation next, then independent ICO en
 ## Phase 11: Convergence
 
 - [ ] T039 Exercise the real Android selected-entry native/provider export round trip, chooser cancellation, original identity and existing-destination refusal on API 24/36, and compare independent PNG/DIB golden pixels per FR-021, SC-003, SC-006 and T026 (partial).
+
+## Phase 12: Convergence
+
+- [ ] T040 Open Android export destinations without truncation, recheck actual descriptor size/cancellation before writing, and prove misreported-size conflict preservation in provider instrumentation per FR-015, SC-006 and #72 (partial).

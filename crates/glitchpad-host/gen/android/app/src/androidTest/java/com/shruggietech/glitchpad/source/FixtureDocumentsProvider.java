@@ -233,7 +233,7 @@ public final class FixtureDocumentsProvider extends DocumentsProvider {
             | Document.FLAG_SUPPORTS_DELETE);
     if (!"unknown-size.txt".equals(file.getName())
         && !"metadata-omitted.txt".equals(file.getName())) {
-      row.add(Document.COLUMN_SIZE, file.length());
+      row.add(Document.COLUMN_SIZE, file.getName().startsWith("s040-misreported-") ? 0L : file.length());
     }
     if (!"metadata-omitted.txt".equals(file.getName())) {
       row.add(Document.COLUMN_LAST_MODIFIED, file.lastModified());

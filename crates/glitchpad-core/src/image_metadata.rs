@@ -788,6 +788,78 @@ fn tiff_metadata(
         };
         classify.push((next, gps, false));
     }
+    // Separate IFDs can alias GPS payload bytes, so classify sensitive extents
+    // before reading or normalizing any ordinary metadata value.
+    let mut protected = Vec::new();
+    for (&offset, &(gps, _)) in &sensitivity {
+        if !gps {
+            continue;
+        }
+        let Some(count) = read16(offset).map(usize::from) else {
+            report.status("tiff_metadata_truncated");
+            return;
+        };
+        let Some(end) = count
+            .checked_mul(12)
+            .and_then(|length| offset.checked_add(6)?.checked_add(length))
+            .filter(|end| *end <= bytes.len())
+        else {
+            report.status("tiff_metadata_truncated");
+            return;
+        };
+        protected.push((offset, end));
+        for index in 0..count {
+            let Some(entry) = offset
+                .checked_add(2)
+                .and_then(|start| index.checked_mul(12)?.checked_add(start))
+            else {
+                report.status("tiff_metadata_malformed");
+                return;
+            };
+            let (Some(kind), Some(count), Some(pointer)) = (
+                entry.checked_add(2).and_then(read16),
+                entry.checked_add(4).and_then(read32),
+                entry.checked_add(8).and_then(read32),
+            ) else {
+                report.status("tiff_metadata_truncated");
+                return;
+            };
+            let unit = match kind {
+                1 | 2 | 6 | 7 => 1,
+                3 | 8 => 2,
+                4 | 9 | 11 | 13 => 4,
+                5 | 10 | 12 => 8,
+                _ => {
+                    report.status("tiff_metadata_malformed");
+                    return;
+                }
+            };
+            let Some(length) = count.checked_mul(unit) else {
+                report.status("metadata_block_limit");
+                return;
+            };
+            if length > MAX_IMAGE_METADATA_BLOCK
+                || total.saturating_add(length) > MAX_IMAGE_METADATA_TOTAL
+            {
+                report.status("metadata_block_limit");
+                return;
+            }
+            let Some(start) = (if length <= 4 {
+                entry.checked_add(8)
+            } else {
+                Some(pointer)
+            }) else {
+                report.status("tiff_metadata_malformed");
+                return;
+            };
+            let Some(end) = start.checked_add(length).filter(|end| *end <= bytes.len()) else {
+                report.status("tiff_metadata_truncated");
+                return;
+            };
+            *total += length;
+            protected.push((start, end));
+        }
+    }
     let mut pending = vec![first];
     let mut visited = std::collections::BTreeSet::new();
     let mut entries = 0usize;
@@ -866,14 +938,19 @@ fn tiff_metadata(
                 continue;
             }
             let start = if length <= 4 { entry + 8 } else { pointer };
-            let Some(data) = start
-                .checked_add(length)
-                .and_then(|end| bytes.get(start..end))
-            else {
+            let Some(end) = start.checked_add(length).filter(|end| *end <= bytes.len()) else {
                 report.status("tiff_metadata_truncated");
                 continue;
             };
             *total += length;
+            if protected
+                .iter()
+                .any(|&(begin, protected_end)| start < protected_end && begin < end)
+            {
+                report.observe("image.location", "exif", "GPSPayloadAlias", *block, None);
+                continue;
+            }
+            let data = &bytes[start..end];
             if tag == 700 {
                 xmp_metadata(report, data, *block);
                 continue;

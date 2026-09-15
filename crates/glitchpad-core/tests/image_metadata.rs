@@ -268,3 +268,50 @@ fn gps_linked_capture_time_in_jpeg_exif_is_redacted() {
     let report = extract_image_metadata(&jpeg_block(0xe1, &payload));
     assert!(!serde_json::to_string(&report).unwrap().contains("PRIVATE"));
 }
+
+#[test]
+fn gps_payload_alias_in_ordinary_exif_is_redacted() {
+    for reverse in [false, true] {
+        for (pointer, secret) in [(96, "51"), (100, "51"), (108, "30"), (124, "51")] {
+            let mut tiff = vec![0; 100];
+            tiff[..8].copy_from_slice(b"II*\0\x08\0\0\0");
+            let mut roots = [(0x8825, 4, 1, 38), (0x8769, 4, 1, 56)];
+            if reverse {
+                roots.reverse();
+            }
+            put_ifd(&mut tiff, 8, &roots, 0);
+            put_ifd(&mut tiff, 38, &[(0x0002, 5, 3, 100)], 0);
+            put_ifd(&mut tiff, 56, &[(0x829a, 5, 1, pointer)], 0);
+            for (numerator, denominator) in [(51u32, 1u32), (30, 1), (26, 1), (7, 1)] {
+                tiff.extend_from_slice(&numerator.to_le_bytes());
+                tiff.extend_from_slice(&denominator.to_le_bytes());
+            }
+            let mut payload = b"Exif\0\0".to_vec();
+            payload.extend_from_slice(&tiff);
+            for source in [&tiff, &jpeg_block(0xe1, &payload)] {
+                let serialized = serde_json::to_string(&extract_image_metadata(source)).unwrap();
+                assert!(!serialized.contains(secret));
+                if pointer == 124 {
+                    assert!(
+                        serialized.contains("7.00000000"),
+                        "adjacent public value was withheld"
+                    );
+                }
+            }
+            // An invalid sensitive extent must not publish ordinary values first.
+            put_ifd(&mut tiff, 38, &[(0x0002, 5, 3, 200)], 0);
+            let report = extract_image_metadata(&tiff);
+            assert!(
+                report
+                    .statuses
+                    .iter()
+                    .any(|status| status == "tiff_metadata_truncated")
+            );
+            assert!(
+                !serde_json::to_string(&report)
+                    .unwrap()
+                    .contains("7.00000000")
+            );
+        }
+    }
+}

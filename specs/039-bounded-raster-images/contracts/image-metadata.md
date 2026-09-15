@@ -20,6 +20,8 @@ Known facts use registered catalog policy and typed normalized/bounded original 
 
 GPS/destination GPS, IPTC city/sublocation/province/country, and recognized XMP location fields are sensitive and redacted before wire serialization. Redacted DTOs contain no raw coordinate/string, tooltip, clipboard payload, or logged source value. Unknown metadata is protected and summarized without content. Inspector aggregation cannot bypass these rules.
 
+EXIF/TIFF classification precedes value publication: GPS sensitivity follows supported IFD links and shared IFDs, and ordinary facts whose checked payload extents overlap GPS structures or values are withheld. Invalid sensitive extents fail closed; adjacent non-overlapping public values remain eligible. Pixel decoding remains independent of metadata failure.
+
 ## Revision and accessibility
 
 Facts are bound to the request/session/external revision. Refresh invalidates stale facts and updates within the same session. The existing dismissible drawer, focus restoration, group ordering, availability labels, and keyboard/touch/screen-reader semantics are reused. Independent metadata failures never suppress an otherwise safe preview.

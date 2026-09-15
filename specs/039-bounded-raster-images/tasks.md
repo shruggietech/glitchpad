@@ -112,3 +112,7 @@ First prove US1's five-codec read-only preview end-to-end; then add independentl
 
 - [x] T046 Use the official AOSP API 36 emulator image and precompile the instrumentation APK before emulator startup, preserving API 24 Chrome coverage and every provider/delivery/restoration/performance gate (FR-019; SC-001, SC-002; partial).
 - [x] T047 Require each Android raster preview to match its delivered source filename and emit bounded pixel/status diagnostics on failure without logging raw source bytes or provider URIs (FR-019; SC-001; partial).
+
+## Phase 13: Convergence
+
+- [x] T048 Redact ordinary EXIF/TIFF facts whose payload ranges overlap GPS-sensitive IFD structures or values, classify checked extents before publication, fail closed on invalid sensitive extents, and add failure-first standalone/embedded serialization regressions (FR-014; US2/AC2; partial).

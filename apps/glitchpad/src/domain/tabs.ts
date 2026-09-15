@@ -30,6 +30,7 @@ export interface TabState {
 }
 
 export type TabAction =
+  | { type: 'update_image'; id: string; expectedRevision: number; image: import('./image-contract').ImageDocumentState }
   | { type: 'open'; session: ShellSession }
   | { type: 'activate'; id: string }
   | { type: 'close'; id: string }
@@ -229,6 +230,12 @@ export const tabReducer = (state: TabState, action: TabAction): TabState => {
         ),
       };
     }
+    case 'update_image': {
+      const target = state.sessions.find(s => s.id === action.id && s.revision === action.expectedRevision && s.image_document);
+      if (!target) return state;
+      const metadata = target.metadata ? { ...target.metadata, facts: target.metadata.facts.filter(f => !f.key.startsWith('image.')) } : undefined;
+      return { ...state, sessions: state.sessions.map(s => s.id === target.id ? { ...target, image_document: action.image, metadata } : s) };
+    }
     case 'refresh_metadata': {
       const target = state.sessions.find(
         (session) => session.id === action.id && session.revision === action.expectedRevision,
@@ -238,6 +245,21 @@ export const tabReducer = (state: TabState, action: TabAction): TabState => {
         target.source_id !== action.source.source_id ||
         JSON.stringify(target.external_revision ?? null) !== JSON.stringify(action.expectedExternalRevision)
       ) return state;
+      if (target.image_document && (target.source_state === 'unavailable' || JSON.stringify(target.external_revision) !== JSON.stringify(action.source.external_revision))) {
+        const refreshed = {
+          ...target,
+          revision: target.revision + 1,
+          saved_revision: target.revision + 1,
+          source: { ...target.source, byte_length: action.source.external_revision.byte_length },
+          external_revision: action.source.external_revision,
+          source_state: 'available' as const,
+          image_document: { ...target.image_document, descriptor: null, metadata: null, status: 'idle' as const },
+          metadata: undefined,
+        };
+        const metadata = mergeSourceMetadataSnapshot(refreshed, projectSessionMetadata(refreshed), action.source);
+        if (!metadata) return state;
+        return { ...state, sessions: state.sessions.map(s => s.id === target.id ? { ...refreshed, metadata } : s) };
+      }
       const metadata = mergeSourceMetadataSnapshot(
         target,
         target.metadata ?? projectSessionMetadata(target),
@@ -256,6 +278,12 @@ export const tabReducer = (state: TabState, action: TabAction): TabState => {
         (session) => session.id === action.id && session.revision === action.expectedRevision,
       );
       if (!target || target.source_id !== action.sourceId) return state;
+      if (target.image_document) {
+        if (target.source_state === 'unavailable') return state;
+        const unavailable = { ...target, revision: target.revision + 1, source_state: 'unavailable' as const,
+          image_document: { ...target.image_document, descriptor: null, metadata: null, status: 'failed' as const }, metadata: undefined };
+        return { ...state, sessions: state.sessions.map(s => s.id === target.id ? { ...unavailable, metadata: markSourceMetadataUnavailable(unavailable, projectSessionMetadata(unavailable)) } : s) };
+      }
       const snapshot = target.metadata ?? projectSessionMetadata(target);
       return {
         ...state,

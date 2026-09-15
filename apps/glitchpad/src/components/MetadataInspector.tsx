@@ -9,6 +9,7 @@ import {
   bulkCopyText,
   formatMetadataFact,
   groupMetadataFacts,
+  metadataCatalogEntry,
   type MetadataFact,
   type MetadataSnapshot,
 } from '../domain/metadata';
@@ -113,6 +114,21 @@ export function MetadataInspector({
         )}
       </div>
       <div className="metadata-groups">
+        {session.image_document?.metadata && (
+          <section className="metadata-group" aria-label="Embedded image observations">
+            <h3>Embedded observations</h3>
+            <p>{session.image_document.metadata.unknown_fields} unknown fields (values withheld).</p>
+            {session.image_document.metadata.observations.map((observation, index) => (
+              <details key={`${observation.family}-${observation.block}-${index}`}>
+                <summary>{metadataCatalogEntry(observation.key).label}: {observation.family.toUpperCase()} / {observation.tag}{observation.duplicate ? ' (duplicate; first observation is used in facts)' : ''}</summary>
+                <p>Metadata block {observation.block}. {observation.availability.replaceAll('_', ' ')}.</p>
+                {observation.availability === 'available' && observation.key !== 'image.location' && observation.original && (
+                  <p>Original typed value: <code>{JSON.stringify(observation.original)}</code></p>
+                )}
+              </details>
+            ))}
+          </section>
+        )}
         {groupMetadataFacts(snapshot).map((group) => (
           <section key={group.group} className="metadata-group" aria-labelledby={`metadata-group-${group.group}`}>
             <h3 id={`metadata-group-${group.group}`}>{group.label}</h3>

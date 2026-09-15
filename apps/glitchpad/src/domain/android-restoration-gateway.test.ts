@@ -67,8 +67,20 @@ const projection: SessionProjection = {
 };
 
 describe('Android startup restoration', () => {
+  it('routes content-verified image restoration without decoding text', async () => {
+    const call = vi.fn((command: string) => {
+      if (command === 'restore_android_sources') return Promise.resolve([{ source, status: 'restored', display_name: 'restored.md' }]);
+      if (command === 'identify_image_source') return Promise.resolve('jpeg');
+      throw new Error(`Unexpected image text read: ${command}`);
+    });
+    const sessions = await createNativeAndroidRestorationGateway(call).restore([{ ...projection, renderer_id: 'image' }]);
+    expect(sessions[0]?.image_document?.codec).toBe('jpeg');
+    expect(sessions[0]?.text_document).toBeNull();
+    expect(sessions[0]?.renderer.capabilities.save).toBe(false);
+  });
   it('reopens only projected durable sources and materializes their bounded content', async () => {
     const nativeCall = (command: string): Promise<unknown> => {
+      if (command === 'identify_image_source') return Promise.resolve(null);
       if (command === 'restore_android_sources')
         return Promise.resolve([
           { source, status: 'restored', display_name: 'restored.md' },

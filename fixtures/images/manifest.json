@@ -1,0 +1,98 @@
+{
+  "author": "Glitchpad contributors",
+  "files": [
+    {
+      "bytes": 691,
+      "height": 3,
+      "name": "orientation-1.jpg",
+      "sha256": "c00ff10a05151d66126bfd8d25f8953c620c72d2187c10fd57de2f415f8234ed",
+      "width": 4
+    },
+    {
+      "bytes": 691,
+      "height": 3,
+      "name": "orientation-2.jpg",
+      "sha256": "aeab01b7c0d90620fd2e1af3cf013640f5fe94d08934f1c295e9463072d5742b",
+      "width": 4
+    },
+    {
+      "bytes": 691,
+      "height": 3,
+      "name": "orientation-3.jpg",
+      "sha256": "26dced76163a34fed5ae556f35800a663cfbd78fd969a346b5797f973f05944f",
+      "width": 4
+    },
+    {
+      "bytes": 691,
+      "height": 3,
+      "name": "orientation-4.jpg",
+      "sha256": "afc8d3d1b549fc6d60dcc32cf8bca20b2ec25bd67ad4d83764149416ef3481f3",
+      "width": 4
+    },
+    {
+      "bytes": 691,
+      "height": 3,
+      "name": "orientation-5.jpg",
+      "sha256": "98979fecd013931e4db8ff4f7f1e0d5fb0907ccd00a7a30ced55eff5cd21224c",
+      "width": 4
+    },
+    {
+      "bytes": 691,
+      "height": 3,
+      "name": "orientation-6.jpg",
+      "sha256": "13f6631b7ee595124531286b411476e48026c13da2783bf2fb850b5968da28c5",
+      "width": 4
+    },
+    {
+      "bytes": 691,
+      "height": 3,
+      "name": "orientation-7.jpg",
+      "sha256": "e65f42700f1d4ac9f36d3733b68fcc03ed3da73fcbec7f5dbf27d48d766213fe",
+      "width": 4
+    },
+    {
+      "bytes": 691,
+      "height": 3,
+      "name": "orientation-8.jpg",
+      "sha256": "c6f648797c99fca9b143d9371592787f664e5457fc5828e618a24dd770692f53",
+      "width": 4
+    },
+    {
+      "bytes": 90,
+      "height": 3,
+      "name": "original.bmp",
+      "sha256": "227d56cdf77c84c050d920e05aabfefa26a7a91d71b96de8ce9d0a574aee5296",
+      "width": 4
+    },
+    {
+      "bytes": 655,
+      "height": 3,
+      "name": "original.jpg",
+      "sha256": "be3da475b7e799500c12971c3dacebfc531d307ecde71109a8aa15833b09b6bd",
+      "width": 4
+    },
+    {
+      "bytes": 107,
+      "height": 3,
+      "name": "original.png",
+      "sha256": "79c11e5db45c966ded851a598187d19d54f486c84d20b240c0e35638b9a339c8",
+      "width": 4
+    },
+    {
+      "bytes": 246,
+      "height": 3,
+      "name": "original.tiff",
+      "sha256": "e24d8fea3b87254ee8ff0160be0b4ad6d128df206c428d196675c1ab85885956",
+      "width": 4
+    },
+    {
+      "bytes": 162,
+      "height": 3,
+      "name": "original.webp",
+      "sha256": "aca59787e476c1cb9b27781317ec5b5f6cce77c4cddb4a20a4b670476a1d07b6",
+      "width": 4
+    }
+  ],
+  "generator": "cargo run -p glitchpad-core --example generate_image_fixtures",
+  "license": "Apache-2.0"
+}

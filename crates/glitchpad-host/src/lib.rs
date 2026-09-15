@@ -6,6 +6,7 @@ pub mod app_state;
 #[cfg(not(mobile))]
 pub mod desktop_delivery;
 pub mod external_link;
+pub mod images;
 #[cfg(not(mobile))]
 pub mod lifecycle_probe;
 pub mod performance;
@@ -107,6 +108,9 @@ pub fn run() {
     let builder = builder.plugin(glitchpad_android_source::init());
     #[cfg(not(mobile))]
     let builder = builder.invoke_handler(tauri::generate_handler![
+        images::identify_image_source,
+        images::render_image_source,
+        images::cancel_image_render,
         inventory_recovery,
         load_preferences,
         persist_preferences,
@@ -142,6 +146,9 @@ pub fn run() {
     ]);
     #[cfg(target_os = "android")]
     let builder = builder.invoke_handler(tauri::generate_handler![
+        images::identify_image_source,
+        images::render_image_source,
+        images::cancel_image_render,
         inventory_recovery,
         load_preferences,
         persist_preferences,
@@ -181,6 +188,7 @@ pub fn run() {
 
     let application = builder
         .setup(move |app| {
+            app.manage(images::ImageRenderHost::default());
             app.manage(product);
             let recovery_quota = if cfg!(target_os = "android") {
                 recovery::ANDROID_RECOVERY_QUOTA_BYTES

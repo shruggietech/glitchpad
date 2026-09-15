@@ -427,7 +427,7 @@ export function App({ sessions = [], recoveryGateway, externalLinkGateway, local
   useEffect(() => setCommandStatus(''), [state.activeId]);
 
   useEffect(() => {
-    if (!inspectorOpen || !activeSession?.source_id || !selectedMetadataGateway) {
+    if ((!inspectorOpen && !activeSession?.image_document) || !activeSession?.source_id || !selectedMetadataGateway) {
       setMetadataReadySessionId(null);
       return;
     }
@@ -768,6 +768,7 @@ export function App({ sessions = [], recoveryGateway, externalLinkGateway, local
         localAssetGateway={localAssetGateway}
         onOpenMetadata={openMetadata}
         onMetadataContribution={publishMetadata}
+        onImageChange={(id, expectedRevision, image) => dispatch({ type: 'update_image', id, expectedRevision, image })}
         />
       </PreferenceContext.Provider>
       {inspectorOpen && activeSession && (

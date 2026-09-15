@@ -378,6 +378,7 @@ export interface ShellSession {
   text_document?: TextDocumentState | null;
   markdown_document?: MarkdownDocumentState | null;
   mermaid_document?: MermaidDocumentState | null;
+  image_document?: import('./image-contract').ImageDocumentState | null;
   metadata?: import('./metadata').MetadataSnapshot | null;
 }
 

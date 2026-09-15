@@ -327,6 +327,149 @@ impl AndroidSourceHost {
         }
     }
 
+    /// Checks a registered image revision without leaking provider authority.
+    ///
+    /// # Errors
+    /// Returns a safe provider or missing-source error.
+    pub fn image_revision_matches(
+        &self,
+        source_id: &SourceId,
+        expected: &ExternalRevision,
+    ) -> Result<bool, CoreError> {
+        let current = self.current_summary(source_id)?.external_revision;
+        Ok(current == *expected || path_free_external_revision(source_id, &current) == *expected)
+    }
+
+    /// Reads a bounded image from a stream-only or seek-capable provider.
+    ///
+    /// # Errors
+    /// Returns safe cancellation, revision, provider, or budget failures.
+    #[allow(clippy::too_many_lines)] // Provider stream ownership and unconditional close share one scope.
+    pub fn read_image_bytes(
+        &self,
+        source_id: &SourceId,
+        expected: &ExternalRevision,
+        cancel: &std::sync::atomic::AtomicBool,
+        probe: bool,
+    ) -> Result<Vec<u8>, CoreError> {
+        use std::sync::atomic::Ordering;
+        let maximum = if probe {
+            16
+        } else {
+            glitchpad_core::images::MAX_IMAGE_SOURCE_BYTES
+        };
+        if cancel.load(Ordering::Acquire) {
+            return Err(safe_error(
+                CoreErrorCategory::StaleSession,
+                "Image work was cancelled",
+                true,
+            ));
+        }
+        if !self.image_revision_matches(source_id, expected)? {
+            return Err(safe_error(
+                CoreErrorCategory::Conflict,
+                "The image source changed",
+                true,
+            ));
+        }
+        let summary = self.current_summary(source_id)?;
+        if !probe && summary.descriptor.byte_length.is_some_and(|n| n > maximum) {
+            return Err(safe_error(
+                CoreErrorCategory::ResourceLimit,
+                "The image source exceeds its encoded-byte limit",
+                false,
+            ));
+        }
+        #[cfg(not(target_os = "android"))]
+        {
+            let registry = self.lock_registry()?;
+            let source = registry
+                .test_source_bytes
+                .get(source_id)
+                .ok_or_else(integrity_not_found)?;
+            let length = if probe {
+                source.len().min(16)
+            } else {
+                source.len()
+            };
+            if length as u64 > maximum {
+                return Err(safe_error(
+                    CoreErrorCategory::ResourceLimit,
+                    "The image source exceeds its encoded-byte limit",
+                    false,
+                ));
+            }
+            Ok(source[..length].to_vec())
+        }
+        #[cfg(target_os = "android")]
+        {
+            let source = self.source_record(source_id)?;
+            self.ensure_current(source_id, &source)?;
+            let opened = self
+                .plugin
+                .open_stream(&source.bridge_token, 0, maximum)
+                .map_err(plugin_error)?;
+            let result = (|| {
+                let mut bytes = Vec::new();
+                loop {
+                    if cancel.load(Ordering::Acquire) {
+                        return Err(safe_error(
+                            CoreErrorCategory::StaleSession,
+                            "Image work was cancelled",
+                            true,
+                        ));
+                    }
+                    let remaining = maximum.saturating_sub(bytes.len() as u64);
+                    if remaining == 0 {
+                        return Err(safe_error(
+                            CoreErrorCategory::ResourceLimit,
+                            "The image source exceeds its encoded-byte limit",
+                            false,
+                        ));
+                    }
+                    let length = remaining.min(MAX_SOURCE_CHUNK_BYTES);
+                    let read = self
+                        .plugin
+                        .read_stream(&opened.stream_token, length)
+                        .map_err(plugin_error)?;
+                    if read.bytes.len() as u64 > length
+                        || (read.bytes.is_empty() && !read.end_of_source)
+                    {
+                        return Err(safe_error(
+                            CoreErrorCategory::InvalidInput,
+                            "The image provider returned an invalid stream chunk",
+                            false,
+                        ));
+                    }
+                    bytes.try_reserve(read.bytes.len()).map_err(|_| {
+                        safe_error(
+                            CoreErrorCategory::ResourceLimit,
+                            "Image source allocation was refused",
+                            false,
+                        )
+                    })?;
+                    bytes.extend_from_slice(&read.bytes);
+                    if read.end_of_source
+                        || probe
+                        || summary.descriptor.byte_length == Some(bytes.len() as u64)
+                    {
+                        break;
+                    }
+                }
+                if !self.image_revision_matches(source_id, expected)? {
+                    return Err(safe_error(
+                        CoreErrorCategory::Conflict,
+                        "The image source changed",
+                        true,
+                    ));
+                }
+                Ok(bytes)
+            })();
+            let _ = self.plugin.close_stream(&opened.stream_token);
+            result
+        }
+    }
+
     /// Installs deterministic bytes for non-Android adapter conformance tests.
     #[cfg(not(target_os = "android"))]
     #[doc(hidden)]
@@ -1350,6 +1493,46 @@ mod tests {
             persisted_read: false,
             persisted_write: false,
             seekable: false,
+        }
+    }
+
+    #[test]
+    fn image_adapter_reads_five_codecs_with_bounded_opaque_authority() {
+        let host = AndroidSourceHost::new_for_tests();
+        for name in ["png", "jpg", "webp", "bmp", "tiff"] {
+            let bytes = std::fs::read(format!("../../fixtures/images/original.{name}")).unwrap();
+            let source = host.accept_delivery(&delivery(name, "strong")).unwrap();
+            host.install_test_source_bytes(&source.source_id, bytes.clone())
+                .unwrap();
+            let cancel = std::sync::atomic::AtomicBool::new(false);
+            let probe = host
+                .read_image_bytes(&source.source_id, &source.external_revision, &cancel, true)
+                .unwrap();
+            assert!(glitchpad_core::images::raster_signature(&probe).is_some());
+            let actual = host
+                .read_image_bytes(&source.source_id, &source.external_revision, &cancel, false)
+                .unwrap();
+            assert_eq!(actual, bytes);
+            assert!(
+                glitchpad_core::images::decode_image(
+                    &actual,
+                    &glitchpad_core::images::ImageLimits::android(),
+                    &cancel
+                )
+                .is_ok()
+            );
+            cancel.store(true, std::sync::atomic::Ordering::Release);
+            assert!(
+                host.read_image_bytes(&source.source_id, &source.external_revision, &cancel, false)
+                    .is_err()
+            );
+            let mut stale = source.external_revision.clone();
+            stale.change_token = Some("stale".into());
+            assert!(
+                !host
+                    .image_revision_matches(&source.source_id, &stale)
+                    .unwrap()
+            );
         }
     }
 

@@ -3,6 +3,8 @@
 pub mod contracts;
 pub mod detection;
 pub mod editor;
+pub mod image_metadata;
+pub mod images;
 pub mod metadata;
 pub mod performance;
 pub mod persistence;

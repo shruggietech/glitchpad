@@ -8,6 +8,8 @@ import {
   type TextEncoding,
 } from './contracts';
 import { detectLanguage } from './language';
+import { identifyImageSource } from './image-gateway';
+import { createImageSession } from './image-contract';
 import { markdownEligibility } from './markdown-contract';
 import { initialMermaidViewport } from './mermaid-contract';
 import type { SessionProjection } from './persistence';
@@ -18,7 +20,7 @@ import {
 } from './text-document';
 
 const SOURCE_CHUNK_BYTES = 1024 * 1024;
-const TEXT_RENDERERS = new Set(['markdown', 'mermaid', 'source', 'text']);
+const RESTORABLE_RENDERERS = new Set(['markdown', 'mermaid', 'source', 'text', 'image']);
 
 interface RangeReadResult {
   source_id: string;
@@ -124,6 +126,9 @@ export const materializeAndroidSource = async (
   rendererId: string,
   idPrefix: 'android' | 'restored',
 ): Promise<ShellSession> => {
+  const imageCodec = await identifyImageSource(call, source.source_id, source.external_revision);
+  if (imageCodec) return createImageSession(source.descriptor, source.source_id, source.external_revision, imageCodec, idPrefix);
+  if (rendererId === 'image') throw new Error('The restored source is no longer a supported image');
   const { text, sourceBytes, encoding } = await readBoundedText(call, source);
   const renderer = rendererId.toLowerCase();
   const textDocument = createTextDocument({
@@ -204,7 +209,7 @@ export const createNativeAndroidRestorationGateway = (
       const source = result.status === 'restored' ? result.source : null;
       if (!source?.descriptor.restoration_reference) return null;
       const projection = byReference.get(source.descriptor.restoration_reference);
-      if (!projection || !TEXT_RENDERERS.has(projection.renderer_id.toLowerCase())) return null;
+      if (!projection || !RESTORABLE_RENDERERS.has(projection.renderer_id.toLowerCase())) return null;
       try {
         return await materializeAndroidSource(
           call,

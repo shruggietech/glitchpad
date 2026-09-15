@@ -34,6 +34,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
+    sourceSets.getByName("androidTest").assets.srcDir(rootProject.file("../../../../fixtures/images"))
     compileSdk = 36
     ndkVersion = "28.2.13676358"
     namespace = "com.shruggietech.glitchpad"

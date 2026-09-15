@@ -156,7 +156,10 @@ jobs:
           shared-key: desktop-${{ matrix.os }}
 
       - name: Markdown recovery and shared shell smoke
-        run: pnpm --filter @shruggietech/glitchpad exec vitest run --maxWorkers=2 src/App.test.tsx src/components/ApplicationMenu.test.tsx src/components/DocumentSurface.test.tsx src/components/MarkdownSurface.test.tsx
+        run: pnpm --filter @shruggietech/glitchpad exec vitest run --maxWorkers=2 src/App.test.tsx src/components/ApplicationMenu.test.tsx src/components/DocumentSurface.test.tsx src/components/MarkdownSurface.test.tsx src/components/ImageSurface.test.tsx src/components/ImageMetadataInspector.test.tsx src/domain/image-metadata.test.ts
+
+      - name: Image family corpus and privacy
+        run: cargo test -p glitchpad-core --locked --test image_contract --test image_decode --test image_metadata
 
       - name: Run desktop source adapter conformance
         run: cargo test -p glitchpad-host --test desktop_source_conformance --locked

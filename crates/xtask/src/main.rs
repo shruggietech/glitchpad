@@ -211,6 +211,7 @@ fn docs(repository: &Path) -> Result<(), String> {
     run(repository, "pnpm", ["run", "check:validation"])?;
     run(repository, "pnpm", ["run", "check:mermaid-runtime"])?;
     run(repository, "pnpm", ["run", "check:metadata"])?;
+    run(repository, "pnpm", ["run", "check:images"])?;
     run(repository, "pnpm", ["run", "check:persistence"])?;
     run(repository, "pnpm", ["run", "check:performance"])?;
     run(repository, "pnpm", ["run", "check:shell-layout"])?;

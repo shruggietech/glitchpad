@@ -32,7 +32,7 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
   private val pending = ArrayBlockingQueue<DeliveryCandidate>(MAX_PENDING_DELIVERIES)
   private val rejections = ArrayBlockingQueue<String>(MAX_PENDING_REJECTIONS)
   private val sources = ConcurrentHashMap<String, NativeSource>()
-  private val imageExports = ConcurrentHashMap<String, java.util.concurrent.atomic.AtomicBoolean>()
+  private val imageExports = ImageExportCancellations()
   private val streams = ConcurrentHashMap<String, NativeStream>()
   private val restoration = RestorationStore(activity)
   private val initialIntentConsumed = AtomicBoolean(false)
@@ -245,30 +245,32 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
   fun exportImage(invoke: Invoke) {
     val args = invoke.parseArgs(ImageExportArgs::class.java)
     if ((args.bytes?.size ?: 0) !in 8..(8 * 1024 * 1024) || !args.sourceSha256.matches(Regex("[0-9a-f]{64}"))) return invoke.reject("budget_exceeded")
-    if (!sources.containsKey(args.bridgeToken) || imageExports.isNotEmpty()) return invoke.reject("source_not_found")
-    imageExports[args.requestId] = java.util.concurrent.atomic.AtomicBoolean(false)
+    if (!sources.containsKey(args.bridgeToken)) return invoke.reject("source_not_found")
+    val flag = runCatching { imageExports.register(args.requestId) }.getOrElse { return invoke.reject(code(it)) }
+    if (flag.get()) { imageExports.finish(args.requestId); return invoke.resolve(JSObject().put("exported", false).put("byteCount", 0)) }
     val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
       .setType("image/png").putExtra(Intent.EXTRA_TITLE, "selected-icon-entry.png")
       .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
-    startActivityForResult(invoke, intent, "exportImageResult")
+    try { startActivityForResult(invoke, intent, "exportImageResult") }
+    catch (error: Exception) { imageExports.finish(args.requestId); invoke.reject("picker_failed") }
   }
 
   @Command
   fun cancelImageExport(invoke: Invoke) {
     val args = invoke.parseArgs(ImageExportCancelArgs::class.java)
-    imageExports[args.requestId]?.set(true)
+    runCatching { imageExports.cancel(args.requestId) }.getOrElse { return invoke.reject(code(it)) }
     invoke.resolve()
   }
 
   @ActivityCallback
   fun exportImageResult(invoke: Invoke, result: ActivityResult) {
     val args = invoke.parseArgs(ImageExportArgs::class.java)
-    val cancelled = imageExports[args.requestId] ?: return invoke.reject("source_not_found")
+    val cancelled = imageExports.flag(args.requestId) ?: return invoke.reject("source_not_found")
     if (result.resultCode == Activity.RESULT_CANCELED || cancelled.get()) {
-      imageExports.remove(args.requestId)
+      imageExports.finish(args.requestId)
       return invoke.resolve(JSObject().put("exported", false).put("byteCount", 0))
     }
-    if (result.resultCode != Activity.RESULT_OK) { imageExports.remove(args.requestId); return invoke.reject("picker_failed") }
+    if (result.resultCode != Activity.RESULT_OK) { imageExports.finish(args.requestId); return invoke.reject("picker_failed") }
     val bytes = args.bytes?.map(Int::toByte)?.toByteArray() ?: ByteArray(0)
     ioExecutor.execute {
       var started = false
@@ -304,13 +306,13 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
         val observed = activity.contentResolver.openInputStream(candidate.uri)?.use { ImageExportPolicy.readGenerated(it) } ?: throw IllegalStateException("provider_unavailable")
         ImageExportPolicy.verified(bytes, observed, cancelled.get())
         bytes.size
-      }.onSuccess { invoke.resolve(JSObject().put("exported", true).put("byteCount", it)) }
+      }.onSuccess { imageExports.finish(args.requestId); invoke.resolve(JSObject().put("exported", true).put("byteCount", it)) }
         .onFailure {
           // Never delete a refused original/alias. Cleanup is limited to an independent destination we wrote.
           if (started) destination?.let { uri -> runCatching { DocumentsContract.deleteDocument(activity.contentResolver, uri) } }
+          imageExports.finish(args.requestId)
           invoke.reject(code(it))
         }
-      imageExports.remove(args.requestId)
     }
   }
 

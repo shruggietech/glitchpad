@@ -81,3 +81,7 @@ Prove safe SVG first, incremental paused animation next, then independent ICO en
 ## Phase 9: Convergence
 
 - [x] T037 Preserve every bounded ICO row and valid-neighbor decoding when another entry has an invalid range or excessive claimed length; retain unknown encoding and full bounded directory facts in native/browser tests per FR-011, FR-012, US3/AC1 and #72 (contradicts).
+
+## Phase 10: Convergence
+
+- [x] T038 Admit transient encoded animation buffers before preflight allocation, bound sanitized vector capacity, and retain encoded data without a Vec-to-Arc payload copy per FR-008 and plan: peak-memory admission (partial).

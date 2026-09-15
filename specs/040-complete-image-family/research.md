@@ -47,3 +47,7 @@ The complete locked audit found RUSTSEC-2026-0206 (`rustybuzz`) and RUSTSEC-2026
 ## 2026-09-15: Entry-local ICO range refusal
 
 Adversarial reassessment found that returning a container failure for one bad entry range contradicts FR-012 and #72. Before correction, the decision is to keep only header/directory truncation and global resource ceilings container-wide; each invalid payload range, claimed size or payload shape becomes a row-local classification. Unknown/unavailable payload encoding is explicit, and browser facts admit the bounded raw u16 depth/u32 byte length without authorizing decode or export. Valid neighboring entries remain usable.
+
+## 2026-09-15: Animation encoded-buffer admission
+
+Peak reassessment found that vector growth and conversion to `Arc<[u8]>` could temporarily add an uncounted encoded copy. Before correction, the decision is to reserve at most the source length for sanitized bytes, keep the vector allocation behind an immutable `Arc<Vec<u8>>` cursor wrapper without copying its payload, and conservatively admit three encoded buffers (including Android source-cache/read coexistence) plus existing fixed, surface and delivery overhead. Reject insufficient encoded headroom before allocating the sanitized vector, then apply full surface admission with that extra encoded buffer reserved.

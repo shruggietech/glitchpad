@@ -83,6 +83,28 @@ fn icon(payloads: &[Vec<u8>]) -> Vec<u8> {
 }
 
 #[test]
+fn animation_admits_encoded_metadata_coexistence_before_sanitizing() {
+    let mut bytes = include_bytes!("../../../fixtures/images/original.gif").to_vec();
+    assert_eq!(bytes.pop(), Some(0x3b));
+    bytes.extend_from_slice(&[0x21, 0xfe]);
+    for _ in 0..16_384 {
+        bytes.push(255);
+        bytes.extend_from_slice(&[42; 255]);
+    }
+    bytes.extend_from_slice(&[0, 0x3b]);
+    let mut limits = ImageLimits::desktop();
+    limits.peak_bytes = 75 * 1024 * 1024;
+    assert!(matches!(
+        glitchpad_core::image_family::AnimationContext::new(
+            &bytes,
+            &limits,
+            &AtomicBool::new(false)
+        ),
+        Err(ImageFailure::Allocation)
+    ));
+}
+
+#[test]
 fn ico_corrupt_entries_do_not_hide_valid_entries_or_export_source_metadata() {
     use image::ImageEncoder;
     let mut png = Vec::new();

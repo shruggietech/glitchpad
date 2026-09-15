@@ -76,7 +76,9 @@ fn gif_inventory(bytes: &[u8], cancel: &AtomicBool) -> Result<(Inventory, Vec<u8
         } else {
             0
         };
-    let mut sanitized = bytes.get(..at).ok_or(ImageFailure::Truncated)?.to_vec();
+    let prefix = bytes.get(..at).ok_or(ImageFailure::Truncated)?;
+    let mut sanitized = Vec::with_capacity(bytes.len());
+    sanitized.extend_from_slice(prefix);
     let (mut durations, mut loops, mut delay) = (Vec::new(), None, 0);
     loop {
         check(cancel)?;
@@ -154,7 +156,8 @@ fn webp_inventory(bytes: &[u8], cancel: &AtomicBool) -> Result<(Inventory, Vec<u
         return Err(ImageFailure::Malformed);
     }
     let (mut width, mut height, mut loops, mut durations) = (0, 0, Some(1), Vec::new());
-    let mut sanitized = bytes[..12].to_vec();
+    let mut sanitized = Vec::with_capacity(bytes.len());
+    sanitized.extend_from_slice(&bytes[..12]);
     let mut at = 12;
     let mut chunks = 0;
     while at < bytes.len() {
@@ -225,9 +228,18 @@ fn webp_inventory(bytes: &[u8], cancel: &AtomicBool) -> Result<(Inventory, Vec<u
     ))
 }
 
+#[derive(Clone)]
+struct SharedEncoded(Arc<Vec<u8>>);
+
+impl AsRef<[u8]> for SharedEncoded {
+    fn as_ref(&self) -> &[u8] {
+        self.0.as_slice()
+    }
+}
+
 enum Decoder {
     Gif {
-        reader: Box<gif::Decoder<Cursor<Arc<[u8]>>>>,
+        reader: Box<gif::Decoder<Cursor<SharedEncoded>>>,
         canvas: Vec<u8>,
         previous: Option<Vec<u8>>,
         patch: Vec<u8>,
@@ -235,14 +247,14 @@ enum Decoder {
         rect: (u32, u32, u32, u32),
     },
     Webp {
-        reader: image_webp::WebPDecoder<Cursor<Arc<[u8]>>>,
+        reader: image_webp::WebPDecoder<Cursor<SharedEncoded>>,
         output: Vec<u8>,
         rgba: Vec<u8>,
     },
 }
 
 pub struct AnimationContext {
-    encoded: Arc<[u8]>,
+    encoded: SharedEncoded,
     inventory: Inventory,
     container: ImageContainer,
     decoder: Decoder,
@@ -265,6 +277,19 @@ impl AnimationContext {
         if bytes.len() as u64 > MAX_IMAGE_SOURCE_BYTES {
             return Err(ImageFailure::Oversized);
         }
+        let encoded_bytes = bytes.len() as u64;
+        if encoded_bytes
+            .checked_mul(3)
+            .and_then(|n| n.checked_add(64 * 1024 * 1024))
+            .is_none_or(|n| n > limits.peak_bytes)
+        {
+            return Err(ImageFailure::Allocation);
+        }
+        let mut admission = *limits;
+        admission.peak_bytes = limits
+            .peak_bytes
+            .checked_sub(encoded_bytes)
+            .ok_or(ImageFailure::Allocation)?;
         let container = if bytes.starts_with(b"GIF") {
             ImageContainer::Gif
         } else {
@@ -284,9 +309,9 @@ impl AnimationContext {
                 16
             },
             bytes.len() as u64,
-            limits,
+            &admission,
         )?;
-        let encoded: Arc<[u8]> = encoded.into();
+        let encoded = SharedEncoded(Arc::new(encoded));
         let decoder = Self::decoder(encoded.clone(), &inventory, container)?;
         Ok(Self {
             encoded,
@@ -298,7 +323,7 @@ impl AnimationContext {
     }
 
     fn decoder(
-        encoded: Arc<[u8]>,
+        encoded: SharedEncoded,
         inventory: &Inventory,
         container: ImageContainer,
     ) -> Result<Decoder, ImageFailure> {

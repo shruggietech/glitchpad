@@ -70,9 +70,14 @@ describe('read-only raster viewport', () => {
     expect(screen.getByLabelText('Animation frame')).toHaveValue(3);
     await act(() => vi.advanceTimersByTimeAsync(40));
     expect(screen.getByRole('button', { name: 'Play' })).toHaveAttribute('aria-pressed', 'false');
+    fireEvent.click(screen.getByRole('button', { name: 'Play' }));
+    await act(() => vi.advanceTimersByTimeAsync(0));
+    expect(screen.getByLabelText('Animation frame')).toHaveValue(1);
+    expect(screen.getByRole('button', { name: 'Pause' })).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(screen.getByRole('button', { name: 'Pause' }));
     vi.useRealTimers();
     view.unmount();
-    expect(suspend).toHaveBeenCalledWith('opaque', 'frame-2');
+    expect(suspend).toHaveBeenCalledWith('opaque', 'frame-0');
   });
   it('lists corrupt icon entries and aborts an export when selection changes', async () => {
     const entries = [0,1].map(index => ({ index, width: 1, height: 1, bits_per_pixel: 32, encoded_bytes: 64, preview: 'full' as const, encoding: 'png' as const, alpha: true, failure: null, duplicate_of: null }));

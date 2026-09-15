@@ -70,8 +70,8 @@
 - [x] T033 Record unreleased documentation delta and explicit incomplete #74/#75/#76/#66 status in `verification.md` and PR body; preserve public authority (FR-021).
 - [x] T034 Commit, automatically push, and publish official S039 PR with #68/#69/#73 traceability using the hidden VCS launcher (FR-022).
 - [x] T035 Wait for first external reviews/reactions, remediate and respond to every comment, and resolve satisfied threads; record review ledger in `verification.md` (FR-022).
-- [ ] T036 Request at most one explicit second `@codex review` if justified, handle every result, converge after remediation, and wait for all latest required CI/security/docs/platform checks (FR-022; SC-007).
-- [ ] T037 Hand the reviewed green PR to the owner for final review/merge; keep it unmerged and report incomplete future issues accurately (FR-022; SC-006, SC-007).
+- [x] T036 Request at most one explicit second `@codex review` if justified, handle every result, converge after remediation, and wait for all latest required CI/security/docs/platform checks (FR-022; SC-007).
+- [x] T037 Hand the reviewed green PR to the owner for final review/merge; keep it unmerged and report incomplete future issues accurately (FR-022; SC-006, SC-007).
 
 ## Dependencies & Execution Order
 

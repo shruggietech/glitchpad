@@ -1,35 +1,23 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
-
-const nativeReplaceAll = Object.getOwnPropertyDescriptor(String.prototype, 'replaceAll');
-const nativeAt = Object.getOwnPropertyDescriptor(Array.prototype, 'at');
-
-afterEach(() => {
-  if (nativeReplaceAll) {
-    Object.defineProperty(String.prototype, 'replaceAll', nativeReplaceAll);
-  } else {
-    delete (String.prototype as { replaceAll?: string['replaceAll'] }).replaceAll;
-  }
-  if (nativeAt) {
-    Object.defineProperty(Array.prototype, 'at', nativeAt);
-  } else {
-    delete (Array.prototype as { at?: unknown[]['at'] }).at;
-  }
-  vi.resetModules();
-});
+import { execFileSync } from 'node:child_process';
+import { describe, it } from 'vitest';
 
 describe('Chrome 69 runtime compatibility', () => {
-  it('installs required stable built-ins before application startup', async () => {
-    delete (String.prototype as { replaceAll?: string['replaceAll'] }).replaceAll;
-    delete (Array.prototype as { at?: unknown[]['at'] }).at;
-    vi.resetModules();
+  it('installs required stable built-ins before application startup', () => {
+    // Vitest uses Array.prototype.at internally. Remove built-ins in a separate
+    // process so the compatibility probe cannot break the test runner itself.
+    execFileSync(process.execPath, ['--input-type=module', '--eval', `
+      import assert from 'node:assert/strict';
 
-    await import('./runtime-polyfills');
+      delete String.prototype.replaceAll;
+      delete Array.prototype.at;
+      await import(${JSON.stringify(new URL('./runtime-polyfills.ts', import.meta.url).href)});
 
-    expect('utf_8 utf_8'.replaceAll('_', ' ')).toBe('utf 8 utf 8');
-    expect('a.b.a'.replaceAll('.', '$&')).toBe('a.b.a');
-    expect('a_a'.replaceAll('_', (match) => `[${match}]`)).toBe('a[_]a');
-    expect('a1a2'.replaceAll(/a/g, 'b')).toBe('b1b2');
-    expect(() => 'a'.replaceAll(/a/, 'b')).toThrow(TypeError);
-    expect(['first', 'last'].at(-1)).toBe('last');
+      assert.equal('utf_8 utf_8'.replaceAll('_', ' '), 'utf 8 utf 8');
+      assert.equal('a.b.a'.replaceAll('.', '$&'), 'a.b.a');
+      assert.equal('a_a'.replaceAll('_', (match) => '[' + match + ']'), 'a[_]a');
+      assert.equal('a1a2'.replaceAll(/a/g, 'b'), 'b1b2');
+      assert.throws(() => 'a'.replaceAll(/a/, 'b'), TypeError);
+      assert.equal(['first', 'last'].at(-1), 'last');
+    `], { timeout: 30_000, windowsHide: true });
   }, 30_000);
 });

@@ -22,7 +22,6 @@ export default async function Page({
   return (
     <DocsPage
       id="main-content"
-      role="main"
       tabIndex={-1}
       toc={page.data.toc}
       full={page.data.full}

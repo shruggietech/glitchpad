@@ -28,6 +28,66 @@ use glitchpad_core::source::{
     RevalidationStatus,
 };
 
+#[cfg(any(target_os = "android", test))]
+fn read_bounded_image_stream(
+    maximum: u64,
+    declared_length: Option<u64>,
+    probe: bool,
+    cancel: &std::sync::atomic::AtomicBool,
+    mut read: impl FnMut(u64) -> Result<glitchpad_android_source::models::ReadResponse, CoreError>,
+) -> Result<Vec<u8>, CoreError> {
+    let mut bytes = Vec::new();
+    loop {
+        if cancel.load(std::sync::atomic::Ordering::Acquire) {
+            return Err(safe_error(
+                CoreErrorCategory::StaleSession,
+                "Image work was cancelled",
+                true,
+            ));
+        }
+        let remaining = maximum.saturating_sub(bytes.len() as u64);
+        if remaining == 0 {
+            let terminal = read(1)?;
+            if !terminal.bytes.is_empty() {
+                return Err(safe_error(
+                    CoreErrorCategory::ResourceLimit,
+                    "The image source exceeds its encoded-byte limit",
+                    false,
+                ));
+            }
+            if !terminal.end_of_source {
+                return Err(safe_error(
+                    CoreErrorCategory::InvalidInput,
+                    "The image provider returned an invalid terminal chunk",
+                    false,
+                ));
+            }
+            break;
+        }
+        let length = remaining.min(glitchpad_core::source::MAX_SOURCE_CHUNK_BYTES);
+        let chunk = read(length)?;
+        if chunk.bytes.len() as u64 > length || (chunk.bytes.is_empty() && !chunk.end_of_source) {
+            return Err(safe_error(
+                CoreErrorCategory::InvalidInput,
+                "The image provider returned an invalid stream chunk",
+                false,
+            ));
+        }
+        bytes.try_reserve(chunk.bytes.len()).map_err(|_| {
+            safe_error(
+                CoreErrorCategory::ResourceLimit,
+                "Image source allocation was refused",
+                false,
+            )
+        })?;
+        bytes.extend_from_slice(&chunk.bytes);
+        if chunk.end_of_source || probe || declared_length == Some(bytes.len() as u64) {
+            break;
+        }
+    }
+    Ok(bytes)
+}
+
 #[derive(Clone)]
 struct AndroidSourceRecord {
     #[cfg(target_os = "android")]
@@ -407,55 +467,22 @@ impl AndroidSourceHost {
             self.ensure_current(source_id, &source)?;
             let opened = self
                 .plugin
-                .open_stream(&source.bridge_token, 0, maximum)
+                // The bridge closes its stream as soon as its budget is used.
+                // Reserve one EOF byte, which is never accepted into source data.
+                .open_stream(&source.bridge_token, 0, maximum.saturating_add(u64::from(!probe)))
                 .map_err(plugin_error)?;
             let result = (|| {
-                let mut bytes = Vec::new();
-                loop {
-                    if cancel.load(Ordering::Acquire) {
-                        return Err(safe_error(
-                            CoreErrorCategory::StaleSession,
-                            "Image work was cancelled",
-                            true,
-                        ));
-                    }
-                    let remaining = maximum.saturating_sub(bytes.len() as u64);
-                    if remaining == 0 {
-                        return Err(safe_error(
-                            CoreErrorCategory::ResourceLimit,
-                            "The image source exceeds its encoded-byte limit",
-                            false,
-                        ));
-                    }
-                    let length = remaining.min(MAX_SOURCE_CHUNK_BYTES);
-                    let read = self
-                        .plugin
-                        .read_stream(&opened.stream_token, length)
-                        .map_err(plugin_error)?;
-                    if read.bytes.len() as u64 > length
-                        || (read.bytes.is_empty() && !read.end_of_source)
-                    {
-                        return Err(safe_error(
-                            CoreErrorCategory::InvalidInput,
-                            "The image provider returned an invalid stream chunk",
-                            false,
-                        ));
-                    }
-                    bytes.try_reserve(read.bytes.len()).map_err(|_| {
-                        safe_error(
-                            CoreErrorCategory::ResourceLimit,
-                            "Image source allocation was refused",
-                            false,
-                        )
-                    })?;
-                    bytes.extend_from_slice(&read.bytes);
-                    if read.end_of_source
-                        || probe
-                        || summary.descriptor.byte_length == Some(bytes.len() as u64)
-                    {
-                        break;
-                    }
-                }
+                let bytes = read_bounded_image_stream(
+                    maximum,
+                    summary.descriptor.byte_length,
+                    probe,
+                    cancel,
+                    |length| {
+                        self.plugin
+                            .read_stream(&opened.stream_token, length)
+                            .map_err(plugin_error)
+                    },
+                )?;
                 if !self.image_revision_matches(source_id, expected)? {
                     return Err(safe_error(
                         CoreErrorCategory::Conflict,
@@ -1563,6 +1590,49 @@ mod tests {
         let source = summary_from_delivery(&delivery("unknown-size", "strong")).unwrap();
         assert_eq!(source.external_revision.byte_length, None);
         assert_eq!(source.descriptor.byte_length, None);
+    }
+
+    #[test]
+    fn unknown_image_stream_accepts_exact_limit_and_rejects_one_extra_byte() {
+        use glitchpad_android_source::models::ReadResponse;
+        for size in [0usize, 3, 4, 5] {
+            let input = vec![42; size];
+            let mut offset = 0usize;
+            let mut requests = Vec::new();
+            let result = read_bounded_image_stream(
+                4,
+                None,
+                false,
+                &std::sync::atomic::AtomicBool::new(false),
+                |length| {
+                    requests.push(length);
+                    let requested = usize::try_from(length).unwrap();
+                    let end = (offset + requested).min(input.len());
+                    let bytes = input[offset..end].to_vec();
+                    offset = end;
+                    let end_of_source = bytes.len() < requested;
+                    Ok(ReadResponse {
+                        bytes,
+                        end_of_source,
+                    })
+                },
+            );
+            if size <= 4 {
+                assert_eq!(result.unwrap(), input);
+            } else {
+                assert_eq!(
+                    result.unwrap_err().category,
+                    CoreErrorCategory::ResourceLimit
+                );
+            }
+            if size >= 4 {
+                assert_eq!(requests, vec![4, 1]);
+            }
+            assert!(
+                offset <= 5,
+                "only one EOF byte may exceed the accepted source ceiling"
+            );
+        }
     }
 
     #[test]

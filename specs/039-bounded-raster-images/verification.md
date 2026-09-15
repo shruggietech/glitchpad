@@ -27,6 +27,9 @@ Read-only cross-artifact analysis checked 22 functional requirements, 7 measurab
 
 ## Implementation Evidence
 
+- 2026-09-15: External review found GPS sensitivity lost through TIFF links. Preclassify the bounded IFD graph before publishing facts so descendants, siblings, and shared offsets inherit GPS taint independent of traversal order; fail closed if classification exceeds existing graph/entry limits.
+- 2026-09-15: External review found exact-budget Android streams indistinguishable from larger sources. Reserve one additional stream-authority byte solely for EOF detection, never append it to accepted source bytes, and retain unconditional native stream closure and revision revalidation.
+
 - 2026-09-15: PNG decoder setup can expand ancillary ICC payloads under the codec allocation hint. Strip EXIF, ICC, and text metadata chunks from a temporary pixel-only stream before decoder construction; parse the unchanged source separately under metadata budgets. Keep transparency/palette/pixel chunks and account for the temporary copy in encoded-byte admission.
 
 Implemented the versioned common family contract and immutable resource policy, five native raster codecs, read-only source routing, independently bounded metadata extraction, and an owned inert-PNG viewport. Animation/SVG/ICO contracts are modeled, while their implementations and public activation remain deferred.
@@ -60,8 +63,10 @@ Final complete `cargo xtask check` completed with exit status 0 on 2026-09-15 in
 
 ## Scope Traceability
 
+Review remediation added T040/T041. Failure-first tests reproduced both reported bugs; the fixed native metadata suite (9 tests) and the shared Android stream-drain boundary test pass. The GPS test also covers shared IFD offsets with both root-pointer orders, preventing traversal-order redaction bypass. The stream test covers empty, below-limit, exact-limit, and one-byte-over-limit unknown-size sources and asserts that only one EOF byte may exceed the accepted ceiling. The complete remediation `cargo xtask check` completed with exit status 0 on 2026-09-15, including all 51 frontend test files (289 tests), native/contract/corpus tests, strict lint, dependency policies, browser gates, documentation, encoding, and public authority checks. Post-remediation convergence assesses 41 tasks with no remaining implementation gap; hosted checks and final owner handoff remain pending.
+
 Issues #68, #69, and #73 are included and must satisfy every criterion before handoff. #74 receives raster controls only and remains open. #70/#71/#72/#75/#76 and non-blocking #66 remain incomplete. No release or merge is authorized by this receipt.
 
 ## External Review Ledger
 
-Official PR pending. First review is automatic after publication. At most one explicit second `@codex review` request is permitted. Owner final review and merge remain the last step.
+Official PR [#194](https://github.com/shruggietech/glitchpad/pull/194) was automatically pushed and published on 2026-09-15 at implementation commit `3e685eeb77fc48e6ec62058e1bcbf5cbf9f76cf8`. The initial bot response was a cloud-environment configuration message, not a code review or approval. It was acknowledged in the one authorized explicit follow-up [request](https://github.com/shruggietech/glitchpad/pull/194#issuecomment-5684458850), which Codex acknowledged with an eyes reaction. Explicit follow-up request count is exactly one, and no further request is allowed. Review findings, final platform checks, and owner handoff remain pending. The PR remains unmerged.

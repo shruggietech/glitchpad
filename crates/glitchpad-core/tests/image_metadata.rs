@@ -186,3 +186,65 @@ fn exif_and_tiff_numeric_original_arrays_are_preserved() {
         );
     }
 }
+
+fn put_ifd(bytes: &mut [u8], offset: usize, entries: &[(u16, u16, u32, u32)], next: u32) {
+    bytes[offset..offset + 2].copy_from_slice(&u16::try_from(entries.len()).unwrap().to_le_bytes());
+    for (index, (tag, kind, count, value)) in entries.iter().enumerate() {
+        let start = offset + 2 + index * 12;
+        bytes[start..start + 2].copy_from_slice(&tag.to_le_bytes());
+        bytes[start + 2..start + 4].copy_from_slice(&kind.to_le_bytes());
+        bytes[start + 4..start + 8].copy_from_slice(&count.to_le_bytes());
+        bytes[start + 8..start + 12].copy_from_slice(&value.to_le_bytes());
+    }
+    let end = offset + 2 + entries.len() * 12;
+    bytes[end..end + 4].copy_from_slice(&next.to_le_bytes());
+}
+
+#[test]
+fn gps_tiff_descendants_siblings_and_shared_ifds_never_expose_values() {
+    let secret = b"PRIVATE LOCATION\0";
+    for shared in [false, true] {
+        for reverse in [false, true] {
+            let mut tiff = vec![0; 100];
+            tiff[..8].copy_from_slice(b"II*\0\x08\0\0\0");
+            if shared {
+                let mut root = vec![(0x8825, 4, 1, 38), (0x8769, 4, 1, 56)];
+                if reverse {
+                    root.reverse();
+                }
+                put_ifd(&mut tiff, 8, &root, 0);
+                put_ifd(&mut tiff, 38, &[(0x8769, 4, 1, 56)], 0);
+                put_ifd(
+                    &mut tiff,
+                    56,
+                    &[(0x010e, 2, u32::try_from(secret.len()).unwrap(), 100)],
+                    0,
+                );
+            } else {
+                put_ifd(&mut tiff, 8, &[(0x8825, 4, 1, 26)], 0);
+                put_ifd(&mut tiff, 26, &[(0x8769, 4, 1, 44)], 62);
+                put_ifd(
+                    &mut tiff,
+                    44,
+                    &[(0x010e, 2, u32::try_from(secret.len()).unwrap(), 100)],
+                    0,
+                );
+                put_ifd(
+                    &mut tiff,
+                    62,
+                    &[(0x010f, 2, u32::try_from(secret.len()).unwrap(), 100)],
+                    0,
+                );
+            }
+            tiff.extend_from_slice(secret);
+            let report = extract_image_metadata(&tiff);
+            assert!(!serde_json::to_string(&report).unwrap().contains("PRIVATE"));
+            assert!(
+                report
+                    .observations
+                    .iter()
+                    .any(|o| o.key == "image.location")
+            );
+        }
+    }
+}

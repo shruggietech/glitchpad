@@ -771,14 +771,72 @@ fn tiff_metadata(
         report.status("tiff_metadata_truncated");
         return;
     };
-    let mut pending = vec![(first, false)];
-    let mut visited = std::collections::BTreeSet::new();
-    let mut entries = 0usize;
-    while let Some((offset, gps)) = pending.pop() {
+    // Classify the graph before publishing any value: aliases must not make GPS
+    // sensitivity depend on whether an ordinary pointer was traversed first.
+    let mut sensitivity = std::collections::BTreeMap::new();
+    let mut classify = vec![(first, false)];
+    let mut classified_entries = 0usize;
+    while let Some((offset, gps)) = classify.pop() {
         if offset == 0 {
             continue;
         }
-        if !visited.insert(offset) || visited.len() > 32 {
+        if let Some(previous) = sensitivity.get(&offset)
+            && (*previous || !gps)
+        {
+            continue;
+        }
+        sensitivity.insert(offset, gps);
+        if sensitivity.len() > 32 {
+            report.status("tiff_ifd_limit");
+            return;
+        }
+        let Some(count) = read16(offset).map(usize::from) else {
+            report.status("tiff_metadata_truncated");
+            return;
+        };
+        for index in 0..count {
+            classified_entries += 1;
+            if classified_entries > 4096 {
+                report.status("tiff_entry_limit");
+                return;
+            }
+            let Some(entry) = offset
+                .checked_add(2)
+                .and_then(|n| index.checked_mul(12).and_then(|i| n.checked_add(i)))
+            else {
+                report.status("tiff_metadata_malformed");
+                return;
+            };
+            let (Some(tag), Some(pointer)) = (read16(entry), read32(entry + 8)) else {
+                report.status("tiff_metadata_truncated");
+                return;
+            };
+            if matches!(tag, 0x8769 | 0x8825) {
+                classify.push((pointer, gps || tag == 0x8825));
+            }
+        }
+        let Some(next) = count
+            .checked_mul(12)
+            .and_then(|n| offset.checked_add(2)?.checked_add(n))
+            .and_then(read32)
+        else {
+            report.status("tiff_metadata_truncated");
+            return;
+        };
+        classify.push((next, gps));
+    }
+    let mut pending = vec![(first, false)];
+    let mut visited = std::collections::BTreeSet::new();
+    let mut entries = 0usize;
+    while let Some((offset, inherited_gps)) = pending.pop() {
+        let gps = inherited_gps || sensitivity.get(&offset).copied().unwrap_or(false);
+        if offset == 0 {
+            continue;
+        }
+        if !visited.insert(offset) {
+            continue;
+        }
+        if visited.len() > 32 {
             report.status("tiff_ifd_limit");
             break;
         }
@@ -809,7 +867,7 @@ fn tiff_metadata(
                 break;
             };
             if matches!(tag, 0x8769 | 0x8825) {
-                pending.push((pointer, tag == 0x8825));
+                pending.push((pointer, gps || tag == 0x8825));
                 continue;
             }
             if gps {
@@ -877,7 +935,7 @@ fn tiff_metadata(
             .and_then(|n| offset.checked_add(2)?.checked_add(n))
             .and_then(read32)
         {
-            pending.push((next, false));
+            pending.push((next, gps));
         }
         *block += 1;
     }

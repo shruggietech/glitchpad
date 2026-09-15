@@ -68,7 +68,7 @@
 - [x] T031 Run complete repository gate, UTF-8/BOM/mojibake and diff checks through completion; record in `verification.md` (FR-005, FR-019; SC-002 through SC-006).
 - [x] T032 Audit every bundled issue criterion and requirement/scenario against implementation using Spec Kit convergence; append any remaining work to `tasks.md` and implement it (FR-019; SC-006).
 - [x] T033 Record unreleased documentation delta and explicit incomplete #74/#75/#76/#66 status in `verification.md` and PR body; preserve public authority (FR-021).
-- [ ] T034 Commit, automatically push, and publish official S039 PR with #68/#69/#73 traceability using the hidden VCS launcher (FR-022).
+- [x] T034 Commit, automatically push, and publish official S039 PR with #68/#69/#73 traceability using the hidden VCS launcher (FR-022).
 - [ ] T035 Wait for first external reviews/reactions, remediate and respond to every comment, and resolve satisfied threads; record review ledger in `verification.md` (FR-022).
 - [ ] T036 Request at most one explicit second `@codex review` if justified, handle every result, converge after remediation, and wait for all latest required CI/security/docs/platform checks (FR-022; SC-007).
 - [ ] T037 Hand the reviewed green PR to the owner for final review/merge; keep it unmerged and report incomplete future issues accurately (FR-022; SC-006, SC-007).
@@ -89,3 +89,8 @@ First prove US1's five-codec read-only preview end-to-end; then add independentl
 
 - [x] T038 Preserve bounded embedded-thumbnail orientation, apply a source-orientation fallback, retain original descriptor facts, and add independent pixel assertions per FR-009 and US1/AC2 (partial).
 - [x] T039 Preserve complete bounded XMP scalar text and numeric EXIF/TIFF original arrays, prevent unknown/RDF namespace leakage, and add typed-fact/privacy tests per FR-013, FR-014, and US2/AC1 (partial).
+
+## Phase 8: Convergence
+
+- [x] T040 Preserve GPS sensitivity through every TIFF descendant/sibling and shared IFD independent of traversal order, with failure-first serialization regressions (FR-014; US2/AC2).
+- [x] T041 Distinguish exact-limit Android unknown-size streams from oversized input with one bounded EOF byte, retain cleanup/revision checks, and test the real shared stream-drain logic (FR-006, FR-008; US3/AC1).

@@ -95,6 +95,29 @@ fn compressed_metadata_cannot_break_or_expand_the_raster_decoder() {
     );
 }
 
+#[test]
+fn tiff_first_page_does_not_inherit_later_page_orientation() {
+    let original = include_bytes!("../../../fixtures/images/original.tiff");
+    assert_eq!(&original[..4], b"II*\0");
+    let mut source = original.to_vec();
+    let first = usize::try_from(u32::from_le_bytes(source[4..8].try_into().unwrap())).unwrap();
+    let entries = usize::from(u16::from_le_bytes(
+        source[first..first + 2].try_into().unwrap(),
+    ));
+    let next = first + 2 + entries * 12;
+    let later = u32::try_from(source.len()).unwrap();
+    source[next..next + 4].copy_from_slice(&later.to_le_bytes());
+    source.extend_from_slice(b"\x01\0\x12\x01\x03\0\x01\0\0\0\x06\0\0\0\0\0\0\0");
+    let preview = decode_image(&source, &ImageLimits::desktop(), &AtomicBool::new(false)).unwrap();
+    assert_eq!(preview.descriptor.orientation, 1);
+    assert_eq!(
+        image::load_from_memory(&preview.png_bytes)
+            .unwrap()
+            .into_rgba8(),
+        image::load_from_memory(original).unwrap().into_rgba8()
+    );
+}
+
 fn large_png_with_thumbnail(width: u32, height: u32) -> Vec<u8> {
     large_png_with_oriented_thumbnail(width, height, 1)
 }

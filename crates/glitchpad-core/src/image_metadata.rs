@@ -874,6 +874,10 @@ fn tiff_metadata(
                 report.observe("image.location", "exif", "GPS", *block, None);
                 continue;
             }
+            if tag == 0x0112 && offset != first {
+                report.unknown();
+                continue;
+            }
             if !matches!(tag, 700 | 33723 | 34675) && exif_key(tag).is_none() {
                 report.unknown();
                 continue;

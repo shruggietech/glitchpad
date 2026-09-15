@@ -76,7 +76,7 @@ jobs:
     steps:
       - name: Locate successful package runs for this commit
         id: locate
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const workflows = { windows: 'windows-package.yml', macos: 'macos-package.yml', linux: 'linux-package.yml', android: 'android-package.yml' };

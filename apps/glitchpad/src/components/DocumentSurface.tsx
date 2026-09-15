@@ -6,6 +6,8 @@ import { MarkdownSurface } from './MarkdownSurface';
 import { TextEditorSurface, type TextEditorHandle } from './TextEditorSurface';
 import { LargeTextSurface } from './LargeTextSurface';
 import { MermaidSurface } from './MermaidSurface';
+import { ImageSurface } from './ImageSurface';
+import type { ImageDocumentState } from '../domain/image-contract';
 import type { MetadataContribution } from '../domain/metadata';
 import { DocumentErrorBoundary } from './DocumentErrorBoundary';
 
@@ -28,10 +30,11 @@ interface DocumentSurfaceProps {
   localAssetGateway?: MarkdownLocalAssetGateway;
   onOpenMetadata?: (opener: HTMLElement) => void;
   onMetadataContribution?: (contribution: MetadataContribution) => void;
+  onImageChange?: (id: string, expectedRevision: number, image: ImageDocumentState) => void;
 }
 
 export const DocumentSurface = forwardRef<TextEditorHandle, DocumentSurfaceProps>(function DocumentSurface(
-  { session, markdownFailureProbe = false, canOpen = false, onOpen, labelledByTab = false, onDocumentChange, onLanguageChange, onMarkdownChange, onMermaidChange, externalLinkGateway, localAssetGateway, onOpenMetadata, onMetadataContribution },
+  { session, markdownFailureProbe = false, canOpen = false, onOpen, labelledByTab = false, onDocumentChange, onLanguageChange, onMarkdownChange, onMermaidChange, externalLinkGateway, localAssetGateway, onOpenMetadata, onMetadataContribution, onImageChange },
   ref,
 ) {
   const [markdownRecoveries, setMarkdownRecoveries] = useState(() => new Map<string, {
@@ -103,7 +106,7 @@ export const DocumentSurface = forwardRef<TextEditorHandle, DocumentSurfaceProps
     reset?.();
   };
 
-  const presentation = session.text_document ? (
+  const presentation = session.image_document ? <ImageSurface key={session.id} session={session} onImageChange={onImageChange} onOpenMetadata={onOpenMetadata} /> : session.text_document ? (
     session.text_document.mode === 'refused' ? (
       <p className="document-limit" role="alert">This text source exceeds the 256 MiB viewing limit. Use a streaming log viewer or command-line pager for this file.</p>
     ) : session.text_document.mode === 'large_read_only' ? (

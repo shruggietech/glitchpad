@@ -50,6 +50,19 @@ public final class FixtureDocumentsProvider extends DocumentsProvider {
     writeFixture(directory, "diagram.mmd", "flowchart LR\nSource --> Session\n");
     writeFixture(directory, "resolver-cold.md", "# S031 cold delivery\n\nS031_COLD_MARKER_4F2A\n");
     writeFixture(directory, "resolver-warm.txt", "S031_WARM_MARKER_7C9D\n");
+    for (String extension : new String[] {"png", "jpg", "webp", "bmp", "tiff"}) {
+      String name = "original." + extension;
+      try (java.io.InputStream input = getContext().getAssets().open(name);
+          FileOutputStream output = new FileOutputStream(new File(directory, name))) {
+        byte[] buffer = new byte[4096];
+        int count;
+        while ((count = input.read(buffer)) != -1) {
+          output.write(buffer, 0, count);
+        }
+      } catch (IOException error) {
+        throw new IllegalStateException("raster_fixture_copy_failed", error);
+      }
+    }
     return true;
   }
 
@@ -237,6 +250,11 @@ public final class FixtureDocumentsProvider extends DocumentsProvider {
   }
 
   private static String mimeType(String name) {
+    if (name.startsWith("original.")) {
+      if (name.endsWith(".jpg")) return "image/jpeg";
+      if (name.endsWith(".tiff")) return "image/tiff";
+      return "image/" + name.substring("original.".length());
+    }
     if ("resolver-cold".equals(name)) {
       return "text/markdown";
     }

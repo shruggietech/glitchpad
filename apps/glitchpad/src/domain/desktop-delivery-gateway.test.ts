@@ -41,6 +41,19 @@ const result: DesktopDeliveryResult = {
   error: null,
 };
 
+test('content-verified raster delivery bypasses text decoding and stays read-only', async () => {
+  const call = vi.fn((command: string) => {
+    if (command === 'identify_image_source') return Promise.resolve('png');
+    throw new Error(`Unexpected image text read: ${command}`);
+  });
+  const session = await createDesktopDeliveryGateway(call, () => Promise.resolve(() => undefined)).materialize(result);
+  expect(session?.image_document?.codec).toBe('png');
+  expect(session?.text_document).toBeNull();
+  expect(session?.dirty).toBe(false);
+  expect(session?.renderer.capabilities.save).toBe(false);
+  expect(call).toHaveBeenCalledTimes(1);
+});
+
 test('requires the complete Tauri callback boundary before enabling native delivery', () => {
   const descriptor = Object.getOwnPropertyDescriptor(window, '__TAURI_INTERNALS__');
   try {
@@ -115,6 +128,7 @@ test('native Markdown failure probes expose no document data', async () => {
 
 test('materializes a bounded path-free native summary', async () => {
   const call = vi.fn((command: string, args?: Record<string, unknown>) => {
+    if (command === 'identify_image_source') return Promise.resolve(null);
     if (command !== 'read_source_range') throw new Error(`unexpected ${command}`);
     const offset = args?.offset as number;
     const length = args?.length as number;
@@ -146,6 +160,7 @@ test('materializes exact TXT content without injecting shell fixtures', async ()
     },
   };
   const call = vi.fn((_command: string, args?: Record<string, unknown>) => {
+    if (_command === 'identify_image_source') return Promise.resolve(null);
     const offset = args?.offset as number;
     const length = args?.length as number;
     return Promise.resolve({
@@ -168,12 +183,12 @@ test('detects a large desktop source BOM from a bounded prefix', async () => {
     ...source,
     descriptor: { ...source.descriptor, byte_length: 32 * 1024 * 1024 + 2 },
   };
-  const call = vi.fn().mockResolvedValue({
+  const call = vi.fn((command: string) => command === 'identify_image_source' ? Promise.resolve(null) : Promise.resolve({
     source_id: source.source_id,
     offset: 0,
     bytes: [0xff, 0xfe, 0x41],
     end_of_source: false,
-  });
+  }));
   const gateway = createDesktopDeliveryGateway(call, () => Promise.resolve(() => undefined));
   const session = await gateway.materialize({ ...result, source: largeSource });
   expect(session?.text_document?.mode).toBe('large_read_only');
@@ -222,6 +237,7 @@ test('Save As serializes exact text bytes and reports native cancellation', asyn
   const call = vi.fn().mockResolvedValue(false);
   const gateway = createDesktopDeliveryGateway(call, () => Promise.resolve(() => undefined));
   const sourceGateway = createDesktopDeliveryGateway((command, args) => {
+    if (command === 'identify_image_source') return Promise.resolve(null);
     if (command !== 'read_source_range') throw new Error('unexpected command');
     const offset = args?.offset as number;
     const length = args?.length as number;
@@ -238,6 +254,7 @@ test('Save As serializes exact text bytes and reports native cancellation', asyn
 
 test('Save sends exact bytes and revision guards to the native source command', async () => {
   const sourceGateway = createDesktopDeliveryGateway((command, args) => {
+    if (command === 'identify_image_source') return Promise.resolve(null);
     if (command !== 'read_source_range') throw new Error('unexpected command');
     const offset = args?.offset as number;
     return Promise.resolve({

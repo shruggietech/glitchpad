@@ -47,7 +47,7 @@ export interface MetadataCatalogEntry {
   value_kind: MetadataValueKind;
   sensitivity: MetadataSensitivity;
   copy_policy: MetadataCopyPolicy;
-  applies: 'all' | 'text' | 'markdown' | 'mermaid';
+  applies: 'all' | 'text' | 'markdown' | 'mermaid' | 'image';
 }
 
 export interface MetadataFact {
@@ -101,6 +101,30 @@ const entry = (
 });
 
 export const METADATA_CATALOG: readonly MetadataCatalogEntry[] = [
+  entry('image.camera_make', 'embedded', 'Camera make', 'text', 'image'),
+  entry('image.camera_model', 'embedded', 'Camera model', 'text', 'image'),
+  entry('image.software', 'embedded', 'Image software', 'text', 'image'),
+  entry('image.captured', 'embedded', 'Capture time (as stored)', 'text', 'image'),
+  entry('image.artist', 'embedded', 'Artist', 'text', 'image'),
+  entry('image.title', 'embedded', 'Image title', 'text', 'image'),
+  entry('image.description', 'embedded', 'Image description', 'text', 'image'),
+  entry('image.keywords', 'embedded', 'Keywords', 'text', 'image'),
+  entry('image.exposure', 'embedded', 'Exposure time', 'decimal', 'image'),
+  entry('image.f_number', 'embedded', 'F-number', 'decimal', 'image'),
+  entry('image.focal_length', 'embedded', 'Focal length', 'decimal', 'image'),
+  entry('image.iso', 'embedded', 'ISO sensitivity', 'integer', 'image'),
+  entry('image.location', 'embedded', 'Location', 'text', 'image', 'sensitive', 'denied'),
+  entry('image.orientation', 'embedded', 'Stored orientation', 'integer', 'image'),
+  entry('image.embedded_width', 'embedded', 'Embedded width', 'integer', 'image'),
+  entry('image.embedded_height', 'embedded', 'Embedded height', 'integer', 'image'),
+  entry('image.container', 'content', 'Image container', 'text', 'image'),
+  entry('image.width', 'content', 'Pixel width', 'integer', 'image'),
+  entry('image.height', 'content', 'Pixel height', 'integer', 'image'),
+  entry('image.color', 'derived', 'Display color policy', 'text', 'image'),
+  entry('image.profile', 'embedded', 'Embedded color profile', 'text', 'image'),
+  entry('image.alpha', 'content', 'Transparency', 'boolean', 'image'),
+  entry('image.bit_depth', 'content', 'Bits per pixel', 'integer', 'image'),
+  entry('image.metadata_status', 'renderer', 'Image metadata status', 'text', 'image'),
   entry('host.display_name', 'source', 'File name', 'text'),
   entry('host.source_kind', 'source', 'Source kind', 'text'),
   entry('host.byte_length', 'source', 'Size', 'integer'),
@@ -239,6 +263,29 @@ export const projectSessionMetadata = (session: ShellSession): MetadataSnapshot 
   }
   if (session.source.claimed_media_type)
     put(available('derived.media_type', textValue(session.source.claimed_media_type), 'detection', session));
+  if (session.image_document) {
+    const image = session.image_document;
+    put(available('image.container', textValue(image.codec.toUpperCase()), 'renderer', session));
+    if (image.descriptor) {
+      const descriptor = image.descriptor;
+      put(available('image.width', integerValue(descriptor.width), 'renderer', session, 'px'));
+      put(available('image.height', integerValue(descriptor.height), 'renderer', session, 'px'));
+      put(available('image.color', textValue('RGBA8; sRGB assumed; embedded profiles are not applied'), 'renderer', session));
+      put(available('image.alpha', { kind: 'boolean', value: descriptor.alpha }, 'renderer', session));
+      put(available('image.bit_depth', integerValue(descriptor.bits_per_pixel), 'renderer', session));
+    }
+    if (image.metadata) {
+      const profile = !image.metadata.profile_present ? 'Not provided' : image.metadata.statuses.includes('icc_profile_invalid') ? 'Invalid; not applied' : image.metadata.statuses.some(s => s.includes('icc') && (s.includes('unsupported') || s.includes('limit'))) ? 'Unsupported; not applied' : 'Present; not applied';
+      put(available('image.profile', textValue(profile), 'renderer', session));
+      put(available('image.metadata_status', textValue((image.metadata.statuses.join('; ').replaceAll('_', ' ') || 'Extracted').slice(0, 1024)), 'renderer', session));
+      const seen = new Set<string>();
+      for (const observation of image.metadata.observations) {
+        if (seen.has(observation.key)) continue;
+        seen.add(observation.key);
+        put({ key: observation.key, availability: observation.availability, value: observation.value ?? undefined, provenance: 'renderer', session_revision: session.revision, external_revision: session.external_revision });
+      }
+    }
+  }
   put(available('renderer.name', textValue(session.renderer.label), 'renderer', session));
   put(available('renderer.status', textValue(rendererStatus(session)), 'renderer', session));
   const projected: MetadataSnapshot = {

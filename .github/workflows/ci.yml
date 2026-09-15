@@ -156,7 +156,10 @@ jobs:
           shared-key: desktop-${{ matrix.os }}
 
       - name: Markdown recovery and shared shell smoke
-        run: pnpm --filter @shruggietech/glitchpad exec vitest run --maxWorkers=2 src/App.test.tsx src/components/ApplicationMenu.test.tsx src/components/DocumentSurface.test.tsx src/components/MarkdownSurface.test.tsx
+        run: pnpm --filter @shruggietech/glitchpad exec vitest run --maxWorkers=2 src/App.test.tsx src/components/ApplicationMenu.test.tsx src/components/DocumentSurface.test.tsx src/components/MarkdownSurface.test.tsx src/components/ImageSurface.test.tsx src/components/ImageMetadataInspector.test.tsx src/domain/image-metadata.test.ts
+
+      - name: Image family corpus and privacy
+        run: cargo test -p glitchpad-core --locked --test image_contract --test image_decode --test image_metadata
 
       - name: Run desktop source adapter conformance
         run: cargo test -p glitchpad-host --test desktop_source_conformance --locked
@@ -275,12 +278,21 @@ jobs:
         with:
           shared-key: android-x86_64-api-${{ matrix.api-level }}
 
+      - name: Build emulator APK and provider unit tests
+        run: |
+          export NDK_HOME="${ANDROID_SDK_ROOT}/ndk/28.2.13676358"
+          pnpm tauri android build --debug --apk --target x86_64 --ci --config '{"version":"0.0.1"}'
+          ./crates/glitchpad-host/gen/android/gradlew --project-dir crates/glitchpad-host/gen/android :glitchpad-android-source:testDebugUnitTest --no-daemon
+          ./crates/glitchpad-host/gen/android/gradlew --project-dir crates/glitchpad-host/gen/android :app:assembleUniversalDebugAndroidTest -PabiList=x86_64 -ParchList=x86_64 -PtargetList=x86_64 -x :app:rustBuildUniversalDebug -x :app:rustBuildX86_64Debug --no-daemon
+
       - name: Run provider, resolver, delivery, and restoration evidence
         uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2
         with:
           api-level: ${{ matrix.api-level }}
           arch: x86_64
-          target: google_apis
+          # Keep API 24's older Chrome coverage. API 36 uses the official AOSP image
+          # to exercise offline framework behavior without Google first-boot work.
+          target: ${{ matrix.api-level == 36 && 'default' || 'google_apis' }}
           cores: 4
           emulator-boot-timeout: 900
           disable-animations: true
@@ -289,9 +301,9 @@ jobs:
           # Vulkan disabled for this headless GLES test workload.
           emulator-options: -no-window -no-audio -no-snapshot -no-boot-anim -gpu swiftshader -feature -Vulkan
           script: |
-            export NDK_HOME="${ANDROID_SDK_ROOT}/ndk/28.2.13676358"
-            pnpm tauri android build --debug --apk --target x86_64 --ci --config '{"version":"0.0.1"}'
-            ./crates/glitchpad-host/gen/android/gradlew --project-dir crates/glitchpad-host/gen/android :glitchpad-android-source:testDebugUnitTest --no-daemon
+            # These offline tests do not need Google services. Avoid their first-boot
+            # work starving instrumentation on the disposable hosted emulator.
+            set -e; for package in com.google.android.gms com.google.android.googlequicksearchbox; do if adb shell pm list packages "$package" | grep -Fq "package:$package"; then adb shell pm disable-user --user 0 "$package"; fi; done
             bash scripts/run-android-connected-tests.sh
             adb install -r crates/glitchpad-host/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk
             adb install -r crates/glitchpad-host/gen/android/app/build/outputs/apk/androidTest/universal/debug/app-universal-debug-androidTest.apk

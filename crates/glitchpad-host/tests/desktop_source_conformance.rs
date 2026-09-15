@@ -68,6 +68,38 @@ impl Drop for TemporarySource {
 }
 
 #[test]
+fn raster_corpus_converges_through_registered_desktop_source_authority() {
+    for extension in ["png", "jpg", "webp", "bmp", "tiff"] {
+        let host = DesktopSourceHost::new();
+        let bytes = fs::read(format!("../../fixtures/images/original.{extension}")).unwrap();
+        let file = TemporarySource::named(&format!("original.{extension}"), &bytes);
+        let source = host.acquire(DesktopDelivery::dialog(file.path())).unwrap();
+        let cancelled = std::sync::atomic::AtomicBool::new(false);
+        let actual = host
+            .read_image_bytes(
+                &source.source_id,
+                &source.external_revision,
+                &cancelled,
+                false,
+            )
+            .unwrap();
+        let preview = glitchpad_core::images::decode_image(
+            &actual,
+            &glitchpad_core::images::ImageLimits::desktop(),
+            &cancelled,
+        )
+        .unwrap();
+        assert_eq!(
+            (preview.descriptor.width, preview.descriptor.height),
+            (4, 3)
+        );
+        assert_eq!(actual, bytes);
+        assert_eq!(fs::read(file.path()).unwrap(), bytes);
+        assert_eq!(host.resource_snapshot().unwrap().streams, 0);
+    }
+}
+
+#[test]
 fn every_trusted_delivery_kind_converges_on_one_strong_source() {
     let source = TemporarySource::new(b"# desktop source");
     let host = DesktopSourceHost::new();

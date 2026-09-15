@@ -15,6 +15,7 @@ import com.shruggietech.glitchpad.MainActivity
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
+import org.json.JSONObject
 import org.junit.After
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -50,6 +51,18 @@ class AndroidDeliveryInstrumentedTest {
     assertTrue("installed Glitchpad package did not resolve the warm fixture", glitchpadComponent(warmIntent) != null)
     clientContext.startActivity(warmIntent.setComponent(component).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     waitForBodyText(scenario, "resolver-warm.txt", "S031_WARM_MARKER_7C9D")
+    for (extension in listOf("png", "jpg", "webp", "bmp", "tiff")) {
+      val uri = grant(documentUri("original.$extension"))
+      val before = resolver.openInputStream(uri)!!.use { it.readBytes() }
+      // Explicit internal delivery exercises the already granted provider path;
+      // image associations and public ACTION_VIEW intent filters stay deferred.
+      clientContext.startActivity(viewIntent(uri, "image/*").setComponent(component).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+      waitForBodyText(scenario, "original.$extension", "Actual size", "Background")
+      waitForImagePixels(scenario, "original.$extension")
+      val after = resolver.openInputStream(uri)!!.use { it.readBytes() }
+      assertTrue("raster preview changed original provider bytes", before.contentEquals(after))
+    }
+    println("image_evidence=png:pass,jpeg:pass,webp:pass,bmp:pass,tiff:pass,source_unchanged:pass,api:${android.os.Build.VERSION.SDK_INT}")
     println("delivery_evidence=cold:pass,warm:pass,api:${android.os.Build.VERSION.SDK_INT}")
     System.out.flush()
     // This test runs alone because MainActivity owns the Tauri process. Closing
@@ -105,6 +118,32 @@ class AndroidDeliveryInstrumentedTest {
       }
     }
     return if (latch.await(2, TimeUnit.SECONDS)) result.get() else null
+  }
+
+  private fun waitForImagePixels(scenario: ActivityScenario<MainActivity>, expectedName: String) {
+    val deadline = SystemClock.elapsedRealtime() + 30_000L
+    val expectedLiteral = JSONObject.quote(expectedName)
+    var latest = "no WebView evidence"
+    while (SystemClock.elapsedRealtime() < deadline) {
+      val view = AtomicReference<WebView?>()
+      scenario.onActivity { view.set(findWebView(it.window.decorView)) }
+      val result = AtomicReference("")
+      val latch = CountDownLatch(1)
+      view.get()?.let { webView ->
+        instrumentation.runOnMainSync {
+          webView.evaluateJavascript("(()=>{const image=document.querySelector('.image-preview');const background=document.querySelector('select[aria-label=\"Image background\"]');const status=document.querySelector('.image-status');const matches=!!image && image.alt===$expectedLiteral;const blob=!!image && image.src.startsWith('blob:');return {pass:!!background && matches && image.complete && image.naturalWidth===4 && image.naturalHeight===3 && blob,matches:matches,complete:!!image && image.complete,width:image ? image.naturalWidth : 0,height:image ? image.naturalHeight : 0,blob:blob,background:!!background,status:status ? status.textContent.slice(0,256) : ''};})()") {
+            result.set(it ?: "")
+            latch.countDown()
+          }
+        }
+        if (latch.await(2, TimeUnit.SECONDS)) {
+          latest = result.get()
+          if (latest.startsWith("{") && JSONObject(latest).optBoolean("pass")) return
+        }
+      }
+      SystemClock.sleep(100L)
+    }
+    throw AssertionError("bounded raster did not produce the expected inert image pixels for $expectedName; $latest")
   }
 
   private fun findWebView(view: View): WebView? {

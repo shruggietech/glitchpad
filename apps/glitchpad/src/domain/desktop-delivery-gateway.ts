@@ -9,6 +9,8 @@ import {
   type TextEncoding,
 } from './contracts';
 import { detectLanguage } from './language';
+import { identifyImageSource } from './image-gateway';
+import { createImageSession } from './image-contract';
 import { markdownEligibility } from './markdown-contract';
 import { initialMermaidViewport } from './mermaid-contract';
 import {
@@ -205,6 +207,8 @@ export const createDesktopDeliveryGateway = (
   async materialize(result) {
     if (result.status !== 'opened' || !result.source) return null;
     const source = result.source;
+    const imageCodec = await identifyImageSource(call, source.source_id, source.external_revision);
+    if (imageCodec) return createImageSession(source.descriptor, source.source_id, source.external_revision, imageCodec, 'desktop');
     const { text, sourceBytes, encoding } = await readSource(call, source);
     const renderer = rendererFor(source.descriptor.display_name);
     const textDocument = createTextDocument({

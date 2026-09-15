@@ -60,6 +60,7 @@ const source: AndroidSourceSummary = {
 describe('Android delivery gateway', () => {
   it('drains, materializes, observes, and closes Android sources', async () => {
     const nativeCall = vi.fn((command: string): Promise<unknown> => {
+      if (command === 'identify_image_source') return Promise.resolve(null);
       if (command === 'drain_android_deliveries')
         return Promise.resolve({ sources: [source], rejections: [] });
       if (command === 'read_android_range')

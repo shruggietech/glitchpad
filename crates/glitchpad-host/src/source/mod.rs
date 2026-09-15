@@ -1236,6 +1236,110 @@ impl DesktopSourceHost {
         }
     }
 
+    /// Reads a revision-bound image or probe through an existing opaque source lease.
+    ///
+    /// # Errors
+    /// Returns a safe cancellation, source, revision, or encoded-budget error.
+    pub fn read_image_bytes(
+        &self,
+        source_id: &SourceId,
+        expected: &ExternalRevision,
+        cancel: &std::sync::atomic::AtomicBool,
+        probe: bool,
+    ) -> Result<Vec<u8>, CoreError> {
+        use std::sync::atomic::Ordering;
+        if cancel.load(Ordering::Acquire) {
+            return Err(CoreError::new(
+                CoreErrorCategory::StaleSession,
+                "Image work was cancelled",
+                true,
+                true,
+            ));
+        }
+        let maximum = if probe {
+            16
+        } else {
+            glitchpad_core::images::MAX_IMAGE_SOURCE_BYTES
+        };
+        let snapshot = self.query_metadata_snapshot(source_id)?;
+        if !probe && snapshot.byte_length.is_some_and(|n| n > maximum) {
+            return Err(CoreError::new(
+                CoreErrorCategory::ResourceLimit,
+                "The image source exceeds its encoded-byte limit",
+                false,
+                true,
+            ));
+        }
+        let lease = self.open_integrity_stream(source_id, 0, maximum, expected)?;
+        let result = (|| {
+            let mut bytes = Vec::new();
+            loop {
+                if cancel.load(Ordering::Acquire) {
+                    return Err(CoreError::new(
+                        CoreErrorCategory::StaleSession,
+                        "Image work was cancelled",
+                        true,
+                        true,
+                    ));
+                }
+                let remaining = maximum.saturating_sub(bytes.len() as u64);
+                if remaining == 0 {
+                    return Err(CoreError::new(
+                        CoreErrorCategory::ResourceLimit,
+                        "The image source exceeds its encoded-byte limit",
+                        false,
+                        true,
+                    ));
+                }
+                let read =
+                    self.read_stream(&lease.stream_id, remaining.min(MAX_SOURCE_CHUNK_BYTES))?;
+                if read.bytes.is_empty() && !read.end_of_source {
+                    return Err(CoreError::new(
+                        CoreErrorCategory::InvalidInput,
+                        "Image source read made no progress",
+                        false,
+                        true,
+                    ));
+                }
+                bytes.try_reserve(read.bytes.len()).map_err(|_| {
+                    CoreError::new(
+                        CoreErrorCategory::ResourceLimit,
+                        "Image source allocation was refused",
+                        false,
+                        true,
+                    )
+                })?;
+                bytes.extend_from_slice(&read.bytes);
+                if read.end_of_source || probe || snapshot.byte_length == Some(bytes.len() as u64) {
+                    break;
+                }
+            }
+            if !self.image_revision_matches(source_id, expected)? {
+                return Err(CoreError::new(
+                    CoreErrorCategory::Conflict,
+                    "The image source changed",
+                    true,
+                    true,
+                ));
+            }
+            Ok(bytes)
+        })();
+        self.retire_stream(&lease.stream_id);
+        result
+    }
+
+    /// Checks the native or path-free expected image revision without exposing paths.
+    ///
+    /// # Errors
+    /// Returns a safe missing-source or observation error.
+    pub fn image_revision_matches(
+        &self,
+        source_id: &SourceId,
+        expected: &ExternalRevision,
+    ) -> Result<bool, CoreError> {
+        self.integrity_revision_matches(source_id, expected)
+    }
+
     fn cancel_source_integrity(&self, source_id: &SourceId) -> Result<(), CoreError> {
         let mut state = self.lock_state()?;
         let retired_streams = state
@@ -1722,6 +1826,41 @@ pub(crate) mod tests {
     impl Drop for TemporarySource {
         fn drop(&mut self) {
             let _ = fs::remove_dir_all(&self.directory);
+        }
+    }
+
+    #[test]
+    fn image_adapter_preserves_five_codecs_and_cleans_up_revision_failures() {
+        for name in ["png", "jpg", "webp", "bmp", "tiff"] {
+            let host = DesktopSourceHost::new();
+            let bytes = fs::read(format!("../../fixtures/images/original.{name}")).unwrap();
+            let file = TemporarySource::new(&bytes);
+            let source = host.acquire(DesktopDelivery::dialog(file.path())).unwrap();
+            let cancel = std::sync::atomic::AtomicBool::new(false);
+            let probe = host
+                .read_image_bytes(&source.source_id, &source.external_revision, &cancel, true)
+                .unwrap();
+            assert!(glitchpad_core::images::raster_signature(&probe).is_some());
+            let actual = host
+                .read_image_bytes(&source.source_id, &source.external_revision, &cancel, false)
+                .unwrap();
+            assert_eq!(actual, bytes);
+            assert!(
+                glitchpad_core::images::decode_image(
+                    &actual,
+                    &glitchpad_core::images::ImageLimits::desktop(),
+                    &cancel
+                )
+                .is_ok()
+            );
+            assert_eq!(fs::read(file.path()).unwrap(), bytes);
+            assert_eq!(host.resource_snapshot().unwrap().streams, 0);
+            fs::write(file.path(), b"changed length").unwrap();
+            assert!(
+                host.read_image_bytes(&source.source_id, &source.external_revision, &cancel, false)
+                    .is_err()
+            );
+            assert_eq!(host.resource_snapshot().unwrap().streams, 0);
         }
     }
 

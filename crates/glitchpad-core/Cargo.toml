@@ -9,6 +9,9 @@ description = "Platform-independent domain core for Glitchpad."
 publish = false
 
 [dependencies]
+image.workspace = true
+kamadak-exif.workspace = true
+quick-xml.workspace = true
 schemars.workspace = true
 serde.workspace = true
 serde_json.workspace = true

@@ -43,3 +43,7 @@
 ## 2026-09-15: Dependency Gate Refinement
 
 The complete locked audit found RUSTSEC-2026-0206 (`rustybuzz`) and RUSTSEC-2026-0192 (`ttf-parser`) in the initially researched 0.47 text stack. Mandatory research follow-up verified maintained resvg/usvg 0.48.1, whose text stack uses fontdb0.24, harfrust0.12 and skrifa0.44. The exact released pin retains the bounded XML/font/resolver APIs and removes both flagged packages. No advisory suppression or text-support downgrade is introduced. Default features remain disabled, including SVGZ, host fonts, memmap and raster-image decoding. See the [tagged changelog](https://raw.githubusercontent.com/linebender/resvg/v0.48.1/CHANGELOG.md), [tagged manifest](https://raw.githubusercontent.com/linebender/resvg/v0.48.1/crates/usvg/Cargo.toml) and [release](https://github.com/linebender/resvg/releases/tag/v0.48.1).
+
+## 2026-09-15: Entry-local ICO range refusal
+
+Adversarial reassessment found that returning a container failure for one bad entry range contradicts FR-012 and #72. Before correction, the decision is to keep only header/directory truncation and global resource ceilings container-wide; each invalid payload range, claimed size or payload shape becomes a row-local classification. Unknown/unavailable payload encoding is explicit, and browser facts admit the bounded raw u16 depth/u32 byte length without authorizing decode or export. Valid neighboring entries remain usable.

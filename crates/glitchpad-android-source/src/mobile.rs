@@ -40,7 +40,9 @@ impl<R: Runtime> AndroidSource<R> {
     pub fn cancel_image_export(&self, request: &str) {
         let _ = self.0.run_mobile_plugin::<()>(
             "cancelImageExport",
-            serde_json::json!({ "requestId": request }),
+            crate::models::ImageExportCancelRequest {
+                request_id: request,
+            },
         );
     }
     pub fn drain_deliveries(&self, maximum: usize) -> Result<DeliveryBatch, String> {

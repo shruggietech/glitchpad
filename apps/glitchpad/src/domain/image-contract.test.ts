@@ -36,6 +36,8 @@ describe('image contract', () => {
     Object.assign(icon.preview!.descriptor, { family: 'ico', codec: 'ico', capabilities: { ...result.preview!.descriptor.capabilities, select_entry: true, export_entry: true } });
     icon.family_state = { family: 'ico', entries: [{ index: 0, width: 1, height: 1, bits_per_pixel: 65535, encoded_bytes: 57, preview: 'full', encoding: 'png', alpha: true, failure: null, duplicate_of: null }], selected_entry: 0, selected_entry_export: true };
     expect(validateImageResult(icon, 'opaque', 'request', revision)).toBe(true);
+    icon.family_state.entries.push({ ...icon.family_state.entries[0], index: 1, encoded_bytes: 0xffff_ffff, encoding: 'unknown', failure: 'truncated', preview: 'unavailable' });
+    expect(validateImageResult(icon, 'opaque', 'request', revision)).toBe(true);
     Object.assign(result, { family_state: icon.family_state });
     expect(validateImageResult(result, 'opaque', 'request', revision)).toBe(false);
     delete result.family_state;

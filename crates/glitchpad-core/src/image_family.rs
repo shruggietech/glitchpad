@@ -294,11 +294,60 @@ fn png_icon_dimensions(payload: &[u8], width: u32, height: u32) -> bool {
         })
 }
 
+struct IconFingerprints {
+    ranges: std::collections::HashMap<(usize, usize), [u8; 32]>,
+    scanned: usize,
+    deadline: std::time::Instant,
+}
+
+impl IconFingerprints {
+    fn new() -> Self {
+        Self {
+            ranges: std::collections::HashMap::new(),
+            scanned: 0,
+            deadline: std::time::Instant::now() + std::time::Duration::from_secs(5),
+        }
+    }
+
+    fn hash(
+        &mut self,
+        payload: &[u8],
+        range: (usize, usize),
+        cancel: &AtomicBool,
+    ) -> Result<[u8; 32], ImageFailure> {
+        use sha2::{Digest, Sha256};
+        if let Some(hash) = self.ranges.get(&range) {
+            return Ok(*hash);
+        }
+        self.scanned = self
+            .scanned
+            .checked_add(payload.len())
+            .ok_or(ImageFailure::Oversized)?;
+        if self.scanned > 128 * 1024 * 1024 {
+            return Err(ImageFailure::Oversized);
+        }
+        let mut digest = Sha256::new();
+        for chunk in payload.chunks(1024 * 1024) {
+            check(cancel)?;
+            if std::time::Instant::now() > self.deadline {
+                return Err(ImageFailure::Deadline);
+            }
+            digest.update(chunk);
+        }
+        let hash: [u8; 32] = digest.finalize().into();
+        self.ranges.insert(range, hash);
+        Ok(hash)
+    }
+}
+
 /// Inspects every bounded icon directory row without decoding unrelated payloads.
 ///
 /// # Errors
-/// Rejects malformed directories and out-of-source entry ranges.
+/// Rejects malformed/truncated directories or global budgets; payload failures stay entry-local.
 pub fn ico_inventory(bytes: &[u8], cancel: &AtomicBool) -> Result<Vec<ImageEntry>, ImageFailure> {
+    if bytes.get(..4) != Some(&[0, 0, 1, 0]) {
+        return Err(ImageFailure::Malformed);
+    }
     if bytes.len() as u64 > crate::images::MAX_IMAGE_SOURCE_BYTES {
         return Err(ImageFailure::Oversized);
     }
@@ -312,9 +361,7 @@ pub fn ico_inventory(bytes: &[u8], cancel: &AtomicBool) -> Result<Vec<ImageEntry
     }
     let mut entries = Vec::with_capacity(usize::from(count));
     let mut fingerprints: Vec<Option<[u8; 32]>> = Vec::with_capacity(usize::from(count));
-    let mut range_hashes = std::collections::HashMap::new();
-    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
-    let mut scanned = 0_usize;
+    let mut hashing = IconFingerprints::new();
     for index in 0..count {
         check(cancel)?;
         let at = 6 + usize::from(index) * 16;
@@ -330,42 +377,37 @@ pub fn ico_inventory(bytes: &[u8], cancel: &AtomicBool) -> Result<Vec<ImageEntry
         };
         let length = usize::try_from(u32le(bytes, at + 8)?).map_err(|_| ImageFailure::Oversized)?;
         let start = usize::try_from(u32le(bytes, at + 12)?).map_err(|_| ImageFailure::Oversized)?;
-        let end = start.checked_add(length).ok_or(ImageFailure::Oversized)?;
-        if start < directory_end {
-            return Err(ImageFailure::Malformed);
-        }
-        let payload = bytes.get(start..end).ok_or(ImageFailure::Truncated)?;
+        let end = start.checked_add(length);
+        let range_failure = if start < directory_end {
+            Some(ImageFailure::Malformed)
+        } else if end.is_none() {
+            Some(ImageFailure::Oversized)
+        } else if end.is_some_and(|n| n > bytes.len()) {
+            Some(ImageFailure::Truncated)
+        } else {
+            None
+        };
+        let payload = if range_failure.is_none() {
+            bytes.get(start..end.unwrap_or(start)).unwrap_or_default()
+        } else {
+            &[]
+        };
+        let end = end.unwrap_or(start);
         let png = payload.starts_with(b"\x89PNG\r\n\x1a\n");
+        let dib = u32le(payload, 0).is_ok_and(|n| matches!(n, 40 | 52 | 56 | 108 | 124));
         let valid = if png {
             png_icon_dimensions(payload, width, height)
         } else {
-            u32le(payload, 0).is_ok_and(|n| n >= 40)
-                && u32le(payload, 4) == Ok(width)
+            dib && u32le(payload, 4) == Ok(width)
                 && u32le(payload, 8) == Ok(height * 2)
                 && u16le(payload, 12) == Ok(1)
                 && u16le(payload, 14).is_ok_and(|n| matches!(n, 1 | 4 | 8 | 16 | 24 | 32))
         };
-        let fingerprint = if valid && length <= 8 * 1024 * 1024 {
-            if let Some(hash) = range_hashes.get(&(start, end)) {
-                Some(*hash)
-            } else {
-                use sha2::{Digest, Sha256};
-                scanned = scanned.checked_add(length).ok_or(ImageFailure::Oversized)?;
-                if scanned > 128 * 1024 * 1024 {
-                    return Err(ImageFailure::Oversized);
-                }
-                let mut digest = Sha256::new();
-                for chunk in payload.chunks(1024 * 1024) {
-                    check(cancel)?;
-                    if std::time::Instant::now() > deadline {
-                        return Err(ImageFailure::Deadline);
-                    }
-                    digest.update(chunk);
-                }
-                let hash: [u8; 32] = digest.finalize().into();
-                range_hashes.insert((start, end), hash);
-                Some(hash)
-            }
+        let failure = range_failure
+            .or_else(|| (length > 8 * 1024 * 1024).then_some(ImageFailure::Oversized))
+            .or_else(|| (!valid).then_some(ImageFailure::Malformed));
+        let fingerprint = if failure.is_none() {
+            Some(hashing.hash(payload, (start, end), cancel)?)
         } else {
             None
         };
@@ -373,7 +415,7 @@ pub fn ico_inventory(bytes: &[u8], cancel: &AtomicBool) -> Result<Vec<ImageEntry
             .and_then(|hash| fingerprints.iter().position(|old| *old == Some(hash)))
             .and_then(|n| u16::try_from(n).ok());
         fingerprints.push(fingerprint);
-        let valid = valid && length <= 8 * 1024 * 1024;
+        let valid = failure.is_none();
         entries.push(ImageEntry {
             index,
             width,
@@ -385,13 +427,20 @@ pub fn ico_inventory(bytes: &[u8], cancel: &AtomicBool) -> Result<Vec<ImageEntry
             } else {
                 ImagePreviewKind::Unavailable
             },
-            encoding: if png { "png" } else { "dib" }.into(),
+            encoding: if png {
+                "png"
+            } else if dib {
+                "dib"
+            } else {
+                "unknown"
+            }
+            .into(),
             alpha: if png && valid {
                 payload.get(25).map(|n| matches!(n, 4 | 6))
             } else {
                 None
             },
-            failure: (!valid).then_some(ImageFailure::Malformed),
+            failure,
             duplicate_of,
         });
     }
@@ -426,7 +475,11 @@ pub fn decode_ico_entry(
 ) -> Result<FamilyPreview, ImageFailure> {
     use image::ImageDecoder;
     check(cancel)?;
-    if entries.is_empty() || entries.len() > 256 || usize::from(u16le(bytes, 4)?) != entries.len() {
+    if bytes.get(..4) != Some(&[0, 0, 1, 0])
+        || entries.is_empty()
+        || entries.len() > 256
+        || usize::from(u16le(bytes, 4)?) != entries.len()
+    {
         return Err(ImageFailure::Malformed);
     }
     let selected = usize::try_from(selection).map_err(|_| ImageFailure::Malformed)?;

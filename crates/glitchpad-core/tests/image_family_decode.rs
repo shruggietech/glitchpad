@@ -114,7 +114,18 @@ fn ico_corrupt_entries_do_not_hide_valid_entries_or_export_source_metadata() {
     assert!(decode(&bytes, 0).is_err());
     let mut malicious = bytes.clone();
     malicious[18..22].copy_from_slice(&u32::MAX.to_le_bytes());
-    assert!(decode(&malicious, 1).is_err());
+    let neighbor = decode(&malicious, 1).unwrap();
+    let ImageFamilyState::Ico { entries, .. } = neighbor.state else {
+        panic!("wrong family")
+    };
+    assert_eq!(entries[0].failure, Some(ImageFailure::Truncated));
+    assert_eq!(entries[0].encoding, "unknown");
+    assert_eq!(entries.len(), 3);
+    malicious[14..18].copy_from_slice(&u32::MAX.to_le_bytes());
+    assert!(decode(&malicious, 1).is_ok());
+    malicious[18..22].copy_from_slice(&0_u32.to_le_bytes());
+    assert!(decode(&malicious, 1).is_ok());
+    assert!(decode(&malicious, 0).is_err());
 }
 
 fn animation_gif() -> Vec<u8> {

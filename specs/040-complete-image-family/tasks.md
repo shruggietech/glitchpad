@@ -61,7 +61,7 @@
 - [x] T029 Run complete `cargo xtask check`, documentation, encoding/BOM/mojibake and diff checks with real successful exit status in `verification.md` (FR-022; SC-007).
 - [x] T030 Perform Spec Kit read-only analyze and convergence against every issue criterion, 24 requirements/16 scenarios/seven outcomes and eight principles; append and implement any findings in `tasks.md` (FR-023, FR-024).
 - [x] T031 Record unreleased documentation delta in `changelog.d/040.added.md` and feature/PR evidence; preserve official0.1.3 and incomplete #75/#76/#66/later milestones (FR-023).
-- [ ] T032 Commit, automatically push and publish the official PR closing only #70/#71/#72/#74 through the hidden VCS launcher (FR-024).
+- [x] T032 Commit, automatically push and publish the official PR closing only #70/#71/#72/#74 through the hidden VCS launcher (FR-024).
 - [ ] T033 Wait initial external reviews/reactions, respond to every comment, remediate with regression evidence and resolve every satisfied thread; record the ledger in `verification.md` (FR-024).
 - [ ] T034 Request at most one explicit follow-up review round if needed, address/resolve every result, and wait complete latest-head CI/security/platform checks (FR-024; SC-007).
 - [ ] T035 Publish one final completed verification/task receipt, wait its latest-head CI, and notify the owner for final review/merge with the PR unmerged (FR-024; SC-001, SC-007).
@@ -77,3 +77,7 @@ Prove safe SVG first, incremental paused animation next, then independent ICO en
 ## Phase 8: Convergence
 
 - [x] T036 Exercise reduced-motion preference changes during playback and prove no subsequent frame scheduling in `ImageSurface.test.tsx` per FR-009, FR-010 and US2/AC3 (partial).
+
+## Phase 9: Convergence
+
+- [x] T037 Preserve every bounded ICO row and valid-neighbor decoding when another entry has an invalid range or excessive claimed length; retain unknown encoding and full bounded directory facts in native/browser tests per FR-011, FR-012, US3/AC1 and #72 (contradicts).

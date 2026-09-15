@@ -112,6 +112,12 @@ pub struct ImageExportRequest<'a> {
     pub bytes: &'a [u8],
 }
 
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImageExportCancelRequest<'a> {
+    pub request_id: &'a str,
+}
+
 #[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ImageExportResponse {

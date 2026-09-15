@@ -56,7 +56,7 @@ class AndroidDeliveryInstrumentedTest {
       // Explicit internal delivery exercises the already granted provider path;
       // image associations and public ACTION_VIEW intent filters stay deferred.
       clientContext.startActivity(viewIntent(uri, "image/*").setComponent(component).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-      waitForBodyText(scenario, "original.$extension", "Actual size", "Image background")
+      waitForBodyText(scenario, "original.$extension", "Actual size", "Background")
       waitForImagePixels(scenario)
       val after = resolver.openInputStream(uri)!!.use { it.readBytes() }
       assertTrue("raster preview changed original provider bytes", before.contentEquals(after))
@@ -128,7 +128,7 @@ class AndroidDeliveryInstrumentedTest {
       val latch = CountDownLatch(1)
       view.get()?.let { webView ->
         instrumentation.runOnMainSync {
-          webView.evaluateJavascript("(()=>{const image=document.querySelector('.image-preview');return !!image && image.complete && image.naturalWidth===4 && image.naturalHeight===3 && image.src.startsWith('blob:');})()") {
+          webView.evaluateJavascript("(()=>{const image=document.querySelector('.image-preview');const background=document.querySelector('select[aria-label=\"Image background\"]');return !!background && !!image && image.complete && image.naturalWidth===4 && image.naturalHeight===3 && image.src.startsWith('blob:');})()") {
             result.set(it ?: "")
             latch.countDown()
           }

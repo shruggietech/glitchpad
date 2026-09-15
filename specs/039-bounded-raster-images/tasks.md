@@ -102,3 +102,8 @@ First prove US1's five-codec read-only preview end-to-end; then add independentl
 ## Phase 10: Convergence
 
 - [x] T043 Apply the bounded GPS-aware IFD graph classification to embedded EXIF facts across JPEG/PNG/WebP, retain primary-only facts and private thumbnail extraction, and prove that shared GPS-linked EXIF capture-time payloads never serialize (FR-014; US2/AC2).
+
+## Phase 11: Convergence
+
+- [x] T044 Correct hosted Android image evidence to check the visible background label separately from its accessible selector name, retaining strict inert pixel and unchanged-source assertions (FR-019; SC-001; partial).
+- [x] T045 Separate Android APK/provider compilation from emulator execution and suppress unrelated Google service startup in the ephemeral validation emulator, retaining the complete provider/delivery/restoration/performance gates and existing retry limits (FR-019; SC-001, SC-002; partial).

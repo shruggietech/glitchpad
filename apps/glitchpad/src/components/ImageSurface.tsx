@@ -28,7 +28,9 @@ export function ImageSurface({ session, gateway = nativeImageGateway, onImageCha
   const [family, setFamily] = useState<ImageFamilyState | null>(session.image_document?.family_state ?? null);
   const [selection, setSelection] = useState<number | null>(session.image_document?.selection ?? null);
   const [playing, setPlaying] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(() => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches);
   const completedLoops = useRef(0);
+  const playbackCompleted = useRef(false);
   const exportAbort = useRef<AbortController | null>(null);
   const lastRequest = useRef<string | null>(null);
   const points = useRef(new Map<number, { x: number; y: number }>());
@@ -46,10 +48,13 @@ export function ImageSurface({ session, gateway = nativeImageGateway, onImageCha
   useEffect(() => {
     if (typeof matchMedia !== 'function') return;
     const motion = matchMedia('(prefers-reduced-motion: reduce)');
-    const change = () => { if (motion.matches) setPlaying(false); };
+    const change = () => { setReducedMotion(motion.matches); if (motion.matches) setPlaying(false); };
+    change();
     if (motion.addEventListener) { motion.addEventListener('change', change); return () => motion.removeEventListener('change', change); }
     motion.addListener(change); return () => motion.removeListener(change);
   }, []);
+
+  useEffect(() => { completedLoops.current = 0; playbackCompleted.current = false; }, [session.id, session.revision]);
 
   useEffect(() => {
     const update = () => setVisible(document.visibilityState !== 'hidden');
@@ -107,18 +112,18 @@ export function ImageSurface({ session, gateway = nativeImageGateway, onImageCha
   }, [session.id, session.revision, session.source_state, visible, gateway]);
 
   useEffect(() => {
-    if (!playing || !visible || !url || family?.family !== 'animation' || family.frame_count === null) return;
+    if (!playing || reducedMotion || !visible || !url || family?.family !== 'animation' || family.frame_count === null) return;
     const timer = setTimeout(() => {
       const next = family.selected_frame + 1;
       if (next >= family.frame_count!) {
         completedLoops.current += 1;
         const loops = family.loop_count === null ? 1 : (descriptor?.codec === 'gif' && family.loop_count > 0 ? family.loop_count + 1 : family.loop_count);
-        if (loops !== 0 && completedLoops.current >= loops) { setPlaying(false); return; }
+        if (loops !== 0 && completedLoops.current >= loops) { playbackCompleted.current = true; setPlaying(false); return; }
       }
       setSelection(next % family.frame_count!);
     }, family.frame_duration_ms === 0 ? 100 : Math.max(20, family.frame_duration_ms ?? 100));
     return () => clearTimeout(timer);
-  }, [playing, visible, url, family, descriptor]);
+  }, [playing, reducedMotion, visible, url, family, descriptor]);
 
   useEffect(() => {
     const element = pane.current;
@@ -161,7 +166,7 @@ export function ImageSurface({ session, gateway = nativeImageGateway, onImageCha
       <label>Background <select aria-label="Image background" value={viewport.background} onChange={e => apply({ ...viewport, background: e.target.value as ImageViewport['background'] })}><option value="checker">Checkerboard</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
       {onOpenMetadata && <button type="button" onClick={e => onOpenMetadata(e.currentTarget)}>File information</button>}
     {family?.family === 'animation' && <span className="image-family-actions" role="group" aria-label="Animation controls">
-      <button type="button" disabled={!url} aria-pressed={playing} onClick={() => { completedLoops.current = 0; if (!playing && family.selected_frame + 1 >= (family.frame_count ?? 1)) setSelection(0); setPlaying(p => !p); }}>{playing ? 'Pause' : 'Play'}</button>
+      <button type="button" disabled={!url || reducedMotion} title={reducedMotion ? 'Playback disabled by reduced-motion preference.' : undefined} aria-pressed={playing} onClick={() => { if (reducedMotion) return; if (!playing && playbackCompleted.current) { completedLoops.current = 0; playbackCompleted.current = false; setSelection(0); } setPlaying(p => !p); }}>{playing ? 'Pause' : 'Play'}</button>
       <button type="button" disabled={!url || family.selected_frame === 0} onClick={() => { setPlaying(false); setSelection(family.selected_frame - 1); }}>Previous frame</button>
       <button type="button" disabled={!url || family.selected_frame + 1 >= (family.frame_count ?? 1)} onClick={() => { setPlaying(false); setSelection(family.selected_frame + 1); }}>Next frame</button>
       <label>Frame <input aria-label="Animation frame" type="number" min={1} max={family.frame_count ?? 1} value={family.selected_frame + 1} onChange={e => { const frame = Number(e.target.value); if (Number.isInteger(frame) && frame >= 1 && frame <= (family.frame_count ?? 1)) { setPlaying(false); setSelection(frame - 1); } }} /></label>

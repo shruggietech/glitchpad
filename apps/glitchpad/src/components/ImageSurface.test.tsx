@@ -42,10 +42,58 @@ describe('read-only raster viewport', () => {
       motion.matches = true;
       act(() => change());
       expect(screen.getByRole('button', { name: 'Play' })).toHaveAttribute('aria-pressed', 'false');
+      expect(screen.getByRole('button', { name: 'Play' })).toBeDisabled();
+      fireEvent.click(screen.getByRole('button', { name: 'Play' }));
       await act(() => vi.advanceTimersByTimeAsync(1000));
       expect(renderFrame).toHaveBeenCalledTimes(1);
     } finally { vi.useRealTimers(); view.unmount(); }
     expect(motion.removeEventListener).toHaveBeenCalledWith('change', change);
+  });
+  it('prevents playback when reduced motion already matches while retaining manual frame controls', async () => {
+    vi.stubGlobal('matchMedia', () => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() }));
+    const renderFrame = vi.fn((session: ShellSession) => {
+      const preview = result();
+      Object.assign(preview.preview!.descriptor, { codec: 'gif', family: 'animation' });
+      preview.family_state = { family: 'animation', paused: true, selected_frame: session.image_document?.selection ?? 0, frame_count: 3, loop_count: 0, frame_duration_ms: 40, max_composited_frames: 2 };
+      return Promise.resolve(preview);
+    });
+    const view = render(<ImageSurface session={imageSession()} gateway={{ render: renderFrame }} />);
+    await screen.findByRole('img');
+    expect(screen.getByRole('button', { name: 'Play' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Next frame' }));
+    await waitFor(() => expect(screen.getByLabelText('Animation frame')).toHaveValue(2));
+    vi.useFakeTimers();
+    try {
+      fireEvent.click(screen.getByRole('button', { name: 'Play' }));
+      await act(() => vi.advanceTimersByTimeAsync(1000));
+      expect(renderFrame).toHaveBeenCalledTimes(2);
+    } finally { vi.useRealTimers(); view.unmount(); }
+  });
+  it.each([{ codec: 'gif', loops: 1 }, { codec: 'webp', loops: 2 }])('preserves the encoded finite-loop allowance across pause and resume for $codec', async ({ codec, loops }) => {
+    const renderFrame = vi.fn((session: ShellSession) => {
+      const preview = result();
+      Object.assign(preview.preview!.descriptor, { codec, family: 'animation' });
+      preview.family_state = { family: 'animation', paused: true, selected_frame: session.image_document?.selection ?? 0, frame_count: 3, loop_count: loops, frame_duration_ms: 40, max_composited_frames: 2 };
+      return Promise.resolve(preview);
+    });
+    const view = render(<ImageSurface session={imageSession()} gateway={{ render: renderFrame }} />);
+    await screen.findByRole('img');
+    vi.useFakeTimers();
+    try {
+      fireEvent.click(screen.getByRole('button', { name: 'Play' }));
+      for (let frame = 0; frame < 4; frame++) await act(() => vi.advanceTimersByTimeAsync(40));
+      expect(screen.getByLabelText('Animation frame')).toHaveValue(2);
+      fireEvent.click(screen.getByRole('button', { name: 'Pause' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Play' }));
+      await act(() => vi.advanceTimersByTimeAsync(40));
+      fireEvent.click(screen.getByRole('button', { name: 'Pause' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Play' }));
+      await act(() => vi.advanceTimersByTimeAsync(0));
+      expect(screen.getByLabelText('Animation frame')).toHaveValue(3);
+      await act(() => vi.advanceTimersByTimeAsync(40));
+      expect(screen.getByRole('button', { name: 'Play' })).toHaveAttribute('aria-pressed', 'false');
+      expect(renderFrame).toHaveBeenCalledTimes(6);
+    } finally { vi.useRealTimers(); view.unmount(); }
   });
   it('starts animation paused, steps frames, and releases native retention only on suspension', async () => {
     const suspend = vi.fn(() => Promise.resolve());

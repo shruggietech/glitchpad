@@ -59,3 +59,7 @@ The [Android ContentResolver contract](https://developer.android.com/reference/a
 ## 2026-09-15: Nested WebP dimensions before allocation
 
 Pinned image-webp 0.2.4 source inspection shows `read_frame` calls lossy VP8 decode before comparing dimensions; VP8 header parsing allocates Y/U/V planes from embedded dimensions. The ALPH/VP8 branch similarly decodes before filling the ANMF-sized output. Before correction, the decision is to inspect the bounded ANMF subchunk sequence and require each VP8/VP8L bitstream header to match its already admitted frame rectangle before constructing any decoder. ALPH must precede one VP8 image; unknown/repeated/truncated subchunks fail preflight. This closes P4/FR-008 admission rather than relying on a metadata memory hint or a comparison after allocation.
+
+## 2026-09-15: Playback preference and finite progress
+
+The permitted second review identifies that a preference-change pause alone does not prevent a later Play click, and unconditional loop-counter reset grants extra finite cycles on resume. Before correction, retain reduced motion as component state, block timer scheduling and Play while it matches, and preserve manual stepping. Preserve completed-loop progress across pause/resume; reset it and return to frame zero only when Play explicitly restarts a naturally completed animation, or when source/session revision changes. Separate failure-first browser regressions cover initial preference, restart after preference change and finite-cycle exhaustion after resume.

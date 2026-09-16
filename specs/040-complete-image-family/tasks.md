@@ -97,3 +97,8 @@ Prove safe SVG first, incremental paused animation next, then independent ICO en
 ## Phase 13: Convergence
 
 - [x] T041 CRITICAL Verify every nested animated WebP VP8/VP8L header against the admitted ANMF rectangle before decoder creation, including ALPH/VP8, and add malformed/dimension-bomb regressions per Constitution P4, FR-008 and US2/AC4 (contradicts).
+
+## Phase 14: Convergence
+
+- [x] T042 Retain the reduced-motion preference and prevent playback scheduling while it matches; prove both initial preference and attempted restart after a preference change in `ImageSurface.test.tsx` per FR-009, FR-010, US2/AC3 and review4021351270 (partial).
+- [x] T043 Preserve finite-loop progress across pause/resume and reset it only for an explicit completed-animation restart; prove encoded repeat exhaustion after resumed playback in `ImageSurface.test.tsx` per FR-007, FR-008, US2/AC2 and review4021351271 (partial).

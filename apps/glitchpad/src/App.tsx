@@ -362,6 +362,15 @@ export function App({ sessions = [], recoveryGateway, externalLinkGateway, local
 
     for (const session of state.sessions) {
       const projection = projectionFor(session);
+      if (session.image_document && projection?.image_presentation) {
+        const image = projection.image_presentation;
+        const signature = `${projection.session_key}:${JSON.stringify(image)}`;
+        if (presentationProjectionAppliedRef.current.get(session.id) !== signature) {
+          presentationProjectionAppliedRef.current.set(session.id, signature);
+          dispatch({ type: 'update_image', id: session.id, expectedRevision: session.revision, image: { ...session.image_document, family_state: null, selection: image.selection, viewport: { mode: image.mode, zoom: image.zoom_milli / 1000, pan_x: image.pan_x, pan_y: image.pan_y, background: image.background } } });
+        }
+        continue;
+      }
       const desiredMode = projection?.presentation_mode
         ?? (session.markdown_document
           ? persistence.preferences.markdown_default_mode

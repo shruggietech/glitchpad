@@ -414,7 +414,7 @@ impl AndroidSourceHost {
     ) -> Result<Vec<u8>, CoreError> {
         use std::sync::atomic::Ordering;
         let maximum = if probe {
-            16
+            4096
         } else {
             glitchpad_core::images::MAX_IMAGE_SOURCE_BYTES
         };
@@ -448,7 +448,7 @@ impl AndroidSourceHost {
                 .get(source_id)
                 .ok_or_else(integrity_not_found)?;
             let length = if probe {
-                source.len().min(16)
+                source.len().min(4096)
             } else {
                 source.len()
             };
@@ -1283,6 +1283,58 @@ impl AndroidSourceHost {
             byte_count: response.byte_count,
             durability: DurabilityGuarantee::RecoverableNonAtomic,
         })
+    }
+
+    #[cfg(target_os = "android")]
+    pub fn export_image_entry(
+        &self,
+        source: &SourceId,
+        expected: &ExternalRevision,
+        request: &str,
+        original: &[u8],
+        png: &[u8],
+    ) -> Result<bool, CoreError> {
+        use sha2::{Digest, Sha256};
+        if png.len() > glitchpad_core::images::MAX_IMAGE_PNG_BYTES
+            || !self.image_revision_matches(source, expected)?
+        {
+            return Err(safe_error(
+                CoreErrorCategory::Conflict,
+                "The icon source changed before export",
+                true,
+            ));
+        }
+        let record = self.source_record(source)?;
+        if record.summary.external_revision.identity.strength != IdentityStrength::Strong {
+            return Err(safe_error(
+                CoreErrorCategory::CapabilityDenied,
+                "This provider cannot establish an independent export destination",
+                false,
+            ));
+        }
+        let hash = format!("{:x}", Sha256::digest(original));
+        let response = self
+            .plugin
+            .export_image(glitchpad_android_source::models::ImageExportRequest {
+                bridge_token: &record.bridge_token,
+                request_id: request,
+                source_sha256: &hash,
+                bytes: png,
+            })
+            .map_err(plugin_error)?;
+        if response.exported && response.byte_count != png.len() as u64 {
+            return Err(safe_error(
+                CoreErrorCategory::PartialWritePrevented,
+                "The provider could not verify the PNG export",
+                true,
+            ));
+        }
+        Ok(response.exported)
+    }
+
+    #[cfg(target_os = "android")]
+    pub fn cancel_image_export(&self, request: &str) {
+        self.plugin.cancel_image_export(request);
     }
 
     #[cfg(target_os = "android")]

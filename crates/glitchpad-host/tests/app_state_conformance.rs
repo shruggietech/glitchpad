@@ -243,6 +243,7 @@ fn session_state_is_bounded_deduplicated_and_contains_no_document_bytes() {
         presentation_mode: Some("rendered".into()),
         source_reference: Some("37d21d4b-674d-41fa-b792-29b7c2012ed3".into()),
         recovery_record_id: None,
+        image_presentation: None,
     };
     store
         .persist_session(SessionState {
@@ -278,6 +279,7 @@ fn session_state_caps_platform_references_and_keeps_recovery_separate() {
             presentation_mode: None,
             source_reference: Some(Uuid::new_v4().to_string()),
             recovery_record_id: (index == 0).then(|| Uuid::new_v4().to_string()),
+            image_presentation: None,
         })
         .collect();
     store

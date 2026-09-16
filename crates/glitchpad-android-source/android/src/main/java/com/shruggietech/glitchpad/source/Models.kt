@@ -44,6 +44,17 @@ class PickerArgs {
   var bytes: IntArray? = null
 }
 
+@InvokeArg
+class ImageExportArgs {
+  lateinit var bridgeToken: String
+  lateinit var requestId: String
+  lateinit var sourceSha256: String
+  var bytes: IntArray? = null
+}
+
+@InvokeArg
+class ImageExportCancelArgs { lateinit var requestId: String }
+
 internal enum class DeliveryKind(val wireName: String) {
   VIEW("view"),
   SHARE("share"),

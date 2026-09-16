@@ -159,7 +159,7 @@ jobs:
         run: pnpm --filter @shruggietech/glitchpad exec vitest run --maxWorkers=2 src/App.test.tsx src/components/ApplicationMenu.test.tsx src/components/DocumentSurface.test.tsx src/components/MarkdownSurface.test.tsx src/components/ImageSurface.test.tsx src/components/ImageMetadataInspector.test.tsx src/domain/image-metadata.test.ts
 
       - name: Image family corpus and privacy
-        run: cargo test -p glitchpad-core --locked --test image_contract --test image_decode --test image_metadata
+        run: cargo test -p glitchpad-core --locked --test image_contract --test image_decode --test image_metadata --test image_family --test image_family_decode
 
       - name: Run desktop source adapter conformance
         run: cargo test -p glitchpad-host --test desktop_source_conformance --locked

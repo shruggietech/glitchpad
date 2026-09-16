@@ -125,6 +125,13 @@ export const METADATA_CATALOG: readonly MetadataCatalogEntry[] = [
   entry('image.alpha', 'content', 'Transparency', 'boolean', 'image'),
   entry('image.bit_depth', 'content', 'Bits per pixel', 'integer', 'image'),
   entry('image.metadata_status', 'renderer', 'Image metadata status', 'text', 'image'),
+  entry('image.frame_count', 'content', 'Animation frames', 'integer', 'image'),
+  entry('image.selected_frame', 'renderer', 'Selected frame', 'integer', 'image'),
+  entry('image.frame_duration', 'content', 'Frame duration', 'integer', 'image'),
+  entry('image.loop_count', 'content', 'Animation loops (zero means unlimited)', 'integer', 'image'),
+  entry('image.entry_count', 'content', 'Icon entries', 'integer', 'image'),
+  entry('image.selected_entry', 'renderer', 'Selected icon entry', 'integer', 'image'),
+  entry('image.svg_policy', 'renderer', 'SVG rendering policy', 'text', 'image'),
   entry('host.display_name', 'source', 'File name', 'text'),
   entry('host.source_kind', 'source', 'Source kind', 'text'),
   entry('host.byte_length', 'source', 'Size', 'integer'),
@@ -266,6 +273,18 @@ export const projectSessionMetadata = (session: ShellSession): MetadataSnapshot 
   if (session.image_document) {
     const image = session.image_document;
     put(available('image.container', textValue(image.codec.toUpperCase()), 'renderer', session));
+    const family = image.family_state;
+    if (family?.family === 'animation') {
+      if (family.frame_count !== null) put(available('image.frame_count', integerValue(family.frame_count), 'renderer', session));
+      put(available('image.selected_frame', integerValue(family.selected_frame + 1), 'renderer', session));
+      if (family.frame_duration_ms !== null) put(available('image.frame_duration', integerValue(family.frame_duration_ms), 'renderer', session, 'ms'));
+      if (family.loop_count !== null) put(available('image.loop_count', integerValue(family.loop_count), 'renderer', session));
+    }
+    if (family?.family === 'ico') {
+      put(available('image.entry_count', integerValue(family.entries.length), 'renderer', session));
+      if (family.selected_entry !== null) put(available('image.selected_entry', integerValue(family.selected_entry + 1), 'renderer', session));
+    }
+    if (family?.family === 'svg') put(available('image.svg_policy', textValue('Native inert pixels; bundled Geist font; external resources and scripts refused'), 'renderer', session));
     if (image.descriptor) {
       const descriptor = image.descriptor;
       put(available('image.width', integerValue(descriptor.width), 'renderer', session, 'px'));

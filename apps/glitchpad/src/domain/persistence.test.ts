@@ -1,4 +1,5 @@
 import { initialSessions } from '../test/fixtures';
+import { createImageSession } from './image-contract';
 import {
   defaultPreferences,
   normalizeExtension,
@@ -7,6 +8,15 @@ import {
 } from './persistence';
 
 describe('bounded persistence policy', () => {
+  it('persists only bounded image presentation and selected frame, with no autoplay or decoder bytes', () => {
+    const source = { ...initialSessions[0].source, restoration_reference: '70cbf05c-53f5-4442-9ace-9d576529714c' };
+    const image = createImageSession(source,'opaque',{ identity: source.identity,byte_length: 64,modified_unix_nanos: null,change_token: null },'gif','desktop');
+    image.image_document!.viewport = { mode: 'actual',zoom: 2,pan_x: 10,pan_y: -20,background: 'dark' };
+    image.image_document!.family_state = { family: 'animation', paused: true,selected_frame: 2,frame_count: 4,loop_count: 0,frame_duration_ms: 40,max_composited_frames: 2 };
+    const projected = projectSessionState([image],image.id,'closed');
+    expect(projected.sessions[0].image_presentation).toEqual({ mode: 'actual',zoom_milli: 2000,pan_x: 10,pan_y: -20,background: 'dark',selection: 2 });
+    expect(JSON.stringify(projected)).not.toMatch(/png_bytes|frame_count|paused|playing|source_id|descriptor/u);
+  });
   it('defaults invalid preference fields independently', () => {
     expect(normalizePreferences({
       ...defaultPreferences(),

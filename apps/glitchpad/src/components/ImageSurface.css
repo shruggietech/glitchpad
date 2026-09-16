@@ -1,6 +1,8 @@
 .image-layout { display: flex; flex-direction: column; width: 100%; height: 100%; min-height: 0; }
-.image-actions { display: flex; flex-wrap: nowrap; align-items: center; gap: 0.25rem; padding: 0.25rem; flex: 0 0 auto; overflow-x: auto; }
-.image-actions button, .image-actions select { min-height: 2rem; }
+.image-actions { display: flex; flex-wrap: nowrap; align-items: center; gap: 0.25rem; padding: 0 0.125rem; flex: 0 0 auto; overflow-x: auto; }
+.image-family-actions { display: flex; flex-shrink: 0; align-items: center; gap: 0.25rem; }
+.image-actions button, .image-actions select, .image-actions input { min-height: 2.75rem; min-width: 2.75rem; }
+.image-actions input { width: 4.5rem; }
 .image-actions button, .image-actions label { flex-shrink: 0; white-space: nowrap; }
 .image-actions label { display: flex; align-items: center; gap: 0.25rem; }
 .image-actions output { min-width: 3rem; text-align: center; }
@@ -10,6 +12,7 @@
 .image-background-light { background: #fafafa; }
 .image-background-dark { background: #222; }
 .image-status, .image-limitation { flex: 0 0 auto; margin: 0; padding: 0.25rem 0.5rem; }
+.image-limitation { height: 1rem; padding-block: 0; font-size: 0.75rem; line-height: 1rem; white-space: nowrap; overflow-x: auto; }
 .image-status button { margin-inline-start: 0.5rem; }
 @media (max-width: 480px) { .image-actions { gap: 0.125rem; font-size: 0.875rem; } .image-actions button { padding-inline: 0.4rem; } }
 @media (pointer: coarse) { .image-actions button, .image-actions select { min-height: 2.75rem; } }

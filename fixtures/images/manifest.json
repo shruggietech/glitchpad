@@ -2,6 +2,27 @@
   "author": "Glitchpad contributors",
   "files": [
     {
+      "bytes": 344,
+      "height": 3,
+      "name": "animated.webp",
+      "sha256": "847e245c6055b4ade7ac6d4c47583dfd535b2080a6a42b522cbb6c0d0c59000d",
+      "width": 4
+    },
+    {
+      "bytes": 388,
+      "height": 3,
+      "name": "entries.ico",
+      "sha256": "b73f4d20eae96192c9de1c4755c5de315c7c947bef0a2ad7079cfe6aeded68bd",
+      "width": 4
+    },
+    {
+      "bytes": 154,
+      "height": 3,
+      "name": "hostile.svg",
+      "sha256": "0e115158d0326be6fe50a2224e232b5c68834d6576852ef58bc789473a2d316d",
+      "width": 4
+    },
+    {
       "bytes": 691,
       "height": 3,
       "name": "orientation-1.jpg",
@@ -65,6 +86,13 @@
       "width": 4
     },
     {
+      "bytes": 138,
+      "height": 3,
+      "name": "original.gif",
+      "sha256": "e78c47d3b8cc7effb82070768c41662fdd03a852dcd68bee03ff7e1d286199aa",
+      "width": 4
+    },
+    {
       "bytes": 655,
       "height": 3,
       "name": "original.jpg",
@@ -76,6 +104,13 @@
       "height": 3,
       "name": "original.png",
       "sha256": "79c11e5db45c966ded851a598187d19d54f486c84d20b240c0e35638b9a339c8",
+      "width": 4
+    },
+    {
+      "bytes": 233,
+      "height": 3,
+      "name": "original.svg",
+      "sha256": "7359085b4cf489ecec28d27de5b08d6be1a6d451521cb4f880d39daa115f5f11",
       "width": 4
     },
     {

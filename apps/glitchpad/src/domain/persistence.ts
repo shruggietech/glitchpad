@@ -38,6 +38,7 @@ export interface SessionProjection {
   presentation_mode: string | null;
   source_reference: string | null;
   recovery_record_id: string | null;
+  image_presentation?: { mode: 'fit' | 'actual'; zoom_milli: number; pan_x: number; pan_y: number; background: 'checker' | 'light' | 'dark'; selection: number | null };
 }
 
 export interface SessionState {
@@ -186,6 +187,14 @@ export const projectSessionState = (
       presentation_mode: presentationMode(session)?.slice(0, 64) ?? null,
       source_reference: session.source.restoration_reference ?? null,
       recovery_record_id: recoveryRecordIds.get(session.id) ?? null,
+      ...(session.image_document ? { image_presentation: {
+        mode: session.image_document.viewport.mode,
+        zoom_milli: Math.round(Math.min(16, Math.max(0.1, session.image_document.viewport.zoom)) * 1000),
+        pan_x: Math.round(Math.min(200000000, Math.max(-200000000, session.image_document.viewport.pan_x))),
+        pan_y: Math.round(Math.min(200000000, Math.max(-200000000, session.image_document.viewport.pan_y))),
+        background: session.image_document.viewport.background,
+        selection: session.image_document.family_state?.family === 'animation' ? session.image_document.family_state.selected_frame : session.image_document.family_state?.family === 'ico' ? session.image_document.family_state.selected_entry : null,
+      } } : {}),
     })),
   };
 };

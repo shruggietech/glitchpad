@@ -4,21 +4,22 @@ import type { MetadataValue } from './metadata';
 
 export const IMAGE_CONTRACT_VERSION = 1;
 export const MAX_IMAGE_PNG_BYTES = 8 * 1024 * 1024;
-export const IMAGE_CODECS = ['png', 'jpeg', 'webp', 'bmp', 'tiff'] as const;
-export type RasterCodec = typeof IMAGE_CODECS[number];
+export const IMAGE_CODECS = ['png', 'jpeg', 'webp', 'bmp', 'tiff', 'gif', 'svg', 'ico'] as const;
+export type ImageCodec = typeof IMAGE_CODECS[number];
+export type RasterCodec = Extract<ImageCodec, 'png' | 'jpeg' | 'webp' | 'bmp' | 'tiff'>;
 export type ImageFamilyState =
   | { family: 'raster'; preview: 'full' | 'thumbnail' | 'unavailable' | 'refused' }
   | { family: 'animation'; paused: boolean; selected_frame: number; frame_count: number | null; loop_count: number | null; frame_duration_ms: number | null; max_composited_frames: number }
   | { family: 'svg'; output: 'unavailable' | 'rasterized_png' | 'safe_tree'; external_resources: false; scripts: false; max_nodes: number; max_depth: number }
-  | { family: 'ico'; entries: { index: number; width: number; height: number; bits_per_pixel: number; encoded_bytes: number; preview: 'full' | 'thumbnail' | 'unavailable' | 'refused' }[]; selected_entry: number | null; selected_entry_export: boolean };
+  | { family: 'ico'; entries: { index: number; width: number; height: number; bits_per_pixel: number; encoded_bytes: number; preview: 'full' | 'thumbnail' | 'unavailable' | 'refused'; encoding: 'png' | 'dib' | 'unknown'; alpha: boolean | null; failure: string | null; duplicate_of: number | null }[]; selected_entry: number | null; selected_entry_export: boolean };
 export interface ImageResourcePolicy { encoded_bytes: number; png_bytes: number; full_pixels: number; refuse_pixels: number; surface_bytes: number; peak_bytes: number; metadata_block_bytes: number; metadata_total_bytes: number; metadata_facts: number; max_frames: number; max_composited_frames: number; max_entries: number; max_svg_nodes: number; max_svg_depth: number; concurrent_decodes: number; cancellation_scheduling_ms: number }
-export interface ImageFamilyContract { contract_version: 1; container: RasterCodec | 'gif' | 'svg' | 'ico'; state: ImageFamilyState; raster_descriptor: ImageDescriptor | null; metadata: ImageMetadataReport; resources: ImageResourcePolicy; capabilities: ImageDescriptor['capabilities']; lifecycle: 'idle' | 'admitted' | 'cancel_requested' | 'suspended' | 'disposed' }
+export interface ImageFamilyContract { contract_version: 1; container: ImageCodec; state: ImageFamilyState; raster_descriptor: ImageDescriptor | null; metadata: ImageMetadataReport; resources: ImageResourcePolicy; capabilities: ImageDescriptor['capabilities']; lifecycle: 'idle' | 'admitted' | 'cancel_requested' | 'suspended' | 'disposed' }
 export const IMAGE_METADATA_KEYS = ['image.camera_make', 'image.camera_model', 'image.software', 'image.captured', 'image.artist', 'image.title', 'image.description', 'image.keywords', 'image.exposure', 'image.f_number', 'image.focal_length', 'image.iso', 'image.location', 'image.orientation', 'image.embedded_width', 'image.embedded_height'] as const;
 
 export interface ImageDescriptor {
   contract_version: 1;
   family: 'raster' | 'animation' | 'svg' | 'ico';
-  codec: RasterCodec;
+  codec: ImageCodec;
   width: number;
   height: number;
   display_width: number;
@@ -45,12 +46,12 @@ export interface ImageMetadataObservation {
 }
 export interface ImageMetadataReport { observations: ImageMetadataObservation[]; statuses: string[]; unknown_fields: number; profile_present: boolean }
 export interface ImageViewport { mode: 'fit' | 'actual'; zoom: number; pan_x: number; pan_y: number; background: 'checker' | 'light' | 'dark' }
-export interface ImageDocumentState { codec: RasterCodec; status: 'idle' | 'loading' | 'ready' | 'failed'; descriptor: ImageDescriptor | null; metadata: ImageMetadataReport | null; viewport: ImageViewport }
-export interface ImageRenderResult { source_id: string; request_id: string; external_revision: ExternalRevision; preview: { descriptor: ImageDescriptor; kind: 'full' | 'thumbnail'; png_bytes: number[] } | null; failure: string | null; metadata: ImageMetadataReport }
+export interface ImageDocumentState { codec: ImageCodec; status: 'idle' | 'loading' | 'ready' | 'failed'; descriptor: ImageDescriptor | null; metadata: ImageMetadataReport | null; viewport: ImageViewport; family_state?: ImageFamilyState | null; selection?: number | null }
+export interface ImageRenderResult { source_id: string; request_id: string; external_revision: ExternalRevision; preview: { descriptor: ImageDescriptor; kind: 'full' | 'thumbnail'; png_bytes: number[] } | null; failure: string | null; metadata: ImageMetadataReport; family_state?: ImageFamilyState | null }
 
 export const initialImageViewport = (): ImageViewport => ({ mode: 'fit', zoom: 1, pan_x: 0, pan_y: 0, background: 'checker' });
 
-export const createImageSession = (source: SourceDescriptor, sourceId: string, externalRevision: ExternalRevision, codec: RasterCodec, idPrefix: string): ShellSession => ({
+export const createImageSession = (source: SourceDescriptor, sourceId: string, externalRevision: ExternalRevision, codec: ImageCodec, idPrefix: string): ShellSession => ({
   id: `${idPrefix}-${sourceId}`, source,
   renderer: { id: 'image', label: 'Image', capabilities: { ...noRendererCapabilities(), view: true, inspect_metadata: true, zoom: true } },
   lifecycle: 'background', source_state: 'available', external_revision: externalRevision,
@@ -92,14 +93,21 @@ export const validateImageMetadata = (report: unknown): report is ImageMetadataR
 
 export const validateImageResult = (result: unknown, sourceId: string, requestId: string, revision: ExternalRevision): result is ImageRenderResult => {
   if (!record(result) || result.source_id !== sourceId || result.request_id !== requestId || JSON.stringify(result.external_revision) !== JSON.stringify(revision) || !validateImageMetadata(result.metadata)) return false;
+  if (result.family_state != null && !validateFamilyState(result.family_state)) return false;
   if (result.preview === null) return token(result.failure);
   if (result.failure !== null || !record(result.preview) || !['full', 'thumbnail'].includes(String(result.preview.kind))) return false;
   const d = result.preview.descriptor;
-  if (!record(d) || d.contract_version !== 1 || !IMAGE_CODECS.includes(d.codec as RasterCodec) || !['raster', 'animation'].includes(String(d.family))) return false;
+  if (!record(d) || d.contract_version !== 1 || !IMAGE_CODECS.includes(d.codec as ImageCodec) || !['raster', 'animation', 'svg', 'ico'].includes(String(d.family))) return false;
+  const state = result.family_state;
+  if ((d.family === 'svg' || d.family === 'ico' || d.codec === 'gif') && (!record(state) || state.family !== d.family)) return false;
+  if (record(state) && state.family !== d.family && !(d.family === 'animation' && state.family === 'raster' && d.codec === 'png')) return false;
+  if ((d.family === 'svg') !== (d.codec === 'svg') || (d.family === 'ico') !== (d.codec === 'ico') || (d.codec === 'gif' && d.family !== 'animation')) return false;
   if (![d.width, d.height, d.display_width, d.display_height].every(v => count(v, 200_000_000) && v > 0) || !count(d.pixels, 200_000_000) || !count(d.decoded_bytes, 400_000_000) || !count(d.orientation, 8) || d.orientation === 0 || !count(d.bits_per_pixel, 128) || typeof d.alpha !== 'boolean' || !token(d.color_policy) || !token(d.profile_status)) return false;
   if (!Array.isArray(d.limitations) || d.limitations.length > 32 || !d.limitations.every(token) || !record(d.capabilities)) return false;
   const capabilities = d.capabilities;
-  if (['view', 'inspect_metadata', 'zoom'].some(k => capabilities[k] !== true) || ['edit', 'save', 'animate', 'select_frame', 'select_entry', 'export_entry'].some(k => capabilities[k] !== false)) return false;
+  const animation = d.family === 'animation' && record(state) && state.family === 'animation';
+  const icon = d.family === 'ico';
+  if (['view', 'inspect_metadata', 'zoom'].some(k => capabilities[k] !== true) || ['edit', 'save'].some(k => capabilities[k] !== false) || ['animate', 'select_frame'].some(k => capabilities[k] !== animation) || ['select_entry', 'export_entry'].some(k => capabilities[k] !== icon)) return false;
   if (d.pixels !== Number(d.width) * Number(d.height) || d.decoded_bytes !== Number(d.display_width) * Number(d.display_height) * 4 || d.bits_per_pixel === 0) return false;
   if (result.preview.kind === 'full' && Number(d.pixels) > 100_000_000) return false;
   const bytes = result.preview.png_bytes;
@@ -108,4 +116,13 @@ export const validateImageResult = (result: unknown, sourceId: string, requestId
   const dimension = (offset: number) => Number(bytes[offset]) * 0x1000000 + Number(bytes[offset + 1]) * 0x10000 + Number(bytes[offset + 2]) * 0x100 + Number(bytes[offset + 3]);
   if (dimension(16) !== d.display_width || dimension(20) !== d.display_height || bytes[24] !== 8 || bytes[25] !== 6 || bytes[26] !== 0 || bytes[27] !== 0 || bytes[28] !== 0) return false;
   return [0,0,0,0,73,69,78,68,174,66,96,130].every((n,i) => bytes[bytes.length - 12 + i] === n);
+};
+
+const validateFamilyState = (state: unknown): state is ImageFamilyState => {
+  if (!record(state)) return false;
+  if (state.family === 'raster') return ['full', 'thumbnail', 'unavailable', 'refused'].includes(String(state.preview));
+  if (state.family === 'svg') return state.output === 'rasterized_png' && state.external_resources === false && state.scripts === false && state.max_nodes === 50000 && state.max_depth === 128;
+  if (state.family === 'animation') return state.paused === true && count(state.frame_count, 1024) && Number(state.frame_count) > 0 && count(state.selected_frame, Number(state.frame_count) - 1) && (state.loop_count === null || count(state.loop_count, 65535)) && count(state.frame_duration_ms, 60000) && state.max_composited_frames === 2;
+  if (state.family !== 'ico' || !Array.isArray(state.entries) || state.entries.length === 0 || state.entries.length > 256 || !count(state.selected_entry, state.entries.length - 1) || typeof state.selected_entry_export !== 'boolean') return false;
+  return state.entries.every((entry: unknown, index: number) => record(entry) && entry.index === index && count(entry.width, 256) && Number(entry.width) > 0 && count(entry.height, 256) && Number(entry.height) > 0 && count(entry.bits_per_pixel, 65535) && count(entry.encoded_bytes, 0xffff_ffff) && ['png', 'dib', 'unknown'].includes(String(entry.encoding)) && ['full', 'thumbnail', 'unavailable', 'refused'].includes(String(entry.preview)) && (entry.alpha === null || typeof entry.alpha === 'boolean') && (entry.failure === null || token(entry.failure)) && (entry.duplicate_of === null || count(entry.duplicate_of, index - 1)));
 };

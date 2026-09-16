@@ -155,12 +155,40 @@ pub struct SessionProjection {
     pub presentation_mode: Option<String>,
     pub source_reference: Option<String>,
     pub recovery_record_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub image_presentation: Option<ImagePresentation>,
+}
+
+#[derive(Clone, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ImagePresentation {
+    pub mode: String,
+    pub zoom_milli: u16,
+    pub pan_x: i32,
+    pub pan_y: i32,
+    pub background: String,
+    pub selection: Option<u32>,
+}
+
+impl ImagePresentation {
+    pub fn is_valid(&self) -> bool {
+        matches!(self.mode.as_str(), "fit" | "actual")
+            && (100..=16000).contains(&self.zoom_milli)
+            && self.pan_x.unsigned_abs() <= 200_000_000
+            && self.pan_y.unsigned_abs() <= 200_000_000
+            && matches!(self.background.as_str(), "checker" | "light" | "dark")
+            && self.selection.is_none_or(|n| n < 1024)
+    }
 }
 
 impl SessionProjection {
     #[must_use]
     pub fn is_valid(&self) -> bool {
         bounded_safe(&self.session_key, 128)
+            && self
+                .image_presentation
+                .as_ref()
+                .is_none_or(ImagePresentation::is_valid)
             && bounded_safe(&self.display_hint, 255)
             && bounded_token(&self.renderer_id, 64)
             && self
@@ -413,6 +441,27 @@ fn is_lowercase_uuid(value: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn image_presentation_is_bounded_and_carries_no_decoder_or_play_authority() {
+        use super::ImagePresentation;
+        let mut image = ImagePresentation {
+            mode: "actual".into(),
+            zoom_milli: 2000,
+            pan_x: 10,
+            pan_y: -20,
+            background: "dark".into(),
+            selection: Some(2),
+        };
+        assert!(image.is_valid());
+        image.zoom_milli = 16001;
+        assert!(!image.is_valid());
+        image.zoom_milli = 2000;
+        image.selection = Some(1024);
+        assert!(!image.is_valid());
+        let encoded = serde_json::to_string(&image).unwrap();
+        assert!(!encoded.contains("playing") && !encoded.contains("png_bytes"));
+        assert!(serde_json::from_str::<ImagePresentation>(r#"{"mode":"fit","zoom_milli":1000,"pan_x":0,"pan_y":0,"background":"checker","selection":null,"playing":true}"#).is_err());
+    }
     use super::*;
 
     #[test]
@@ -453,6 +502,7 @@ mod tests {
             presentation_mode: Some("rendered".into()),
             source_reference: Some("37d21d4b-674d-41fa-b792-29b7c2012ed3".into()),
             recovery_record_id: None,
+            image_presentation: None,
         };
         let state = SessionState {
             schema_version: 9,

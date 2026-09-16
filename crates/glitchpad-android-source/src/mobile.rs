@@ -28,6 +28,23 @@ pub fn init<R: Runtime>(
 }
 
 impl<R: Runtime> AndroidSource<R> {
+    pub fn export_image(
+        &self,
+        request: crate::models::ImageExportRequest<'_>,
+    ) -> Result<crate::models::ImageExportResponse, String> {
+        self.0
+            .run_mobile_plugin("exportImage", request)
+            .map_err(|e| e.to_string())
+    }
+
+    pub fn cancel_image_export(&self, request: &str) {
+        let _ = self.0.run_mobile_plugin::<()>(
+            "cancelImageExport",
+            crate::models::ImageExportCancelRequest {
+                request_id: request,
+            },
+        );
+    }
     pub fn drain_deliveries(&self, maximum: usize) -> Result<DeliveryBatch, String> {
         self.0
             .run_mobile_plugin("drainDeliveries", DrainRequest { maximum })

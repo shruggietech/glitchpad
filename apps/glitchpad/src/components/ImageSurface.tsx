@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ShellSession } from '../domain/contracts';
-import { initialImageViewport, type ImageDocumentState, type ImageViewport } from '../domain/image-contract';
+import { initialImageViewport, type ImageDocumentState, type ImageViewport, type ImageFamilyState } from '../domain/image-contract';
 import { nativeImageGateway, type ImageGateway } from '../domain/image-gateway';
 import './ImageSurface.css';
 
@@ -20,15 +20,42 @@ export function ImageSurface({ session, gateway = nativeImageGateway, onImageCha
   const [url, setUrl] = useState<string | null>(null);
   const ownedPreview = useRef<string | null>(null);
   const [status, setStatus] = useState('Loading image…');
+  const [exportStatus, setExportStatus] = useState<string | null>(null);
   const [descriptor, setDescriptor] = useState(session.image_document?.descriptor ?? null);
   const [viewport, setViewport] = useState(session.image_document?.viewport ?? initialImageViewport());
   const [size, setSize] = useState({ width: 640, height: 480 });
   const [retry, setRetry] = useState(0);
   const [visible, setVisible] = useState(document.visibilityState !== 'hidden');
+  const [family, setFamily] = useState<ImageFamilyState | null>(session.image_document?.family_state ?? null);
+  const [selection, setSelection] = useState<number | null>(session.image_document?.selection ?? null);
+  const [playing, setPlaying] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(() => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const completedLoops = useRef(0);
+  const playbackCompleted = useRef(false);
+  const exportAbort = useRef<AbortController | null>(null);
+  const lastRequest = useRef<string | null>(null);
   const points = useRef(new Map<number, { x: number; y: number }>());
   const gesture = useRef<{ x: number; y: number; distance: number } | null>(null);
   const imageState = useRef(session.image_document!);
   imageState.current = session.image_document!;
+
+  useEffect(() => {
+    setViewport(session.image_document!.viewport);
+    setSelection(session.image_document!.selection ?? null);
+  }, [session.image_document?.viewport, session.image_document?.selection]);
+
+  useEffect(() => { setFamily(session.image_document?.family_state ?? null); }, [session.image_document?.family_state]);
+
+  useEffect(() => {
+    if (typeof matchMedia !== 'function') return;
+    const motion = matchMedia('(prefers-reduced-motion: reduce)');
+    const change = () => { setReducedMotion(motion.matches); if (motion.matches) setPlaying(false); };
+    change();
+    if (motion.addEventListener) { motion.addEventListener('change', change); return () => motion.removeEventListener('change', change); }
+    motion.addListener(change); return () => motion.removeListener(change);
+  }, []);
+
+  useEffect(() => { completedLoops.current = 0; playbackCompleted.current = false; }, [session.id, session.revision]);
 
   useEffect(() => {
     const update = () => setVisible(document.visibilityState !== 'hidden');
@@ -37,19 +64,28 @@ export function ImageSurface({ session, gateway = nativeImageGateway, onImageCha
   }, []);
 
   useEffect(() => {
+    setExportStatus(null);
+    return () => { exportAbort.current?.abort(); };
+  }, [session.id, session.revision, session.source_id, gateway, selection, session.source_state]);
+
+  useEffect(() => {
     const abort = new AbortController();
     let ownedUrl: string | null = null;
     let retryTimer: ReturnType<typeof setTimeout> | null = null;
     setUrl(null);
     setDescriptor(null);
-    if (!visible) { setStatus('Image preview suspended.'); return; }
+    if (!visible) { setPlaying(false); setStatus('Image preview suspended.'); return; }
     if (session.source_state === 'unavailable' || session.source_state === 'permission_revoked') { setStatus('Image source is unavailable.'); return; }
     setStatus('Loading image…');
     const run = async () => {
       try {
-        const result = await gateway.render(session, abort.signal);
+        const result = await gateway.render({ ...session, image_document: { ...imageState.current, selection } }, abort.signal);
         if (abort.signal.aborted) return;
-        const next: ImageDocumentState = { ...imageState.current, descriptor: result.preview?.descriptor ?? null, metadata: result.metadata, status: result.preview ? 'ready' : 'failed' };
+        lastRequest.current = result.request_id;
+        setFamily(result.family_state ?? null);
+        const selected = result.family_state?.family === 'animation' ? result.family_state.selected_frame : result.family_state?.family === 'ico' ? result.family_state.selected_entry : selection;
+        if (selection !== null && selected !== selection) setSelection(selected ?? null);
+        const next: ImageDocumentState = { ...imageState.current, selection: selected, family_state: result.family_state ?? null, descriptor: result.preview?.descriptor ?? null, metadata: result.metadata, status: result.preview ? 'ready' : 'failed' };
         callbacks.current.onImageChange?.(session.id, session.revision, next);
         if (!result.preview) { setStatus(`Image preview unavailable: ${(result.failure ?? 'unsupported').replaceAll('_', ' ')}.`); return; }
         ownedUrl = URL.createObjectURL(new Blob([Uint8Array.from(result.preview.png_bytes)], { type: 'image/png' }));
@@ -72,7 +108,27 @@ export function ImageSurface({ session, gateway = nativeImageGateway, onImageCha
       points.current.clear();
       gesture.current = null;
     };
-  }, [session.id, session.revision, gateway, retry, visible]);
+  }, [session.id, session.revision, gateway, retry, visible, selection, session.source_state]);
+
+  useEffect(() => () => {
+    setPlaying(false);
+    if (lastRequest.current && session.source_id) void gateway.suspend?.(session.source_id, lastRequest.current).catch(() => undefined);
+    lastRequest.current = null;
+  }, [session.id, session.revision, session.source_state, visible, gateway]);
+
+  useEffect(() => {
+    if (!playing || reducedMotion || !visible || !url || family?.family !== 'animation' || family.frame_count === null) return;
+    const timer = setTimeout(() => {
+      const next = family.selected_frame + 1;
+      if (next >= family.frame_count!) {
+        completedLoops.current += 1;
+        const loops = family.loop_count === null ? 1 : (descriptor?.codec === 'gif' && family.loop_count > 0 ? family.loop_count + 1 : family.loop_count);
+        if (loops !== 0 && completedLoops.current >= loops) { playbackCompleted.current = true; setPlaying(false); return; }
+      }
+      setSelection(next % family.frame_count!);
+    }, family.frame_duration_ms === 0 ? 100 : Math.max(20, family.frame_duration_ms ?? 100));
+    return () => clearTimeout(timer);
+  }, [playing, reducedMotion, visible, url, family, descriptor]);
 
   useEffect(() => {
     const element = pane.current;
@@ -114,8 +170,27 @@ export function ImageSurface({ session, gateway = nativeImageGateway, onImageCha
       <button type="button" disabled={!url} onClick={() => apply(initialImageViewport())}>Reset view</button>
       <label>Background <select aria-label="Image background" value={viewport.background} onChange={e => apply({ ...viewport, background: e.target.value as ImageViewport['background'] })}><option value="checker">Checkerboard</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
       {onOpenMetadata && <button type="button" onClick={e => onOpenMetadata(e.currentTarget)}>File information</button>}
+    {family?.family === 'animation' && <span className="image-family-actions" role="group" aria-label="Animation controls">
+      <button type="button" disabled={!url || reducedMotion} title={reducedMotion ? 'Playback disabled by reduced-motion preference.' : undefined} aria-pressed={playing} onClick={() => { if (reducedMotion) return; if (!playing && playbackCompleted.current) { completedLoops.current = 0; playbackCompleted.current = false; setSelection(0); } setPlaying(p => !p); }}>{playing ? 'Pause' : 'Play'}</button>
+      <button type="button" disabled={!url || family.selected_frame === 0} onClick={() => { setPlaying(false); setSelection(family.selected_frame - 1); }}>Previous frame</button>
+      <button type="button" disabled={!url || family.selected_frame + 1 >= (family.frame_count ?? 1)} onClick={() => { setPlaying(false); setSelection(family.selected_frame + 1); }}>Next frame</button>
+      <label>Frame <input aria-label="Animation frame" type="number" min={1} max={family.frame_count ?? 1} value={family.selected_frame + 1} onChange={e => { const frame = Number(e.target.value); if (Number.isInteger(frame) && frame >= 1 && frame <= (family.frame_count ?? 1)) { setPlaying(false); setSelection(frame - 1); } }} /></label>
+      <output>of {family.frame_count}; {family.frame_duration_ms} ms; {family.loop_count === null ? 'one play' : family.loop_count === 0 ? 'unlimited loops' : `${family.loop_count} ${descriptor?.codec === 'gif' ? 'repeat(s)' : 'loop(s)'}`}</output>
+    </span>}
+    {family?.family === 'ico' && <span className="image-family-actions" role="group" aria-label="Icon controls">
+      <label>Entry <select aria-label="Icon entry" value={family.selected_entry ?? 0} onChange={e => setSelection(Number(e.target.value))}>{family.entries.map(entry => <option key={entry.index} value={entry.index}>{entry.index + 1}: {entry.width} × {entry.height}, {entry.encoding}, {entry.bits_per_pixel} bit, {entry.encoded_bytes} bytes, alpha {entry.alpha === null ? 'unknown' : entry.alpha ? 'yes' : 'no'}{entry.failure ? ` (${entry.failure})` : ''}{entry.duplicate_of !== null ? ` (duplicate of ${entry.duplicate_of + 1})` : ''}</option>)}</select></label>
+      <button type="button" disabled={!url || !family.selected_entry_export || !gateway.exportEntry} onClick={() => { void (async () => {
+        exportAbort.current?.abort();
+        const controller = new AbortController(); exportAbort.current = controller;
+        setExportStatus('Choose a destination for the selected PNG entry.');
+        try {
+          const receipt = await gateway.exportEntry!({ ...session, image_document: { ...imageState.current, family_state: family } }, controller.signal);
+          if (!controller.signal.aborted) setExportStatus(receipt.status === 'exported' ? 'Selected entry exported as PNG.' : 'Export cancelled.');
+        } catch { if (!controller.signal.aborted) setExportStatus('Export could not complete safely. The original icon remains unchanged.'); }
+      })(); }}>Export selected entry as PNG</button>
+    </span>}
     </div>
-    {status && <div className="image-status" role="status">{status}{!url && <button type="button" onClick={() => setRetry(n => n + 1)}>Retry preview</button>}</div>}
+    {(status || exportStatus) && <div className="image-status" role="status">{exportStatus}{exportStatus && status ? ' ' : ''}{status}{!url && <button type="button" onClick={() => setRetry(n => n + 1)}>Retry preview</button>}</div>}
     <div ref={pane} className={`image-pane image-background-${viewport.background}`} role="group" aria-label="Image viewport. Arrow keys pan; plus and minus zoom; zero fits." tabIndex={0}
       onKeyDown={e => {
         if (!url) return;
@@ -143,6 +218,6 @@ export function ImageSurface({ session, gateway = nativeImageGateway, onImageCha
         callbacks.current.onImageChange?.(session.id, session.revision, { ...imageState.current, status: 'failed' });
       }} style={{ width: renderedWidth, height: renderedHeight, transform: `translate(calc(-50% + ${clamp(viewport.pan_x, -Math.max(0,(renderedWidth-size.width)/2), Math.max(0,(renderedWidth-size.width)/2))}px), calc(-50% + ${clamp(viewport.pan_y, -Math.max(0,(renderedHeight-size.height)/2), Math.max(0,(renderedHeight-size.height)/2))}px))` }} />}
     </div>
-    {descriptor?.limitations.filter(l => l !== 'unreleased_image_capability').map(l => <p className="image-limitation" key={l}>{l.replaceAll('_', ' ')}.</p>)}
+    {descriptor?.limitations.some(l => l !== 'unreleased_image_capability') && <p className="image-limitation" title={descriptor.limitations.filter(l => l !== 'unreleased_image_capability').join('; ').replaceAll('_', ' ')}>{descriptor.limitations.filter(l => l !== 'unreleased_image_capability').join('; ').replaceAll('_', ' ')}.</p>}
   </div>;
 }

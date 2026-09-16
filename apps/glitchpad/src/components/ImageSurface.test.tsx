@@ -23,6 +23,156 @@ const revokeUrl = vi.fn();
 describe('read-only raster viewport', () => {
   beforeEach(() => { createUrl.mockClear(); revokeUrl.mockClear(); vi.stubGlobal('URL', class extends URL { static createObjectURL = createUrl; static revokeObjectURL = revokeUrl; }); });
   afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
+  it('pauses active animation when reduced motion changes and schedules no subsequent frames', async () => {
+    let change!: () => void;
+    const motion = { matches: false, addEventListener: vi.fn((_event: string, listener: () => void) => { change = listener; }), removeEventListener: vi.fn() };
+    vi.stubGlobal('matchMedia', () => motion);
+    const renderFrame = vi.fn(() => {
+      const preview = result();
+      Object.assign(preview.preview!.descriptor, { codec: 'gif', family: 'animation' });
+      preview.family_state = { family: 'animation', paused: true, selected_frame: 0, frame_count: 3, loop_count: 0, frame_duration_ms: 40, max_composited_frames: 2 };
+      return Promise.resolve(preview);
+    });
+    const view = render(<ImageSurface session={imageSession()} gateway={{ render: renderFrame }} />);
+    await screen.findByRole('img');
+    vi.useFakeTimers();
+    try {
+      fireEvent.click(screen.getByRole('button', { name: 'Play' }));
+      expect(screen.getByRole('button', { name: 'Pause' })).toHaveAttribute('aria-pressed', 'true');
+      motion.matches = true;
+      act(() => change());
+      expect(screen.getByRole('button', { name: 'Play' })).toHaveAttribute('aria-pressed', 'false');
+      expect(screen.getByRole('button', { name: 'Play' })).toBeDisabled();
+      fireEvent.click(screen.getByRole('button', { name: 'Play' }));
+      await act(() => vi.advanceTimersByTimeAsync(1000));
+      expect(renderFrame).toHaveBeenCalledTimes(1);
+    } finally { vi.useRealTimers(); view.unmount(); }
+    expect(motion.removeEventListener).toHaveBeenCalledWith('change', change);
+  });
+  it('prevents playback when reduced motion already matches while retaining manual frame controls', async () => {
+    vi.stubGlobal('matchMedia', () => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() }));
+    const renderFrame = vi.fn((session: ShellSession) => {
+      const preview = result();
+      Object.assign(preview.preview!.descriptor, { codec: 'gif', family: 'animation' });
+      preview.family_state = { family: 'animation', paused: true, selected_frame: session.image_document?.selection ?? 0, frame_count: 3, loop_count: 0, frame_duration_ms: 40, max_composited_frames: 2 };
+      return Promise.resolve(preview);
+    });
+    const view = render(<ImageSurface session={imageSession()} gateway={{ render: renderFrame }} />);
+    await screen.findByRole('img');
+    expect(screen.getByRole('button', { name: 'Play' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Next frame' }));
+    await waitFor(() => expect(screen.getByLabelText('Animation frame')).toHaveValue(2));
+    vi.useFakeTimers();
+    try {
+      fireEvent.click(screen.getByRole('button', { name: 'Play' }));
+      await act(() => vi.advanceTimersByTimeAsync(1000));
+      expect(renderFrame).toHaveBeenCalledTimes(2);
+    } finally { vi.useRealTimers(); view.unmount(); }
+  });
+  it.each([{ codec: 'gif', loops: 1 }, { codec: 'webp', loops: 2 }])('preserves the encoded finite-loop allowance across pause and resume for $codec', async ({ codec, loops }) => {
+    const renderFrame = vi.fn((session: ShellSession) => {
+      const preview = result();
+      Object.assign(preview.preview!.descriptor, { codec, family: 'animation' });
+      preview.family_state = { family: 'animation', paused: true, selected_frame: session.image_document?.selection ?? 0, frame_count: 3, loop_count: loops, frame_duration_ms: 40, max_composited_frames: 2 };
+      return Promise.resolve(preview);
+    });
+    const view = render(<ImageSurface session={imageSession()} gateway={{ render: renderFrame }} />);
+    await screen.findByRole('img');
+    vi.useFakeTimers();
+    try {
+      fireEvent.click(screen.getByRole('button', { name: 'Play' }));
+      for (let frame = 0; frame < 4; frame++) await act(() => vi.advanceTimersByTimeAsync(40));
+      expect(screen.getByLabelText('Animation frame')).toHaveValue(2);
+      fireEvent.click(screen.getByRole('button', { name: 'Pause' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Play' }));
+      await act(() => vi.advanceTimersByTimeAsync(40));
+      fireEvent.click(screen.getByRole('button', { name: 'Pause' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Play' }));
+      await act(() => vi.advanceTimersByTimeAsync(0));
+      expect(screen.getByLabelText('Animation frame')).toHaveValue(3);
+      await act(() => vi.advanceTimersByTimeAsync(40));
+      expect(screen.getByRole('button', { name: 'Play' })).toHaveAttribute('aria-pressed', 'false');
+      expect(renderFrame).toHaveBeenCalledTimes(6);
+    } finally { vi.useRealTimers(); view.unmount(); }
+  });
+  it('starts animation paused, steps frames, and releases native retention only on suspension', async () => {
+    const suspend = vi.fn(() => Promise.resolve());
+    const renderFrame = vi.fn((session: ShellSession) => {
+      const frame = session.image_document?.selection ?? 0;
+      const preview = result();
+      preview.request_id = `frame-${frame}`;
+      Object.assign(preview.preview!.descriptor, { codec: 'gif', family: 'animation' });
+      preview.family_state = { family: 'animation', paused: true, selected_frame: frame, frame_count: 3, loop_count: null, frame_duration_ms: 40, max_composited_frames: 2 };
+      return Promise.resolve(preview);
+    });
+    const view = render(<ImageSurface session={imageSession()} gateway={{ render: renderFrame, suspend }} />);
+    await screen.findByRole('button', { name: 'Play' });
+    expect(renderFrame).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Next frame' }));
+    await waitFor(() => expect(screen.getByLabelText('Animation frame')).toHaveValue(2));
+    expect(suspend).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Play' })).toHaveAttribute('aria-pressed', 'false');
+    vi.useFakeTimers();
+    fireEvent.click(screen.getByRole('button', { name: 'Play' }));
+    await act(() => vi.advanceTimersByTimeAsync(40));
+    expect(screen.getByLabelText('Animation frame')).toHaveValue(3);
+    await act(() => vi.advanceTimersByTimeAsync(40));
+    expect(screen.getByRole('button', { name: 'Play' })).toHaveAttribute('aria-pressed', 'false');
+    fireEvent.click(screen.getByRole('button', { name: 'Play' }));
+    await act(() => vi.advanceTimersByTimeAsync(0));
+    expect(screen.getByLabelText('Animation frame')).toHaveValue(1);
+    expect(screen.getByRole('button', { name: 'Pause' })).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(screen.getByRole('button', { name: 'Pause' }));
+    vi.useRealTimers();
+    view.unmount();
+    expect(suspend).toHaveBeenCalledWith('opaque', 'frame-0');
+  });
+  it('preserves native chooser export and its receipt across visibility suspension and preview regeneration', async () => {
+    const visibility = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+    let signal!: AbortSignal;
+    let finish!: (value: { status: 'cancelled'; durability: null }) => void;
+    const exportEntry = vi.fn((_session: ShellSession, abort: AbortSignal) => { signal = abort; return new Promise<{ status: 'cancelled'; durability: null }>(resolve => { finish = resolve; }); });
+    const renderEntry = vi.fn(() => {
+      const preview = result();
+      Object.assign(preview.preview!.descriptor, { codec: 'ico', family: 'ico' });
+      preview.family_state = { family: 'ico', entries: [{ index: 0, width: 1, height: 1, bits_per_pixel: 32, encoded_bytes: 64, preview: 'full', encoding: 'png', alpha: true, failure: null, duplicate_of: null }], selected_entry: 0, selected_entry_export: true };
+      return Promise.resolve(preview);
+    });
+    const view = render(<ImageSurface session={imageSession()} gateway={{ render: renderEntry, exportEntry }} />);
+    await screen.findByRole('img');
+    fireEvent.click(screen.getByRole('button', { name: 'Export selected entry as PNG' }));
+    visibility.mockReturnValue('hidden');
+    fireEvent(document, new Event('visibilitychange'));
+    expect(signal.aborted).toBe(false);
+    await act(() => Promise.resolve(finish({ status: 'cancelled', durability: null })));
+    visibility.mockReturnValue('visible');
+    fireEvent(document, new Event('visibilitychange'));
+    await screen.findByRole('img');
+    expect(renderEntry).toHaveBeenCalledTimes(2);
+    expect(screen.getByText('Export cancelled.')).toBeInTheDocument();
+    view.unmount();
+  });
+  it('lists corrupt icon entries and aborts an export when selection changes', async () => {
+    const entries = [0,1].map(index => ({ index, width: 1, height: 1, bits_per_pixel: 32, encoded_bytes: 64, preview: 'full' as const, encoding: 'png' as const, alpha: true, failure: null, duplicate_of: null }));
+    let signal: AbortSignal | null = null;
+    let finish!: (value: { status: 'exported'; durability: string }) => void;
+    const exportEntry = vi.fn((_session: ShellSession, abort: AbortSignal) => { signal = abort; return new Promise<{ status: 'exported'; durability: string }>(resolve => { finish = resolve; }); });
+    const renderEntry = (session: ShellSession) => {
+      const preview = result();
+      Object.assign(preview.preview!.descriptor, { codec: 'ico', family: 'ico' });
+      preview.family_state = { family: 'ico', entries, selected_entry: session.image_document?.selection ?? 0, selected_entry_export: true };
+      return Promise.resolve(preview);
+    };
+    render(<ImageSurface session={imageSession()} gateway={{ render: renderEntry, exportEntry }} />);
+    await screen.findByRole('img');
+    fireEvent.click(screen.getByRole('button', { name: 'Export selected entry as PNG' }));
+    expect(exportEntry).toHaveBeenCalledTimes(1);
+    fireEvent.change(screen.getByLabelText('Icon entry'), { target: { value: '1' } });
+    await waitFor(() => expect(screen.getByLabelText('Icon entry')).toHaveValue('1'));
+    expect((signal as unknown as AbortSignal).aborted).toBe(true);
+    await act(() => Promise.resolve(finish({ status: 'exported', durability: 'atomic_file' })));
+    expect(screen.queryByText('Selected entry exported as PNG.')).not.toBeInTheDocument();
+  });
   it('renders inert image and supports keyboard zoom, pan recovery, fit, and background', async () => {
     render(<ImageSurface session={imageSession()} gateway={{ render: vi.fn(() => Promise.resolve(result())) }} />);
     await screen.findByRole('img', { name: 'photo.png' });

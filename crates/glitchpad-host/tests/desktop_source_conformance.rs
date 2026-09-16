@@ -100,6 +100,89 @@ fn raster_corpus_converges_through_registered_desktop_source_authority() {
 }
 
 #[test]
+fn image_families_and_generated_icon_export_preserve_desktop_source_authority() {
+    let cancel = std::sync::atomic::AtomicBool::new(false);
+    for (name, selection) in [
+        ("original.svg", 0),
+        ("original.gif", 3),
+        ("animated.webp", 1),
+        ("entries.ico", 1),
+    ] {
+        let bytes = fs::read(format!("../../fixtures/images/{name}")).unwrap();
+        let file = TemporarySource::named(name, &bytes);
+        let alias = file.directory.join("original-alias");
+        fs::hard_link(file.path(), &alias).unwrap();
+        let host = DesktopSourceHost::new();
+        let source = host.acquire(DesktopDelivery::dialog(file.path())).unwrap();
+        let actual = host
+            .read_image_bytes(&source.source_id, &source.external_revision, &cancel, false)
+            .unwrap();
+        let preview = glitchpad_core::image_family::decode_family(
+            &actual,
+            selection,
+            &glitchpad_core::images::ImageLimits::desktop(),
+            &cancel,
+        )
+        .unwrap()
+        .preview;
+        assert_eq!(
+            (preview.descriptor.width, preview.descriptor.height),
+            (4, 3)
+        );
+        if name == "entries.ico" {
+            assert!(
+                host.prepare_image_export_destination(
+                    &source.source_id,
+                    &source.external_revision,
+                    file.path()
+                )
+                .is_err()
+            );
+            assert!(
+                host.prepare_image_export_destination(
+                    &source.source_id,
+                    &source.external_revision,
+                    &alias
+                )
+                .is_err()
+            );
+            let destination = file.directory.join("selected.png");
+            host.export_image_png(
+                &source.source_id,
+                &source.external_revision,
+                &destination,
+                None,
+                &preview.png_bytes,
+                &cancel,
+            )
+            .unwrap();
+            assert_eq!(fs::read(&destination).unwrap(), preview.png_bytes);
+            assert!(
+                host.image_revision_matches(&source.source_id, &source.external_revision)
+                    .unwrap()
+            );
+            cancel.store(true, std::sync::atomic::Ordering::Release);
+            assert!(
+                host.export_image_png(
+                    &source.source_id,
+                    &source.external_revision,
+                    &file.directory.join("cancelled.png"),
+                    None,
+                    &preview.png_bytes,
+                    &cancel
+                )
+                .is_err()
+            );
+            assert!(!file.directory.join("cancelled.png").exists());
+            cancel.store(false, std::sync::atomic::Ordering::Release);
+        }
+        assert_eq!(actual, bytes);
+        assert_eq!(fs::read(file.path()).unwrap(), bytes);
+        assert_eq!(host.resource_snapshot().unwrap().streams, 0);
+    }
+}
+
+#[test]
 fn every_trusted_delivery_kind_converges_on_one_strong_source() {
     let source = TemporarySource::new(b"# desktop source");
     let host = DesktopSourceHost::new();

@@ -118,6 +118,10 @@ pub struct ImageEntry {
     pub bits_per_pixel: u16,
     pub encoded_bytes: u64,
     pub preview: ImagePreviewKind,
+    pub encoding: String,
+    pub alpha: Option<bool>,
+    pub failure: Option<ImageFailure>,
+    pub duplicate_of: Option<u16>,
 }
 
 #[derive(Clone, Copy, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
@@ -142,6 +146,18 @@ pub enum ImageContainer {
     Gif,
     Svg,
     Ico,
+}
+
+impl From<RasterCodec> for ImageContainer {
+    fn from(codec: RasterCodec) -> Self {
+        match codec {
+            RasterCodec::Png => Self::Png,
+            RasterCodec::Jpeg => Self::Jpeg,
+            RasterCodec::Webp => Self::Webp,
+            RasterCodec::Bmp => Self::Bmp,
+            RasterCodec::Tiff => Self::Tiff,
+        }
+    }
 }
 
 #[derive(Clone, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
@@ -171,15 +187,14 @@ pub struct ImageCapabilities {
 }
 
 pub const fn family_capabilities(family: ImageFamily) -> ImageCapabilities {
-    let raster = matches!(family, ImageFamily::Raster);
     ImageCapabilities {
-        view: raster,
-        inspect_metadata: raster,
-        zoom: raster,
-        animate: false,
-        select_frame: false,
-        select_entry: false,
-        export_entry: false,
+        view: true,
+        inspect_metadata: true,
+        zoom: true,
+        animate: matches!(family, ImageFamily::Animation),
+        select_frame: matches!(family, ImageFamily::Animation),
+        select_entry: matches!(family, ImageFamily::Ico),
+        export_entry: matches!(family, ImageFamily::Ico),
         edit: false,
         save: false,
     }
@@ -220,6 +235,7 @@ pub enum ImageFailure {
     Cancelled,
     Busy,
     OutputLimit,
+    Deadline,
 }
 
 #[derive(Clone, Copy, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
@@ -235,7 +251,7 @@ pub enum ImagePreviewKind {
 pub struct ImageDescriptor {
     pub contract_version: u32,
     pub family: ImageFamily,
-    pub codec: RasterCodec,
+    pub codec: ImageContainer,
     pub width: u32,
     pub height: u32,
     pub display_width: u32,
@@ -556,7 +572,7 @@ fn decode_image_inner(
             return Err(ImageFailure::Oversized);
         }
         preview.kind = ImagePreviewKind::Thumbnail;
-        preview.descriptor.codec = codec;
+        preview.descriptor.codec = codec.into();
         preview.descriptor.width = width;
         preview.descriptor.height = height;
         preview.descriptor.pixels = pixels;
@@ -637,7 +653,7 @@ fn decode_image_inner(
     let descriptor = ImageDescriptor {
         contract_version: IMAGE_CONTRACT_VERSION,
         family,
-        codec,
+        codec: codec.into(),
         width,
         height,
         display_width,
@@ -659,6 +675,61 @@ fn decode_image_inner(
     };
     Ok(DecodedImage {
         descriptor,
+        kind: ImagePreviewKind::Full,
+        png_bytes: writer.bytes,
+    })
+}
+
+/// Encodes an already admitted straight-alpha surface through the bounded delivery writer.
+///
+/// # Errors
+/// Rejects inconsistent surfaces, cancellation, and delivery budget exhaustion.
+pub(crate) fn rgba_preview(
+    rgba: &[u8],
+    width: u32,
+    height: u32,
+    container: ImageContainer,
+    family: ImageFamily,
+    cancel: &AtomicBool,
+) -> Result<DecodedImage, ImageFailure> {
+    cancelled(cancel)?;
+    let pixels = u64::from(width) * u64::from(height);
+    if width == 0 || height == 0 || pixels.checked_mul(4) != Some(rgba.len() as u64) {
+        return Err(ImageFailure::Malformed);
+    }
+    let mut writer = BoundedPngWriter {
+        bytes: Vec::new(),
+        cancelled: cancel,
+    };
+    image::codecs::png::PngEncoder::new(&mut writer)
+        .write_image(rgba, width, height, image::ExtendedColorType::Rgba8)
+        .map_err(|_| {
+            if cancel.load(Ordering::Acquire) {
+                ImageFailure::Cancelled
+            } else {
+                ImageFailure::OutputLimit
+            }
+        })?;
+    cancelled(cancel)?;
+    Ok(DecodedImage {
+        descriptor: ImageDescriptor {
+            contract_version: IMAGE_CONTRACT_VERSION,
+            family,
+            codec: container,
+            width,
+            height,
+            display_width: width,
+            display_height: height,
+            pixels,
+            decoded_bytes: pixels * 4,
+            orientation: 1,
+            color_policy: "rgba8_srgb_assumed".into(),
+            profile_status: "not_applied".into(),
+            alpha: true,
+            bits_per_pixel: 32,
+            capabilities: family_capabilities(family),
+            limitations: vec!["unreleased_image_capability".into()],
+        },
         kind: ImagePreviewKind::Full,
         png_bytes: writer.bytes,
     })

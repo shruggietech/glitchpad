@@ -14,7 +14,7 @@ Issues #70/#71/#72/#74 are fully included and must meet every criterion before h
 
 ## Execution and External Review Ledger
 
-Implementation is complete. Official publication, external reviews and latest-head hosted results are pending. No review request has been posted for S040. Maximum explicit follow-up review requests: one.
+Official [PR #195](https://github.com/shruggietech/glitchpad/pull/195) is open, non-draft and unmerged. Both Codex review rounds completed; all five findings have pushed corrections, replies and resolved threads. Exactly one explicit follow-up was requested. Application head `3f6ebb6f4a6c5e8817e047d3d0f734459d52daab` has 36 successful checks and the intentional GitHub Pages deployment skip. The final receipt commit must pass its own latest-head CI before owner handoff; the PR completion comment will bind that receipt SHA to its results. No further review trigger or automatic merge is permitted. Sections below retain chronological checkpoints, including their historical pending states.
 
 ## Implementation Decisions and Focused Evidence
 
@@ -65,3 +65,32 @@ The complete local gate also passed with exit 0 at `d9c3ef4`. All five review fi
 ## Native Chooser Visibility Correction
 
 At `0e03436`, API 24 passed the direct four-entry/DIB/duplicate inventory and selected DIB pixels, then failed awaiting the first chooser-cancellation receipt. The device log confirms `exportImage` was invoked, MainActivity paused for its chooser and resumed, and visibility cleanup sent cancellation. T045 separates explicit export lifetime from preview visibility and retains its receipt independently of preview regeneration; source, selection and session disposal still abort export. The new hide/resume regression failed against the old cleanup and passes after correction, alongside the existing selection-change cancellation test (15 surface tests total). Instrumentation waits for regenerated selected pixels and verifies the export action is enabled before each native chooser. Complete local `cargo xtask check` passes with exit 0, including all 299 frontend tests, browser/layout/performance checks, 47 Mermaid diagrams, 419 linked Markdown files and 964 UTF-8 text files; version remains 0.1.3. Actual API 24/36 provider evidence remains pending.
+
+## Final Application Verification and Receipt
+
+On 2026-09-16 UTC, all application checks completed successfully at `3f6ebb6`. A complete tracked-file Git archive synchronized the reusable Linux validation checkout, including the final non-truncating Kotlin destination guard; the exact-source `cargo xtask check` rerun completed with exit 0. Evidence includes 299 frontend tests (15 image-surface regressions), 12 image-family native tests, 56 host tests, 16 desktop source conformance tests, 18 original fixture digests, 32 image layout cases, browser/accessibility/performance checks, all platform package policies, 47 rendered Mermaid diagrams, links in 419 Markdown files, and 964 UTF-8 files without BOM or common mojibake. Official version authorities agree on 0.1.3.
+
+[CI run35044126886](https://github.com/shruggietech/glitchpad/actions/runs/35044126886) passes both Android API levels, all three desktop hosts, shared native/frontend checks, performance, documentation and dependency/security gates. CodeQL run35044126866 passes Rust and JavaScript/TypeScript. Signed Android package run35044126880 passes. Linux PR/push runs35044126900/35044122373 pass builds and all eight clean Debian/AppImage lifecycle jobs on Ubuntu 22.04/24.04. macOS PR/push runs35044126894/35044122369 pass universal packages and both architectures' lifecycle jobs. Windows PR/push runs35044126874/35044122462 pass installed/portable lifecycles. The Windows PR's first attempt missed the unrelated portable Markdown diagram while its identical-head push run passed; one failed-job retry passed, with no additional application change. Docs run35044126884 passes, with Pages deployment intentionally skipped for a PR. The fresh PR rollup is 36 success, one skip and zero pending or failed checks.
+
+Android API 24 job104630171699 and API 36 job104630171635 pass plugin unit tests, instrumentation builds, delivery, process-boundary restoration and performance. First-attempt device logs explicitly contain `image_export_evidence=cancel:pass,original_denied:pass,selected_dib_png:pass,existing_conflict:pass,misreported_size:pass,source_unchanged:pass` for each API. They also contain GIF, animated-WebP, SVG, PNG/DIB ICO, hostile-SVG-refusal and cold/warm-delivery markers. Selected DIB output is compared pixel-by-pixel with the independently generated PNG fixture. The existing dedicated delivery protocol verifies flushed device markers before closing the native-owned MainActivity; restoration/performance report passing instrumentation tests. Owned generated destinations are cleaned up and fixture grants revoked.
+
+| Included issue | Passing acceptance evidence |
+| --- | --- |
+| #70 GIF/animated WebP | Keyboard/touch/assistive controls and reduced-motion regressions; independent composition/timing/disposal goldens; frame/duration/dimension/peak admission tests; zero scheduled animation after suspension and paused resume; real API 24/36 frame stepping |
+| #71 safe SVG | Native active/external-resource denial and hostile complexity corpus; inert generated PNG on shared browser and platform delivery paths; bounded classified failures; zoom/pan and independently copyable metadata/font-policy facts |
+| #72 ICO inspection/export | Every mixed/malformed directory row and valid neighbors retained; independent PNG/DIB goldens on shared native and API 24/36 delivery; explicit source-bound native chooser/export; cancel/original/conflict/misreported-size byte preservation; entry/range/surface/time admission |
+| #74 compact controls | Keyboard, pointer, pinch, touch and accessible names; bounded-pan/reset recovery; 32 layout cases with at least 70% image coverage, reachable 44-pixel actions and no page overflow; per-session presentation, source-refresh invalidation and suspended-resource cleanup |
+
+| Review finding | Correction and closure |
+| --- | --- |
+| discussion4021205262, invalid ICO ranges | Entry-local refusal preserves all bounded rows and valid neighbors; reply4021232770; resolved |
+| discussion4021205266, early Android export cancellation | Bounded synchronized pending-cancellation registry and typed request arguments; replies4021232913/4021451110; real API 24/36 unit/runtime evidence; resolved |
+| discussion4021205275, completed one-play replay | Explicit Play restarts a naturally completed animation; regression and reply4021233023; resolved |
+| discussion4021351270, reduced-motion restart | Retained current preference blocks Play/timers while preserving manual stepping; reply4021374859; resolved |
+| discussion4021351271, finite pause/resume loops | Loop progress survives pause/resume and resets only for completed explicit restart, with GIF/WebP regressions; reply4021375090; resolved |
+
+Initial review of `533ea36` completed at 2026-09-15T23:41:02Z. The single explicit follow-up, comment5689892192 against `60e4566`, completed at 2026-09-16T00:12:10Z. A fresh conversation/review-thread/reaction check finds no additional actionable finding and all five threads resolved. No separate security-bot approval is claimed; CodeQL, dependency review, licenses, advisories and secret-pattern checks pass. No third review is requested.
+
+Final Spec Kit analysis covers all 45 tasks, 24 functional requirements, 16 acceptance scenarios, seven success criteria and eight constitution principles, with zero unmapped work or additional implementation finding. Convergence adds no further build task. T033/T034 and T039/T040/T044/T045 now have complete evidence. The final T035 receipt publication is followed by a mandatory exact receipt-head CI check and owner completion comment; no owner-ready claim is made before that final check.
+
+Issues #70/#71/#72/#74 remain open until the owner merges the PR's closing references. Rechecked #75/#76/#66 remain open, and PDF/office milestones are not closed by this slice. The PR remains mergeable against main `8146a736f734877aa8442d77b3686da350e31d22`. Public support claims, associations/intents and official version remain unchanged at 0.1.3. This receipt authorizes no merge or release.

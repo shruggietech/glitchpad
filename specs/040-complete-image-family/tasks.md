@@ -62,9 +62,9 @@
 - [x] T030 Perform Spec Kit read-only analyze and convergence against every issue criterion, 24 requirements/16 scenarios/seven outcomes and eight principles; append and implement any findings in `tasks.md` (FR-023, FR-024).
 - [x] T031 Record unreleased documentation delta in `changelog.d/040.added.md` and feature/PR evidence; preserve official0.1.3 and incomplete #75/#76/#66/later milestones (FR-023).
 - [x] T032 Commit, automatically push and publish the official PR closing only #70/#71/#72/#74 through the hidden VCS launcher (FR-024).
-- [ ] T033 Wait initial external reviews/reactions, respond to every comment, remediate with regression evidence and resolve every satisfied thread; record the ledger in `verification.md` (FR-024).
-- [ ] T034 Request at most one explicit follow-up review round if needed, address/resolve every result, and wait complete latest-head CI/security/platform checks (FR-024; SC-007).
-- [ ] T035 Publish one final completed verification/task receipt, wait its latest-head CI, and notify the owner for final review/merge with the PR unmerged (FR-024; SC-001, SC-007).
+- [x] T033 Wait initial external reviews/reactions, respond to every comment, remediate with regression evidence and resolve every satisfied thread; record the ledger in `verification.md` (FR-024).
+- [x] T034 Request at most one explicit follow-up review round if needed, address/resolve every result, and wait complete latest-head CI/security/platform checks (FR-024; SC-007).
+- [x] T035 Publish one final completed verification/task receipt, wait its latest-head CI, and notify the owner for final review/merge with the PR unmerged (FR-024; SC-001, SC-007).
 
 ## Dependencies and Parallel Opportunities
 
@@ -88,11 +88,11 @@ Prove safe SVG first, incremental paused animation next, then independent ICO en
 
 ## Phase 11: Convergence
 
-- [ ] T039 Exercise the real Android selected-entry native/provider export round trip, chooser cancellation, original identity and existing-destination refusal on API 24/36, and compare independent PNG/DIB golden pixels per FR-021, SC-003, SC-006 and T026 (partial).
+- [x] T039 Exercise the real Android selected-entry native/provider export round trip, chooser cancellation, original identity and existing-destination refusal on API 24/36, and compare independent PNG/DIB golden pixels per FR-021, SC-003, SC-006 and T026 (partial).
 
 ## Phase 12: Convergence
 
-- [ ] T040 Open Android export destinations without truncation, recheck actual descriptor size/cancellation before writing, and prove misreported-size conflict preservation in provider instrumentation per FR-015, SC-006 and #72 (partial).
+- [x] T040 Open Android export destinations without truncation, recheck actual descriptor size/cancellation before writing, and prove misreported-size conflict preservation in provider instrumentation per FR-015, SC-006 and #72 (partial).
 
 ## Phase 13: Convergence
 
@@ -105,8 +105,8 @@ Prove safe SVG first, incremental paused animation next, then independent ICO en
 
 ## Phase 15: Convergence
 
-- [ ] T044 Inspect native select option text/count directly in Android ICO inventory evidence instead of relying on body innerText for unselected options; retain every-row/DIB/duplicate assertions and run the real export round trips on API 24/36 per FR-011, FR-021, SC-003 and failed job104615332577 (contradicts).
+- [x] T044 Inspect native select option text/count directly in Android ICO inventory evidence instead of relying on body innerText for unselected options; retain every-row/DIB/duplicate assertions and run the real export round trips on API 24/36 per FR-011, FR-021, SC-003 and failed job104615332577 (contradicts).
 
 ## Phase 16: Convergence
 
-- [ ] T045 HIGH Preserve an explicit native chooser/export across visibility-only suspension, cancel it on source/selection/session disposal, and retain its receipt independently of regenerated-preview status; add a failure-first chooser hide/resume regression and complete API 24/36 provider export per FR-014, FR-015, FR-020, US3/AC3 and failed job104622457718 (contradicts).
+- [x] T045 HIGH Preserve an explicit native chooser/export across visibility-only suspension, cancel it on source/selection/session disposal, and retain its receipt independently of regenerated-preview status; add a failure-first chooser hide/resume regression and complete API 24/36 provider export per FR-014, FR-015, FR-020, US3/AC3 and failed job104622457718 (contradicts).

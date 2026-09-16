@@ -63,3 +63,7 @@ Pinned image-webp 0.2.4 source inspection shows `read_frame` calls lossy VP8 dec
 ## 2026-09-15: Playback preference and finite progress
 
 The permitted second review identifies that a preference-change pause alone does not prevent a later Play click, and unconditional loop-counter reset grants extra finite cycles on resume. Before correction, retain reduced motion as component state, block timer scheduling and Play while it matches, and preserve manual stepping. Preserve completed-loop progress across pause/resume; reset it and return to frame zero only when Play explicitly restarts a naturally completed animation, or when source/session revision changes. Separate failure-first browser regressions cover initial preference, restart after preference change and finite-cycle exhaustion after resume.
+
+## 2026-09-15: Android native-select inventory evidence
+
+API 24 reaches the ICO preview but fails at the body-innerText assertion for unselected DIB/duplicate options (job104615332577, test line83), before export is invoked. Before correction, query every native select option directly and assert row count, DIB and duplicate facts using the returned JSON, while retaining visible-button, selected-pixel and real-provider export assertions. This avoids treating a WebView's body-text projection as the inventory authority. Log only bounded synthetic inventory booleans/counts; actual API 24/36 outcomes remain required.

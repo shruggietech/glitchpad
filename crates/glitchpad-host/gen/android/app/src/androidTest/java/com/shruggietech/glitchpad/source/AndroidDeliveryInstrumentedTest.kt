@@ -80,7 +80,11 @@ class AndroidDeliveryInstrumentedTest {
         waitForBodyText(scenario, "of " + if (name.endsWith("gif")) "4" else "2")
       }
       if (name.endsWith("ico")) {
-        waitForBodyText(scenario, "Export selected entry as PNG", "dib", "duplicate")
+        waitForBodyText(scenario, "Export selected entry as PNG")
+        val inventory = JSONObject(evaluate(scenario, "(()=>{const entries=document.querySelector('select[aria-label=\"Icon entry\"]');const options=Array.from(entries.options).map(option=>option.textContent);return {count:options.length,dib:options.some(text=>text.includes('dib')),duplicate:options.some(text=>text.includes('duplicate'))};})()"))
+        assertEquals("every bounded ICO directory row must be exposed", 4, inventory.getInt("count"))
+        assertTrue("DIB entry facts must be available in native entry selection", inventory.getBoolean("dib"))
+        assertTrue("duplicate entry facts must be available in native entry selection", inventory.getBoolean("duplicate"))
         evaluate(scenario, "(()=>{window.__s040PreviousPreview=document.querySelector('.image-preview').src;const entries=document.querySelector('select[aria-label=\"Icon entry\"]');entries.value='1';entries.dispatchEvent(new Event('change',{bubbles:true}));return true;})()")
         waitForImagePixels(scenario, name, true)
         verifySelectedIconExport(scenario, uri, before)
@@ -194,12 +198,14 @@ class AndroidDeliveryInstrumentedTest {
     return if (latch.await(2, TimeUnit.SECONDS)) result.get() else null
   }
 
-  private fun evaluate(scenario: ActivityScenario<MainActivity>, script: String) {
+  private fun evaluate(scenario: ActivityScenario<MainActivity>, script: String): String {
     val view = AtomicReference<WebView?>()
     scenario.onActivity { view.set(findWebView(it.window.decorView)) }
     val latch = CountDownLatch(1)
-    instrumentation.runOnMainSync { requireNotNull(view.get()).evaluateJavascript(script) { latch.countDown() } }
+    val result = AtomicReference("null")
+    instrumentation.runOnMainSync { requireNotNull(view.get()).evaluateJavascript(script) { value -> result.set(value ?: "null"); latch.countDown() } }
     assertTrue("WebView image control did not complete", latch.await(2, TimeUnit.SECONDS))
+    return result.get()
   }
 
   private fun waitForImagePixels(scenario: ActivityScenario<MainActivity>, expectedName: String, changed: Boolean = false) {

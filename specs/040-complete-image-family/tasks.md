@@ -102,3 +102,7 @@ Prove safe SVG first, incremental paused animation next, then independent ICO en
 
 - [x] T042 Retain the reduced-motion preference and prevent playback scheduling while it matches; prove both initial preference and attempted restart after a preference change in `ImageSurface.test.tsx` per FR-009, FR-010, US2/AC3 and review4021351270 (partial).
 - [x] T043 Preserve finite-loop progress across pause/resume and reset it only for an explicit completed-animation restart; prove encoded repeat exhaustion after resumed playback in `ImageSurface.test.tsx` per FR-007, FR-008, US2/AC2 and review4021351271 (partial).
+
+## Phase 15: Convergence
+
+- [ ] T044 Inspect native select option text/count directly in Android ICO inventory evidence instead of relying on body innerText for unselected options; retain every-row/DIB/duplicate assertions and run the real export round trips on API 24/36 per FR-011, FR-021, SC-003 and failed job104615332577 (contradicts).

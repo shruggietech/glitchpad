@@ -110,13 +110,15 @@ class AndroidDeliveryInstrumentedTest {
       .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
 
   private fun exportChoice(scenario: ActivityScenario<MainActivity>, result: ActivityResult, expected: String) {
+    waitForImagePixels(scenario, "entries.ico")
     val filter = IntentFilter(Intent.ACTION_CREATE_DOCUMENT).apply {
       addCategory(Intent.CATEGORY_OPENABLE)
       addDataType("image/png")
     }
     val monitor = instrumentation.addMonitor(filter, result, true)
     try {
-      evaluate(scenario, "(()=>{const button=Array.from(document.querySelectorAll('button')).find(b=>b.textContent==='Export selected entry as PNG');button.click();return true;})()")
+      val action = JSONObject(evaluate(scenario, "(()=>{const button=Array.from(document.querySelectorAll('button')).find(b=>b.textContent==='Export selected entry as PNG');const requested=!!button&&!button.disabled;if(requested)button.click();return {requested};})()"))
+      assertTrue("selected-entry export must be enabled before opening the chooser", action.getBoolean("requested"))
       waitForBodyText(scenario, expected)
       assertEquals("explicit native PNG chooser must be invoked exactly once", 1, monitor.hits)
     } finally { instrumentation.removeMonitor(monitor) }

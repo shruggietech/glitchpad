@@ -106,3 +106,7 @@ Prove safe SVG first, incremental paused animation next, then independent ICO en
 ## Phase 15: Convergence
 
 - [ ] T044 Inspect native select option text/count directly in Android ICO inventory evidence instead of relying on body innerText for unselected options; retain every-row/DIB/duplicate assertions and run the real export round trips on API 24/36 per FR-011, FR-021, SC-003 and failed job104615332577 (contradicts).
+
+## Phase 16: Convergence
+
+- [ ] T045 HIGH Preserve an explicit native chooser/export across visibility-only suspension, cancel it on source/selection/session disposal, and retain its receipt independently of regenerated-preview status; add a failure-first chooser hide/resume regression and complete API 24/36 provider export per FR-014, FR-015, FR-020, US3/AC3 and failed job104622457718 (contradicts).

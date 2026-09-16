@@ -20,6 +20,7 @@ export function ImageSurface({ session, gateway = nativeImageGateway, onImageCha
   const [url, setUrl] = useState<string | null>(null);
   const ownedPreview = useRef<string | null>(null);
   const [status, setStatus] = useState('Loading image…');
+  const [exportStatus, setExportStatus] = useState<string | null>(null);
   const [descriptor, setDescriptor] = useState(session.image_document?.descriptor ?? null);
   const [viewport, setViewport] = useState(session.image_document?.viewport ?? initialImageViewport());
   const [size, setSize] = useState({ width: 640, height: 480 });
@@ -63,6 +64,11 @@ export function ImageSurface({ session, gateway = nativeImageGateway, onImageCha
   }, []);
 
   useEffect(() => {
+    setExportStatus(null);
+    return () => { exportAbort.current?.abort(); };
+  }, [session.id, session.revision, session.source_id, gateway, selection, session.source_state]);
+
+  useEffect(() => {
     const abort = new AbortController();
     let ownedUrl: string | null = null;
     let retryTimer: ReturnType<typeof setTimeout> | null = null;
@@ -97,7 +103,6 @@ export function ImageSurface({ session, gateway = nativeImageGateway, onImageCha
     void run();
     return () => {
       abort.abort();
-      exportAbort.current?.abort();
       if (retryTimer !== null) clearTimeout(retryTimer);
       if (ownedUrl && ownedPreview.current === ownedUrl) { URL.revokeObjectURL(ownedUrl); ownedPreview.current = null; }
       points.current.clear();
@@ -177,15 +182,15 @@ export function ImageSurface({ session, gateway = nativeImageGateway, onImageCha
       <button type="button" disabled={!url || !family.selected_entry_export || !gateway.exportEntry} onClick={() => { void (async () => {
         exportAbort.current?.abort();
         const controller = new AbortController(); exportAbort.current = controller;
-        setStatus('Choose a destination for the selected PNG entry.');
+        setExportStatus('Choose a destination for the selected PNG entry.');
         try {
           const receipt = await gateway.exportEntry!({ ...session, image_document: { ...imageState.current, family_state: family } }, controller.signal);
-          if (!controller.signal.aborted) setStatus(receipt.status === 'exported' ? 'Selected entry exported as PNG.' : 'Export cancelled.');
-        } catch { if (!controller.signal.aborted) setStatus('Export could not complete safely. The original icon remains unchanged.'); }
+          if (!controller.signal.aborted) setExportStatus(receipt.status === 'exported' ? 'Selected entry exported as PNG.' : 'Export cancelled.');
+        } catch { if (!controller.signal.aborted) setExportStatus('Export could not complete safely. The original icon remains unchanged.'); }
       })(); }}>Export selected entry as PNG</button>
     </span>}
     </div>
-    {status && <div className="image-status" role="status">{status}{!url && <button type="button" onClick={() => setRetry(n => n + 1)}>Retry preview</button>}</div>}
+    {(status || exportStatus) && <div className="image-status" role="status">{exportStatus}{exportStatus && status ? ' ' : ''}{status}{!url && <button type="button" onClick={() => setRetry(n => n + 1)}>Retry preview</button>}</div>}
     <div ref={pane} className={`image-pane image-background-${viewport.background}`} role="group" aria-label="Image viewport. Arrow keys pan; plus and minus zoom; zero fits." tabIndex={0}
       onKeyDown={e => {
         if (!url) return;

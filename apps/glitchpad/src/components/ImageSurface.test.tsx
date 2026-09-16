@@ -127,6 +127,31 @@ describe('read-only raster viewport', () => {
     view.unmount();
     expect(suspend).toHaveBeenCalledWith('opaque', 'frame-0');
   });
+  it('preserves native chooser export and its receipt across visibility suspension and preview regeneration', async () => {
+    const visibility = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+    let signal!: AbortSignal;
+    let finish!: (value: { status: 'cancelled'; durability: null }) => void;
+    const exportEntry = vi.fn((_session: ShellSession, abort: AbortSignal) => { signal = abort; return new Promise<{ status: 'cancelled'; durability: null }>(resolve => { finish = resolve; }); });
+    const renderEntry = vi.fn(() => {
+      const preview = result();
+      Object.assign(preview.preview!.descriptor, { codec: 'ico', family: 'ico' });
+      preview.family_state = { family: 'ico', entries: [{ index: 0, width: 1, height: 1, bits_per_pixel: 32, encoded_bytes: 64, preview: 'full', encoding: 'png', alpha: true, failure: null, duplicate_of: null }], selected_entry: 0, selected_entry_export: true };
+      return Promise.resolve(preview);
+    });
+    const view = render(<ImageSurface session={imageSession()} gateway={{ render: renderEntry, exportEntry }} />);
+    await screen.findByRole('img');
+    fireEvent.click(screen.getByRole('button', { name: 'Export selected entry as PNG' }));
+    visibility.mockReturnValue('hidden');
+    fireEvent(document, new Event('visibilitychange'));
+    expect(signal.aborted).toBe(false);
+    await act(() => Promise.resolve(finish({ status: 'cancelled', durability: null })));
+    visibility.mockReturnValue('visible');
+    fireEvent(document, new Event('visibilitychange'));
+    await screen.findByRole('img');
+    expect(renderEntry).toHaveBeenCalledTimes(2);
+    expect(screen.getByText('Export cancelled.')).toBeInTheDocument();
+    view.unmount();
+  });
   it('lists corrupt icon entries and aborts an export when selection changes', async () => {
     const entries = [0,1].map(index => ({ index, width: 1, height: 1, bits_per_pixel: 32, encoded_bytes: 64, preview: 'full' as const, encoding: 'png' as const, alpha: true, failure: null, duplicate_of: null }));
     let signal: AbortSignal | null = null;

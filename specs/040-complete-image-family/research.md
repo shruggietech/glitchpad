@@ -67,3 +67,7 @@ The permitted second review identifies that a preference-change pause alone does
 ## 2026-09-15: Android native-select inventory evidence
 
 API 24 reaches the ICO preview but fails at the body-innerText assertion for unselected DIB/duplicate options (job104615332577, test line83), before export is invoked. Before correction, query every native select option directly and assert row count, DIB and duplicate facts using the returned JSON, while retaining visible-button, selected-pixel and real-provider export assertions. This avoids treating a WebView's body-text projection as the inventory authority. Log only bounded synthetic inventory booleans/counts; actual API 24/36 outcomes remain required.
+
+## 2026-09-15: Native chooser visibility continuation
+
+Corrected API 24 reaches `exportImage`, then MainActivity pauses/resumes for the native chooser and frontend cleanup sends `cancelImageExport` (job104622457718, first cancellation choice). Before correction, separate explicit export lifetime from regenerated-preview visibility: visibility suspends preview/frame work, while selection, source revision/state, gateway replacement and component disposal still abort export. Keep the path-free export receipt separate from preview loading/suspension status so re-rendering after the chooser cannot erase it. Instrumentation must await the enabled current-entry action before each choice. This corrects the blanket preview-cleanup cancellation assumption without persisting export authority or changing native original/conflict guards.

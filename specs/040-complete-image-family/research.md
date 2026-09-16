@@ -55,3 +55,7 @@ Peak reassessment found that vector growth and conversion to `Arc<[u8]>` could t
 ## 2026-09-15: Non-truncating Android export descriptor
 
 The [Android ContentResolver contract](https://developer.android.com/reference/android/content/ContentResolver) permits provider-specific truncation for `w` and identifies `rw` as a seekable descriptor. Before correction, the generated export decision is to open with `rw`, reject any actual nonzero/unknown descriptor size, and recheck cancellation/source registration immediately before writing. Providers without a verifiable empty seekable destination fail safely. This does not change general source Save As. A controlled provider with deliberately misreported zero size supplies real conflict-preservation evidence.
+
+## 2026-09-15: Nested WebP dimensions before allocation
+
+Pinned image-webp 0.2.4 source inspection shows `read_frame` calls lossy VP8 decode before comparing dimensions; VP8 header parsing allocates Y/U/V planes from embedded dimensions. The ALPH/VP8 branch similarly decodes before filling the ANMF-sized output. Before correction, the decision is to inspect the bounded ANMF subchunk sequence and require each VP8/VP8L bitstream header to match its already admitted frame rectangle before constructing any decoder. ALPH must precede one VP8 image; unknown/repeated/truncated subchunks fail preflight. This closes P4/FR-008 admission rather than relying on a metadata memory hint or a comparison after allocation.

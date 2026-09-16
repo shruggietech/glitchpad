@@ -93,3 +93,7 @@ Prove safe SVG first, incremental paused animation next, then independent ICO en
 ## Phase 12: Convergence
 
 - [ ] T040 Open Android export destinations without truncation, recheck actual descriptor size/cancellation before writing, and prove misreported-size conflict preservation in provider instrumentation per FR-015, SC-006 and #72 (partial).
+
+## Phase 13: Convergence
+
+- [x] T041 CRITICAL Verify every nested animated WebP VP8/VP8L header against the admitted ANMF rectangle before decoder creation, including ALPH/VP8, and add malformed/dimension-bomb regressions per Constitution P4, FR-008 and US2/AC4 (contradicts).

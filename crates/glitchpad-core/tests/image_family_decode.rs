@@ -268,6 +268,47 @@ fn animation_webp() -> Vec<u8> {
 }
 
 #[test]
+fn webp_nested_dimensions_are_refused_before_decoder_creation() {
+    let cancel = AtomicBool::new(false);
+    let mut bytes = animation_webp();
+    let at = bytes.windows(4).position(|n| n == b"VP8L").unwrap() + 9;
+    bytes[at..at + 4].copy_from_slice(&(0x3fff_u32 | (0x3fff_u32 << 14)).to_le_bytes());
+    assert!(matches!(
+        glitchpad_core::image_family::AnimationContext::new(
+            &bytes,
+            &ImageLimits::desktop(),
+            &cancel
+        ),
+        Err(ImageFailure::Malformed)
+    ));
+    for alpha in [false, true] {
+        let mut chunks = chunk(*b"VP8X", &[0x12, 0, 0, 0, 1, 0, 0, 0, 0, 0]);
+        chunks.extend(chunk(*b"ANIM", &[0; 6]));
+        let mut frame = vec![0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 40, 0, 0, 2];
+        if alpha {
+            frame.extend(chunk(*b"ALPH", &[0, 255, 255]));
+        }
+        frame.extend(chunk(
+            *b"VP8 ",
+            &[0x10, 0, 0, 0x9d, 1, 0x2a, 0xff, 0x3f, 0xff, 0x3f],
+        ));
+        chunks.extend(chunk(*b"ANMF", &frame));
+        let mut bytes = b"RIFF".to_vec();
+        bytes.extend_from_slice(&(u32::try_from(chunks.len() + 4).unwrap()).to_le_bytes());
+        bytes.extend_from_slice(b"WEBP");
+        bytes.extend(chunks);
+        assert!(matches!(
+            glitchpad_core::image_family::AnimationContext::new(
+                &bytes,
+                &ImageLimits::desktop(),
+                &cancel
+            ),
+            Err(ImageFailure::Malformed)
+        ));
+    }
+}
+
+#[test]
 fn animated_webp_composes_selected_frames_and_reconstructs_on_loop_restart() {
     let bytes = animation_webp();
     let cancel = AtomicBool::new(false);

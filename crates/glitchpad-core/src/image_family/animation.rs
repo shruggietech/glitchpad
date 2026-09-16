@@ -148,6 +148,62 @@ fn gif_inventory(bytes: &[u8], cancel: &AtomicBool) -> Result<(Inventory, Vec<u8
     ))
 }
 
+fn webp_frame_headers(payload: &[u8], width: u32, height: u32) -> Result<(), ImageFailure> {
+    if payload.get(15).is_none_or(|flags| flags & !3 != 0) {
+        return Err(ImageFailure::Malformed);
+    }
+    let (mut at, mut alpha, mut image) = (16_usize, false, false);
+    while at < payload.len() {
+        let tag = payload.get(at..at + 4).ok_or(ImageFailure::Truncated)?;
+        let length =
+            usize::try_from(u32le(payload, at + 4)?).map_err(|_| ImageFailure::Oversized)?;
+        let end = at
+            .checked_add(8)
+            .and_then(|n| n.checked_add(length))
+            .ok_or(ImageFailure::Oversized)?;
+        let encoded = payload.get(at + 8..end).ok_or(ImageFailure::Truncated)?;
+        if tag == b"ALPH" && !alpha && !image && !encoded.is_empty() {
+            alpha = true;
+        } else {
+            if image || (alpha && tag != b"VP8 ") {
+                return Err(ImageFailure::Malformed);
+            }
+            let dimensions = match tag {
+                b"VP8 "
+                    if encoded.get(3..6) == Some(&[0x9d, 1, 0x2a])
+                        && encoded.first().is_some_and(|n| n & 1 == 0) =>
+                {
+                    (
+                        u32::from(u16le(encoded, 6)? & 0x3fff),
+                        u32::from(u16le(encoded, 8)? & 0x3fff),
+                    )
+                }
+                b"VP8L" if encoded.first() == Some(&0x2f) => {
+                    let packed = u32le(encoded, 1)?;
+                    if packed >> 29 != 0 {
+                        return Err(ImageFailure::Malformed);
+                    }
+                    ((packed & 0x3fff) + 1, ((packed >> 14) & 0x3fff) + 1)
+                }
+                _ => return Err(ImageFailure::Malformed),
+            };
+            if dimensions != (width, height) {
+                return Err(ImageFailure::Malformed);
+            }
+            image = true;
+        }
+        at = end.checked_add(length & 1).ok_or(ImageFailure::Oversized)?;
+        if at > payload.len() {
+            return Err(ImageFailure::Truncated);
+        }
+    }
+    if image {
+        Ok(())
+    } else {
+        Err(ImageFailure::Malformed)
+    }
+}
+
 fn webp_inventory(bytes: &[u8], cancel: &AtomicBool) -> Result<(Inventory, Vec<u8>), ImageFailure> {
     if bytes.get(..4) != Some(b"RIFF")
         || bytes.get(8..12) != Some(b"WEBP")
@@ -187,6 +243,7 @@ fn webp_inventory(bytes: &[u8], cancel: &AtomicBool) -> Result<(Inventory, Vec<u
                 loops = Some(u32::from(u16le(payload, 4)?));
             }
             b"ANMF" => {
+                webp_frame_headers(payload, u24(payload, 6)? + 1, u24(payload, 9)? + 1)?;
                 rect(
                     width,
                     height,

@@ -6,6 +6,7 @@ import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
 import android.os.SystemClock
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
@@ -152,6 +153,35 @@ class BrandBuilderAppFrameInstrumentedTest {
         )
     }
 
+    private fun tapWebViewPoint(
+        scenario: ActivityScenario<MainActivity>,
+        cssX: Double,
+        cssY: Double,
+        devicePixelRatio: Double,
+    ) {
+        var screenX = 0f
+        var screenY = 0f
+        scenario.onActivity { activity ->
+            val webView = findWebView(activity.window.decorView)!!
+            val location = IntArray(2)
+            webView.getLocationOnScreen(location)
+            screenX = location[0] + (cssX * devicePixelRatio).toFloat()
+            screenY = location[1] + (cssY * devicePixelRatio).toFloat()
+        }
+
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val downTime = SystemClock.uptimeMillis()
+        val down = MotionEvent.obtain(downTime, downTime, MotionEvent.ACTION_DOWN, screenX, screenY, 0)
+        val up = MotionEvent.obtain(downTime, downTime + 50L, MotionEvent.ACTION_UP, screenX, screenY, 0)
+        try {
+            instrumentation.sendPointerSync(down)
+            instrumentation.sendPointerSync(up)
+        } finally {
+            down.recycle()
+            up.recycle()
+        }
+    }
+
     @Test
     fun appFrameOwnsActualAndroidWebViewGeometry() {
         assertTrue("reference API must be governed", Build.VERSION.SDK_INT == 24 || Build.VERSION.SDK_INT == 36)
@@ -212,11 +242,11 @@ class BrandBuilderAppFrameInstrumentedTest {
             webView.requestFocusFromTouch()
         }
 
-        assertEquals(
-            "true",
-            evaluate(
-                scenario,
-                """
+        val probe = JSONObject(
+            decodedJavascriptString(
+                evaluate(
+                    scenario,
+                    """
             (() => {
               let input = document.querySelector('#brandbuilder-ime-probe');
               if (!input) {
@@ -224,15 +254,32 @@ class BrandBuilderAppFrameInstrumentedTest {
                 input.id = 'brandbuilder-ime-probe';
                 input.setAttribute('aria-label', 'BrandBuilder IME probe');
                 input.style.position = 'fixed';
-                input.style.inset = 'auto 0 0';
+                input.style.right = '0';
+                input.style.bottom = '0';
+                input.style.width = '48px';
+                input.style.height = '48px';
+                input.style.zIndex = '2147483647';
                 document.body.append(input);
               }
               input.focus();
-              input.click();
-              return document.activeElement === input;
+              const bounds = input.getBoundingClientRect();
+              return JSON.stringify({
+                focused: document.activeElement === input,
+                x: bounds.left + bounds.width / 2,
+                y: bounds.top + bounds.height / 2,
+                devicePixelRatio: window.devicePixelRatio || 1
+              });
             })()
-                """.trimIndent(),
+                    """.trimIndent(),
+                ),
             ),
+        )
+        assertTrue("IME probe must accept DOM focus before the native tap: $probe", probe.getBoolean("focused"))
+        tapWebViewPoint(
+            scenario,
+            probe.getDouble("x"),
+            probe.getDouble("y"),
+            probe.getDouble("devicePixelRatio"),
         )
         SystemClock.sleep(250L)
         var imeShowRequested = false

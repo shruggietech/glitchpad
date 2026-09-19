@@ -10,7 +10,7 @@
 
 **Alternatives considered**: Electron violates the project constitution and carries a bundled browser runtime. Flutter would provide broad platform coverage but would replace the mature browser-native editor and PDF ecosystems and move the native core to Dart or a larger FFI boundary. Compose Multiplatform would make Android natural but would require recreating or wrapping major renderer capabilities for desktop. A fully native Rust UI would force immature Android support or per-platform renderer implementations. A browser-only application cannot satisfy local file, association, Android intent, and offline packaging requirements.
 
-**Primary evidence**: [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/), [Tauri distribution](https://v2.tauri.app/distribute/), [Tauri Google Play packaging](https://v2.tauri.app/distribute/google-play/), [CodeMirror system guide](https://codemirror.net/docs/guide/), [Vite requirements](https://vite.dev/guide/)
+**Primary evidence**: [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/), [Tauri distribution](https://v2.tauri.app/distribute/), [Tauri Google Play packaging](https://v2.tauri.app/distribute/google-play/), [CodeMirror system guide](https://github.com/codemirror/website/blob/main/site/docs/guide/index.md), [Vite requirements](https://vite.dev/guide/)
 
 ## R2. Version and toolchain baseline
 
@@ -48,7 +48,7 @@
 
 **Alternatives considered**: Multiple selectable Markdown engines create inconsistent output and testing. Rendering raw HTML creates active-content risk. Highlight.js duplicates CodeMirror's language and highlighting work. Monaco carries a larger IDE-oriented surface and bundle.
 
-**Primary evidence**: [CodeMirror guide](https://codemirror.net/docs/guide/), [CodeMirror language data](https://github.com/codemirror/language-data), [rehype-sanitize security guidance](https://github.com/rehypejs/rehype-sanitize)
+**Primary evidence**: [CodeMirror guide](https://github.com/codemirror/website/blob/main/site/docs/guide/index.md), [CodeMirror language data](https://github.com/codemirror/language-data), [rehype-sanitize security guidance](https://github.com/rehypejs/rehype-sanitize)
 
 ## R6. Image renderer and metadata
 

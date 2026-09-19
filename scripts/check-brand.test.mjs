@@ -14,6 +14,7 @@ import {
   verifyReadmeBanner,
 } from './check-brand.mjs';
 import {
+  agentContractContext,
   agentContractEnd,
   agentContractStart,
   mergeAgentContract,
@@ -33,6 +34,7 @@ test('generated agent contract merge preserves project-owned instructions', () =
   assert.match(merged, /Keep this human rule\./);
   assert.match(merged, new RegExp(agentContractStart));
   assert.match(merged, new RegExp(agentContractEnd));
+  assert.ok(merged.includes(agentContractContext));
   assert.deepEqual(verifyAgentContract(merged, generated), []);
 });
 

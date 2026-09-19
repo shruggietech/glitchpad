@@ -145,7 +145,10 @@ class BrandBuilderAppFrameInstrumentedTest {
         assertEquals("hidden", snapshot.getString("bodyOverflow"))
         assertTrue(snapshot.getDouble("visualViewportHeight") > 0.0)
         assertTrue(snapshot.getDouble("visualViewportOffset") >= 0.0)
-        assertTrue(snapshot.getBoolean("menuInsideViewport"))
+        assertTrue(
+            "menu trigger must remain inside the visual viewport: $snapshot",
+            snapshot.getBoolean("menuInsideViewport"),
+        )
     }
 
     @Test

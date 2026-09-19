@@ -2,9 +2,11 @@ export const agentContractStart =
   '<!-- BEGIN GENERATED BRANDBUILDER AGENT CONTRACT -->';
 export const agentContractEnd =
   '<!-- END GENERATED BRANDBUILDER AGENT CONTRACT -->';
+export const agentContractContext =
+  'Repository integration context: generated paths are kit-root-relative. In this repository, the kit root is `brand/`; resolve `consumer-contract.json` and `IMPLEMENTATION.md` in `brand/enforcement/`, and prefix every generated `enforcement/...` path with `brand/`.';
 
 function contractBlock(generatedContract) {
-  return `${agentContractStart}\n${generatedContract.trim()}\n${agentContractEnd}`;
+  return `${agentContractStart}\n\n${agentContractContext}\n\n${generatedContract.trim()}\n${agentContractEnd}`;
 }
 
 export function mergeAgentContract(projectInstructions, generatedContract) {

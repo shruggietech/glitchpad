@@ -105,7 +105,7 @@ try {
             ],
           });
           await page.setContent(
-            `<!doctype html><html data-theme="${theme}" style="font-size: ${textScaleFactor * 100}%"><head><meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"><style>${css}</style></head><body><div class="bb-app-frame" data-bb-app-frame data-bb-host="tauri" data-bb-layout="full-bleed"><a class="bb-skip-link bb-control" href="#bb-main">Skip to content</a><div class="bb-app-frame__scroll"><main id="bb-main" class="bb-app-frame__content" tabindex="-1"><div class="app-shell" data-has-tabs="${hasTabs}"><div class="shell-chrome" data-has-tabs="${hasTabs}"><div class="application-menu-shell application-toolbar" data-menu-active="true" data-menu-open="false"><button class="application-menu-trigger" type="button" aria-label="Menu"><span class="application-menu-glyph">☰</span></button></div>${hasTabs ? '<div class="tab-strip-shell"><div class="tab-list-shell">Fixture tab</div></div>' : ''}</div><section class="document-surface" aria-label="Document surface"><div class="document-render-failure"><p>Contained failure</p><button type="button">View source</button><button type="button">Retry preview</button></div><div aria-hidden="true" style="height: calc(100vh + 200px); width: 1px"></div></section></div></main></div><div id="bb-overlay-root" class="bb-app-frame__overlay" data-bb-overlay-root></div></div><script>const trigger=document.querySelector('.application-menu-trigger');trigger.addEventListener('click',()=>{const shell=document.querySelector('.application-menu-shell');const popup=document.createElement('div');popup.className='application-menu';popup.setAttribute('role','menu');popup.innerHTML='<button role="menuitem">Open</button><button role="menuitem">Preferences</button>';shell.append(popup);shell.dataset.menuOpen='true';});document.addEventListener('keydown',(event)=>{if(event.key!=='Escape')return;document.querySelector('.application-menu')?.remove();document.querySelector('.application-menu-shell').dataset.menuOpen='false';trigger.focus();});</script></body></html>`,
+            `<!doctype html><html data-theme="${theme}" style="font-size: ${textScaleFactor * 100}%"><head><meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"><style>${css}</style></head><body><div class="bb-app-frame" data-bb-app-frame data-bb-host="tauri" data-bb-layout="full-bleed"><a class="bb-skip-link bb-control" href="#bb-main">Skip to content</a><div class="bb-app-frame__scroll"><main id="bb-main" class="bb-app-frame__content" tabindex="-1"><div class="app-shell" data-has-tabs="${hasTabs}"><div class="shell-chrome" data-has-tabs="${hasTabs}"><div class="application-menu-shell application-toolbar" data-menu-active="true" data-menu-open="false"><button class="application-menu-trigger" type="button" aria-label="Menu"><span class="application-menu-glyph">☰</span></button></div>${hasTabs ? '<div class="tab-strip-shell"><div class="tab-list-shell">Fixture tab</div></div>' : ''}</div><section class="document-surface" aria-label="Document surface"><div class="document-render-failure"><p>Contained failure</p><button type="button">View source</button><button type="button">Retry preview</button></div></section></div></main></div><div id="bb-overlay-root" class="bb-app-frame__overlay" data-bb-overlay-root></div></div><script>const trigger=document.querySelector('.application-menu-trigger');trigger.addEventListener('click',()=>{const shell=document.querySelector('.application-menu-shell');const popup=document.createElement('div');popup.className='application-menu';popup.setAttribute('role','menu');popup.innerHTML='<button role="menuitem">Open</button><button role="menuitem">Preferences</button>';shell.append(popup);shell.dataset.menuOpen='true';});document.addEventListener('keydown',(event)=>{if(event.key!=='Escape')return;document.querySelector('.application-menu')?.remove();document.querySelector('.application-menu-shell').dataset.menuOpen='false';trigger.focus();});</script></body></html>`,
           );
           await client.send('Emulation.setPageScaleFactor', {
             pageScaleFactor,
@@ -125,8 +125,17 @@ try {
               };
             };
             const documentSurface = document.querySelector('.document-surface');
+            const frame = rect('.bb-app-frame');
+            const frameScroll = rect('.bb-app-frame__scroll');
+            const spacer = document.createElement('div');
+            spacer.setAttribute('aria-hidden', 'true');
+            spacer.style.cssText =
+              'height: calc(100vh + 200px); width: 1px';
+            documentSurface.append(spacer);
             documentSurface.scrollTop = 37;
             return {
+              frame,
+              frameScroll,
               toolbar: rect('.application-toolbar'),
               trigger: rect('.application-menu-trigger'),
               glyph: rect('.application-menu-glyph'),
@@ -217,6 +226,12 @@ try {
             before.bodyOverflow,
             'hidden',
             'generated AppFrame must own body overflow',
+          );
+          assert.ok(
+            Math.abs(before.frameScroll.top - before.frame.top) <= tolerance &&
+              Math.abs(before.frameScroll.bottom - before.frame.bottom) <=
+                tolerance,
+            'headerless AppFrame scroll row must fill the governed viewport',
           );
           assert.ok(
             before.toolbar.bottom <= before.document.top + tolerance,

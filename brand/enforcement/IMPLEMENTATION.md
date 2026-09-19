@@ -41,7 +41,7 @@ Success means zero verifier problems and zero glyph failures.
 
 ## Offline recovery
 
-Verify `3f6fb82c75d7689cccef7b9909eb1cc848939e1192bfc92b2e1f5fafc20bd984` for `enforcement/distributions/shruggie-brandbuilder-1.3.0.skill`, then extract it to `enforcement/brandbuilder`. Use the delivered bundle and never substitute an unspecified latest release.
+Verify `9a48859c193b271ea9eac915ea11c9ee9bc43c5266ff15b52bcc6c93171b3944` for `enforcement/distributions/shruggie-brandbuilder-1.3.0.skill`, then extract it to `enforcement/brandbuilder`. Use the delivered bundle and never substitute an unspecified latest release.
 
 Capability gaps stay local at `enforcement/capability-gap.example.json` until a human explicitly authorizes upstream submission.
 

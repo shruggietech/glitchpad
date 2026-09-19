@@ -44,7 +44,11 @@
 - The validated visibility probes are `scripts/invoke-docker-hidden.ps1 -DockerArguments @('run', '--rm', 'alpine:3.22', 'sleep', '180')` and `scripts/invoke-wsl-hidden.ps1 -Command 'sleep 180'`. Any visible window, taskbar activation, flash, or focus change is a hard failure. Stop the launcher immediately and do not continue repository commands.
 
 <!-- BEGIN GENERATED BRANDBUILDER AGENT CONTRACT -->
+
+Repository integration context: generated paths are kit-root-relative. In this repository, the kit root is `brand/`; resolve `consumer-contract.json` and `IMPLEMENTATION.md` in `brand/enforcement/`, and prefix every generated `enforcement/...` path with `brand/`.
+
 <!-- BEGIN SHRUGGIE-BRANDBUILDER: CONSUMER CONTRACT -->
+
 ## Governed BrandBuilder contract
 
 BrandBuilder is mandatory for brand-system authoring, consumer implementation, and conformance audit. This kit pins Brand Canon `1.2.1`, Interface Canon `1.0.0`, component recipes `1.1.0`, Web/React adapter `1.1.0`, egui adapter `1.0.0`, compiler `1.3.0`, and brand `1.1.0`.
@@ -53,6 +57,6 @@ Read `consumer-contract.json`, then `IMPLEMENTATION.md`. The pinned contract out
 
 Affiliation boundary: this is a ShruggieTech-owned child brand with declared parent `ShruggieTech`.
 
-If BrandBuilder `1.3.0` is absent, verify SHA-256 `3f6fb82c75d7689cccef7b9909eb1cc848939e1192bfc92b2e1f5fafc20bd984` and extract `enforcement/distributions/shruggie-brandbuilder-1.3.0.skill` into the empty directory `enforcement/brandbuilder`. Never substitute another version. Run `python3 enforcement/brandbuilder/templates/verify.py .` and `python3 enforcement/brandbuilder/templates/validate_glyph.py brand.json`; both must report zero failures.
+If BrandBuilder `1.3.0` is absent, verify SHA-256 `9a48859c193b271ea9eac915ea11c9ee9bc43c5266ff15b52bcc6c93171b3944` and extract `enforcement/distributions/shruggie-brandbuilder-1.3.0.skill` into the empty directory `enforcement/brandbuilder`. Never substitute another version. Run `python3 enforcement/brandbuilder/templates/verify.py .` and `python3 enforcement/brandbuilder/templates/validate_glyph.py brand.json`; both must report zero failures.
 <!-- END SHRUGGIE-BRANDBUILDER: CONSUMER CONTRACT -->
 <!-- END GENERATED BRANDBUILDER AGENT CONTRACT -->

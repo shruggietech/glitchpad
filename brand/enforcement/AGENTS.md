@@ -1,4 +1,5 @@
 <!-- BEGIN SHRUGGIE-BRANDBUILDER: CONSUMER CONTRACT -->
+
 ## Governed BrandBuilder contract
 
 BrandBuilder is mandatory for brand-system authoring, consumer implementation, and conformance audit. This kit pins Brand Canon `1.2.1`, Interface Canon `1.0.0`, component recipes `1.1.0`, Web/React adapter `1.1.0`, egui adapter `1.0.0`, compiler `1.3.0`, and brand `1.1.0`.
@@ -7,5 +8,5 @@ Read `consumer-contract.json`, then `IMPLEMENTATION.md`. The pinned contract out
 
 Affiliation boundary: this is a ShruggieTech-owned child brand with declared parent `ShruggieTech`.
 
-If BrandBuilder `1.3.0` is absent, verify SHA-256 `3f6fb82c75d7689cccef7b9909eb1cc848939e1192bfc92b2e1f5fafc20bd984` and extract `enforcement/distributions/shruggie-brandbuilder-1.3.0.skill` into the empty directory `enforcement/brandbuilder`. Never substitute another version. Run `python3 enforcement/brandbuilder/templates/verify.py .` and `python3 enforcement/brandbuilder/templates/validate_glyph.py brand.json`; both must report zero failures.
+If BrandBuilder `1.3.0` is absent, verify SHA-256 `9a48859c193b271ea9eac915ea11c9ee9bc43c5266ff15b52bcc6c93171b3944` and extract `enforcement/distributions/shruggie-brandbuilder-1.3.0.skill` into the empty directory `enforcement/brandbuilder`. Never substitute another version. Run `python3 enforcement/brandbuilder/templates/verify.py .` and `python3 enforcement/brandbuilder/templates/validate_glyph.py brand.json`; both must report zero failures.
 <!-- END SHRUGGIE-BRANDBUILDER: CONSUMER CONTRACT -->

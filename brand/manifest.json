@@ -20,7 +20,7 @@
     {
       "path": "README.md",
       "bytes": 5575,
-      "sha256": "e818692c7da009627214e707b2036a3a8e7a347ba14a7a99ad876be77c00f39b"
+      "sha256": "e4399143934a1433934ac94d67b18ff6eb98e024b3028a4c33008ec7553a5f7f"
     },
     {
       "path": "SKILL.md",
@@ -35,7 +35,7 @@
     {
       "path": "brand-guide.pdf",
       "bytes": 184073,
-      "sha256": "b2434e0ed2d35c73b529caecb286c7f01b9371bd629ef2511629ef353076687b"
+      "sha256": "57cbb70faa1a8dc55fd3d8cfc81abc86e6fd17e8958faf748a00e3ec7c95ce84"
     },
     {
       "path": "brand.json",
@@ -130,12 +130,12 @@
     {
       "path": "conformance/manifest.json",
       "bytes": 9491,
-      "sha256": "c4a1d445770549de31b9d5f350b8f0f673f16c2ca6cb86e30fa7cd02bd6e3ac0"
+      "sha256": "b016b137b69d53b9d64419d35836a10f6525fadeeed4d2e93743abcb44539425"
     },
     {
       "path": "conformance/browser/specimen.html",
-      "bytes": 16863,
-      "sha256": "343fb6e1aa4fd1dbffcf5de05b9792586cca11f0a853874a2b26f1e6c9651c18"
+      "bytes": 16876,
+      "sha256": "ef79f5b3bc81a9811cd5f6fc2de210a7197accf60e3ebe1737e1e0c959151fd0"
     },
     {
       "path": "conformance/evidence/traces.json",
@@ -179,13 +179,13 @@
     },
     {
       "path": "enforcement/AGENTS.md",
-      "bytes": 1193,
-      "sha256": "f942b408032156743e6934121274974cbfa18b057cbc359d21c217427017c236"
+      "bytes": 1194,
+      "sha256": "50f6439c0fe575f7cce6919508e33e60b2d7e328c5879512b220528d5d06763a"
     },
     {
       "path": "enforcement/IMPLEMENTATION.md",
       "bytes": 7244,
-      "sha256": "0d4d1b32e59f5a1acedc3076df6e27097b14b43a071762bf98aacc09a5dfaa39"
+      "sha256": "dcea852410e9a9931f8c9eae386253db845789e92b42099aa7fe29e169ef9009"
     },
     {
       "path": "enforcement/README.md",
@@ -210,7 +210,7 @@
     {
       "path": "enforcement/consumer-contract.json",
       "bytes": 7567,
-      "sha256": "609d01d60490ec8b38850d37508be62a48db2fcb2af3e4fcbcf8dec496b4efa4"
+      "sha256": "400f90cca86523afe164f5750d5a8a859e015300f3a9b114867ed89e7a48f333"
     },
     {
       "path": "enforcement/consumer-contract.schema.json",
@@ -230,7 +230,7 @@
     {
       "path": "enforcement/documentation-facts.json",
       "bytes": 3144,
-      "sha256": "2f75d893dd90f8a615e1f44b8f9bd3f469a3551da2f00c181a53aa54abc0f041"
+      "sha256": "8672b348dc6b9b81a6266647a232b7f0726acc0bf8193d55ac5a742a37221215"
     },
     {
       "path": "enforcement/eslint.brand.mjs",
@@ -259,8 +259,8 @@
     },
     {
       "path": "enforcement/distributions/shruggie-brandbuilder-1.3.0.skill",
-      "bytes": 416320,
-      "sha256": "3f6fb82c75d7689cccef7b9909eb1cc848939e1192bfc92b2e1f5fafc20bd984"
+      "bytes": 416342,
+      "sha256": "9a48859c193b271ea9eac915ea11c9ee9bc43c5266ff15b52bcc6c93171b3944"
     },
     {
       "path": "favicons/android-chrome-192x192.png",
@@ -465,7 +465,7 @@
     {
       "path": "guidelines/portal.json",
       "bytes": 170480,
-      "sha256": "a52e96afec000cae9ceb0bd461c5191754d0387dc354dfc555035222c3599b62"
+      "sha256": "a3001f349f7a5df590a1a2635b4c6fc49b33b3452949bd4ec88c64388860e0b7"
     },
     {
       "path": "icons/.iconkit-generated.json",
@@ -1434,8 +1434,8 @@
     },
     {
       "path": "qc/pages-web-specimen.png",
-      "bytes": 72460,
-      "sha256": "fc159b183839038fabe55a1c93d55d6863669a8304298a55cc32cf47a31f03a4"
+      "bytes": 75479,
+      "sha256": "f45683b1eccf961a344d4828ad6a1f7695eb448f7ee2a4f2ac021f0260b7a80a"
     },
     {
       "path": "qc/probe.json",
@@ -1544,13 +1544,13 @@
     },
     {
       "path": "web/components.css",
-      "bytes": 7024,
-      "sha256": "4f66afbe1696a1710a754d4303bc47138926e65cf7fe1fee6b16b9fc16e57b2a"
+      "bytes": 7037,
+      "sha256": "876cda36cc1e3ceb2a6438cfd31bbc9b0ce64ae4b39552fbb7b14e56be112365"
     },
     {
       "path": "web/specimen.html",
-      "bytes": 14972,
-      "sha256": "d17ac0bcfdf440c2e5d6136befa3581d2c37dbce5d4fe4e28cfe81571ba86003"
+      "bytes": 14985,
+      "sha256": "b3a0b159c782ebe1d29e0266b67677c5099e569d6995d4de737ba5d3fb1f5984"
     },
     {
       "path": "web/support-matrix.json",

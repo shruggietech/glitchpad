@@ -4,7 +4,7 @@
   "brand": "glitchpad",
   "brand_title": "Glitchpad",
   "brand_version": "1.1.0",
-  "source_revision": "e87737f592780bcf7fcffd718932a35e596c03a6",
+  "source_revision": "26383b6fbbcee55d0de615c2cd0600c6e29bdd65",
   "versions": {
     "canon_version": "1.2.1",
     "interface_canon_version": "1.0.0",
@@ -314,7 +314,7 @@
   "artifacts": [
     {
       "path": "conformance/browser/specimen.html",
-      "sha256": "343fb6e1aa4fd1dbffcf5de05b9792586cca11f0a853874a2b26f1e6c9651c18"
+      "sha256": "ef79f5b3bc81a9811cd5f6fc2de210a7197accf60e3ebe1737e1e0c959151fd0"
     },
     {
       "path": "conformance/evidence/traces.json",

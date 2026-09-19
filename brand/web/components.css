@@ -12,7 +12,7 @@
 html[data-bb-app-frame-mounted], html[data-bb-app-frame-mounted] body { block-size: 100%; margin: 0; overflow: hidden; }
 @supports selector(html:has(.bb-app-frame)) { html:has(.bb-app-frame), body:has(.bb-app-frame) { block-size: 100%; margin: 0; overflow: hidden; } }
 .bb-app-frame { block-size: 100vh; block-size: 100dvh; box-sizing: border-box; display: grid; grid-template-rows: auto minmax(0, 1fr); min-block-size: 0; overflow: hidden; padding-block-start: max(env(safe-area-inset-top), var(--bb-host-titlebar-block-end, 0rem)); padding-inline: env(safe-area-inset-left) env(safe-area-inset-right); }
-.bb-app-frame__scroll { box-sizing: border-box; min-block-size: 0; overflow: auto; padding-block-end: max(env(safe-area-inset-bottom), var(--bb-ime-block-end, 0rem)); }
+.bb-app-frame__scroll { box-sizing: border-box; grid-row: 2; min-block-size: 0; overflow: auto; padding-block-end: max(env(safe-area-inset-bottom), var(--bb-ime-block-end, 0rem)); }
 .bb-app-frame__content { box-sizing: border-box; min-block-size: 0; min-inline-size: 0; overflow-wrap: anywhere; }
 .bb-app-frame[data-bb-layout="contained"] .bb-app-frame__content { inline-size: min(100%, var(--bb-layout-content-max)); margin-inline: auto; padding: var(--bb-layout-gutter-compact); }
 .bb-app-frame[data-bb-layout="full-bleed"] .bb-app-frame__scroll { display: grid; grid-template-rows: minmax(0, 1fr); overflow: hidden; }

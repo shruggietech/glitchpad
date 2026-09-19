@@ -14,6 +14,7 @@ import android.view.inputmethod.InputMethodManager
 import android.webkit.WebView
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
 import com.shruggietech.glitchpad.MainActivity
 import org.json.JSONArray
 import org.json.JSONObject

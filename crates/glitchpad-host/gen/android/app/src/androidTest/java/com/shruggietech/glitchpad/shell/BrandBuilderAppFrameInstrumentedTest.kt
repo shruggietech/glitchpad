@@ -14,7 +14,6 @@ import android.view.inputmethod.InputMethodManager
 import android.webkit.WebView
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.platform.app.InstrumentationRegistry
 import com.shruggietech.glitchpad.MainActivity
 import org.json.JSONArray
 import org.json.JSONObject
@@ -159,26 +158,20 @@ class BrandBuilderAppFrameInstrumentedTest {
         cssY: Double,
         devicePixelRatio: Double,
     ) {
-        var screenX = 0f
-        var screenY = 0f
         scenario.onActivity { activity ->
             val webView = findWebView(activity.window.decorView)!!
-            val location = IntArray(2)
-            webView.getLocationOnScreen(location)
-            screenX = location[0] + (cssX * devicePixelRatio).toFloat()
-            screenY = location[1] + (cssY * devicePixelRatio).toFloat()
-        }
-
-        val instrumentation = InstrumentationRegistry.getInstrumentation()
-        val downTime = SystemClock.uptimeMillis()
-        val down = MotionEvent.obtain(downTime, downTime, MotionEvent.ACTION_DOWN, screenX, screenY, 0)
-        val up = MotionEvent.obtain(downTime, downTime + 50L, MotionEvent.ACTION_UP, screenX, screenY, 0)
-        try {
-            instrumentation.sendPointerSync(down)
-            instrumentation.sendPointerSync(up)
-        } finally {
-            down.recycle()
-            up.recycle()
+            val localX = (cssX * devicePixelRatio).toFloat()
+            val localY = (cssY * devicePixelRatio).toFloat()
+            val downTime = SystemClock.uptimeMillis()
+            val down = MotionEvent.obtain(downTime, downTime, MotionEvent.ACTION_DOWN, localX, localY, 0)
+            val up = MotionEvent.obtain(downTime, downTime + 50L, MotionEvent.ACTION_UP, localX, localY, 0)
+            try {
+                assertTrue("WebView must accept the IME probe touch-down", webView.dispatchTouchEvent(down))
+                assertTrue("WebView must accept the IME probe touch-up", webView.dispatchTouchEvent(up))
+            } finally {
+                down.recycle()
+                up.recycle()
+            }
         }
     }
 

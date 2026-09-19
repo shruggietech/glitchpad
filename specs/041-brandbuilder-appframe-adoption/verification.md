@@ -4,8 +4,8 @@
 
 - Upstream work slice: S042, issue [shruggietech/shruggie-brand#219](https://github.com/shruggietech/shruggie-brand/issues/219), pull request [shruggietech/shruggie-brand#231](https://github.com/shruggietech/shruggie-brand/pull/231).
 - Downstream adoption: issue [shruggietech/glitchpad#196](https://github.com/shruggietech/glitchpad/issues/196), pull request [shruggietech/glitchpad#197](https://github.com/shruggietech/glitchpad/pull/197).
-- Consumer baseline: `3d9a56048d01bbe2e661933e2c6eaebc7526534b`. Adopted upstream candidate: `f5d699831043d1ee5facf350ef10451e0da95bb8`.
-- Artifact authority: successful Build run `35460685229`, artifact `10590086274`, named `verified-brand-kits-a4016df28e48e1467b931db70f90a2cecd8139bc`. GitHub built the pull-request artifact at synthetic merge commit `a4016df28e48e1467b931db70f90a2cecd8139bc`; its tree `185375af091b58fff15ad1b4db7a370575c67ff1` exactly matches the adopted candidate head tree.
+- Consumer baseline: `3d9a56048d01bbe2e661933e2c6eaebc7526534b`. Adopted upstream candidate: `c7af3f1bad2e042bd5ec26690822cc7b23714ec5`.
+- Artifact authority: successful Build run `35471564080`, artifact `10593187108`, named `verified-brand-kits-4157b8f2a36d67bf257e1750704276d418eafff1`. GitHub built the pull-request artifact at synthetic merge commit `4157b8f2a36d67bf257e1750704276d418eafff1`; its tree `1f56812d31df048efdff72838b183cb18bdfb44b` exactly matches the adopted candidate head tree.
 - Contract identity: Glitchpad brand `1.1.0`, Brand Canon `1.2.1`, generated React/Vite renderer adapter, Tauri host, 313 governed files.
 - Authority order: the successful SHA-qualified workflow artifact, its governed `manifest.json`, Glitchpad's immutable `brand/INTEGRATION.json` receipt, then generated kit guidance.
 - Recovery: rerun `scripts/sync-brand-kit.mjs` with the recorded source revision, workflow run, artifact identity, and retrieval date. Never reconstruct or hand-edit governed files under `brand/`.

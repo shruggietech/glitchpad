@@ -191,6 +191,11 @@ fn android_emulator_uses_supported_software_rendering() {
         "standalone delivery tests must not share a process with the connected provider suite"
     );
     assert!(
+        connected_tests
+            .contains("com.shruggietech.glitchpad.shell.BrandBuilderAppFrameInstrumentedTest",),
+        "standalone AppFrame tests must not tear down the shared connected provider suite"
+    );
+    assert!(
         connected_tests.contains("for attempt in 1 2; do"),
         "connected-test recovery must remain bounded to one retry"
     );

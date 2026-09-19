@@ -103,7 +103,7 @@
   "recovery": {
     "distribution": "shruggie-brandbuilder-1.3.0.skill",
     "path": "enforcement/distributions/shruggie-brandbuilder-1.3.0.skill",
-    "sha256": "9a48859c193b271ea9eac915ea11c9ee9bc43c5266ff15b52bcc6c93171b3944",
+    "sha256": "6a87b599932d9d1bd849f007e87881c9752814c165f6076ea391537805c91308",
     "extract_to": "enforcement/brandbuilder",
     "sources": [
       {
@@ -132,12 +132,12 @@
     {
       "path": "enforcement/AGENTS.md",
       "bytes": 1194,
-      "sha256": "50f6439c0fe575f7cce6919508e33e60b2d7e328c5879512b220528d5d06763a"
+      "sha256": "3e633a3e2a922ab072f7b1aa447d0c0f85cdf810ef3cc4e355293eeebbf87a9c"
     },
     {
       "path": "enforcement/IMPLEMENTATION.md",
-      "bytes": 7244,
-      "sha256": "dcea852410e9a9931f8c9eae386253db845789e92b42099aa7fe29e169ef9009"
+      "bytes": 7271,
+      "sha256": "eb49cac846ba57bfd7a964f9831307aa52f9bc42912996e0eef2bd659794a229"
     },
     {
       "path": "enforcement/interface-canon.json",
@@ -182,7 +182,7 @@
     {
       "path": "enforcement/documentation-facts.json",
       "bytes": 3144,
-      "sha256": "8672b348dc6b9b81a6266647a232b7f0726acc0bf8193d55ac5a742a37221215"
+      "sha256": "7498ed7e14eca31d825a43df1301b347d25d5c4abe1925796c7336913a383c73"
     },
     {
       "path": "web/adapter.json",
@@ -216,8 +216,8 @@
     },
     {
       "path": "enforcement/distributions/shruggie-brandbuilder-1.3.0.skill",
-      "bytes": 416342,
-      "sha256": "9a48859c193b271ea9eac915ea11c9ee9bc43c5266ff15b52bcc6c93171b3944"
+      "bytes": 416489,
+      "sha256": "6a87b599932d9d1bd849f007e87881c9752814c165f6076ea391537805c91308"
     }
   ]
 }

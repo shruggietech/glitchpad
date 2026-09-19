@@ -60,7 +60,7 @@
   "recovery": {
     "distribution": "shruggie-brandbuilder-1.3.0.skill",
     "path": "enforcement/distributions/shruggie-brandbuilder-1.3.0.skill",
-    "sha256": "9a48859c193b271ea9eac915ea11c9ee9bc43c5266ff15b52bcc6c93171b3944",
+    "sha256": "6a87b599932d9d1bd849f007e87881c9752814c165f6076ea391537805c91308",
     "extract_to": "enforcement/brandbuilder",
     "sources": [
       {

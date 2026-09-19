@@ -20,7 +20,7 @@
     {
       "path": "README.md",
       "bytes": 5575,
-      "sha256": "e4399143934a1433934ac94d67b18ff6eb98e024b3028a4c33008ec7553a5f7f"
+      "sha256": "7e9e7dd3652a239dc87c46164255295d291db73bcfb66ce6d9ad433e5c24c819"
     },
     {
       "path": "SKILL.md",
@@ -35,7 +35,7 @@
     {
       "path": "brand-guide.pdf",
       "bytes": 184073,
-      "sha256": "57cbb70faa1a8dc55fd3d8cfc81abc86e6fd17e8958faf748a00e3ec7c95ce84"
+      "sha256": "4651616b6fd4a3a570a313acc24c0ba48e0999fc42a8b6eacc23a9857da75b46"
     },
     {
       "path": "brand.json",
@@ -130,7 +130,7 @@
     {
       "path": "conformance/manifest.json",
       "bytes": 9491,
-      "sha256": "b016b137b69d53b9d64419d35836a10f6525fadeeed4d2e93743abcb44539425"
+      "sha256": "4ddfdd4f619c54500205a89668df0d1c1d27a61ba4edf51a78c974060466bb6b"
     },
     {
       "path": "conformance/browser/specimen.html",
@@ -180,12 +180,12 @@
     {
       "path": "enforcement/AGENTS.md",
       "bytes": 1194,
-      "sha256": "50f6439c0fe575f7cce6919508e33e60b2d7e328c5879512b220528d5d06763a"
+      "sha256": "3e633a3e2a922ab072f7b1aa447d0c0f85cdf810ef3cc4e355293eeebbf87a9c"
     },
     {
       "path": "enforcement/IMPLEMENTATION.md",
-      "bytes": 7244,
-      "sha256": "dcea852410e9a9931f8c9eae386253db845789e92b42099aa7fe29e169ef9009"
+      "bytes": 7271,
+      "sha256": "eb49cac846ba57bfd7a964f9831307aa52f9bc42912996e0eef2bd659794a229"
     },
     {
       "path": "enforcement/README.md",
@@ -210,7 +210,7 @@
     {
       "path": "enforcement/consumer-contract.json",
       "bytes": 7567,
-      "sha256": "400f90cca86523afe164f5750d5a8a859e015300f3a9b114867ed89e7a48f333"
+      "sha256": "d240d5f95a0383992afdba5e610757cf8efcb534defd69134c2f856381ea0c0d"
     },
     {
       "path": "enforcement/consumer-contract.schema.json",
@@ -230,7 +230,7 @@
     {
       "path": "enforcement/documentation-facts.json",
       "bytes": 3144,
-      "sha256": "8672b348dc6b9b81a6266647a232b7f0726acc0bf8193d55ac5a742a37221215"
+      "sha256": "7498ed7e14eca31d825a43df1301b347d25d5c4abe1925796c7336913a383c73"
     },
     {
       "path": "enforcement/eslint.brand.mjs",
@@ -259,8 +259,8 @@
     },
     {
       "path": "enforcement/distributions/shruggie-brandbuilder-1.3.0.skill",
-      "bytes": 416342,
-      "sha256": "9a48859c193b271ea9eac915ea11c9ee9bc43c5266ff15b52bcc6c93171b3944"
+      "bytes": 416489,
+      "sha256": "6a87b599932d9d1bd849f007e87881c9752814c165f6076ea391537805c91308"
     },
     {
       "path": "favicons/android-chrome-192x192.png",
@@ -465,7 +465,7 @@
     {
       "path": "guidelines/portal.json",
       "bytes": 170480,
-      "sha256": "a3001f349f7a5df590a1a2635b4c6fc49b33b3452949bd4ec88c64388860e0b7"
+      "sha256": "d572cce9c84392e0893d932a98a037b779a4dac64d5104c08335de5bfe4f18a1"
     },
     {
       "path": "icons/.iconkit-generated.json",

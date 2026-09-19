@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.os.SystemClock
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.view.inputmethod.InputMethodManager
 import android.webkit.WebView
 import androidx.test.core.app.ActivityScenario
@@ -30,8 +31,19 @@ class BrandBuilderAppFrameInstrumentedTest {
     private var activeScenario: ActivityScenario<MainActivity>? = null
 
     @After
-    fun closeActivityScenario() {
-        activeScenario?.close()
+    fun resetActivityScenario() {
+        activeScenario?.onActivity { activity ->
+            activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+            val webView = findWebView(activity.window.decorView)
+            if (webView != null) {
+                (activity.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
+                    .hideSoftInputFromWindow(webView.windowToken, 0)
+                webView.evaluateJavascript(
+                    "document.querySelector('#brandbuilder-ime-probe')?.remove(); true",
+                    null,
+                )
+            }
+        }
         activeScenario = null
     }
 
@@ -165,6 +177,13 @@ class BrandBuilderAppFrameInstrumentedTest {
         assertTrue("reference API must be governed", Build.VERSION.SDK_INT == 24 || Build.VERSION.SDK_INT == 36)
         val scenario = ActivityScenario.launch(MainActivity::class.java)
         activeScenario = scenario
+        scenario.onActivity { activity ->
+            assertEquals(
+                "Android host must resize the WebView for IME geometry",
+                WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE,
+                activity.window.attributes.softInputMode and WindowManager.LayoutParams.SOFT_INPUT_MASK_ADJUST,
+            )
+        }
         waitForShell(scenario)
 
         waitForOrientation(

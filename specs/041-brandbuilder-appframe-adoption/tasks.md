@@ -24,7 +24,7 @@
 ## Phase 4: User Story 3 - Windows preservation (P3)
 
 - [x] T009 [US3] Extend `scripts/check-shell-layout.mjs` and `scripts/check-windows-package.mjs` for native titlebar separation, keyboard focus, narrow layout, and single root ownership
-- [ ] T010 [US3] Run the real Windows Tauri build/package checks and record the exact result in `specs/041-brandbuilder-appframe-adoption/verification.md`
+- [x] T010 [US3] Run the real Windows Tauri build/package checks and record the exact result in `specs/041-brandbuilder-appframe-adoption/verification.md`
 
 ## Phase 5: User Story 4 - Handover (P4)
 

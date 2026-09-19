@@ -8,5 +8,5 @@ Read `consumer-contract.json`, then `IMPLEMENTATION.md`. The pinned contract out
 
 Affiliation boundary: this is a ShruggieTech-owned child brand with declared parent `ShruggieTech`.
 
-If BrandBuilder `1.3.0` is absent, verify SHA-256 `9a48859c193b271ea9eac915ea11c9ee9bc43c5266ff15b52bcc6c93171b3944` and extract `enforcement/distributions/shruggie-brandbuilder-1.3.0.skill` into the empty directory `enforcement/brandbuilder`. Never substitute another version. Run `python3 enforcement/brandbuilder/templates/verify.py .` and `python3 enforcement/brandbuilder/templates/validate_glyph.py brand.json`; both must report zero failures.
+If BrandBuilder `1.3.0` is absent, verify SHA-256 `6a87b599932d9d1bd849f007e87881c9752814c165f6076ea391537805c91308` and extract `enforcement/distributions/shruggie-brandbuilder-1.3.0.skill` into the empty directory `enforcement/brandbuilder`. Never substitute another version. Run `python3 enforcement/brandbuilder/templates/verify.py .` and `python3 enforcement/brandbuilder/templates/validate_glyph.py brand.json`; both must report zero failures.
 <!-- END SHRUGGIE-BRANDBUILDER: CONSUMER CONTRACT -->

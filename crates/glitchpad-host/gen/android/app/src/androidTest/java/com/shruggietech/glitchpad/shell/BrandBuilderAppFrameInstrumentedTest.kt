@@ -17,7 +17,6 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.shruggietech.glitchpad.MainActivity
 import org.json.JSONArray
 import org.json.JSONObject
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -28,25 +27,6 @@ import java.util.concurrent.TimeUnit
 
 @RunWith(AndroidJUnit4::class)
 class BrandBuilderAppFrameInstrumentedTest {
-    private var activeScenario: ActivityScenario<MainActivity>? = null
-
-    @After
-    fun resetActivityScenario() {
-        activeScenario?.onActivity { activity ->
-            activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-            val webView = findWebView(activity.window.decorView)
-            if (webView != null) {
-                (activity.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
-                    .hideSoftInputFromWindow(webView.windowToken, 0)
-                webView.evaluateJavascript(
-                    "document.querySelector('#brandbuilder-ime-probe')?.remove(); true",
-                    null,
-                )
-            }
-        }
-        activeScenario = null
-    }
-
     private fun findWebView(view: View): WebView? {
         if (view is WebView) return view
         if (view !is ViewGroup) return null
@@ -143,7 +123,7 @@ class BrandBuilderAppFrameInstrumentedTest {
                 menuInsideViewport: Boolean(bounds && viewport && bounds.left >= viewport.offsetLeft && bounds.top >= viewport.offsetTop && bounds.right <= viewport.offsetLeft + viewport.width && bounds.bottom <= viewport.offsetTop + viewport.height),
                 menuOpen: Boolean(popup),
                 popupInsideViewport: !popupBounds || Boolean(viewport && popupBounds.left >= viewport.offsetLeft && popupBounds.top >= viewport.offsetTop && popupBounds.right <= viewport.offsetLeft + viewport.width && popupBounds.bottom <= viewport.offsetTop + viewport.height),
-                imeProbeFocused: Boolean(document.activeElement && document.activeElement.id === 'brandbuilder-ime-probe'),
+                imeProbeFocused: Boolean(document.activeElement && (document.activeElement.matches('[role="textbox"][contenteditable="true"]') || document.activeElement.closest('[role="textbox"][contenteditable="true"]'))),
                 framePaddingTop: Number.parseFloat(frameStyle ? frameStyle.paddingTop : '0'),
                 framePaddingRight: Number.parseFloat(frameStyle ? frameStyle.paddingRight : '0'),
                 framePaddingBottom: Number.parseFloat(frameStyle ? frameStyle.paddingBottom : '0'),
@@ -176,7 +156,6 @@ class BrandBuilderAppFrameInstrumentedTest {
     fun appFrameOwnsActualAndroidWebViewGeometry() {
         assertTrue("reference API must be governed", Build.VERSION.SDK_INT == 24 || Build.VERSION.SDK_INT == 36)
         val scenario = ActivityScenario.launch(MainActivity::class.java)
-        activeScenario = scenario
         scenario.onActivity { activity ->
             assertEquals(
                 "Android host must resize the WebView for IME geometry",
@@ -222,23 +201,28 @@ class BrandBuilderAppFrameInstrumentedTest {
             "document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); true",
         )
 
+        waitForOrientation(
+            scenario,
+            ActivityInfo.SCREEN_ORIENTATION_PORTRAIT,
+            Configuration.ORIENTATION_PORTRAIT,
+        )
+        scenario.onActivity { activity ->
+            val webView = findWebView(activity.window.decorView)!!
+            webView.requestFocus()
+            webView.requestFocusFromTouch()
+        }
+
         assertEquals(
             "true",
             evaluate(
                 scenario,
                 """
             (() => {
-              let input = document.querySelector('#brandbuilder-ime-probe');
-              if (!input) {
-                input = document.createElement('textarea');
-                input.id = 'brandbuilder-ime-probe';
-                input.setAttribute('aria-label', 'BrandBuilder IME probe');
-                const shell = document.querySelector('.app-shell');
-                if (shell) shell.append(input);
-              }
-              input.focus();
-              input.click();
-              return document.activeElement === input;
+              const editor = document.querySelector('[role="textbox"][contenteditable="true"]');
+              if (!editor) return false;
+              editor.focus();
+              editor.click();
+              return document.activeElement === editor || editor.contains(document.activeElement);
             })()
                 """.trimIndent(),
             ),

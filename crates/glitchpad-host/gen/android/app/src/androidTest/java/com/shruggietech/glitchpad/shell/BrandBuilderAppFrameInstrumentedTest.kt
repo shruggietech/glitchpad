@@ -16,6 +16,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.shruggietech.glitchpad.MainActivity
 import org.json.JSONArray
 import org.json.JSONObject
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -26,6 +27,14 @@ import java.util.concurrent.TimeUnit
 
 @RunWith(AndroidJUnit4::class)
 class BrandBuilderAppFrameInstrumentedTest {
+    private var activeScenario: ActivityScenario<MainActivity>? = null
+
+    @After
+    fun closeActivityScenario() {
+        activeScenario?.close()
+        activeScenario = null
+    }
+
     private fun findWebView(view: View): WebView? {
         if (view is WebView) return view
         if (view !is ViewGroup) return null
@@ -155,6 +164,7 @@ class BrandBuilderAppFrameInstrumentedTest {
     fun appFrameOwnsActualAndroidWebViewGeometry() {
         assertTrue("reference API must be governed", Build.VERSION.SDK_INT == 24 || Build.VERSION.SDK_INT == 36)
         val scenario = ActivityScenario.launch(MainActivity::class.java)
+        activeScenario = scenario
         waitForShell(scenario)
 
         waitForOrientation(
@@ -173,6 +183,9 @@ class BrandBuilderAppFrameInstrumentedTest {
         val landscape = snapshot(scenario)
         assertAppFrame(landscape)
 
+        scenario.onActivity { activity ->
+            findWebView(activity.window.decorView)!!.requestFocus()
+        }
         assertEquals(
             "true",
             evaluate(
@@ -205,15 +218,17 @@ class BrandBuilderAppFrameInstrumentedTest {
                 if (shell) shell.append(input);
               }
               input.focus();
+              input.click();
               return document.activeElement === input;
             })()
                 """.trimIndent(),
             ),
         )
+        SystemClock.sleep(250L)
+        var imeShowRequested = false
         scenario.onActivity { activity ->
             val webView = findWebView(activity.window.decorView)!!
-            webView.requestFocus()
-            (activity.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
+            imeShowRequested = (activity.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
                 .showSoftInput(webView, InputMethodManager.SHOW_IMPLICIT)
         }
         val imeDeadline = SystemClock.elapsedRealtime() + 15_000L
@@ -223,8 +238,14 @@ class BrandBuilderAppFrameInstrumentedTest {
             imeSnapshot = snapshot(scenario)
         }
         assertAppFrame(imeSnapshot)
-        assertTrue("IME probe must retain DOM focus", imeSnapshot.getBoolean("imeProbeFocused"))
-        assertTrue("IME must publish a positive AppFrame block-end inset", imeSnapshot.getDouble("imeBlockEnd") > 0.0)
+        assertTrue(
+            "IME probe must retain DOM focus (native request accepted: $imeShowRequested): $imeSnapshot",
+            imeSnapshot.getBoolean("imeProbeFocused"),
+        )
+        assertTrue(
+            "IME must publish a positive AppFrame block-end inset (native request accepted: $imeShowRequested): $imeSnapshot",
+            imeSnapshot.getDouble("imeBlockEnd") > 0.0,
+        )
 
         var cutoutInsets = intArrayOf(0, 0, 0, 0)
         scenario.onActivity { activity ->

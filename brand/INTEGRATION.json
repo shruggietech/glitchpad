@@ -2,27 +2,26 @@
   "brandVersion": "1.1.0",
   "canonVersion": "1.2.1",
   "sourceRepository": "https://github.com/ShruggieTech/shruggie-brand",
-  "sourceRevision": "737cc1e88f3ddf50950a50897f68cdd131bf0167",
-  "workflowRunId": 34314125097,
-  "artifactId": 10089799642,
-  "artifactName": "verified-brand-kits",
-  "retrievedAt": "2026-09-09",
-  "sourceManifestSha256": "071deeb7e8983e8695e0f8d1f84beb11fed9749f02eab3959141309a92c47f33",
-  "integratedManifestSha256": "c11a9a324d56666e6eb361b3b1f84bbd9db61cdd514ff3d48ed4ea123c6d279d",
-  "governedFileCount": 253,
-  "recoveredArtifactFiles": [
-    "icons/.iconkit-generated.json"
-  ],
+  "sourceRevision": "f5d699831043d1ee5facf350ef10451e0da95bb8",
+  "artifactSourceRevision": "a4016df28e48e1467b931db70f90a2cecd8139bc",
+  "workflowRunId": 35460685229,
+  "artifactId": 10590086274,
+  "artifactName": "verified-brand-kits-a4016df28e48e1467b931db70f90a2cecd8139bc",
+  "retrievedAt": "2026-09-19",
+  "sourceManifestSha256": "bfe3b99eb8e1784043e87cd8e0b7c4bb19400a1e43111c28a9585d497144a62c",
+  "integratedManifestSha256": "f65a4db9e8a1d07e06b2350602ce67eb530124d748c8d72256eefef1a6e5dcd0",
+  "governedFileCount": 313,
+  "recoveredArtifactFiles": [],
   "publicComparisons": [
     {
       "path": "logos/provenance.json",
       "url": "https://brand.shruggie.tech/glitchpad/downloads/files/logos/provenance.json",
-      "sha256": "439b20c4cc8db1fb8fe84a3ea04012bb20f1a4b5db42e3d2830465806fb5ac3d"
+      "sha256": "a9ec076cf2b45c0161aebf79bfe2ad75175b1b66c9cc4b0478bcad242d0ce7ca"
     },
     {
       "path": "icons/manifest.json",
       "url": "https://brand.shruggie.tech/glitchpad/downloads/files/icons/manifest.json",
-      "sha256": "90a04bfe418cf6d6f5ff35eea720f663e41d5375f03ca3bc41ab5de4ecfaa362"
+      "sha256": "82e0898c7aa3abe25a31afd6d4e02189d66e3f13806d64ef61c009861ce7336b"
     },
     {
       "path": "logos/svg/glitchpad-horizontal-white.svg",

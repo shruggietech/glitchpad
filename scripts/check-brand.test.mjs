@@ -13,12 +13,40 @@ import {
   verifyPublicCopy,
   verifyReadmeBanner,
 } from './check-brand.mjs';
+import {
+  agentContractContext,
+  agentContractEnd,
+  agentContractStart,
+  mergeAgentContract,
+  verifyAgentContract,
+} from './brand-agent-contract.mjs';
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const canonicalBanner = `<picture>
   <source media="(prefers-color-scheme: dark)" srcset="brand/logos/png/glitchpad-horizontal-color-1024.png">
   <img src="brand/logos/png/glitchpad-horizontal-light-1024.png" alt="Glitchpad" width="480">
 </picture>`;
+
+test('generated agent contract merge preserves project-owned instructions', () => {
+  const original = '# Project rules\n\nKeep this human rule.\n';
+  const generated = '# Brand rules\n\nUse the generated adapter.\n';
+  const merged = mergeAgentContract(original, generated);
+  assert.match(merged, /Keep this human rule\./);
+  assert.match(merged, new RegExp(agentContractStart));
+  assert.match(merged, new RegExp(agentContractEnd));
+  assert.ok(merged.includes(agentContractContext));
+  assert.deepEqual(verifyAgentContract(merged, generated), []);
+});
+
+test('generated agent contract merge replaces one stale block idempotently', () => {
+  const original = `# Project rules\n\n${agentContractStart}\nold\n${agentContractEnd}\n`;
+  const merged = mergeAgentContract(original, 'new');
+  assert.equal(mergeAgentContract(merged, 'new'), merged);
+  assert.deepEqual(verifyAgentContract(merged, 'new'), []);
+  assert.deepEqual(verifyAgentContract(merged, 'different'), [
+    'root AGENTS.md generated BrandBuilder agent contract is stale',
+  ]);
+});
 
 function readmeWithCenteredBanner(banner, afterHeading = '') {
   return `<div align="center">
@@ -271,10 +299,10 @@ test('README raster geometry rejects clipped or invalid assets', () => {
   const png = Buffer.alloc(24);
   Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]).copy(png);
   png.writeUInt32BE(1024, 16);
-  png.writeUInt32BE(259, 20);
+  png.writeUInt32BE(258, 20);
   assert.deepEqual(verifyPngHeader(png, 'lockup.png'), []);
   png.writeUInt32BE(40, 16);
-  assert.match(verifyPngHeader(png, 'lockup.png')[0], /unexpected 40x259/);
+  assert.match(verifyPngHeader(png, 'lockup.png')[0], /unexpected 40x258/);
 });
 
 test('online freshness rejects same-version derivative drift', async () => {

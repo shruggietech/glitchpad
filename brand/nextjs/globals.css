@@ -46,6 +46,8 @@
   --color-brand-accent-deep: var(--brand-accent-deep);
   --color-brand-emphasis: var(--brand-emphasis);
   --color-brand-cta: var(--brand-cta);
+  --color-brand-cta-foreground: var(--brand-cta-foreground);
+  --color-brand-cta-outline-foreground: var(--brand-cta-outline-foreground);
 
   /* Radius pegs are set explicitly. shadcn derives its scale from a single
    * --radius by fixed ratios, which cannot land 6/8/12 simultaneously.
@@ -74,7 +76,7 @@
   --primary-foreground: oklch(1.0000 0 0); /* #FFFFFF */
   --secondary: oklch(0.9523 0.0029 84.56); /* #F0EFED */
   --secondary-foreground: oklch(0.1448 0 0); /* #0A0A0A */
-  --muted: oklch(0.9702 0 0); /* #F5F5F5 */
+  --muted: oklch(0.9523 0.0029 84.56); /* #F0EFED */
   --muted-foreground: oklch(0.5278 0 0); /* #6B6B6B */
   --accent: oklch(0.9523 0.0029 84.56); /* #F0EFED */
   --accent-foreground: oklch(0.1448 0 0); /* #0A0A0A */
@@ -98,6 +100,8 @@
   --brand-accent-deep: oklch(0.5615 0.0333 248.42); /* #667788 */
   --brand-emphasis: oklch(0.5519 0.1759 39.26); /* #C24000 */
   --brand-cta: oklch(0.5519 0.1759 39.26); /* #C24000 */
+  --brand-cta-foreground: oklch(1.0000 0 0); /* #FFFFFF */
+  --brand-cta-outline-foreground: oklch(0.5519 0.1759 39.26); /* #C24000 */
 }
 
 /* default brand surface */
@@ -136,6 +140,8 @@
   --brand-accent-deep: oklch(0.5615 0.0333 248.42); /* #667788 */
   --brand-emphasis: oklch(0.6738 0.2190 38.33); /* #FF5300 */
   --brand-cta: oklch(0.5519 0.1759 39.26); /* #C24000 */
+  --brand-cta-foreground: oklch(1.0000 0 0); /* #FFFFFF */
+  --brand-cta-outline-foreground: oklch(1.0000 0 0); /* #FFFFFF */
 }
 
 @layer base {

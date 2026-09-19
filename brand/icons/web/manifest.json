@@ -107,6 +107,18 @@
       "destination": "Web root"
     },
     {
+      "path": "icons/web/favicon-96x96.png",
+      "platform": "web",
+      "role": "favicon",
+      "format": "png",
+      "width": 96,
+      "height": 96,
+      "appearance": "default",
+      "alpha": "opaque",
+      "source_variant": "full",
+      "destination": "Web root"
+    },
+    {
       "path": "icons/web/favicon-128x128.png",
       "platform": "web",
       "role": "favicon",

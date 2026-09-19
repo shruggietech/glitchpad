@@ -11,27 +11,34 @@ Every number below is measured from the shipped files at run time.
 | `accent-rule` | pass | hue 96.2, 14.15:1 on base, light variant #0B0C0D at 18.41:1 |
 | `immutables-verbatim` | pass | no drift from canon immutables |
 | `radius-pegs` | pass | all 6 pegs exact |
-| `globals-slots` | pass | 68 values round-trip; every pair, chart and state meets AA |
-| `banned-rhetoric` | pass | 14 copy files clean; 0 em-dashes (reported, not failed) |
-| `no-raw-values` | pass | 13 source files, no raw hex, px or stock palette classes |
-| `font-weights-exist` | pass | 21 files, no weight requested that the faces lack |
+| `globals-slots` | pass | 72 values round-trip; every pair, chart and state meets AA |
+| `banned-rhetoric` | pass | 17 copy files clean; 0 em-dashes (reported, not failed) |
+| `no-raw-values` | pass | 17 source files, no raw hex, px or stock palette classes |
+| `font-weights-exist` | pass | 26 files, no weight requested that the faces lack |
+| `identity-continuity` | pass | legacy-constructed historical-baseline source and generated report agree |
 | `glyph-geometry` | pass | imported geometry (The shipped Glitchpad paper-and-G paths predate glyphkit and have no authoritative mk_paths.py source.); 4 checks clean, 4 warning(s): full geometry-provenance; full commands; reduced geometry-provenance; reduced commands |
 | `logo-provenance` | pass | 42 derivatives agree with constructed source contract |
 | `capability-tier` | pass | full tier recorded by probe.py |
 | `raster-artifacts` | pass | 21 logo PNGs produced |
 | `ico-artifact` | pass | favicon.ico produced by the deterministic icon writer |
 | `brand-guide-artifact` | pass | PDF produced after successful Chromium probe |
-| `icon-suites` | pass | 5 platform suites, 120 declared artifacts, 17 compatibility aliases |
+| `icon-suites` | pass | 5 platform suites, 121 declared artifacts, 18 compatibility aliases |
+| `specimen-portability` | pass | 0 references self-contained; 0 image sources byte-exact |
+| `specimen-mark-visible` | pass | glitchpad-type-specimen.svg mark region has 496 non-background pixels |
 | `svg-no-live-text` | pass | 26 SVGs, all type outlined |
 | `svg-viewbox` | pass | 22 vector SVGs resolved inside viewBox; 4 lossless raster wrappers use generator-checked bounds |
 | `ico-entries` | pass | favicons/favicon.ico: 7 entries (16x16,24x24,32x32,48x48,64x64,128x128,256x256) |
 | `ico-entries` | pass | icons/windows/classic/app.ico: 7 entries (16x16,24x24,32x32,48x48,64x64,128x128,256x256) |
 | `ico-entries` | pass | icons/web/favicon.ico: 7 entries (16x16,24x24,32x32,48x48,64x64,128x128,256x256) |
 | `pdf-fonts-embedded` | pass | 1 PDFs, all fonts embedded; 1 Type3 glyph fonts (inline CharProcs, embedded; usually a renderer fallback) |
-| `manifest-checksums` | pass | 239 files match |
+| `component-adapter` | pass | 15 recipes, semantic tokens, ownership, exports, and support records verified |
+| `egui-adapter` | pass | native crate, versions, recipe coverage, support states, and pins verified |
+| `cross-host-conformance` | pass | 7 profiles, 4 non-substitutable host tracks, safe-area traces, and human-only baseline policy verified |
+| `consumer-contract` | pass | versions, authority, provenance, recovery, and gap authorization verified |
+| `manifest-checksums` | pass | 297 files match |
 
 | | |
 | --- | ---: |
-| Checks run | 24 |
+| Checks run | 31 |
 | Skipped (inputs absent) | 0 |
 | **Problems found** | **0** |

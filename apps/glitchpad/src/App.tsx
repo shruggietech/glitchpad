@@ -1,4 +1,14 @@
-import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+} from 'react';
+
+import { AppFrame } from '../../../brand/web/react/server';
+import { AppFrameEnvironmentBridge } from '../../../brand/web/react/environment';
 
 import { ApplicationMenu } from './components/ApplicationMenu';
 import { DocumentSurface } from './components/DocumentSurface';
@@ -45,7 +55,10 @@ import {
   type ClipboardGateway,
   type MetadataGateway,
 } from './domain/metadata-gateway';
-import { projectSessionMetadata, type MetadataContribution } from './domain/metadata';
+import {
+  projectSessionMetadata,
+  type MetadataContribution,
+} from './domain/metadata';
 import { PreferenceContext } from './domain/preference-context';
 import {
   normalizeExtension,
@@ -94,14 +107,30 @@ interface AppProps {
   desktopDeliveryGateway?: DesktopDeliveryGateway | null;
 }
 
-export function App({ sessions = [], recoveryGateway, externalLinkGateway, localAssetGateway, metadataGateway, clipboardGateway = browserClipboardGateway, persistenceGateway, diagnosticExportGateway = browserDiagnosticExportGateway, androidDeliveryGateway, androidRestorationGateway, desktopDeliveryGateway }: AppProps) {
+export function App({
+  sessions = [],
+  recoveryGateway,
+  externalLinkGateway,
+  localAssetGateway,
+  metadataGateway,
+  clipboardGateway = browserClipboardGateway,
+  persistenceGateway,
+  diagnosticExportGateway = browserDiagnosticExportGateway,
+  androidDeliveryGateway,
+  androidRestorationGateway,
+  desktopDeliveryGateway,
+}: AppProps) {
   const [state, dispatch] = useReducer(tabReducer, sessions, createTabState);
   const [commandStatus, setCommandStatus] = useState('');
   const [deliveryError, setDeliveryError] = useState('');
   const [markdownFailureProbe, setMarkdownFailureProbe] = useState(false);
   const [inspectorOpen, setInspectorOpen] = useState(false);
-  const [applicationPanel, setApplicationPanel] = useState<'closed' | 'preferences' | 'diagnostics'>('closed');
-  const [metadataReadySessionId, setMetadataReadySessionId] = useState<string | null>(null);
+  const [applicationPanel, setApplicationPanel] = useState<
+    'closed' | 'preferences' | 'diagnostics'
+  >('closed');
+  const [metadataReadySessionId, setMetadataReadySessionId] = useState<
+    string | null
+  >(null);
   const editorRef = useRef<TextEditorHandle>(null);
   const metadataOpenerRef = useRef<HTMLElement | null>(null);
   const applicationOpenerRef = useRef<HTMLButtonElement | null>(null);
@@ -127,121 +156,179 @@ export function App({ sessions = [], recoveryGateway, externalLinkGateway, local
   const activeSession =
     state.sessions.find(({ id }) => id === state.activeId) ?? null;
   const selectedMetadataGateway = useMemo(
-    () => metadataGateway === undefined
-      ? nativeMetadataAvailable()
-        ? createNativeMetadataGateway()
-        : null
-      : metadataGateway,
+    () =>
+      metadataGateway === undefined
+        ? nativeMetadataAvailable()
+          ? createNativeMetadataGateway()
+          : null
+        : metadataGateway,
     [metadataGateway],
   );
   const selectedPersistenceGateway = useMemo(
-    () => persistenceGateway === undefined
-      ? nativePersistenceAvailable()
-        ? nativePersistenceGateway
-        : null
-      : persistenceGateway,
+    () =>
+      persistenceGateway === undefined
+        ? nativePersistenceAvailable()
+          ? nativePersistenceGateway
+          : null
+        : persistenceGateway,
     [persistenceGateway],
   );
   const persistence = usePersistence(
     state.sessions,
     state.activeId,
-    applicationPanel === 'closed' ? (inspectorOpen ? 'metadata' : 'closed') : applicationPanel,
+    applicationPanel === 'closed'
+      ? inspectorOpen
+        ? 'metadata'
+        : 'closed'
+      : applicationPanel,
     selectedPersistenceGateway,
     recovery.recordIds,
   );
-  const selectedAndroidRestorationGateway = androidRestorationGateway === undefined
-    ? (nativeAndroidRestorationAvailable() ? nativeAndroidRestorationGateway : null)
-    : androidRestorationGateway;
-  const selectedAndroidDeliveryGateway = androidDeliveryGateway === undefined
-    ? (nativeAndroidDeliveryAvailable() ? nativeAndroidDeliveryGateway : null)
-    : androidDeliveryGateway;
-  const selectedDesktopDeliveryGateway = desktopDeliveryGateway === undefined
-    ? (nativeDesktopDeliveryAvailable() ? nativeDesktopDeliveryGateway : null)
-    : desktopDeliveryGateway;
+  const selectedAndroidRestorationGateway =
+    androidRestorationGateway === undefined
+      ? nativeAndroidRestorationAvailable()
+        ? nativeAndroidRestorationGateway
+        : null
+      : androidRestorationGateway;
+  const selectedAndroidDeliveryGateway =
+    androidDeliveryGateway === undefined
+      ? nativeAndroidDeliveryAvailable()
+        ? nativeAndroidDeliveryGateway
+        : null
+      : androidDeliveryGateway;
+  const selectedDesktopDeliveryGateway =
+    desktopDeliveryGateway === undefined
+      ? nativeDesktopDeliveryAvailable()
+        ? nativeDesktopDeliveryGateway
+        : null
+      : desktopDeliveryGateway;
   const openDesktopSourceIdsRef = useRef(new Set<string>());
   const openAndroidSourceIdsRef = useRef(new Set<string>());
   const pendingDesktopDeliveryProbesRef = useRef(new Map<string, number[]>());
   useEffect(() => {
     void reportDesktopLifecycleProbe('shell-ready').catch(() => undefined);
     if (/Windows/iu.test(navigator.userAgent))
-      void reportDesktopDeviceScaleProbe(window.devicePixelRatio).catch(() => undefined);
+      void reportDesktopDeviceScaleProbe(window.devicePixelRatio).catch(
+        () => undefined,
+      );
     void consumeDesktopMarkdownFailureProbe()
       .then((requested) => {
         if (requested) setMarkdownFailureProbe(true);
       })
       .catch(() => undefined);
   }, []);
-  const applyDesktopDeliveries = useCallback(async (results: readonly DesktopDeliveryResult[]) => {
-    if (!selectedDesktopDeliveryGateway) return;
-    for (const result of results) {
-      if (result.status === 'rejected') {
-        setDeliveryError(result.error?.summary ?? 'The delivered file could not be opened.');
-        continue;
-      }
-      if (result.status === 'duplicate' && result.source) {
-        dispatch({ type: 'activate', id: `desktop-${result.source.source_id}` });
-        await reportDesktopLifecycleProbe('delivery-ready', result.sequence).catch(() => false);
-        continue;
-      }
-      try {
-        const session = await selectedDesktopDeliveryGateway.materialize(result);
-        if (session) {
-          setDeliveryError('');
-          const sourceId = session.source_id;
-          if (sourceId) {
-            const pending = pendingDesktopDeliveryProbesRef.current.get(sourceId) ?? [];
-            pendingDesktopDeliveryProbesRef.current.set(sourceId, [...pending, result.sequence]);
-          }
-          dispatch({ type: 'open', session });
+  const applyDesktopDeliveries = useCallback(
+    async (results: readonly DesktopDeliveryResult[]) => {
+      if (!selectedDesktopDeliveryGateway) return;
+      for (const result of results) {
+        if (result.status === 'rejected') {
+          setDeliveryError(
+            result.error?.summary ?? 'The delivered file could not be opened.',
+          );
+          continue;
         }
-      } catch {
-        if (result.source) void selectedDesktopDeliveryGateway.close(result.source.source_id);
-        setDeliveryError('The delivered file could not be decoded safely. Check that it is readable UTF-8 or UTF-16 text.');
+        if (result.status === 'duplicate' && result.source) {
+          dispatch({
+            type: 'activate',
+            id: `desktop-${result.source.source_id}`,
+          });
+          await reportDesktopLifecycleProbe(
+            'delivery-ready',
+            result.sequence,
+          ).catch(() => false);
+          continue;
+        }
+        try {
+          const session =
+            await selectedDesktopDeliveryGateway.materialize(result);
+          if (session) {
+            setDeliveryError('');
+            const sourceId = session.source_id;
+            if (sourceId) {
+              const pending =
+                pendingDesktopDeliveryProbesRef.current.get(sourceId) ?? [];
+              pendingDesktopDeliveryProbesRef.current.set(sourceId, [
+                ...pending,
+                result.sequence,
+              ]);
+            }
+            dispatch({ type: 'open', session });
+          }
+        } catch {
+          if (result.source)
+            void selectedDesktopDeliveryGateway.close(result.source.source_id);
+          setDeliveryError(
+            'The delivered file could not be decoded safely. Check that it is readable UTF-8 or UTF-16 text.',
+          );
+        }
       }
-    }
-  }, [selectedDesktopDeliveryGateway]);
+    },
+    [selectedDesktopDeliveryGateway],
+  );
   useEffect(() => {
     if (!selectedDesktopDeliveryGateway) return;
     let active = true;
     const drain = () => {
-      void selectedDesktopDeliveryGateway.drain().then((results) => {
-        if (active) void applyDesktopDeliveries(results);
-      }).catch(() => {
-        if (active) setDeliveryError('Desktop delivery is temporarily unavailable. Try Open again.');
-      });
+      void selectedDesktopDeliveryGateway
+        .drain()
+        .then((results) => {
+          if (active) void applyDesktopDeliveries(results);
+        })
+        .catch(() => {
+          if (active)
+            setDeliveryError(
+              'Desktop delivery is temporarily unavailable. Try Open again.',
+            );
+        });
     };
     let unlisten: (() => void) | undefined;
-    void selectedDesktopDeliveryGateway.subscribe(drain).then((dispose) => {
-      if (active) {
-        unlisten = dispose;
-        drain();
-      } else dispose();
-    }).catch(() => {
-      if (active) setDeliveryError('Desktop delivery is temporarily unavailable. Try Open again.');
-    });
+    void selectedDesktopDeliveryGateway
+      .subscribe(drain)
+      .then((dispose) => {
+        if (active) {
+          unlisten = dispose;
+          drain();
+        } else dispose();
+      })
+      .catch(() => {
+        if (active)
+          setDeliveryError(
+            'Desktop delivery is temporarily unavailable. Try Open again.',
+          );
+      });
     return () => {
       active = false;
       unlisten?.();
     };
   }, [applyDesktopDeliveries, selectedDesktopDeliveryGateway]);
   useEffect(() => {
-    const active = state.sessions.find((session) => session.id === state.activeId);
+    const active = state.sessions.find(
+      (session) => session.id === state.activeId,
+    );
     if (!active?.source_id) return;
-    const pending = pendingDesktopDeliveryProbesRef.current.get(active.source_id);
+    const pending = pendingDesktopDeliveryProbesRef.current.get(
+      active.source_id,
+    );
     if (!pending?.length) return;
     pendingDesktopDeliveryProbesRef.current.delete(active.source_id);
     for (const sequence of pending)
-      void reportDesktopLifecycleProbe('delivery-ready', sequence).catch(() => undefined);
+      void reportDesktopLifecycleProbe('delivery-ready', sequence).catch(
+        () => undefined,
+      );
   }, [state.activeId, state.sessions]);
   useEffect(() => {
     if (!selectedDesktopDeliveryGateway) return;
     const current = new Set(
       state.sessions
-        .filter((session) => session.source_id && session.id === `desktop-${session.source_id}`)
+        .filter(
+          (session) =>
+            session.source_id && session.id === `desktop-${session.source_id}`,
+        )
         .map((session) => session.source_id as string),
     );
     for (const sourceId of openDesktopSourceIdsRef.current) {
-      if (!current.has(sourceId)) void selectedDesktopDeliveryGateway.close(sourceId);
+      if (!current.has(sourceId))
+        void selectedDesktopDeliveryGateway.close(sourceId);
     }
     openDesktopSourceIdsRef.current = current;
   }, [selectedDesktopDeliveryGateway, state.sessions]);
@@ -249,15 +336,20 @@ export function App({ sessions = [], recoveryGateway, externalLinkGateway, local
     if (!selectedAndroidDeliveryGateway) return;
     const delivery = await selectedAndroidDeliveryGateway.drain();
     for (const rejection of delivery.rejections)
-      setDeliveryError(`The delivered Android file could not be opened (${rejection.code}).`);
+      setDeliveryError(
+        `The delivered Android file could not be opened (${rejection.code}).`,
+      );
     for (const source of delivery.sources) {
       try {
-        const session = await selectedAndroidDeliveryGateway.materialize(source);
+        const session =
+          await selectedAndroidDeliveryGateway.materialize(source);
         setDeliveryError('');
         dispatch({ type: 'open', session });
       } catch {
         void selectedAndroidDeliveryGateway.close(source.source_id);
-        setDeliveryError('The delivered Android file could not be decoded safely. Check that it is readable UTF-8 or UTF-16 text.');
+        setDeliveryError(
+          'The delivered Android file could not be decoded safely. Check that it is readable UTF-8 or UTF-16 text.',
+        );
       }
     }
   }, [selectedAndroidDeliveryGateway]);
@@ -266,18 +358,25 @@ export function App({ sessions = [], recoveryGateway, externalLinkGateway, local
     let active = true;
     const drain = () => {
       void applyAndroidDeliveries().catch(() => {
-        if (active) setDeliveryError('Android file delivery is temporarily unavailable. Open the file again.');
+        if (active)
+          setDeliveryError(
+            'Android file delivery is temporarily unavailable. Open the file again.',
+          );
       });
     };
     let unlisten: (() => void) | undefined;
     let fallbackTimer: ReturnType<typeof setInterval> | undefined;
-    void selectedAndroidDeliveryGateway.subscribe(drain).then((dispose) => {
-      if (active) {
-        unlisten = dispose;
-      } else dispose();
-    }).catch(() => {
-      if (active) fallbackTimer = setInterval(drain, 500);
-    }).finally(drain);
+    void selectedAndroidDeliveryGateway
+      .subscribe(drain)
+      .then((dispose) => {
+        if (active) {
+          unlisten = dispose;
+        } else dispose();
+      })
+      .catch(() => {
+        if (active) fallbackTimer = setInterval(drain, 500);
+      })
+      .finally(drain);
     return () => {
       active = false;
       unlisten?.();
@@ -288,11 +387,15 @@ export function App({ sessions = [], recoveryGateway, externalLinkGateway, local
     if (!selectedAndroidDeliveryGateway) return;
     const current = new Set(
       state.sessions
-        .filter((session) => session.source_id && session.id === `android-${session.source_id}`)
+        .filter(
+          (session) =>
+            session.source_id && session.id === `android-${session.source_id}`,
+        )
         .map((session) => session.source_id as string),
     );
     for (const sourceId of openAndroidSourceIdsRef.current) {
-      if (!current.has(sourceId)) void selectedAndroidDeliveryGateway.close(sourceId);
+      if (!current.has(sourceId))
+        void selectedAndroidDeliveryGateway.close(sourceId);
     }
     openAndroidSourceIdsRef.current = current;
   }, [selectedAndroidDeliveryGateway, state.sessions]);
@@ -311,29 +414,42 @@ export function App({ sessions = [], recoveryGateway, externalLinkGateway, local
         if (!active) return;
         for (const session of restoredSessions) {
           const reference = session.source.restoration_reference;
-          if (!reference || openedRestorationReferencesRef.current.has(reference)) continue;
+          if (
+            !reference ||
+            openedRestorationReferencesRef.current.has(reference)
+          )
+            continue;
           openedRestorationReferencesRef.current.add(reference);
           dispatch({ type: 'open', session });
         }
       })
       .catch(() => {
-        if (active) setCommandStatus('Authorized Android sources could not be restored.');
+        if (active)
+          setCommandStatus('Authorized Android sources could not be restored.');
       });
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [persistence.restoredSession, selectedAndroidRestorationGateway]);
   useEffect(() => {
     const restored = persistence.restoredSession;
-    const projectionFor = (session: ShellSession): SessionProjection | undefined =>
-      restored?.sessions.find((projection) =>
-        Boolean(
-          projection.source_reference
-          && projection.source_reference === session.source.restoration_reference,
-        )
-        || Boolean(
-          projection.recovery_record_id
-          && (session.id === `recovery-${projection.recovery_record_id}`
-            || recovery.recordIds.get(session.id) === projection.recovery_record_id),
-        ));
+    const projectionFor = (
+      session: ShellSession,
+    ): SessionProjection | undefined =>
+      restored?.sessions.find(
+        (projection) =>
+          Boolean(
+            projection.source_reference &&
+            projection.source_reference ===
+              session.source.restoration_reference,
+          ) ||
+          Boolean(
+            projection.recovery_record_id &&
+            (session.id === `recovery-${projection.recovery_record_id}` ||
+              recovery.recordIds.get(session.id) ===
+                projection.recovery_record_id),
+          ),
+      );
 
     if (restored && inspectorProjectionAppliedRef.current !== restored) {
       inspectorProjectionAppliedRef.current = restored;
@@ -348,13 +464,20 @@ export function App({ sessions = [], recoveryGateway, externalLinkGateway, local
       }
     }
 
-    const activeProjection = !restored || restored.window.active_session_index === null
-      ? undefined
-      : restored.sessions[restored.window.active_session_index];
+    const activeProjection =
+      !restored || restored.window.active_session_index === null
+        ? undefined
+        : restored.sessions[restored.window.active_session_index];
     const restoredActive = activeProjection
-      ? state.sessions.find((session) => projectionFor(session) === activeProjection)
+      ? state.sessions.find(
+          (session) => projectionFor(session) === activeProjection,
+        )
       : undefined;
-    if (restored && restoredActive && activeProjectionAppliedRef.current !== restored) {
+    if (
+      restored &&
+      restoredActive &&
+      activeProjectionAppliedRef.current !== restored
+    ) {
       activeProjectionAppliedRef.current = restored;
       if (state.activeId !== restoredActive.id)
         dispatch({ type: 'activate', id: restoredActive.id });
@@ -365,29 +488,56 @@ export function App({ sessions = [], recoveryGateway, externalLinkGateway, local
       if (session.image_document && projection?.image_presentation) {
         const image = projection.image_presentation;
         const signature = `${projection.session_key}:${JSON.stringify(image)}`;
-        if (presentationProjectionAppliedRef.current.get(session.id) !== signature) {
+        if (
+          presentationProjectionAppliedRef.current.get(session.id) !== signature
+        ) {
           presentationProjectionAppliedRef.current.set(session.id, signature);
-          dispatch({ type: 'update_image', id: session.id, expectedRevision: session.revision, image: { ...session.image_document, family_state: null, selection: image.selection, viewport: { mode: image.mode, zoom: image.zoom_milli / 1000, pan_x: image.pan_x, pan_y: image.pan_y, background: image.background } } });
+          dispatch({
+            type: 'update_image',
+            id: session.id,
+            expectedRevision: session.revision,
+            image: {
+              ...session.image_document,
+              family_state: null,
+              selection: image.selection,
+              viewport: {
+                mode: image.mode,
+                zoom: image.zoom_milli / 1000,
+                pan_x: image.pan_x,
+                pan_y: image.pan_y,
+                background: image.background,
+              },
+            },
+          });
         }
         continue;
       }
-      const desiredMode = projection?.presentation_mode
-        ?? (session.markdown_document
+      const desiredMode =
+        projection?.presentation_mode ??
+        (session.markdown_document
           ? persistence.preferences.markdown_default_mode
           : null);
       if (desiredMode !== 'rendered' && desiredMode !== 'source') continue;
       const signature = `${projection?.session_key ?? 'default'}:${desiredMode}`;
-      if (presentationProjectionAppliedRef.current.get(session.id) === signature)
+      if (
+        presentationProjectionAppliedRef.current.get(session.id) === signature
+      )
         continue;
       presentationProjectionAppliedRef.current.set(session.id, signature);
-      if (session.markdown_document && session.markdown_document.mode !== desiredMode)
+      if (
+        session.markdown_document &&
+        session.markdown_document.mode !== desiredMode
+      )
         dispatch({
           type: 'update_markdown',
           id: session.id,
           expectedRevision: session.revision,
           markdown: { ...session.markdown_document, mode: desiredMode },
         });
-      if (session.mermaid_document && session.mermaid_document.mode !== desiredMode)
+      if (
+        session.mermaid_document &&
+        session.mermaid_document.mode !== desiredMode
+      )
         dispatch({
           type: 'update_mermaid',
           id: session.id,
@@ -405,9 +555,19 @@ export function App({ sessions = [], recoveryGateway, externalLinkGateway, local
   useEffect(() => {
     for (const session of state.sessions) {
       const decision = session.text_document?.language;
-      const extension = normalizeExtension(session.source.display_name.split('.').at(-1) ?? '');
-      const language = extension ? persistence.preferences.language_overrides[extension] : undefined;
-      if (!decision || !language || (decision.language === language && decision.origin === 'session_override')) continue;
+      const extension = normalizeExtension(
+        session.source.display_name.split('.').at(-1) ?? '',
+      );
+      const language = extension
+        ? persistence.preferences.language_overrides[extension]
+        : undefined;
+      if (
+        !decision ||
+        !language ||
+        (decision.language === language &&
+          decision.origin === 'session_override')
+      )
+        continue;
       dispatch({
         type: 'update_language',
         id: session.id,
@@ -436,7 +596,11 @@ export function App({ sessions = [], recoveryGateway, externalLinkGateway, local
   useEffect(() => setCommandStatus(''), [state.activeId]);
 
   useEffect(() => {
-    if ((!inspectorOpen && !activeSession?.image_document) || !activeSession?.source_id || !selectedMetadataGateway) {
+    if (
+      (!inspectorOpen && !activeSession?.image_document) ||
+      !activeSession?.source_id ||
+      !selectedMetadataGateway
+    ) {
       setMetadataReadySessionId(null);
       return;
     }
@@ -468,7 +632,9 @@ export function App({ sessions = [], recoveryGateway, externalLinkGateway, local
               expectedRevision: activeSession.revision,
               sourceId: activeSession.source_id!,
             });
-            setCommandStatus('File information could not be refreshed. Source facts are unavailable.');
+            setCommandStatus(
+              'File information could not be refreshed. Source facts are unavailable.',
+            );
           }
         })
         .finally(() => {
@@ -480,15 +646,26 @@ export function App({ sessions = [], recoveryGateway, externalLinkGateway, local
       abort.abort();
       if (refreshTimer !== null) clearTimeout(refreshTimer);
     };
-  }, [activeSession?.id, activeSession?.revision, activeSession?.source_id, inspectorOpen, selectedMetadataGateway]);
+  }, [
+    activeSession?.id,
+    activeSession?.revision,
+    activeSession?.source_id,
+    inspectorOpen,
+    selectedMetadataGateway,
+  ]);
 
-  useEffect(() => () => {
-    integrityAbortRef.current?.abort();
-    if (integrityRequestIdRef.current && selectedMetadataGateway)
-      void selectedMetadataGateway.cancelIntegrity(integrityRequestIdRef.current).catch(() => undefined);
-    integrityAbortRef.current = null;
-    integrityRequestIdRef.current = null;
-  }, [activeSession?.id, inspectorOpen, selectedMetadataGateway]);
+  useEffect(
+    () => () => {
+      integrityAbortRef.current?.abort();
+      if (integrityRequestIdRef.current && selectedMetadataGateway)
+        void selectedMetadataGateway
+          .cancelIntegrity(integrityRequestIdRef.current)
+          .catch(() => undefined);
+      integrityAbortRef.current = null;
+      integrityRequestIdRef.current = null;
+    },
+    [activeSession?.id, inspectorOpen, selectedMetadataGateway],
+  );
 
   const openMetadata = (opener: HTMLElement) => {
     windowProjectionChangedRef.current = true;
@@ -501,18 +678,27 @@ export function App({ sessions = [], recoveryGateway, externalLinkGateway, local
   const closeMetadata = () => {
     integrityAbortRef.current?.abort();
     if (integrityRequestIdRef.current && selectedMetadataGateway)
-      void selectedMetadataGateway.cancelIntegrity(integrityRequestIdRef.current).catch(() => undefined);
+      void selectedMetadataGateway
+        .cancelIntegrity(integrityRequestIdRef.current)
+        .catch(() => undefined);
     integrityAbortRef.current = null;
     integrityRequestIdRef.current = null;
     setInspectorOpen(false);
     const opener = metadataOpenerRef.current;
     requestAnimationFrame(() => {
       if (opener?.isConnected) opener.focus();
-      else if (state.activeId && document.getElementById(`tab-${state.activeId}`)) document.getElementById(`tab-${state.activeId}`)?.focus();
+      else if (
+        state.activeId &&
+        document.getElementById(`tab-${state.activeId}`)
+      )
+        document.getElementById(`tab-${state.activeId}`)?.focus();
     });
   };
 
-  const openApplicationPanel = (panel: 'preferences' | 'diagnostics', opener: HTMLButtonElement) => {
+  const openApplicationPanel = (
+    panel: 'preferences' | 'diagnostics',
+    opener: HTMLButtonElement,
+  ) => {
     windowProjectionChangedRef.current = true;
     editorRef.current?.invoke('close_search');
     applicationOpenerRef.current = opener;
@@ -524,24 +710,40 @@ export function App({ sessions = [], recoveryGateway, externalLinkGateway, local
     windowProjectionChangedRef.current = true;
     setApplicationPanel('closed');
     requestAnimationFrame(() => {
-      if (applicationOpenerRef.current?.isConnected) applicationOpenerRef.current.focus();
+      if (applicationOpenerRef.current?.isConnected)
+        applicationOpenerRef.current.focus();
     });
   };
 
   const invoke = (command: CommandDescriptor, opener: HTMLButtonElement) => {
     const result = executeCommand(command, activeSession);
-    if (result.ok && command.id === 'save' && activeSession && selectedDesktopDeliveryGateway) {
-      void selectedDesktopDeliveryGateway.save(activeSession)
+    if (
+      result.ok &&
+      command.id === 'save' &&
+      activeSession &&
+      selectedDesktopDeliveryGateway
+    ) {
+      void selectedDesktopDeliveryGateway
+        .save(activeSession)
         .then((receipt) => {
           dispatch({ type: 'save_completed', id: activeSession.id, receipt });
-          setCommandStatus(`${activeSession.source.display_name} saved durably.`);
+          setCommandStatus(
+            `${activeSession.source.display_name} saved durably.`,
+          );
         })
-        .catch(() => setCommandStatus(`Save failed for ${activeSession.source.display_name}. The document remains open with its edits.`));
-      setCommandStatus(`Saving ${activeSession.source.display_name}. Waiting for a durable save receipt.`);
+        .catch(() =>
+          setCommandStatus(
+            `Save failed for ${activeSession.source.display_name}. The document remains open with its edits.`,
+          ),
+        );
+      setCommandStatus(
+        `Saving ${activeSession.source.display_name}. Waiting for a durable save receipt.`,
+      );
       return;
     }
     const applied =
-      result.ok && (command.id === 'metadata'
+      result.ok &&
+      (command.id === 'metadata'
         ? (openMetadata(opener), true)
         : (editorRef.current?.invoke(command.id) ?? false));
     setCommandStatus(
@@ -558,9 +760,14 @@ export function App({ sessions = [], recoveryGateway, externalLinkGateway, local
   const chooseDesktopSources = () => {
     if (!selectedDesktopDeliveryGateway) return;
     setDeliveryError('');
-    void selectedDesktopDeliveryGateway.choose()
+    void selectedDesktopDeliveryGateway
+      .choose()
       .then(applyDesktopDeliveries)
-      .catch(() => setDeliveryError('The native Open dialog is unavailable. Try again or open the file from your desktop.'));
+      .catch(() =>
+        setDeliveryError(
+          'The native Open dialog is unavailable. Try again or open the file from your desktop.',
+        ),
+      );
   };
 
   const publishMetadata = (contribution: MetadataContribution) =>
@@ -568,13 +775,21 @@ export function App({ sessions = [], recoveryGateway, externalLinkGateway, local
 
   const requestChecksum = () => {
     const inspectedRevision = activeSession?.metadata?.external_revision;
-    if (!activeSession?.source_id || !inspectedRevision || metadataReadySessionId !== activeSession.id || !selectedMetadataGateway) return;
+    if (
+      !activeSession?.source_id ||
+      !inspectedRevision ||
+      metadataReadySessionId !== activeSession.id ||
+      !selectedMetadataGateway
+    )
+      return;
     integrityAbortRef.current?.abort();
     const abort = new AbortController();
     integrityAbortRef.current = abort;
     const requestId = createIntegrityRequestId();
     if (!requestId) {
-      setCommandStatus('SHA-256 is unavailable because secure request identifiers are not supported.');
+      setCommandStatus(
+        'SHA-256 is unavailable because secure request identifiers are not supported.',
+      );
       return;
     }
     integrityRequestIdRef.current = requestId;
@@ -584,52 +799,95 @@ export function App({ sessions = [], recoveryGateway, externalLinkGateway, local
       expected_external_revision: inspectedRevision,
       producer: 'integrity' as const,
     };
-    publishMetadata({ ...base, facts: [
-      { key: 'derived.sha256', availability: 'pending' },
-      { key: 'derived.sha256_progress', availability: 'available', value: { kind: 'integer', value: '0' }, unit: 'bytes' },
-    ] });
+    publishMetadata({
+      ...base,
+      facts: [
+        { key: 'derived.sha256', availability: 'pending' },
+        {
+          key: 'derived.sha256_progress',
+          availability: 'available',
+          value: { kind: 'integer', value: '0' },
+          unit: 'bytes',
+        },
+      ],
+    });
     void runIntegrityRequest(
       selectedMetadataGateway,
       activeSession.source_id,
       inspectedRevision,
       requestId,
       abort.signal,
-      (progress) => publishMetadata({
-        ...base,
-        facts: [
-          { key: 'derived.sha256', availability: 'pending' },
-          { key: 'derived.sha256_progress', availability: 'available', value: { kind: 'integer', value: String(progress.processed_bytes) }, unit: 'bytes' },
-        ],
-      }),
+      (progress) =>
+        publishMetadata({
+          ...base,
+          facts: [
+            { key: 'derived.sha256', availability: 'pending' },
+            {
+              key: 'derived.sha256_progress',
+              availability: 'available',
+              value: {
+                kind: 'integer',
+                value: String(progress.processed_bytes),
+              },
+              unit: 'bytes',
+            },
+          ],
+        }),
     )
       .then((progress) => {
         if (abort.signal.aborted) return;
         integrityRequestIdRef.current = null;
         publishMetadata({
           ...base,
-          facts: progress.state === 'ready' && progress.sha256
-            ? [
-                { key: 'derived.sha256', availability: 'available', value: { kind: 'text', value: progress.sha256 } },
-                { key: 'derived.sha256_progress', availability: 'not_provided' },
-              ]
-            : progress.state === 'limited'
+          facts:
+            progress.state === 'ready' && progress.sha256
               ? [
-                  { key: 'derived.sha256', availability: 'unsupported' },
-                  { key: 'derived.sha256_progress', availability: 'not_provided' },
+                  {
+                    key: 'derived.sha256',
+                    availability: 'available',
+                    value: { kind: 'text', value: progress.sha256 },
+                  },
+                  {
+                    key: 'derived.sha256_progress',
+                    availability: 'not_provided',
+                  },
                 ]
-              : [
-                  { key: 'derived.sha256', availability: 'errored', error_code: `integrity_${progress.state}` },
-                  { key: 'derived.sha256_progress', availability: 'not_provided' },
-                ],
+              : progress.state === 'limited'
+                ? [
+                    { key: 'derived.sha256', availability: 'unsupported' },
+                    {
+                      key: 'derived.sha256_progress',
+                      availability: 'not_provided',
+                    },
+                  ]
+                : [
+                    {
+                      key: 'derived.sha256',
+                      availability: 'errored',
+                      error_code: `integrity_${progress.state}`,
+                    },
+                    {
+                      key: 'derived.sha256_progress',
+                      availability: 'not_provided',
+                    },
+                  ],
         });
       })
       .catch((error: unknown) => {
-        if (error instanceof DOMException && error.name === 'AbortError') return;
+        if (error instanceof DOMException && error.name === 'AbortError')
+          return;
         integrityRequestIdRef.current = null;
-        publishMetadata({ ...base, facts: [
-          { key: 'derived.sha256', availability: 'errored', error_code: 'integrity_failed' },
-          { key: 'derived.sha256_progress', availability: 'not_provided' },
-        ] });
+        publishMetadata({
+          ...base,
+          facts: [
+            {
+              key: 'derived.sha256',
+              availability: 'errored',
+              error_code: 'integrity_failed',
+            },
+            { key: 'derived.sha256_progress', availability: 'not_provided' },
+          ],
+        });
       });
   };
 
@@ -667,26 +925,42 @@ export function App({ sessions = [], recoveryGateway, externalLinkGateway, local
       });
   };
 
-  const resolveDestructiveTransition = (decision: 'save' | 'save_as' | 'discard' | 'cancel') => {
-    if (!resolutionSession || !selectedDesktopDeliveryGateway || (decision !== 'save' && decision !== 'save_as')) {
+  const resolveDestructiveTransition = (
+    decision: 'save' | 'save_as' | 'discard' | 'cancel',
+  ) => {
+    if (
+      !resolutionSession ||
+      !selectedDesktopDeliveryGateway ||
+      (decision !== 'save' && decision !== 'save_as')
+    ) {
       dispatch({ type: 'resolve_transition', decision });
       return;
     }
     dispatch({ type: 'resolve_transition', decision });
-    const operation: Promise<SaveReceipt | boolean> = decision === 'save'
-      ? selectedDesktopDeliveryGateway.save(resolutionSession)
-      : selectedDesktopDeliveryGateway.saveAs(resolutionSession);
+    const operation: Promise<SaveReceipt | boolean> =
+      decision === 'save'
+        ? selectedDesktopDeliveryGateway.save(resolutionSession)
+        : selectedDesktopDeliveryGateway.saveAs(resolutionSession);
     void operation
       .then((receipt) => {
         if (decision === 'save') {
-          dispatch({ type: 'save_completed', id: resolutionSession.id, receipt: receipt as SaveReceipt });
+          dispatch({
+            type: 'save_completed',
+            id: resolutionSession.id,
+            receipt: receipt as SaveReceipt,
+          });
         } else {
-          dispatch({ type: 'resolve_transition', decision: receipt ? 'discard' : 'cancel' });
+          dispatch({
+            type: 'resolve_transition',
+            decision: receipt ? 'discard' : 'cancel',
+          });
         }
       })
       .catch(() => {
         dispatch({ type: 'resolve_transition', decision: 'cancel' });
-        setCommandStatus(`${decision === 'save' ? 'Save' : 'Save As'} did not complete. The document remains open with its edits.`);
+        setCommandStatus(
+          `${decision === 'save' ? 'Save' : 'Save As'} did not complete. The document remains open with its edits.`,
+        );
       });
   };
 
@@ -702,131 +976,199 @@ export function App({ sessions = [], recoveryGateway, externalLinkGateway, local
   };
 
   return (
-    <main className="app-shell" data-has-tabs={state.sessions.length > 1 ? 'true' : 'false'} data-performance-ready="true" onKeyDown={handleShellKey}>
-      <div className="shell-chrome" data-has-tabs={state.sessions.length > 1 ? 'true' : 'false'}>
-        <ApplicationMenu
-          active={applicationPanel === 'closed' && !inspectorOpen}
-          commands={commands}
-          canOpen={Boolean(selectedDesktopDeliveryGateway)}
-          onOpen={chooseDesktopSources}
-          onInvoke={invoke}
-          onPreferences={(opener) => openApplicationPanel('preferences', opener)}
-          onDiagnostics={(opener) => openApplicationPanel('diagnostics', opener)}
-        />
-        <TabStrip state={state} dispatch={dispatch} />
-      </div>
-      {deliveryError && <aside className="delivery-error" role="alert">{deliveryError}</aside>}
-      {activeSession &&
-        (integrityOf(activeSession) === 'conflicted' ||
-          integrityOf(activeSession) === 'recovery_only') && (
-          <aside className="integrity-banner" role="status" aria-live="polite">
-            {integrityOf(activeSession) === 'recovery_only'
-              ? 'Recovered local edits have no confirmed source authority. Save As is available.'
-              : 'The source changed outside Glitchpad. Local edits remain available; in-place save is blocked.'}
-          </aside>
-        )}
-      {recovery.warning && (
-        <aside className="integrity-banner" role="status" aria-live="assertive">
-          {recovery.warning}
-        </aside>
-      )}
-      {persistence.warning && (
-        <aside className="integrity-banner persistence-warning" role="status" aria-live="polite">
-          {persistence.warning}
-        </aside>
-      )}
-      <PreferenceContext.Provider value={persistence.preferences}>
-        <DocumentSurface
-          ref={editorRef}
-          session={activeSession}
-          markdownFailureProbe={markdownFailureProbe}
-          canOpen={Boolean(selectedDesktopDeliveryGateway)}
-          onOpen={chooseDesktopSources}
-          labelledByTab={state.sessions.length > 1}
-        onDocumentChange={(id, expectedRevision, document, revision) =>
-          dispatch({
-            type: 'update_text',
-            id,
-            expectedRevision,
-            document,
-            revision,
-          })
-        }
-          onLanguageChange={(id, expectedRevision, language) => {
-            dispatch({ type: 'update_language', id, expectedRevision, language });
-            const target = state.sessions.find((session) => session.id === id);
-            const extension = target?.source.display_name.split('.').at(-1);
-            const normalized = extension ? normalizeExtension(extension) : null;
-            if (normalized && language.origin === 'session_override') {
-              persistence.updatePreferences({
-                ...persistence.preferences,
-                language_overrides: {
-                  ...persistence.preferences.language_overrides,
-                  [normalized]: language.language,
-                },
-              });
-            }
-          }}
-        onMarkdownChange={(id, expectedRevision, markdown) =>
-          dispatch({ type: 'update_markdown', id, expectedRevision, markdown })
-        }
-        onMermaidChange={(id, expectedRevision, mermaid) =>
-          dispatch({ type: 'update_mermaid', id, expectedRevision, mermaid })
-        }
-        externalLinkGateway={externalLinkGateway ?? (nativeExternalLinkAvailable() ? nativeMarkdownExternalLinkGateway : undefined)}
-        localAssetGateway={localAssetGateway}
-        onOpenMetadata={openMetadata}
-        onMetadataContribution={publishMetadata}
-        onImageChange={(id, expectedRevision, image) => dispatch({ type: 'update_image', id, expectedRevision, image })}
-        />
-      </PreferenceContext.Provider>
-      {inspectorOpen && activeSession && (
-        <MetadataInspector
-          key={activeSession.id}
-          session={activeSession}
-          snapshot={projectSessionMetadata(activeSession)}
-          onClose={closeMetadata}
-          onRequestChecksum={activeSession.source_id && activeSession.metadata?.external_revision && metadataReadySessionId === activeSession.id && selectedMetadataGateway ? requestChecksum : undefined}
-          clipboardGateway={clipboardGateway}
-        />
-      )}
-      {applicationPanel === 'preferences' && (
-        <PreferencesPanel
-          value={persistence.preferences}
-          onChange={persistence.updatePreferences}
-          onReset={() => void persistence.reset('preferences')}
-          onClose={closeApplicationPanel}
-        />
-      )}
-      {applicationPanel === 'diagnostics' && (
-        <DiagnosticsPanel
-          load={persistence.previewDiagnostics}
-          exporter={diagnosticExportGateway}
-          onReset={() => persistence.reset('diagnostics')}
-          onClose={closeApplicationPanel}
-        />
-      )}
-      {!recoveryCandidate && state.pendingTransition && resolutionSession && (
-        <RecoveryResolution
-          session={resolutionSession}
-          transition={state.pendingTransition}
-          onDecision={resolveDestructiveTransition}
-        />
-      )}
-      {recoveryCandidate && (
-        <RecoveryCandidateResolution
-          entry={recoveryCandidate}
-          onDecision={resolveRecoveryCandidate}
-        />
-      )}
-      <p
-        className="visually-hidden"
-        role="status"
-        aria-live="polite"
-        aria-atomic="true"
-      >
-        {commandStatus || state.announcement}
-      </p>
-    </main>
+    <>
+      <AppFrameEnvironmentBridge />
+      <AppFrame host="tauri" layout="full-bleed">
+        <div
+          className="app-shell"
+          data-has-tabs={state.sessions.length > 1 ? 'true' : 'false'}
+          data-performance-ready="true"
+          onKeyDown={handleShellKey}
+        >
+          <div
+            className="shell-chrome"
+            data-has-tabs={state.sessions.length > 1 ? 'true' : 'false'}
+          >
+            <ApplicationMenu
+              active={applicationPanel === 'closed' && !inspectorOpen}
+              commands={commands}
+              canOpen={Boolean(selectedDesktopDeliveryGateway)}
+              onOpen={chooseDesktopSources}
+              onInvoke={invoke}
+              onPreferences={(opener) =>
+                openApplicationPanel('preferences', opener)
+              }
+              onDiagnostics={(opener) =>
+                openApplicationPanel('diagnostics', opener)
+              }
+            />
+            <TabStrip state={state} dispatch={dispatch} />
+          </div>
+          {deliveryError && (
+            <aside className="delivery-error" role="alert">
+              {deliveryError}
+            </aside>
+          )}
+          {activeSession &&
+            (integrityOf(activeSession) === 'conflicted' ||
+              integrityOf(activeSession) === 'recovery_only') && (
+              <aside
+                className="integrity-banner"
+                role="status"
+                aria-live="polite"
+              >
+                {integrityOf(activeSession) === 'recovery_only'
+                  ? 'Recovered local edits have no confirmed source authority. Save As is available.'
+                  : 'The source changed outside Glitchpad. Local edits remain available; in-place save is blocked.'}
+              </aside>
+            )}
+          {recovery.warning && (
+            <aside
+              className="integrity-banner"
+              role="status"
+              aria-live="assertive"
+            >
+              {recovery.warning}
+            </aside>
+          )}
+          {persistence.warning && (
+            <aside
+              className="integrity-banner persistence-warning"
+              role="status"
+              aria-live="polite"
+            >
+              {persistence.warning}
+            </aside>
+          )}
+          <PreferenceContext.Provider value={persistence.preferences}>
+            <DocumentSurface
+              ref={editorRef}
+              session={activeSession}
+              markdownFailureProbe={markdownFailureProbe}
+              canOpen={Boolean(selectedDesktopDeliveryGateway)}
+              onOpen={chooseDesktopSources}
+              labelledByTab={state.sessions.length > 1}
+              onDocumentChange={(id, expectedRevision, document, revision) =>
+                dispatch({
+                  type: 'update_text',
+                  id,
+                  expectedRevision,
+                  document,
+                  revision,
+                })
+              }
+              onLanguageChange={(id, expectedRevision, language) => {
+                dispatch({
+                  type: 'update_language',
+                  id,
+                  expectedRevision,
+                  language,
+                });
+                const target = state.sessions.find(
+                  (session) => session.id === id,
+                );
+                const extension = target?.source.display_name.split('.').at(-1);
+                const normalized = extension
+                  ? normalizeExtension(extension)
+                  : null;
+                if (normalized && language.origin === 'session_override') {
+                  persistence.updatePreferences({
+                    ...persistence.preferences,
+                    language_overrides: {
+                      ...persistence.preferences.language_overrides,
+                      [normalized]: language.language,
+                    },
+                  });
+                }
+              }}
+              onMarkdownChange={(id, expectedRevision, markdown) =>
+                dispatch({
+                  type: 'update_markdown',
+                  id,
+                  expectedRevision,
+                  markdown,
+                })
+              }
+              onMermaidChange={(id, expectedRevision, mermaid) =>
+                dispatch({
+                  type: 'update_mermaid',
+                  id,
+                  expectedRevision,
+                  mermaid,
+                })
+              }
+              externalLinkGateway={
+                externalLinkGateway ??
+                (nativeExternalLinkAvailable()
+                  ? nativeMarkdownExternalLinkGateway
+                  : undefined)
+              }
+              localAssetGateway={localAssetGateway}
+              onOpenMetadata={openMetadata}
+              onMetadataContribution={publishMetadata}
+              onImageChange={(id, expectedRevision, image) =>
+                dispatch({ type: 'update_image', id, expectedRevision, image })
+              }
+            />
+          </PreferenceContext.Provider>
+          {inspectorOpen && activeSession && (
+            <MetadataInspector
+              key={activeSession.id}
+              session={activeSession}
+              snapshot={projectSessionMetadata(activeSession)}
+              onClose={closeMetadata}
+              onRequestChecksum={
+                activeSession.source_id &&
+                activeSession.metadata?.external_revision &&
+                metadataReadySessionId === activeSession.id &&
+                selectedMetadataGateway
+                  ? requestChecksum
+                  : undefined
+              }
+              clipboardGateway={clipboardGateway}
+            />
+          )}
+          {applicationPanel === 'preferences' && (
+            <PreferencesPanel
+              value={persistence.preferences}
+              onChange={persistence.updatePreferences}
+              onReset={() => void persistence.reset('preferences')}
+              onClose={closeApplicationPanel}
+            />
+          )}
+          {applicationPanel === 'diagnostics' && (
+            <DiagnosticsPanel
+              load={persistence.previewDiagnostics}
+              exporter={diagnosticExportGateway}
+              onReset={() => persistence.reset('diagnostics')}
+              onClose={closeApplicationPanel}
+            />
+          )}
+          {!recoveryCandidate &&
+            state.pendingTransition &&
+            resolutionSession && (
+              <RecoveryResolution
+                session={resolutionSession}
+                transition={state.pendingTransition}
+                onDecision={resolveDestructiveTransition}
+              />
+            )}
+          {recoveryCandidate && (
+            <RecoveryCandidateResolution
+              entry={recoveryCandidate}
+              onDecision={resolveRecoveryCandidate}
+            />
+          )}
+          <p
+            className="visually-hidden"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            {commandStatus || state.announcement}
+          </p>
+        </div>
+      </AppFrame>
+    </>
   );
 }

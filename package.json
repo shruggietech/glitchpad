@@ -48,13 +48,19 @@
     "test": "pnpm --filter @shruggietech/glitchpad test:run"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "2.11.4",
     "@mermaid-js/mermaid-cli": "11.17.0",
     "@taplo/cli": "0.7.0",
+    "@tauri-apps/cli": "2.11.4",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
     "markdown-link-check": "3.15.0",
     "markdownlint-cli2": "0.23.2",
     "prettier": "3.9.6",
     "puppeteer": "25.10.0",
     "yaml": "2.9.1"
+  },
+  "dependencies": {
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
   }
 }

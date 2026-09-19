@@ -3,6 +3,8 @@ import { cp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { mergeAgentContract } from './brand-agent-contract.mjs';
+
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const destination = join(repositoryRoot, 'brand');
 
@@ -109,6 +111,7 @@ function parseArguments(argv) {
   for (const required of [
     'source',
     'revision',
+    'artifact-revision',
     'run-id',
     'artifact-id',
     'retrieved-at',
@@ -117,6 +120,8 @@ function parseArguments(argv) {
   }
   if (!/^[0-9a-f]{40}$/.test(values.get('revision')))
     throw new Error('--revision must be a full lowercase commit SHA');
+  if (!/^[0-9a-f]{40}$/.test(values.get('artifact-revision')))
+    throw new Error('--artifact-revision must be a full lowercase commit SHA');
   if (!/^\d{4}-\d{2}-\d{2}$/.test(values.get('retrieved-at')))
     throw new Error('--retrieved-at must be YYYY-MM-DD');
   return values;
@@ -219,6 +224,18 @@ async function main() {
     );
   }
 
+  const generatedAgentContract = await readFile(
+    join(destination, 'enforcement', 'AGENTS.md'),
+    'utf8',
+  );
+  const projectInstructionsPath = join(repositoryRoot, 'AGENTS.md');
+  const projectInstructions = await readFile(projectInstructionsPath, 'utf8');
+  await writeFile(
+    projectInstructionsPath,
+    mergeAgentContract(projectInstructions, generatedAgentContract),
+    'utf8',
+  );
+
   const publicComparisonSources = [
     {
       path: 'logos/provenance.json',
@@ -246,9 +263,10 @@ async function main() {
     canonVersion: sourceManifest.canon,
     sourceRepository: 'https://github.com/ShruggieTech/shruggie-brand',
     sourceRevision: values.get('revision'),
+    artifactSourceRevision: values.get('artifact-revision'),
     workflowRunId: Number(values.get('run-id')),
     artifactId: Number(values.get('artifact-id')),
-    artifactName: 'verified-brand-kits',
+    artifactName: `verified-brand-kits-${values.get('artifact-revision')}`,
     retrievedAt: values.get('retrieved-at'),
     sourceManifestSha256: digest(sourceManifestBytes),
     integratedManifestSha256,
@@ -263,7 +281,7 @@ async function main() {
   );
   await writeFile(
     join(destination, 'INTEGRATION.md'),
-    `# Repository integration\n\nGlitchpad brand ${receipt.brandVersion} under ShruggieTech canon ${receipt.canonVersion} was imported from the successful \`${receipt.artifactName}\` artifact produced by upstream commit \`${receipt.sourceRevision}\` in Build run \`${receipt.workflowRunId}\` (artifact \`${receipt.artifactId}\`). That commit also produced the Pages deployment served at \`https://brand.shruggie.tech\`.\n\nThe artifact was retrieved on ${receipt.retrievedAt}. Its upstream manifest SHA-256 is \`${receipt.sourceManifestSha256}\`; the integrated manifest SHA-256 is \`${receipt.integratedManifestSha256}\` after the deterministic legal-link correction described below. All ${receipt.governedFileCount} governed files were verified against the upstream manifest before import. Publicly exposed derivative manifests and the repaired lockup were independently compared with the live download surface; their digests are recorded in \`INTEGRATION.json\`.\n\nOne deterministic integration correction intentionally differs from the artifact bytes: \`brand/README.md\` replaces the artifact-layout-relative \`../../LICENSE-BRAND.md\` target with the immutable upstream URL at the pinned commit so the legal terms remain reachable from this repository. \`brand/manifest.json\` governs the corrected file bytes. This correction is performed only by \`scripts/sync-brand-kit.mjs\`, never by hand.\n\nFiles named in \`manifest.json\` are immutable governed inputs. \`INTEGRATION.md\` and \`INTEGRATION.json\` are the only project-owned files inside this directory and are intentionally excluded from the upstream manifest. Do not regenerate, optimize, recolor, resize, or edit governed files in place.\n\nThe public site copies approved fonts, lockups, the social preview, and web icons from this directory. Desktop packages copy the Windows ICO, macOS ICNS, and approved web raster sizes. Android copies the supplied legacy, adaptive, and monochrome resources into both Tauri icon inputs and the generated Android project. Every mapping is enforced by \`scripts/check-brand.mjs\` as an exact byte comparison.\n\nRun \`pnpm check:brand\` for manifest, provenance, receipt, encoding, licensing, stale-file, README, site, desktop, and Android integration validation. Run \`pnpm check:brand:freshness\` only when network access is intentionally available to compare the recorded public derivatives with \`brand.shruggie.tech\`. Run the complete \`cargo xtask check\` gate before describing the update as verified.\n`,
+    `# Repository integration\n\nGlitchpad brand ${receipt.brandVersion} under ShruggieTech canon ${receipt.canonVersion} was imported from the successful \`${receipt.artifactName}\` artifact built at GitHub pull-request merge commit \`${receipt.artifactSourceRevision}\` in Build run \`${receipt.workflowRunId}\` (artifact \`${receipt.artifactId}\`). The adopted upstream candidate is head commit \`${receipt.sourceRevision}\`; the pilot evidence records the required tree-equivalence check between those two commits. The workflow also produced the candidate Pages deployment.\n\nThe artifact was retrieved on ${receipt.retrievedAt}. Its upstream manifest SHA-256 is \`${receipt.sourceManifestSha256}\`; the integrated manifest SHA-256 is \`${receipt.integratedManifestSha256}\` after the deterministic legal-link correction described below. All ${receipt.governedFileCount} governed files were verified against the upstream manifest before import. Publicly exposed derivative manifests and the repaired lockup were independently compared with the live download surface; their digests are recorded in \`INTEGRATION.json\`.\n\nOne deterministic integration correction intentionally differs from the artifact bytes: \`brand/README.md\` replaces the artifact-layout-relative \`../../LICENSE-BRAND.md\` target with the immutable upstream URL at the pinned candidate head so the legal terms remain reachable from this repository. \`brand/manifest.json\` governs the corrected file bytes. This correction is performed only by \`scripts/sync-brand-kit.mjs\`, never by hand.\n\nFiles named in \`manifest.json\` are immutable governed inputs. \`INTEGRATION.md\` and \`INTEGRATION.json\` are the only project-owned files inside this directory and are intentionally excluded from the upstream manifest. Do not regenerate, optimize, recolor, resize, or edit governed files in place.\n\nThe public site copies approved fonts, lockups, the social preview, and web icons from this directory. Desktop packages copy the Windows ICO, macOS ICNS, and approved web raster sizes. Android copies the supplied legacy, adaptive, and monochrome resources into both Tauri icon inputs and the generated Android project. Every mapping is enforced by \`scripts/check-brand.mjs\` as an exact byte comparison.\n\nRun \`pnpm check:brand\` for manifest, provenance, receipt, encoding, licensing, stale-file, README, site, desktop, and Android integration validation. Run \`pnpm check:brand:freshness\` only when network access is intentionally available to compare the recorded public derivatives with \`brand.shruggie.tech\`. Run the complete \`cargo xtask check\` gate before describing the update as verified.\n`,
     'utf8',
   );
 

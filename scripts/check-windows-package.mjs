@@ -68,7 +68,7 @@ export function validatePortableSmokeContract(lifecycleSource, workflowSource) {
     'Get-TabCount $process) -ne 0',
     'Get-TabCount $process) -ne 2',
     'Close {0}',
-    "schema_version = 5",
+    'schema_version = 5',
     'candidate_manifest_sha256 = $manifestDigest',
     'evidence_authority = [ordered]@{',
     "kind = 'github_actions_workflow'",
@@ -104,13 +104,81 @@ export function validatePortableSmokeContract(lifecycleSource, workflowSource) {
   for (const requirement of lifecycleRequirements)
     if (!lifecycleSource.includes(requirement))
       fail(`portable smoke lifecycle omits ${requirement}`);
-  for (const requirement of ['-TextFixture', '-MarkdownFixtureMinimal', '-MarkdownFixtureEditable', '-MarkdownFixtureRecovery', '-MarkdownFixtureA', '-MarkdownFixtureB', '-Manifest', '-ScaleMatrixReceipt', 'windows-package-manifest.json', 'shell-layout-scale-receipt.json', 's027-visible.txt', 's035-minimal.md', 's038-installed-editable.md', 's038-portable-editable.md', 's038-installed-recovery.md', 's038-portable-recovery.md', 's030-alpha.md', 's030-beta.md'])
+  for (const requirement of [
+    '-TextFixture',
+    '-MarkdownFixtureMinimal',
+    '-MarkdownFixtureEditable',
+    '-MarkdownFixtureRecovery',
+    '-MarkdownFixtureA',
+    '-MarkdownFixtureB',
+    '-Manifest',
+    '-ScaleMatrixReceipt',
+    'windows-package-manifest.json',
+    'shell-layout-scale-receipt.json',
+    's027-visible.txt',
+    's035-minimal.md',
+    's038-installed-editable.md',
+    's038-portable-editable.md',
+    's038-installed-recovery.md',
+    's038-portable-recovery.md',
+    's030-alpha.md',
+    's030-beta.md',
+  ])
     if (!workflowSource.includes(requirement))
       fail(`Windows workflow omits ${requirement}`);
-  for (const requirement of ['[S030_ALPHA_RAW_SENTINEL]: https://example.invalid/alpha', '[S030_BETA_RAW_SENTINEL]: https://example.invalid/beta', 'S038_RECOVERY_RAW_SENTINEL', '| Alpha | Beta |', 'Footnote[^1]', 'flowchart TB', 'Wait-SafeMarkdownOutcome', 'Wait-WindowText', 'Wait-FileText', 'Wait-NamedButton', 'Wait-ActionableNamedElement', "[string] $Shortcut = ''", "[Regex]::Escape($Shortcut)", 'TreeWalker]::ControlViewWalker.GetParent', 'TryGetCurrentPattern', 'Invoke-AutomationElement', 'Click-AutomationElement', 'catch { }', 'GetClickablePoint', '$bounds = $Element.Current.BoundingRectangle', '$clickX = $bounds.X + ($bounds.Width / 2)', '$clickY = $bounds.Y + ($bounds.Height / 2)', '$item = Wait-ActionableNamedElement $Process $Name $Shortcut', 'Click-AutomationElement $Process $item $Name', 'GlitchpadNativeInput', 'SetForegroundWindow', 'mouse_event', 'Send-MarkdownDelivery', 'Exercise-MarkdownEditSavePreview', 'Exercise-MarkdownRecovery', 'markdown-failure-request.marker', 'markdown-failure-consumed.marker', 'System.Text.Json.JsonDocument', "GetProperty('source_commit').GetString()", "GetProperty('workflow_identity').GetString()", "GetProperty('candidate_manifest_sha256').GetString()", "GetProperty('evidence_authority').GetProperty('source_commit').GetString()", "GetProperty('content_free').GetBoolean()", 'GetProperty($property).GetString()', "Invoke-MenuCommand $Process 'Edit source'", "Invoke-MenuCommand $Process 'Save' 'Ctrl+S'", "Invoke-MenuCommand $Process 'Preview'", 'Wait-FileText $Path $savedText', 'DocumentSurface.test.tsx', 'MarkdownSurface.test.tsx'])
+  for (const requirement of [
+    '[S030_ALPHA_RAW_SENTINEL]: https://example.invalid/alpha',
+    '[S030_BETA_RAW_SENTINEL]: https://example.invalid/beta',
+    'S038_RECOVERY_RAW_SENTINEL',
+    '| Alpha | Beta |',
+    'Footnote[^1]',
+    'flowchart TB',
+    'Wait-SafeMarkdownOutcome',
+    'Wait-WindowText',
+    'Wait-FileText',
+    'Wait-NamedButton',
+    'Wait-ActionableNamedElement',
+    "[string] $Shortcut = ''",
+    '[Regex]::Escape($Shortcut)',
+    'TreeWalker]::ControlViewWalker.GetParent',
+    'TryGetCurrentPattern',
+    'Invoke-AutomationElement',
+    'Click-AutomationElement',
+    'catch { }',
+    'GetClickablePoint',
+    '$bounds = $Element.Current.BoundingRectangle',
+    '$clickX = $bounds.X + ($bounds.Width / 2)',
+    '$clickY = $bounds.Y + ($bounds.Height / 2)',
+    '$item = Wait-ActionableNamedElement $Process $Name $Shortcut',
+    'Click-AutomationElement $Process $item $Name',
+    'GlitchpadNativeInput',
+    'SetForegroundWindow',
+    'mouse_event',
+    'Send-MarkdownDelivery',
+    'Exercise-MarkdownEditSavePreview',
+    'Exercise-MarkdownRecovery',
+    'markdown-failure-request.marker',
+    'markdown-failure-consumed.marker',
+    'System.Text.Json.JsonDocument',
+    "GetProperty('source_commit').GetString()",
+    "GetProperty('workflow_identity').GetString()",
+    "GetProperty('candidate_manifest_sha256').GetString()",
+    "GetProperty('evidence_authority').GetProperty('source_commit').GetString()",
+    "GetProperty('content_free').GetBoolean()",
+    'GetProperty($property).GetString()',
+    "Invoke-MenuCommand $Process 'Edit source'",
+    "Invoke-MenuCommand $Process 'Save' 'Ctrl+S'",
+    "Invoke-MenuCommand $Process 'Preview'",
+    'Wait-FileText $Path $savedText',
+    'DocumentSurface.test.tsx',
+    'MarkdownSurface.test.tsx',
+  ])
     if (!`${lifecycleSource}\n${workflowSource}`.includes(requirement))
       fail(`Windows Markdown lifecycle omits ${requirement}`);
-  for (const requirement of ['-InstalledMarkdownReceipt', 'installed-markdown-lifecycle-receipt.json'])
+  for (const requirement of [
+    '-InstalledMarkdownReceipt',
+    'installed-markdown-lifecycle-receipt.json',
+  ])
     if (!workflowSource.includes(requirement))
       fail(`Windows installed lifecycle omits ${requirement}`);
   for (const requirement of [
@@ -121,11 +189,23 @@ export function validatePortableSmokeContract(lifecycleSource, workflowSource) {
   ])
     if (!workflowSource.includes(requirement))
       fail(`Windows final-byte validation omits ${requirement}`);
-  const promotionIndex = workflowSource.indexOf('- name: Promote truthful community evidence');
-  const scaleIndex = workflowSource.indexOf('- name: Prove governed display-scale geometry');
-  const lifecycleIndex = workflowSource.indexOf('- name: Exercise installed and portable lifecycles');
-  if (promotionIndex < 0 || scaleIndex <= promotionIndex || lifecycleIndex <= scaleIndex)
-    fail('Windows official manifest promotion and receipt binding are out of order');
+  const promotionIndex = workflowSource.indexOf(
+    '- name: Promote truthful community evidence',
+  );
+  const scaleIndex = workflowSource.indexOf(
+    '- name: Prove governed display-scale geometry',
+  );
+  const lifecycleIndex = workflowSource.indexOf(
+    '- name: Exercise installed and portable lifecycles',
+  );
+  if (
+    promotionIndex < 0 ||
+    scaleIndex <= promotionIndex ||
+    lifecycleIndex <= scaleIndex
+  )
+    fail(
+      'Windows official manifest promotion and receipt binding are out of order',
+    );
   return true;
 }
 
@@ -203,13 +283,51 @@ export async function checkWindowsConfiguration(
       ),
       'utf8',
     ),
-    readFile(join(repositoryRoot, 'scripts', 'windows', 'test-portable-lifecycle.ps1'), 'utf8'),
-    readFile(join(repositoryRoot, '.github', 'workflows', 'windows-package.yml'), 'utf8'),
+    readFile(
+      join(repositoryRoot, 'scripts', 'windows', 'test-portable-lifecycle.ps1'),
+      'utf8',
+    ),
+    readFile(
+      join(repositoryRoot, '.github', 'workflows', 'windows-package.yml'),
+      'utf8',
+    ),
     readFile(join(repositoryRoot, 'scripts', 'check-shell-layout.mjs'), 'utf8'),
-    readFile(join(repositoryRoot, 'crates', 'glitchpad-host', 'src', 'lifecycle_probe.rs'), 'utf8'),
-    readFile(join(repositoryRoot, 'apps', 'glitchpad', 'src', 'App.tsx'), 'utf8'),
-    readFile(join(repositoryRoot, 'apps', 'glitchpad', 'src', 'components', 'MarkdownSurface.tsx'), 'utf8'),
-    readFile(join(repositoryRoot, 'apps', 'glitchpad', 'src', 'domain', 'desktop-delivery-gateway.ts'), 'utf8'),
+    readFile(
+      join(
+        repositoryRoot,
+        'crates',
+        'glitchpad-host',
+        'src',
+        'lifecycle_probe.rs',
+      ),
+      'utf8',
+    ),
+    readFile(
+      join(repositoryRoot, 'apps', 'glitchpad', 'src', 'App.tsx'),
+      'utf8',
+    ),
+    readFile(
+      join(
+        repositoryRoot,
+        'apps',
+        'glitchpad',
+        'src',
+        'components',
+        'MarkdownSurface.tsx',
+      ),
+      'utf8',
+    ),
+    readFile(
+      join(
+        repositoryRoot,
+        'apps',
+        'glitchpad',
+        'src',
+        'domain',
+        'desktop-delivery-gateway.ts',
+      ),
+      'utf8',
+    ),
   ]);
 
   validatePortableSmokeContract(portableLifecycle, windowsWorkflow);
@@ -218,6 +336,8 @@ export async function checkWindowsConfiguration(
     [shellLayoutSource, 'geometry_scale_${scale}'],
     [lifecycleProbeSource, 'consume_desktop_markdown_failure_probe'],
     [applicationSource, 'consumeDesktopMarkdownFailureProbe'],
+    [applicationSource, '<AppFrame host="tauri" layout="full-bleed">'],
+    [applicationSource, '<AppFrameEnvironmentBridge />'],
     [markdownSurfaceSource, 'LifecycleMarkdownFailure'],
     [desktopGatewaySource, "call('consume_desktop_markdown_failure_probe')"],
   ])
@@ -277,7 +397,9 @@ export async function checkWindowsConfiguration(
   if (
     contract.official.trust_state !== 'unsigned_community' ||
     contract.official.required_signature_status !== 'not_signed' ||
-    !contract.official.required_evidence.includes('community-trust-evidence.json')
+    !contract.official.required_evidence.includes(
+      'community-trust-evidence.json',
+    )
   )
     fail('official unsigned community trust is not governed');
   for (const name of [
@@ -427,7 +549,9 @@ function validateWindowsEvidenceShape(evidence, contract, official) {
   )
     fail('official evidence file inventory is incomplete or unexpected');
   for (const artifact of evidence.artifacts)
-    if (artifact.signature_status !== contract.official.required_signature_status)
+    if (
+      artifact.signature_status !== contract.official.required_signature_status
+    )
       fail(`official unsigned trust does not bind ${artifact.kind}`);
   return true;
 }
@@ -475,16 +599,34 @@ export async function validateOfficialWindowsEvidence(
   if (contract.official.trust_state === 'unsigned_community') {
     validateWindowsEvidenceShape(evidence, contract, true);
     const root = resolve(artifactRoot);
-    const manifestBytes = await readFile(join(root, 'windows-package-manifest.json'));
-    if (!isDeepStrictEqual(JSON.parse(manifestBytes.toString('utf8')), evidence)) fail('manifest evidence does not match the validated document');
+    const manifestBytes = await readFile(
+      join(root, 'windows-package-manifest.json'),
+    );
+    if (
+      !isDeepStrictEqual(JSON.parse(manifestBytes.toString('utf8')), evidence)
+    )
+      fail('manifest evidence does not match the validated document');
     const checksums = await readFile(join(root, 'SHA256SUMS'), 'utf8');
     for (const artifact of evidence.artifacts) {
       const bytes = await readFile(join(root, artifact.name));
       const digest = createHash('sha256').update(bytes).digest('hex');
-      if (digest !== artifact.sha256 || bytes.length !== artifact.bytes || !checksums.includes(`${digest}  ${artifact.name}`)) fail(`final bytes do not match ${artifact.kind}`);
+      if (
+        digest !== artifact.sha256 ||
+        bytes.length !== artifact.bytes ||
+        !checksums.includes(`${digest}  ${artifact.name}`)
+      )
+        fail(`final bytes do not match ${artifact.kind}`);
     }
     const trust = await json(join(root, 'community-trust-evidence.json'));
-    if (trust.schema_version !== 1 || trust.trust_state !== 'unsigned_community' || trust.source_commit !== evidence.source_commit || trust.artifacts?.some(({ signature_status }) => signature_status !== 'not_signed')) fail('community trust evidence is invalid');
+    if (
+      trust.schema_version !== 1 ||
+      trust.trust_state !== 'unsigned_community' ||
+      trust.source_commit !== evidence.source_commit ||
+      trust.artifacts?.some(
+        ({ signature_status }) => signature_status !== 'not_signed',
+      )
+    )
+      fail('community trust evidence is invalid');
     return true;
   }
   validateWindowsEvidenceShape(evidence, contract, true);

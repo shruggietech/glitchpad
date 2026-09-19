@@ -3,6 +3,8 @@ import { readFile, readdir, stat } from 'node:fs/promises';
 import { dirname, extname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { verifyAgentContract } from './brand-agent-contract.mjs';
+
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const textExtensions = new Set([
   '.css',
@@ -146,7 +148,7 @@ export function verifyPngHeader(bytes, label) {
     return [`README banner asset is not a valid PNG: ${label}`];
   const width = bytes.readUInt32BE(16);
   const height = bytes.readUInt32BE(20);
-  return width === 1024 && height === 259
+  return width === 1024 && height === 258
     ? []
     : [
         `README banner asset has unexpected ${width}x${height} geometry: ${label}`,
@@ -294,6 +296,17 @@ export async function verifyBrand(
     );
     if (!/^[0-9a-f]{40}$/.test(receipt.sourceRevision ?? ''))
       problems.push('brand integration receipt has no pinned source revision');
+    if (!/^[0-9a-f]{40}$/.test(receipt.artifactSourceRevision ?? ''))
+      problems.push(
+        'brand integration receipt has no pinned artifact source revision',
+      );
+    if (
+      receipt.artifactName !==
+      `verified-brand-kits-${receipt.artifactSourceRevision}`
+    )
+      problems.push(
+        'brand integration receipt artifact name does not match its source revision',
+      );
     if (!/^\d{4}-\d{2}-\d{2}$/.test(receipt.retrievedAt ?? ''))
       problems.push('brand integration receipt has no retrieval date');
     if (receipt.governedFileCount !== manifest.files.length)
@@ -317,6 +330,14 @@ export async function verifyBrand(
       if (!entry)
         problems.push(`recovered artifact file is not governed: ${recovered}`);
     }
+
+    const [projectInstructions, generatedAgentContract] = await Promise.all([
+      readFile(join(projectRoot, 'AGENTS.md'), 'utf8'),
+      readFile(join(brandRoot, 'enforcement', 'AGENTS.md'), 'utf8'),
+    ]);
+    problems.push(
+      ...verifyAgentContract(projectInstructions, generatedAgentContract),
+    );
 
     for (const path of [
       'logos/png/glitchpad-horizontal-color-1024.png',
@@ -507,7 +528,7 @@ if (
     process.exitCode = 1;
   } else {
     console.log(
-      'Glitchpad brand 1.1.0 / canon 1.2.1 verified: manifest, provenance, integrations, encoding, and licenses are clean.',
+      'Glitchpad brand 1.1.0 / canon 1.2.1 verified: manifest, provenance, agent contract, integrations, encoding, and licenses are clean.',
     );
   }
 }

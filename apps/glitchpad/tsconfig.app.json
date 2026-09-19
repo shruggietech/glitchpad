@@ -18,5 +18,9 @@
     "jsx": "react-jsx",
     "types": ["vitest/globals", "@testing-library/jest-dom"]
   },
-  "include": ["src"]
+  "include": [
+    "src",
+    "../../brand/web/react/server.tsx",
+    "../../brand/web/react/environment.tsx"
+  ]
 }

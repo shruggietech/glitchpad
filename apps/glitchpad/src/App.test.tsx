@@ -1,19 +1,35 @@
 import axe from 'axe-core';
 import { EditorView } from '@codemirror/view';
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 
 import { App } from './App';
 import { initialSessions } from './test/fixtures';
 import { RecoveryCandidateResolution } from './components/RecoveryResolution';
 import type { RecoveryGateway } from './domain/recovery-gateway';
 import type { MetadataGateway } from './domain/metadata-gateway';
-import type { IntegrityProgress, IntegrityStartRequest } from './domain/contracts';
+import type {
+  IntegrityProgress,
+  IntegrityStartRequest,
+} from './domain/contracts';
 import { DESKTOP_CHROME_MAX_PX, REFERENCE_HEIGHT_PX } from './domain/tabs';
 import { defaultPreferences } from './domain/persistence';
 import type { PersistenceGateway } from './domain/persistence-gateway';
 import type { AndroidRestorationGateway } from './domain/android-restoration-gateway';
 import type { AndroidDeliveryGateway } from './domain/android-delivery-gateway';
 import type { DesktopDeliveryGateway } from './domain/desktop-delivery-gateway';
+
+function getApplicationShell() {
+  const shell = document.querySelector<HTMLElement>('.app-shell');
+  if (!shell) throw new Error('application shell was not rendered');
+  return shell;
+}
 
 const revision = {
   identity: initialSessions[2].source.identity,
@@ -34,11 +50,18 @@ const saveReceipt = {
 const invokeMenu = (name: string | RegExp) => {
   fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
   const matcher = typeof name === 'string' ? new RegExp(`^${name}`, 'u') : name;
-  fireEvent.click(within(screen.getByRole('menu', { name: 'Glitchpad menu' })).getByRole('menuitem', { name: matcher }));
+  fireEvent.click(
+    within(screen.getByRole('menu', { name: 'Glitchpad menu' })).getByRole(
+      'menuitem',
+      { name: matcher },
+    ),
+  );
 };
 
 describe('document foundation shell', () => {
-  const persistenceGateway = (overrides: Partial<PersistenceGateway> = {}): PersistenceGateway => ({
+  const persistenceGateway = (
+    overrides: Partial<PersistenceGateway> = {},
+  ): PersistenceGateway => ({
     loadPreferences: vi.fn().mockResolvedValue({
       status: 'loaded',
       value: defaultPreferences(),
@@ -80,11 +103,34 @@ describe('document foundation shell', () => {
 
   it('starts with no synthetic documents in the production shell', () => {
     render(<App />);
-    expect(within(screen.getByRole('region', { name: 'Document surface' })).getByText('No document is open')).toBeVisible();
+    expect(
+      within(
+        screen.getByRole('region', { name: 'Document surface' }),
+      ).getByText('No document is open'),
+    ).toBeVisible();
     expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Menu' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Menu' }).closest('.shell-chrome')).toBeInTheDocument();
-    for (const fixture of ['welcome.md', 'draft.md', 'notes.txt']) expect(screen.queryByText(fixture)).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Menu' }).closest('.shell-chrome'),
+    ).toBeInTheDocument();
+    for (const fixture of ['welcome.md', 'draft.md', 'notes.txt'])
+      expect(screen.queryByText(fixture)).not.toBeInTheDocument();
+  });
+
+  it('adopts one generated full-bleed Tauri AppFrame as the semantic shell', () => {
+    render(<App />);
+    const frame = document.querySelector<HTMLElement>('[data-bb-app-frame]');
+    expect(frame).not.toBeNull();
+    expect(frame).toHaveAttribute('data-bb-host', 'tauri');
+    expect(frame).toHaveAttribute('data-bb-layout', 'full-bleed');
+    expect(document.querySelectorAll('[data-bb-app-frame]')).toHaveLength(1);
+    expect(screen.getAllByRole('main')).toHaveLength(1);
+    expect(screen.getByRole('main')).toContainElement(getApplicationShell());
+    expect(
+      document.documentElement.style.getPropertyValue(
+        '--bb-visual-viewport-height',
+      ),
+    ).not.toBe('');
   });
 
   it('shows native delivery failures as an actionable visible alert', async () => {
@@ -109,7 +155,9 @@ describe('document foundation shell', () => {
       subscribe: vi.fn().mockResolvedValue(() => undefined),
     };
     render(<App sessions={[]} desktopDeliveryGateway={gateway} />);
-    expect(await screen.findByRole('alert')).toHaveTextContent('The selected file cannot be read.');
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'The selected file cannot be read.',
+    );
   });
 
   it('opens initial and warm Android deliveries and releases closed sources', async () => {
@@ -120,21 +168,24 @@ describe('document foundation shell', () => {
       external_revision: revision,
     };
     let notify: (() => void) | undefined;
-    const drain = vi.fn()
+    const drain = vi
+      .fn()
       .mockResolvedValueOnce({
-        sources: [{
-          source_id: 'source',
-          descriptor: delivered.source,
-          external_revision: revision,
-          delivery_kind: 'view',
-          grant: {
-            read: true,
-            write: false,
-            persisted_read: false,
-            persisted_write: false,
-            restorable: false,
+        sources: [
+          {
+            source_id: 'source',
+            descriptor: delivered.source,
+            external_revision: revision,
+            delivery_kind: 'view',
+            grant: {
+              read: true,
+              write: false,
+              persisted_read: false,
+              persisted_write: false,
+              restorable: false,
+            },
           },
-        }],
+        ],
         rejections: [],
       })
       .mockResolvedValue({ sources: [], rejections: [] });
@@ -153,7 +204,7 @@ describe('document foundation shell', () => {
     await screen.findByRole('region', { name: 'notes.txt' });
     notify?.();
     await waitFor(() => expect(drain).toHaveBeenCalledTimes(2));
-    fireEvent.keyDown(screen.getByRole('main'), { key: 'w', ctrlKey: true });
+    fireEvent.keyDown(getApplicationShell(), { key: 'w', ctrlKey: true });
     await waitFor(() => expect(close).toHaveBeenCalledWith('source'));
   });
 
@@ -164,21 +215,24 @@ describe('document foundation shell', () => {
       source_id: 'source',
       external_revision: revision,
     };
-    const drain = vi.fn()
+    const drain = vi
+      .fn()
       .mockResolvedValueOnce({
-        sources: [{
-          source_id: 'source',
-          descriptor: delivered.source,
-          external_revision: revision,
-          delivery_kind: 'view',
-          grant: {
-            read: true,
-            write: false,
-            persisted_read: false,
-            persisted_write: false,
-            restorable: false,
+        sources: [
+          {
+            source_id: 'source',
+            descriptor: delivered.source,
+            external_revision: revision,
+            delivery_kind: 'view',
+            grant: {
+              read: true,
+              write: false,
+              persisted_read: false,
+              persisted_write: false,
+              restorable: false,
+            },
           },
-        }],
+        ],
         rejections: [],
       })
       .mockResolvedValue({ sources: [], rejections: [] });
@@ -191,8 +245,12 @@ describe('document foundation shell', () => {
 
     render(<App sessions={[]} androidDeliveryGateway={gateway} />);
 
-    expect(await screen.findByRole('region', { name: 'notes.txt' })).toBeVisible();
-    await waitFor(() => expect(drain).toHaveBeenCalledTimes(2), { timeout: 1_500 });
+    expect(
+      await screen.findByRole('region', { name: 'notes.txt' }),
+    ).toBeVisible();
+    await waitFor(() => expect(drain).toHaveBeenCalledTimes(2), {
+      timeout: 1_500,
+    });
   });
 
   it('opens native desktop deliveries through the compact application commands', async () => {
@@ -235,7 +293,9 @@ describe('document foundation shell', () => {
       }),
     };
     render(<App sessions={[]} desktopDeliveryGateway={gateway} />);
-    await waitFor(() => expect(subscriptionOrder).toEqual(['subscribe', 'drain']));
+    await waitFor(() =>
+      expect(subscriptionOrder).toEqual(['subscribe', 'drain']),
+    );
     fireEvent.click(screen.getByRole('button', { name: /Open file/i }));
     await screen.findByRole('region', { name: 'notes.txt' });
     expect(choose).toHaveBeenCalledOnce();
@@ -249,9 +309,15 @@ describe('document foundation shell', () => {
       }),
     );
     invokeMenu('Save');
-    await waitFor(() => expect(save).toHaveBeenCalledWith(expect.objectContaining({ source_id: 'source', revision: 2 })));
-    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(/saved durably/i));
-    fireEvent.keyDown(screen.getByRole('main'), { key: 'w', ctrlKey: true });
+    await waitFor(() =>
+      expect(save).toHaveBeenCalledWith(
+        expect.objectContaining({ source_id: 'source', revision: 2 }),
+      ),
+    );
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent(/saved durably/i),
+    );
+    fireEvent.keyDown(getApplicationShell(), { key: 'w', ctrlKey: true });
     await waitFor(() => expect(close).toHaveBeenCalledWith('source'));
   });
 
@@ -263,7 +329,9 @@ describe('document foundation shell', () => {
     const view = EditorView.findFromDOM(textbox);
     expect(view).not.toBeNull();
     act(() => view?.dispatch({ changes: { from: 0, to: 1, insert: 'a' } }));
-    expect(screen.getByRole('region', { name: 'notes.txt' })).toHaveTextContent('a small text fixture');
+    expect(screen.getByRole('region', { name: 'notes.txt' })).toHaveTextContent(
+      'a small text fixture',
+    );
     fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
     expect(screen.getByRole('menuitem', { name: /^Save/u })).toBeEnabled();
   });
@@ -271,11 +339,22 @@ describe('document foundation shell', () => {
   it('renders semantic compact tabs and an active document surface', async () => {
     render(<App sessions={initialSessions} />);
 
-    expect(screen.getByRole('tablist', { name: 'Open documents' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('tablist', { name: 'Open documents' }),
+    ).toBeInTheDocument();
     expect(screen.getAllByRole('tab')).toHaveLength(5);
-    expect(screen.getByRole('tab', { name: /welcome\.md/i })).toHaveAttribute('aria-selected', 'true');
-    expect(await screen.findByRole('heading', { name: 'Glitchpad document foundation' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /more open documents/i })).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByRole('tab', { name: /welcome\.md/i })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(
+      await screen.findByRole('heading', {
+        name: 'Glitchpad document foundation',
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /more open documents/i }),
+    ).toHaveAttribute('aria-expanded', 'false');
   });
 
   it('supports automatic keyboard activation, reorder, cycling, close focus, and overflow', () => {
@@ -292,39 +371,61 @@ describe('document foundation shell', () => {
     });
     expect(screen.getByRole('tab', { name: /diagram\.mmd/i })).toHaveFocus();
 
-    fireEvent.keyDown(screen.getByRole('main'), { key: 'Tab', ctrlKey: true });
-    expect(screen.getByRole('tab', { name: /draft\.md/i })).toHaveAttribute('aria-selected', 'true');
-    fireEvent.keyDown(screen.getByRole('main'), { key: 'w', ctrlKey: true });
+    fireEvent.keyDown(getApplicationShell(), { key: 'Tab', ctrlKey: true });
+    expect(screen.getByRole('tab', { name: /draft\.md/i })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    fireEvent.keyDown(getApplicationShell(), { key: 'w', ctrlKey: true });
     expect(screen.getByRole('dialog')).toHaveTextContent(/unsaved changes/i);
-    expect(within(screen.getByRole('dialog')).getByRole('button', { name: 'Save' })).toHaveFocus();
+    expect(
+      within(screen.getByRole('dialog')).getByRole('button', { name: 'Save' }),
+    ).toHaveFocus();
     fireEvent.click(screen.getByRole('button', { name: 'Discard' }));
-    expect(screen.queryByRole('tab', { name: /draft\.md/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('tab', { name: /draft\.md/i }),
+    ).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: /more open documents/i }));
+    fireEvent.click(
+      screen.getByRole('button', { name: /more open documents/i }),
+    );
     const menu = screen.getByRole('menu', { name: 'Overflow documents' });
-    fireEvent.click(within(menu).getByRole('menuitem', { name: /^welcome\.md$/iu }));
-    expect(screen.getByRole('tab', { name: /welcome\.md/i })).toHaveAttribute('aria-selected', 'true');
+    fireEvent.click(
+      within(menu).getByRole('menuitem', { name: /^welcome\.md$/iu }),
+    );
+    expect(screen.getByRole('tab', { name: /welcome\.md/i })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
   });
 
   it('cancels dirty close without changing content and returns keyboard focus', async () => {
     render(<App sessions={[initialSessions[3]]} />);
     const document = screen.getByRole('region', { name: 'draft.md' });
     document.focus();
-    fireEvent.keyDown(screen.getByRole('main'), { key: 'w', ctrlKey: true });
-    expect(within(screen.getByRole('dialog')).getByRole('button', { name: 'Save' })).toHaveFocus();
+    fireEvent.keyDown(getApplicationShell(), { key: 'w', ctrlKey: true });
+    expect(
+      within(screen.getByRole('dialog')).getByRole('button', { name: 'Save' }),
+    ).toHaveFocus();
     fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(document).toHaveFocus();
-    expect(await screen.findByText('Unsaved fixture content.')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Unsaved fixture content.'),
+    ).toBeInTheDocument();
     expect(screen.getByRole('status')).toHaveTextContent(/remains open/i);
   });
 
   it('keeps dirty content open while Save As waits for a durable receipt', async () => {
     render(<App sessions={[initialSessions[3]]} />);
-    fireEvent.keyDown(screen.getByRole('main'), { key: 'w', ctrlKey: true });
+    fireEvent.keyDown(getApplicationShell(), { key: 'w', ctrlKey: true });
     fireEvent.click(screen.getByRole('button', { name: 'Save As' }));
-    expect(screen.getByRole('dialog')).toHaveTextContent(/until a durable receipt arrives/i);
-    expect(await screen.findByText('Unsaved fixture content.')).toBeInTheDocument();
+    expect(screen.getByRole('dialog')).toHaveTextContent(
+      /until a durable receipt arrives/i,
+    );
+    expect(
+      await screen.findByText('Unsaved fixture content.'),
+    ).toBeInTheDocument();
     expect(screen.getByRole('region', { name: 'draft.md' })).toBeVisible();
   });
 
@@ -339,12 +440,22 @@ describe('document foundation shell', () => {
       saveAs,
       subscribe: vi.fn().mockResolvedValue(() => undefined),
     };
-    render(<App sessions={[initialSessions[3]]} desktopDeliveryGateway={gateway} />);
-    fireEvent.keyDown(screen.getByRole('main'), { key: 'w', ctrlKey: true });
+    render(
+      <App sessions={[initialSessions[3]]} desktopDeliveryGateway={gateway} />,
+    );
+    fireEvent.keyDown(getApplicationShell(), { key: 'w', ctrlKey: true });
     fireEvent.click(screen.getByRole('button', { name: 'Save As' }));
-    expect(screen.getByRole('dialog')).toHaveTextContent(/until a durable receipt arrives/i);
-    await waitFor(() => expect(screen.queryByRole('region', { name: 'draft.md' })).not.toBeInTheDocument());
-    expect(saveAs).toHaveBeenCalledWith(expect.objectContaining({ id: 'draft' }));
+    expect(screen.getByRole('dialog')).toHaveTextContent(
+      /until a durable receipt arrives/i,
+    );
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('region', { name: 'draft.md' }),
+      ).not.toBeInTheDocument(),
+    );
+    expect(saveAs).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'draft' }),
+    );
   });
 
   it('completes a close only after native in-place Save returns a durable receipt', async () => {
@@ -367,10 +478,20 @@ describe('document foundation shell', () => {
       subscribe: vi.fn().mockResolvedValue(() => undefined),
     };
     render(<App sessions={[session]} desktopDeliveryGateway={gateway} />);
-    fireEvent.keyDown(screen.getByRole('main'), { key: 'w', ctrlKey: true });
-    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Save' }));
-    await waitFor(() => expect(save).toHaveBeenCalledWith(expect.objectContaining({ id: 'draft' })));
-    await waitFor(() => expect(screen.queryByRole('region', { name: 'draft.md' })).not.toBeInTheDocument());
+    fireEvent.keyDown(getApplicationShell(), { key: 'w', ctrlKey: true });
+    fireEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', { name: 'Save' }),
+    );
+    await waitFor(() =>
+      expect(save).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'draft' }),
+      ),
+    );
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('region', { name: 'draft.md' }),
+      ).not.toBeInTheDocument(),
+    );
   });
 
   it('projects conflict messaging and removes unsafe in-place save', () => {
@@ -382,10 +503,14 @@ describe('document foundation shell', () => {
     render(<App sessions={[conflicted]} />);
     expect(screen.getByText(/source changed outside/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
-    expect(screen.queryByRole('menuitem', { name: /Save Ctrl\+S/i })).not.toBeInTheDocument();
-    fireEvent.keyDown(screen.getByRole('main'), { key: 'w', ctrlKey: true });
+    expect(
+      screen.queryByRole('menuitem', { name: /Save Ctrl\+S/i }),
+    ).not.toBeInTheDocument();
+    fireEvent.keyDown(getApplicationShell(), { key: 'w', ctrlKey: true });
     const dialog = within(screen.getByRole('dialog'));
-    expect(dialog.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
+    expect(
+      dialog.queryByRole('button', { name: 'Save' }),
+    ).not.toBeInTheDocument();
     expect(dialog.getByRole('button', { name: 'Save As' })).toBeInTheDocument();
     expect(dialog.getByRole('button', { name: 'Discard' })).toBeInTheDocument();
     expect(dialog.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
@@ -452,8 +577,14 @@ describe('document foundation shell', () => {
     render(<App sessions={[]} recoveryGateway={gateway} />);
     fireEvent.click(await screen.findByRole('button', { name: 'Recover' }));
 
-    expect(await screen.findByRole('region', { name: 'recovered.txt' })).toBeVisible();
-    await waitFor(() => expect(screen.getByRole('region', { name: 'recovered.txt' })).toHaveTextContent('Recovered exact content'));
+    expect(
+      await screen.findByRole('region', { name: 'recovered.txt' }),
+    ).toBeVisible();
+    await waitFor(() =>
+      expect(
+        screen.getByRole('region', { name: 'recovered.txt' }),
+      ).toHaveTextContent('Recovered exact content'),
+    );
     expect(remove).not.toHaveBeenCalled();
   });
 
@@ -497,7 +628,9 @@ describe('document foundation shell', () => {
     render(<App sessions={initialSessions} />);
     fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
     expect(screen.getByRole('menuitem', { name: /copy/i })).toBeInTheDocument();
-    expect(screen.queryByRole('menuitem', { name: /save/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('menuitem', { name: /save/i }),
+    ).not.toBeInTheDocument();
     fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' });
 
     fireEvent.click(screen.getByRole('tab', { name: /draft\.md/i }));
@@ -508,13 +641,23 @@ describe('document foundation shell', () => {
   it('opens one shell-owned inspector, retargets it with the active tab, and restores opener focus', async () => {
     render(<App sessions={initialSessions} />);
     invokeMenu('File information');
-    expect(screen.getByRole('complementary', { name: 'File information' })).toHaveTextContent('welcome.md');
-    expect(screen.queryByRole('button', { name: 'Menu' })).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('complementary', { name: 'File information' }),
+    ).toHaveTextContent('welcome.md');
+    expect(
+      screen.queryByRole('button', { name: 'Menu' }),
+    ).not.toBeInTheDocument();
     expect(screen.getByRole('tabpanel')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('tab', { name: /diagram\.mmd/iu }));
-    expect(screen.getByRole('complementary', { name: 'File information' })).toHaveTextContent('diagram.mmd');
-    fireEvent.click(screen.getByRole('button', { name: 'Close file information' }));
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Menu' })).toHaveFocus());
+    expect(
+      screen.getByRole('complementary', { name: 'File information' }),
+    ).toHaveTextContent('diagram.mmd');
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Close file information' }),
+    );
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Menu' })).toHaveFocus(),
+    );
     expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
   });
 
@@ -581,11 +724,18 @@ describe('document foundation shell', () => {
     };
     render(<App sessions={[source]} metadataGateway={gateway} />);
     invokeMenu('File information');
-    await waitFor(() => expect(screen.getByRole('complementary')).toHaveTextContent('refreshed.txt'));
+    await waitFor(() =>
+      expect(screen.getByRole('complementary')).toHaveTextContent(
+        'refreshed.txt',
+      ),
+    );
     fireEvent.click(screen.getByRole('button', { name: 'Calculate SHA-256' }));
     expect(await screen.findByText('a'.repeat(64))).toBeInTheDocument();
     expect(advanceIntegrity).toHaveBeenCalled();
-    expect(startIntegrity).toHaveBeenCalledWith(expect.objectContaining({ expected_external_revision: observedRevision }), expect.any(AbortSignal));
+    expect(startIntegrity).toHaveBeenCalledWith(
+      expect.objectContaining({ expected_external_revision: observedRevision }),
+      expect.any(AbortSignal),
+    );
   });
 
   it('withdraws cached source facts and checksum actions when metadata polling fails', async () => {
@@ -618,13 +768,27 @@ describe('document foundation shell', () => {
     };
     render(<App sessions={[source]} metadataGateway={gateway} />);
     invokeMenu('File information');
-    expect(await screen.findByRole('button', { name: 'Calculate SHA-256' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('button', { name: 'Calculate SHA-256' }),
+    ).toBeInTheDocument();
     await waitFor(() => expect(query).toHaveBeenCalledTimes(2), {
       timeout: 2_000,
     });
-    await waitFor(() => expect(screen.getAllByRole('status').some((status) => status.textContent?.includes('Source facts are unavailable'))).toBe(true));
-    expect(screen.queryByRole('button', { name: 'Calculate SHA-256' })).not.toBeInTheDocument();
-    expect(screen.getAllByText('Unavailable (metadata_unavailable)').length).toBeGreaterThan(0);
+    await waitFor(() =>
+      expect(
+        screen
+          .getAllByRole('status')
+          .some((status) =>
+            status.textContent?.includes('Source facts are unavailable'),
+          ),
+      ).toBe(true),
+    );
+    expect(
+      screen.queryByRole('button', { name: 'Calculate SHA-256' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getAllByText('Unavailable (metadata_unavailable)').length,
+    ).toBeGreaterThan(0);
   });
 
   it('cancels native checksum work immediately when the inspector closes', async () => {
@@ -635,7 +799,9 @@ describe('document foundation shell', () => {
       external_revision: revision,
     };
     const cancelIntegrity = vi.fn(() => Promise.resolve());
-    const advanceIntegrity = vi.fn(() => new Promise<IntegrityProgress>(() => undefined));
+    const advanceIntegrity = vi.fn(
+      () => new Promise<IntegrityProgress>(() => undefined),
+    );
     const gateway: MetadataGateway = {
       query: vi.fn(() =>
         Promise.resolve({
@@ -667,40 +833,68 @@ describe('document foundation shell', () => {
     };
     render(<App sessions={[source]} metadataGateway={gateway} />);
     invokeMenu('File information');
-    fireEvent.click(await screen.findByRole('button', { name: 'Calculate SHA-256' }));
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Calculate SHA-256' }),
+    );
     await waitFor(() => expect(advanceIntegrity).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole('button', { name: 'Close file information' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Close file information' }),
+    );
     await waitFor(() => expect(cancelIntegrity).toHaveBeenCalledOnce());
   });
 
   it('keeps the reference document area at or above 90 percent', () => {
-    expect(DESKTOP_CHROME_MAX_PX).toBeLessThanOrEqual(REFERENCE_HEIGHT_PX * 0.1);
+    expect(DESKTOP_CHROME_MAX_PX).toBeLessThanOrEqual(
+      REFERENCE_HEIGHT_PX * 0.1,
+    );
   });
 
   it('has no critical or serious automated accessibility findings', async () => {
-    const { container } = render(<App sessions={initialSessions.slice(0, 2)} />);
+    const { container } = render(
+      <App sessions={initialSessions.slice(0, 2)} />,
+    );
     const results = await axe.run(container, {
       runOnly: {
         type: 'tag',
         values: ['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'],
       },
     });
-    expect(results.violations.filter(({ impact }) => impact === 'critical' || impact === 'serious')).toEqual([]);
+    expect(
+      results.violations.filter(
+        ({ impact }) => impact === 'critical' || impact === 'serious',
+      ),
+    ).toEqual([]);
   });
 
   it('loads, edits, persists, and resets bounded preferences without replacing the document', async () => {
     const gateway = persistenceGateway();
-    render(<App sessions={[initialSessions[2]]} persistenceGateway={gateway} />);
+    render(
+      <App sessions={[initialSessions[2]]} persistenceGateway={gateway} />,
+    );
     invokeMenu('Preferences');
-    expect(screen.getByRole('complementary', { name: 'Preferences' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Menu' })).not.toBeInTheDocument();
-    expect(screen.getByRole('region', { name: 'notes.txt' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('complementary', { name: 'Preferences' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Menu' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('region', { name: 'notes.txt' }),
+    ).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('Theme'), {
       target: { value: 'dark' },
     });
-    await waitFor(() => expect(gateway.persistPreferences).toHaveBeenCalledWith(expect.objectContaining({ theme: 'dark' })), { timeout: 1_000 });
+    await waitFor(
+      () =>
+        expect(gateway.persistPreferences).toHaveBeenCalledWith(
+          expect.objectContaining({ theme: 'dark' }),
+        ),
+      { timeout: 1_000 },
+    );
     fireEvent.click(screen.getByRole('button', { name: 'Reset preferences' }));
-    await waitFor(() => expect(gateway.reset).toHaveBeenCalledWith('preferences'));
+    await waitFor(() =>
+      expect(gateway.reset).toHaveBeenCalledWith('preferences'),
+    );
     fireEvent.click(screen.getByRole('button', { name: 'Close preferences' }));
     expect(screen.getByRole('button', { name: 'Menu' })).toBeInTheDocument();
   });
@@ -708,13 +902,27 @@ describe('document foundation shell', () => {
   it('previews the exact redacted diagnostic bundle before explicit export', async () => {
     const gateway = persistenceGateway();
     const exporter = { export: vi.fn().mockResolvedValue(undefined) };
-    render(<App sessions={[initialSessions[2]]} persistenceGateway={gateway} diagnosticExportGateway={exporter} />);
+    render(
+      <App
+        sessions={[initialSessions[2]]}
+        persistenceGateway={gateway}
+        diagnosticExportGateway={exporter}
+      />,
+    );
     invokeMenu('Diagnostics');
-    expect(await screen.findByText(/"generated_unix_ms": 42/u)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Menu' })).not.toBeInTheDocument();
+    expect(
+      await screen.findByText(/"generated_unix_ms": 42/u),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Menu' }),
+    ).not.toBeInTheDocument();
     expect(exporter.export).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole('button', { name: 'Export previewed bundle' }));
-    expect(exporter.export).toHaveBeenCalledWith(expect.objectContaining({ generated_unix_ms: 42 }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Export previewed bundle' }),
+    );
+    expect(exporter.export).toHaveBeenCalledWith(
+      expect.objectContaining({ generated_unix_ms: 42 }),
+    );
   });
 
   it('applies loaded window, active-session, native-reference, and presentation projections', async () => {
@@ -750,9 +958,17 @@ describe('document foundation shell', () => {
     });
     render(<App sessions={restorable} persistenceGateway={gateway} />);
 
-    await waitFor(() => expect(screen.getByRole('tab', { name: /diagram\.mmd/iu })).toHaveAttribute('aria-selected', 'true'));
-    expect(screen.getByRole('complementary', { name: 'Preferences' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Menu' })).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        screen.getByRole('tab', { name: /diagram\.mmd/iu }),
+      ).toHaveAttribute('aria-selected', 'true'),
+    );
+    expect(
+      screen.getByRole('complementary', { name: 'Preferences' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Menu' }),
+    ).not.toBeInTheDocument();
   });
 
   it('invokes Android restoration before matching a loaded native projection', async () => {
@@ -767,7 +983,9 @@ describe('document foundation shell', () => {
         restoration_reference: sourceReference,
       },
     };
-    const restore = vi.fn<AndroidRestorationGateway['restore']>().mockResolvedValue([restoredSession]);
+    const restore = vi
+      .fn<AndroidRestorationGateway['restore']>()
+      .mockResolvedValue([restoredSession]);
     const androidGateway: AndroidRestorationGateway = { restore };
     const gateway = persistenceGateway({
       loadSession: vi.fn().mockResolvedValue({
@@ -790,15 +1008,25 @@ describe('document foundation shell', () => {
       }),
     });
 
-    render(<App sessions={[]} persistenceGateway={gateway} androidRestorationGateway={androidGateway} />);
+    render(
+      <App
+        sessions={[]}
+        persistenceGateway={gateway}
+        androidRestorationGateway={androidGateway}
+      />,
+    );
 
-    expect(await screen.findByRole('region', { name: 'welcome.md' })).toBeVisible();
-    expect(restore).toHaveBeenCalledWith([expect.objectContaining({ source_reference: sourceReference })]);
+    expect(
+      await screen.findByRole('region', { name: 'welcome.md' }),
+    ).toBeVisible();
+    expect(restore).toHaveBeenCalledWith([
+      expect.objectContaining({ source_reference: sourceReference }),
+    ]);
   });
 
   it('uses a minimal empty surface after all fixture sessions close', () => {
     render(<App sessions={initialSessions.slice(0, 1)} />);
-    fireEvent.keyDown(screen.getByRole('main'), { key: 'w', ctrlKey: true });
+    fireEvent.keyDown(getApplicationShell(), { key: 'w', ctrlKey: true });
     expect(screen.getByRole('status')).toHaveTextContent('No document is open');
     expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
   });

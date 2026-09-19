@@ -5,7 +5,19 @@ this file after changing the source brand specification.
 
 | File | Runs with |
 | --- | --- |
-| `AGENTS.md` | read by the agent before any UI work |
+| `AGENTS.md` | concise governed entry block, merged without replacing human instructions |
+| `IMPLEMENTATION.md` | complete brand-specific implementation guidance |
+| `consumer-contract.json` | exact versions, authority, environment, provenance, recovery, and checks |
+| `documentation-contract.json` | documentation ownership, inventory, navigation, and route policy |
+| `documentation-facts.json` | exact facts shared by bundled and hosted implementation guidance |
+| `interface-canon.json` | exact renderer-neutral Interface Canon used by this kit |
+| `component-recipes.json` | exact bounded component grammar used by this kit |
+| `component-recipes.schema.json` | structural component recipe schema |
+| `version-policy.json` | independent version meanings, bump rules, compatibility, and recovery policy |
+| `../native/egui/adapter.json` | exact typed Rust and egui adapter contract |
+| `../native/egui/support-matrix.json` | native support, adaptation, gaps, and proof status |
+| `capability-gap.example.json` | local reusable-gap record that does not authorize submission |
+| `distributions/*.skill` | exact checksummed offline BrandBuilder recovery bundle |
 | `eslint.brand.mjs` | `npx eslint --config enforcement/eslint.brand.mjs .` |
 | `stylelint.config.json` | `npx stylelint --config enforcement/stylelint.config.json "**/*.css"` |
 
@@ -14,3 +26,5 @@ raw literals are legal, because it is where the tokens are defined.
 
 Use ESLint for these rules. oxlint 1.79 implements none of the
 no-restricted-* rules, so an oxlint adherence config never runs.
+
+Contract compatibility, artifact publication, and consumer adoption are separate states. Pin every version in `consumer-contract.json`; never replace the delivered checksummed recovery bytes with a latest version.

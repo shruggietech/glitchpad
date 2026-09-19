@@ -123,7 +123,7 @@ class BrandBuilderAppFrameInstrumentedTest {
                 menuInsideViewport: Boolean(bounds && viewport && bounds.left >= viewport.offsetLeft && bounds.top >= viewport.offsetTop && bounds.right <= viewport.offsetLeft + viewport.width && bounds.bottom <= viewport.offsetTop + viewport.height),
                 menuOpen: Boolean(popup),
                 popupInsideViewport: !popupBounds || Boolean(viewport && popupBounds.left >= viewport.offsetLeft && popupBounds.top >= viewport.offsetTop && popupBounds.right <= viewport.offsetLeft + viewport.width && popupBounds.bottom <= viewport.offsetTop + viewport.height),
-                imeProbeFocused: Boolean(document.activeElement && (document.activeElement.matches('[role="textbox"][contenteditable="true"]') || document.activeElement.closest('[role="textbox"][contenteditable="true"]'))),
+                imeProbeFocused: Boolean(document.activeElement && document.activeElement.id === 'brandbuilder-ime-probe'),
                 framePaddingTop: Number.parseFloat(frameStyle ? frameStyle.paddingTop : '0'),
                 framePaddingRight: Number.parseFloat(frameStyle ? frameStyle.paddingRight : '0'),
                 framePaddingBottom: Number.parseFloat(frameStyle ? frameStyle.paddingBottom : '0'),
@@ -218,11 +218,18 @@ class BrandBuilderAppFrameInstrumentedTest {
                 scenario,
                 """
             (() => {
-              const editor = document.querySelector('[role="textbox"][contenteditable="true"]');
-              if (!editor) return false;
-              editor.focus();
-              editor.click();
-              return document.activeElement === editor || editor.contains(document.activeElement);
+              let input = document.querySelector('#brandbuilder-ime-probe');
+              if (!input) {
+                input = document.createElement('textarea');
+                input.id = 'brandbuilder-ime-probe';
+                input.setAttribute('aria-label', 'BrandBuilder IME probe');
+                input.style.position = 'fixed';
+                input.style.inset = 'auto 0 0';
+                document.body.append(input);
+              }
+              input.focus();
+              input.click();
+              return document.activeElement === input;
             })()
                 """.trimIndent(),
             ),

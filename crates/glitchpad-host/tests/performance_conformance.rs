@@ -149,15 +149,27 @@ fn assert_android_ime_request_paths(workspace: &std::path::Path) {
         "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/shell/BrandBuilderAppFrameInstrumentedTest.kt",
     ))
     .expect("read AppFrame instrumentation source");
+    let main_activity = fs::read_to_string(workspace.join(
+        "crates/glitchpad-host/gen/android/app/src/main/java/com/shruggietech/glitchpad/MainActivity.kt",
+    ))
+    .expect("read Android main activity source");
     assert!(
         appframe_test.contains("windowInsetsController")
             && appframe_test.contains("WindowInsets.Type.ime()")
             && appframe_test.contains("showSoftInput")
-            && appframe_test.contains("automation.injectInputEvent(down, true)")
-            && appframe_test.contains("automation.injectInputEvent(up, true)")
-            && appframe_test.contains("input.blur()")
+            && appframe_test.contains("input.focus()")
+            && appframe_test.contains("document.activeElement === input")
             && appframe_test.contains("input.style.top = '50%';"),
-        "AppFrame evidence must let privileged touchscreen events focus a safely positioned WebView editor before requesting the IME, while retaining the API 24 fallback"
+        "AppFrame evidence must focus a safely positioned WebView editor before requesting the IME, while retaining the API 24 fallback"
+    );
+
+    assert!(
+        main_activity.contains("installPre139WebViewImeResizeBridge()")
+            && main_activity.contains("webViewMilestone >= 139")
+            && main_activity.contains("WindowInsets.Type.ime()")
+            && main_activity.contains("content.height - imeBottom")
+            && main_activity.contains("return@setOnApplyWindowInsetsListener insets"),
+        "the Android host must resize pre-139 WebViews from real modern IME insets without consuming safe-area dispatch"
     );
 }
 

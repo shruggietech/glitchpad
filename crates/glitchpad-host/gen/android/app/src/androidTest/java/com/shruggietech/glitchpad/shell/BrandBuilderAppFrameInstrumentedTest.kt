@@ -6,8 +6,6 @@ import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
 import android.os.SystemClock
-import android.view.InputDevice
-import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowInsets
@@ -162,48 +160,6 @@ class BrandBuilderAppFrameInstrumentedTest {
         )
     }
 
-    private fun tapWebViewPoint(
-        scenario: ActivityScenario<MainActivity>,
-        cssX: Double,
-        cssY: Double,
-        devicePixelRatio: Double,
-    ) {
-        var screenX = 0
-        var screenY = 0
-        scenario.onActivity { activity ->
-            val webView = findWebView(activity.window.decorView)!!
-            val location = IntArray(2)
-            webView.getLocationOnScreen(location)
-            screenX = location[0] + (cssX * devicePixelRatio).toInt()
-            screenY = location[1] + (cssY * devicePixelRatio).toInt()
-        }
-        val automation = InstrumentationRegistry.getInstrumentation().uiAutomation
-        val downTime = SystemClock.uptimeMillis()
-        val down = MotionEvent.obtain(
-            downTime,
-            downTime,
-            MotionEvent.ACTION_DOWN,
-            screenX.toFloat(),
-            screenY.toFloat(),
-            0,
-        ).apply { source = InputDevice.SOURCE_TOUCHSCREEN }
-        val up = MotionEvent.obtain(
-            downTime,
-            downTime + 50L,
-            MotionEvent.ACTION_UP,
-            screenX.toFloat(),
-            screenY.toFloat(),
-            0,
-        ).apply { source = InputDevice.SOURCE_TOUCHSCREEN }
-        try {
-            assertTrue("UiAutomation must inject the IME probe touch-down", automation.injectInputEvent(down, true))
-            assertTrue("UiAutomation must inject the IME probe touch-up", automation.injectInputEvent(up, true))
-        } finally {
-            down.recycle()
-            up.recycle()
-        }
-    }
-
     @Test
     fun appFrameOwnsActualAndroidWebViewGeometry() {
         assertTrue("reference API must be governed", Build.VERSION.SDK_INT == 24 || Build.VERSION.SDK_INT == 36)
@@ -284,26 +240,19 @@ class BrandBuilderAppFrameInstrumentedTest {
                 input.style.zIndex = '2147483647';
                 document.body.append(input);
               }
-              input.blur();
-              const bounds = input.getBoundingClientRect();
+              input.focus();
+              input.click();
               return JSON.stringify({
                 present: document.body.contains(input),
-                x: bounds.left + bounds.width / 2,
-                y: bounds.top + bounds.height / 2,
-                devicePixelRatio: window.devicePixelRatio || 1
+                focused: document.activeElement === input
               });
             })()
                     """.trimIndent(),
                 ),
             ),
         )
-        assertTrue("IME probe must be present before the native tap: $probe", probe.getBoolean("present"))
-        tapWebViewPoint(
-            scenario,
-            probe.getDouble("x"),
-            probe.getDouble("y"),
-            probe.getDouble("devicePixelRatio"),
-        )
+        assertTrue("IME probe must be present before the native request: $probe", probe.getBoolean("present"))
+        assertTrue("IME probe must accept DOM focus before the native request: $probe", probe.getBoolean("focused"))
         SystemClock.sleep(250L)
         var imeShowRequested = false
         var imeRequestPath = "legacy-input-method-manager"

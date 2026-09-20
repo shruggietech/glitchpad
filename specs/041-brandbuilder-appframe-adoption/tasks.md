@@ -28,8 +28,8 @@
 
 ## Phase 5: User Story 4 - Handover (P4)
 
-- [ ] T011 [US4] Record focused checks, actual-host evidence, observations, limitations, recovery, capability gaps, and merge order in `specs/041-brandbuilder-appframe-adoption/verification.md`
-- [ ] T012 [US4] Run the documented aggregate validation, encoding, mojibake, diff, and repository-hygiene gates
+- [x] T011 [US4] Record focused checks, actual-host evidence, observations, limitations, recovery, capability gaps, and merge order in `specs/041-brandbuilder-appframe-adoption/verification.md`
+- [x] T012 [US4] Run the documented aggregate validation, encoding, mojibake, diff, and repository-hygiene gates
 - [ ] T013 [US4] Commit, push, publish the downstream PR, address every CI/review finding, and request no more than one manual second Codex review round
 
 ## Dependencies

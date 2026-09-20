@@ -154,6 +154,14 @@ fn android_emulator_uses_supported_software_rendering() {
         "Android instrumentation must use the supported software renderer with Vulkan disabled"
     );
     assert!(
+        workflow.contains("com.android.internal.display.cutout.emulation.corner"),
+        "API 36 cutout evidence must use an overlay shipped by the Android 16 platform"
+    );
+    assert!(
+        !workflow.contains("com.android.internal.display.cutout.emulation.top_and_right"),
+        "API 36 cutout evidence must not depend on the obsolete emulator overlay package"
+    );
+    assert!(
         !workflow.contains("swiftshader_indirect"),
         "deprecated indirect rendering reintroduces emulator teardown crashes"
     );

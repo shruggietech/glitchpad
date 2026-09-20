@@ -9,6 +9,7 @@ import android.os.SystemClock
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowInsets
 import android.view.WindowManager
 import android.view.inputmethod.InputMethodManager
 import android.webkit.WebView
@@ -277,10 +278,18 @@ class BrandBuilderAppFrameInstrumentedTest {
         )
         SystemClock.sleep(250L)
         var imeShowRequested = false
+        var imeRequestPath = "legacy-input-method-manager"
         scenario.onActivity { activity ->
             val webView = findWebView(activity.window.decorView)!!
-            imeShowRequested = (activity.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
-                .showSoftInput(webView, InputMethodManager.SHOW_IMPLICIT)
+            if (Build.VERSION.SDK_INT >= 30) {
+                imeRequestPath = "window-insets-controller"
+                val controller = webView.windowInsetsController
+                imeShowRequested = controller != null
+                controller?.show(WindowInsets.Type.ime())
+            } else {
+                imeShowRequested = (activity.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
+                    .showSoftInput(webView, InputMethodManager.SHOW_IMPLICIT)
+            }
         }
         val imeDeadline = SystemClock.elapsedRealtime() + 15_000L
         var imeSnapshot = snapshot(scenario)
@@ -290,11 +299,11 @@ class BrandBuilderAppFrameInstrumentedTest {
         }
         assertAppFrame(imeSnapshot)
         assertTrue(
-            "IME probe must retain DOM focus (native request accepted: $imeShowRequested): $imeSnapshot",
+            "IME probe must retain DOM focus ($imeRequestPath accepted: $imeShowRequested): $imeSnapshot",
             imeSnapshot.getBoolean("imeProbeFocused"),
         )
         assertTrue(
-            "IME must publish a positive AppFrame block-end inset (native request accepted: $imeShowRequested): $imeSnapshot",
+            "IME must publish a positive AppFrame block-end inset ($imeRequestPath accepted: $imeShowRequested): $imeSnapshot",
             imeSnapshot.getDouble("imeBlockEnd") > 0.0,
         )
 

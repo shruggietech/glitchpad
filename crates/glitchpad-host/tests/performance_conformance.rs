@@ -144,6 +144,19 @@ fn assert_android_16_cutout_overlay(workflow: &str) {
     );
 }
 
+fn assert_android_ime_request_paths(workspace: &std::path::Path) {
+    let appframe_test = fs::read_to_string(workspace.join(
+        "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/shell/BrandBuilderAppFrameInstrumentedTest.kt",
+    ))
+    .expect("read AppFrame instrumentation source");
+    assert!(
+        appframe_test.contains("windowInsetsController")
+            && appframe_test.contains("WindowInsets.Type.ime()")
+            && appframe_test.contains("showSoftInput"),
+        "AppFrame evidence must request the IME through the modern controller while retaining the API 24 fallback"
+    );
+}
+
 #[test]
 fn android_emulator_uses_supported_software_rendering() {
     let workspace = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
@@ -165,6 +178,7 @@ fn android_emulator_uses_supported_software_rendering() {
         "Android instrumentation must use the supported software renderer with Vulkan disabled"
     );
     assert_android_16_cutout_overlay(&workflow);
+    assert_android_ime_request_paths(&workspace);
     assert!(
         !workflow.contains("swiftshader_indirect"),
         "deprecated indirect rendering reintroduces emulator teardown crashes"

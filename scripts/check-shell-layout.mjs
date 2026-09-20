@@ -45,7 +45,8 @@ const [applicationSource, indexSource] = await Promise.all([
   readFile(join(repositoryRoot, 'apps', 'glitchpad', 'index.html'), 'utf8'),
 ]);
 for (const marker of [
-  '<AppFrameEnvironmentBridge />',
+  '<AppFrameEnvironmentBridge',
+  'layoutResizeCanBeIme={layoutResizeCanBeIme}',
   '<AppFrame host="tauri" layout="full-bleed">',
 ])
   assert.ok(
@@ -129,8 +130,7 @@ try {
             const frameScroll = rect('.bb-app-frame__scroll');
             const spacer = document.createElement('div');
             spacer.setAttribute('aria-hidden', 'true');
-            spacer.style.cssText =
-              'height: calc(100vh + 200px); width: 1px';
+            spacer.style.cssText = 'height: calc(100vh + 200px); width: 1px';
             documentSurface.append(spacer);
             documentSurface.scrollTop = 37;
             return {

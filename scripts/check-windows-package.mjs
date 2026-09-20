@@ -337,7 +337,8 @@ export async function checkWindowsConfiguration(
     [lifecycleProbeSource, 'consume_desktop_markdown_failure_probe'],
     [applicationSource, 'consumeDesktopMarkdownFailureProbe'],
     [applicationSource, '<AppFrame host="tauri" layout="full-bleed">'],
-    [applicationSource, '<AppFrameEnvironmentBridge />'],
+    [applicationSource, '<AppFrameEnvironmentBridge'],
+    [applicationSource, 'layoutResizeCanBeIme={layoutResizeCanBeIme}'],
     [markdownSurfaceSource, 'LifecycleMarkdownFailure'],
     [desktopGatewaySource, "call('consume_desktop_markdown_failure_probe')"],
   ])

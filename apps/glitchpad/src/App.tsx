@@ -105,6 +105,7 @@ interface AppProps {
   androidDeliveryGateway?: AndroidDeliveryGateway | null;
   androidRestorationGateway?: AndroidRestorationGateway | null;
   desktopDeliveryGateway?: DesktopDeliveryGateway | null;
+  layoutResizeCanBeIme?: boolean;
 }
 
 export function App({
@@ -119,6 +120,7 @@ export function App({
   androidDeliveryGateway,
   androidRestorationGateway,
   desktopDeliveryGateway,
+  layoutResizeCanBeIme = nativeAndroidDeliveryAvailable(),
 }: AppProps) {
   const [state, dispatch] = useReducer(tabReducer, sessions, createTabState);
   const [commandStatus, setCommandStatus] = useState('');
@@ -977,7 +979,9 @@ export function App({
 
   return (
     <>
-      <AppFrameEnvironmentBridge />
+      <AppFrameEnvironmentBridge
+        layoutResizeCanBeIme={layoutResizeCanBeIme}
+      />
       <AppFrame host="tauri" layout="full-bleed">
         <div
           className="app-shell"

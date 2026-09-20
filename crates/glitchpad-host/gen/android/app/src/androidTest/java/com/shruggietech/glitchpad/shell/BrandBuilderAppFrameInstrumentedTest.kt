@@ -254,34 +254,45 @@ class BrandBuilderAppFrameInstrumentedTest {
             probe.getDouble("y"),
             probe.getDouble("devicePixelRatio"),
         )
-        SystemClock.sleep(250L)
         var imeShowRequested = false
         var imeRequestPath = "legacy-input-method-manager"
-        scenario.onActivity { activity ->
-            val webView = findWebView(activity.window.decorView)!!
-            if (Build.VERSION.SDK_INT >= 30) {
-                imeRequestPath = "window-insets-controller"
-                val controller = webView.windowInsetsController
-                imeShowRequested = controller != null
-                controller?.show(WindowInsets.Type.ime())
-            } else {
-                imeShowRequested = (activity.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
-                    .showSoftInput(webView, InputMethodManager.SHOW_IMPLICIT)
+        var imeRequestAttempts = 0
+        fun requestIme() {
+            scenario.onActivity { activity ->
+                val webView = findWebView(activity.window.decorView)!!
+                webView.requestFocus()
+                webView.requestFocusFromTouch()
+                val inputMethodManager =
+                    activity.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                if (Build.VERSION.SDK_INT >= 30) {
+                    imeRequestPath = "window-insets-controller+input-method-manager"
+                    val controller = webView.windowInsetsController
+                    controller?.show(WindowInsets.Type.ime())
+                    val inputMethodManagerAccepted =
+                        inputMethodManager.showSoftInput(webView, InputMethodManager.SHOW_IMPLICIT)
+                    imeShowRequested = imeShowRequested || controller != null || inputMethodManagerAccepted
+                } else {
+                    imeShowRequested = imeShowRequested ||
+                        inputMethodManager.showSoftInput(webView, InputMethodManager.SHOW_IMPLICIT)
+                }
             }
+            imeRequestAttempts += 1
         }
+
         val imeDeadline = SystemClock.elapsedRealtime() + 15_000L
         var imeSnapshot = snapshot(scenario)
         while (imeSnapshot.getDouble("imeBlockEnd") <= 0.0 && SystemClock.elapsedRealtime() < imeDeadline) {
-            SystemClock.sleep(100L)
+            requestIme()
+            SystemClock.sleep(250L)
             imeSnapshot = snapshot(scenario)
         }
         assertAppFrame(imeSnapshot)
         assertTrue(
-            "IME probe must retain DOM focus ($imeRequestPath accepted: $imeShowRequested): $imeSnapshot",
+            "IME probe must retain DOM focus ($imeRequestPath accepted: $imeShowRequested after $imeRequestAttempts attempts): $imeSnapshot",
             imeSnapshot.getBoolean("imeProbeFocused"),
         )
         assertTrue(
-            "IME must publish a positive AppFrame block-end inset ($imeRequestPath accepted: $imeShowRequested): $imeSnapshot",
+            "IME must publish a positive AppFrame block-end inset ($imeRequestPath accepted: $imeShowRequested after $imeRequestAttempts attempts): $imeSnapshot",
             imeSnapshot.getDouble("imeBlockEnd") > 0.0,
         )
 

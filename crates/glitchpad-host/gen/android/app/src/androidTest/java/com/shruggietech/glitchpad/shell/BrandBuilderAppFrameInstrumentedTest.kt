@@ -254,14 +254,13 @@ class BrandBuilderAppFrameInstrumentedTest {
             probe.getDouble("y"),
             probe.getDouble("devicePixelRatio"),
         )
+        SystemClock.sleep(250L)
         var imeShowRequested = false
         var imeRequestPath = "legacy-input-method-manager"
         var imeRequestAttempts = 0
         fun requestIme() {
             scenario.onActivity { activity ->
                 val webView = findWebView(activity.window.decorView)!!
-                webView.requestFocus()
-                webView.requestFocusFromTouch()
                 val inputMethodManager =
                     activity.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
                 if (Build.VERSION.SDK_INT >= 30) {
@@ -279,10 +278,12 @@ class BrandBuilderAppFrameInstrumentedTest {
             imeRequestAttempts += 1
         }
 
+        requestIme()
+        SystemClock.sleep(250L)
         val imeDeadline = SystemClock.elapsedRealtime() + 15_000L
         var imeSnapshot = snapshot(scenario)
         while (imeSnapshot.getDouble("imeBlockEnd") <= 0.0 && SystemClock.elapsedRealtime() < imeDeadline) {
-            requestIme()
+            if (Build.VERSION.SDK_INT >= 30) requestIme()
             SystemClock.sleep(250L)
             imeSnapshot = snapshot(scenario)
         }

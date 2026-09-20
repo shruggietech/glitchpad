@@ -133,6 +133,38 @@ describe('document foundation shell', () => {
     ).not.toBe('');
   });
 
+  it('does not classify a focused desktop window resize as an IME inset', () => {
+    const originalInnerHeight = Object.getOwnPropertyDescriptor(
+      window,
+      'innerHeight',
+    );
+    const probe = document.createElement('textarea');
+    try {
+      Object.defineProperty(window, 'innerHeight', {
+        configurable: true,
+        value: 800,
+      });
+      render(<App />);
+      document.body.append(probe);
+      probe.focus();
+      Object.defineProperty(window, 'innerHeight', {
+        configurable: true,
+        value: 600,
+      });
+      act(() => {
+        window.dispatchEvent(new Event('resize'));
+      });
+      expect(
+        document.documentElement.style.getPropertyValue('--bb-ime-block-end'),
+      ).toBe('0px');
+    } finally {
+      probe.remove();
+      if (originalInnerHeight) {
+        Object.defineProperty(window, 'innerHeight', originalInnerHeight);
+      }
+    }
+  });
+
   it('shows native delivery failures as an actionable visible alert', async () => {
     const gateway: DesktopDeliveryGateway = {
       choose: vi.fn().mockResolvedValue([]),

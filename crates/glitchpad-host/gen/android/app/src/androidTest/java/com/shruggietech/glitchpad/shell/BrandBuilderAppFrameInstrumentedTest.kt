@@ -187,65 +187,19 @@ class BrandBuilderAppFrameInstrumentedTest {
         )
     }
 
-    @Test
-    fun appFrameOwnsActualAndroidWebViewGeometry() {
-        assertTrue("reference API must be governed", Build.VERSION.SDK_INT == 24 || Build.VERSION.SDK_INT == 36)
-        val scenario = ActivityScenario.launch(MainActivity::class.java)
-        scenario.onActivity { activity ->
-            assertEquals(
-                "Android host must resize the WebView for IME geometry",
-                WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE,
-                activity.window.attributes.softInputMode and WindowManager.LayoutParams.SOFT_INPUT_MASK_ADJUST,
-            )
+    private fun measureIme(scenario: ActivityScenario<MainActivity>): JSONObject {
+        var hasWindowFocus = false
+        val focusDeadline = SystemClock.elapsedRealtime() + 15_000L
+        while (!hasWindowFocus && SystemClock.elapsedRealtime() < focusDeadline) {
+            scenario.onActivity { activity ->
+                val webView = findWebView(activity.window.decorView)!!
+                webView.requestFocus()
+                webView.requestFocusFromTouch()
+                hasWindowFocus = activity.hasWindowFocus()
+            }
+            if (!hasWindowFocus) SystemClock.sleep(100L)
         }
-        waitForShell(scenario)
-
-        waitForOrientation(
-            scenario,
-            ActivityInfo.SCREEN_ORIENTATION_PORTRAIT,
-            Configuration.ORIENTATION_PORTRAIT,
-        )
-        val portrait = snapshot(scenario)
-        assertAppFrame(portrait)
-
-        waitForOrientation(
-            scenario,
-            ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE,
-            Configuration.ORIENTATION_LANDSCAPE,
-        )
-        val landscape = snapshot(scenario)
-        assertAppFrame(landscape)
-
-        scenario.onActivity { activity ->
-            findWebView(activity.window.decorView)!!.requestFocus()
-        }
-        assertEquals(
-            "true",
-            evaluate(
-                scenario,
-                "var trigger = document.querySelector('.application-menu-trigger'); if (trigger) trigger.click(); Boolean(trigger)",
-            ),
-        )
-        SystemClock.sleep(100L)
-        val openMenu = snapshot(scenario)
-        assertAppFrame(openMenu)
-        assertTrue("application menu must open in the actual WebView", openMenu.getBoolean("menuOpen"))
-        assertTrue("open menu must remain inside the visual viewport", openMenu.getBoolean("popupInsideViewport"))
-        evaluate(
-            scenario,
-            "document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); true",
-        )
-
-        waitForOrientation(
-            scenario,
-            ActivityInfo.SCREEN_ORIENTATION_PORTRAIT,
-            Configuration.ORIENTATION_PORTRAIT,
-        )
-        scenario.onActivity { activity ->
-            val webView = findWebView(activity.window.decorView)!!
-            webView.requestFocus()
-            webView.requestFocusFromTouch()
-        }
+        assertTrue("Android host window must have focus before the WebView touch", hasWindowFocus)
 
         val probe = JSONObject(
             decodedJavascriptString(
@@ -318,6 +272,85 @@ class BrandBuilderAppFrameInstrumentedTest {
         assertTrue(
             "IME must publish a positive AppFrame block-end inset ($imeRequestPath accepted: $imeShowRequested): $imeSnapshot",
             imeSnapshot.getDouble("imeBlockEnd") > 0.0,
+        )
+
+        evaluate(
+            scenario,
+            "document.querySelector('#brandbuilder-ime-probe')?.blur(); document.querySelector('#brandbuilder-ime-probe')?.remove(); true",
+        )
+        scenario.onActivity { activity ->
+            val webView = findWebView(activity.window.decorView)!!
+            if (Build.VERSION.SDK_INT >= 30) {
+                webView.windowInsetsController?.hide(WindowInsets.Type.ime())
+            } else {
+                (activity.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
+                    .hideSoftInputFromWindow(webView.windowToken, 0)
+            }
+        }
+        val hiddenDeadline = SystemClock.elapsedRealtime() + 15_000L
+        var hiddenSnapshot = snapshot(scenario)
+        while (hiddenSnapshot.getDouble("imeBlockEnd") > 0.0 && SystemClock.elapsedRealtime() < hiddenDeadline) {
+            SystemClock.sleep(100L)
+            hiddenSnapshot = snapshot(scenario)
+        }
+        assertTrue("IME inset must clear before orientation evidence: $hiddenSnapshot", hiddenSnapshot.getDouble("imeBlockEnd") <= 0.0)
+        return imeSnapshot
+    }
+
+    @Test
+    fun appFrameOwnsActualAndroidWebViewGeometry() {
+        assertTrue("reference API must be governed", Build.VERSION.SDK_INT == 24 || Build.VERSION.SDK_INT == 36)
+        val scenario = ActivityScenario.launch(MainActivity::class.java)
+        scenario.onActivity { activity ->
+            assertEquals(
+                "Android host must resize the WebView for IME geometry",
+                WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE,
+                activity.window.attributes.softInputMode and WindowManager.LayoutParams.SOFT_INPUT_MASK_ADJUST,
+            )
+        }
+        waitForShell(scenario)
+
+        waitForOrientation(
+            scenario,
+            ActivityInfo.SCREEN_ORIENTATION_PORTRAIT,
+            Configuration.ORIENTATION_PORTRAIT,
+        )
+        val portrait = snapshot(scenario)
+        assertAppFrame(portrait)
+        val imeSnapshot = measureIme(scenario)
+
+        waitForOrientation(
+            scenario,
+            ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE,
+            Configuration.ORIENTATION_LANDSCAPE,
+        )
+        val landscape = snapshot(scenario)
+        assertAppFrame(landscape)
+
+        scenario.onActivity { activity ->
+            findWebView(activity.window.decorView)!!.requestFocus()
+        }
+        assertEquals(
+            "true",
+            evaluate(
+                scenario,
+                "var trigger = document.querySelector('.application-menu-trigger'); if (trigger) trigger.click(); Boolean(trigger)",
+            ),
+        )
+        SystemClock.sleep(100L)
+        val openMenu = snapshot(scenario)
+        assertAppFrame(openMenu)
+        assertTrue("application menu must open in the actual WebView", openMenu.getBoolean("menuOpen"))
+        assertTrue("open menu must remain inside the visual viewport", openMenu.getBoolean("popupInsideViewport"))
+        evaluate(
+            scenario,
+            "document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); true",
+        )
+
+        waitForOrientation(
+            scenario,
+            ActivityInfo.SCREEN_ORIENTATION_PORTRAIT,
+            Configuration.ORIENTATION_PORTRAIT,
         )
 
         var cutoutInsets = intArrayOf(0, 0, 0, 0)

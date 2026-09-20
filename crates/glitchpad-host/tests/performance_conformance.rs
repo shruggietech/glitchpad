@@ -165,6 +165,17 @@ fn assert_android_ime_request_paths(workspace: &std::path::Path) {
             && appframe_test.contains("input.style.top = '50%';"),
         "AppFrame evidence must focus a safely positioned WebView editor, use Espresso's WebView-aware physical gesture, and retain the native IME requests"
     );
+    assert!(
+        appframe_test
+            .find("val imeSnapshot = measureIme(scenario)")
+            .expect("IME evidence call")
+            < appframe_test
+                .find("ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE")
+                .expect("landscape evidence call")
+            && appframe_test.contains("hide(WindowInsets.Type.ime())")
+            && appframe_test.contains("hideSoftInputFromWindow"),
+        "IME evidence must run in the initially focused portrait window and clear before orientation changes"
+    );
 
     assert!(
         main_activity.contains("installPre139WebViewImeResizeBridge()")

@@ -5,8 +5,8 @@ import android.content.Context
 import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
+import android.os.ParcelFileDescriptor
 import android.os.SystemClock
-import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowInsets
@@ -160,21 +160,18 @@ class BrandBuilderAppFrameInstrumentedTest {
         cssY: Double,
         devicePixelRatio: Double,
     ) {
+        var screenX = 0
+        var screenY = 0
         scenario.onActivity { activity ->
             val webView = findWebView(activity.window.decorView)!!
-            val localX = (cssX * devicePixelRatio).toFloat()
-            val localY = (cssY * devicePixelRatio).toFloat()
-            val downTime = SystemClock.uptimeMillis()
-            val down = MotionEvent.obtain(downTime, downTime, MotionEvent.ACTION_DOWN, localX, localY, 0)
-            val up = MotionEvent.obtain(downTime, downTime + 50L, MotionEvent.ACTION_UP, localX, localY, 0)
-            try {
-                assertTrue("WebView must accept the IME probe touch-down", webView.dispatchTouchEvent(down))
-                assertTrue("WebView must accept the IME probe touch-up", webView.dispatchTouchEvent(up))
-            } finally {
-                down.recycle()
-                up.recycle()
-            }
+            val location = IntArray(2)
+            webView.getLocationOnScreen(location)
+            screenX = location[0] + (cssX * devicePixelRatio).toInt()
+            screenY = location[1] + (cssY * devicePixelRatio).toInt()
         }
+        val command = "input tap $screenX $screenY"
+        val descriptor = InstrumentationRegistry.getInstrumentation().uiAutomation.executeShellCommand(command)
+        ParcelFileDescriptor.AutoCloseInputStream(descriptor).use { it.readBytes() }
     }
 
     @Test

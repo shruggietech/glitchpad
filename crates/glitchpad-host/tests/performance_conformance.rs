@@ -133,6 +133,17 @@ fn empty_native_registries_report_no_retained_leases() {
     }
 }
 
+fn assert_android_16_cutout_overlay(workflow: &str) {
+    assert!(
+        workflow.contains("com.android.internal.display.cutout.emulation.corner"),
+        "API 36 cutout evidence must use an overlay shipped by the Android 16 platform"
+    );
+    assert!(
+        !workflow.contains("com.android.internal.display.cutout.emulation.top_and_right"),
+        "API 36 cutout evidence must not depend on the obsolete emulator overlay package"
+    );
+}
+
 #[test]
 fn android_emulator_uses_supported_software_rendering() {
     let workspace = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
@@ -153,14 +164,7 @@ fn android_emulator_uses_supported_software_rendering() {
         workflow.contains("-gpu swiftshader -feature -Vulkan"),
         "Android instrumentation must use the supported software renderer with Vulkan disabled"
     );
-    assert!(
-        workflow.contains("com.android.internal.display.cutout.emulation.corner"),
-        "API 36 cutout evidence must use an overlay shipped by the Android 16 platform"
-    );
-    assert!(
-        !workflow.contains("com.android.internal.display.cutout.emulation.top_and_right"),
-        "API 36 cutout evidence must not depend on the obsolete emulator overlay package"
-    );
+    assert_android_16_cutout_overlay(&workflow);
     assert!(
         !workflow.contains("swiftshader_indirect"),
         "deprecated indirect rendering reintroduces emulator teardown crashes"

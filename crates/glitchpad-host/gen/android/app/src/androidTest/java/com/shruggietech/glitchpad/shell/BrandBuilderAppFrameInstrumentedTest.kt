@@ -246,17 +246,18 @@ class BrandBuilderAppFrameInstrumentedTest {
                 input.id = 'brandbuilder-ime-probe';
                 input.setAttribute('aria-label', 'BrandBuilder IME probe');
                 input.style.position = 'fixed';
-                input.style.right = '0';
-                input.style.bottom = '0';
+                input.style.left = '50%';
+                input.style.top = '50%';
                 input.style.width = '48px';
                 input.style.height = '48px';
+                input.style.transform = 'translate(-50%, -50%)';
                 input.style.zIndex = '2147483647';
                 document.body.append(input);
               }
-              input.focus();
+              input.blur();
               const bounds = input.getBoundingClientRect();
               return JSON.stringify({
-                focused: document.activeElement === input,
+                present: document.body.contains(input),
                 x: bounds.left + bounds.width / 2,
                 y: bounds.top + bounds.height / 2,
                 devicePixelRatio: window.devicePixelRatio || 1
@@ -266,7 +267,7 @@ class BrandBuilderAppFrameInstrumentedTest {
                 ),
             ),
         )
-        assertTrue("IME probe must accept DOM focus before the native tap: $probe", probe.getBoolean("focused"))
+        assertTrue("IME probe must be present before the native tap: $probe", probe.getBoolean("present"))
         tapWebViewPoint(
             scenario,
             probe.getDouble("x"),

@@ -178,6 +178,18 @@
       "destination": "Web root"
     },
     {
+      "path": "icons/web/favicon-96x96.png",
+      "platform": "web",
+      "role": "favicon",
+      "format": "png",
+      "width": 96,
+      "height": 96,
+      "appearance": "default",
+      "alpha": "opaque",
+      "source_variant": "full",
+      "destination": "Web root"
+    },
+    {
       "path": "icons/web/favicon-128x128.png",
       "platform": "web",
       "role": "favicon",
@@ -1512,6 +1524,7 @@
     "favicons/favicon-48x48.png": "icons/web/favicon-48x48.png",
     "favicons/favicon-512x512.png": "icons/web/favicon-512x512.png",
     "favicons/favicon-64x64.png": "icons/web/favicon-64x64.png",
+    "favicons/favicon-96x96.png": "icons/web/favicon-96x96.png",
     "favicons/favicon-full.svg": "icons/web/favicon-full.svg",
     "favicons/favicon.ico": "icons/web/favicon.ico",
     "favicons/favicon.svg": "icons/web/favicon.svg",

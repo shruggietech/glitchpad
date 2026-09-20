@@ -15,10 +15,17 @@ const receiptPath = argument('--receipt');
 const manifestPath = argument('--manifest');
 const sourceCommit = argument('--source-commit');
 const receiptRequested = Boolean(receiptPath || manifestPath || sourceCommit);
-if (receiptRequested && (!receiptPath || !manifestPath || !/^[a-f0-9]{40}$/u.test(sourceCommit)))
-  throw new Error('scale receipt requires receipt, manifest, and source commit arguments');
+if (
+  receiptRequested &&
+  (!receiptPath || !manifestPath || !/^[a-f0-9]{40}$/u.test(sourceCommit))
+)
+  throw new Error(
+    'scale receipt requires receipt, manifest, and source commit arguments',
+  );
 const manifestBytes = receiptRequested ? await readFile(manifestPath) : null;
-const manifest = manifestBytes ? JSON.parse(manifestBytes.toString('utf8')) : null;
+const manifest = manifestBytes
+  ? JSON.parse(manifestBytes.toString('utf8'))
+  : null;
 if (manifest && manifest.source_commit !== sourceCommit)
   throw new Error('scale receipt manifest source commit is stale');
 const assetDirectory = join(
@@ -33,6 +40,23 @@ const cssAsset = (await readdir(assetDirectory)).find((name) =>
 );
 assert.ok(cssAsset, 'the production build must contain a CSS asset');
 const css = await readFile(join(assetDirectory, cssAsset), 'utf8');
+const [applicationSource, indexSource] = await Promise.all([
+  readFile(join(repositoryRoot, 'apps', 'glitchpad', 'src', 'App.tsx'), 'utf8'),
+  readFile(join(repositoryRoot, 'apps', 'glitchpad', 'index.html'), 'utf8'),
+]);
+for (const marker of [
+  '<AppFrameEnvironmentBridge',
+  'layoutResizeCanBeIme={layoutResizeCanBeIme}',
+  '<AppFrame host="tauri" layout="full-bleed">',
+])
+  assert.ok(
+    applicationSource.includes(marker),
+    `production shell omits ${marker}`,
+  );
+assert.ok(
+  indexSource.includes('viewport-fit=cover'),
+  'production viewport must opt into safe-area geometry',
+);
 
 const browser = await puppeteer.launch({
   headless: 'shell',
@@ -61,6 +85,7 @@ try {
           const reducedMotion = variant % 3 === 0;
           const forcedColors = variant % 4 === 0;
           const pageScaleFactor = [1, 1.25, 1.5, 2][variant % 4];
+          const textScaleFactor = [1, 1.25, 1.5, 2][variant % 4];
           await page.setViewport({
             ...viewport,
             deviceScaleFactor,
@@ -80,12 +105,12 @@ try {
               },
             ],
           });
+          await page.setContent(
+            `<!doctype html><html data-theme="${theme}" style="font-size: ${textScaleFactor * 100}%"><head><meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"><style>${css}</style></head><body><div class="bb-app-frame" data-bb-app-frame data-bb-host="tauri" data-bb-layout="full-bleed"><a class="bb-skip-link bb-control" href="#bb-main">Skip to content</a><div class="bb-app-frame__scroll"><main id="bb-main" class="bb-app-frame__content" tabindex="-1"><div class="app-shell" data-has-tabs="${hasTabs}"><div class="shell-chrome" data-has-tabs="${hasTabs}"><div class="application-menu-shell application-toolbar" data-menu-active="true" data-menu-open="false"><button class="application-menu-trigger" type="button" aria-label="Menu"><span class="application-menu-glyph">☰</span></button></div>${hasTabs ? '<div class="tab-strip-shell"><div class="tab-list-shell">Fixture tab</div></div>' : ''}</div><section class="document-surface" aria-label="Document surface"><div class="document-render-failure"><p>Contained failure</p><button type="button">View source</button><button type="button">Retry preview</button></div></section></div></main></div><div id="bb-overlay-root" class="bb-app-frame__overlay" data-bb-overlay-root></div></div><script>const trigger=document.querySelector('.application-menu-trigger');trigger.addEventListener('click',()=>{const shell=document.querySelector('.application-menu-shell');const popup=document.createElement('div');popup.className='application-menu';popup.setAttribute('role','menu');popup.innerHTML='<button role="menuitem">Open</button><button role="menuitem">Preferences</button>';shell.append(popup);shell.dataset.menuOpen='true';});document.addEventListener('keydown',(event)=>{if(event.key!=='Escape')return;document.querySelector('.application-menu')?.remove();document.querySelector('.application-menu-shell').dataset.menuOpen='false';trigger.focus();});</script></body></html>`,
+          );
           await client.send('Emulation.setPageScaleFactor', {
             pageScaleFactor,
           });
-          await page.setContent(
-            `<!doctype html><html data-theme="${theme}"><head><style>${css}</style></head><body><main class="app-shell" data-has-tabs="${hasTabs}"><div class="shell-chrome" data-has-tabs="${hasTabs}"><div class="application-menu-shell application-toolbar" data-menu-active="true" data-menu-open="false"><button class="application-menu-trigger" type="button" aria-label="Menu"><span class="application-menu-glyph">☰</span></button></div>${hasTabs ? '<div class="tab-strip-shell"><div class="tab-list-shell">Fixture tab</div></div>' : ''}</div><section class="document-surface" aria-label="Document surface"><div class="document-render-failure"><p>Contained failure</p><button type="button">View source</button><button type="button">Retry preview</button></div><div aria-hidden="true" style="height: calc(100vh + 200px); width: 1px"></div></section></main><script>const trigger=document.querySelector('.application-menu-trigger');trigger.addEventListener('click',()=>{const shell=document.querySelector('.application-menu-shell');const popup=document.createElement('div');popup.className='application-menu';popup.setAttribute('role','menu');popup.innerHTML='<button role="menuitem">Open</button><button role="menuitem">Preferences</button>';shell.append(popup);shell.dataset.menuOpen='true';});document.addEventListener('keydown',(event)=>{if(event.key!=='Escape')return;document.querySelector('.application-menu')?.remove();document.querySelector('.application-menu-shell').dataset.menuOpen='false';trigger.focus();});</script></body></html>`,
-          );
           const before = await page.evaluate(() => {
             const rect = (selector) => {
               const value = document
@@ -101,8 +126,16 @@ try {
               };
             };
             const documentSurface = document.querySelector('.document-surface');
+            const frame = rect('.bb-app-frame');
+            const frameScroll = rect('.bb-app-frame__scroll');
+            const spacer = document.createElement('div');
+            spacer.setAttribute('aria-hidden', 'true');
+            spacer.style.cssText = 'height: calc(100vh + 200px); width: 1px';
+            documentSurface.append(spacer);
             documentSurface.scrollTop = 37;
             return {
+              frame,
+              frameScroll,
               toolbar: rect('.application-toolbar'),
               trigger: rect('.application-menu-trigger'),
               glyph: rect('.application-menu-glyph'),
@@ -116,6 +149,23 @@ try {
                 .matches,
               forcedColors: matchMedia('(forced-colors: active)').matches,
               pageScaleFactor: visualViewport?.scale ?? 1,
+              rootFontSize: Number.parseFloat(
+                getComputedStyle(document.documentElement).fontSize,
+              ),
+              frameCount: document.querySelectorAll('[data-bb-app-frame]')
+                .length,
+              mainCount: document.querySelectorAll('main').length,
+              frameHost: document
+                .querySelector('[data-bb-app-frame]')
+                ?.getAttribute('data-bb-host'),
+              frameLayout: document
+                .querySelector('[data-bb-app-frame]')
+                ?.getAttribute('data-bb-layout'),
+              shellInsideMain: document
+                .querySelector('main')
+                ?.contains(document.querySelector('.app-shell')),
+              rootOverflow: getComputedStyle(document.documentElement).overflow,
+              bodyOverflow: getComputedStyle(document.body).overflow,
             };
           });
           await page.click('.application-menu-trigger');
@@ -142,6 +192,47 @@ try {
             };
           });
           const tolerance = 1 / deviceScaleFactor;
+          assert.equal(
+            before.frameCount,
+            1,
+            'fixture must contain one generated AppFrame',
+          );
+          assert.equal(
+            before.mainCount,
+            1,
+            'generated AppFrame must own the only main landmark',
+          );
+          assert.equal(
+            before.frameHost,
+            'tauri',
+            'generated AppFrame must use the Tauri host profile',
+          );
+          assert.equal(
+            before.frameLayout,
+            'full-bleed',
+            'generated AppFrame must use the full-bleed layout',
+          );
+          assert.equal(
+            before.shellInsideMain,
+            true,
+            'product shell must be inside the generated main landmark',
+          );
+          assert.equal(
+            before.rootOverflow,
+            'hidden',
+            'generated AppFrame must own root overflow',
+          );
+          assert.equal(
+            before.bodyOverflow,
+            'hidden',
+            'generated AppFrame must own body overflow',
+          );
+          assert.ok(
+            Math.abs(before.frameScroll.top - before.frame.top) <= tolerance &&
+              Math.abs(before.frameScroll.bottom - before.frame.bottom) <=
+                tolerance,
+            'headerless AppFrame scroll row must fill the governed viewport',
+          );
           assert.ok(
             before.toolbar.bottom <= before.document.top + tolerance,
             'toolbar must not overlap the document',
@@ -168,8 +259,8 @@ try {
             'recovery actions must preserve their pointer target',
           );
           assert.ok(
-            before.action.height <= 44 + tolerance,
-            'recovery actions must retain intrinsic compact height',
+            before.action.height <= 44 * textScaleFactor + tolerance,
+            'recovery actions must retain intrinsic compact height at the governed text scale',
           );
           assert.ok(
             before.scrollTop > 0,
@@ -217,7 +308,11 @@ try {
           );
           assert.ok(
             Math.abs(before.pageScaleFactor - pageScaleFactor) <= 0.01,
-            'page-scale emulation must match the governed case',
+            `page-scale emulation must match the governed case (expected ${pageScaleFactor}, received ${before.pageScaleFactor})`,
+          );
+          assert.ok(
+            Math.abs(before.rootFontSize - 16 * textScaleFactor) <= 0.01,
+            `text scaling must match the governed case (expected ${16 * textScaleFactor}px, received ${before.rootFontSize}px)`,
           );
           await page.keyboard.press('Escape');
           const dismissed = await page.evaluate(() => {
@@ -302,19 +397,25 @@ if (receiptRequested && manifestBytes && manifest) {
   assert.ok(Object.values(results).every((result) => result === 'pass'));
   await writeFile(
     receiptPath,
-    `${JSON.stringify({
-      schema_version: 1,
-      candidate_manifest_sha256: createHash('sha256').update(manifestBytes).digest('hex'),
-      evidence_authority: {
-        kind: 'github_actions_workflow',
-        workflow_identity: manifest.workflow_identity,
-        source_commit: sourceCommit,
+    `${JSON.stringify(
+      {
+        schema_version: 1,
+        candidate_manifest_sha256: createHash('sha256')
+          .update(manifestBytes)
+          .digest('hex'),
+        evidence_authority: {
+          kind: 'github_actions_workflow',
+          workflow_identity: manifest.workflow_identity,
+          source_commit: sourceCommit,
+        },
+        content_free: true,
+        ...results,
+        case_count: cases,
+        completed_utc: new Date().toISOString(),
       },
-      content_free: true,
-      ...results,
-      case_count: cases,
-      completed_utc: new Date().toISOString(),
-    }, null, 2)}\n`,
+      null,
+      2,
+    )}\n`,
     'utf8',
   );
 }

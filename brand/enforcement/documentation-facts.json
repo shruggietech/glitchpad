@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "documentation_contract_version": "1.0.0",
+  "brand": {
+    "slug": "glitchpad",
+    "title": "Glitchpad",
+    "affiliation": {
+      "ownership": "shruggietech-owned",
+      "showcase": "public",
+      "parent": "ShruggieTech",
+      "inheritance": "shruggietech-house",
+      "endorsement": "shruggietech-project",
+      "service_credit": "none"
+    },
+    "brand_version": "1.1.0"
+  },
+  "versions": {
+    "canon_version": "1.2.1",
+    "interface_canon_version": "1.0.0",
+    "component_recipe_version": "1.1.0",
+    "web_react_adapter_version": "1.1.0",
+    "egui_adapter_version": "1.0.0",
+    "compiler_version": "1.3.0",
+    "brand_version": "1.1.0"
+  },
+  "bindings": {
+    "interface_canon": "enforcement/interface-canon.json",
+    "component_recipes": "enforcement/component-recipes.json",
+    "web_adapter": "web/adapter.json",
+    "web_support_matrix": "web/support-matrix.json",
+    "egui_adapter": "native/egui/adapter.json",
+    "egui_support_matrix": "native/egui/support-matrix.json"
+  },
+  "rules": {
+    "inheritance": "shruggietech-house",
+    "overrides": {}
+  },
+  "authority": {
+    "precedence": [
+      "brand.json",
+      "enforcement/interface-canon.json",
+      "enforcement/component-recipes.json",
+      "enforcement/version-policy.json",
+      "enforcement/documentation-contract.json",
+      "enforcement/consumer-contract.json",
+      "human instructions that do not conflict"
+    ],
+    "permitted_exceptions": [
+      "token definition files may contain governed literals",
+      "renderer metadata may contain documented platform-required literals"
+    ]
+  },
+  "verification": {
+    "entry_points": [
+      "python3 enforcement/brandbuilder/templates/verify.py .",
+      "python3 enforcement/brandbuilder/templates/validate_glyph.py brand.json"
+    ],
+    "success": "zero verifier problems and zero glyph failures"
+  },
+  "recovery": {
+    "distribution": "shruggie-brandbuilder-1.3.0.skill",
+    "path": "enforcement/distributions/shruggie-brandbuilder-1.3.0.skill",
+    "sha256": "9aebb8f3a015bbf857ae2a4ecc98eaada6b8ee81d10254a52ee79842992d2064",
+    "extract_to": "enforcement/brandbuilder",
+    "sources": [
+      {
+        "kind": "delivered-bundle",
+        "path": "enforcement/distributions/shruggie-brandbuilder-1.3.0.skill",
+        "network_required": false
+      },
+      {
+        "kind": "authoritative-release",
+        "version": "1.3.0",
+        "network_requires_authorization": true
+      }
+    ],
+    "instruction": "Verify the delivered SHA-256, then extract the exact archive into the empty enforcement/brandbuilder directory. Never substitute another version."
+  },
+  "capability_gap": {
+    "template_path": "enforcement/capability-gap.example.json",
+    "submission_requires_authorization": true
+  },
+  "hosted": {
+    "manual_path": "/docs/",
+    "scope": "Current generated kit only. Older pinned kits remain governed by their bundled contracts."
+  },
+  "bundled": {
+    "facts_path": "enforcement/documentation-facts.json",
+    "authority": "These pinned delivered bytes remain authoritative offline.",
+    "latest_substitution_allowed": false
+  }
+}

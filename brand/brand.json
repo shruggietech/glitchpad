@@ -233,6 +233,10 @@
     "palette": "Near-black surfaces keep controls visually secondary to file content. Pure sulfur provides identity, focus, and selection; cool slate supplies the fold and subdued states. Muddy and darkened yellows are prohibited."
   },
   "canon": "1.2.1",
+  "identity_continuity": {
+    "record": "identity-continuity.json",
+    "status": "historical-baseline"
+  },
   "measured": {
     "generated_by": "shruggie-brandbuilder/enrich_brand.py",
     "rule": "Every number here is measured from the hex at generation time. Regenerate rather than edit; verify.py re-derives all of it.",

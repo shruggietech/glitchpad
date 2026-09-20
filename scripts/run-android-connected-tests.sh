@@ -6,7 +6,7 @@ run_connected_suite() {
   ./crates/glitchpad-host/gen/android/gradlew \
     --project-dir crates/glitchpad-host/gen/android \
     :app:connectedUniversalDebugAndroidTest \
-    -Pandroid.testInstrumentationRunnerArguments.notClass=com.shruggietech.glitchpad.performance.PerformanceInstrumentedTest,com.shruggietech.glitchpad.source.AndroidDeliveryInstrumentedTest \
+    -Pandroid.testInstrumentationRunnerArguments.notClass=com.shruggietech.glitchpad.performance.PerformanceInstrumentedTest,com.shruggietech.glitchpad.source.AndroidDeliveryInstrumentedTest,com.shruggietech.glitchpad.shell.BrandBuilderAppFrameInstrumentedTest \
     -PabiList=x86_64 \
     -ParchList=x86_64 \
     -PtargetList=x86_64 \

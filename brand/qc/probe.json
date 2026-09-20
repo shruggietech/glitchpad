@@ -2,7 +2,7 @@
   "tier": "full",
   "python": "3.12.14",
   "cli": {
-    "rsvg-convert": true,
+    "rsvg-convert": false,
     "resvg": false,
     "inkscape": false,
     "magick": false,
@@ -25,6 +25,6 @@
   "pillow_composite": true,
   "svg_raster": true,
   "raster_reason": null,
-  "node_resvg": false,
+  "node_resvg": true,
   "ico_writer": true
 }

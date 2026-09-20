@@ -1,0 +1,360 @@
+{
+  "schema_version": 1,
+  "conformance_contract_version": "1.0.0",
+  "brand": "glitchpad",
+  "brand_title": "Glitchpad",
+  "brand_version": "1.1.0",
+  "source_revision": "8ceb22f700d29595c4967a54973d5df0b1571fbe",
+  "versions": {
+    "canon_version": "1.2.1",
+    "interface_canon_version": "1.0.0",
+    "component_recipe_version": "1.1.0",
+    "web_react_adapter_version": "1.1.0",
+    "egui_adapter_version": "1.0.0",
+    "compiler_version": "1.3.0",
+    "brand_version": "1.1.0",
+    "conformance_contract_version": "1.0.0"
+  },
+  "recipes": [
+    "AppFrame",
+    "Button",
+    "IconButton",
+    "Toolbar",
+    "Tabs",
+    "Menu",
+    "Dialog",
+    "Field",
+    "FormControls",
+    "ListRow",
+    "SplitPane",
+    "Toast",
+    "StatusBadge",
+    "Card",
+    "EmptyState"
+  ],
+  "diagnostic_classes": [
+    "visual",
+    "accessibility",
+    "interaction",
+    "host-boundary"
+  ],
+  "profiles": [
+    {
+      "id": "phone-portrait-touch",
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "orientation": "portrait"
+      },
+      "input": {
+        "keyboard": false,
+        "touch": true,
+        "pointer": "coarse",
+        "hover": false
+      },
+      "motion": "standard",
+      "contrast": "normal",
+      "text_scale": 1.0,
+      "safe_area": {
+        "top": 38,
+        "right": 0,
+        "bottom": 24,
+        "left": 0
+      },
+      "ime_block_end": 0,
+      "window_class": "compact"
+    },
+    {
+      "id": "phone-landscape-touch",
+      "viewport": {
+        "width": 844,
+        "height": 390,
+        "orientation": "landscape"
+      },
+      "input": {
+        "keyboard": false,
+        "touch": true,
+        "pointer": "coarse",
+        "hover": false
+      },
+      "motion": "standard",
+      "contrast": "normal",
+      "text_scale": 1.0,
+      "safe_area": {
+        "top": 0,
+        "right": 24,
+        "bottom": 20,
+        "left": 38
+      },
+      "ime_block_end": 0,
+      "window_class": "compact"
+    },
+    {
+      "id": "narrow-desktop",
+      "viewport": {
+        "width": 768,
+        "height": 720,
+        "orientation": "landscape"
+      },
+      "input": {
+        "keyboard": true,
+        "touch": false,
+        "pointer": "fine",
+        "hover": true
+      },
+      "motion": "standard",
+      "contrast": "normal",
+      "text_scale": 1.0,
+      "safe_area": {
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      },
+      "ime_block_end": 0,
+      "window_class": "narrow"
+    },
+    {
+      "id": "normal-desktop",
+      "viewport": {
+        "width": 1280,
+        "height": 900,
+        "orientation": "landscape"
+      },
+      "input": {
+        "keyboard": true,
+        "touch": false,
+        "pointer": "fine",
+        "hover": true
+      },
+      "motion": "standard",
+      "contrast": "normal",
+      "text_scale": 1.0,
+      "safe_area": {
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      },
+      "ime_block_end": 0,
+      "window_class": "normal"
+    },
+    {
+      "id": "reduced-motion",
+      "viewport": {
+        "width": 1280,
+        "height": 900,
+        "orientation": "landscape"
+      },
+      "input": {
+        "keyboard": true,
+        "touch": false,
+        "pointer": "fine",
+        "hover": true
+      },
+      "motion": "reduced",
+      "contrast": "normal",
+      "text_scale": 1.0,
+      "safe_area": {
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      },
+      "ime_block_end": 0,
+      "window_class": "normal"
+    },
+    {
+      "id": "forced-colors",
+      "viewport": {
+        "width": 1280,
+        "height": 900,
+        "orientation": "landscape"
+      },
+      "input": {
+        "keyboard": true,
+        "touch": false,
+        "pointer": "fine",
+        "hover": true
+      },
+      "motion": "standard",
+      "contrast": "forced-colors",
+      "text_scale": 1.0,
+      "safe_area": {
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      },
+      "ime_block_end": 0,
+      "window_class": "normal"
+    },
+    {
+      "id": "text-scale-200",
+      "viewport": {
+        "width": 768,
+        "height": 720,
+        "orientation": "landscape"
+      },
+      "input": {
+        "keyboard": true,
+        "touch": false,
+        "pointer": "fine",
+        "hover": true
+      },
+      "motion": "standard",
+      "contrast": "normal",
+      "text_scale": 2.0,
+      "safe_area": {
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      },
+      "ime_block_end": 0,
+      "window_class": "narrow"
+    }
+  ],
+  "host_tracks": [
+    {
+      "id": "browser-react",
+      "renderer": "web-react",
+      "host": "chrome",
+      "target": "browser",
+      "entry_point": "conformance/browser/specimen.html",
+      "evidence_class": "browser-reference",
+      "status": "supported",
+      "host_version": "playwright-chromium-1.62.1",
+      "renderer_version": "web-react-adapter-1.1.0",
+      "target_version": "browser-reference-envelope-1.0.0",
+      "tool_version": "playwright-1.62.1",
+      "required_tool": "chromium",
+      "profiles": [
+        "phone-portrait-touch",
+        "phone-landscape-touch",
+        "narrow-desktop",
+        "normal-desktop",
+        "reduced-motion",
+        "forced-colors",
+        "text-scale-200"
+      ]
+    },
+    {
+      "id": "tauri-android",
+      "renderer": "web-react",
+      "host": "tauri-2-android-webview",
+      "target": "android",
+      "entry_point": "conformance/hosts/tauri-android/Cargo.toml",
+      "evidence_class": "tauri-reference-host",
+      "status": "supported",
+      "host_version": "tauri-2-reference-envelope-1.0.0",
+      "renderer_version": "web-react-adapter-1.1.0",
+      "target_version": "android-webview-reference-envelope-1.0.0",
+      "tool_version": "rust-1.95-minimum",
+      "required_tool": "cargo",
+      "profiles": [
+        "phone-portrait-touch",
+        "phone-landscape-touch"
+      ]
+    },
+    {
+      "id": "wails-windows",
+      "renderer": "web-react",
+      "host": "wails-windows-webview2",
+      "target": "windows-11",
+      "entry_point": "conformance/hosts/wails-windows/go.mod",
+      "evidence_class": "wails-reference-host",
+      "status": "supported",
+      "host_version": "wails-2-reference-envelope-1.0.0",
+      "renderer_version": "web-react-adapter-1.1.0",
+      "target_version": "windows-11-webview2-reference-envelope-1.0.0",
+      "tool_version": "go-1.22-minimum",
+      "required_tool": "go",
+      "profiles": [
+        "narrow-desktop",
+        "normal-desktop",
+        "text-scale-200"
+      ]
+    },
+    {
+      "id": "egui-native",
+      "renderer": "egui",
+      "host": "eframe-native",
+      "target": "native",
+      "entry_point": "native/egui/Cargo.toml",
+      "evidence_class": "egui-reference-renderer",
+      "status": "supported",
+      "host_version": "eframe-native-reference-envelope-1.0.0",
+      "renderer_version": "egui-0.36.1",
+      "target_version": "native-reference-envelope-1.0.0",
+      "tool_version": "rust-1.95-minimum",
+      "required_tool": "cargo",
+      "profiles": [
+        "narrow-desktop",
+        "normal-desktop",
+        "reduced-motion",
+        "text-scale-200"
+      ]
+    }
+  ],
+  "evidence_boundaries": {
+    "browser_emulation_is_host_proof": false,
+    "reference_fixture_is_consumer_adoption": false,
+    "actual_host_status": "pending-proof",
+    "consumer_adoption_status": "pending-proof"
+  },
+  "entries": {
+    "browser": "conformance/browser/specimen.html",
+    "traces": "conformance/evidence/traces.json",
+    "tauri": "conformance/hosts/tauri-android/Cargo.toml",
+    "wails": "conformance/hosts/wails-windows/go.mod",
+    "egui": "native/egui/Cargo.toml",
+    "baseline_decisions": "conformance/baseline-decisions.json"
+  },
+  "artifacts": [
+    {
+      "path": "conformance/browser/specimen.html",
+      "sha256": "ef79f5b3bc81a9811cd5f6fc2de210a7197accf60e3ebe1737e1e0c959151fd0"
+    },
+    {
+      "path": "conformance/evidence/traces.json",
+      "sha256": "f5b5e4c9cdbd72b50079be55ee115d7bf5db47a3415c459f3cba18af94056bce"
+    },
+    {
+      "path": "conformance/baseline-decisions.json",
+      "sha256": "1e796900dfe1884d52c830e62dbbc254a433c28d849de7c3fcd8cf11d8c140ca"
+    },
+    {
+      "path": "conformance/hosts/tauri-android/Cargo.toml",
+      "sha256": "7fdd2c8eb878ac12eae7cfe7f377ddba242276335c8547b8e918e7b7eb816a27"
+    },
+    {
+      "path": "conformance/hosts/tauri-android/Cargo.lock",
+      "sha256": "b81aa2ab3dc6285edccaf63c732b731a2bf2f721123d46928d9ee4dae4cb087a"
+    },
+    {
+      "path": "conformance/hosts/tauri-android/src/lib.rs",
+      "sha256": "d36fa2be92f884b1f7ed4b548a305f5912325268667373cbdb4d95a9445a680b"
+    },
+    {
+      "path": "conformance/hosts/tauri-android/tests/ownership.rs",
+      "sha256": "ed43c5314ac2293912d21cb51fb107552f5d9a74c454580d887d417b9cf426db"
+    },
+    {
+      "path": "conformance/hosts/wails-windows/go.mod",
+      "sha256": "bc75be39b33395e370b16c5cefbdeab00e07a3d9eed377a2053d08d0e9d26974"
+    },
+    {
+      "path": "conformance/hosts/wails-windows/ownership.go",
+      "sha256": "9051f37f90498ccc647c76c876990a6de0659d299ca6e37875d43e73ff6f09b5"
+    },
+    {
+      "path": "conformance/hosts/wails-windows/ownership_test.go",
+      "sha256": "29545ffdfb3146ca27115b16a2ff38d8a843fa3cd08b75a8e6dbd253f444215c"
+    },
+    {
+      "path": "conformance/README.md",
+      "sha256": "41a4f7724f0389d6c5e339db283e9bfe89e56c0ba5cd54eb42ec63adc0e758f1"
+    }
+  ]
+}

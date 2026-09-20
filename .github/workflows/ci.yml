@@ -314,10 +314,9 @@ jobs:
             bash scripts/run-android-instrumentation.sh "$RUNNER_TEMP/restoration-verify.txt" 'OK (1 test)' -e class com.shruggietech.glitchpad.source.RestorationInstrumentedTest#privateRestorationRecordSurvivesProcessBoundary -e restorationPhase verify
             bash scripts/run-android-instrumentation.sh "$RUNNER_TEMP/performance-evidence.txt" 'performance_evidence=' -e class com.shruggietech.glitchpad.performance.PerformanceInstrumentedTest
             node scripts/check-performance.mjs --android-instrumentation-output "$RUNNER_TEMP/performance-evidence.txt" --api-level "${{ matrix.api-level }}"
-            test_ime='com.shruggietech.glitchpad.test/com.shruggietech.glitchpad.shell.FixtureInputMethodService'
-            adb shell ime enable "$test_ime"
-            adb shell ime set "$test_ime"
-            adb shell settings get secure default_input_method | grep -Fqx "$test_ime"
+            adb shell ime enable 'com.shruggietech.glitchpad.test/com.shruggietech.glitchpad.shell.FixtureInputMethodService'
+            adb shell ime set 'com.shruggietech.glitchpad.test/com.shruggietech.glitchpad.shell.FixtureInputMethodService'
+            adb shell settings get secure default_input_method | grep -Fqx 'com.shruggietech.glitchpad.test/com.shruggietech.glitchpad.shell.FixtureInputMethodService'
             bash scripts/run-android-instrumentation.sh "$RUNNER_TEMP/appframe-evidence.txt" 'appframe_evidence=' -e class com.shruggietech.glitchpad.shell.BrandBuilderAppFrameInstrumentedTest
 
       - name: Upload Android instrumentation reports

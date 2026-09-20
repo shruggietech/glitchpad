@@ -13,7 +13,9 @@ shift 2
 
 for attempt in 1 2; do
   adb shell am force-stop com.shruggietech.glitchpad || true
-  adb shell am force-stop com.shruggietech.glitchpad.test || true
+  if [[ "${ANDROID_INSTRUMENTATION_PRESERVE_TEST_INPUT_METHOD:-false}" != "true" ]]; then
+    adb shell am force-stop com.shruggietech.glitchpad.test || true
+  fi
   adb logcat -c || true
   adb shell am instrument -w "$@" com.shruggietech.glitchpad.test/androidx.test.runner.AndroidJUnitRunner > "$output" 2>&1 || true
   cat "$output"

@@ -196,6 +196,9 @@ fn assert_android_fixture_ime(workspace: &std::path::Path, workflow: &str) {
         workspace.join("crates/glitchpad-host/gen/android/app/src/androidTest/AndroidManifest.xml"),
     )
     .expect("read Android test manifest");
+    let instrumentation =
+        fs::read_to_string(workspace.join("scripts/run-android-instrumentation.sh"))
+            .expect("read Android instrumentation wrapper");
     assert!(
         fixture_ime.contains("class FixtureInputMethodService : InputMethodService()")
             && fixture_ime.contains("override fun onEvaluateFullscreenMode(): Boolean = false")
@@ -224,6 +227,14 @@ fn assert_android_fixture_ime(workspace: &std::path::Path, workflow: &str) {
             )
             && fixture_ime_selection < appframe_evidence,
         "CI must enable, select, and verify the fixture IME immediately before AppFrame evidence"
+    );
+    assert!(
+        workflow.contains(
+            "ANDROID_INSTRUMENTATION_PRESERVE_TEST_INPUT_METHOD=true bash scripts/run-android-instrumentation.sh \"$RUNNER_TEMP/appframe-evidence.txt\"",
+        ) && instrumentation.contains(
+            "if [[ \"${ANDROID_INSTRUMENTATION_PRESERVE_TEST_INPUT_METHOD:-false}\" != \"true\" ]]; then",
+        ),
+        "AppFrame evidence must preserve the selected test-APK IME while resetting the product process"
     );
 }
 

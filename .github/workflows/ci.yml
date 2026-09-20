@@ -317,7 +317,7 @@ jobs:
             adb shell ime enable 'com.shruggietech.glitchpad.test/com.shruggietech.glitchpad.shell.FixtureInputMethodService'
             adb shell ime set 'com.shruggietech.glitchpad.test/com.shruggietech.glitchpad.shell.FixtureInputMethodService'
             adb shell settings get secure default_input_method | grep -Fqx 'com.shruggietech.glitchpad.test/com.shruggietech.glitchpad.shell.FixtureInputMethodService'
-            bash scripts/run-android-instrumentation.sh "$RUNNER_TEMP/appframe-evidence.txt" 'appframe_evidence=' -e class com.shruggietech.glitchpad.shell.BrandBuilderAppFrameInstrumentedTest
+            ANDROID_INSTRUMENTATION_PRESERVE_TEST_INPUT_METHOD=true bash scripts/run-android-instrumentation.sh "$RUNNER_TEMP/appframe-evidence.txt" 'appframe_evidence=' -e class com.shruggietech.glitchpad.shell.BrandBuilderAppFrameInstrumentedTest
 
       - name: Upload Android instrumentation reports
         if: always()

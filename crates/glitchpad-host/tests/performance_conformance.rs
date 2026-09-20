@@ -153,6 +153,14 @@ fn assert_android_ime_request_paths(workspace: &std::path::Path) {
         "crates/glitchpad-host/gen/android/app/src/main/java/com/shruggietech/glitchpad/MainActivity.kt",
     ))
     .expect("read Android main activity source");
+    let fixture_ime = fs::read_to_string(workspace.join(
+        "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/shell/FixtureInputMethodService.kt",
+    ))
+    .expect("read fixture input method source");
+    let test_manifest = fs::read_to_string(
+        workspace.join("crates/glitchpad-host/gen/android/app/src/androidTest/AndroidManifest.xml"),
+    )
+    .expect("read Android test manifest");
     assert!(
         appframe_test.contains("windowInsetsController")
             && appframe_test.contains("WindowInsets.Type.ime()")
@@ -184,6 +192,18 @@ fn assert_android_ime_request_paths(workspace: &std::path::Path) {
             && main_activity.contains("content.height - imeBottom")
             && main_activity.contains("return@setOnApplyWindowInsetsListener insets"),
         "the Android host must resize pre-139 WebViews from real modern IME insets without consuming safe-area dispatch"
+    );
+    assert!(
+        fixture_ime.contains("class FixtureInputMethodService : InputMethodService()")
+            && fixture_ime.contains("override fun onEvaluateFullscreenMode(): Boolean = false")
+            && fixture_ime.contains("ViewGroup.LayoutParams.MATCH_PARENT, height"),
+        "AppFrame evidence must use a bounded test-only IME with deterministic resize geometry"
+    );
+    assert!(
+        test_manifest.contains("com.shruggietech.glitchpad.shell.FixtureInputMethodService")
+            && test_manifest.contains("android.permission.BIND_INPUT_METHOD")
+            && test_manifest.contains("@xml/fixture_input_method"),
+        "the Android test APK must declare the deterministic fixture input method"
     );
 }
 
@@ -230,6 +250,22 @@ fn android_emulator_uses_supported_software_rendering() {
     assert!(
         workflow.contains("bash scripts/run-android-instrumentation.sh"),
         "the emulator runner must invoke the multiline retry logic through one shell command"
+    );
+    let fixture_ime_selection = workflow
+        .find("adb shell ime set \"$test_ime\"")
+        .expect("CI must select the deterministic test input method");
+    let appframe_evidence = workflow
+        .rfind("com.shruggietech.glitchpad.shell.BrandBuilderAppFrameInstrumentedTest")
+        .expect("AppFrame evidence invocation should be present");
+    assert!(
+        workflow.contains(
+            "test_ime='com.shruggietech.glitchpad.test/com.shruggietech.glitchpad.shell.FixtureInputMethodService'",
+        ) && workflow.contains("adb shell ime enable \"$test_ime\"")
+            && workflow.contains(
+                "adb shell settings get secure default_input_method | grep -Fqx \"$test_ime\"",
+            )
+            && fixture_ime_selection < appframe_evidence,
+        "CI must enable, select, and verify the fixture IME immediately before AppFrame evidence"
     );
     assert!(
         performance_test.contains("SystemClock.elapsedRealtime() + 60_000L"),

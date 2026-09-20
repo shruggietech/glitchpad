@@ -5,8 +5,9 @@ import android.content.Context
 import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
-import android.os.ParcelFileDescriptor
 import android.os.SystemClock
+import android.view.InputDevice
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowInsets
@@ -62,6 +63,13 @@ class BrandBuilderAppFrameInstrumentedTest {
 
     private fun waitForShell(scenario: ActivityScenario<MainActivity>) {
         val deadline = SystemClock.elapsedRealtime() + 60_000L
+        var webViewReady = false
+        while (!webViewReady && SystemClock.elapsedRealtime() < deadline) {
+            scenario.onActivity { webViewReady = findWebView(it.window.decorView) != null }
+            if (!webViewReady) SystemClock.sleep(100L)
+        }
+        assertTrue("Tauri must attach its Android WebView", webViewReady)
+
         var ready = false
         while (!ready && SystemClock.elapsedRealtime() < deadline) {
             ready = evaluate(
@@ -169,9 +177,31 @@ class BrandBuilderAppFrameInstrumentedTest {
             screenX = location[0] + (cssX * devicePixelRatio).toInt()
             screenY = location[1] + (cssY * devicePixelRatio).toInt()
         }
-        val command = "input tap $screenX $screenY"
-        val descriptor = InstrumentationRegistry.getInstrumentation().uiAutomation.executeShellCommand(command)
-        ParcelFileDescriptor.AutoCloseInputStream(descriptor).use { it.readBytes() }
+        val automation = InstrumentationRegistry.getInstrumentation().uiAutomation
+        val downTime = SystemClock.uptimeMillis()
+        val down = MotionEvent.obtain(
+            downTime,
+            downTime,
+            MotionEvent.ACTION_DOWN,
+            screenX.toFloat(),
+            screenY.toFloat(),
+            0,
+        ).apply { source = InputDevice.SOURCE_TOUCHSCREEN }
+        val up = MotionEvent.obtain(
+            downTime,
+            downTime + 50L,
+            MotionEvent.ACTION_UP,
+            screenX.toFloat(),
+            screenY.toFloat(),
+            0,
+        ).apply { source = InputDevice.SOURCE_TOUCHSCREEN }
+        try {
+            assertTrue("UiAutomation must inject the IME probe touch-down", automation.injectInputEvent(down, true))
+            assertTrue("UiAutomation must inject the IME probe touch-up", automation.injectInputEvent(up, true))
+        } finally {
+            down.recycle()
+            up.recycle()
+        }
     }
 
     @Test

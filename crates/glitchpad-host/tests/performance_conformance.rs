@@ -153,11 +153,11 @@ fn assert_android_ime_request_paths(workspace: &std::path::Path) {
         appframe_test.contains("windowInsetsController")
             && appframe_test.contains("WindowInsets.Type.ime()")
             && appframe_test.contains("showSoftInput")
-            && appframe_test.contains("uiAutomation.executeShellCommand(command)")
-            && appframe_test.contains("input tap $screenX $screenY")
+            && appframe_test.contains("automation.injectInputEvent(down, true)")
+            && appframe_test.contains("automation.injectInputEvent(up, true)")
             && appframe_test.contains("input.blur()")
             && appframe_test.contains("input.style.top = '50%';"),
-        "AppFrame evidence must let a system-level tap focus a safely positioned WebView editor before requesting the IME, while retaining the API 24 fallback"
+        "AppFrame evidence must let privileged touchscreen events focus a safely positioned WebView editor before requesting the IME, while retaining the API 24 fallback"
     );
 }
 

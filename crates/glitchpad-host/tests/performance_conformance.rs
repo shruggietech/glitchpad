@@ -159,11 +159,11 @@ fn assert_android_ime_request_paths(workspace: &std::path::Path) {
             && appframe_test.contains("showSoftInput")
             && appframe_test.contains("input.focus()")
             && appframe_test.contains("document.activeElement === input")
-            && appframe_test.contains("if (Build.VERSION.SDK_INT < 30)")
-            && appframe_test.contains("automation.injectInputEvent(down, true)")
-            && appframe_test.contains("automation.injectInputEvent(up, true)")
+            && appframe_test.contains("GeneralClickAction(")
+            && appframe_test.contains("Tap.SINGLE")
+            && appframe_test.contains("isAssignableFrom(WebView::class.java)")
             && appframe_test.contains("input.style.top = '50%';"),
-        "AppFrame evidence must focus a safely positioned WebView editor, use a physical gesture on legacy Chrome, and retain the modern IME request"
+        "AppFrame evidence must focus a safely positioned WebView editor, use Espresso's WebView-aware physical gesture, and retain the native IME requests"
     );
 
     assert!(

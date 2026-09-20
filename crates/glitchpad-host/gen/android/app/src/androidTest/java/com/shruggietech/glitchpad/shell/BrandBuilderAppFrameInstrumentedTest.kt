@@ -6,8 +6,6 @@ import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
 import android.os.SystemClock
-import android.view.InputDevice
-import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowInsets
@@ -15,6 +13,12 @@ import android.view.WindowManager
 import android.view.inputmethod.InputMethodManager
 import android.webkit.WebView
 import androidx.test.core.app.ActivityScenario
+import androidx.test.espresso.Espresso.onView
+import androidx.test.espresso.action.CoordinatesProvider
+import androidx.test.espresso.action.GeneralClickAction
+import androidx.test.espresso.action.Press
+import androidx.test.espresso.action.Tap
+import androidx.test.espresso.matcher.ViewMatchers.isAssignableFrom
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.shruggietech.glitchpad.MainActivity
@@ -163,45 +167,24 @@ class BrandBuilderAppFrameInstrumentedTest {
     }
 
     private fun tapWebViewPoint(
-        scenario: ActivityScenario<MainActivity>,
         cssX: Double,
         cssY: Double,
         devicePixelRatio: Double,
     ) {
-        var screenX = 0
-        var screenY = 0
-        scenario.onActivity { activity ->
-            val webView = findWebView(activity.window.decorView)!!
-            val location = IntArray(2)
-            webView.getLocationOnScreen(location)
-            screenX = location[0] + (cssX * devicePixelRatio).toInt()
-            screenY = location[1] + (cssY * devicePixelRatio).toInt()
-        }
-        val automation = InstrumentationRegistry.getInstrumentation().uiAutomation
-        val downTime = SystemClock.uptimeMillis()
-        val down = MotionEvent.obtain(
-            downTime,
-            downTime,
-            MotionEvent.ACTION_DOWN,
-            screenX.toFloat(),
-            screenY.toFloat(),
-            0,
-        ).apply { source = InputDevice.SOURCE_TOUCHSCREEN }
-        val up = MotionEvent.obtain(
-            downTime,
-            downTime + 50L,
-            MotionEvent.ACTION_UP,
-            screenX.toFloat(),
-            screenY.toFloat(),
-            0,
-        ).apply { source = InputDevice.SOURCE_TOUCHSCREEN }
-        try {
-            assertTrue("UiAutomation must inject the IME probe touch-down", automation.injectInputEvent(down, true))
-            assertTrue("UiAutomation must inject the IME probe touch-up", automation.injectInputEvent(up, true))
-        } finally {
-            down.recycle()
-            up.recycle()
-        }
+        onView(isAssignableFrom(WebView::class.java)).perform(
+            GeneralClickAction(
+                Tap.SINGLE,
+                CoordinatesProvider { view ->
+                    val location = IntArray(2)
+                    view.getLocationOnScreen(location)
+                    floatArrayOf(
+                        location[0] + (cssX * devicePixelRatio).toFloat(),
+                        location[1] + (cssY * devicePixelRatio).toFloat(),
+                    )
+                },
+                Press.FINGER,
+            ),
+        )
     }
 
     @Test
@@ -301,14 +284,11 @@ class BrandBuilderAppFrameInstrumentedTest {
         )
         assertTrue("IME probe must be present before the native request: $probe", probe.getBoolean("present"))
         assertTrue("IME probe must accept DOM focus before the native request: $probe", probe.getBoolean("focused"))
-        if (Build.VERSION.SDK_INT < 30) {
-            tapWebViewPoint(
-                scenario,
-                probe.getDouble("x"),
-                probe.getDouble("y"),
-                probe.getDouble("devicePixelRatio"),
-            )
-        }
+        tapWebViewPoint(
+            probe.getDouble("x"),
+            probe.getDouble("y"),
+            probe.getDouble("devicePixelRatio"),
+        )
         SystemClock.sleep(250L)
         var imeShowRequested = false
         var imeRequestPath = "legacy-input-method-manager"

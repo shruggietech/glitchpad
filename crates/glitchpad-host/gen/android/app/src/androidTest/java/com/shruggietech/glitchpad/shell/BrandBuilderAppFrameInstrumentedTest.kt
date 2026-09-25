@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
+import android.os.ParcelFileDescriptor
 import android.os.SystemClock
 import android.view.InputDevice
 import android.view.MotionEvent
@@ -225,7 +226,27 @@ class BrandBuilderAppFrameInstrumentedTest {
             }
             if (!webViewWindowFocused) SystemClock.sleep(100L)
         }
-        assertTrue("WebView window must have focus before the IME probe touch", webViewWindowFocused)
+        if (!webViewWindowFocused) {
+            var viewState = "unavailable"
+            scenario.onActivity { activity ->
+                val webView = findWebView(activity.window.decorView)!!
+                val task = (activity.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager)
+                    .appTasks.firstOrNull { it.taskInfo.id == activity.taskId }
+                viewState = "task=${activity.taskId}, taskFocused=${task?.taskInfo?.isFocused}, " +
+                    "decorAttached=${activity.window.decorView.isAttachedToWindow}, " +
+                    "decorWindowFocus=${activity.window.decorView.hasWindowFocus()}, " +
+                    "webViewAttached=${webView.isAttachedToWindow}, webViewWindowFocus=${webView.hasWindowFocus()}"
+            }
+            val windowDump = ParcelFileDescriptor.AutoCloseInputStream(
+                InstrumentationRegistry.getInstrumentation().uiAutomation.executeShellCommand("dumpsys window"),
+            ).bufferedReader().use { reader ->
+                reader.lineSequence()
+                    .filter { it.contains("mCurrentFocus=") || it.contains("mFocusedApp=") }
+                    .take(4)
+                    .joinToString("; ") { it.trim() }
+            }
+            assertTrue("WebView window must have focus before the IME probe touch ($viewState; $windowDump)", false)
+        }
 
         val probe = JSONObject(
             decodedJavascriptString(

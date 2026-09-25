@@ -8,6 +8,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.ParcelFileDescriptor
 import android.os.SystemClock
+import android.util.Log
 import android.view.InputDevice
 import android.view.MotionEvent
 import android.view.View
@@ -74,14 +75,20 @@ class BrandBuilderAppFrameInstrumentedTest {
                 .joinToString("; ") { it.trim() }
         }
 
-    private fun dismissBluetoothCrashDialog(): Boolean {
+    private fun dismissEmulatorSystemDialog(): Boolean {
         val currentWindow = focusedWindowState().split("; ")
             .firstOrNull { it.startsWith("mCurrentFocus=") } ?: return false
-        if (!currentWindow.contains("Application Error: com.android.bluetooth")) return false
-        val closeButton = InstrumentationRegistry.getInstrumentation().uiAutomation.rootInActiveWindow
-            ?.findAccessibilityNodeInfosByText("Close app")
-            ?.firstOrNull { it.text?.toString() == "Close app" }
-        return closeButton?.performAction(AccessibilityNodeInfo.ACTION_CLICK) == true
+        val action = when {
+            currentWindow.contains("Application Error: com.android.") -> "Close app"
+            currentWindow.contains("Application Not Responding: com.android.") -> "Wait"
+            else -> return false
+        }
+        val button = InstrumentationRegistry.getInstrumentation().uiAutomation.rootInActiveWindow
+            ?.findAccessibilityNodeInfosByText(action)
+            ?.firstOrNull { it.text?.toString() == action }
+        val dismissed = button?.performAction(AccessibilityNodeInfo.ACTION_CLICK) == true
+        if (dismissed) Log.i("BrandBuilderAppFrame", "Dismissed emulator system dialog: $currentWindow")
+        return dismissed
     }
 
     private fun waitForShell(scenario: ActivityScenario<MainActivity>) {
@@ -251,7 +258,7 @@ class BrandBuilderAppFrameInstrumentedTest {
                 val now = SystemClock.elapsedRealtime()
                 if (Build.VERSION.SDK_INT >= 36 && now >= nextSystemDialogProbe) {
                     nextSystemDialogProbe = now + 1_000L
-                    if (dismissBluetoothCrashDialog()) {
+                    if (dismissEmulatorSystemDialog()) {
                         windowFocusDeadline = minOf(focusStart + 60_000L, maxOf(windowFocusDeadline, now + 15_000L))
                     }
                 }

@@ -230,9 +230,7 @@ class BrandBuilderAppFrameInstrumentedTest {
             var viewState = "unavailable"
             scenario.onActivity { activity ->
                 val webView = findWebView(activity.window.decorView)!!
-                val task = (activity.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager)
-                    .appTasks.firstOrNull { it.taskInfo.id == activity.taskId }
-                viewState = "task=${activity.taskId}, taskFocused=${task?.taskInfo?.isFocused}, " +
+                viewState = "task=${activity.taskId}, " +
                     "decorAttached=${activity.window.decorView.isAttachedToWindow}, " +
                     "decorWindowFocus=${activity.window.decorView.hasWindowFocus()}, " +
                     "webViewAttached=${webView.isAttachedToWindow}, webViewWindowFocus=${webView.hasWindowFocus()}"

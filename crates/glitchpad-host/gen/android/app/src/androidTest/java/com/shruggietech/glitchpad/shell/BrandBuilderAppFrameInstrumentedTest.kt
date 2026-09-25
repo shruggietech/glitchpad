@@ -267,8 +267,9 @@ class BrandBuilderAppFrameInstrumentedTest {
                     imeRequestPath = "window-insets-controller+input-method-manager"
                     val controller = webView.windowInsetsController
                     controller?.show(WindowInsets.Type.ime())
+                    // The injected touch is an explicit user gesture; implicit requests may be ignored.
                     val inputMethodManagerAccepted =
-                        inputMethodManager.showSoftInput(webView, InputMethodManager.SHOW_IMPLICIT)
+                        inputMethodManager.showSoftInput(webView, 0)
                     imeShowRequested = imeShowRequested || controller != null || inputMethodManagerAccepted
                 } else {
                     imeShowRequested = imeShowRequested ||

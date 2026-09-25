@@ -4,7 +4,7 @@
   "kind": "sub-brand",
   "title": "Glitchpad",
   "slug": "glitchpad",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "showcase_surface": "card",
   "affiliation": {
     "ownership": "shruggietech-owned",
@@ -232,7 +232,7 @@
     "logo": "The rectangular paper and G share one protected construction inside a permanent square. On dark surfaces the square is sulfur with a charcoal page; on light surfaces the square is charcoal with a sulfur page. The slate fold stays consistent across both contexts.",
     "palette": "Near-black surfaces keep controls visually secondary to file content. Pure sulfur provides identity, focus, and selection; cool slate supplies the fold and subdued states. Muddy and darkened yellows are prohibited."
   },
-  "canon": "1.2.1",
+  "canon": "1.3.0",
   "identity_continuity": {
     "record": "identity-continuity.json",
     "status": "historical-baseline"
@@ -308,7 +308,7 @@
         "color": "#000000",
         "ratio": 6.49
       },
-      "note": "inherited verbatim from canon 1.2.1"
+      "note": "inherited verbatim from canon 1.3.0"
     },
     "orange-cta": {
       "hex": "#C24000",
@@ -323,7 +323,7 @@
         "color": "#FFFFFF",
         "ratio": 5.21
       },
-      "note": "inherited verbatim from canon 1.2.1"
+      "note": "inherited verbatim from canon 1.3.0"
     },
     "fault": {
       "hex": "#E9505F",
@@ -338,7 +338,7 @@
         "color": "#000000",
         "ratio": 5.78
       },
-      "note": "inherited verbatim from canon 1.2.1"
+      "note": "inherited verbatim from canon 1.3.0"
     },
     "fault-deep": {
       "hex": "#C0293A",
@@ -353,7 +353,7 @@
         "color": "#FFFFFF",
         "ratio": 5.8
       },
-      "note": "inherited verbatim from canon 1.2.1"
+      "note": "inherited verbatim from canon 1.3.0"
     },
     "surface-base": {
       "hex": "#0B0C0D",

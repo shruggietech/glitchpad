@@ -10,6 +10,9 @@ import android.widget.FrameLayout
 class FixtureInputMethodService : InputMethodService() {
     override fun onEvaluateFullscreenMode(): Boolean = false
 
+    // The hosted emulator can expose a hardware keyboard; this fixture must still show its input area.
+    override fun onEvaluateInputViewShown(): Boolean = true
+
     override fun onCreateInputView(): View {
         val height = (240 * resources.displayMetrics.density).toInt()
         return FrameLayout(this).apply {

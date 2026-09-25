@@ -529,7 +529,7 @@ dependencies = [
 
 [[package]]
 name = "shruggie_glitchpad_egui"
-version = "1.0.0"
+version = "1.0.2"
 dependencies = [
  "egui",
  "egui_kittest",

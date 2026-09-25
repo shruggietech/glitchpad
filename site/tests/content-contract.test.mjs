@@ -422,6 +422,15 @@ test('web manifest icons are present in the public export source', async () => {
     await readFile(join(siteRoot, 'public', 'site.webmanifest'), 'utf8'),
   );
 
+  assert.deepEqual(
+    manifest.icons.map(({ src, purpose }) => [src, purpose]),
+    [
+      ['/android-chrome-192x192.png', 'any'],
+      ['/android-chrome-512x512.png', 'any'],
+      ['/maskable-icon-192x192.png', 'maskable'],
+      ['/maskable-icon-512x512.png', 'maskable'],
+    ],
+  );
   for (const icon of manifest.icons) {
     assert.match(icon.src, /^\/[a-z0-9.-]+$/);
     const asset = await readFile(join(siteRoot, 'public', icon.src.slice(1)));

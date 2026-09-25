@@ -6,13 +6,15 @@ Generated from `enforcement/documentation-facts.json` under documentation contra
 
 | Domain | Version |
 | --- | --- |
-| Brand Canon | `1.2.1` |
+| Brand Canon | `1.3.0` |
 | Interface Canon | `1.0.0` |
 | Component recipes | `1.1.0` |
 | Web/React adapter | `1.1.0` |
-| egui adapter | `1.0.0` |
-| BrandBuilder | `1.3.0` |
-| Brand | `1.1.0` |
+| egui adapter | `1.0.2` |
+| BrandBuilder | `2.0.3` |
+| Brand | `1.1.1` |
+
+Package identity: `glitchpad-brand-1.1.1-bb2.0.3` (`glitchpad-brand-1.1.1-bb2.0.3.zip`)
 
 ## Bindings
 
@@ -30,7 +32,7 @@ Inheritance mode: `shruggietech-house`.
 Declared interface overrides:
 - None.
 
-Follow authority in this order: `brand.json` -> `enforcement/interface-canon.json` -> `enforcement/component-recipes.json` -> `enforcement/version-policy.json` -> `enforcement/documentation-contract.json` -> `enforcement/consumer-contract.json` -> `human instructions that do not conflict`.
+Follow authority in this order: `brand.json` -> `enforcement/bundle.json` -> `enforcement/release-impact.json` -> `enforcement/interface-canon.json` -> `enforcement/component-recipes.json` -> `enforcement/version-policy.json` -> `enforcement/documentation-contract.json` -> `enforcement/consumer-contract.json` -> `human instructions that do not conflict`.
 
 ## Verification
 
@@ -41,9 +43,26 @@ Success means zero verifier problems and zero glyph failures.
 
 ## Offline recovery
 
-Verify `9aebb8f3a015bbf857ae2a4ecc98eaada6b8ee81d10254a52ee79842992d2064` for `enforcement/distributions/shruggie-brandbuilder-1.3.0.skill`, then extract it to `enforcement/brandbuilder`. Use the delivered bundle and never substitute an unspecified latest release.
+Verify `f8ae954806e9797cbde8270a0660dc16dd6c4018df03f8003ca95e633efc073f` for `enforcement/distributions/shruggie-brandbuilder-2.0.3.skill`, then extract it to `enforcement/brandbuilder`. Use the delivered bundle and never substitute an unspecified latest release.
 
 Capability gaps stay local at `enforcement/capability-gap.example.json` until a human explicitly authorizes upstream submission.
+
+## Migration impact
+
+No approved identity redesign is included. Brand version `1.1.1` remains distinct from package `glitchpad-brand-1.1.1-bb2.0.3`.
+
+| Surface | Classification | Guidance |
+| --- | --- | --- |
+| Identity | unaffected | Approved logo geometry, source bytes, ownership, and affiliation are unchanged. Glitchpad 1.1.1 and ESO Weave 1.0.2 advance package versions for native role presentation without identity redesign. |
+| Palette | required | Consumers using generated semantic color roles must repin the rebuilt kit and retain its measured surface-specific values. |
+| Typography | required | Consumers using generated typography bindings must repin the rebuilt kit and its local font declarations. |
+| Platform Assets | required | Web, Android, and Windows consumers of affected icon roles must regenerate and repin assets; other platform assets remain optional. |
+| Web React | optional | Web and React consumers may adopt the AppFrame and environment contracts when they use those generated surfaces. |
+| Egui | required | Native Rust consumers using status or disabled controls should regenerate and repin egui adapter 1.0.2 for explicit readable text roles; ESO Weave must fix its local strong-label call separately. |
+| Documentation | required | Readers and consumers using generated guidance should repin the rebuilt kit for native icon role, egui status, and exact-version bundle instructions. |
+| Recovery | required | Consumers retaining a kit must preserve the delivered checksummed BrandBuilder recovery bytes and canonical immutable package identity. |
+
+`required` applies to existing use of that surface, `optional` is an available capability, and `unaffected` requires no migration.
 
 For shared architecture and extension guidance, read [/docs/](https://brand.shruggie.tech/docs/). The hosted reference describes only the current generated kit. This bundled contract continues to govern these pinned delivered bytes.
 

@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "shruggie-version-policy",
   "kind": "version-policy",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "domains": {
     "brand_canon": {
       "meaning": "Governed identity, affiliation, inheritance, accessibility, and source-contract semantics shared by brands.",
@@ -151,7 +151,8 @@
       "supported": [
         "1.1.2",
         "1.2.0",
-        "1.2.1"
+        "1.2.1",
+        "1.3.0"
       ]
     },
     {
@@ -198,17 +199,18 @@
     },
     {
       "dependent": "compiler",
-      "dependent_major": 1,
+      "dependent_major": 2,
       "dependency": "brand_canon",
       "supported": [
         "1.1.2",
         "1.2.0",
-        "1.2.1"
+        "1.2.1",
+        "1.3.0"
       ]
     },
     {
       "dependent": "compiler",
-      "dependent_major": 1,
+      "dependent_major": 2,
       "dependency": "interface_canon",
       "supported": [
         "1.0.0"
@@ -216,7 +218,7 @@
     },
     {
       "dependent": "compiler",
-      "dependent_major": 1,
+      "dependent_major": 2,
       "dependency": "component_recipes",
       "supported": [
         "1.0.0",
@@ -225,7 +227,7 @@
     },
     {
       "dependent": "compiler",
-      "dependent_major": 1,
+      "dependent_major": 2,
       "dependency": "web_react_adapter",
       "supported": [
         "1.0.0",
@@ -234,10 +236,12 @@
     },
     {
       "dependent": "compiler",
-      "dependent_major": 1,
+      "dependent_major": 2,
       "dependency": "egui_adapter",
       "supported": [
-        "1.0.0"
+        "1.0.0",
+        "1.0.1",
+        "1.0.2"
       ]
     },
     {
@@ -247,7 +251,8 @@
       "supported": [
         "1.1.2",
         "1.2.0",
-        "1.2.1"
+        "1.2.1",
+        "1.3.0"
       ]
     },
     {
@@ -270,15 +275,7 @@
     },
     {
       "id": "published",
-      "meaning": "Immutable artifacts and checksums exist for the version; this does not imply compatibility with every consumer or adoption."
-    },
-    {
-      "id": "unadopted",
-      "meaning": "No named downstream consumer adoption is claimed by this record."
-    },
-    {
-      "id": "adopted",
-      "meaning": "A named consumer pins and uses the exact version; this does not change the publication or compatibility record."
+      "meaning": "Immutable artifacts and checksums exist for the version; this does not imply compatibility with every consumer."
     }
   ],
   "recovery": {

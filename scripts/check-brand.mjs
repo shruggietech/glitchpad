@@ -4,6 +4,13 @@ import { dirname, extname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { verifyAgentContract } from './brand-agent-contract.mjs';
+import {
+  androidResources,
+  integratedCopies,
+  isSafeBrandPath,
+  legalFileDigests,
+  releasePin,
+} from './brand-kit-contract.mjs';
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const textExtensions = new Set([
@@ -208,6 +215,96 @@ export async function verifyIntegratedCopy(
 
 export const verifyPublicCopy = verifyIntegratedCopy;
 
+export function verifyWebIconRoles(manifest) {
+  const expected = [
+    ['/android-chrome-192x192.png', 'any'],
+    ['/android-chrome-512x512.png', 'any'],
+    ['/maskable-icon-192x192.png', 'maskable'],
+    ['/maskable-icon-512x512.png', 'maskable'],
+  ];
+  const observed = manifest.icons?.map(({ src, purpose }) => [src, purpose]);
+  return JSON.stringify(observed) === JSON.stringify(expected)
+    ? []
+    : ['brand web manifest icon roles mismatch'];
+}
+
+export function verifyReleaseReceipt(receipt, bundle, consumer, manifestDigest) {
+  const problems = [];
+  for (const [field, expected, label] of [
+    ['packageId', releasePin.packageId, 'package ID'],
+    ['archiveName', releasePin.archiveName, 'archive name'],
+    ['archiveSha256', releasePin.archiveSha256, 'archive checksum'],
+    [
+      'sourceManifestSha256',
+      releasePin.sourceManifestSha256,
+      'source manifest checksum',
+    ],
+    [
+      'integratedManifestSha256',
+      releasePin.integratedManifestSha256,
+      'integrated manifest checksum',
+    ],
+    ['sourceRevision', releasePin.sourceRevision, 'source revision'],
+    ['releaseTag', releasePin.releaseTag, 'release tag'],
+    ['releaseUrl', releasePin.releaseUrl, 'release URL'],
+    ['brandVersion', releasePin.brandVersion, 'brand version'],
+    ['canonVersion', releasePin.canonVersion, 'canon version'],
+    ['compilerVersion', releasePin.compilerVersion, 'compiler version'],
+    ['recoverySha256', releasePin.recoverySha256, 'recovery checksum'],
+    ['governedFileCount', releasePin.governedFileCount, 'governed file count'],
+  ]) {
+    if (receipt[field] !== expected)
+      problems.push(`brand integration receipt ${label} mismatch`);
+  }
+  if (receipt.integratedManifestSha256 !== manifestDigest) {
+    problems.push('brand integration receipt manifest digest does not match');
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(receipt.retrievedAt ?? '')) {
+    problems.push('brand integration receipt has no retrieval date');
+  }
+  if (
+    receipt.correction?.path !== 'README.md' ||
+    receipt.correction?.from !== '../../LICENSE-BRAND.md' ||
+    receipt.correction?.to !== 'LICENSE-BRAND.md'
+  ) {
+    problems.push('brand integration receipt legal-link correction mismatch');
+  }
+  for (const [path, expected] of Object.entries(legalFileDigests)) {
+    if (receipt.legalFileDigests?.[path] !== expected) {
+      problems.push(
+        `brand integration receipt legal file digest mismatch: ${path}`,
+      );
+    }
+  }
+  if (
+    bundle.package?.id !== releasePin.packageId ||
+    bundle.package?.filename !== releasePin.archiveName ||
+    bundle.source_revision !== releasePin.sourceRevision ||
+    bundle.publication?.status !== 'release' ||
+    bundle.publication?.tag !== releasePin.releaseTag ||
+    bundle.versions?.compiler_version !== releasePin.compilerVersion ||
+    bundle.versions?.egui_adapter_version !== releasePin.eguiAdapterVersion
+  ) {
+    problems.push('brand release bundle identity mismatch');
+  }
+  if (
+    consumer.bundle?.package?.id !== releasePin.packageId ||
+    consumer.versions?.brand_version !== releasePin.brandVersion ||
+    consumer.versions?.canon_version !== releasePin.canonVersion ||
+    consumer.versions?.compiler_version !== releasePin.compilerVersion ||
+    consumer.recovery?.sha256 !== releasePin.recoverySha256
+  ) {
+    problems.push('brand consumer contract identity mismatch');
+  }
+  if (
+    !Array.isArray(receipt.publicComparisons) ||
+    receipt.publicComparisons.length < 3
+  ) {
+    problems.push('brand integration receipt lacks public derivative comparisons');
+  }
+  return problems;
+}
+
 export async function verifyBrand(
   brandRoot = join(repositoryRoot, 'brand'),
   projectRoot = repositoryRoot,
@@ -221,22 +318,33 @@ export async function verifyBrand(
 
   if (
     manifest.name !== 'glitchpad-brand-kit' ||
-    manifest.version !== '1.1.0' ||
-    manifest.canon !== '1.2.1'
+    manifest.version !== releasePin.brandVersion ||
+    manifest.canon !== releasePin.canonVersion ||
+    manifest.files.length !== releasePin.governedFileCount
   ) {
     problems.push(
-      'brand/manifest.json must identify Glitchpad 1.1.0 under canon 1.2.1',
+      `brand/manifest.json must identify Glitchpad ${releasePin.brandVersion} under canon ${releasePin.canonVersion} with ${releasePin.governedFileCount} governed files`,
     );
   }
 
-  const manifestFiles = new Set(manifest.files.map((entry) => entry.path));
+  const manifestFiles = new Set();
   const allowedProjectFiles = new Set([
     'INTEGRATION.json',
     'INTEGRATION.md',
     'manifest.json',
+    ...Object.keys(legalFileDigests),
   ]);
 
   for (const entry of manifest.files) {
+    if (!isSafeBrandPath(entry.path)) {
+      problems.push(`unsafe canonical path: ${entry.path}`);
+      continue;
+    }
+    if (manifestFiles.has(entry.path)) {
+      problems.push(`duplicate canonical path: ${entry.path}`);
+      continue;
+    }
+    manifestFiles.add(entry.path);
     const path = join(brandRoot, ...entry.path.split('/'));
     let bytes;
     try {
@@ -250,6 +358,17 @@ export async function verifyBrand(
     const digest = createHash('sha256').update(bytes).digest('hex');
     if (digest !== entry.sha256)
       problems.push(`checksum drift: brand/${entry.path}`);
+  }
+
+  for (const [path, expected] of Object.entries(legalFileDigests)) {
+    try {
+      const observed = createHash('sha256')
+        .update(await readFile(join(brandRoot, path)))
+        .digest('hex');
+      if (observed !== expected) problems.push(`legal file drift: brand/${path}`);
+    } catch {
+      problems.push(`missing release legal file: brand/${path}`);
+    }
   }
 
   for (const path of await collectFiles(brandRoot)) {
@@ -294,42 +413,43 @@ export async function verifyBrand(
     const receipt = JSON.parse(
       await readFile(join(brandRoot, 'INTEGRATION.json'), 'utf8'),
     );
-    if (!/^[0-9a-f]{40}$/.test(receipt.sourceRevision ?? ''))
-      problems.push('brand integration receipt has no pinned source revision');
-    if (!/^[0-9a-f]{40}$/.test(receipt.artifactSourceRevision ?? ''))
-      problems.push(
-        'brand integration receipt has no pinned artifact source revision',
-      );
-    if (
-      receipt.artifactName !==
-      `verified-brand-kits-${receipt.artifactSourceRevision}`
-    )
-      problems.push(
-        'brand integration receipt artifact name does not match its source revision',
-      );
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(receipt.retrievedAt ?? ''))
-      problems.push('brand integration receipt has no retrieval date');
-    if (receipt.governedFileCount !== manifest.files.length)
-      problems.push(
-        'brand integration receipt file count does not match manifest',
-      );
     const manifestDigest = createHash('sha256')
       .update(await readFile(manifestPath))
       .digest('hex');
-    if (receipt.integratedManifestSha256 !== manifestDigest)
-      problems.push('brand integration receipt manifest digest does not match');
-    if (
-      !Array.isArray(receipt.publicComparisons) ||
-      receipt.publicComparisons.length < 3
-    )
-      problems.push(
-        'brand integration receipt lacks public derivative comparisons',
-      );
-    for (const recovered of receipt.recoveredArtifactFiles ?? []) {
-      const entry = manifest.files.find(({ path }) => path === recovered);
-      if (!entry)
-        problems.push(`recovered artifact file is not governed: ${recovered}`);
+    const [bundle, consumer] = await Promise.all([
+      readFile(join(brandRoot, 'enforcement', 'bundle.json'), 'utf8').then(
+        JSON.parse,
+      ),
+      readFile(
+        join(brandRoot, 'enforcement', 'consumer-contract.json'),
+        'utf8',
+      ).then(JSON.parse),
+    ]);
+    problems.push(...verifyReleaseReceipt(receipt, bundle, consumer, manifestDigest));
+    const recoveryPath = join(
+      brandRoot,
+      'enforcement',
+      'distributions',
+      'shruggie-brandbuilder-2.0.3.skill',
+    );
+    const recoveryDigest = createHash('sha256')
+      .update(await readFile(recoveryPath))
+      .digest('hex');
+    if (recoveryDigest !== releasePin.recoverySha256) {
+      problems.push('bundled BrandBuilder recovery checksum mismatch');
     }
+    const brandReadme = await readFile(join(brandRoot, 'README.md'), 'utf8');
+    if (
+      brandReadme.includes('../../LICENSE-BRAND.md') ||
+      !brandReadme.includes('(LICENSE-BRAND.md)')
+    ) {
+      problems.push('brand README legal link must resolve to bundled license');
+    }
+
+    const webManifest = JSON.parse(
+      await readFile(join(brandRoot, 'icons', 'web', 'site.webmanifest'), 'utf8'),
+    );
+    problems.push(...verifyWebIconRoles(webManifest));
 
     const [projectInstructions, generatedAgentContract] = await Promise.all([
       readFile(join(projectRoot, 'AGENTS.md'), 'utf8'),
@@ -359,100 +479,9 @@ export async function verifyBrand(
     }
   }
 
-  const integratedCopies = [
-    [
-      'fonts/woff2/Geist-Regular.woff2',
-      'site/public/fonts/Geist-Regular.woff2',
-    ],
-    ['fonts/woff2/Geist-Medium.woff2', 'site/public/fonts/Geist-Medium.woff2'],
-    [
-      'fonts/woff2/GeistMono-Regular.woff2',
-      'site/public/fonts/GeistMono-Regular.woff2',
-    ],
-    [
-      'fonts/woff2/SpaceGrotesk-Medium.woff2',
-      'site/public/fonts/SpaceGrotesk-Medium.woff2',
-    ],
-    [
-      'fonts/woff2/SpaceGrotesk-Bold.woff2',
-      'site/public/fonts/SpaceGrotesk-Bold.woff2',
-    ],
-    ['fonts/licenses/OFL-Geist.txt', 'site/public/fonts/OFL-Geist.txt'],
-    [
-      'fonts/licenses/OFL-Space-Grotesk.txt',
-      'site/public/fonts/OFL-Space-Grotesk.txt',
-    ],
-    [
-      'logos/svg/glitchpad-horizontal-color.svg',
-      'site/public/logos/glitchpad-horizontal-color.svg',
-    ],
-    [
-      'logos/svg/glitchpad-horizontal-light.svg',
-      'site/public/logos/glitchpad-horizontal-light.svg',
-    ],
-    [
-      'logos/svg/glitchpad-horizontal-black.svg',
-      'site/public/logos/glitchpad-horizontal-black.svg',
-    ],
-    [
-      'logos/svg/glitchpad-horizontal-white.svg',
-      'site/public/logos/glitchpad-horizontal-white.svg',
-    ],
-    [
-      'logos/png/glitchpad-social-preview-1280.png',
-      'site/public/social-preview.png',
-    ],
-    [
-      'logos/svg/glitchpad-mark-color.svg',
-      'site/public/logos/glitchpad-mark-color.svg',
-    ],
-    ['icons/web/favicon.svg', 'site/public/favicon.svg'],
-    ['icons/web/favicon.ico', 'site/public/favicon.ico'],
-    ['icons/web/favicon-16x16.png', 'site/public/favicon-16x16.png'],
-    ['icons/web/favicon-32x32.png', 'site/public/favicon-32x32.png'],
-    ['icons/web/apple-touch-icon.png', 'site/public/apple-touch-icon.png'],
-    [
-      'icons/web/android-chrome-192x192.png',
-      'site/public/android-chrome-192x192.png',
-    ],
-    [
-      'icons/web/android-chrome-512x512.png',
-      'site/public/android-chrome-512x512.png',
-    ],
-    ['icons/web/site.webmanifest', 'site/public/site.webmanifest'],
-    ['icons/web/favicon.svg', 'apps/glitchpad/public/favicon.svg'],
-    ['icons/web/favicon-32x32.png', 'crates/glitchpad-host/icons/32x32.png'],
-    [
-      'icons/web/favicon-128x128.png',
-      'crates/glitchpad-host/icons/128x128.png',
-    ],
-    [
-      'icons/web/favicon-256x256.png',
-      'crates/glitchpad-host/icons/128x128@2x.png',
-    ],
-    ['icons/web/favicon-512x512.png', 'crates/glitchpad-host/icons/icon.png'],
-    ['icons/windows/classic/app.ico', 'crates/glitchpad-host/icons/icon.ico'],
-    ['icons/apple/macos/AppIcon.icns', 'crates/glitchpad-host/icons/icon.icns'],
-    [
-      'icons/android/play-store/google-play-512.png',
-      'crates/glitchpad-host/icons/android/play-store/google-play-512.png',
-    ],
-  ];
-
-  const androidResources = [
-    'drawable-nodpi/ic_launcher_foreground.png',
-    'drawable-nodpi/ic_launcher_monochrome.png',
-    'drawable/ic_launcher_background.xml',
-    'mipmap-anydpi-v26/ic_launcher.xml',
-    'mipmap-mdpi/ic_launcher.png',
-    'mipmap-hdpi/ic_launcher.png',
-    'mipmap-xhdpi/ic_launcher.png',
-    'mipmap-xxhdpi/ic_launcher.png',
-    'mipmap-xxxhdpi/ic_launcher.png',
-    'values/ic_launcher_colors.xml',
-  ];
+  const allIntegratedCopies = [...integratedCopies];
   for (const resource of androidResources) {
-    integratedCopies.push(
+    allIntegratedCopies.push(
       [
         `icons/android/app/src/main/res/${resource}`,
         `crates/glitchpad-host/icons/android/${resource}`,
@@ -464,7 +493,9 @@ export async function verifyBrand(
     );
   }
 
-  for (const [canonical, integrated] of integrations ? integratedCopies : []) {
+  for (const [canonical, integrated] of integrations
+    ? allIntegratedCopies
+    : []) {
     problems.push(
       ...(await verifyIntegratedCopy(
         join(brandRoot, ...canonical.split('/')),
@@ -528,7 +559,7 @@ if (
     process.exitCode = 1;
   } else {
     console.log(
-      'Glitchpad brand 1.1.0 / canon 1.2.1 verified: manifest, provenance, agent contract, integrations, encoding, and licenses are clean.',
+      `Glitchpad brand ${releasePin.brandVersion} / canon ${releasePin.canonVersion} verified: manifest, release receipt, provenance, agent contract, integrations, encoding, and licenses are clean.`,
     );
   }
 }

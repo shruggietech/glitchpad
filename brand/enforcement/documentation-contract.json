@@ -53,7 +53,7 @@
     {"kind": "guidelines-topic", "owner": "hosted", "action": "preserve", "destination": "/{brand}/guidelines/{topic}/", "rationale": "Current brand topic routes remain available."},
     {"kind": "downloads", "owner": "hosted", "action": "preserve", "destination": "/{brand}/downloads/", "rationale": "Verified brand deliveries keep their task-oriented route."}
   ],
-  "shared_fact_fields": ["documentation_contract_version", "brand", "versions", "bindings", "rules", "authority", "verification", "recovery", "capability_gap", "hosted", "bundled"],
+  "shared_fact_fields": ["documentation_contract_version", "brand", "bundle", "release_impact", "versions", "bindings", "rules", "authority", "verification", "recovery", "capability_gap", "hosted", "bundled"],
   "graphics": [
     {"id": "ownership", "title": "Documentation ownership", "nodes": ["Main manual", "Hosted brand reference", "Bundled implementation contract"], "text_equivalent": "The main manual owns the system, hosted references own current public brand presentation, and bundled contracts own exact delivered implementation bytes."},
     {"id": "operating-modes", "title": "Operating modes", "nodes": ["Author", "Implementation", "Audit"], "text_equivalent": "Author creates governed sources, Implementation consumes exact contracts, and Audit verifies an existing delivery without changing authority."},

@@ -45,6 +45,16 @@ jobs:
       - name: Verify the delivered brand canon
         run: pnpm check:brand
 
+      - name: Setup Python for the bundled BrandBuilder verifier
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Verify the exact bundled BrandBuilder recovery contract
+        run: |
+          python -m pip install --disable-pip-version-check coloraide==8.12.1 pillow==12.3.0 fonttools==4.65.0 brotli==1.2.0 pikepdf==10.13.0.post1 svgelements==1.9.6
+          python scripts/verify-brandbuilder.py
+
       - name: Validate documentation
         run: cargo xtask docs
 
@@ -304,20 +314,29 @@ jobs:
             # These offline tests do not need Google services. Avoid their first-boot
             # work starving instrumentation on the disposable hosted emulator.
             set -e; for package in com.google.android.gms com.google.android.googlequicksearchbox; do if adb shell pm list packages "$package" | grep -Fq "package:$package"; then adb shell pm disable-user --user 0 "$package"; fi; done
+            # The API 36 system Bluetooth service can crash and leave its error dialog above
+            # the AppFrame activity, stealing input focus from the WebView under test.
+            if [ "${{ matrix.api-level }}" = "36" ]; then adb shell svc power stayon true && adb shell svc bluetooth disable; fi
+            # Follow AOSP CTS input-test setup: suppress later system crash/ANR dialogs and
+            # close any dialog already present before testing the foreground WebView.
+            if [ "${{ matrix.api-level }}" = "36" ]; then adb shell settings put global hide_error_dialogs 1 && adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS; fi
             bash scripts/run-android-connected-tests.sh
             adb install -r crates/glitchpad-host/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk
             adb install -r crates/glitchpad-host/gen/android/app/build/outputs/apk/androidTest/universal/debug/app-universal-debug-androidTest.apk
             adb shell settings put secure show_ime_with_hard_keyboard 1
             if [ "${{ matrix.api-level }}" = "36" ]; then adb shell cmd overlay list | grep -F 'com.android.internal.display.cutout.emulation.corner' && adb shell cmd overlay enable --user 0 com.android.internal.display.cutout.emulation.corner && adb shell cmd overlay list | grep -F '[x] com.android.internal.display.cutout.emulation.corner'; fi
+            # Exercise API 36 AppFrame on a fresh emulator, before long provider suites.
+            if [ "${{ matrix.api-level }}" = "36" ]; then adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS && adb shell input keyevent KEYCODE_WAKEUP && adb shell wm dismiss-keyguard; fi
+            if [ "${{ matrix.api-level }}" = "36" ]; then ime_id='com.shruggietech.glitchpad.test/com.shruggietech.glitchpad.shell.FixtureInputMethodService'; for attempt in $(seq 1 30); do if adb shell ime list -s -a | grep -Fq "$ime_id"; then break; fi; sleep 1; done; adb shell ime list -s -a | grep -Fq "$ime_id" && adb shell ime enable "$ime_id" && adb shell ime set "$ime_id" && adb shell settings get secure default_input_method | grep -Fqx "$ime_id"; fi
+            if [ "${{ matrix.api-level }}" = "36" ]; then ANDROID_INSTRUMENTATION_PRESERVE_TEST_INPUT_METHOD=true bash scripts/run-android-instrumentation.sh "$RUNNER_TEMP/appframe-evidence.txt" 'appframe_evidence=' -e class com.shruggietech.glitchpad.shell.BrandBuilderAppFrameInstrumentedTest; fi
+            if [ "${{ matrix.api-level }}" = "36" ]; then adb shell ime reset; fi
             ANDROID_INSTRUMENTATION_RESET_APP_DATA=true bash scripts/run-android-instrumentation.sh "$RUNNER_TEMP/delivery-evidence.txt" 'delivery_evidence=' -e class com.shruggietech.glitchpad.source.AndroidDeliveryInstrumentedTest
             bash scripts/run-android-instrumentation.sh "$RUNNER_TEMP/restoration-seed.txt" 'OK (1 test)' -e class com.shruggietech.glitchpad.source.RestorationInstrumentedTest#privateRestorationRecordSurvivesProcessBoundary -e restorationPhase seed
             bash scripts/run-android-instrumentation.sh "$RUNNER_TEMP/restoration-verify.txt" 'OK (1 test)' -e class com.shruggietech.glitchpad.source.RestorationInstrumentedTest#privateRestorationRecordSurvivesProcessBoundary -e restorationPhase verify
             bash scripts/run-android-instrumentation.sh "$RUNNER_TEMP/performance-evidence.txt" 'performance_evidence=' -e class com.shruggietech.glitchpad.performance.PerformanceInstrumentedTest
             node scripts/check-performance.mjs --android-instrumentation-output "$RUNNER_TEMP/performance-evidence.txt" --api-level "${{ matrix.api-level }}"
-            adb shell ime enable 'com.shruggietech.glitchpad.test/com.shruggietech.glitchpad.shell.FixtureInputMethodService'
-            adb shell ime set 'com.shruggietech.glitchpad.test/com.shruggietech.glitchpad.shell.FixtureInputMethodService'
-            adb shell settings get secure default_input_method | grep -Fqx 'com.shruggietech.glitchpad.test/com.shruggietech.glitchpad.shell.FixtureInputMethodService'
-            ANDROID_INSTRUMENTATION_PRESERVE_TEST_INPUT_METHOD=true bash scripts/run-android-instrumentation.sh "$RUNNER_TEMP/appframe-evidence.txt" 'appframe_evidence=' -e class com.shruggietech.glitchpad.shell.BrandBuilderAppFrameInstrumentedTest
+            if [ "${{ matrix.api-level }}" != "36" ]; then adb shell ime enable 'com.shruggietech.glitchpad.test/com.shruggietech.glitchpad.shell.FixtureInputMethodService' && adb shell ime set 'com.shruggietech.glitchpad.test/com.shruggietech.glitchpad.shell.FixtureInputMethodService' && adb shell settings get secure default_input_method | grep -Fqx 'com.shruggietech.glitchpad.test/com.shruggietech.glitchpad.shell.FixtureInputMethodService'; fi
+            if [ "${{ matrix.api-level }}" != "36" ]; then ANDROID_INSTRUMENTATION_PRESERVE_TEST_INPUT_METHOD=true bash scripts/run-android-instrumentation.sh "$RUNNER_TEMP/appframe-evidence.txt" 'appframe_evidence=' -e class com.shruggietech.glitchpad.shell.BrandBuilderAppFrameInstrumentedTest; fi
 
       - name: Upload Android instrumentation reports
         if: always()

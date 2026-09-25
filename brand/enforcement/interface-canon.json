@@ -3,7 +3,7 @@
   "id": "shruggie-interface-canon",
   "kind": "interface-canon",
   "version": "1.0.0",
-  "brand_canon_compatibility": ["1.2.1"],
+  "brand_canon_compatibility": ["1.2.1", "1.3.0"],
   "summary": "Renderer-neutral semantic interface roles, logical measures, observed runtime capabilities, accessibility invariants, and bounded brand expression for BrandBuilder consumers.",
   "units": {
     "logical_ui_unit": "lu",

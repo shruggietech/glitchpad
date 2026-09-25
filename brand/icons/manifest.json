@@ -3,7 +3,8 @@
   "brand": "glitchpad",
   "profile": {
     "background": "#0B0C0D",
-    "reduced_below_px": 32
+    "reduced_below_px": 32,
+    "masked_background": "#FFD900"
   },
   "capability": {
     "tier": "full",
@@ -274,9 +275,33 @@
       "destination": "Web root"
     },
     {
+      "path": "icons/web/maskable-icon-192x192.png",
+      "platform": "web",
+      "role": "maskable",
+      "format": "png",
+      "width": 192,
+      "height": 192,
+      "appearance": "default",
+      "alpha": "opaque",
+      "source_variant": "full",
+      "destination": "Web root"
+    },
+    {
       "path": "icons/web/android-chrome-512x512.png",
       "platform": "web",
       "role": "installable",
+      "format": "png",
+      "width": 512,
+      "height": 512,
+      "appearance": "default",
+      "alpha": "opaque",
+      "source_variant": "full",
+      "destination": "Web root"
+    },
+    {
+      "path": "icons/web/maskable-icon-512x512.png",
+      "platform": "web",
+      "role": "maskable",
       "format": "png",
       "width": 512,
       "height": 512,
@@ -1528,6 +1553,8 @@
     "favicons/favicon-full.svg": "icons/web/favicon-full.svg",
     "favicons/favicon.ico": "icons/web/favicon.ico",
     "favicons/favicon.svg": "icons/web/favicon.svg",
+    "favicons/maskable-icon-192x192.png": "icons/web/maskable-icon-192x192.png",
+    "favicons/maskable-icon-512x512.png": "icons/web/maskable-icon-512x512.png",
     "favicons/site.webmanifest": "icons/web/site.webmanifest"
   }
 }

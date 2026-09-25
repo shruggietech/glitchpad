@@ -1,10 +1,12 @@
 package com.shruggietech.glitchpad.shell
 
+import android.app.ActivityManager
 import android.content.pm.ActivityInfo
 import android.content.Context
 import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
+import android.os.ParcelFileDescriptor
 import android.os.SystemClock
 import android.view.InputDevice
 import android.view.MotionEvent
@@ -60,6 +62,16 @@ class BrandBuilderAppFrameInstrumentedTest {
 
     private fun decodedJavascriptString(result: String): String =
         JSONArray("[$result]").getString(0)
+
+    private fun focusedWindowState(): String =
+        ParcelFileDescriptor.AutoCloseInputStream(
+            InstrumentationRegistry.getInstrumentation().uiAutomation.executeShellCommand("dumpsys window"),
+        ).bufferedReader().use { reader ->
+            reader.lineSequence()
+                .filter { it.contains("mCurrentFocus=") || it.contains("mFocusedApp=") }
+                .take(4)
+                .joinToString("; ") { it.trim() }
+        }
 
     private fun waitForShell(scenario: ActivityScenario<MainActivity>) {
         val deadline = SystemClock.elapsedRealtime() + 60_000L
@@ -209,6 +221,32 @@ class BrandBuilderAppFrameInstrumentedTest {
             val webView = findWebView(activity.window.decorView)!!
             webView.requestFocus()
             webView.requestFocusFromTouch()
+            if (Build.VERSION.SDK_INT >= 36) {
+                val task = (activity.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager)
+                    .appTasks.firstOrNull { it.taskInfo.id == activity.taskId }
+                assertNotNull("The AppFrame scenario must own an Android task", task)
+                task!!.moveToFront()
+            }
+        }
+        val windowFocusDeadline = SystemClock.elapsedRealtime() + 30_000L
+        var webViewWindowFocused = false
+        while (!webViewWindowFocused && SystemClock.elapsedRealtime() < windowFocusDeadline) {
+            scenario.onActivity { activity ->
+                webViewWindowFocused = findWebView(activity.window.decorView)!!.hasWindowFocus()
+            }
+            if (!webViewWindowFocused) SystemClock.sleep(100L)
+        }
+        if (!webViewWindowFocused) {
+            var viewState = "unavailable"
+            scenario.onActivity { activity ->
+                val webView = findWebView(activity.window.decorView)!!
+                viewState = "task=${activity.taskId}, " +
+                    "decorAttached=${activity.window.decorView.isAttachedToWindow}, " +
+                    "decorWindowFocus=${activity.window.decorView.hasWindowFocus()}, " +
+                    "webViewAttached=${webView.isAttachedToWindow}, webViewWindowFocus=${webView.hasWindowFocus()}"
+            }
+            val windowDump = focusedWindowState()
+            assertTrue("WebView window must have focus before the IME probe touch ($viewState; $windowDump)", false)
         }
 
         val probe = JSONObject(
@@ -234,11 +272,18 @@ class BrandBuilderAppFrameInstrumentedTest {
               input.focus();
               input.click();
               const bounds = input.getBoundingClientRect();
+              const x = bounds.left + bounds.width / 2;
+              const y = bounds.top + bounds.height / 2;
+              window.__brandbuilderImeTouchTarget = null;
+              document.addEventListener('pointerdown', event => {
+                window.__brandbuilderImeTouchTarget = event.target instanceof Element ? event.target.id : null;
+              }, { once: true });
               return JSON.stringify({
                 present: document.body.contains(input),
                 focused: document.activeElement === input,
-                x: bounds.left + bounds.width / 2,
-                y: bounds.top + bounds.height / 2,
+                hit: document.elementFromPoint(x, y) === input,
+                x,
+                y,
                 devicePixelRatio: window.devicePixelRatio || 1
               });
             })()
@@ -248,6 +293,7 @@ class BrandBuilderAppFrameInstrumentedTest {
         )
         assertTrue("IME probe must be present before the native request: $probe", probe.getBoolean("present"))
         assertTrue("IME probe must accept DOM focus before the native request: $probe", probe.getBoolean("focused"))
+        assertTrue("IME probe must receive a touch at its center: $probe", probe.getBoolean("hit"))
         tapWebViewPoint(
             scenario,
             probe.getDouble("x"),
@@ -255,6 +301,8 @@ class BrandBuilderAppFrameInstrumentedTest {
             probe.getDouble("devicePixelRatio"),
         )
         SystemClock.sleep(250L)
+        val touchTarget = decodedJavascriptString(evaluate(scenario, "window.__brandbuilderImeTouchTarget"))
+        assertEquals("The injected touch must reach the IME probe: $probe", "brandbuilder-ime-probe", touchTarget)
         var imeShowRequested = false
         var imeRequestPath = "legacy-input-method-manager"
         var imeRequestAttempts = 0
@@ -267,8 +315,9 @@ class BrandBuilderAppFrameInstrumentedTest {
                     imeRequestPath = "window-insets-controller+input-method-manager"
                     val controller = webView.windowInsetsController
                     controller?.show(WindowInsets.Type.ime())
+                    // The injected touch is an explicit user gesture; implicit requests may be ignored.
                     val inputMethodManagerAccepted =
-                        inputMethodManager.showSoftInput(webView, InputMethodManager.SHOW_IMPLICIT)
+                        inputMethodManager.showSoftInput(webView, 0)
                     imeShowRequested = imeShowRequested || controller != null || inputMethodManagerAccepted
                 } else {
                     imeShowRequested = imeShowRequested ||
@@ -292,8 +341,20 @@ class BrandBuilderAppFrameInstrumentedTest {
             "IME probe must retain DOM focus ($imeRequestPath accepted: $imeShowRequested after $imeRequestAttempts attempts): $imeSnapshot",
             imeSnapshot.getBoolean("imeProbeFocused"),
         )
+        var nativeImeState = "unavailable before API 30"
+        if (Build.VERSION.SDK_INT >= 30) {
+            scenario.onActivity { activity ->
+                val webView = findWebView(activity.window.decorView)!!
+                val insets = webView.rootWindowInsets
+                nativeImeState =
+                    "windowFocus=${webView.hasWindowFocus()}, webViewFocus=${webView.hasFocus()}, " +
+                        "imeVisible=${insets?.isVisible(WindowInsets.Type.ime())}, " +
+                        "imeBottom=${insets?.getInsets(WindowInsets.Type.ime())?.bottom}, " +
+                        "webViewHeight=${webView.height}"
+            }
+        }
         assertTrue(
-            "IME must publish a positive AppFrame block-end inset ($imeRequestPath accepted: $imeShowRequested after $imeRequestAttempts attempts): $imeSnapshot",
+            "IME must publish a positive AppFrame block-end inset ($imeRequestPath accepted: $imeShowRequested after $imeRequestAttempts attempts; $nativeImeState): $imeSnapshot",
             imeSnapshot.getDouble("imeBlockEnd") > 0.0,
         )
 

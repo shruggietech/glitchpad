@@ -203,9 +203,33 @@
       "destination": "Web root"
     },
     {
+      "path": "icons/web/maskable-icon-192x192.png",
+      "platform": "web",
+      "role": "maskable",
+      "format": "png",
+      "width": 192,
+      "height": 192,
+      "appearance": "default",
+      "alpha": "opaque",
+      "source_variant": "full",
+      "destination": "Web root"
+    },
+    {
       "path": "icons/web/android-chrome-512x512.png",
       "platform": "web",
       "role": "installable",
+      "format": "png",
+      "width": 512,
+      "height": 512,
+      "appearance": "default",
+      "alpha": "opaque",
+      "source_variant": "full",
+      "destination": "Web root"
+    },
+    {
+      "path": "icons/web/maskable-icon-512x512.png",
+      "platform": "web",
+      "role": "maskable",
       "format": "png",
       "width": 512,
       "height": 512,

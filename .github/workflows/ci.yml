@@ -314,6 +314,7 @@ jobs:
             # These offline tests do not need Google services. Avoid their first-boot
             # work starving instrumentation on the disposable hosted emulator.
             set -e; for package in com.google.android.gms com.google.android.googlequicksearchbox; do if adb shell pm list packages "$package" | grep -Fq "package:$package"; then adb shell pm disable-user --user 0 "$package"; fi; done
+            if [ "${{ matrix.api-level }}" = "36" ]; then adb shell svc power stayon true; fi
             bash scripts/run-android-connected-tests.sh
             adb install -r crates/glitchpad-host/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk
             adb install -r crates/glitchpad-host/gen/android/app/build/outputs/apk/androidTest/universal/debug/app-universal-debug-androidTest.apk
@@ -324,6 +325,8 @@ jobs:
             bash scripts/run-android-instrumentation.sh "$RUNNER_TEMP/restoration-verify.txt" 'OK (1 test)' -e class com.shruggietech.glitchpad.source.RestorationInstrumentedTest#privateRestorationRecordSurvivesProcessBoundary -e restorationPhase verify
             bash scripts/run-android-instrumentation.sh "$RUNNER_TEMP/performance-evidence.txt" 'performance_evidence=' -e class com.shruggietech.glitchpad.performance.PerformanceInstrumentedTest
             node scripts/check-performance.mjs --android-instrumentation-output "$RUNNER_TEMP/performance-evidence.txt" --api-level "${{ matrix.api-level }}"
+            # Long provider suites can leave the hosted display unfocused before the IME probe.
+            if [ "${{ matrix.api-level }}" = "36" ]; then adb shell input keyevent KEYCODE_WAKEUP; adb shell wm dismiss-keyguard; adb shell am start -W -n com.shruggietech.glitchpad/.MainActivity; fi
             adb shell ime enable 'com.shruggietech.glitchpad.test/com.shruggietech.glitchpad.shell.FixtureInputMethodService'
             adb shell ime set 'com.shruggietech.glitchpad.test/com.shruggietech.glitchpad.shell.FixtureInputMethodService'
             adb shell settings get secure default_input_method | grep -Fqx 'com.shruggietech.glitchpad.test/com.shruggietech.glitchpad.shell.FixtureInputMethodService'

@@ -8,14 +8,12 @@ import android.os.Build
 import android.os.Bundle
 import android.os.ParcelFileDescriptor
 import android.os.SystemClock
-import android.util.Log
 import android.view.InputDevice
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowInsets
 import android.view.WindowManager
-import android.view.accessibility.AccessibilityNodeInfo
 import android.view.inputmethod.InputMethodManager
 import android.webkit.WebView
 import androidx.test.core.app.ActivityScenario
@@ -74,22 +72,6 @@ class BrandBuilderAppFrameInstrumentedTest {
                 .take(4)
                 .joinToString("; ") { it.trim() }
         }
-
-    private fun dismissEmulatorSystemDialog(): Boolean {
-        val currentWindow = focusedWindowState().split("; ")
-            .firstOrNull { it.startsWith("mCurrentFocus=") } ?: return false
-        val action = when {
-            currentWindow.contains("Application Error: com.android.") -> "Close app"
-            currentWindow.contains("Application Not Responding: com.android.") -> "Wait"
-            else -> return false
-        }
-        val button = InstrumentationRegistry.getInstrumentation().uiAutomation.rootInActiveWindow
-            ?.findAccessibilityNodeInfosByText(action)
-            ?.firstOrNull { it.text?.toString() == action }
-        val dismissed = button?.performAction(AccessibilityNodeInfo.ACTION_CLICK) == true
-        if (dismissed) Log.i("BrandBuilderAppFrame", "Dismissed emulator system dialog: $currentWindow")
-        return dismissed
-    }
 
     private fun waitForShell(scenario: ActivityScenario<MainActivity>) {
         val deadline = SystemClock.elapsedRealtime() + 60_000L
@@ -246,24 +228,13 @@ class BrandBuilderAppFrameInstrumentedTest {
                 task!!.moveToFront()
             }
         }
-        val focusStart = SystemClock.elapsedRealtime()
-        var windowFocusDeadline = focusStart + 30_000L
-        var nextSystemDialogProbe = 0L
+        val windowFocusDeadline = SystemClock.elapsedRealtime() + 30_000L
         var webViewWindowFocused = false
         while (!webViewWindowFocused && SystemClock.elapsedRealtime() < windowFocusDeadline) {
             scenario.onActivity { activity ->
                 webViewWindowFocused = findWebView(activity.window.decorView)!!.hasWindowFocus()
             }
-            if (!webViewWindowFocused) {
-                val now = SystemClock.elapsedRealtime()
-                if (Build.VERSION.SDK_INT >= 36 && now >= nextSystemDialogProbe) {
-                    nextSystemDialogProbe = now + 1_000L
-                    if (dismissEmulatorSystemDialog()) {
-                        windowFocusDeadline = minOf(focusStart + 60_000L, maxOf(windowFocusDeadline, now + 15_000L))
-                    }
-                }
-                SystemClock.sleep(100L)
-            }
+            if (!webViewWindowFocused) SystemClock.sleep(100L)
         }
         if (!webViewWindowFocused) {
             var viewState = "unavailable"

@@ -210,6 +210,15 @@ class BrandBuilderAppFrameInstrumentedTest {
             webView.requestFocus()
             webView.requestFocusFromTouch()
         }
+        val windowFocusDeadline = SystemClock.elapsedRealtime() + 30_000L
+        var webViewWindowFocused = false
+        while (!webViewWindowFocused && SystemClock.elapsedRealtime() < windowFocusDeadline) {
+            scenario.onActivity { activity ->
+                webViewWindowFocused = findWebView(activity.window.decorView)!!.hasWindowFocus()
+            }
+            if (!webViewWindowFocused) SystemClock.sleep(100L)
+        }
+        assertTrue("WebView window must have focus before the IME probe touch", webViewWindowFocused)
 
         val probe = JSONObject(
             decodedJavascriptString(
@@ -234,11 +243,18 @@ class BrandBuilderAppFrameInstrumentedTest {
               input.focus();
               input.click();
               const bounds = input.getBoundingClientRect();
+              const x = bounds.left + bounds.width / 2;
+              const y = bounds.top + bounds.height / 2;
+              window.__brandbuilderImeTouchTarget = null;
+              document.addEventListener('pointerdown', event => {
+                window.__brandbuilderImeTouchTarget = event.target instanceof Element ? event.target.id : null;
+              }, { once: true });
               return JSON.stringify({
                 present: document.body.contains(input),
                 focused: document.activeElement === input,
-                x: bounds.left + bounds.width / 2,
-                y: bounds.top + bounds.height / 2,
+                hit: document.elementFromPoint(x, y) === input,
+                x,
+                y,
                 devicePixelRatio: window.devicePixelRatio || 1
               });
             })()
@@ -248,6 +264,7 @@ class BrandBuilderAppFrameInstrumentedTest {
         )
         assertTrue("IME probe must be present before the native request: $probe", probe.getBoolean("present"))
         assertTrue("IME probe must accept DOM focus before the native request: $probe", probe.getBoolean("focused"))
+        assertTrue("IME probe must receive a touch at its center: $probe", probe.getBoolean("hit"))
         tapWebViewPoint(
             scenario,
             probe.getDouble("x"),
@@ -255,6 +272,8 @@ class BrandBuilderAppFrameInstrumentedTest {
             probe.getDouble("devicePixelRatio"),
         )
         SystemClock.sleep(250L)
+        val touchTarget = decodedJavascriptString(evaluate(scenario, "window.__brandbuilderImeTouchTarget"))
+        assertEquals("The injected touch must reach the IME probe: $probe", "brandbuilder-ime-probe", touchTarget)
         var imeShowRequested = false
         var imeRequestPath = "legacy-input-method-manager"
         var imeRequestAttempts = 0

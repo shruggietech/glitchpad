@@ -1,5 +1,6 @@
 package com.shruggietech.glitchpad.shell
 
+import android.app.ActivityManager
 import android.content.pm.ActivityInfo
 import android.content.Context
 import android.content.res.Configuration
@@ -209,6 +210,12 @@ class BrandBuilderAppFrameInstrumentedTest {
             val webView = findWebView(activity.window.decorView)!!
             webView.requestFocus()
             webView.requestFocusFromTouch()
+            if (Build.VERSION.SDK_INT >= 36) {
+                val task = (activity.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager)
+                    .appTasks.firstOrNull { it.taskInfo.id == activity.taskId }
+                assertNotNull("The AppFrame scenario must own an Android task", task)
+                task!!.moveToFront()
+            }
         }
         val windowFocusDeadline = SystemClock.elapsedRealtime() + 30_000L
         var webViewWindowFocused = false

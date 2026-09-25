@@ -1,17 +1,29 @@
 {
-  "brandVersion": "1.1.0",
-  "canonVersion": "1.2.1",
-  "sourceRepository": "https://github.com/ShruggieTech/shruggie-brand",
-  "sourceRevision": "65ed38adea0462a8bc744bff8a19ec55a738c4c4",
-  "artifactSourceRevision": "8ceb22f700d29595c4967a54973d5df0b1571fbe",
-  "workflowRunId": 35498773758,
-  "artifactId": 10600989362,
-  "artifactName": "verified-brand-kits-8ceb22f700d29595c4967a54973d5df0b1571fbe",
-  "retrievedAt": "2026-09-20",
-  "sourceManifestSha256": "92e1cac0c434faf32cd7900f22f65272f09b6564ad8f57e512ff59079f9a9c1e",
-  "integratedManifestSha256": "995c014b1cdc2b8d898f1a443f10d2400062e763d6932aa231087385fac912b1",
-  "governedFileCount": 313,
-  "recoveredArtifactFiles": [],
+  "packageId": "glitchpad-brand-1.1.1-bb2.0.3",
+  "brandVersion": "1.1.1",
+  "canonVersion": "1.3.0",
+  "compilerVersion": "2.0.3",
+  "sourceRepository": "https://github.com/shruggietech/shruggie-brand",
+  "sourceRevision": "115bd423f0656b6006b0719d1838da8286afb5e4",
+  "releaseTag": "v2.0.3",
+  "releaseUrl": "https://github.com/shruggietech/shruggie-brand/releases/tag/v2.0.3",
+  "archiveName": "glitchpad-brand-1.1.1-bb2.0.3.zip",
+  "archiveSha256": "4cedc498d58fe6a8e7573b4c18ca97b95e27bf96c4e0eeb88712dff6545543f3",
+  "retrievedAt": "2026-09-24",
+  "sourceManifestSha256": "e32b6211e698a4ca47c8c547a5d64975e22bb623c62e8b31fcc494a7df086910",
+  "integratedManifestSha256": "a6688b0d8a81aaa2e7d6a168fd5f09e8c60d24c089aa2a0ce7ee6eeb7302c217",
+  "governedFileCount": 321,
+  "legalFileDigests": {
+    "LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "LICENSE-BRAND.md": "bd1107a804108bbe02955ca64000945322a6fc2456b45b795dac11a253c0023a",
+    "NOTICE": "d919688fd2c931500447418b628dfd0acf4d82c88d7eb392692bb629f7d0193f"
+  },
+  "recoverySha256": "f8ae954806e9797cbde8270a0660dc16dd6c4018df03f8003ca95e633efc073f",
+  "correction": {
+    "path": "README.md",
+    "from": "../../LICENSE-BRAND.md",
+    "to": "LICENSE-BRAND.md"
+  },
   "publicComparisons": [
     {
       "path": "logos/provenance.json",
@@ -21,7 +33,7 @@
     {
       "path": "icons/manifest.json",
       "url": "https://brand.shruggie.tech/glitchpad/downloads/files/icons/manifest.json",
-      "sha256": "82e0898c7aa3abe25a31afd6d4e02189d66e3f13806d64ef61c009861ce7336b"
+      "sha256": "ac443044fc8b976ae3d7d0589d2241059aeb60bac424bdeacacdbb9a31d41a2f"
     },
     {
       "path": "logos/svg/glitchpad-horizontal-white.svg",

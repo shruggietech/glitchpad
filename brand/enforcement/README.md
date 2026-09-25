@@ -8,6 +8,8 @@ this file after changing the source brand specification.
 | `AGENTS.md` | concise governed entry block, merged without replacing human instructions |
 | `IMPLEMENTATION.md` | complete brand-specific implementation guidance |
 | `consumer-contract.json` | exact versions, authority, environment, provenance, recovery, and checks |
+| `bundle.json` | immutable kit package identity, exact release target, source revision, and checksum authority |
+| `MIGRATION.md` | generated identity and implementation impact summary |
 | `documentation-contract.json` | documentation ownership, inventory, navigation, and route policy |
 | `documentation-facts.json` | exact facts shared by bundled and hosted implementation guidance |
 | `interface-canon.json` | exact renderer-neutral Interface Canon used by this kit |
@@ -27,4 +29,4 @@ raw literals are legal, because it is where the tokens are defined.
 Use ESLint for these rules. oxlint 1.79 implements none of the
 no-restricted-* rules, so an oxlint adherence config never runs.
 
-Contract compatibility, artifact publication, and consumer adoption are separate states. Pin every version in `consumer-contract.json`; never replace the delivered checksummed recovery bytes with a latest version.
+Contract compatibility and artifact publication are separate states. Pin every version in `consumer-contract.json`; never replace the delivered checksummed recovery bytes with a latest version.

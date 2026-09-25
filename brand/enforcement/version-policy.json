@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "shruggie-version-policy",
   "kind": "version-policy",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "domains": {
     "brand_canon": {
       "meaning": "Governed identity, affiliation, inheritance, accessibility, and source-contract semantics shared by brands.",
@@ -62,26 +62,24 @@
     }
   },
   "compatibility_rules": [
-    {"dependent": "interface_canon", "dependent_major": 1, "dependency": "brand_canon", "supported": ["1.1.2", "1.2.0", "1.2.1"]},
+    {"dependent": "interface_canon", "dependent_major": 1, "dependency": "brand_canon", "supported": ["1.1.2", "1.2.0", "1.2.1", "1.3.0"]},
     {"dependent": "component_recipes", "dependent_major": 1, "dependency": "interface_canon", "supported": ["1.0.0"]},
     {"dependent": "web_react_adapter", "dependent_major": 1, "dependency": "interface_canon", "supported": ["1.0.0"]},
     {"dependent": "web_react_adapter", "dependent_major": 1, "dependency": "component_recipes", "supported": ["1.0.0", "1.1.0"]},
     {"dependent": "egui_adapter", "dependent_major": 1, "dependency": "interface_canon", "supported": ["1.0.0"]},
     {"dependent": "egui_adapter", "dependent_major": 1, "dependency": "component_recipes", "supported": ["1.0.0", "1.1.0"]},
-    {"dependent": "compiler", "dependent_major": 1, "dependency": "brand_canon", "supported": ["1.1.2", "1.2.0", "1.2.1"]},
-    {"dependent": "compiler", "dependent_major": 1, "dependency": "interface_canon", "supported": ["1.0.0"]},
-    {"dependent": "compiler", "dependent_major": 1, "dependency": "component_recipes", "supported": ["1.0.0", "1.1.0"]},
-    {"dependent": "compiler", "dependent_major": 1, "dependency": "web_react_adapter", "supported": ["1.0.0", "1.1.0"]},
-    {"dependent": "compiler", "dependent_major": 1, "dependency": "egui_adapter", "supported": ["1.0.0"]},
-    {"dependent": "brand", "dependent_major": 1, "dependency": "brand_canon", "supported": ["1.1.2", "1.2.0", "1.2.1"]},
+    {"dependent": "compiler", "dependent_major": 2, "dependency": "brand_canon", "supported": ["1.1.2", "1.2.0", "1.2.1", "1.3.0"]},
+    {"dependent": "compiler", "dependent_major": 2, "dependency": "interface_canon", "supported": ["1.0.0"]},
+    {"dependent": "compiler", "dependent_major": 2, "dependency": "component_recipes", "supported": ["1.0.0", "1.1.0"]},
+    {"dependent": "compiler", "dependent_major": 2, "dependency": "web_react_adapter", "supported": ["1.0.0", "1.1.0"]},
+    {"dependent": "compiler", "dependent_major": 2, "dependency": "egui_adapter", "supported": ["1.0.0", "1.0.1", "1.0.2"]},
+    {"dependent": "brand", "dependent_major": 1, "dependency": "brand_canon", "supported": ["1.1.2", "1.2.0", "1.2.1", "1.3.0"]},
     {"dependent": "brand", "dependent_major": 1, "dependency": "interface_canon", "supported": ["1.0.0"]}
   ],
   "lifecycle_states": [
     {"id": "compatible", "meaning": "The exact versions satisfy every declared dependency rule; this does not imply publication or consumer use."},
     {"id": "candidate", "meaning": "Generated and verified bytes exist locally or in CI but have not been published as an immutable release artifact."},
-    {"id": "published", "meaning": "Immutable artifacts and checksums exist for the version; this does not imply compatibility with every consumer or adoption."},
-    {"id": "unadopted", "meaning": "No named downstream consumer adoption is claimed by this record."},
-    {"id": "adopted", "meaning": "A named consumer pins and uses the exact version; this does not change the publication or compatibility record."}
+    {"id": "published", "meaning": "Immutable artifacts and checksums exist for the version; this does not imply compatibility with every consumer."}
   ],
   "recovery": {
     "pin_exact_versions": true,

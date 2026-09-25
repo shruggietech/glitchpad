@@ -14,16 +14,86 @@
         "endorsement": "shruggietech-project",
         "service_credit": "none"
       },
-      "brand_version": "1.1.0"
+      "brand_version": "1.1.1"
+    },
+    "bundle": {
+      "schema_version": 1,
+      "package": {
+        "id": "glitchpad-brand-1.1.1-bb2.0.3",
+        "filename": "glitchpad-brand-1.1.1-bb2.0.3.zip",
+        "brand_slug": "glitchpad",
+        "brand_version": "1.1.1",
+        "brandbuilder_version": "2.0.3"
+      },
+      "versions": {
+        "canon_version": "1.3.0",
+        "interface_canon_version": "1.0.0",
+        "component_recipe_version": "1.1.0",
+        "web_react_adapter_version": "1.1.0",
+        "egui_adapter_version": "1.0.2",
+        "compiler_version": "2.0.3",
+        "brand_version": "1.1.1"
+      },
+      "source_revision": "115bd423f0656b6006b0719d1838da8286afb5e4",
+      "publication": {
+        "status": "release",
+        "version": "2.0.3",
+        "tag": "v2.0.3"
+      },
+      "checksum_authority": {
+        "algorithm": "sha256",
+        "manifest": "manifest.json",
+        "release_checksums": "SHA256SUMS"
+      }
+    },
+    "release_impact": {
+      "$schema": "release-impact.schema.json",
+      "schema_version": 1,
+      "brandbuilder_version": "2.0.3",
+      "identity_redesign": false,
+      "surfaces": {
+        "identity": {
+          "classification": "unaffected",
+          "summary": "Approved logo geometry, source bytes, ownership, and affiliation are unchanged. Glitchpad 1.1.1 and ESO Weave 1.0.2 advance package versions for native role presentation without identity redesign."
+        },
+        "palette": {
+          "classification": "required",
+          "summary": "Consumers using generated semantic color roles must repin the rebuilt kit and retain its measured surface-specific values."
+        },
+        "typography": {
+          "classification": "required",
+          "summary": "Consumers using generated typography bindings must repin the rebuilt kit and its local font declarations."
+        },
+        "platform_assets": {
+          "classification": "required",
+          "summary": "Web, Android, and Windows consumers of affected icon roles must regenerate and repin assets; other platform assets remain optional."
+        },
+        "web_react": {
+          "classification": "optional",
+          "summary": "Web and React consumers may adopt the AppFrame and environment contracts when they use those generated surfaces."
+        },
+        "egui": {
+          "classification": "required",
+          "summary": "Native Rust consumers using status or disabled controls should regenerate and repin egui adapter 1.0.2 for explicit readable text roles; ESO Weave must fix its local strong-label call separately."
+        },
+        "documentation": {
+          "classification": "required",
+          "summary": "Readers and consumers using generated guidance should repin the rebuilt kit for native icon role, egui status, and exact-version bundle instructions."
+        },
+        "recovery": {
+          "classification": "required",
+          "summary": "Consumers retaining a kit must preserve the delivered checksummed BrandBuilder recovery bytes and canonical immutable package identity."
+        }
+      }
     },
     "versions": {
-      "canon_version": "1.2.1",
+      "canon_version": "1.3.0",
       "interface_canon_version": "1.0.0",
       "component_recipe_version": "1.1.0",
       "web_react_adapter_version": "1.1.0",
-      "egui_adapter_version": "1.0.0",
-      "compiler_version": "1.3.0",
-      "brand_version": "1.1.0"
+      "egui_adapter_version": "1.0.2",
+      "compiler_version": "2.0.3",
+      "brand_version": "1.1.1"
     },
     "bindings": {
       "interface_canon": "enforcement/interface-canon.json",
@@ -40,6 +110,8 @@
     "authority": {
       "precedence": [
         "brand.json",
+        "enforcement/bundle.json",
+        "enforcement/release-impact.json",
         "enforcement/interface-canon.json",
         "enforcement/component-recipes.json",
         "enforcement/version-policy.json",
@@ -60,19 +132,19 @@
       "success": "zero verifier problems and zero glyph failures"
     },
     "recovery": {
-      "distribution": "shruggie-brandbuilder-1.3.0.skill",
-      "path": "enforcement/distributions/shruggie-brandbuilder-1.3.0.skill",
-      "sha256": "9aebb8f3a015bbf857ae2a4ecc98eaada6b8ee81d10254a52ee79842992d2064",
+      "distribution": "shruggie-brandbuilder-2.0.3.skill",
+      "path": "enforcement/distributions/shruggie-brandbuilder-2.0.3.skill",
+      "sha256": "f8ae954806e9797cbde8270a0660dc16dd6c4018df03f8003ca95e633efc073f",
       "extract_to": "enforcement/brandbuilder",
       "sources": [
         {
           "kind": "delivered-bundle",
-          "path": "enforcement/distributions/shruggie-brandbuilder-1.3.0.skill",
+          "path": "enforcement/distributions/shruggie-brandbuilder-2.0.3.skill",
           "network_required": false
         },
         {
           "kind": "authoritative-release",
-          "version": "1.3.0",
+          "version": "2.0.3",
           "network_requires_authorization": true
         }
       ],
@@ -95,7 +167,7 @@
   "brand": {
     "slug": "glitchpad",
     "title": "Glitchpad",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "descriptor": "A fast, cross-platform viewer and editor for local files.",
     "idea": "View your files.",
     "affiliation": "A ShruggieTech project",
@@ -1954,6 +2026,93 @@
       "summary": "Choose by purpose, then open details for every delivered size and format.",
       "assets": [
         {
+          "id": "asset-icon-web-default-default-default-maskable-default-full",
+          "title": "Maskable",
+          "role": "maskable",
+          "platform": "web",
+          "appearance": "default",
+          "surface": "dark",
+          "summary": "Use this maskable for web root.",
+          "formats": [
+            "png"
+          ],
+          "variants": [
+            "full"
+          ],
+          "preview": {
+            "path": "icons/web/maskable-icon-512x512.png",
+            "platform": "web",
+            "role": "maskable",
+            "format": "png",
+            "width": 512,
+            "height": 512,
+            "appearance": "default",
+            "alpha": "opaque",
+            "source_variant": "full",
+            "destination": "Web root",
+            "family": "icon",
+            "sha256": "39c0bbf9cecd000cc638ae493fabaff6fe210a33f0d8b6d2934dfee4cd78e737"
+          },
+          "deliveries": [
+            {
+              "path": "favicons/maskable-icon-192x192.png",
+              "platform": "web",
+              "role": "maskable",
+              "format": "png",
+              "width": 192,
+              "height": 192,
+              "appearance": "default",
+              "alpha": "opaque",
+              "source_variant": "full",
+              "destination": "Compatibility alias for icons/web/maskable-icon-192x192.png",
+              "family": "icon",
+              "sha256": "53ca44f6262b7d7d76fb8119530422ec4cdf21a5f1c10fca25b1834fe139e3bc"
+            },
+            {
+              "path": "favicons/maskable-icon-512x512.png",
+              "platform": "web",
+              "role": "maskable",
+              "format": "png",
+              "width": 512,
+              "height": 512,
+              "appearance": "default",
+              "alpha": "opaque",
+              "source_variant": "full",
+              "destination": "Compatibility alias for icons/web/maskable-icon-512x512.png",
+              "family": "icon",
+              "sha256": "39c0bbf9cecd000cc638ae493fabaff6fe210a33f0d8b6d2934dfee4cd78e737"
+            },
+            {
+              "path": "icons/web/maskable-icon-192x192.png",
+              "platform": "web",
+              "role": "maskable",
+              "format": "png",
+              "width": 192,
+              "height": 192,
+              "appearance": "default",
+              "alpha": "opaque",
+              "source_variant": "full",
+              "destination": "Web root",
+              "family": "icon",
+              "sha256": "53ca44f6262b7d7d76fb8119530422ec4cdf21a5f1c10fca25b1834fe139e3bc"
+            },
+            {
+              "path": "icons/web/maskable-icon-512x512.png",
+              "platform": "web",
+              "role": "maskable",
+              "format": "png",
+              "width": 512,
+              "height": 512,
+              "appearance": "default",
+              "alpha": "opaque",
+              "source_variant": "full",
+              "destination": "Web root",
+              "family": "icon",
+              "sha256": "39c0bbf9cecd000cc638ae493fabaff6fe210a33f0d8b6d2934dfee4cd78e737"
+            }
+          ]
+        },
+        {
           "id": "asset-icon-web-default-default-default-web-icon-default-full",
           "title": "Favicon",
           "role": "favicon",
@@ -2588,7 +2747,7 @@
             "source_variant": "full",
             "destination": "Android res/mipmap-xxxhdpi",
             "family": "icon",
-            "sha256": "a24407874f48767311e76b6f56b5612a3d84e990c3f08144afe13cf33008341e"
+            "sha256": "145a5f5351400a02b57516c0b704bc63e76e3d3f912cf85dd63a9e3011dc5e50"
           },
           "deliveries": [
             {
@@ -2603,7 +2762,7 @@
               "source_variant": "full",
               "destination": "Android res/mipmap-hdpi",
               "family": "icon",
-              "sha256": "8a50b69a1070cc9084daafcb9fb66acce0eca59b33b5e90e39d942a77c945101"
+              "sha256": "c109ca1b12a81d1feacecfe7ba8e588799c8ea89c156be3d9d4acdef6affe0a5"
             },
             {
               "path": "icons/android/app/src/main/res/mipmap-mdpi/ic_launcher.png",
@@ -2617,7 +2776,7 @@
               "source_variant": "full",
               "destination": "Android res/mipmap-mdpi",
               "family": "icon",
-              "sha256": "3d71f7bab312d97af033de284e9170dc6b06836af6f57e55d5977d0a345bd9bf"
+              "sha256": "c916ad5d0bbb09db73acc6f351e8bc6cc2a92b850c856f365b8c270fd9aa20b2"
             },
             {
               "path": "icons/android/app/src/main/res/mipmap-xhdpi/ic_launcher.png",
@@ -2631,7 +2790,7 @@
               "source_variant": "full",
               "destination": "Android res/mipmap-xhdpi",
               "family": "icon",
-              "sha256": "07e9a0cb81863bfac0fd87596a0323857b86fa7f002b3f435532cd467902d382"
+              "sha256": "960f4fc62c4ee3d184047527828b085ff7924ff3dfed02d4c746481c287bb904"
             },
             {
               "path": "icons/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png",
@@ -2645,7 +2804,7 @@
               "source_variant": "full",
               "destination": "Android res/mipmap-xxhdpi",
               "family": "icon",
-              "sha256": "b66c605bca2e37d5eb1e70243cfea33a9a34edcc6c5d012145e5c948f1b6ac8a"
+              "sha256": "028e379b800a1a4ba30a5fd06accc1de8974c82b69a9ee11f68eefe44fd00f46"
             },
             {
               "path": "icons/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png",
@@ -2659,7 +2818,7 @@
               "source_variant": "full",
               "destination": "Android res/mipmap-xxxhdpi",
               "family": "icon",
-              "sha256": "a24407874f48767311e76b6f56b5612a3d84e990c3f08144afe13cf33008341e"
+              "sha256": "145a5f5351400a02b57516c0b704bc63e76e3d3f912cf85dd63a9e3011dc5e50"
             }
           ]
         },
@@ -4180,7 +4339,7 @@
       "source_variant": "metadata",
       "destination": "Compatibility alias for icons/web/site.webmanifest",
       "family": "icon",
-      "sha256": "adee52f8b55f96da0a452f36d279b0bbff3d59c308bd07999eb9671c9add195a",
+      "sha256": "2df8f188e3090aa63efc635ad032ca3ec92fc89ab5c100b4847d506b1267ea69",
       "id": "resource-favicons-site-webmanifest",
       "title": "Site",
       "resource_kind": "code-or-container",
@@ -4234,7 +4393,7 @@
       "source_variant": "metadata",
       "destination": "See suite README",
       "family": "icon",
-      "sha256": "204229c59eecb46c21c2bd1cf2060fda329d09b3ce427ca0ed9d2ce747d2f30f",
+      "sha256": "856cd332542cc3ad8518ebf35cd242f38c7b223f79f249ab53e0d5d943290618",
       "id": "resource-icons-android-readme-md",
       "title": "Readme",
       "resource_kind": "instructions",
@@ -4288,7 +4447,7 @@
       "source_variant": "metadata",
       "destination": "Android res/values",
       "family": "icon",
-      "sha256": "a73a04d4717d4895191e7cecca01952b1111cfa8962cf76dc8bc354656e0969d",
+      "sha256": "d22c0684bc8679253d2ad61afd8687ee370473f3071fca494feb0880eed9727f",
       "id": "resource-icons-android-app-src-main-res-values-ic-launcher-colors-xml",
       "title": "Ic Launcher Colors",
       "resource_kind": "code-or-container",
@@ -4459,7 +4618,7 @@
       "source_variant": "metadata",
       "destination": "See suite README",
       "family": "icon",
-      "sha256": "ae5245a152fa44c9c5131f6cc1e52b078e76e41efd1715510fd38f0e640d56e9",
+      "sha256": "87241d32ab763ee9cf0ef11dee8c9f19627d5d3bbdebdaed6af1f250ca0542f8",
       "id": "resource-icons-web-readme-md",
       "title": "Readme",
       "resource_kind": "instructions",
@@ -4504,7 +4663,7 @@
       "source_variant": "metadata",
       "destination": "See suite README",
       "family": "icon",
-      "sha256": "0acacd4302049dd89d086dc5473ae158be37ab1cd8d0c898630c7d9bb8f3eadc",
+      "sha256": "919035d022f0ad3dd89df9c458383906ad586d71b2e50a2b7140f61489c7af13",
       "id": "resource-icons-web-manifest-json",
       "title": "Manifest",
       "resource_kind": "code-or-container",
@@ -4522,7 +4681,7 @@
       "source_variant": "metadata",
       "destination": "Web root",
       "family": "icon",
-      "sha256": "adee52f8b55f96da0a452f36d279b0bbff3d59c308bd07999eb9671c9add195a",
+      "sha256": "2df8f188e3090aa63efc635ad032ca3ec92fc89ab5c100b4847d506b1267ea69",
       "id": "resource-icons-web-site-webmanifest",
       "title": "Site",
       "resource_kind": "code-or-container",
@@ -4540,7 +4699,7 @@
       "source_variant": "metadata",
       "destination": "See suite README",
       "family": "icon",
-      "sha256": "b6b7cdb5ae147fbc5699333d7309b8e1a11964cd75c4e181375ca348d5462694",
+      "sha256": "6e3577de4279347a2f496c17789f57b5cbaab2e059e1b3d58705e05ac24060f3",
       "id": "resource-icons-windows-readme-md",
       "title": "Readme",
       "resource_kind": "instructions",
@@ -4641,7 +4800,7 @@
       "title": "Readme",
       "platform": "android",
       "source_path": "icons/android/README.md",
-      "markdown": "# Android icons\n\nCopy the `app/src/main/res` tree into an Android application and upload the separate Play image in Play Console.\n\n| Path | Use |\n|---|---|\n| `app/src/main/res` | Launcher and adaptive resources |\n| `play-store/google-play-512.png` | Google Play listing artwork |\n"
+      "markdown": "# Android icons\n\nCopy the `app/src/main/res` tree into an Android application and upload the separate Play image in Play Console. Declare `android:icon=\"@mipmap/ic_launcher\"` in the app manifest; if declaring `android:roundIcon`, point it to a separately qualified round resource. Verify the packaged APK manifest and resources along with these source files.\n\n| Path | Use |\n|---|---|\n| `app/src/main/res` | Legacy density PNGs and adaptive foreground, background, and optional monochrome resources |\n| `play-store/google-play-512.png` | Full-square Google Play listing artwork; use only in Play Console |\n"
     },
     {
       "key": "apple-ios",
@@ -4662,14 +4821,14 @@
       "title": "Readme",
       "platform": "web",
       "source_path": "icons/web/README.md",
-      "markdown": "# Web icons\n\nBrowser, touch, and installable-web assets. `favicon.svg` is preferred; PNG and ICO files are fallbacks.\n\n| Path | Use |\n|---|---|\n| `favicon.svg` | Preferred reduced-mark browser favicon |\n| `favicon-full.svg` | Full-mark vector alternative |\n| `favicon.ico` | Classic multi-size fallback |\n| `apple-touch-icon.png` | Apple touch icon |\n| `site.webmanifest` | Installable web metadata |\n"
+      "markdown": "# Web icons\n\nBrowser, touch, and installable-web assets. `favicon.svg` is preferred. At raster tiers, copy both ordinary `android-chrome-*` and dedicated opaque `maskable-icon-*` PNGs alongside `site.webmanifest`. The manifest declares their roles separately; do not reuse a transparent ordinary icon as maskable.\n\n| Path | Use |\n|---|---|\n| `favicon.svg` | Preferred reduced-mark browser favicon |\n| `favicon-full.svg` | Full-mark vector alternative |\n| `favicon.ico` | Classic multi-size fallback |\n| `apple-touch-icon.png` | Apple touch icon |\n| `maskable-icon-192x192.png and maskable-icon-512x512.png` | Opaque PWA maskable artwork |\n| `site.webmanifest` | Installable web metadata |\n"
     },
     {
       "key": "windows",
       "title": "Readme",
       "platform": "windows",
       "source_path": "icons/windows/README.md",
-      "markdown": "# Windows icons\n\nUse `classic/app.ico` for Win32 and the `msix` directory for packaged Windows applications.\n\n| Path | Use |\n|---|---|\n| `classic/app.ico` | Classic application icon |\n| `msix/Assets` | MSIX scale, target-size, and store assets |\n| `msix/ApplicationVisualElements.fragment.xml` | Merge into Applications/Application |\n| `msix/PackageProperties.fragment.xml` | Merge into Package for the Store logo |\n"
+      "markdown": "# Windows icons\n\nEmbed `classic/app.ico` in Win32 executables and use the `msix` directory only for packaged Windows applications. The ICO and target-size assets have taskbar roles; scale, tile, and Store assets have separate plate rules. Confirm which resource the actual EXE or MSIX embeds and inspect 16, 24, 32, and 48-pixel light/dark taskbar appearances.\n\n| Path | Use |\n|---|---|\n| `classic/app.ico` | Classic Win32 executable, shortcut, and taskbar icon |\n| `msix/Assets` | MSIX scale/tile, target-size/unplated taskbar, and Store assets |\n| `msix/ApplicationVisualElements.fragment.xml` | Merge into Applications/Application |\n| `msix/PackageProperties.fragment.xml` | Merge into Package for the Store logo |\n"
     }
   ],
   "capability_suites": [
@@ -4732,6 +4891,8 @@
     "favicons/favicon-full.svg": "icons/web/favicon-full.svg",
     "favicons/favicon.ico": "icons/web/favicon.ico",
     "favicons/favicon.svg": "icons/web/favicon.svg",
+    "favicons/maskable-icon-192x192.png": "icons/web/maskable-icon-192x192.png",
+    "favicons/maskable-icon-512x512.png": "icons/web/maskable-icon-512x512.png",
     "favicons/site.webmanifest": "icons/web/site.webmanifest"
   },
   "portable_guide": "guidelines/index.html"

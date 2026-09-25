@@ -2,7 +2,7 @@
   "schema_version": 1,
   "consumer": {
     "brand": "glitchpad",
-    "brand_version": "1.1.0"
+    "brand_version": "1.1.1"
   },
   "environment": {
     "renderer": "renderer-neutral",
@@ -13,6 +13,5 @@
   "evidence": [],
   "classification": "reusable-capability",
   "upstream_resolution": null,
-  "adopted_version": null,
   "submission_authorized": false
 }

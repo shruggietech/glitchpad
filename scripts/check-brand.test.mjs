@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
@@ -12,7 +13,10 @@ import {
   verifyPngHeader,
   verifyPublicCopy,
   verifyReadmeBanner,
+  verifyReleaseReceipt,
+  verifyWebIconRoles,
 } from './check-brand.mjs';
+import { isSafeBrandPath, releasePin } from './brand-kit-contract.mjs';
 import {
   agentContractContext,
   agentContractEnd,
@@ -67,12 +71,55 @@ test('embedded brand guidance retains reachable pinned legal terms', async () =>
   ]);
   const integration = JSON.parse(integrationSource);
   assert.doesNotMatch(readme, /\.\.\/\.\.\/LICENSE-BRAND\.md/);
-  assert.match(
-    readme,
-    new RegExp(
-      `shruggie-brand/${integration.sourceRevision}/LICENSE-BRAND\\.md`,
-    ),
+  assert.match(readme, /\[brand asset terms\]\(LICENSE-BRAND\.md\)/);
+  assert.equal(integration.packageId, releasePin.packageId);
+});
+
+test('release receipt rejects a stale archive or source revision', async () => {
+  const [receipt, bundle, consumer, manifest] = await Promise.all([
+    readFile(join(repositoryRoot, 'brand', 'INTEGRATION.json'), 'utf8'),
+    readFile(join(repositoryRoot, 'brand', 'enforcement', 'bundle.json'), 'utf8'),
+    readFile(join(repositoryRoot, 'brand', 'enforcement', 'consumer-contract.json'), 'utf8'),
+    readFile(join(repositoryRoot, 'brand', 'manifest.json')),
+  ]);
+  const canonical = JSON.parse(receipt);
+  const args = [
+    JSON.parse(bundle),
+    JSON.parse(consumer),
+    createHash('sha256').update(manifest).digest('hex'),
+  ];
+  assert.deepEqual(verifyReleaseReceipt(canonical, ...args), []);
+  assert.ok(
+    verifyReleaseReceipt({ ...canonical, archiveSha256: '0'.repeat(64) }, ...args)
+      .some((problem) => problem.includes('archive checksum')),
   );
+  assert.ok(
+    verifyReleaseReceipt({ ...canonical, sourceRevision: '0'.repeat(40) }, ...args)
+      .some((problem) => problem.includes('source revision')),
+  );
+  assert.ok(
+    verifyReleaseReceipt(
+      { ...canonical, integratedManifestSha256: '0'.repeat(64) },
+      ...args,
+    ).some((problem) => problem.includes('integrated manifest checksum')),
+  );
+});
+
+test('brand paths reject traversal, absolute paths, and Windows drive paths', () => {
+  for (const path of ['../mark.svg', '/mark.svg', 'C:/mark.svg', 'a//mark.svg', 'a\\mark.svg']) {
+    assert.equal(isSafeBrandPath(path), false, path);
+  }
+  assert.equal(isSafeBrandPath('icons/web/maskable-icon-192x192.png'), true);
+});
+
+test('web icon roles distinguish ordinary and maskable artwork', async () => {
+  const manifest = JSON.parse(
+    await readFile(join(repositoryRoot, 'brand', 'icons', 'web', 'site.webmanifest'), 'utf8'),
+  );
+  assert.deepEqual(verifyWebIconRoles(manifest), []);
+  const stale = structuredClone(manifest);
+  stale.icons[0].purpose = 'any maskable';
+  assert.ok(verifyWebIconRoles(stale).some((problem) => problem.includes('icon roles')));
 });
 
 test('system theme receives light brand tokens under a light OS', async () => {

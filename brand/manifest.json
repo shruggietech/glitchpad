@@ -1,6 +1,6 @@
 {
   "name": "glitchpad-brand-kit",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "parent": "ShruggieTech",
   "affiliation": {
     "ownership": "shruggietech-owned",
@@ -10,7 +10,7 @@
     "endorsement": "shruggietech-project",
     "service_credit": "none"
   },
-  "canon": "1.2.1",
+  "canon": "1.3.0",
   "files": [
     {
       "path": "NOTES.md",
@@ -19,8 +19,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 5575,
-      "sha256": "5b2e0b6888ac28e885957963965e1024e5ac4f9cdcbe7c74322abbaef4d89641"
+      "bytes": 5472,
+      "sha256": "5f2ec949833d0c2161cfae7a2d660539124ef932457b89772a0d335cd22f0bdb"
     },
     {
       "path": "SKILL.md",
@@ -29,18 +29,18 @@
     },
     {
       "path": "VERIFY.md",
-      "bytes": 3258,
-      "sha256": "b72013593f66c35af496666b67c3bb63362539df05b77287a2ec977593707815"
+      "bytes": 3228,
+      "sha256": "6a6b793ebbaaf8209f1d00d28a3b3e2eeb5eab7922eb157753850141c7cbc0be"
     },
     {
       "path": "brand-guide.pdf",
-      "bytes": 184073,
-      "sha256": "2d1fe0a8da5b3f33551e9c263000f6c3ec902e2f3fd932c0df47899895ed73a4"
+      "bytes": 184070,
+      "sha256": "db61ea113286b06ab6f0f1d1cbc00a16df77c742eb343a0a5cea41b44d00d518"
     },
     {
       "path": "brand.json",
       "bytes": 13487,
-      "sha256": "c231bea5a8427f66c9f206fc84c62ad7b40f3737830746d64f2c1d63dcf15455"
+      "sha256": "4799e640ef66dfd844bae5548d0c9037d79e149aac110b77217b14c756972559"
     },
     {
       "path": "identity-continuity-report.json",
@@ -60,7 +60,7 @@
     {
       "path": "build/brand-guide.print.html",
       "bytes": 458171,
-      "sha256": "9eac2713581af2b99e3b8cc3e6b157f4cfa16068d5a8e892065eaf0ab6cf78bd"
+      "sha256": "85c74154739a0d8a0d26248c64881efab961759cc62e3a9c087eaf13915e1bc1"
     },
     {
       "path": "components/README.md",
@@ -119,8 +119,8 @@
     },
     {
       "path": "conformance/README.md",
-      "bytes": 594,
-      "sha256": "41a4f7724f0389d6c5e339db283e9bfe89e56c0ba5cd54eb42ec63adc0e758f1"
+      "bytes": 593,
+      "sha256": "dcbde6ffda320022b2cea6678e96ee683f39ff7068f6429b024b1d7533b09874"
     },
     {
       "path": "conformance/baseline-decisions.json",
@@ -129,8 +129,8 @@
     },
     {
       "path": "conformance/manifest.json",
-      "bytes": 9491,
-      "sha256": "304f4340069267e2f994c8f949ff3e3d59570cd5127eae4c3eb6a6b4d2d0209c"
+      "bytes": 9389,
+      "sha256": "e1865c3ee3ec5cd8059a793dd41fef80316a79f53d012ac4d892222c424d0dd2"
     },
     {
       "path": "conformance/browser/specimen.html",
@@ -180,22 +180,32 @@
     {
       "path": "enforcement/AGENTS.md",
       "bytes": 1194,
-      "sha256": "3bc20936f313bed91dfd5c50ad4780bfa89d85158f9c74a00246327d1f90bed8"
+      "sha256": "1d1eeb5f80e035072626e1bace9d9bd37e0764f7c45f7ca6f14849900e259fc4"
     },
     {
       "path": "enforcement/IMPLEMENTATION.md",
-      "bytes": 7271,
-      "sha256": "c23427caa83ff288c761517f33363fd878cf84ff1894405a2d123301bfa96645"
+      "bytes": 9142,
+      "sha256": "11d9d6345d1cb60a1c560a4e9137a1abcd4dfeb2ed033df2de1f934c13affbbd"
+    },
+    {
+      "path": "enforcement/MIGRATION.md",
+      "bytes": 1715,
+      "sha256": "dda85cce6b4ac6f759e70c2cff638afeae0cb1c479c46a65ea3cafccbe98e68d"
     },
     {
       "path": "enforcement/README.md",
-      "bytes": 2012,
-      "sha256": "3b37e6606f6d788477a2837d23d1ea3f70eb0d87b4a73b7ae3490683cb79c22e"
+      "bytes": 2180,
+      "sha256": "590201d0264d55905f48663c38b5e76c7b73749bbf9198ddccb3c517a1c1aac9"
+    },
+    {
+      "path": "enforcement/bundle.json",
+      "bytes": 799,
+      "sha256": "9a1701bd898276a09c5f91e5871e984f6789d525d4238c9c174bfafe28deff03"
     },
     {
       "path": "enforcement/capability-gap.example.json",
-      "bytes": 476,
-      "sha256": "6f892e22ba6c72ee13e64d91fb48220553337ad6cdf0e62758b892c64cef5e96"
+      "bytes": 449,
+      "sha256": "a82a01c62365813d37966676e83cdc9bea16556e96829fd764643e71904ba0e8"
     },
     {
       "path": "enforcement/component-recipes.json",
@@ -209,18 +219,18 @@
     },
     {
       "path": "enforcement/consumer-contract.json",
-      "bytes": 7567,
-      "sha256": "c1889029ee144a0d2558db06c760cabe92776f0600028b3ae6bb5e3d77e1a960"
+      "bytes": 9242,
+      "sha256": "643798c6d775df249f4ae37a6cf17782714fa1eeace25bd369086959f2b41c17"
     },
     {
       "path": "enforcement/consumer-contract.schema.json",
-      "bytes": 6833,
-      "sha256": "13fd247d5272249c05b1d847cfd0442b886ea6a24f0e05ecc237ecb4b612d089"
+      "bytes": 8415,
+      "sha256": "76b5e7b5448b668cc058067524b8b7978480512b75b4d2305962625e90173d2b"
     },
     {
       "path": "enforcement/documentation-contract.json",
-      "bytes": 12104,
-      "sha256": "8fcd7a2776bcbe72aea5d0c7a0dea0addfba27aff8c6667d2ab793f538732350"
+      "bytes": 12132,
+      "sha256": "6a08b3e640f117c9b1c23c03c83eb32829f34e75262974d4becca7ca591bdc02"
     },
     {
       "path": "enforcement/documentation-contract.schema.json",
@@ -229,8 +239,8 @@
     },
     {
       "path": "enforcement/documentation-facts.json",
-      "bytes": 3144,
-      "sha256": "bd4a50a00473e52a19efbcd2b6ea04cf90a58213ecf65060b2722c2cb378ce40"
+      "bytes": 6146,
+      "sha256": "abf6f2d855cf0dfe64286b3ebf1e72f42ec4b095b89290e958de9ff7ab05b854"
     },
     {
       "path": "enforcement/eslint.brand.mjs",
@@ -239,13 +249,23 @@
     },
     {
       "path": "enforcement/interface-canon.json",
-      "bytes": 9089,
-      "sha256": "8ab7e586393d7015d86a98940426a7400765386721a92a4d9be4a1cc6a715658"
+      "bytes": 9098,
+      "sha256": "e5837fb8f868992b375f7f641500e5ac3b46a004a0a68a2c069bf6b2ad705ec4"
     },
     {
       "path": "enforcement/interface-canon.schema.json",
       "bytes": 7313,
       "sha256": "b21d2a7b62cd302df62e8d4a3d0a1033f98a8d75d3a193fced61429cf40c656d"
+    },
+    {
+      "path": "enforcement/release-impact.json",
+      "bytes": 1815,
+      "sha256": "5ca6e757b9a853e18146f0dd63c327382928ad073f3dad047b6a9538139624d5"
+    },
+    {
+      "path": "enforcement/release-impact.schema.json",
+      "bytes": 1575,
+      "sha256": "aa4b191c27883ad2d58b7815b21b66560802cdd2c6fe79ff2f2d47af9e477975"
     },
     {
       "path": "enforcement/stylelint.config.json",
@@ -254,13 +274,13 @@
     },
     {
       "path": "enforcement/version-policy.json",
-      "bytes": 6978,
-      "sha256": "4f6fef7abccee75e7390001bc7382909f0122c8e6d527c6dc8ad22f31f107cfe"
+      "bytes": 6758,
+      "sha256": "ee9a93112cb2722bc159adc460332361c50d9516b3b2dc52fc07ca8723fa577e"
     },
     {
-      "path": "enforcement/distributions/shruggie-brandbuilder-1.3.0.skill",
-      "bytes": 416847,
-      "sha256": "9aebb8f3a015bbf857ae2a4ecc98eaada6b8ee81d10254a52ee79842992d2064"
+      "path": "enforcement/distributions/shruggie-brandbuilder-2.0.3.skill",
+      "bytes": 433751,
+      "sha256": "f8ae954806e9797cbde8270a0660dc16dd6c4018df03f8003ca95e633efc073f"
     },
     {
       "path": "favicons/android-chrome-192x192.png",
@@ -348,9 +368,19 @@
       "sha256": "3a74d5c84b37daa8b802df5b84b147b8d1f1ed4314a18cefb63312095e9cf6f4"
     },
     {
+      "path": "favicons/maskable-icon-192x192.png",
+      "bytes": 2992,
+      "sha256": "53ca44f6262b7d7d76fb8119530422ec4cdf21a5f1c10fca25b1834fe139e3bc"
+    },
+    {
+      "path": "favicons/maskable-icon-512x512.png",
+      "bytes": 7186,
+      "sha256": "39c0bbf9cecd000cc638ae493fabaff6fe210a33f0d8b6d2934dfee4cd78e737"
+    },
+    {
       "path": "favicons/site.webmanifest",
-      "bytes": 444,
-      "sha256": "adee52f8b55f96da0a452f36d279b0bbff3d59c308bd07999eb9671c9add195a"
+      "bytes": 700,
+      "sha256": "2df8f188e3090aa63efc635ad032ca3ec92fc89ab5c100b4847d506b1267ea69"
     },
     {
       "path": "fonts/README.md",
@@ -459,13 +489,13 @@
     },
     {
       "path": "guidelines/index.html",
-      "bytes": 736221,
-      "sha256": "45581a1e613014cc498ccd849b70351745881633c499f6f896028f2d446ec18d"
+      "bytes": 746528,
+      "sha256": "a2f8102c786dfeca43bde644a1189441b71d308f3a1538f3c519a53194b13d47"
     },
     {
       "path": "guidelines/portal.json",
-      "bytes": 170480,
-      "sha256": "bcf6a1525254208eacb80d33976e63928c9254e16e97ae55f286def3cf7296e9"
+      "bytes": 177853,
+      "sha256": "31ef33f1e41030d5d30f6a4b5604ca3b25c865899fd325711410bd4e2cd9ba09"
     },
     {
       "path": "icons/.iconkit-generated.json",
@@ -479,13 +509,13 @@
     },
     {
       "path": "icons/manifest.json",
-      "bytes": 43751,
-      "sha256": "82e0898c7aa3abe25a31afd6d4e02189d66e3f13806d64ef61c009861ce7336b"
+      "bytes": 44551,
+      "sha256": "ac443044fc8b976ae3d7d0589d2241059aeb60bac424bdeacacdbb9a31d41a2f"
     },
     {
       "path": "icons/android/README.md",
-      "bytes": 280,
-      "sha256": "204229c59eecb46c21c2bd1cf2060fda329d09b3ce427ca0ed9d2ce747d2f30f"
+      "bytes": 606,
+      "sha256": "856cd332542cc3ad8518ebf35cd242f38c7b223f79f249ab53e0d5d943290618"
     },
     {
       "path": "icons/android/manifest.json",
@@ -514,33 +544,33 @@
     },
     {
       "path": "icons/android/app/src/main/res/mipmap-hdpi/ic_launcher.png",
-      "bytes": 1715,
-      "sha256": "8a50b69a1070cc9084daafcb9fb66acce0eca59b33b5e90e39d942a77c945101"
+      "bytes": 1491,
+      "sha256": "c109ca1b12a81d1feacecfe7ba8e588799c8ea89c156be3d9d4acdef6affe0a5"
     },
     {
       "path": "icons/android/app/src/main/res/mipmap-mdpi/ic_launcher.png",
-      "bytes": 1181,
-      "sha256": "3d71f7bab312d97af033de284e9170dc6b06836af6f57e55d5977d0a345bd9bf"
+      "bytes": 1123,
+      "sha256": "c916ad5d0bbb09db73acc6f351e8bc6cc2a92b850c856f365b8c270fd9aa20b2"
     },
     {
       "path": "icons/android/app/src/main/res/mipmap-xhdpi/ic_launcher.png",
-      "bytes": 2253,
-      "sha256": "07e9a0cb81863bfac0fd87596a0323857b86fa7f002b3f435532cd467902d382"
+      "bytes": 1949,
+      "sha256": "960f4fc62c4ee3d184047527828b085ff7924ff3dfed02d4c746481c287bb904"
     },
     {
       "path": "icons/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png",
-      "bytes": 3304,
-      "sha256": "b66c605bca2e37d5eb1e70243cfea33a9a34edcc6c5d012145e5c948f1b6ac8a"
+      "bytes": 2735,
+      "sha256": "028e379b800a1a4ba30a5fd06accc1de8974c82b69a9ee11f68eefe44fd00f46"
     },
     {
       "path": "icons/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png",
-      "bytes": 4197,
-      "sha256": "a24407874f48767311e76b6f56b5612a3d84e990c3f08144afe13cf33008341e"
+      "bytes": 3322,
+      "sha256": "145a5f5351400a02b57516c0b704bc63e76e3d3f912cf85dd63a9e3011dc5e50"
     },
     {
       "path": "icons/android/app/src/main/res/values/ic_launcher_colors.xml",
       "bytes": 115,
-      "sha256": "a73a04d4717d4895191e7cecca01952b1111cfa8962cf76dc8bc354656e0969d"
+      "sha256": "d22c0684bc8679253d2ad61afd8687ee370473f3071fca494feb0880eed9727f"
     },
     {
       "path": "icons/android/play-store/google-play-512.png",
@@ -699,8 +729,8 @@
     },
     {
       "path": "icons/web/README.md",
-      "bytes": 401,
-      "sha256": "ae5245a152fa44c9c5131f6cc1e52b078e76e41efd1715510fd38f0e640d56e9"
+      "bytes": 689,
+      "sha256": "87241d32ab763ee9cf0ef11dee8c9f19627d5d3bbdebdaed6af1f250ca0542f8"
     },
     {
       "path": "icons/web/android-chrome-192x192.png",
@@ -789,18 +819,28 @@
     },
     {
       "path": "icons/web/manifest.json",
-      "bytes": 5972,
-      "sha256": "0acacd4302049dd89d086dc5473ae158be37ab1cd8d0c898630c7d9bb8f3eadc"
+      "bytes": 6574,
+      "sha256": "919035d022f0ad3dd89df9c458383906ad586d71b2e50a2b7140f61489c7af13"
+    },
+    {
+      "path": "icons/web/maskable-icon-192x192.png",
+      "bytes": 2992,
+      "sha256": "53ca44f6262b7d7d76fb8119530422ec4cdf21a5f1c10fca25b1834fe139e3bc"
+    },
+    {
+      "path": "icons/web/maskable-icon-512x512.png",
+      "bytes": 7186,
+      "sha256": "39c0bbf9cecd000cc638ae493fabaff6fe210a33f0d8b6d2934dfee4cd78e737"
     },
     {
       "path": "icons/web/site.webmanifest",
-      "bytes": 444,
-      "sha256": "adee52f8b55f96da0a452f36d279b0bbff3d59c308bd07999eb9671c9add195a"
+      "bytes": 700,
+      "sha256": "2df8f188e3090aa63efc635ad032ca3ec92fc89ab5c100b4847d506b1267ea69"
     },
     {
       "path": "icons/windows/README.md",
-      "bytes": 416,
-      "sha256": "b6b7cdb5ae147fbc5699333d7309b8e1a11964cd75c4e181375ca348d5462694"
+      "bytes": 718,
+      "sha256": "6e3577de4279347a2f496c17789f57b5cbaab2e059e1b3d58705e05ac24060f3"
     },
     {
       "path": "icons/windows/manifest.json",
@@ -1300,37 +1340,37 @@
     {
       "path": "native/egui/Cargo.lock",
       "bytes": 19847,
-      "sha256": "a0a17416dadc8d4a2ed9a41dd64f6aeda5a4fdd45856e43dca2593b14ddb23cc"
+      "sha256": "6b83ac92d3aa6bd4d5fa425d33b264c5ede005b50288ab78edeacd2ae4d71d87"
     },
     {
       "path": "native/egui/Cargo.toml",
       "bytes": 194,
-      "sha256": "922478538b128d8afae8418b9070a9a519563a90820c840bdd8263e689b2965a"
+      "sha256": "5e1063bc3e727b96d4364aded645cee0d36a79b239539c408f39405273caaec9"
     },
     {
       "path": "native/egui/README.md",
-      "bytes": 491,
-      "sha256": "8de08229c5de47fa57e96bd4eb64d5e4e7088d9e53f5a9abfea28fcd065e8ee6"
+      "bytes": 471,
+      "sha256": "8abe59941076bcf464ebf03dce670242ff08bd9e62ba34bcea7b4c9db67d4538"
     },
     {
       "path": "native/egui/adapter.json",
-      "bytes": 2004,
-      "sha256": "fa1ef7046eed86dc7933676151b093a47decde823653fc0a236099ce8fa5f2b9"
+      "bytes": 1929,
+      "sha256": "c6e9e5b9c4cd9848ef04bd9996e2e123a0f8963a89597f74a6d613d688090ee5"
     },
     {
       "path": "native/egui/support-matrix.json",
       "bytes": 7817,
-      "sha256": "7c89d86d7be7362fc37c422986b745a8c170d2e4a961baa5d95cb8e4451bf974"
+      "sha256": "3843ba994a45fe46f649bf00b6440efffbb883e0c0a29c6bd7048603454e962d"
     },
     {
       "path": "native/egui/version-policy.json",
-      "bytes": 8402,
-      "sha256": "8f313d02f05e08c9e642b056bc0a4458bcbb56c3b559f6426aaf95695474d21b"
+      "bytes": 8186,
+      "sha256": "c0e074e2222cd91d1bf4ee3aa014dc1361881dbe73e29f5021eea755c798aeed"
     },
     {
       "path": "native/egui/src/components.rs",
-      "bytes": 6736,
-      "sha256": "26e0578fdb907d18d8d11fd1f6b193a15145048a037b3a0f6d548cdc85e8a6d7"
+      "bytes": 8458,
+      "sha256": "09f014a29638673dc10e944a65aca962d4e2b38aa236ec979ee867d340de5943"
     },
     {
       "path": "native/egui/src/lib.rs",
@@ -1344,8 +1384,8 @@
     },
     {
       "path": "native/egui/tests/adapter.rs",
-      "bytes": 5061,
-      "sha256": "830ca93fa2c34cea063fa21ecb04192e2e811bc73255285ec6c3ebc99868e276"
+      "bytes": 10416,
+      "sha256": "08864a021b502338a8a15a2ebaff47f5dcca9a1f49a16f113151df670c656fab"
     },
     {
       "path": "nextjs/README.md",
@@ -1409,8 +1449,8 @@
     },
     {
       "path": "qc/contact-sheet.png",
-      "bytes": 361547,
-      "sha256": "4b0a445ebe9978aaff8e2bc28cd42c606353693ddc6a685f17700d41f63e2a29"
+      "bytes": 361544,
+      "sha256": "7d58c5ee291c9dcfbb9767affb4f62df0cadfa73b8d0070e4268cbf7ca77d5a9"
     },
     {
       "path": "qc/logo-sheet.png",
@@ -1444,8 +1484,8 @@
     },
     {
       "path": "qc/_pdf-pages/p-1.png",
-      "bytes": 37822,
-      "sha256": "7c15a4b33bd0c9bbcf839b4297b934737cbc694e8eedf34e1ab72a26ca026f8f"
+      "bytes": 37923,
+      "sha256": "bfae8ce02b201e578655b66f4d2e0677b28d4275484a32483afaf66cee09323c"
     },
     {
       "path": "qc/_pdf-pages/p-2.png",
@@ -1474,8 +1514,8 @@
     },
     {
       "path": "qc/_pdf-pages/p-7.png",
-      "bytes": 114836,
-      "sha256": "28d0830d69db7828b64171abce75637a1d7728c2cab5c1fde8161f246d03d4d6"
+      "bytes": 114971,
+      "sha256": "aea8b8b4e77a32129f861b6f37ff54fe503ae5406c54caa5313ec2477e450b92"
     },
     {
       "path": "specimens/glitchpad-type-specimen.svg",
@@ -1490,7 +1530,7 @@
     {
       "path": "tokens/brand.tokens.json",
       "bytes": 2561,
-      "sha256": "651c312ca037b65a19a3d46bf2e013f98a70bf642bda9e8127692ac5f0c3f197"
+      "sha256": "b2bb0eff3b7150bb3fbb56ed1cc6b6bc088720b1ea876e7b75ec626b2e4155f7"
     },
     {
       "path": "tokens/colors.css",
@@ -1580,15 +1620,15 @@
   ],
   "consumer_contract": {
     "path": "enforcement/consumer-contract.json",
-    "schema_version": 3,
+    "schema_version": 4,
     "versions": {
-      "canon_version": "1.2.1",
+      "canon_version": "1.3.0",
       "interface_canon_version": "1.0.0",
       "component_recipe_version": "1.1.0",
       "web_react_adapter_version": "1.1.0",
-      "egui_adapter_version": "1.0.0",
-      "compiler_version": "1.3.0",
-      "brand_version": "1.1.0"
+      "egui_adapter_version": "1.0.2",
+      "compiler_version": "2.0.3",
+      "brand_version": "1.1.1"
     }
   }
 }

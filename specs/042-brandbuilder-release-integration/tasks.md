@@ -47,7 +47,7 @@
 ## Phase 6: Validation and PR
 
 - [x] T014 Run focused brand, site, Android, desktop, encoding, and aggregate validation through the approved Linux environment where available; record real exit results in `specs/042-brandbuilder-release-integration/verification.md` (Node/Rust and full BrandBuilder verification await CI because the local approved toolchain is incomplete)
-- [ ] T015 Commit S042, push `codex/042-brandbuilder-release-integration`, and open one PR closing #202, #203, and #204
+- [x] T015 Commit S042, push `codex/042-brandbuilder-release-integration`, and open one PR closing #202, #203, and #204
 - [ ] T016 Resolve CI and first Codex review findings, request at most one additional Codex review round after all first-round threads close, then resolve second-round findings and return for merge approval after CI is green
 
 ## Dependencies

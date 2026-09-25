@@ -293,8 +293,20 @@ class BrandBuilderAppFrameInstrumentedTest {
             "IME probe must retain DOM focus ($imeRequestPath accepted: $imeShowRequested after $imeRequestAttempts attempts): $imeSnapshot",
             imeSnapshot.getBoolean("imeProbeFocused"),
         )
+        var nativeImeState = "unavailable before API 30"
+        if (Build.VERSION.SDK_INT >= 30) {
+            scenario.onActivity { activity ->
+                val webView = findWebView(activity.window.decorView)!!
+                val insets = webView.rootWindowInsets
+                nativeImeState =
+                    "windowFocus=${webView.hasWindowFocus()}, webViewFocus=${webView.hasFocus()}, " +
+                        "imeVisible=${insets?.isVisible(WindowInsets.Type.ime())}, " +
+                        "imeBottom=${insets?.getInsets(WindowInsets.Type.ime())?.bottom}, " +
+                        "webViewHeight=${webView.height}"
+            }
+        }
         assertTrue(
-            "IME must publish a positive AppFrame block-end inset ($imeRequestPath accepted: $imeShowRequested after $imeRequestAttempts attempts): $imeSnapshot",
+            "IME must publish a positive AppFrame block-end inset ($imeRequestPath accepted: $imeShowRequested after $imeRequestAttempts attempts; $nativeImeState): $imeSnapshot",
             imeSnapshot.getDouble("imeBlockEnd") > 0.0,
         )
 

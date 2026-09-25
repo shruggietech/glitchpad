@@ -1,7 +1,9 @@
 # Specification Quality Checklist: BrandBuilder Release Integration
 
 **Purpose**: Validate specification completeness before planning.
+
 **Created**: 2026-09-24
+
 **Feature**: [spec.md](../spec.md)
 
 ## Content Quality

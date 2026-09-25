@@ -23,7 +23,9 @@ if hashlib.sha256(archive_bytes).hexdigest() != recovery['sha256']:
 with tempfile.TemporaryDirectory(prefix='glitchpad-brandbuilder-') as directory:
     verification_brand = Path(directory) / 'brand'
     shutil.copytree(brand, verification_brand)
-    extraction_root = verification_brand / 'enforcement' / 'brandbuilder'
+    # Keep the recovery source outside the kit so the kit's prose audit checks
+    # only delivered consumer files, not the verifier's own SKILL.md.
+    extraction_root = Path(directory) / 'brandbuilder'
     extraction_root.mkdir()
     with zipfile.ZipFile(archive_path) as archive:
         for member in archive.infolist():

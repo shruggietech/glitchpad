@@ -14,6 +14,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.WindowInsets
 import android.view.WindowManager
+import android.view.accessibility.AccessibilityNodeInfo
 import android.view.inputmethod.InputMethodManager
 import android.webkit.WebView
 import androidx.test.core.app.ActivityScenario
@@ -62,6 +63,26 @@ class BrandBuilderAppFrameInstrumentedTest {
 
     private fun decodedJavascriptString(result: String): String =
         JSONArray("[$result]").getString(0)
+
+    private fun focusedWindowState(): String =
+        ParcelFileDescriptor.AutoCloseInputStream(
+            InstrumentationRegistry.getInstrumentation().uiAutomation.executeShellCommand("dumpsys window"),
+        ).bufferedReader().use { reader ->
+            reader.lineSequence()
+                .filter { it.contains("mCurrentFocus=") || it.contains("mFocusedApp=") }
+                .take(4)
+                .joinToString("; ") { it.trim() }
+        }
+
+    private fun dismissBluetoothCrashDialog(): Boolean {
+        val currentWindow = focusedWindowState().split("; ")
+            .firstOrNull { it.startsWith("mCurrentFocus=") } ?: return false
+        if (!currentWindow.contains("Application Error: com.android.bluetooth")) return false
+        val closeButton = InstrumentationRegistry.getInstrumentation().uiAutomation.rootInActiveWindow
+            ?.findAccessibilityNodeInfosByText("Close app")
+            ?.firstOrNull { it.text?.toString() == "Close app" }
+        return closeButton?.performAction(AccessibilityNodeInfo.ACTION_CLICK) == true
+    }
 
     private fun waitForShell(scenario: ActivityScenario<MainActivity>) {
         val deadline = SystemClock.elapsedRealtime() + 60_000L
@@ -218,13 +239,24 @@ class BrandBuilderAppFrameInstrumentedTest {
                 task!!.moveToFront()
             }
         }
-        val windowFocusDeadline = SystemClock.elapsedRealtime() + 30_000L
+        val focusStart = SystemClock.elapsedRealtime()
+        var windowFocusDeadline = focusStart + 30_000L
+        var nextSystemDialogProbe = 0L
         var webViewWindowFocused = false
         while (!webViewWindowFocused && SystemClock.elapsedRealtime() < windowFocusDeadline) {
             scenario.onActivity { activity ->
                 webViewWindowFocused = findWebView(activity.window.decorView)!!.hasWindowFocus()
             }
-            if (!webViewWindowFocused) SystemClock.sleep(100L)
+            if (!webViewWindowFocused) {
+                val now = SystemClock.elapsedRealtime()
+                if (Build.VERSION.SDK_INT >= 36 && now >= nextSystemDialogProbe) {
+                    nextSystemDialogProbe = now + 1_000L
+                    if (dismissBluetoothCrashDialog()) {
+                        windowFocusDeadline = minOf(focusStart + 60_000L, maxOf(windowFocusDeadline, now + 15_000L))
+                    }
+                }
+                SystemClock.sleep(100L)
+            }
         }
         if (!webViewWindowFocused) {
             var viewState = "unavailable"
@@ -235,14 +267,7 @@ class BrandBuilderAppFrameInstrumentedTest {
                     "decorWindowFocus=${activity.window.decorView.hasWindowFocus()}, " +
                     "webViewAttached=${webView.isAttachedToWindow}, webViewWindowFocus=${webView.hasWindowFocus()}"
             }
-            val windowDump = ParcelFileDescriptor.AutoCloseInputStream(
-                InstrumentationRegistry.getInstrumentation().uiAutomation.executeShellCommand("dumpsys window"),
-            ).bufferedReader().use { reader ->
-                reader.lineSequence()
-                    .filter { it.contains("mCurrentFocus=") || it.contains("mFocusedApp=") }
-                    .take(4)
-                    .joinToString("; ") { it.trim() }
-            }
+            val windowDump = focusedWindowState()
             assertTrue("WebView window must have focus before the IME probe touch ($viewState; $windowDump)", false)
         }
 

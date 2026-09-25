@@ -314,7 +314,9 @@ jobs:
             # These offline tests do not need Google services. Avoid their first-boot
             # work starving instrumentation on the disposable hosted emulator.
             set -e; for package in com.google.android.gms com.google.android.googlequicksearchbox; do if adb shell pm list packages "$package" | grep -Fq "package:$package"; then adb shell pm disable-user --user 0 "$package"; fi; done
-            if [ "${{ matrix.api-level }}" = "36" ]; then adb shell svc power stayon true; fi
+            # The API 36 system Bluetooth service can crash and leave its error dialog above
+            # the AppFrame activity, stealing input focus from the WebView under test.
+            if [ "${{ matrix.api-level }}" = "36" ]; then adb shell svc power stayon true && adb shell svc bluetooth disable; fi
             bash scripts/run-android-connected-tests.sh
             adb install -r crates/glitchpad-host/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk
             adb install -r crates/glitchpad-host/gen/android/app/build/outputs/apk/androidTest/universal/debug/app-universal-debug-androidTest.apk

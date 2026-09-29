@@ -4,6 +4,12 @@
   "productVersion": "0.1.4",
   "introductionRoute": "/docs",
   "compatibilityRoute": "/docs/technical-specification",
+  "compatibilityRoutes": [
+    {
+      "route": "/docs/36-roadmap-beyond-v013",
+      "target": "/docs/36-roadmap-beyond"
+    }
+  ],
   "documentControl": {
     "Status": "Normative corrective community release",
     "Specification version": "0.1.4",
@@ -459,7 +465,7 @@
       "route": "/docs/35-spec-kit-decomposition-and-decision-records",
       "description": "Spec Kit Decomposition and Decision Records requirements from the authoritative Glitchpad Technical Specification.",
       "previousRoute": "/docs/34-brand-system-and-required-brand-kit",
-      "nextRoute": "/docs/36-roadmap-beyond-v014",
+      "nextRoute": "/docs/36-roadmap-beyond",
       "headingAnchors": []
     },
     {
@@ -467,8 +473,8 @@
       "title": "Roadmap Beyond v0.1.4",
       "heading": "36. Roadmap Beyond v0.1.4",
       "anchor": "36-roadmap-beyond-v014",
-      "slug": "36-roadmap-beyond-v014",
-      "route": "/docs/36-roadmap-beyond-v014",
+      "slug": "36-roadmap-beyond",
+      "route": "/docs/36-roadmap-beyond",
       "description": "Roadmap Beyond v0.1.4 requirements from the authoritative Glitchpad Technical Specification.",
       "previousRoute": "/docs/35-spec-kit-decomposition-and-decision-records",
       "nextRoute": "/docs/37-open-questions",
@@ -482,7 +488,7 @@
       "slug": "37-open-questions",
       "route": "/docs/37-open-questions",
       "description": "Open Questions requirements from the authoritative Glitchpad Technical Specification.",
-      "previousRoute": "/docs/36-roadmap-beyond-v014",
+      "previousRoute": "/docs/36-roadmap-beyond",
       "nextRoute": "/docs/38-appendices",
       "headingAnchors": []
     },

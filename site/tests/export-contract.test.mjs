@@ -27,6 +27,8 @@ test('generated documentation manifest covers the complete ordered route set', a
   );
   for (const section of manifest.sections)
     await access(`out${section.route}.html`);
+  for (const { route } of manifest.compatibilityRoutes)
+    await access(`out${route}.html`);
 });
 
 test('GitHub Pages markers are complete', async () => {

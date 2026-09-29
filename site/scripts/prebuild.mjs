@@ -476,7 +476,9 @@ export function buildDocumentation({
   files.set('technical-specification.mdx', renderCompatibilityPage());
   const compatibilityRoutes = [];
   for (const { slug, number } of legacySectionRoutes) {
-    const section = parsed.sections.find((candidate) => candidate.number === number);
+    const section = parsed.sections.find(
+      (candidate) => candidate.number === number,
+    );
     if (!section || section.slug === slug) continue;
     files.set(`${slug}.mdx`, renderLegacySectionPage(section));
     compatibilityRoutes.push({ route: `/docs/${slug}`, target: section.route });

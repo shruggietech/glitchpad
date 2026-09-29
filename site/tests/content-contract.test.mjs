@@ -103,7 +103,11 @@ test('versioned section titles keep stable routes and preserve published links',
   const workspace = JSON.parse(
     await readFile(join(repositoryRoot, 'package.json'), 'utf8'),
   );
-  const documentation = buildDocumentation({ technicalSpecification, workspace, readme });
+  const documentation = buildDocumentation({
+    technicalSpecification,
+    workspace,
+    readme,
+  });
   const roadmap = documentation.manifest.sections[35];
   assert.equal(roadmap.route, '/docs/36-roadmap-beyond');
   assert.deepEqual(documentation.manifest.compatibilityRoutes, [

@@ -133,6 +133,111 @@ fn empty_native_registries_report_no_retained_leases() {
     }
 }
 
+fn assert_android_16_cutout_overlay(workflow: &str) {
+    assert!(
+        workflow.contains("com.android.internal.display.cutout.emulation.corner"),
+        "API 36 cutout evidence must use an overlay shipped by the Android 16 platform"
+    );
+    assert!(
+        !workflow.contains("com.android.internal.display.cutout.emulation.top_and_right"),
+        "API 36 cutout evidence must not depend on the obsolete emulator overlay package"
+    );
+}
+
+fn assert_android_ime_request_paths(workspace: &std::path::Path) {
+    let appframe_test = fs::read_to_string(workspace.join(
+        "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/shell/BrandBuilderAppFrameInstrumentedTest.kt",
+    ))
+    .expect("read AppFrame instrumentation source");
+    let main_activity = fs::read_to_string(workspace.join(
+        "crates/glitchpad-host/gen/android/app/src/main/java/com/shruggietech/glitchpad/MainActivity.kt",
+    ))
+    .expect("read Android main activity source");
+    assert!(
+        appframe_test.contains("windowInsetsController")
+            && appframe_test.contains("WindowInsets.Type.ime()")
+            && appframe_test.contains("showSoftInput")
+            && appframe_test.contains("input.focus()")
+            && appframe_test.contains("document.activeElement === input")
+            && appframe_test.contains("automation.injectInputEvent(down, true)")
+            && appframe_test.contains("automation.injectInputEvent(up, true)")
+            && appframe_test.contains("InputDevice.SOURCE_TOUCHSCREEN")
+            && appframe_test.contains("input.style.top = '50%';"),
+        "AppFrame evidence must focus a safely positioned WebView editor, inject a complete system touch gesture, and retain the native IME requests"
+    );
+    assert!(
+        appframe_test
+            .find("val imeSnapshot = measureIme(scenario)")
+            .expect("IME evidence call")
+            < appframe_test
+                .find("ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE")
+                .expect("landscape evidence call")
+            && appframe_test.contains("hide(WindowInsets.Type.ime())")
+            && appframe_test.contains("hideSoftInputFromWindow"),
+        "IME evidence must run in the initially focused portrait window and clear before orientation changes"
+    );
+
+    assert!(
+        main_activity.contains("installPre139WebViewImeResizeBridge()")
+            && main_activity.contains("webViewMilestone >= 139")
+            && main_activity.contains("WindowInsets.Type.ime()")
+            && main_activity.contains("content.height - imeBottom")
+            && main_activity.contains("return@setOnApplyWindowInsetsListener insets"),
+        "the Android host must resize pre-139 WebViews from real modern IME insets without consuming safe-area dispatch"
+    );
+}
+
+fn assert_android_fixture_ime(workspace: &std::path::Path, workflow: &str) {
+    let fixture_ime = fs::read_to_string(workspace.join(
+        "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/shell/FixtureInputMethodService.kt",
+    ))
+    .expect("read fixture input method source");
+    let test_manifest = fs::read_to_string(
+        workspace.join("crates/glitchpad-host/gen/android/app/src/androidTest/AndroidManifest.xml"),
+    )
+    .expect("read Android test manifest");
+    let instrumentation =
+        fs::read_to_string(workspace.join("scripts/run-android-instrumentation.sh"))
+            .expect("read Android instrumentation wrapper");
+    assert!(
+        fixture_ime.contains("class FixtureInputMethodService : InputMethodService()")
+            && fixture_ime.contains("override fun onEvaluateFullscreenMode(): Boolean = false")
+            && fixture_ime.contains("ViewGroup.LayoutParams.MATCH_PARENT, height"),
+        "AppFrame evidence must use a bounded test-only IME with deterministic resize geometry"
+    );
+    assert!(
+        test_manifest.contains("com.shruggietech.glitchpad.shell.FixtureInputMethodService")
+            && test_manifest.contains("android.permission.BIND_INPUT_METHOD")
+            && test_manifest.contains("@xml/fixture_input_method"),
+        "the Android test APK must declare the deterministic fixture input method"
+    );
+
+    let fixture_ime_selection = workflow
+        .find("adb shell ime set 'com.shruggietech.glitchpad.test/com.shruggietech.glitchpad.shell.FixtureInputMethodService'")
+        .expect("CI must select the deterministic test input method");
+    let appframe_evidence = workflow
+        .rfind("com.shruggietech.glitchpad.shell.BrandBuilderAppFrameInstrumentedTest")
+        .expect("AppFrame evidence invocation should be present");
+    assert!(
+        workflow.contains(
+            "adb shell ime enable 'com.shruggietech.glitchpad.test/com.shruggietech.glitchpad.shell.FixtureInputMethodService'",
+        )
+            && workflow.contains(
+                "adb shell settings get secure default_input_method | grep -Fqx 'com.shruggietech.glitchpad.test/com.shruggietech.glitchpad.shell.FixtureInputMethodService'",
+            )
+            && fixture_ime_selection < appframe_evidence,
+        "CI must enable, select, and verify the fixture IME immediately before AppFrame evidence"
+    );
+    assert!(
+        workflow.contains(
+            "ANDROID_INSTRUMENTATION_PRESERVE_TEST_INPUT_METHOD=true bash scripts/run-android-instrumentation.sh \"$RUNNER_TEMP/appframe-evidence.txt\"",
+        ) && instrumentation.contains(
+            "if [[ \"${ANDROID_INSTRUMENTATION_PRESERVE_TEST_INPUT_METHOD:-false}\" != \"true\" ]]; then",
+        ),
+        "AppFrame evidence must preserve the selected test-APK IME while resetting the product process"
+    );
+}
+
 #[test]
 fn android_emulator_uses_supported_software_rendering() {
     let workspace = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
@@ -153,6 +258,9 @@ fn android_emulator_uses_supported_software_rendering() {
         workflow.contains("-gpu swiftshader -feature -Vulkan"),
         "Android instrumentation must use the supported software renderer with Vulkan disabled"
     );
+    assert_android_16_cutout_overlay(&workflow);
+    assert_android_ime_request_paths(&workspace);
+    assert_android_fixture_ime(&workspace, &workflow);
     assert!(
         !workflow.contains("swiftshader_indirect"),
         "deprecated indirect rendering reintroduces emulator teardown crashes"
@@ -189,6 +297,11 @@ fn android_emulator_uses_supported_software_rendering() {
         connected_tests
             .contains("com.shruggietech.glitchpad.source.AndroidDeliveryInstrumentedTest",),
         "standalone delivery tests must not share a process with the connected provider suite"
+    );
+    assert!(
+        connected_tests
+            .contains("com.shruggietech.glitchpad.shell.BrandBuilderAppFrameInstrumentedTest",),
+        "standalone AppFrame tests must not tear down the shared connected provider suite"
     );
     assert!(
         connected_tests.contains("for attempt in 1 2; do"),

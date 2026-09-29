@@ -1,0 +1,16 @@
+{
+  "$schema": "release-impact.schema.json",
+  "schema_version": 1,
+  "brandbuilder_version": "2.0.3",
+  "identity_redesign": false,
+  "surfaces": {
+    "identity": {"classification": "unaffected", "summary": "Approved logo geometry, source bytes, ownership, and affiliation are unchanged. Glitchpad 1.1.1 and ESO Weave 1.0.2 advance package versions for native role presentation without identity redesign."},
+    "palette": {"classification": "required", "summary": "Consumers using generated semantic color roles must repin the rebuilt kit and retain its measured surface-specific values."},
+    "typography": {"classification": "required", "summary": "Consumers using generated typography bindings must repin the rebuilt kit and its local font declarations."},
+    "platform_assets": {"classification": "required", "summary": "Web, Android, and Windows consumers of affected icon roles must regenerate and repin assets; other platform assets remain optional."},
+    "web_react": {"classification": "optional", "summary": "Web and React consumers may adopt the AppFrame and environment contracts when they use those generated surfaces."},
+    "egui": {"classification": "required", "summary": "Native Rust consumers using status or disabled controls should regenerate and repin egui adapter 1.0.2 for explicit readable text roles; ESO Weave must fix its local strong-label call separately."},
+    "documentation": {"classification": "required", "summary": "Readers and consumers using generated guidance should repin the rebuilt kit for native icon role, egui status, and exact-version bundle instructions."},
+    "recovery": {"classification": "required", "summary": "Consumers retaining a kit must preserve the delivered checksummed BrandBuilder recovery bytes and canonical immutable package identity."}
+  }
+}

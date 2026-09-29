@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
@@ -12,13 +13,44 @@ import {
   verifyPngHeader,
   verifyPublicCopy,
   verifyReadmeBanner,
+  verifyReleaseReceipt,
+  verifyWebIconRoles,
 } from './check-brand.mjs';
+import { isSafeBrandPath, releasePin } from './brand-kit-contract.mjs';
+import {
+  agentContractContext,
+  agentContractEnd,
+  agentContractStart,
+  mergeAgentContract,
+  verifyAgentContract,
+} from './brand-agent-contract.mjs';
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const canonicalBanner = `<picture>
   <source media="(prefers-color-scheme: dark)" srcset="brand/logos/png/glitchpad-horizontal-color-1024.png">
   <img src="brand/logos/png/glitchpad-horizontal-light-1024.png" alt="Glitchpad" width="480">
 </picture>`;
+
+test('generated agent contract merge preserves project-owned instructions', () => {
+  const original = '# Project rules\n\nKeep this human rule.\n';
+  const generated = '# Brand rules\n\nUse the generated adapter.\n';
+  const merged = mergeAgentContract(original, generated);
+  assert.match(merged, /Keep this human rule\./);
+  assert.match(merged, new RegExp(agentContractStart));
+  assert.match(merged, new RegExp(agentContractEnd));
+  assert.ok(merged.includes(agentContractContext));
+  assert.deepEqual(verifyAgentContract(merged, generated), []);
+});
+
+test('generated agent contract merge replaces one stale block idempotently', () => {
+  const original = `# Project rules\n\n${agentContractStart}\nold\n${agentContractEnd}\n`;
+  const merged = mergeAgentContract(original, 'new');
+  assert.equal(mergeAgentContract(merged, 'new'), merged);
+  assert.deepEqual(verifyAgentContract(merged, 'new'), []);
+  assert.deepEqual(verifyAgentContract(merged, 'different'), [
+    'root AGENTS.md generated BrandBuilder agent contract is stale',
+  ]);
+});
 
 function readmeWithCenteredBanner(banner, afterHeading = '') {
   return `<div align="center">
@@ -39,12 +71,55 @@ test('embedded brand guidance retains reachable pinned legal terms', async () =>
   ]);
   const integration = JSON.parse(integrationSource);
   assert.doesNotMatch(readme, /\.\.\/\.\.\/LICENSE-BRAND\.md/);
-  assert.match(
-    readme,
-    new RegExp(
-      `shruggie-brand/${integration.sourceRevision}/LICENSE-BRAND\\.md`,
-    ),
+  assert.match(readme, /\[brand asset terms\]\(LICENSE-BRAND\.md\)/);
+  assert.equal(integration.packageId, releasePin.packageId);
+});
+
+test('release receipt rejects a stale archive or source revision', async () => {
+  const [receipt, bundle, consumer, manifest] = await Promise.all([
+    readFile(join(repositoryRoot, 'brand', 'INTEGRATION.json'), 'utf8'),
+    readFile(join(repositoryRoot, 'brand', 'enforcement', 'bundle.json'), 'utf8'),
+    readFile(join(repositoryRoot, 'brand', 'enforcement', 'consumer-contract.json'), 'utf8'),
+    readFile(join(repositoryRoot, 'brand', 'manifest.json')),
+  ]);
+  const canonical = JSON.parse(receipt);
+  const args = [
+    JSON.parse(bundle),
+    JSON.parse(consumer),
+    createHash('sha256').update(manifest).digest('hex'),
+  ];
+  assert.deepEqual(verifyReleaseReceipt(canonical, ...args), []);
+  assert.ok(
+    verifyReleaseReceipt({ ...canonical, archiveSha256: '0'.repeat(64) }, ...args)
+      .some((problem) => problem.includes('archive checksum')),
   );
+  assert.ok(
+    verifyReleaseReceipt({ ...canonical, sourceRevision: '0'.repeat(40) }, ...args)
+      .some((problem) => problem.includes('source revision')),
+  );
+  assert.ok(
+    verifyReleaseReceipt(
+      { ...canonical, integratedManifestSha256: '0'.repeat(64) },
+      ...args,
+    ).some((problem) => problem.includes('integrated manifest checksum')),
+  );
+});
+
+test('brand paths reject traversal, absolute paths, and Windows drive paths', () => {
+  for (const path of ['../mark.svg', '/mark.svg', 'C:/mark.svg', 'a//mark.svg', 'a\\mark.svg']) {
+    assert.equal(isSafeBrandPath(path), false, path);
+  }
+  assert.equal(isSafeBrandPath('icons/web/maskable-icon-192x192.png'), true);
+});
+
+test('web icon roles distinguish ordinary and maskable artwork', async () => {
+  const manifest = JSON.parse(
+    await readFile(join(repositoryRoot, 'brand', 'icons', 'web', 'site.webmanifest'), 'utf8'),
+  );
+  assert.deepEqual(verifyWebIconRoles(manifest), []);
+  const stale = structuredClone(manifest);
+  stale.icons[0].purpose = 'any maskable';
+  assert.ok(verifyWebIconRoles(stale).some((problem) => problem.includes('icon roles')));
 });
 
 test('system theme receives light brand tokens under a light OS', async () => {
@@ -271,10 +346,10 @@ test('README raster geometry rejects clipped or invalid assets', () => {
   const png = Buffer.alloc(24);
   Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]).copy(png);
   png.writeUInt32BE(1024, 16);
-  png.writeUInt32BE(259, 20);
+  png.writeUInt32BE(258, 20);
   assert.deepEqual(verifyPngHeader(png, 'lockup.png'), []);
   png.writeUInt32BE(40, 16);
-  assert.match(verifyPngHeader(png, 'lockup.png')[0], /unexpected 40x259/);
+  assert.match(verifyPngHeader(png, 'lockup.png')[0], /unexpected 40x258/);
 });
 
 test('online freshness rejects same-version derivative drift', async () => {

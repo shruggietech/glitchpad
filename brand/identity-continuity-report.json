@@ -1,0 +1,12 @@
+{
+  "brand": "glitchpad",
+  "record_file_sha256": "88f49054b15632fcd6dec7a3295f8fcd52193744bdafe723268b35815558c605",
+  "record_path": "identity-continuity.json",
+  "record_sha256": "f73fee748c96c5b29288206a66688b6cef2b428fd1817c13c26d2b179f47a2da",
+  "report_sha256": "d357a233a051d8a784aac179f781914cf03907b7fadc4c46cf3e3130c44d9083",
+  "schema_version": 1,
+  "snapshot_sha256": "3af46b18cdab7924889677432fd6b88479f7fe2539c291a56ed1aa1faa5d5007",
+  "source_class": "legacy-constructed",
+  "status": "historical-baseline",
+  "validation": "passed"
+}

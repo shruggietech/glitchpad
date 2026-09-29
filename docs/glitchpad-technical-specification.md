@@ -949,7 +949,7 @@ Shortcuts MUST yield to platform-reserved behavior and remain discoverable in co
 - [Node.js release schedule](https://nodejs.org/en/about/previous-releases)
 - [Rust 1.96.0 release](https://blog.rust-lang.org/2026/05/28/Rust-1.96.0/)
 - [Vite requirements](https://vite.dev/guide/)
-- [CodeMirror system guide](https://codemirror.net/docs/guide/)
+- [CodeMirror system guide](https://github.com/codemirror/website/blob/main/site/docs/guide/index.md)
 - [Mermaid API usage](https://mermaid.js.org/config/usage)
 - [Mermaid security levels](https://mermaid.js.org/config/schema-docs/config-properties-securitylevel.html)
 - [Mermaid secure configuration](https://mermaid.js.org/config/schema-docs/config-properties-secure.html)

@@ -4,6 +4,10 @@ All notable changes to Glitchpad are documented in this file. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- Adopted the pinned BrandBuilder AppFrame as Glitchpad's single web-shell owner, including generated safe-area and IME geometry, exact agent governance, and real Android WebView evidence across the governed API profiles.
+
 ## [0.1.3] - 2026-09-11
 
 ### Changed

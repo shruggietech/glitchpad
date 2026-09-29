@@ -1,6 +1,8 @@
 @import '../../../brand/fonts/fonts.css';
 @import '../../../brand/tokens/colors.css';
 @import '../../../brand/tokens/typography.css';
+@import '../../../brand/tokens/interface.css';
+@import '../../../brand/web/components.css';
 
 :root {
   font-family: var(--gl-font-body);
@@ -33,9 +35,7 @@ body,
 #root {
   width: 100%;
   min-width: 320px;
-  height: 100%;
   margin: 0;
-  overflow: hidden;
 }
 
 button {

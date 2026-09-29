@@ -11,66 +11,59 @@ import {
 
 const finalHandoff = () => ({
   releaseNotes:
-    'S035 resolves installed-package issues #171 and #172 before the S038 release boundary.',
+    'S042 imports BrandBuilder with AppFrame. Stable images wait for #75 and #76.',
   releaseReceipt:
-    '| Practical-use recovery slice | S035 |\n| Final release authority slice | S038 |\n| Included corrective issues | #171 and #172 |',
+    '| Brand slice | S042 BrandBuilder and AppFrame |\n| Deferred image gates | #75 and #76 |',
   operatorRunbook:
-    '1. Confirm the S038 pull request is merged after S035 issues #171 and #172 at the reviewed S038 merge commit.\n5. Create the annotated tag `v0.1.3` on the reviewed S038 merge commit and push only that tag.',
+    '1. Confirm the v0.1.4 release pull request is merged at the reviewed v0.1.4 merge commit with S042 BrandBuilder and AppFrame.\n5. Create the annotated tag `v0.1.4` on the reviewed v0.1.4 merge commit and push only that tag.',
   changelog:
-    'S035 fixed installed-package Markdown recovery (#171) and reserved shell chrome (#172) before release.',
+    'S042 adopted BrandBuilder and AppFrame before release.',
 });
 
-test('accepts the final S038 release handoff', () =>
+test('accepts the final v0.1.4 release handoff', () =>
   assert.equal(validateFinalReleaseHandoff(finalHandoff()), true));
 
 for (const [name, mutate, expected] of [
   [
-    'stale S034 tag target',
+    'stale release authority',
     (handoff) => {
       handoff.operatorRunbook = handoff.operatorRunbook.replaceAll(
-        'S038',
-        'S034',
+        'v0.1.4 merge commit',
+        'prior merge commit',
       );
     },
-    /S038 release authority/u,
+    /v0.1.4 release authority/u,
   ],
   [
-    'tag instruction targeting S035',
+    'tag instruction targeting another commit',
     (handoff) => {
       handoff.operatorRunbook = handoff.operatorRunbook.replace(
-        'on the reviewed S038 merge commit and push only that tag',
-        'on the reviewed S035 merge commit and push only that tag',
+        'on the reviewed v0.1.4 merge commit and push only that tag',
+        'on a different merge commit and push only that tag',
       );
     },
-    /tag instruction does not target S038/u,
+    /tag instruction does not target v0.1.4/u,
   ],
   [
-    'missing S035 traceability',
+    'missing S042 traceability',
     (handoff) => {
-      handoff.releaseNotes = handoff.releaseNotes.replace('S035', 'S034');
+      handoff.releaseNotes = handoff.releaseNotes.replace('S042', 'S041');
     },
-    /S035 practical-use remediation/u,
+    /S042 brand integration/u,
   ],
   [
-    'missing issue 171 traceability',
+    'missing AppFrame traceability',
     (handoff) => {
-      handoff.releaseReceipt = handoff.releaseReceipt.replace('#171', '#170');
+      handoff.releaseReceipt = handoff.releaseReceipt.replace('AppFrame', 'shell');
     },
-    /issue #171/u,
+    /AppFrame adoption/u,
   ],
   [
-    'missing issue 172 traceability from the operator runbook',
+    'missing image conformance boundary',
     (handoff) => {
-      handoff.operatorRunbook = handoff.operatorRunbook.replace('#172', '#170');
+      handoff.releaseNotes = handoff.releaseNotes.replace('#75', '#74');
     },
-    /operator runbook omits issue #172/u,
-  ],
-  [
-    'missing issue 172 traceability from the changelog',
-    (handoff) => {
-      handoff.changelog = handoff.changelog.replace('#172', '#170');
-    },
-    /changelog omits issue #172/u,
+    /deferred image gate #75/u,
   ],
 ]) {
   test(`rejects a final handoff with ${name}`, () => {
@@ -82,12 +75,12 @@ for (const [name, mutate, expected] of [
 
 const contract = () => ({
   schema_version: 1,
-  version: '0.1.3',
-  tag: 'v0.1.3',
+  version: '0.1.4',
+  tag: 'v0.1.4',
   repository: 'shruggietech/glitchpad',
   artifacts: Array.from(
     { length: 8 },
-    (_, index) => `glitchpad-0.1.3-${index}`,
+    (_, index) => `glitchpad-0.1.4-${index}`,
   ),
   trust_states: {
     windows: 'unsigned_community',
@@ -186,7 +179,7 @@ test('rejects paid desktop credentials', () =>
   assert.throws(
     () =>
       validateGovernedClaims({
-        releaseWorkflow: "workflow_dispatch:\n- 'v0.1.3'\nAPPLE_API_KEY",
+        releaseWorkflow: "workflow_dispatch:\n- 'v0.1.4'\nAPPLE_API_KEY",
         windowsContract: {
           official: {
             trust_state: 'unsigned_community',

@@ -21,9 +21,9 @@ test('active public authority rejects the legacy v0.1.2 identity', async () => {
   const sources = await loadPublicSources();
   const errors = verifyPublicSources({
     ...sources,
-    readme: sources.readme.replaceAll('0.1.3', '0.1.2'),
+    readme: sources.readme.replaceAll('0.1.4', '0.1.2'),
   });
-  assert.match(errors.join('\n'), /0\.1\.3|current release identity/u);
+  assert.match(errors.join('\n'), /0\.1\.4|current release identity/u);
 });
 
 for (const [name, mutate, expected] of [
@@ -68,11 +68,11 @@ for (const [name, mutate, expected] of [
     'stale specification date',
     (sources) => {
       sources.specification = sources.specification.replace(
-        '| Updated | 2026-09-11 |',
+        '| Updated | 2026-09-29 |',
         '| Updated | 2026-08-30 |',
       );
     },
-    /missing \| Updated \| 2026-09-11/,
+    /missing \| Updated \| 2026-09-29/,
   ],
   [
     'primary support navigation',
@@ -85,8 +85,8 @@ for (const [name, mutate, expected] of [
     'premature main deployment authority',
     (sources) => {
       sources.workflow = sources.workflow.replaceAll(
-        "inputs.deploy && inputs.release_tag == 'v0.1.3'",
-        "(github.event_name == 'push' && github.ref == 'refs/heads/main') || (inputs.deploy && inputs.release_tag == 'v0.1.3')",
+        "inputs.deploy && inputs.release_tag == 'v0.1.4'",
+        "(github.event_name == 'push' && github.ref == 'refs/heads/main') || (inputs.deploy && inputs.release_tag == 'v0.1.4')",
       );
     },
     /exact trusted deployment authority/,

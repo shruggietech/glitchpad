@@ -89,7 +89,7 @@ async function releaseFixture() {
   await mkdir(input);
   const artifacts = Array.from(
     { length: 8 },
-    (_, index) => `glitchpad-0.1.3-${index}.bin`,
+    (_, index) => `glitchpad-0.1.4-${index}.bin`,
   );
   for (const name of artifacts) await writeFile(join(input, name), name);
   const trustStates = {
@@ -145,8 +145,8 @@ async function releaseFixture() {
   await writeFile(
     contractPath,
     JSON.stringify({
-      version: '0.1.3',
-      tag: 'v0.1.3',
+      version: '0.1.4',
+      tag: 'v0.1.4',
       repository: 'shruggietech/glitchpad',
       artifacts,
       trust_states: trustStates,
@@ -169,7 +169,7 @@ test('assembles exactly the declared artifact and practical-use evidence set', a
   assert.deepEqual(manifest.practical_use_evidence, practicalUseEvidence);
   assert.match(
     await readFile(join(fixture.output, 'SHA256SUMS'), 'utf8'),
-    /glitchpad-0\.1\.3-7\.bin/u,
+    /glitchpad-0\.1\.4-7\.bin/u,
   );
 });
 
@@ -178,8 +178,8 @@ test('rejects a missing practical-use receipt', async () => {
   await writeFile(
     fixture.contractPath,
     JSON.stringify({
-      version: '0.1.3',
-      tag: 'v0.1.3',
+      version: '0.1.4',
+      tag: 'v0.1.4',
       repository: 'shruggietech/glitchpad',
       artifacts: fixture.artifacts,
       trust_states: {

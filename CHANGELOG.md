@@ -4,9 +4,17 @@ All notable changes to Glitchpad are documented in this file. The format follows
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-09-29
+
+### Added
+
+- Included the S039 and S040 image preview, metadata, animation, SVG, and selected ICO export implementations for in-app use. Stable image support and operating-system associations remain at the v0.2.0 conformance gate.
+
 ### Changed
 
-- Adopted the pinned BrandBuilder AppFrame as Glitchpad's single web-shell owner, including generated safe-area and IME geometry, exact agent governance, and real Android WebView evidence across the governed API profiles.
+- Adopted the pinned BrandBuilder AppFrame as Glitchpad's single web-shell owner, including generated safe-area and IME geometry, exact agent governance, and Android WebView evidence across the governed API profiles.
+- Imported the formally released Glitchpad brand 1.1.1 kit in S042 from BrandBuilder 2.0.3, with separate maskable web icons and refreshed Android launcher artwork.
+- Updated compatible npm, Cargo, and Gradle wrapper dependencies with platform validation.
 
 ## [0.1.3] - 2026-09-11
 

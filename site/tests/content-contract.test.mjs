@@ -152,7 +152,7 @@ test('canonical technical specification produces exactly 38 ordered focused page
   );
   assert.match(
     documentation.files.get('index.mdx'),
-    /\| Updated \| 2026-09-11 \|/,
+    /\| Updated \| 2026-09-29 \|/,
   );
   assert.doesNotMatch(
     [...documentation.files.values()].join('\n'),

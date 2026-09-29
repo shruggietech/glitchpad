@@ -137,7 +137,7 @@ export async function checkConfiguration(
     ['protected Pages environment', /^\s*name:\s*github-pages\s*$/m],
     [
       'exact publisher deployment condition',
-      /inputs\.deploy[\s\S]*inputs\.release_tag == 'v0\.1\.3'/,
+      /inputs\.deploy[\s\S]*inputs\.release_tag == 'v0\.1\.4'/,
     ],
     [
       'shared Pages deployment group',
@@ -150,9 +150,9 @@ export async function checkConfiguration(
     }
   }
   const expectedUploadCondition =
-    "inputs.deploy && inputs.release_tag == 'v0.1.3' && steps.release_authority.outputs.authorized == 'true'";
+    "inputs.deploy && inputs.release_tag == 'v0.1.4' && steps.release_authority.outputs.authorized == 'true'";
   const expectedDeploymentCondition =
-    "inputs.deploy && inputs.release_tag == 'v0.1.3' && needs.build.outputs.release_authorized == 'true'";
+    "inputs.deploy && inputs.release_tag == 'v0.1.4' && needs.build.outputs.release_authorized == 'true'";
   const normalizeExpression = (value) =>
     typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : '';
   const uploadStep = parsedDocsWorkflow.jobs?.build?.steps?.find(
@@ -288,7 +288,7 @@ export async function checkConfiguration(
       /^\s*uses:\s*\.\/\.github\/workflows\/docs\.yml\s*$/m,
     ],
     ['deployment authorization', /^\s*deploy:\s*true\s*$/m],
-    ['exact release tag input', /^\s*release_tag:\s*v0\.1\.3\s*$/m],
+    ['exact release tag input', /^\s*release_tag:\s*v0\.1\.4\s*$/m],
   ]) {
     if (!pattern.test(releaseWorkflow)) {
       throw new Error(`Invalid release workflow contract: missing ${label}`);

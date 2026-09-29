@@ -9,8 +9,8 @@ const text = async (path) => readFile(path, 'utf8');
 export function validateReleaseContract(contract) {
   if (
     contract.schema_version !== 1 ||
-    contract.version !== '0.1.3' ||
-    contract.tag !== 'v0.1.3' ||
+    contract.version !== '0.1.4' ||
+    contract.tag !== 'v0.1.4' ||
     contract.repository !== 'shruggietech/glitchpad'
   )
     throw new Error('release identity is invalid');
@@ -20,7 +20,7 @@ export function validateReleaseContract(contract) {
     new Set(contract.artifacts).size !== 8
   )
     throw new Error('release must declare exactly eight unique artifacts');
-  if (contract.artifacts.some((name) => !name.includes('0.1.3')))
+  if (contract.artifacts.some((name) => !name.includes('0.1.4')))
     throw new Error('artifact version is stale');
   const expectedTrust = {
     windows: 'unsigned_community',
@@ -158,38 +158,30 @@ export function validateFinalReleaseHandoff({
 }) {
   const tagInstruction = operatorRunbook.match(/^5\.\s+(.+)$/mu)?.[1] ?? '';
   if (
-    !operatorRunbook.includes('S038 pull request is merged') ||
-    !operatorRunbook.includes('reviewed S038 merge commit') ||
-    /reviewed S034 merge commit|S034 pull request is merged/u.test(
-      operatorRunbook,
-    )
+    !operatorRunbook.includes('v0.1.4 release pull request is merged') ||
+    !operatorRunbook.includes('reviewed v0.1.4 merge commit')
   )
-    throw new Error('final handoff omits the S038 release authority');
+    throw new Error('final handoff omits the v0.1.4 release authority');
   if (
     tagInstruction !==
-    'Create the annotated tag `v0.1.3` on the reviewed S038 merge commit and push only that tag.'
+    'Create the annotated tag `v0.1.4` on the reviewed v0.1.4 merge commit and push only that tag.'
   )
-    throw new Error('final handoff tag instruction does not target S038');
+    throw new Error('final handoff tag instruction does not target v0.1.4');
   for (const [source, content] of [
     ['release notes', releaseNotes],
     ['release receipt', releaseReceipt],
     ['operator runbook', operatorRunbook],
     ['changelog', changelog],
   ]) {
-    if (!content.includes('S035'))
-      throw new Error(`${source} omits the S035 practical-use remediation`);
-    if (!content.includes('#171'))
-      throw new Error(`${source} omits issue #171`);
-    if (!content.includes('#172'))
-      throw new Error(`${source} omits issue #172`);
+    if (!content.includes('S042'))
+      throw new Error(`${source} omits S042 brand integration`);
+    if (!content.includes('AppFrame'))
+      throw new Error(`${source} omits AppFrame adoption`);
   }
-  if (!releaseReceipt.includes('S035') || !releaseReceipt.includes('S038'))
-    throw new Error('release receipt omits the final slice chain');
-  if (
-    !changelog.includes('Markdown recovery') ||
-    !changelog.includes('reserved shell chrome')
-  )
-    throw new Error('changelog omits the practical-use corrections');
+  for (const issue of ['#75', '#76']) {
+    if (!releaseNotes.includes(issue) || !releaseReceipt.includes(issue))
+      throw new Error(`release handoff omits deferred image gate ${issue}`);
+  }
   return true;
 }
 
@@ -210,7 +202,7 @@ export function validateGovernedClaims({
   if (forbidden.some((value) => releaseWorkflow.includes(value)))
     throw new Error('paid desktop authority remains in the release workflow');
   if (
-    !releaseWorkflow.includes("- 'v0.1.3'") ||
+    !releaseWorkflow.includes("- 'v0.1.4'") ||
     !releaseWorkflow.includes('workflow_dispatch:')
   )
     throw new Error('release event guards are incomplete');
@@ -319,9 +311,9 @@ export async function checkCommunityRelease(repositoryRoot = root) {
     loadJson(join(repositoryRoot, 'packaging/android/package-contract.json')),
     text(join(repositoryRoot, '.github/workflows/release.yml')),
     text(join(repositoryRoot, 'scripts/check-release-readiness.ps1')),
-    text(join(repositoryRoot, 'docs/releases/v0.1.3.md')),
-    text(join(repositoryRoot, 'docs/releases/v0.1.3-receipt.md')),
-    text(join(repositoryRoot, 'docs/releases/v0.1.3-operator-runbook.md')),
+    text(join(repositoryRoot, 'docs/releases/v0.1.4.md')),
+    text(join(repositoryRoot, 'docs/releases/v0.1.4-receipt.md')),
+    text(join(repositoryRoot, 'docs/releases/v0.1.4-operator-runbook.md')),
     text(join(repositoryRoot, 'CHANGELOG.md')),
     text(join(repositoryRoot, '.github/workflows/android-package.yml')),
     text(join(repositoryRoot, '.github/workflows/macos-package.yml')),
@@ -362,5 +354,5 @@ export async function checkCommunityRelease(repositoryRoot = root) {
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   await checkCommunityRelease();
-  console.log('v0.1.3 community release policy is internally consistent.');
+  console.log('v0.1.4 community release policy is internally consistent.');
 }

@@ -16,6 +16,7 @@ const docsDirectory = join(siteRoot, 'content', 'docs');
 const generatedDirectory = join(siteRoot, 'lib', 'generated');
 const canonicalSource = 'docs/glitchpad-technical-specification.md';
 const generatedMarker = `{/* Generated from ${canonicalSource}. Do not edit this derived page. */}`;
+const legacySectionRoutes = [{ slug: '36-roadmap-beyond-v013', number: 36 }];
 
 function normalizeSource(source) {
   return source.replace(/^\uFEFF/, '').replaceAll('\r\n', '\n');
@@ -89,7 +90,7 @@ export function headingAnchor(source) {
 }
 
 function routeSlug(number, title) {
-  const readable = headingAnchor(title);
+  const readable = headingAnchor(title.replace(/ v\d+\.\d+\.\d+$/, ''));
   if (!readable)
     throw new Error(`Section ${number} title cannot produce a readable route`);
   return `${String(number).padStart(2, '0')}-${readable}`;
@@ -436,6 +437,16 @@ The Technical Specification is now presented as focused, ordered project documen
 `;
 }
 
+function renderLegacySectionPage(section) {
+  return `${frontmatter(
+    `${section.number}. ${section.title} moved`,
+    `Continue to the current ${section.title} section of the Glitchpad Technical Specification.`,
+  )}${generatedMarker}
+
+This section has a permanent route. [Open ${section.title}](${section.route}).
+`;
+}
+
 export function buildDocumentation({
   technicalSpecification,
   workspace,
@@ -463,6 +474,15 @@ export function buildDocumentation({
     });
   }
   files.set('technical-specification.mdx', renderCompatibilityPage());
+  const compatibilityRoutes = [];
+  for (const { slug, number } of legacySectionRoutes) {
+    const section = parsed.sections.find(
+      (candidate) => candidate.number === number,
+    );
+    if (!section || section.slug === slug) continue;
+    files.set(`${slug}.mdx`, renderLegacySectionPage(section));
+    compatibilityRoutes.push({ route: `/docs/${slug}`, target: section.route });
+  }
   files.set(
     'meta.json',
     `${JSON.stringify(
@@ -480,6 +500,7 @@ export function buildDocumentation({
     productVersion: workspace.version,
     introductionRoute: '/docs',
     compatibilityRoute: '/docs/technical-specification',
+    compatibilityRoutes,
     documentControl: Object.fromEntries(
       parsed.documentControl.rows.map(({ field, value }) => [field, value]),
     ),

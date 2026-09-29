@@ -76,6 +76,7 @@ export async function auditExport() {
     manifest.introductionRoute,
     ...expectedSectionRoutes,
     manifest.compatibilityRoute,
+    ...manifest.compatibilityRoutes.map(({ route }) => route),
     '/license',
     '/support',
     '/security',
@@ -88,6 +89,7 @@ export async function auditExport() {
     manifest.introductionRoute,
     ...expectedSectionRoutes,
     manifest.compatibilityRoute,
+    ...manifest.compatibilityRoutes.map(({ route }) => route),
   ]);
   for (const route of routes.filter((candidate) =>
     candidate.startsWith('/docs'),
@@ -171,6 +173,11 @@ export async function auditExport() {
     problems.push(
       'legacy route still contains monolithic specification content',
     );
+  for (const { route, target } of manifest.compatibilityRoutes) {
+    const source = htmlByRoute.get(route) ?? '';
+    if (!source.includes(`href="${target}"`))
+      problems.push(`legacy route does not lead to ${target}: ${route}`);
+  }
 
   for (const [route, source] of htmlByRoute) {
     const hrefs = [...source.matchAll(/\shref="([^"]+)"/g)].map((match) =>

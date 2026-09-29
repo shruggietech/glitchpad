@@ -94,6 +94,34 @@ test('technical specification parser preserves literal trailing heading hashes',
   assert.equal(parsed.sections[0].slug, '01-c');
 });
 
+test('versioned section titles keep stable routes and preserve published links', async () => {
+  const technicalSpecification = await readFile(
+    join(repositoryRoot, 'docs', 'glitchpad-technical-specification.md'),
+    'utf8',
+  );
+  const readme = await readFile(join(repositoryRoot, 'README.md'), 'utf8');
+  const workspace = JSON.parse(
+    await readFile(join(repositoryRoot, 'package.json'), 'utf8'),
+  );
+  const documentation = buildDocumentation({
+    technicalSpecification,
+    workspace,
+    readme,
+  });
+  const roadmap = documentation.manifest.sections[35];
+  assert.equal(roadmap.route, '/docs/36-roadmap-beyond');
+  assert.deepEqual(documentation.manifest.compatibilityRoutes, [
+    {
+      route: '/docs/36-roadmap-beyond-v013',
+      target: roadmap.route,
+    },
+  ]);
+  assert.match(
+    documentation.files.get('36-roadmap-beyond-v013.mdx'),
+    /\[Open Roadmap Beyond v0\.1\.4\]\(\/docs\/36-roadmap-beyond\)/,
+  );
+});
+
 test('documentation rendering rewrites owned fragments and preserves fenced examples', () => {
   const documentation = buildDocumentation({
     technicalSpecification: fixture,
@@ -118,7 +146,7 @@ test('documentation rendering rewrites owned fragments and preserves fenced exam
   assert.doesNotMatch(first, /Table of Contents/);
 });
 
-test('canonical technical specification produces exactly 38 ordered focused pages', async () => {
+test('canonical technical specification produces 38 ordered sections and one legacy section route', async () => {
   const source = await readFile(
     join(repositoryRoot, 'docs', 'glitchpad-technical-specification.md'),
     'utf8',
@@ -140,7 +168,7 @@ test('canonical technical specification produces exactly 38 ordered focused page
   assert.equal(
     [...documentation.files].filter(([name]) => /^\d{2}-.+\.mdx$/.test(name))
       .length,
-    38,
+    39,
   );
   assert.match(
     documentation.files.get('01-document-control-and-authority.mdx'),
@@ -152,7 +180,7 @@ test('canonical technical specification produces exactly 38 ordered focused page
   );
   assert.match(
     documentation.files.get('index.mdx'),
-    /\| Updated \| 2026-09-11 \|/,
+    /\| Updated \| 2026-09-29 \|/,
   );
   assert.doesNotMatch(
     [...documentation.files.values()].join('\n'),
@@ -398,7 +426,7 @@ test('landing copy keeps the current release, canonical brand, and navigation co
     join(siteRoot, 'components', 'footer.tsx'),
     'utf8',
   );
-  assert.match(home, /v0\.1\.3 community release/i);
+  assert.match(home, /v0\.1\.4 community release/i);
   assert.match(home, /View your files\./);
   assert.match(
     home,

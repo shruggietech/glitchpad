@@ -76,7 +76,7 @@ The candidate audit found50 advisories across site/build tooling (2 critical,16 
 
 ### 2026-11-02: Failure artifact namespaces
 
-Always-uploaded failed Windows/macOS evidence must not reserve a later successful artifact name or enter the release gather pattern. Prefix failed/cancelled uploads with their run-attempt number, retaining successful canonical names and every failed archive. Keep macOS failed receipts outside the existing glitchpad-* publication gathering pattern. No lifecycle timeout, retry policy or assertion changes accompany this correction.
+Always-uploaded failed Windows/macOS evidence must remain distinguishable from successful evidence and outside the release gather pattern. The Windows retry retained a second archive under the same canonical name (upload succeeded); the correction addresses ambiguous selection and macOS merged-file gathering, rather than an observed upload conflict. Prefix failed/cancelled uploads with their run-attempt number, retaining successful canonical names and every failed archive. Keep macOS failed receipts outside the existing glitchpad-* publication gathering pattern. No lifecycle timeout, retry policy or assertion changes accompany this correction.
 
 ### 2026-11-02: Hosted Windows visibility precondition
 

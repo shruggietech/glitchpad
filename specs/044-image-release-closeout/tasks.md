@@ -35,7 +35,7 @@
 - [x] T010 [US2] Implement exact published-baseline comparison and always-upload evidence in `scripts/macos/compare-startup.mjs`/`.github/workflows/macos-package.yml` (FR-003/FR-008).
 - [x] T011 [P] [US2] Add tested content-free portable startup diagnostics in `scripts/windows/test-portable-lifecycle.ps1` and diagnostic helper/tests (FR-006).
 - [x] T012 [P] [US2] Add tested bounded callback diagnostics in `BrandBuilderAppFrameInstrumentedTest.kt` and Android policy tests (FR-006).
-- [ ] T013 [US2] Qualify both Mac architectures, Windows and Android observations; record #239/#66 dispositions in `verification.md` (FR-003/FR-008).
+- [x] T013 [US2] Qualify both Mac architectures, Windows and Android observations; record #239/#66 dispositions in `verification.md` (FR-003/FR-008).
 
 ## Phase 5: US3 - Exact candidate handoff
 
@@ -45,12 +45,12 @@
 
 - [x] T014 [US3] Update `docs/releases/v0.2.0-operator-runbook.md`, release candidate receipt and `changelog.d/` with S044 decisions and pending publication states (FR-007/FR-009).
 - [x] T015 [US3] Run aggregate and affected package/documentation/security checks; retain actual exits in `verification.md` (FR-002/FR-007/FR-010).
-- [ ] T016 [US3] Commit, push and publish official PR; monitor CI and at most two review rounds, resolving every comment/thread in `verification.md` (FR-010).
-- [ ] T017 [US3] Read back all eight final-head packages and bind checks, source, digests, provenance and issue dispositions in `.tmp/s044-candidate-handoff.json` and its PR conversation receipt (FR-007/FR-008/FR-009).
+- [x] T016 [US3] Commit, push and publish official PR; monitor CI and at most two review rounds, resolving every comment/thread in `verification.md` (FR-010).
+- [x] T017 [US3] Read back all eight final-head packages and bind checks, source, digests, provenance and issue dispositions in `.tmp/s044-candidate-handoff.json` and its PR conversation receipt (FR-007/FR-008/FR-009).
 
 ## Phase 6: Convergence
 
-- [ ] T018 Complete installed convergence and final cross-artifact analysis; report final owner review/merge readiness from `verification.md` (FR-001 through FR-010).
+- [x] T018 Complete installed convergence and final cross-artifact analysis; report final owner review/merge readiness from `verification.md` (FR-001 through FR-010).
 
 ## Dependencies and Execution Order
 

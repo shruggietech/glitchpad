@@ -19,6 +19,8 @@ All notable changes to Glitchpad are documented in this file. The format follows
 
 ### Decisions
 
+- 2026-11-02 (S044): Resolve the complete JavaScript advisory graph and add its moderate-or-higher audit to aggregate/shared CI. Keep Puppeteer25.16.0 and its validation-image browser synchronized; retain current product/brand/runtime contracts.
+
 - 2026-11-02 (S044): Align the reusable Docker validation browser with the workspace Puppeteer25.12.0 pin after aggregate validation exposed a missing executable.
 - 2026-11-02 (S044): Extend existing package workflows with an exact-byte historical macOS comparison and always-upload failure evidence. Keep reference and hosted-smoke performance classifications separate. Publication remains owner-authorized after review/merge; #76/#10 remain open until actual release readback.
 

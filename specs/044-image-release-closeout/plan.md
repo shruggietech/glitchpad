@@ -70,6 +70,10 @@ Run installed specify/clarify/checklist/plan/tasks/analyze/implement phases. Ext
 
 Retain the machine-readable final-source inventory at `.tmp/s044-candidate-handoff.json` and post its data to the official PR conversation after final checks. This avoids a self-referential source hash in a tracked receipt commit, which would otherwise change the source it claims to bind. Committed verification records link the external handoff authority; only actual final-head results are marked complete.
 
+### 2026-11-02: Complete JavaScript advisory coverage
+
+The candidate audit found50 advisories across site/build tooling (2 critical,16 high,25 moderate,7 low). Expand the selected #226 integrations to patched Next16.4.3, Vite8.3.5, Vitest5.0.5, ESLint10.14.0, markdownlint-cli2 0.24.0, Zod4.6.7 and Puppeteer25.16.0 (whose maintained BiDi dependency uses Zod4). Pin compatible patched transitive versions and preserve package runtime contracts. basic-ftp6.2.1 retains its CommonJS Client entry; minimatch11.0.1 supports the pinned Node24 engine. Qualify their actual consumers rather than suppressing advisories. The resulting complete workspace audit reports zero findings. Keep the Docker browser pin synchronized with Puppeteer25.16.0. Add a full JavaScript audit at the existing moderate-or-higher dependency-review threshold to aggregate and shared CI, addressing the coverage gap that allowed pre-existing advisory paths to survive introduced-dependency review. No advisory suppression is added.
+
 ## Complexity Tracking
 
 ### 2026-11-02: Validation browser parity

@@ -19,6 +19,8 @@ function New-PortableStartupDiagnostic {
         exited = [bool]$Observation['exited']
         exit_code = if ($Observation['exited'] -and $null -ne $Observation['exit_code']) { [int]$Observation['exit_code'] } else { $null }
         main_window_present = [bool]$Observation['main_window_present']
+        main_window_visible = if ($null -eq $Observation['main_window_visible']) { $null } else { [bool]$Observation['main_window_visible'] }
+        automation_descendant_present = if ($null -eq $Observation['automation_descendant_present']) { $null } else { [bool]$Observation['automation_descendant_present'] }
         process_state_available = [bool]$Observation['process_state_available']
         content_free = $true
     }

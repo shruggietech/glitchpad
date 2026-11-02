@@ -108,8 +108,7 @@ class BrandBuilderAppFrameInstrumentedTest {
                 .ifEmpty { "unavailable" }
         }
 
-    @Test
-    fun callbackDiagnosticsContainOnlyBoundedNativeState() {
+    private fun assertCallbackDiagnosticsContainOnlyBoundedNativeState() {
         val diagnostic = readinessSnapshot(36, 1, true, false, false, 0, 1080, 1920)
         assertEquals(
             setOf("api_level", "orientation", "attached", "window_focused", "view_focused", "visibility", "width_px", "height_px"),
@@ -430,6 +429,7 @@ class BrandBuilderAppFrameInstrumentedTest {
 
     @Test
     fun appFrameOwnsActualAndroidWebViewGeometry() {
+        assertCallbackDiagnosticsContainOnlyBoundedNativeState()
         assertTrue("reference API must be governed", Build.VERSION.SDK_INT == 24 || Build.VERSION.SDK_INT == 36)
         val scenario = ActivityScenario.launch(MainActivity::class.java)
         scenario.onActivity { activity ->
@@ -512,6 +512,7 @@ class BrandBuilderAppFrameInstrumentedTest {
             .put("schema_version", 1)
             .put("api_level", Build.VERSION.SDK_INT)
             .put("actual_tauri_webview", true)
+            .put("callback_diagnostics_contract", "pass")
             .put("portrait", portrait)
             .put("landscape", landscape)
             .put("open_menu", openMenu)

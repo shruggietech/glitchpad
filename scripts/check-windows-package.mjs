@@ -52,6 +52,22 @@ function same(left, right) {
 }
 
 export function validatePortableSmokeContract(lifecycleSource, workflowSource) {
+  for (const variable of [
+    'process',
+    'reverseProcess',
+    'minimalProcess',
+    'editableProcess',
+    'recoveryProcess',
+    'webviewProcess',
+  ]) {
+    const launch = lifecycleSource
+      .split('\n')
+      .find((line) => line.startsWith('$' + variable + ' = Start-Process '));
+    if (!launch?.includes('-WindowStyle Normal'))
+      fail(
+        'Windows UI Automation primary window must launch visibly on isolated CI',
+      );
+  }
   const invokeStart = lifecycleSource.indexOf(
     'function Invoke-AutomationElement(',
   );

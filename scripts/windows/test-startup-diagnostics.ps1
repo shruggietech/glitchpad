@@ -11,4 +11,12 @@ if ($null -ne $receipt.exit_code -or -not $receipt.main_window_present) { throw 
 $refused = $false
 try { New-PortableStartupDiagnostic -Observation $observation -Scenario 'private-path' -Stage launch -SourceCommit ('a' * 40) -ManifestDigest ('b' * 64) -Succeeded $false -ElapsedMilliseconds 0 | Out-Null } catch { $refused = $true }
 if (-not $refused) { throw 'Arbitrary scenario was admitted.' }
+$observation.main_window_visible = $false
+$observation.automation_descendant_present = $true
+$receipt = New-PortableStartupDiagnostic -Observation $observation -Scenario clean -Stage named_element_wait -SourceCommit ('a' * 40) -ManifestDigest ('b' * 64) -Succeeded $false -ElapsedMilliseconds 20000
+if ($null -eq $receipt.main_window_visible -or $receipt.main_window_visible -or -not $receipt.automation_descendant_present) { throw 'Visibility and accessibility diagnostics are missing or incorrect.' }
+$observation.main_window_visible = $null
+$observation.automation_descendant_present = $null
+$receipt = New-PortableStartupDiagnostic -Observation $observation -Scenario clean -Stage launch -SourceCommit ('a' * 40) -ManifestDigest ('b' * 64) -Succeeded $false -ElapsedMilliseconds 0
+if ($null -ne $receipt.main_window_visible -or $null -ne $receipt.automation_descendant_present) { throw 'Unavailable visibility diagnostics must remain unknown.' }
 Write-Output 'Content-free portable startup diagnostic tests passed.'

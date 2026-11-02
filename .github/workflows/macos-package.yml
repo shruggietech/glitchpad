@@ -155,7 +155,8 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: glitchpad-macos-clean-host-${{ matrix.architecture }}
+          # Exclude failed attempts from the release gather pattern (glitchpad-*).
+          name: ${{ job.status != 'success' && format('failed-attempt-{0}-', github.run_attempt) || '' }}glitchpad-macos-clean-host-${{ matrix.architecture }}
           path: |
             clean-host-${{ matrix.architecture }}.json
             clean-host-${{ matrix.architecture }}.json.startup.json

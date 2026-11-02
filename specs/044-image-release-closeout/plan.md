@@ -74,6 +74,18 @@ Retain the machine-readable final-source inventory at `.tmp/s044-candidate-hando
 
 The candidate audit found50 advisories across site/build tooling (2 critical,16 high,25 moderate,7 low). Expand the selected #226 integrations to patched Next16.4.3, Vite8.3.5, Vitest5.0.5, ESLint10.14.0, markdownlint-cli2 0.24.0, Zod4.6.7 and Puppeteer25.16.0 (whose maintained BiDi dependency uses Zod4). Pin compatible patched transitive versions and preserve package runtime contracts. basic-ftp6.2.1 retains its CommonJS Client entry; minimatch11.0.1 supports the pinned Node24 engine. Qualify their actual consumers rather than suppressing advisories. The resulting complete workspace audit reports zero findings. Keep the Docker browser pin synchronized with Puppeteer25.16.0. Add a full JavaScript audit at the existing moderate-or-higher dependency-review threshold to aggregate and shared CI, addressing the coverage gap that allowed pre-existing advisory paths to survive introduced-dependency review. No advisory suppression is added.
 
+### 2026-11-02: Failure artifact namespaces
+
+Always-uploaded failed Windows/macOS evidence must not reserve a later successful artifact name or enter the release gather pattern. Prefix failed/cancelled uploads with their run-attempt number, retaining successful canonical names and every failed archive. Keep macOS failed receipts outside the existing glitchpad-* publication gathering pattern. No lifecycle timeout, retry policy or assertion changes accompany this correction.
+
+### 2026-11-02: Hosted Windows visibility precondition
+
+The PR package lifecycle failed the same clean-launch named-element wait on its one bounded retry, despite the branch package passing. Both failed diagnostics show a running process and a main-window handle, which does not establish visibility or identify the root cause. The harness explicitly starts all six primary UI Automation targets hidden. Correct that test precondition to normal visible windows only on isolated hosted CI, retain hidden secondary single-instance deliveries and all hidden console launchers, and add bounded nullable visibility/accessibility-tree diagnostics. Preserve the 20-second deadline and every content/geometry assertion. Native results will establish whether this correction resolves the observed failures; do not claim the old root cause is proven.
+
+### 2026-11-02: Android diagnostic assertion execution
+
+API 24 retains its geometry completion marker but the instrumentation process ends before the newly added second test completes. Do not infer full test execution from marker-based job success. Run the pure diagnostic allowlist assertions at the beginning of the existing native AppFrame flow, before activity launch, and add their successful completion to that flow's final marker. Retain every geometry/IME/focus/cutout assertion and the existing JavaScript timeout and retry bounds. Marker completion and JUnit runner completion remain distinct evidence claims.
+
 ## Complexity Tracking
 
 ### 2026-11-02: Validation browser parity

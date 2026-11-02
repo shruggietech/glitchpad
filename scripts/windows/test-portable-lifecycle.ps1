@@ -60,12 +60,22 @@ $capabilities = Get-Content -LiteralPath 'packaging/desktop/capabilities.json' -
 $extensions = @($capabilities.families | ForEach-Object { $_.extensions } | Sort-Object -Unique)
 
 function Save-StartupDiagnostic([Diagnostics.Process] $Process, [string] $Scenario, [Diagnostics.Stopwatch] $Clock, [bool] $Succeeded) {
-    $observation = @{ exited = $false; exit_code = $null; main_window_present = $false; process_state_available = $false }
+    $observation = @{ exited = $false; exit_code = $null; main_window_present = $false; main_window_visible = $null; automation_descendant_present = $null; process_state_available = $false }
     try {
         $Process.Refresh()
         $observation.exited = $Process.HasExited
         if ($observation.exited) { $observation.exit_code = $Process.ExitCode }
-        else { $observation.main_window_present = $Process.MainWindowHandle -ne [IntPtr]::Zero }
+        else {
+            $handle = $Process.MainWindowHandle
+            $observation.main_window_present = $handle -ne [IntPtr]::Zero
+            if ($observation.main_window_present) {
+                $observation.main_window_visible = [GlitchpadNativeInput]::IsWindowVisible($handle)
+                try {
+                    $automationRoot = [System.Windows.Automation.AutomationElement]::FromHandle($handle)
+                    $observation.automation_descendant_present = $null -ne $automationRoot.FindFirst([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)
+                } catch { }
+            }
+        }
         $observation.process_state_available = $true
     } catch { }
     $record = New-PortableStartupDiagnostic -Observation $observation -Scenario $Scenario -Stage $script:readinessStage -SourceCommit $manifestSourceCommit -ManifestDigest $manifestDigest -Succeeded $Succeeded -ElapsedMilliseconds $Clock.ElapsedMilliseconds
@@ -456,6 +466,9 @@ public static class GlitchpadNativeInput
     public static extern bool SetForegroundWindow(IntPtr window);
 
     [DllImport("user32.dll")]
+    public static extern bool IsWindowVisible(IntPtr window);
+
+    [DllImport("user32.dll")]
     public static extern bool SetCursorPos(int x, int y);
 
     [DllImport("user32.dll")]
@@ -468,7 +481,7 @@ $isolatedEnvironment = @{ APPDATA = $isolatedState; LOCALAPPDATA = $isolatedStat
 $scenarioClock = [Diagnostics.Stopwatch]::StartNew()
 $script:readinessStage = 'launch'
 $scenarioSucceeded = $false
-$process = Start-Process -FilePath $application -PassThru -WindowStyle Hidden -Environment $isolatedEnvironment
+$process = Start-Process -FilePath $application -PassThru -WindowStyle Normal -Environment $isolatedEnvironment
 try {
     Wait-NamedElement $process 'Open file…' | Out-Null
     if ((Get-TabCount $process) -ne 0) { throw 'A clean launch exposed document tabs.' }
@@ -516,7 +529,7 @@ $isolatedEnvironment = @{ APPDATA = $reverseState; LOCALAPPDATA = $reverseState 
 $scenarioClock = [Diagnostics.Stopwatch]::StartNew()
 $script:readinessStage = 'launch'
 $scenarioSucceeded = $false
-$reverseProcess = Start-Process -FilePath $application -PassThru -WindowStyle Hidden -Environment $isolatedEnvironment
+$reverseProcess = Start-Process -FilePath $application -PassThru -WindowStyle Normal -Environment $isolatedEnvironment
 try {
     Wait-NamedElement $reverseProcess 'Open file…' | Out-Null
     Send-MarkdownDelivery $markdownFixtureBPath $reverseProcess 'S030 Markdown Beta 9D4E' 'S030_BETA_RAW_SENTINEL'
@@ -540,7 +553,7 @@ $minimalEnvironment = @{ APPDATA = $minimalState; LOCALAPPDATA = $minimalState }
 $scenarioClock = [Diagnostics.Stopwatch]::StartNew()
 $script:readinessStage = 'launch'
 $scenarioSucceeded = $false
-$minimalProcess = Start-Process -FilePath $application -ArgumentList ('"{0}"' -f $markdownFixtureMinimalPath) -PassThru -WindowStyle Hidden -Environment $minimalEnvironment
+$minimalProcess = Start-Process -FilePath $application -ArgumentList ('"{0}"' -f $markdownFixtureMinimalPath) -PassThru -WindowStyle Normal -Environment $minimalEnvironment
 try {
     Wait-NamedElement $minimalProcess 'S035 Minimal Markdown 5E8A' | Out-Null
     if ((Get-TabCount $minimalProcess) -ne 0) { throw 'A single minimal Markdown document exposed tab chrome.' }
@@ -559,7 +572,7 @@ $isolatedEnvironment = @{ APPDATA = $editableState; LOCALAPPDATA = $editableStat
 $scenarioClock = [Diagnostics.Stopwatch]::StartNew()
 $script:readinessStage = 'launch'
 $scenarioSucceeded = $false
-$editableProcess = Start-Process -FilePath $application -ArgumentList ('"{0}"' -f $markdownFixtureEditablePath) -PassThru -WindowStyle Hidden -Environment $isolatedEnvironment
+$editableProcess = Start-Process -FilePath $application -ArgumentList ('"{0}"' -f $markdownFixtureEditablePath) -PassThru -WindowStyle Normal -Environment $isolatedEnvironment
 try {
     Exercise-MarkdownEditSavePreview $editableProcess $markdownFixtureEditablePath
     $scenarioSucceeded = $true
@@ -580,7 +593,7 @@ $recoveryEnvironment = @{ APPDATA = $recoveryState; LOCALAPPDATA = $recoveryStat
 $scenarioClock = [Diagnostics.Stopwatch]::StartNew()
 $script:readinessStage = 'launch'
 $scenarioSucceeded = $false
-$recoveryProcess = Start-Process -FilePath $application -ArgumentList ('"{0}"' -f $markdownFixtureRecoveryPath) -PassThru -WindowStyle Hidden -Environment $recoveryEnvironment
+$recoveryProcess = Start-Process -FilePath $application -ArgumentList ('"{0}"' -f $markdownFixtureRecoveryPath) -PassThru -WindowStyle Normal -Environment $recoveryEnvironment
 try {
     Exercise-MarkdownRecovery $recoveryProcess $markdownFixtureRecoveryPath $recoveryProbe
     $scenarioSucceeded = $true
@@ -604,7 +617,7 @@ $webviewEnvironment = @{
 $scenarioClock = [Diagnostics.Stopwatch]::StartNew()
 $script:readinessStage = 'launch'
 $scenarioSucceeded = $false
-$webviewProcess = Start-Process -FilePath $application -ArgumentList ('"{0}"' -f $markdownFixtureMinimalPath) -PassThru -WindowStyle Hidden -Environment $webviewEnvironment
+$webviewProcess = Start-Process -FilePath $application -ArgumentList ('"{0}"' -f $markdownFixtureMinimalPath) -PassThru -WindowStyle Normal -Environment $webviewEnvironment
 try {
     Wait-NamedElement $webviewProcess 'S035 Minimal Markdown 5E8A' | Out-Null
     Wait-DeviceScaleMarker $webviewProbe | Out-Null

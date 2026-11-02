@@ -188,8 +188,8 @@ export async function checkMacosConfiguration(
     ),
   ]);
 
-  if (capabilities.schema_version !== 1 || capabilities.release !== '0.1.4')
-    fail('capability inventory version is not v0.1.4 schema 1');
+  if (capabilities.schema_version !== 1 || capabilities.release !== '0.2.0')
+    fail('capability inventory version is not v0.2.0 schema 1');
   const configured = uniqueExtensions(capabilities.families);
   if (!same(contract.document_extensions ?? [], configured))
     fail(
@@ -270,8 +270,17 @@ export async function checkMacosConfiguration(
     .sort();
   if (!same(associated, configured))
     fail('Tauri document declarations drift from shared capabilities');
-  if (tauri.bundle.fileAssociations.some(({ role }) => role !== 'Editor'))
-    fail('macOS document declarations must use the Editor role');
+  if (
+    tauri.bundle.fileAssociations.some(
+      ({ role, ext }) =>
+        role !==
+        (capabilities.families.find((f) => f.extensions.includes(ext[0]))
+          ?.renderer === 'image'
+          ? 'Viewer'
+          : 'Editor'),
+    )
+  )
+    fail('macOS document declarations must use their capability-derived role');
   for (const required of ['LICENSE', 'NOTICE', 'THIRD_PARTY_NOTICES.txt']) {
     if (!Object.values(tauri.bundle.resources ?? {}).includes(required))
       fail(`Tauri bundle omits ${required}`);
@@ -316,7 +325,7 @@ export async function checkMacosConfiguration(
     fail('branch and pull-request package workflow must not publish');
   if (
     !releaseWorkflow.includes(
-      'glitchpad-0.1.4-macos-universal-community-release',
+      'glitchpad-0.2.0-macos-universal-community-release',
     )
   )
     fail('release workflow omits the macOS community package');

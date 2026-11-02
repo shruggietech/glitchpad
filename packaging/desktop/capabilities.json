@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "release": "0.1.4",
+  "release": "0.2.0",
   "families": [
     {
       "id": "markdown",
@@ -54,32 +54,94 @@
       "renderer": "source",
       "association": true,
       "dialog": true
+    },
+    {
+      "id": "png",
+      "description": "PNG image",
+      "extensions": ["png"],
+      "media_types": ["image/png"],
+      "renderer": "image",
+      "association": true,
+      "dialog": true
+    },
+    {
+      "id": "jpeg",
+      "description": "JPEG image",
+      "extensions": ["jpg", "jpeg"],
+      "media_types": ["image/jpeg"],
+      "renderer": "image",
+      "association": true,
+      "dialog": true
+    },
+    {
+      "id": "webp",
+      "description": "WEBP image",
+      "extensions": ["webp"],
+      "media_types": ["image/webp"],
+      "renderer": "image",
+      "association": true,
+      "dialog": true
+    },
+    {
+      "id": "bmp",
+      "description": "BMP image",
+      "extensions": ["bmp"],
+      "media_types": ["image/bmp"],
+      "renderer": "image",
+      "association": true,
+      "dialog": true
+    },
+    {
+      "id": "tiff",
+      "description": "TIFF image",
+      "extensions": ["tif", "tiff"],
+      "media_types": ["image/tiff"],
+      "renderer": "image",
+      "association": true,
+      "dialog": true
+    },
+    {
+      "id": "gif",
+      "description": "GIF image",
+      "extensions": ["gif"],
+      "media_types": ["image/gif"],
+      "renderer": "image",
+      "association": true,
+      "dialog": true
+    },
+    {
+      "id": "svg",
+      "description": "SVG image",
+      "extensions": ["svg"],
+      "media_types": ["image/svg+xml"],
+      "renderer": "image",
+      "association": true,
+      "dialog": true
+    },
+    {
+      "id": "ico",
+      "description": "ICO image",
+      "extensions": ["ico"],
+      "media_types": ["image/vnd.microsoft.icon", "image/x-icon"],
+      "renderer": "image",
+      "association": true,
+      "dialog": true
     }
   ],
   "forbidden_extensions": [
     "7z",
     "aab",
     "apk",
-    "bmp",
     "dll",
     "docx",
     "exe",
-    "gif",
-    "ico",
-    "jpeg",
-    "jpg",
     "msi",
     "odp",
     "ods",
     "odt",
     "pdf",
-    "png",
     "pptx",
     "rar",
-    "svg",
-    "tif",
-    "tiff",
-    "webp",
     "xlsx",
     "zip"
   ]

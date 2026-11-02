@@ -134,7 +134,7 @@ test('homepage presents concise release actions and keeps utility pages secondar
     }),
   ).toHaveAttribute(
     'href',
-    'https://github.com/ShruggieTech/glitchpad/releases/tag/v0.1.4',
+    'https://github.com/ShruggieTech/glitchpad/releases/latest',
   );
   await expect(
     page.getByRole('link', { name: 'Docs', exact: true }),

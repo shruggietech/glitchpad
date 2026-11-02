@@ -16,7 +16,10 @@ const docsDirectory = join(siteRoot, 'content', 'docs');
 const generatedDirectory = join(siteRoot, 'lib', 'generated');
 const canonicalSource = 'docs/glitchpad-technical-specification.md';
 const generatedMarker = `{/* Generated from ${canonicalSource}. Do not edit this derived page. */}`;
-const legacySectionRoutes = [{ slug: '36-roadmap-beyond-v013', number: 36 }];
+const legacySectionRoutes = [
+  { slug: '36-roadmap-beyond-v013', number: 36 },
+  { slug: '36-roadmap-beyond-v014', number: 36 },
+];
 
 function normalizeSource(source) {
   return source.replace(/^\uFEFF/, '').replaceAll('\r\n', '\n');
@@ -394,7 +397,7 @@ function validateAuthorities(parsed, workspace, readme) {
   const escapedVersion = workspace.version.replaceAll('.', '\\.');
   if (
     !new RegExp(
-      `Glitchpad v${escapedVersion} is the current corrective community release`,
+      `Glitchpad v${escapedVersion} is the image-activation release candidate`,
     ).test(readme)
   )
     throw new Error(
@@ -411,7 +414,7 @@ function renderIntroduction(parsed, workspace) {
     'Authoritative project documentation for Glitchpad.',
   )}${generatedMarker}
 
-Glitchpad is a fast, cross-platform viewer and editor for local files. v${workspace.version} is the current corrective community release for Markdown, Mermaid, plain-text, and supported source files.
+Glitchpad is a fast, cross-platform viewer and editor for local files. v${workspace.version} is the image-activation release candidate for Markdown, Mermaid, plain-text, supported source files, and bounded image viewing.
 
 ## Technical Specification authority
 
@@ -423,7 +426,7 @@ ${rows}
 
 ## Current release and source
 
-Install Glitchpad v${workspace.version} from the [GitHub release](https://github.com/ShruggieTech/glitchpad/releases/tag/v${workspace.version}). For contribution requirements, source code, verification evidence, and current work, visit the [Glitchpad repository](https://github.com/ShruggieTech/glitchpad).
+Download the latest published Glitchpad package from the [GitHub release](https://github.com/ShruggieTech/glitchpad/releases/latest). This source tree prepares v${workspace.version}; candidate capabilities are not a claim that its release has been published. For contribution requirements, source code, verification evidence, and current work, visit the [Glitchpad repository](https://github.com/ShruggieTech/glitchpad).
 `;
 }
 
@@ -652,7 +655,7 @@ function buildProjectSource({ workspace, license, notice, support, security }) {
     '// Generated from repository authorities. Do not edit by hand.',
     `export const projectVersion = ${JSON.stringify(workspace.version)};`,
     'export const installableReleaseAvailable = true;',
-    `export const releaseUrl = ${JSON.stringify(`https://github.com/ShruggieTech/glitchpad/releases/tag/v${workspace.version}`)};`,
+    `export const releaseUrl = ${JSON.stringify(`https://github.com/ShruggieTech/glitchpad/releases/latest`)};`,
     `export const licenseText = ${JSON.stringify(license.trimEnd())};`,
     `export const noticeText = ${JSON.stringify(notice.trimEnd())};`,
     `export const supportText = ${JSON.stringify(supportText)};`,

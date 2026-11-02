@@ -1,0 +1,217 @@
+{
+  "schema_version": 1,
+  "head_sha": "50ba55b6d9687ac09bf6cc0b8841a391cd3a66ec",
+  "pr_merge_sha": "41a77cac6a0eb44d3de7f81f77d24946874cfdd8",
+  "head_and_merge_tree_sha": "cf41ca7212a59144b74ce03b39a1f064860a2383",
+  "method": "Download Actions artifacts, verify ZIP SHA256, parse package manifests and verify every declared final package byte count and SHA256",
+  "platforms": [
+    {
+      "platform": "linux",
+      "run_id": 41499155097,
+      "source_commit": "50ba55b6d9687ac09bf6cc0b8841a391cd3a66ec",
+      "archive_sha256": "2ee4a8a391fcea89b81c2a90050fa1a75a5433ed6db0e3ddde60e5a8abbd9717",
+      "publication_status": "non-official candidate",
+      "artifacts": [
+        {
+          "name": "glitchpad-0.2.0-linux-x86_64.AppImage",
+          "bytes": 10369528,
+          "sha256": "27b44fd18af87f3df136e74313a6fdf86bb7d40cfd190e0e86d8824a06848659",
+          "readback_verified": true,
+          "size_classification": "pass"
+        },
+        {
+          "name": "glitchpad-0.2.0-linux-x86_64.deb",
+          "bytes": 9517638,
+          "sha256": "9e887c8780c8f4402c941e09421efa4deca4706ce58abadf076633f9beec3ab8",
+          "readback_verified": true,
+          "size_classification": "pass"
+        }
+      ]
+    },
+    {
+      "platform": "windows",
+      "run_id": 41499155094,
+      "source_commit": "50ba55b6d9687ac09bf6cc0b8841a391cd3a66ec",
+      "archive_sha256": "01e8e059f1d057ae36441cf3b94acfcb0faff11a79a42695939a04de6592e08e",
+      "publication_status": "non-official candidate",
+      "artifacts": [
+        {
+          "name": "glitchpad-0.2.0-windows-x86_64-setup.exe",
+          "bytes": 6130571,
+          "sha256": "d4a7d659982c4bd8eb8e17d2915bb93d9212257eb5fd46847904acdddcf23956",
+          "readback_verified": true,
+          "size_classification": "pass"
+        },
+        {
+          "name": "glitchpad-0.2.0-windows-x86_64.zip",
+          "bytes": 7743494,
+          "sha256": "7373e69ae031c840a27dd583364778ab02671139e7495076e7ff3ab63ba35def",
+          "readback_verified": true,
+          "size_classification": "pass"
+        }
+      ]
+    },
+    {
+      "platform": "macos",
+      "run_id": 41499155051,
+      "source_commit": "50ba55b6d9687ac09bf6cc0b8841a391cd3a66ec",
+      "archive_sha256": "b42bd8f405c696a3c7c3d9cfa22ce986c8dcb0b14bc098615f44b0222ba5e220",
+      "publication_status": "non-official candidate",
+      "artifacts": [
+        {
+          "name": "glitchpad-0.2.0-macos-universal.dmg",
+          "bytes": 16139349,
+          "sha256": "88faa110b2af642a419bea2c660f0382966c30b850af66ea48cf2e359eff4709",
+          "readback_verified": true,
+          "size_classification": "pass"
+        }
+      ]
+    },
+    {
+      "platform": "android",
+      "run_id": 41499171394,
+      "source_commit": "41a77cac6a0eb44d3de7f81f77d24946874cfdd8",
+      "archive_sha256": "e5fe0884c36b45b6cc004403d5c595089116d60145e1f31c22660786d4d19533",
+      "publication_status": "blocked_candidate",
+      "artifacts": [
+        {
+          "name": "glitchpad-0.2.0-android-arm64.apk",
+          "bytes": 20795419,
+          "sha256": "65abb8f09aeb3c992372239acadf051aa5d915858c172eb8085ef3e70a72bc6a",
+          "readback_verified": true,
+          "size_classification": "governed Android package validation"
+        },
+        {
+          "name": "glitchpad-0.2.0-android-universal.aab",
+          "bytes": 18741936,
+          "sha256": "7e4c5ce8dc4c2f7f01248503c35eef8154ca30852539d6a590d0fffc2d347236",
+          "readback_verified": true,
+          "size_classification": "governed Android package validation"
+        },
+        {
+          "name": "glitchpad-0.2.0-android-universal.apk",
+          "bytes": 38602871,
+          "sha256": "195fb4036734772e17e7c7cd946b7b19b9d874a0c42f9e98c4a2b3a0cdade0cd",
+          "readback_verified": true,
+          "size_classification": "governed Android package validation"
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "No official publication",
+    "Windows unsigned community candidate",
+    "macOS non-notarized community candidate",
+    "Android package signatures do not establish physical-device runtime acceptance",
+    "Manual package-flow rows retain their actual not_run_candidate status"
+  ],
+  "macos_lifecycle_readback": [
+    {
+      "artifact_id": 13169258449,
+      "archive_sha256": "7d19bb51dffe04a7e236730c76715188e75cae6456076f4b48864f0a521507d4",
+      "source_commit": "50ba55b6d9687ac09bf6cc0b8841a391cd3a66ec",
+      "architecture": "arm64",
+      "automated": {
+        "mount": "pass",
+        "applications_link": "pass",
+        "copy": "pass",
+        "launch": "pass",
+        "finder_delivery": "pass",
+        "running_instance_delivery": "pass",
+        "read": "pass",
+        "edit": "pass",
+        "save": "pass",
+        "metadata": "pass",
+        "recovery": "pass",
+        "remove": "pass",
+        "cleanup": "pass",
+        "universal_architecture": "pass",
+        "performance": "measured_hosted_smoke"
+      },
+      "manual": {
+        "dialog": "not_run_candidate",
+        "drag_drop": "not_run_candidate",
+        "save_as": "not_run_candidate",
+        "print": "not_run_candidate",
+        "keyboard": "not_run_candidate",
+        "focus": "not_run_candidate",
+        "text_scale": "not_run_candidate",
+        "increased_contrast": "not_run_candidate",
+        "reduced_motion": "not_run_candidate",
+        "voiceover": "not_run_candidate",
+        "markdown_wkwebview": "not_run_candidate",
+        "mermaid_wkwebview": "not_run_candidate"
+      },
+      "performance": {
+        "cold_startup_evidence_class": "hosted_smoke",
+        "cold_startup_samples_ms": [
+          2942,
+          2167,
+          1782,
+          1843,
+          1838
+        ],
+        "cold_startup_p95_ms": 2942,
+        "cold_startup_classification": "failure",
+        "dmg_size_classification": "pass"
+      }
+    },
+    {
+      "artifact_id": 13168813740,
+      "archive_sha256": "a562044b8a57ce2c5e45f3966ab16a8605e875ae32db1e2de343f4f6f6f82616",
+      "source_commit": "50ba55b6d9687ac09bf6cc0b8841a391cd3a66ec",
+      "architecture": "x86_64",
+      "automated": {
+        "mount": "pass",
+        "applications_link": "pass",
+        "copy": "pass",
+        "launch": "pass",
+        "finder_delivery": "pass",
+        "running_instance_delivery": "pass",
+        "read": "pass",
+        "edit": "pass",
+        "save": "pass",
+        "metadata": "pass",
+        "recovery": "pass",
+        "remove": "pass",
+        "cleanup": "pass",
+        "universal_architecture": "pass",
+        "performance": "measured_hosted_smoke"
+      },
+      "manual": {
+        "dialog": "not_run_candidate",
+        "drag_drop": "not_run_candidate",
+        "save_as": "not_run_candidate",
+        "print": "not_run_candidate",
+        "keyboard": "not_run_candidate",
+        "focus": "not_run_candidate",
+        "text_scale": "not_run_candidate",
+        "increased_contrast": "not_run_candidate",
+        "reduced_motion": "not_run_candidate",
+        "voiceover": "not_run_candidate",
+        "markdown_wkwebview": "not_run_candidate",
+        "mermaid_wkwebview": "not_run_candidate"
+      },
+      "performance": {
+        "cold_startup_evidence_class": "hosted_smoke",
+        "cold_startup_samples_ms": [
+          3605,
+          1334,
+          1438,
+          1357,
+          1245
+        ],
+        "cold_startup_p95_ms": 3605,
+        "cold_startup_classification": "failure",
+        "dmg_size_classification": "pass"
+      }
+    }
+  ],
+  "macos_cold_start_followup": {
+    "issue": 239,
+    "url": "https://github.com/shruggietech/glitchpad/issues/239",
+    "reference_threshold_ms": 2500,
+    "hosted_smoke_hard_limit_ms": 10000,
+    "disposition": "Both hosted observations exceed the reference threshold and pass the separate hosted-smoke hard limit; no reference pass or product regression is inferred."
+  }
+}

@@ -131,13 +131,16 @@ export async function checkConfiguration(
     ['pull-request build trigger', /^\s*pull_request:\s*$/m],
     ['main build trigger', /^\s*push:\s*\n\s*branches:\s*\[main\]/m],
     ['reusable release entry point', /^\s*workflow_call:\s*\n\s*inputs:/m],
-    ['post-release retry entry point', /^\s*workflow_dispatch:\s*\n\s*inputs:/m],
+    [
+      'post-release retry entry point',
+      /^\s*workflow_dispatch:\s*\n\s*inputs:/m,
+    ],
     ['read-only default permission', /^permissions:\s*\n\s*contents:\s*read/m],
     ['Pages artifact path', /^\s*path:\s*site\/out\s*$/m],
     ['protected Pages environment', /^\s*name:\s*github-pages\s*$/m],
     [
       'exact publisher deployment condition',
-      /inputs\.deploy[\s\S]*inputs\.release_tag == 'v0\.1\.4'/,
+      /inputs\.deploy[\s\S]*inputs\.release_tag == 'v0\.2\.0'/,
     ],
     [
       'shared Pages deployment group',
@@ -150,9 +153,9 @@ export async function checkConfiguration(
     }
   }
   const expectedUploadCondition =
-    "inputs.deploy && inputs.release_tag == 'v0.1.4' && steps.release_authority.outputs.authorized == 'true'";
+    "inputs.deploy && inputs.release_tag == 'v0.2.0' && steps.release_authority.outputs.authorized == 'true'";
   const expectedDeploymentCondition =
-    "inputs.deploy && inputs.release_tag == 'v0.1.4' && needs.build.outputs.release_authorized == 'true'";
+    "inputs.deploy && inputs.release_tag == 'v0.2.0' && needs.build.outputs.release_authorized == 'true'";
   const normalizeExpression = (value) =>
     typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : '';
   const uploadStep = parsedDocsWorkflow.jobs?.build?.steps?.find(
@@ -288,7 +291,7 @@ export async function checkConfiguration(
       /^\s*uses:\s*\.\/\.github\/workflows\/docs\.yml\s*$/m,
     ],
     ['deployment authorization', /^\s*deploy:\s*true\s*$/m],
-    ['exact release tag input', /^\s*release_tag:\s*v0\.1\.4\s*$/m],
+    ['exact release tag input', /^\s*release_tag:\s*v0\.2\.0\s*$/m],
   ]) {
     if (!pattern.test(releaseWorkflow)) {
       throw new Error(`Invalid release workflow contract: missing ${label}`);

@@ -5,14 +5,14 @@ import { fileURLToPath } from 'node:url';
 import { parse as parseYaml } from 'yaml';
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-export const currentVersion = '0.1.4';
+export const currentVersion = '0.2.0';
 export const currentTag = `v${currentVersion}`;
 export const releaseUrl =
-  'https://github.com/ShruggieTech/glitchpad/releases/tag/v0.1.4';
+  'https://github.com/ShruggieTech/glitchpad/releases/latest';
 const uploadCondition =
-  "inputs.deploy && inputs.release_tag == 'v0.1.4' && steps.release_authority.outputs.authorized == 'true'";
+  "inputs.deploy && inputs.release_tag == 'v0.2.0' && steps.release_authority.outputs.authorized == 'true'";
 const deploymentCondition =
-  "inputs.deploy && inputs.release_tag == 'v0.1.4' && needs.build.outputs.release_authorized == 'true'";
+  "inputs.deploy && inputs.release_tag == 'v0.2.0' && needs.build.outputs.release_authorized == 'true'";
 
 function normalizeExpression(value) {
   return typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : '';
@@ -104,7 +104,7 @@ export function verifyPublicSources(sources) {
     `| Specification version | ${currentVersion} |`,
     `| Product version | ${currentVersion} |`,
     '| Issued | 2026-08-30 |',
-    '| Updated | 2026-09-29 |',
+    '| Updated | 2026-11-02 |',
     '`Issued` records the date this specification was first published.',
     '`Updated` records the effective date of the current specification text',
   ])
@@ -125,7 +125,7 @@ export function verifyPublicSources(sources) {
     problems.push(
       'technical specification revision history is not chronological',
     );
-  if (revisionDates.at(-1) !== '2026-09-29')
+  if (revisionDates.at(-1) !== '2026-11-02')
     problems.push(
       'technical specification Updated date does not match latest revision',
     );
@@ -143,10 +143,12 @@ export function verifyPublicSources(sources) {
   if (!/workflow_call:\s*\n\s*inputs:/.test(workflow))
     problems.push('docs workflow is not reusable by the release publisher');
   if (!/workflow_dispatch:\s*\n\s*inputs:/.test(workflow))
-    problems.push('docs workflow lacks an authorized post-release retry entry point');
+    problems.push(
+      'docs workflow lacks an authorized post-release retry entry point',
+    );
   for (const expected of [
     'inputs.deploy',
-    "inputs.release_tag == 'v0.1.4'",
+    "inputs.release_tag == 'v0.2.0'",
     'group: github-pages-production',
     'queue: max',
     'Confirm published release authority',
@@ -155,7 +157,7 @@ export function verifyPublicSources(sources) {
     'github.rest.git.getTag',
     "object.type !== 'commit' || object.sha !== process.env.CANDIDATE_SHA",
     "core.setOutput('authorized', 'true')",
-    "ref: ${{ inputs.deploy && inputs.release_tag == 'v0.1.4' && inputs.release_tag || github.ref }}",
+    "ref: ${{ inputs.deploy && inputs.release_tag == 'v0.2.0' && inputs.release_tag || github.ref }}",
     'GLITCHPAD_EXPECTED_REVISION: ${{ needs.build.outputs.source_revision }}',
   ])
     requireText(problems, '.github/workflows/docs.yml', workflow, expected);
@@ -181,7 +183,7 @@ export function verifyPublicSources(sources) {
     'needs: publish',
     'uses: ./.github/workflows/docs.yml',
     'deploy: true',
-    'release_tag: v0.1.4',
+    'release_tag: v0.2.0',
   ])
     requireText(
       problems,

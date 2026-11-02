@@ -8,7 +8,7 @@ members = [
 resolver = "3"
 
 [workspace.package]
-version = "0.1.4"
+version = "0.2.0"
 edition = "2024"
 rust-version = "1.96.0"
 license = "Apache-2.0"
@@ -48,3 +48,7 @@ all = { level = "deny", priority = -1 }
 pedantic = { level = "deny", priority = -1 }
 module_name_repetitions = "allow"
 must_use_candidate = "allow"
+
+[patch.crates-io]
+tauri-plugin-opener = { path = "vendor/tauri-plugin-opener-2.5.5" }
+tauri-plugin-single-instance = { path = "vendor/tauri-plugin-single-instance-2.4.5" }

@@ -22,7 +22,7 @@ export default function HomePage() {
         <div className="hero-inner">
           <div className="hero-copy">
             <p className="eyebrow">
-              Desktop + Android · v0.1.4 community release
+              Desktop + Android · v0.2.0 image-activation candidate
             </p>
             <h1>View your files.</h1>
             <p className="hero-summary">
@@ -32,7 +32,7 @@ export default function HomePage() {
             <div className="hero-actions">
               <a
                 className="button button-primary"
-                href="https://github.com/ShruggieTech/glitchpad/releases/tag/v0.1.4"
+                href="https://github.com/ShruggieTech/glitchpad/releases/latest"
               >
                 Download
               </a>

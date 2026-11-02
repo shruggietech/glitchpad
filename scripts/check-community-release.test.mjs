@@ -11,16 +11,15 @@ import {
 
 const finalHandoff = () => ({
   releaseNotes:
-    'S042 imports BrandBuilder with AppFrame. Stable images wait for #75 and #76.',
+    'S043 imports BrandBuilder with image activation. Stable images wait for #75 and #76.',
   releaseReceipt:
-    '| Brand slice | S042 BrandBuilder and AppFrame |\n| Deferred image gates | #75 and #76 |',
+    '| Brand slice | S043 BrandBuilder and image activation |\n| Deferred image gates | #75 and #76 |',
   operatorRunbook:
-    '1. Confirm the v0.1.4 release pull request is merged at the reviewed v0.1.4 merge commit with S042 BrandBuilder and AppFrame.\n5. Create the annotated tag `v0.1.4` on the reviewed v0.1.4 merge commit and push only that tag.',
-  changelog:
-    'S042 adopted BrandBuilder and AppFrame before release.',
+    '1. Confirm the v0.2.0 release pull request is merged at the reviewed v0.2.0 merge commit with S043 BrandBuilder and image activation.\n5. Create the annotated tag `v0.2.0` on the reviewed v0.2.0 merge commit and push only that tag.',
+  changelog: 'S043 adopted BrandBuilder and image activation before release.',
 });
 
-test('accepts the final v0.1.4 release handoff', () =>
+test('accepts the final v0.2.0 release handoff', () =>
   assert.equal(validateFinalReleaseHandoff(finalHandoff()), true));
 
 for (const [name, mutate, expected] of [
@@ -28,42 +27,45 @@ for (const [name, mutate, expected] of [
     'stale release authority',
     (handoff) => {
       handoff.operatorRunbook = handoff.operatorRunbook.replaceAll(
-        'v0.1.4 merge commit',
+        'v0.2.0 merge commit',
         'prior merge commit',
       );
     },
-    /v0.1.4 release authority/u,
+    /v0.2.0 release authority/u,
   ],
   [
     'tag instruction targeting another commit',
     (handoff) => {
       handoff.operatorRunbook = handoff.operatorRunbook.replace(
-        'on the reviewed v0.1.4 merge commit and push only that tag',
+        'on the reviewed v0.2.0 merge commit and push only that tag',
         'on a different merge commit and push only that tag',
       );
     },
-    /tag instruction does not target v0.1.4/u,
+    /tag instruction does not target v0.2.0/u,
   ],
   [
-    'missing S042 traceability',
+    'missing S043 traceability',
     (handoff) => {
-      handoff.releaseNotes = handoff.releaseNotes.replace('S042', 'S041');
+      handoff.releaseNotes = handoff.releaseNotes.replace('S043', 'S041');
     },
-    /S042 brand integration/u,
+    /S043 qualification/u,
   ],
   [
-    'missing AppFrame traceability',
+    'missing image traceability',
     (handoff) => {
-      handoff.releaseReceipt = handoff.releaseReceipt.replace('AppFrame', 'shell');
+      handoff.releaseReceipt = handoff.releaseReceipt.replace(
+        'image activation',
+        'shell',
+      );
     },
-    /AppFrame adoption/u,
+    /image activation/u,
   ],
   [
     'missing image conformance boundary',
     (handoff) => {
       handoff.releaseNotes = handoff.releaseNotes.replace('#75', '#74');
     },
-    /deferred image gate #75/u,
+    /tracked image gate #75/u,
   ],
 ]) {
   test(`rejects a final handoff with ${name}`, () => {
@@ -75,12 +77,12 @@ for (const [name, mutate, expected] of [
 
 const contract = () => ({
   schema_version: 1,
-  version: '0.1.4',
-  tag: 'v0.1.4',
+  version: '0.2.0',
+  tag: 'v0.2.0',
   repository: 'shruggietech/glitchpad',
   artifacts: Array.from(
     { length: 8 },
-    (_, index) => `glitchpad-0.1.4-${index}`,
+    (_, index) => `glitchpad-0.2.0-${index}`,
   ),
   trust_states: {
     windows: 'unsigned_community',
@@ -88,7 +90,7 @@ const contract = () => ({
     linux: 'repository_attested',
     android: 'stable_project_key',
   },
-  manual_validation: 'deferred_post_release_issue_66',
+  manual_validation: 'physical_and_screen_reader_unavailable_owner_2026_11_02',
   practical_use_evidence: {
     windows: [
       'installed-markdown-lifecycle-receipt.json',
@@ -179,7 +181,7 @@ test('rejects paid desktop credentials', () =>
   assert.throws(
     () =>
       validateGovernedClaims({
-        releaseWorkflow: "workflow_dispatch:\n- 'v0.1.4'\nAPPLE_API_KEY",
+        releaseWorkflow: "workflow_dispatch:\n- 'v0.2.0'\nAPPLE_API_KEY",
         windowsContract: {
           official: {
             trust_state: 'unsigned_community',

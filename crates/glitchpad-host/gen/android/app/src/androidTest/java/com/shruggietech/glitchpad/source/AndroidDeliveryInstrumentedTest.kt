@@ -60,8 +60,8 @@ class AndroidDeliveryInstrumentedTest {
     for (extension in listOf("png", "jpg", "webp", "bmp", "tiff")) {
       val uri = grant(documentUri("original.$extension"))
       val before = resolver.openInputStream(uri)!!.use { it.readBytes() }
-      // Explicit internal delivery exercises the already granted provider path;
-      // image associations and public ACTION_VIEW intent filters stay deferred.
+      // Exercise the granted provider path; AndroidResolverInstrumentedTest
+      // separately checks every activated exact image MIME type.
       clientContext.startActivity(viewIntent(uri, "image/*").setComponent(component).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
       waitForBodyText(scenario, "original.$extension", "Actual size", "Background")
       waitForImagePixels(scenario, "original.$extension")

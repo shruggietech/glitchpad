@@ -1,0 +1,76 @@
+{
+  "architecture": "x86_64",
+  "limitations": [
+    "original and generated 1MP campaign, not maximum-input peak proof",
+    "hosted process, not physical Android validation"
+  ],
+  "measurement": "sampled_process_resident_bytes",
+  "peak_bytes": 28012544,
+  "platform": "linux",
+  "rows": [
+    {
+      "fixture": "original.png",
+      "iterations": 20,
+      "p95_us": 51,
+      "sha256": "79c11e5db45c966ded851a598187d19d54f486c84d20b240c0e35638b9a339c8"
+    },
+    {
+      "fixture": "original.jpg",
+      "iterations": 20,
+      "p95_us": 139,
+      "sha256": "be3da475b7e799500c12971c3dacebfc531d307ecde71109a8aa15833b09b6bd"
+    },
+    {
+      "fixture": "original.webp",
+      "iterations": 20,
+      "p95_us": 92,
+      "sha256": "aca59787e476c1cb9b27781317ec5b5f6cce77c4cddb4a20a4b670476a1d07b6"
+    },
+    {
+      "fixture": "original.bmp",
+      "iterations": 20,
+      "p95_us": 14,
+      "sha256": "227d56cdf77c84c050d920e05aabfefa26a7a91d71b96de8ce9d0a574aee5296"
+    },
+    {
+      "fixture": "original.tiff",
+      "iterations": 20,
+      "p95_us": 38,
+      "sha256": "e24d8fea3b87254ee8ff0160be0b4ad6d128df206c428d196675c1ab85885956"
+    },
+    {
+      "fixture": "original.gif",
+      "iterations": 20,
+      "p95_us": 37,
+      "sha256": "e78c47d3b8cc7effb82070768c41662fdd03a852dcd68bee03ff7e1d286199aa"
+    },
+    {
+      "fixture": "animated.webp",
+      "iterations": 20,
+      "p95_us": 58,
+      "sha256": "847e245c6055b4ade7ac6d4c47583dfd535b2080a6a42b522cbb6c0d0c59000d"
+    },
+    {
+      "fixture": "original.svg",
+      "iterations": 20,
+      "p95_us": 659,
+      "sha256": "7359085b4cf489ecec28d27de5b08d6be1a6d451521cb4f880d39daa115f5f11"
+    },
+    {
+      "fixture": "entries.ico",
+      "iterations": 20,
+      "p95_us": 91,
+      "sha256": "b73f4d20eae96192c9de1c4755c5de315c7c947bef0a2ad7079cfe6aeded68bd"
+    },
+    {
+      "fixture": "generated-1mp.bmp",
+      "iterations": 20,
+      "p95_us": 413259,
+      "sha256": "f073ad9424cd6fc6cfb536df27ac2b35f51e8ff4278d90ec69057b77a97b3cf9"
+    }
+  ],
+  "sample_interval_ms": 5,
+  "schema_version": 1,
+  "source_revision": "working-tree-before-initial-S043-commit",
+  "version": "0.2.0"
+}

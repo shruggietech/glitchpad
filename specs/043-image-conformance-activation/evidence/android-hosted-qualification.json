@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "workflow_run": 41499171232,
+  "head_sha": "50ba55b6d9687ac09bf6cc0b8841a391cd3a66ec",
+  "tested_merge_sha": "41a77cac6a0eb44d3de7f81f77d24946874cfdd8",
+  "verified_head_and_merge_tree_sha": "cf41ca7212a59144b74ce03b39a1f064860a2383",
+  "rows": [
+    {
+      "api_level": 24,
+      "artifact_id": 13169902550,
+      "archive_sha256": "36ed81c52b8b720e193a29773f9d90f8d71600540e990c2814008406a1d736f1",
+      "connected_suites": [
+        {
+          "tests": "8",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0",
+          "time": "3.172"
+        }
+      ],
+      "delivery_completed_assertion_markers": {
+        "image_export_evidence": "cancel:pass,original_denied:pass,selected_dib_png:pass,existing_conflict:pass,misreported_size:pass,source_unchanged:pass,api:24",
+        "image_family_evidence": "gif:pass,animated_webp:pass,svg:pass,ico_png_dib:pass,hostile_svg:refused,source_unchanged:pass,api:24",
+        "image_evidence": "png:pass,jpeg:pass,webp:pass,bmp:pass,tiff:pass,source_unchanged:pass,api:24",
+        "delivery_evidence": "cold:pass,warm:pass,api:24"
+      },
+      "appframe_actual_tauri_webview": true,
+      "idle_pss_evidence": {
+        "schema_version": 1,
+        "catalog_version": "v0.1.3-performance-1",
+        "metric_id": "idle_android_pss",
+        "scenario_id": "idle_application",
+        "profile_id": "android_api24_reference_v1",
+        "evidence_class": "reference",
+        "build_profile": "debug",
+        "build_id": "android-debug-1",
+        "runtime_version": "android-api24",
+        "cold_state": false,
+        "method": "android-debug-get-pss-v1",
+        "samples": [
+          98083840,
+          98432000,
+          99485696,
+          98783232,
+          98787328
+        ],
+        "median": 98783232,
+        "p95": 99485696,
+        "maximum": 99485696,
+        "peak_memory_bytes": 99485696,
+        "invariants": {},
+        "classification": "pass",
+        "cleanup_complete": true,
+        "measured_at": "2026-11-02T18:47:33.620Z"
+      },
+      "second_attempt_files": []
+    },
+    {
+      "api_level": 36,
+      "artifact_id": 13170950812,
+      "archive_sha256": "e8969edc4eb08f71b8e288053920e77f71c210839bd596c80986842d5de13d57",
+      "connected_suites": [
+        {
+          "tests": "8",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0",
+          "time": "4.459"
+        }
+      ],
+      "delivery_completed_assertion_markers": {
+        "image_export_evidence": "cancel:pass,original_denied:pass,selected_dib_png:pass,existing_conflict:pass,misreported_size:pass,source_unchanged:pass,api:36",
+        "image_family_evidence": "gif:pass,animated_webp:pass,svg:pass,ico_png_dib:pass,hostile_svg:refused,source_unchanged:pass,api:36",
+        "image_evidence": "png:pass,jpeg:pass,webp:pass,bmp:pass,tiff:pass,source_unchanged:pass,api:36",
+        "delivery_evidence": "cold:pass,warm:pass,api:36"
+      },
+      "appframe_actual_tauri_webview": true,
+      "idle_pss_evidence": {
+        "schema_version": 1,
+        "catalog_version": "v0.1.3-performance-1",
+        "metric_id": "idle_android_pss",
+        "scenario_id": "idle_application",
+        "profile_id": "android_api36_reference_v1",
+        "evidence_class": "reference",
+        "build_profile": "debug",
+        "build_id": "android-debug-1",
+        "runtime_version": "android-api36",
+        "cold_state": false,
+        "method": "android-debug-get-pss-v1",
+        "samples": [
+          154313728,
+          154475520,
+          155190272,
+          156986368,
+          157320192
+        ],
+        "median": 155190272,
+        "p95": 157320192,
+        "maximum": 157320192,
+        "peak_memory_bytes": 157320192,
+        "invariants": {},
+        "classification": "pass",
+        "cleanup_complete": true,
+        "measured_at": "2026-11-02T18:50:24.914Z"
+      },
+      "second_attempt_files": []
+    }
+  ],
+  "limitations": [
+    "Hosted x86_64 Android emulators and debug test builds, not physical ARM64 acceptance",
+    "Idle PSS is distinct from per-image peak memory",
+    "Delivery completion markers follow assertions before intentional Tauri Activity process shutdown; they do not claim a normal JUnit completion for that method",
+    "No manual screen-reader validation"
+  ]
+}

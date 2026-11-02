@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "toolchain": "nightly-2026-10-31",
+  "cargo_fuzz": "0.13.2",
+  "libfuzzer_sys": "0.4.13",
+  "source_sha256": "4c274042cb0a46568d32310816268cac74cb2968749b83278204c1f5ac61d39d",
+  "application_lock_sha256": "ef0703fab69d9d55b81d39295208598a2f2e0d458fbae35a5c2459a43b140321",
+  "fuzz_lock_sha256": "4ed9b1cd2668c608ae0af8246aa2c5a5c33cf4a628369913dc3d01da0e16f50c",
+  "runs": 167825,
+  "seconds": 61,
+  "exit_code": 0,
+  "max_input_bytes": 65536,
+  "seed": 43,
+  "scope": [
+    "image detection",
+    "metadata",
+    "ICO inventory",
+    "family decode",
+    "core detection",
+    "language identification",
+    "SaveRequest deserialization"
+  ],
+  "limitations": [
+    "Bounded campaign, not exhaustive proof",
+    "Local working-tree result; exact-head hosted campaign remains required"
+  ],
+  "library_sha256": "cb617fb33a074c37e09944c271c180d963bd4887841006fc3a965bd2a10c89e3",
+  "regression": "valid JPEG/GIF/animated-WebP/SVG/ICO seeds reach pixel output; cancellation and selectors are independent of magic bytes"
+}

@@ -10,3 +10,8 @@ target/
 site/.next/
 site/out/
 crates/glitchpad-host/gen/
+
+.tmp/
+.codex-tmp/
+.pnpm-store/
+fuzz/target/

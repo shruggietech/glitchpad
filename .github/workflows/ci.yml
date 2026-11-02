@@ -171,6 +171,26 @@ jobs:
       - name: Image family corpus and privacy
         run: cargo test -p glitchpad-core --locked --test image_contract --test image_decode --test image_metadata --test image_family --test image_family_decode
 
+      - name: Measure native image qualification
+        env:
+          GLITCHPAD_SOURCE_REVISION: ${{ github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/image-qualification
+          cargo run -p glitchpad-core --example image_qualification --locked > artifacts/image-qualification/native-${{ matrix.os }}.json
+
+      - name: Retain native image measurements
+        uses: actions/upload-artifact@v6
+        with:
+          name: image-qualification-${{ matrix.os }}
+          path: artifacts/image-qualification/
+          if-no-files-found: error
+
+      - name: Verify persistent Linux D-Bus plugin runtime
+        if: matrix.os == 'ubuntu-latest'
+        run: dbus-run-session -- cargo test -p tauri-plugin-single-instance --lib s043_tests --locked
+
       - name: Run desktop source adapter conformance
         run: cargo test -p glitchpad-host --test desktop_source_conformance --locked
 
@@ -402,6 +422,7 @@ jobs:
         docs,
         shared,
         performance,
+        image-fuzz,
         platform,
         android,
         android-instrumentation,
@@ -417,6 +438,7 @@ jobs:
           DOCS_RESULT: ${{ needs.docs.result }}
           SHARED_RESULT: ${{ needs.shared.result }}
           PERFORMANCE_RESULT: ${{ needs.performance.result }}
+          IMAGE_FUZZ_RESULT: ${{ needs.image-fuzz.result }}
           PLATFORM_RESULT: ${{ needs.platform.result }}
           ANDROID_RESULT: ${{ needs.android.result }}
           ANDROID_INSTRUMENTATION_RESULT: ${{ needs.android-instrumentation.result }}
@@ -424,7 +446,7 @@ jobs:
           SECURITY_RESULT: ${{ needs.security.result }}
           LABELER_RESULT: ${{ needs.labeler.result }}
         run: |
-          results="$DOCS_RESULT $SHARED_RESULT $PERFORMANCE_RESULT $PLATFORM_RESULT $ANDROID_RESULT $ANDROID_INSTRUMENTATION_RESULT $DEPENDENCY_RESULT $SECURITY_RESULT $LABELER_RESULT"
+          results="$DOCS_RESULT $SHARED_RESULT $PERFORMANCE_RESULT $IMAGE_FUZZ_RESULT $PLATFORM_RESULT $ANDROID_RESULT $ANDROID_INSTRUMENTATION_RESULT $DEPENDENCY_RESULT $SECURITY_RESULT $LABELER_RESULT"
           echo "Job results: $results"
           for result in $results; do
             if [ "$result" = "failure" ] || [ "$result" = "cancelled" ]; then
@@ -432,3 +454,30 @@ jobs:
               exit 1
             fi
           done
+
+  image-fuzz:
+    name: Bounded image fuzz qualification
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install pinned fuzz tooling
+        run: |
+          rustup toolchain install nightly-2026-10-31 --profile minimal
+          cargo install cargo-fuzz --version 0.13.2 --locked
+      - name: Verify valid seeds reach pixel decoding
+        run: cargo test --manifest-path fuzz/Cargo.toml --lib --locked
+      - name: Run bounded original-corpus campaign
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .tmp/s043-fuzz/corpus
+          cp fixtures/images/original.* fixtures/images/animated.webp fixtures/images/entries.ico fixtures/images/hostile.svg .tmp/s043-fuzz/corpus/
+          cargo +nightly-2026-10-31 fuzz run image_boundaries .tmp/s043-fuzz/corpus -- -max_total_time=60 -timeout=10 -rss_limit_mb=1536 -max_len=65536 -seed=43 -artifact_prefix=.tmp/s043-fuzz/ 2>&1 | tee .tmp/s043-fuzz/campaign.log
+      - name: Retain fuzz campaign and findings
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: image-fuzz-qualification
+          path: .tmp/s043-fuzz/
+          if-no-files-found: error

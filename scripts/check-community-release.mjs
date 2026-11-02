@@ -9,8 +9,8 @@ const text = async (path) => readFile(path, 'utf8');
 export function validateReleaseContract(contract) {
   if (
     contract.schema_version !== 1 ||
-    contract.version !== '0.1.4' ||
-    contract.tag !== 'v0.1.4' ||
+    contract.version !== '0.2.0' ||
+    contract.tag !== 'v0.2.0' ||
     contract.repository !== 'shruggietech/glitchpad'
   )
     throw new Error('release identity is invalid');
@@ -20,7 +20,7 @@ export function validateReleaseContract(contract) {
     new Set(contract.artifacts).size !== 8
   )
     throw new Error('release must declare exactly eight unique artifacts');
-  if (contract.artifacts.some((name) => !name.includes('0.1.4')))
+  if (contract.artifacts.some((name) => !name.includes('0.2.0')))
     throw new Error('artifact version is stale');
   const expectedTrust = {
     windows: 'unsigned_community',
@@ -103,7 +103,10 @@ export function validateReleaseContract(contract) {
     JSON.stringify(expectedPracticalUseRequiredPasses)
   )
     throw new Error('practical-use required-pass inventory is invalid');
-  if (contract.manual_validation !== 'deferred_post_release_issue_66')
+  if (
+    contract.manual_validation !==
+    'physical_and_screen_reader_unavailable_owner_2026_11_02'
+  )
     throw new Error('manual validation policy is invalid');
   return true;
 }
@@ -158,29 +161,29 @@ export function validateFinalReleaseHandoff({
 }) {
   const tagInstruction = operatorRunbook.match(/^5\.\s+(.+)$/mu)?.[1] ?? '';
   if (
-    !operatorRunbook.includes('v0.1.4 release pull request is merged') ||
-    !operatorRunbook.includes('reviewed v0.1.4 merge commit')
+    !operatorRunbook.includes('v0.2.0 release pull request is merged') ||
+    !operatorRunbook.includes('reviewed v0.2.0 merge commit')
   )
-    throw new Error('final handoff omits the v0.1.4 release authority');
+    throw new Error('final handoff omits the v0.2.0 release authority');
   if (
     tagInstruction !==
-    'Create the annotated tag `v0.1.4` on the reviewed v0.1.4 merge commit and push only that tag.'
+    'Create the annotated tag `v0.2.0` on the reviewed v0.2.0 merge commit and push only that tag.'
   )
-    throw new Error('final handoff tag instruction does not target v0.1.4');
+    throw new Error('final handoff tag instruction does not target v0.2.0');
   for (const [source, content] of [
     ['release notes', releaseNotes],
     ['release receipt', releaseReceipt],
     ['operator runbook', operatorRunbook],
     ['changelog', changelog],
   ]) {
-    if (!content.includes('S042'))
-      throw new Error(`${source} omits S042 brand integration`);
-    if (!content.includes('AppFrame'))
-      throw new Error(`${source} omits AppFrame adoption`);
+    if (!content.includes('S043'))
+      throw new Error(`${source} omits S043 qualification`);
+    if (!content.includes('image activation'))
+      throw new Error(`${source} omits image activation`);
   }
   for (const issue of ['#75', '#76']) {
     if (!releaseNotes.includes(issue) || !releaseReceipt.includes(issue))
-      throw new Error(`release handoff omits deferred image gate ${issue}`);
+      throw new Error(`release handoff omits tracked image gate ${issue}`);
   }
   return true;
 }
@@ -202,7 +205,7 @@ export function validateGovernedClaims({
   if (forbidden.some((value) => releaseWorkflow.includes(value)))
     throw new Error('paid desktop authority remains in the release workflow');
   if (
-    !releaseWorkflow.includes("- 'v0.1.4'") ||
+    !releaseWorkflow.includes("- 'v0.2.0'") ||
     !releaseWorkflow.includes('workflow_dispatch:')
   )
     throw new Error('release event guards are incomplete');
@@ -311,9 +314,9 @@ export async function checkCommunityRelease(repositoryRoot = root) {
     loadJson(join(repositoryRoot, 'packaging/android/package-contract.json')),
     text(join(repositoryRoot, '.github/workflows/release.yml')),
     text(join(repositoryRoot, 'scripts/check-release-readiness.ps1')),
-    text(join(repositoryRoot, 'docs/releases/v0.1.4.md')),
-    text(join(repositoryRoot, 'docs/releases/v0.1.4-receipt.md')),
-    text(join(repositoryRoot, 'docs/releases/v0.1.4-operator-runbook.md')),
+    text(join(repositoryRoot, 'docs/releases/v0.2.0.md')),
+    text(join(repositoryRoot, 'docs/releases/v0.2.0-receipt.md')),
+    text(join(repositoryRoot, 'docs/releases/v0.2.0-operator-runbook.md')),
     text(join(repositoryRoot, 'CHANGELOG.md')),
     text(join(repositoryRoot, '.github/workflows/android-package.yml')),
     text(join(repositoryRoot, '.github/workflows/macos-package.yml')),
@@ -354,5 +357,5 @@ export async function checkCommunityRelease(repositoryRoot = root) {
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   await checkCommunityRelease();
-  console.log('v0.1.4 community release policy is internally consistent.');
+  console.log('v0.2.0 community release policy is internally consistent.');
 }

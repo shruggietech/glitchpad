@@ -17,10 +17,13 @@ use crate::source::{DesktopDelivery, DesktopDeliveryKind, DesktopSourceHost};
 
 const MAX_QUEUED_DELIVERIES: usize = 128;
 const MAX_DELIVERY_DRAIN: usize = 64;
-const INTERNAL_RASTER_EXTENSIONS: &[&str] = &["png", "jpg", "jpeg", "webp", "bmp", "tif", "tiff"];
+const IMAGE_EXTENSIONS: &[&str] = &[
+    "png", "jpg", "jpeg", "webp", "bmp", "tif", "tiff", "gif", "svg", "ico",
+];
 const GOVERNED_EXTENSIONS: &[&str] = &[
     "cjs", "css", "htm", "html", "js", "json", "jsonc", "jsx", "markdown", "md", "mermaid", "mjs",
-    "mmd", "py", "rs", "toml", "ts", "tsx", "txt", "yaml", "yml",
+    "mmd", "py", "rs", "toml", "ts", "tsx", "txt", "yaml", "yml", "png", "jpg", "jpeg", "webp",
+    "bmp", "tif", "tiff", "gif", "svg", "ico",
 ];
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
@@ -117,11 +120,7 @@ impl DesktopDeliveryQueue {
         let mut accepted = 0;
         for resource in resources {
             let acquired = match resource {
-                Ok(path)
-                    if governed_extension(&path)
-                        || (kind != DesktopDeliveryKind::Association
-                            && internal_raster_extension(&path)) =>
-                {
+                Ok(path) if governed_extension(&path) => {
                     let delivery = match kind {
                         DesktopDeliveryKind::Dialog => DesktopDelivery::dialog(path),
                         DesktopDeliveryKind::Drop => DesktopDelivery::dropped(path),
@@ -245,12 +244,6 @@ fn governed_extension(path: &Path) -> bool {
         .is_some_and(|extension| GOVERNED_EXTENSIONS.contains(&extension.as_str()))
 }
 
-fn internal_raster_extension(path: &Path) -> bool {
-    path.extension()
-        .and_then(|e| e.to_str())
-        .is_some_and(|e| INTERNAL_RASTER_EXTENSIONS.contains(&e.to_ascii_lowercase().as_str()))
-}
-
 fn looks_like_url(path: &Path) -> bool {
     let value = path.as_os_str().to_string_lossy();
     value.contains("://") || value.starts_with("file:")
@@ -293,7 +286,7 @@ pub(crate) async fn choose_desktop_sources(
         dialog_app
             .dialog()
             .file()
-            .add_filter("Raster images", INTERNAL_RASTER_EXTENSIONS)
+            .add_filter("Images", IMAGE_EXTENSIONS)
             .add_filter("Markdown", &["md", "markdown"])
             .add_filter("Mermaid", &["mmd", "mermaid"])
             .add_filter(

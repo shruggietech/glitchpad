@@ -244,10 +244,30 @@ describe('read-only raster viewport', () => {
     visibility.mockReturnValue('hidden'); fireEvent(document, new Event('visibilitychange'));
     await screen.findByText('Image preview suspended.');
     expect(revokeUrl).toHaveBeenCalledTimes(1);
+    expect(createUrl.mock.calls.length - revokeUrl.mock.calls.length).toBe(0);
     expect(screen.queryByRole('img')).not.toBeInTheDocument();
+    expect(gateway.render).toHaveBeenCalledTimes(1);
     visibility.mockReturnValue('visible'); fireEvent(document, new Event('visibilitychange'));
     await screen.findByRole('img');
     expect(gateway.render).toHaveBeenCalledTimes(2);
+  });
+  it.each(['gif', 'svg', 'ico'] as const)('has no serious or critical automated accessibility findings for %s controls', async (codec) => {
+    const preview = result();
+    preview.preview!.descriptor.codec = codec;
+    if (codec === 'gif') {
+      preview.preview!.descriptor.family = 'animation';
+      preview.family_state = { family: 'animation', paused: true, selected_frame: 0, frame_count: 3, loop_count: 0, frame_duration_ms: 40, max_composited_frames: 2 };
+    } else if (codec === 'svg') {
+      preview.preview!.descriptor.family = 'svg';
+      preview.family_state = { family: 'svg', output: 'rasterized_png', external_resources: false, scripts: false, max_nodes: 50000, max_depth: 128 };
+    } else {
+      preview.preview!.descriptor.family = 'ico';
+      preview.family_state = { family: 'ico', entries: [{ index: 0, width: 16, height: 16, bits_per_pixel: 32, encoded_bytes: 8, preview: 'full', encoding: 'png', alpha: true, failure: null, duplicate_of: null }], selected_entry: 0, selected_entry_export: true };
+    }
+    const { container } = render(<ImageSurface session={imageSession()} gateway={{ render: () => Promise.resolve(preview), exportEntry: () => Promise.resolve({ status: 'cancelled', durability: null }) }} />);
+    await screen.findByRole('img');
+    const results = await axe.run(container, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'] } });
+    expect(results.violations.filter(v => v.impact === 'critical' || v.impact === 'serious')).toEqual([]);
   });
   it('has no serious or critical accessible-control findings', async () => {
     const { container } = render(<ImageSurface session={imageSession()} gateway={{ render: () => Promise.resolve(result()) }} />);

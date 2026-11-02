@@ -209,7 +209,7 @@ function receipt(
 
 test('repository macOS package configuration is internally consistent', async () => {
   assert.deepEqual(await checkMacosConfiguration(repositoryRoot), {
-    capabilityCount: 21,
+    capabilityCount: 31,
     artifactCount: 1,
   });
 });
@@ -329,7 +329,7 @@ test('candidate mode binds staged application, DMG, supply chain, and notices', 
             ],
           },
           components: [
-            { 'bom-ref': 'pkg:cargo/glitchpad-core@0.1.4' },
+            { 'bom-ref': 'pkg:cargo/glitchpad-core@0.2.0' },
             { 'bom-ref': 'pkg:npm/react@19.2.8' },
           ],
         }),
@@ -528,7 +528,7 @@ test('official community mode binds final bytes and truthful macOS trust', async
     evidence.official = true;
     evidence.gate_status = 'official_valid';
     evidence.event = 'push_tag';
-    evidence.tag = 'v0.1.4';
+    evidence.tag = 'v0.2.0';
     evidence.evidence_files = [...contract.official.required_evidence];
     evidence.artifact.signature_status = 'not_signed';
     evidence.artifact.notarization_status = 'not_submitted';
@@ -592,7 +592,7 @@ test('official community mode binds final bytes and truthful macOS trust', async
           ],
         },
         components: [
-          { 'bom-ref': 'pkg:cargo/glitchpad-core@0.1.4' },
+          { 'bom-ref': 'pkg:cargo/glitchpad-core@0.2.0' },
           { 'bom-ref': 'pkg:npm/react@19.2.8' },
         ],
       }),
@@ -723,7 +723,7 @@ test('macOS SBOM combines Cargo and transitive production JavaScript dependencie
       packages: [
         {
           name: 'glitchpad-core',
-          version: '0.1.4',
+          version: '0.2.0',
           source: null,
           license: 'Apache-2.0',
         },

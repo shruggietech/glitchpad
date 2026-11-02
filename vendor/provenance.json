@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "decision_date": "2026-11-02",
+  "reason": "Remove retired zbus 5 standalone dependencies without suppressing advisory checks",
+  "packages": [
+    {
+      "name": "tauri-plugin-opener",
+      "registry_version": "2.5.5",
+      "crate_sha256": "60d60366174b745b4ef5824b8bbc1c457fd08f0ce101ff643c0a49181a9f4e91",
+      "source": {
+        "git": {
+          "sha1": "6aa2854f314481a459be1189b02c65a2450789ab"
+        },
+        "path_in_vcs": "plugins/opener"
+      },
+      "license": "Apache-2.0 OR MIT",
+      "modified_files": [
+        {
+          "path": "Cargo.toml",
+          "sha256": "bac0efbe566165fbda74c89503fa496b4faa83efd986cd32e7c673af7f571e20"
+        },
+        {
+          "path": "src/reveal_item_in_dir.rs",
+          "sha256": "de6b382594b07975634b5cb3fac079420749eb4f7bda922c2ed2995cade13a7f"
+        }
+      ]
+    },
+    {
+      "name": "tauri-plugin-single-instance",
+      "registry_version": "2.4.5",
+      "crate_sha256": "db817fe9295e19b7d8357e900af31edb93703dd9fb6de524b007b47b6afc63b0",
+      "source": {
+        "git": {
+          "sha1": "5baf71a47292d8490f0ba3d53f15224e55c48327"
+        },
+        "path_in_vcs": "plugins/single-instance"
+      },
+      "license": "Apache-2.0 OR MIT",
+      "modified_files": [
+        {
+          "path": "Cargo.toml",
+          "sha256": "1c94073c6c38dc76f0a13ca81cce07f0624cc4780c2649ebad7782ce7607d546"
+        },
+        {
+          "path": "src/platform_impl/linux.rs",
+          "sha256": "ee166e8defc9fedf5b1d6c7852129f4d472e9dab01a452da4d9d7c40df834e28"
+        }
+      ]
+    }
+  ],
+  "modified_files": [
+    "Cargo.toml (Linux zbus dependency only)",
+    "tauri-plugin-opener/src/reveal_item_in_dir.rs (Linux implementation and persistent-runtime regression)",
+    "tauri-plugin-single-instance/src/platform_impl/linux.rs"
+  ],
+  "retirement": "Remove patches after maintained upstream releases provide compatible zbus 6 integration and full Linux lifecycle qualification passes"
+}

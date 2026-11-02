@@ -1,5 +1,5 @@
 {
-  "version": "0.1.4",
+  "version": "0.2.0",
   "bundle": {
     "active": true,
     "targets": ["app", "dmg"],
@@ -54,6 +54,62 @@
         ],
         "mimeType": "text/plain",
         "role": "Editor"
+      },
+      {
+        "name": "Glitchpad PNG",
+        "description": "PNG image",
+        "ext": ["png"],
+        "mimeType": "image/png",
+        "role": "Viewer"
+      },
+      {
+        "name": "Glitchpad JPEG",
+        "description": "JPEG image",
+        "ext": ["jpg", "jpeg"],
+        "mimeType": "image/jpeg",
+        "role": "Viewer"
+      },
+      {
+        "name": "Glitchpad WEBP",
+        "description": "WEBP image",
+        "ext": ["webp"],
+        "mimeType": "image/webp",
+        "role": "Viewer"
+      },
+      {
+        "name": "Glitchpad BMP",
+        "description": "BMP image",
+        "ext": ["bmp"],
+        "mimeType": "image/bmp",
+        "role": "Viewer"
+      },
+      {
+        "name": "Glitchpad TIFF",
+        "description": "TIFF image",
+        "ext": ["tif", "tiff"],
+        "mimeType": "image/tiff",
+        "role": "Viewer"
+      },
+      {
+        "name": "Glitchpad GIF",
+        "description": "GIF image",
+        "ext": ["gif"],
+        "mimeType": "image/gif",
+        "role": "Viewer"
+      },
+      {
+        "name": "Glitchpad SVG",
+        "description": "SVG image",
+        "ext": ["svg"],
+        "mimeType": "image/svg+xml",
+        "role": "Viewer"
+      },
+      {
+        "name": "Glitchpad ICO",
+        "description": "ICO image",
+        "ext": ["ico"],
+        "mimeType": "image/vnd.microsoft.icon",
+        "role": "Viewer"
       }
     ],
     "macOS": {

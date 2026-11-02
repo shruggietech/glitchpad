@@ -28,7 +28,7 @@ class AndroidResolverInstrumentedTest {
 
     val negativeCases = listOf(
       viewIntent(Uri.parse("file:///tmp/private.md"), "text/markdown"),
-      viewIntent(Uri.parse("content://com.shruggietech.synthetic/document/image"), "image/png"),
+      viewIntent(Uri.parse("content://com.shruggietech.synthetic/document/image"), "image/avif"),
       viewIntent(Uri.parse("content://com.shruggietech.synthetic/document/pdf"), "application/pdf"),
       viewIntent(Uri.parse("content://com.shruggietech.synthetic/document/docx"), "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
       viewIntent(Uri.parse("content://com.shruggietech.synthetic/document/odt"), "application/vnd.oasis.opendocument.text"),
@@ -74,6 +74,15 @@ class AndroidResolverInstrumentedTest {
       "text/rust",
       "text/vnd.mermaid",
       "text/x-python",
+      "image/png",
+      "image/jpeg",
+      "image/webp",
+      "image/bmp",
+      "image/tiff",
+      "image/gif",
+      "image/svg+xml",
+      "image/vnd.microsoft.icon",
+      "image/x-icon",
     )
   }
 }

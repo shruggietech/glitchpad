@@ -175,7 +175,7 @@ test('Windows lifecycle policy rejects removal of content-first release assertio
   assert.throws(
     () =>
       validatePortableSmokeContract(
-        lifecycle.replace('catch { }', ''),
+        lifecycle.replace('        catch { }', ''),
         workflow,
       ),
     /Windows Markdown lifecycle omits/u,

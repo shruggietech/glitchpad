@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import { spawn } from 'node:child_process';
+import { once } from 'node:events';
 import { mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -10,6 +12,7 @@ import {
   initialLaunchArguments,
   lifecycleProbeArgument,
   parseArguments,
+  stopProcess,
   waitForLifecycleReadiness,
   waitForShellReadiness,
   waitForSingleNewDelivery,
@@ -150,5 +153,23 @@ test('running-instance delivery requires exactly one new acknowledgement', async
     );
   } finally {
     await rm(root, { recursive: true, force: true });
+  }
+});
+
+test('owned-process cleanup terminates an actual noninteractive child', async () => {
+  const child = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], {
+    stdio: 'ignore',
+    windowsHide: true,
+  });
+  await once(child, 'spawn');
+  try {
+    await stopProcess(child.pid);
+    assert.throws(
+      () => process.kill(child.pid, 0),
+      (error) => error.code === 'ESRCH',
+    );
+  } finally {
+    if (child.exitCode === null && child.signalCode === null)
+      child.kill('SIGKILL');
   }
 });

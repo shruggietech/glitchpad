@@ -8,6 +8,20 @@ All notable changes to Glitchpad are documented in this file. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- S044 converges compatible Cargo and application patch dependencies for the v0.2.0 candidate, including the SVG parser patch, while preserving existing admission limits and licensed Linux plugin patches.
+
+### Fixed
+
+- Native macOS qualification retains startup failures before gating and cleans processes discovered before readiness completes. Paired baseline/candidate measurements preserve first-launch samples and identify later restarts with warm OS caches.
+- Windows portable and Android AppFrame readiness failures include bounded content-free diagnostics without relaxing assertions or timeouts.
+
+### Decisions
+
+- 2026-11-02 (S044): Align the reusable Docker validation browser with the workspace Puppeteer25.12.0 pin after aggregate validation exposed a missing executable.
+- 2026-11-02 (S044): Extend existing package workflows with an exact-byte historical macOS comparison and always-upload failure evidence. Keep reference and hosted-smoke performance classifications separate. Publication remains owner-authorized after review/merge; #76/#10 remain open until actual release readback.
+
 ## [0.1.4] - 2026-09-29
 
 ### Added

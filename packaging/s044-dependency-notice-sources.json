@@ -1,0 +1,441 @@
+{
+  "schema_version": 1,
+  "slice": "S044",
+  "source_policy": "Registry archives at Cargo.lock digests; missing texts from exact upstream revisions. selectors uses canonical MPL-2.0 text from SPDX license-list-data v3.27.0. Existing SPDX expressions remain unchanged.",
+  "cargo": [
+    {
+      "name": "alloc-no-stdlib",
+      "version": "3.0.0",
+      "registry_archive_sha256": "c2fb6cfd47bf496ff64095c20eaba0c201404ee38714d4142fcfa1dc334fcc7a",
+      "license_expression": "BSD-3-Clause",
+      "license_texts": [
+        {
+          "file": "LICENSE",
+          "sha256": "c0c56f26d9c051cac4d200c34c84e7ae9aaa853e01a982a1df08b09931e518ae"
+        }
+      ]
+    },
+    {
+      "name": "alloc-stdlib",
+      "version": "0.3.0",
+      "registry_archive_sha256": "0b5c1865780388bfa186411ab5f247819487fc4864c6e9c3106611fa347586e1",
+      "license_expression": "BSD-3-Clause",
+      "license_texts": [
+        {
+          "source": "https://raw.githubusercontent.com/dropbox/rust-alloc-no-stdlib/0a81fd6928ea3b33c8cd484aa4575d50ffb98012/LICENSE",
+          "sha256": "c0c56f26d9c051cac4d200c34c84e7ae9aaa853e01a982a1df08b09931e518ae"
+        }
+      ]
+    },
+    {
+      "name": "brotli",
+      "version": "9.1.1",
+      "registry_archive_sha256": "627b7cfb0578f0eafce087a90fcd40add1231900b69e4d4de2d456260a4f5d81",
+      "license_expression": "BSD-3-Clause AND MIT",
+      "license_texts": [
+        {
+          "file": "LICENSE.BSD-3-Clause",
+          "sha256": "c0c56f26d9c051cac4d200c34c84e7ae9aaa853e01a982a1df08b09931e518ae"
+        },
+        {
+          "file": "LICENSE.MIT",
+          "sha256": "3d180008e36922a4e8daec11c34c7af264fed5962d07924aea928c38e8663c94"
+        }
+      ]
+    },
+    {
+      "name": "brotli-decompressor",
+      "version": "6.2.0",
+      "registry_archive_sha256": "34c6783f42c21c952ad7112b354f0ba2f10760e9decea5b1b60523d6e270faaf",
+      "license_expression": "BSD-3-Clause/MIT",
+      "license_texts": [
+        {
+          "file": "LICENSE",
+          "sha256": "c0c56f26d9c051cac4d200c34c84e7ae9aaa853e01a982a1df08b09931e518ae"
+        }
+      ]
+    },
+    {
+      "name": "cfb",
+      "version": "0.14.0",
+      "registry_archive_sha256": "a347dcabdae9c31b0825fd6a8bed285ec9c2acb89c47827126d52fa4f59cece3",
+      "license_expression": "MIT",
+      "license_texts": [
+        {
+          "file": "LICENSE",
+          "sha256": "ebaac853b53fec0ed475796f533ce676912a4df9ad9d8a621fa76d5060591e10"
+        }
+      ]
+    },
+    {
+      "name": "cssparser",
+      "version": "0.37.0",
+      "registry_archive_sha256": "8c9cdaae01d5ed7882b04d795e7f752f46ff52d2fa3b50a20d28c464510bba98",
+      "license_expression": "MPL-2.0",
+      "license_texts": [
+        {
+          "file": "LICENSE",
+          "sha256": "fab3dd6bdab226f1c08630b1dd917e11fcb4ec5e1e020e2c16f83a0a13863e85"
+        }
+      ]
+    },
+    {
+      "name": "cssparser-macros",
+      "version": "0.7.1",
+      "registry_archive_sha256": "d045de693cb712d0b22c6a64be5b953f67b3ce00ab5ad3dd5d8b441886ab8e1a",
+      "license_expression": "MPL-2.0",
+      "license_texts": [
+        {
+          "file": "LICENSE",
+          "sha256": "fab3dd6bdab226f1c08630b1dd917e11fcb4ec5e1e020e2c16f83a0a13863e85"
+        }
+      ]
+    },
+    {
+      "name": "ctor",
+      "version": "1.0.13",
+      "registry_archive_sha256": "914a755b7c2d4af2bdcff7ce1739e2db9a1b81a9b07123d8015786ae03c0980d",
+      "license_expression": "Apache-2.0 OR MIT",
+      "license_texts": [
+        {
+          "file": "LICENSE-APACHE",
+          "sha256": "a8ad31b1c3f40dca5a84119351b8fa8ddc868edd77fad8a8ebf6d8f2d16fa4ae"
+        },
+        {
+          "file": "LICENSE-MIT",
+          "sha256": "bccaa8b6c09f94e81f06696e179dbe058464bbdfbc823b6d49cada1d71e84ac3"
+        }
+      ]
+    },
+    {
+      "name": "dom_query",
+      "version": "0.28.0",
+      "registry_archive_sha256": "fac5fca71e65e94cc718a6e2af65d6e0f9c6027751c2aa562fbb5087fda639bc",
+      "license_expression": "MIT",
+      "license_texts": [
+        {
+          "file": "LICENSE",
+          "sha256": "7554701d1e74fc434f68c522b1dd743c8c16d816a4b761b5213f367b898884c8"
+        }
+      ]
+    },
+    {
+      "name": "html5ever",
+      "version": "0.39.0",
+      "registry_archive_sha256": "46a1761807faccc9a19e86944bbf40610014066306f96edcdedc2fb714bcb7b8",
+      "license_expression": "MIT OR Apache-2.0",
+      "license_texts": [
+        {
+          "file": "LICENSE-APACHE",
+          "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+        },
+        {
+          "file": "LICENSE-MIT",
+          "sha256": "86dd7f026f916daf7511e39951ad8ea8cf55a8db67ae64060dacf829761c18f3"
+        }
+      ]
+    },
+    {
+      "name": "infer",
+      "version": "0.22.0",
+      "registry_archive_sha256": "f4200d433cbd5178df7797c9c2e75b348b728e39631cf14520d1e2fc424201f4",
+      "license_expression": "MIT",
+      "license_texts": [
+        {
+          "file": "LICENSE",
+          "sha256": "270b0d81891aa44c7e8726cf9432dade9556a01c848bacd2f3ef839c9c1a1859"
+        }
+      ]
+    },
+    {
+      "name": "json-patch",
+      "version": "4.2.0",
+      "registry_archive_sha256": "7421438de105a0827e44fadd05377727847d717c80ce29a229f85fd04c427b72",
+      "license_expression": "MIT/Apache-2.0",
+      "license_texts": [
+        {
+          "file": "LICENSE-APACHE",
+          "sha256": "b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1"
+        },
+        {
+          "file": "LICENSE-MIT",
+          "sha256": "87f7527b1066337751f7f4d717089bf514ff8f7ee7d66c4c5b891b09e744ec11"
+        }
+      ]
+    },
+    {
+      "name": "jsonptr",
+      "version": "0.7.1",
+      "registry_archive_sha256": "a5a3cc660ba5d72bce0b3bb295bf20847ccbb40fd423f3f05b61273672e561fe",
+      "license_expression": "MIT OR Apache-2.0",
+      "license_texts": [
+        {
+          "file": "LICENSE-APACHE",
+          "sha256": "2cf31f2ae7f3feba667d50fc1d4d21ecf217703c04c3068b83c9a73b6dde723a"
+        },
+        {
+          "file": "LICENSE-MIT",
+          "sha256": "2bc107bdc18a74263d20bdefdb8073e17bc1a01b6b374dc5835683a33ee5ba7d"
+        }
+      ]
+    },
+    {
+      "name": "markup5ever",
+      "version": "0.39.0",
+      "registry_archive_sha256": "7122d987ec5f704ee56f6e5b41a7d93722e9aae27ae07cafa4036c4d3f9757de",
+      "license_expression": "MIT OR Apache-2.0",
+      "license_texts": [
+        {
+          "file": "LICENSE-APACHE",
+          "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+        },
+        {
+          "file": "LICENSE-MIT",
+          "sha256": "86dd7f026f916daf7511e39951ad8ea8cf55a8db67ae64060dacf829761c18f3"
+        }
+      ]
+    },
+    {
+      "name": "notify",
+      "version": "8.2.1",
+      "registry_archive_sha256": "82f812702fbc75d35416d3f884e04925be7e9498f4eceea2e24ba34559284674",
+      "license_expression": "CC0-1.0",
+      "license_texts": [
+        {
+          "file": "LICENSE-CC0",
+          "sha256": "e0456cbab4f7b5e7203e678faff37eadbdfef02e822db3b7a52a1dd9d3dc514a"
+        }
+      ]
+    },
+    {
+      "name": "objc2-core-services",
+      "version": "0.3.2",
+      "registry_archive_sha256": "583300ad934cba24ff5292aee751ecc070f7ca6b39a574cc21b7b5e588e06a0b",
+      "license_expression": "Zlib OR Apache-2.0 OR MIT",
+      "license_texts": [
+        {
+          "source": "https://raw.githubusercontent.com/madsmtm/objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md",
+          "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54"
+        }
+      ]
+    },
+    {
+      "name": "roxmltree",
+      "version": "0.21.2",
+      "registry_archive_sha256": "9da7f59328b09405b181fee1018925fad50f157afb43c0c0f5c522c256dd5907",
+      "license_expression": "MIT OR Apache-2.0",
+      "license_texts": [
+        {
+          "file": "LICENSE-APACHE",
+          "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+        },
+        {
+          "file": "LICENSE-MIT",
+          "sha256": "fffe218c1e349e1d482a05677f2ce850502f88298174d77f6ac7c04821db7899"
+        }
+      ]
+    },
+    {
+      "name": "schemars",
+      "version": "1.2.3",
+      "registry_archive_sha256": "ab508826f74a77ca9d5aba6ff19b522583ee3eaf28a19384ff3d0e5835fadf6e",
+      "license_expression": "MIT",
+      "license_texts": [
+        {
+          "file": "LICENSE",
+          "sha256": "1954992a2b32e8a2af24a4c11b726902e344c1934b947a77f04d404908f8db30"
+        }
+      ]
+    },
+    {
+      "name": "schemars_derive",
+      "version": "1.2.3",
+      "registry_archive_sha256": "e1c3a92094fa7d61aa124645844facb6b554dfc797136d0f5fd1f890e2bffc69",
+      "license_expression": "MIT",
+      "license_texts": [
+        {
+          "file": "LICENSE",
+          "sha256": "1954992a2b32e8a2af24a4c11b726902e344c1934b947a77f04d404908f8db30"
+        }
+      ]
+    },
+    {
+      "name": "selectors",
+      "version": "0.38.0",
+      "registry_archive_sha256": "8adfa1c298912827b8a28b223b3b874357397ae706e6190acd9bf28cee99114d",
+      "license_expression": "MPL-2.0",
+      "license_texts": [
+        {
+          "source": "https://raw.githubusercontent.com/spdx/license-list-data/v3.27.0/text/MPL-2.0.txt",
+          "sha256": "66a3107d5ad6a058aab753eaac2047ccb2ed0e39465dd0fe5844da3e300d5172"
+        }
+      ]
+    },
+    {
+      "name": "serde_json",
+      "version": "1.0.154",
+      "registry_archive_sha256": "e7e9cc8b1b85264074fbcc02a88680c4096b1e47df8f739dceb03bf482f04bd6",
+      "license_expression": "MIT OR Apache-2.0",
+      "license_texts": [
+        {
+          "file": "LICENSE-APACHE",
+          "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+        },
+        {
+          "file": "LICENSE-MIT",
+          "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+        }
+      ]
+    },
+    {
+      "name": "swift-rs",
+      "version": "1.0.9",
+      "registry_archive_sha256": "cefd87076fd385308ee4aff597256c902f1fbb4d031de1558efc12f8ffefadd9",
+      "license_expression": "MIT OR Apache-2.0",
+      "license_texts": [
+        {
+          "file": "LICENSE-APACHE",
+          "sha256": "908a661cf763bddfa04f2739bea561be62a246f03ad53fcb2272d3ddbd1d943f"
+        },
+        {
+          "file": "LICENSE-MIT",
+          "sha256": "f3c3e9f4febe81ff14ccc233c344e6e60051290d1c1e5a2c670d63cc3608a5bb"
+        }
+      ]
+    },
+    {
+      "name": "tauri-plugin",
+      "version": "2.7.2",
+      "registry_archive_sha256": "67fb21a77e8f94e8beb3325e583102488659365af0a3948b7ea244c5b779c291",
+      "license_expression": "Apache-2.0 OR MIT",
+      "license_texts": [
+        {
+          "source": "https://raw.githubusercontent.com/tauri-apps/tauri/59b63ab500da9859f12d8888c3298bc29bba0b92/LICENSE-MIT",
+          "sha256": "9dd42ea92cff2ede5cd477cbfcce051b2d0115c0ac7f368ee88cb545055dff1d"
+        }
+      ]
+    },
+    {
+      "name": "tauri-utils",
+      "version": "2.10.2",
+      "registry_archive_sha256": "362ab21cd4cc713f2a02b1a9b5688198b1541cfb6907c4281e9190e0f0ef4aa3",
+      "license_expression": "Apache-2.0 OR MIT",
+      "license_texts": [
+        {
+          "file": "LICENSE-APACHE-2.0",
+          "sha256": "0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594"
+        },
+        {
+          "file": "LICENSE-MIT",
+          "sha256": "9dd42ea92cff2ede5cd477cbfcce051b2d0115c0ac7f368ee88cb545055dff1d"
+        }
+      ]
+    },
+    {
+      "name": "urlpattern",
+      "version": "0.6.0",
+      "registry_archive_sha256": "df16f50ef4cc145211879a3867ba757076b25dfee812040dcb0658bd9ae7904b",
+      "license_expression": "MIT",
+      "license_texts": [
+        {
+          "file": "LICENSE",
+          "sha256": "5cf1c9dc617e4cad7fa03181ff893601ad5243aa3be527ef39034e1cd6377676"
+        }
+      ]
+    },
+    {
+      "name": "uuid",
+      "version": "1.29.0",
+      "registry_archive_sha256": "4a0e2d11620c50695fe12bbbfde96b3477fe606e7284c22d505c12ce51214514",
+      "license_expression": "Apache-2.0 OR MIT",
+      "license_texts": [
+        {
+          "file": "LICENSE-APACHE",
+          "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+        },
+        {
+          "file": "LICENSE-MIT",
+          "sha256": "436bc5a105d8e57dcd8778730f3754f7bf39c14d2f530e4cde4bd2d17a83ec3d"
+        }
+      ]
+    },
+    {
+      "name": "web-time",
+      "version": "1.1.0",
+      "registry_archive_sha256": "5a6580f308b1fad9207618087a65c04e7a10bc77e02c8e84e9b00dd4b12fa0bb",
+      "license_expression": "MIT OR Apache-2.0",
+      "license_texts": [
+        {
+          "file": "LICENSE-APACHE",
+          "sha256": "54a744942eb3fa63a74d8d359989ed6962c04f3f10ff20cfa08ff8aa7efbe4e6"
+        },
+        {
+          "file": "LICENSE-MIT",
+          "sha256": "f428305bbf2e70fbd807af0f3c7ac1b7acfb95311640f451e9d2e48db6d7e96b"
+        }
+      ]
+    }
+  ],
+  "npm": [
+    {
+      "name": "react",
+      "version": "19.3.1",
+      "source": "pnpm-lock.yaml integrity-pinned package",
+      "license_texts": [
+        {
+          "file": "LICENSE",
+          "sha256": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93"
+        }
+      ]
+    },
+    {
+      "name": "react-dom",
+      "version": "19.3.1",
+      "source": "pnpm-lock.yaml integrity-pinned package",
+      "license_texts": [
+        {
+          "file": "LICENSE",
+          "sha256": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93"
+        }
+      ]
+    },
+    {
+      "name": "dompurify",
+      "version": "3.4.17",
+      "source": "pnpm-lock.yaml integrity-pinned package",
+      "license_texts": [
+        {
+          "file": "LICENSE",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+        },
+        {
+          "file": "LICENSE-MPL",
+          "sha256": "fab3dd6bdab226f1c08630b1dd917e11fcb4ec5e1e020e2c16f83a0a13863e85"
+        }
+      ]
+    },
+    {
+      "name": "@codemirror/autocomplete",
+      "version": "6.20.4",
+      "source": "pnpm-lock.yaml integrity-pinned package",
+      "license_texts": [
+        {
+          "file": "LICENSE",
+          "sha256": "05c6130cda97e7600ca91427a41e8a065efcf82365fc0293e7de80faec494c07"
+        }
+      ]
+    },
+    {
+      "name": "@codemirror/view",
+      "version": "6.43.15",
+      "source": "pnpm-lock.yaml integrity-pinned package",
+      "license_texts": [
+        {
+          "file": "LICENSE",
+          "sha256": "05c6130cda97e7600ca91427a41e8a065efcf82365fc0293e7de80faec494c07"
+        }
+      ]
+    }
+  ],
+  "text_normalization": "UTF-8, LF and trailing-whitespace normalization only; hashes identify the original upstream license source bytes."
+}

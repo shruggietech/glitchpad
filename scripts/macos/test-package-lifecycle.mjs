@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { execFile, spawn } from 'node:child_process';
+import { execFile } from 'node:child_process';
 import {
   cp,
   lstat,
@@ -21,12 +21,22 @@ import {
   validateCleanHostReceipt,
   validateMacosLifecycleEvidence,
 } from '../check-macos-package.mjs';
+import { createStartupJournal, sampleStartup } from './startup-sampler.mjs';
+
 import {
   collectApplicationInventory,
   digestApplicationInventory,
 } from '../lib/macos-artifact.mjs';
 
 const execFileAsync = promisify(execFile);
+const processPattern = (value) =>
+  [...value]
+    .map((c) =>
+      '.^$*+?()[]{}|'.includes(c) || c.charCodeAt(0) === 92
+        ? String.fromCharCode(92) + c
+        : c,
+    )
+    .join('');
 const deliveryProbePattern = /^delivery-[1-9]\d*\.marker$/u;
 const delay = (milliseconds) =>
   new Promise((resolvePromise) => setTimeout(resolvePromise, milliseconds));
@@ -91,7 +101,7 @@ export function classifyStartupSamples(
   return { p95, classification };
 }
 
-async function command(program, arguments_, options = {}) {
+export async function command(program, arguments_, options = {}) {
   try {
     return await execFileAsync(program, arguments_, {
       encoding: 'utf8',
@@ -107,11 +117,14 @@ async function command(program, arguments_, options = {}) {
   }
 }
 
-async function waitForProcess(executable, timeoutMilliseconds = 30_000) {
+export async function waitForProcess(executable, timeoutMilliseconds = 30_000) {
   const started = performance.now();
   while (performance.now() - started < timeoutMilliseconds) {
     try {
-      const { stdout } = await command('pgrep', ['-f', executable]);
+      const { stdout } = await command('pgrep', [
+        '-f',
+        processPattern(executable),
+      ]);
       const pid = Number.parseInt(stdout.trim().split(/\s+/u)[0], 10);
       if (Number.isSafeInteger(pid) && pid > 0)
         return { pid, elapsed: performance.now() - started };
@@ -189,21 +202,102 @@ export async function waitForSingleNewDelivery(
   throw new Error('delivery_acknowledgement_timeout');
 }
 
-async function stopProcess(pid) {
+export async function stopProcess(pid) {
+  const alive = () => {
+    try {
+      process.kill(pid, 0);
+      return true;
+    } catch (error) {
+      if (error.code === 'ESRCH') return false;
+      throw error;
+    }
+  };
+  if (!alive()) return;
   try {
     process.kill(pid, 'SIGTERM');
-    for (let attempt = 0; attempt < 40; attempt += 1) {
-      try {
-        process.kill(pid, 0);
-        await delay(50);
-      } catch {
-        return;
-      }
-    }
-    process.kill(pid, 'SIGKILL');
-  } catch {
-    // The process already exited.
+  } catch (error) {
+    if (error.code === 'ESRCH') return;
+    throw error;
   }
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    if (!alive()) return;
+    await delay(50);
+  }
+  if (alive()) {
+    try {
+      process.kill(pid, 'SIGKILL');
+    } catch (error) {
+      if (error.code === 'ESRCH') return;
+      throw error;
+    }
+  }
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    if (!alive()) return;
+    await delay(50);
+  }
+  throw new Error('application_cleanup_failed');
+}
+
+async function cleanupApplication(executable, ownedPid) {
+  if (ownedPid) await stopProcess(ownedPid);
+  // The random private application root identifies only this harness instance.
+  let stdout;
+  try {
+    ({ stdout } = await command('pgrep', ['-f', processPattern(executable)]));
+  } catch (error) {
+    if (error.message === 'native_command_failed:pgrep:1') return;
+    throw error;
+  }
+  for (const value of stdout.trim().split(/\s+/u)) {
+    const pid = Number(value);
+    if (Number.isSafeInteger(pid) && pid > 0) await stopProcess(pid);
+  }
+}
+
+export async function measureStartup({
+  installedApplication,
+  fixture,
+  probeRoot,
+  executable,
+  identity = 'candidate',
+  index,
+  sequence = index,
+  persist,
+  onReady = async () => {},
+}) {
+  await clearLifecycleProbes(probeRoot);
+  let pid = null;
+  let deliveries;
+  return sampleStartup({
+    identity,
+    index,
+    sequence,
+    persist,
+    hooks: {
+      launch: () =>
+        command(
+          'open',
+          initialLaunchArguments(installedApplication, fixture, probeRoot),
+          { timeout: 30000 },
+        ),
+      discover: async () => {
+        pid = (await waitForProcess(executable)).pid;
+        return pid;
+      },
+      shell: () => waitForShellReadiness(probeRoot),
+      document: async () => {
+        deliveries = await waitForLifecycleReadiness(probeRoot);
+      },
+      verify: async () => {
+        await delay(500);
+        const settled = await deliveryProbes(probeRoot);
+        if (settled.size !== 1 || [...settled][0] !== [...deliveries][0])
+          throw new Error('delivery_acknowledgement_duplicate');
+        await onReady({ pid, deliveries });
+      },
+      cleanup: (ownedPid) => cleanupApplication(executable, ownedPid),
+    },
+  });
 }
 
 async function main() {
@@ -237,7 +331,6 @@ async function main() {
     '# Glitchpad lifecycle\n\nSafe native package fixture.\n',
   );
   let mounted = false;
-  let activePid = null;
   try {
     await cp(dmgPath, join(root, basename(dmgPath)));
     await writeFile(fixture, fixtureBytes);
@@ -305,58 +398,41 @@ async function main() {
       throw new Error('native_architecture_mismatch');
 
     const startupSamples = [];
+    const journal = await createStartupJournal(receiptPath + '.startup.json', {
+      evidence_class: 'hosted_smoke',
+      endpoint: 'launch_request_to_shell_ready',
+      architecture: options.architecture,
+      source_commit: manifest.source_commit,
+      candidate_manifest_sha256: createHash('sha256')
+        .update(manifestBytes)
+        .digest('hex'),
+    });
     for (let sample = 0; sample < 5; sample += 1) {
-      await clearLifecycleProbes(probeRoot);
-      const launchedAt = performance.now();
-      const child = spawn(
-        'open',
-        initialLaunchArguments(installedApplication, fixture, probeRoot),
-        {
-          detached: false,
-          stdio: 'ignore',
-          shell: false,
+      const attempt = await measureStartup({
+        installedApplication,
+        fixture,
+        probeRoot,
+        executable,
+        index: sample,
+        persist: journal.persist,
+        onReady: async ({ pid, deliveries: acknowledgedDeliveries }) => {
+          if (sample !== 0) return;
+          await command('open', ['-a', installedApplication, fixture]);
+          const delivered = await waitForSingleNewDelivery(
+            probeRoot,
+            acknowledgedDeliveries,
+          );
+          await delay(500);
+          const settled = await deliveryProbes(probeRoot);
+          const added = [...settled].filter(
+            (name) => !acknowledgedDeliveries.has(name),
+          );
+          if (added.length !== 1 || settled.size !== delivered.size)
+            throw new Error('delivery_acknowledgement_duplicate');
+          process.kill(pid, 0);
         },
-      );
-      await new Promise((resolvePromise, reject) => {
-        child.once('error', reject);
-        child.once('exit', (code) =>
-          code === 0
-            ? resolvePromise()
-            : reject(new Error(`open_failed:${code}`)),
-        );
       });
-      const observed = await waitForProcess(executable);
-      await waitForShellReadiness(probeRoot);
-      startupSamples.push(performance.now() - launchedAt);
-      const acknowledgedDeliveries = await waitForLifecycleReadiness(probeRoot);
-      await delay(500);
-      const settledStartupDeliveries = await deliveryProbes(probeRoot);
-      if (
-        settledStartupDeliveries.size !== 1 ||
-        [...settledStartupDeliveries][0] !== [...acknowledgedDeliveries][0]
-      )
-        throw new Error('delivery_acknowledgement_duplicate');
-      activePid = observed.pid;
-      if (sample === 0) {
-        await command('open', ['-a', installedApplication, fixture]);
-        const deliveriesAfterOpen = await waitForSingleNewDelivery(
-          probeRoot,
-          acknowledgedDeliveries,
-        );
-        await delay(500);
-        const settledDeliveries = await deliveryProbes(probeRoot);
-        const added = [...settledDeliveries].filter(
-          (name) => !acknowledgedDeliveries.has(name),
-        );
-        if (
-          added.length !== 1 ||
-          settledDeliveries.size !== deliveriesAfterOpen.size
-        )
-          throw new Error('delivery_acknowledgement_duplicate');
-        process.kill(activePid, 0);
-      }
-      await stopProcess(activePid);
-      activePid = null;
+      startupSamples.push(attempt.shell_ready_ms);
       await delay(250);
     }
     const roundedStartupSamples = startupSamples.map((value) =>
@@ -483,7 +559,6 @@ async function main() {
       'utf8',
     );
   } finally {
-    if (activePid) await stopProcess(activePid);
     if (mounted)
       await command('hdiutil', ['detach', mountPoint, '-force']).catch(
         () => undefined,

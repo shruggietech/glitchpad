@@ -76,6 +76,10 @@ jobs:
       - name: Prove governed display-scale geometry
         run: node scripts/check-shell-layout.mjs --receipt artifacts/windows/shell-layout-scale-receipt.json --manifest artifacts/windows/windows-package-manifest.json --source-commit '${{ github.sha }}'
 
+      - name: Validate content-free startup diagnostics
+        shell: pwsh
+        run: ./scripts/windows/test-startup-diagnostics.ps1
+
       - name: Exercise installed and portable lifecycles
         shell: pwsh
         run: |
@@ -107,6 +111,7 @@ jobs:
           node scripts/run-performance.mjs --profile desktop_reference_v1 --build-id "windows-${{ github.sha }}" --metric desktop_installer_size --artifact artifacts/windows/glitchpad-0.2.0-windows-x86_64.zip --output artifacts/windows/portable-size-evidence.json
 
       - name: Upload governed Windows package
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: ${{ startsWith(github.ref, 'refs/tags/') && 'glitchpad-0.2.0-windows-x86_64-community-release' || 'glitchpad-0.2.0-windows-x86_64-unsigned-candidate' }}

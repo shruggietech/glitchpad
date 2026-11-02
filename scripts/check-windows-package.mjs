@@ -52,6 +52,24 @@ function same(left, right) {
 }
 
 export function validatePortableSmokeContract(lifecycleSource, workflowSource) {
+  const invokeStart = lifecycleSource.indexOf(
+    'function Invoke-AutomationElement(',
+  );
+  const invokeEnd = lifecycleSource.indexOf('\nfunction ', invokeStart + 1);
+  const invokeSource =
+    invokeStart < 0
+      ? ''
+      : lifecycleSource.slice(
+          invokeStart,
+          invokeEnd < 0 ? undefined : invokeEnd,
+        );
+  if (
+    !invokeSource.includes('catch { }') ||
+    !invokeSource.includes(
+      'Click-AutomationElement $Process $Element $Description',
+    )
+  )
+    fail('Windows Markdown lifecycle omits the scoped UI Automation fallback');
   const lifecycleRequirements = [
     '[string] $TextFixture',
     '[string] $MarkdownFixtureMinimal',

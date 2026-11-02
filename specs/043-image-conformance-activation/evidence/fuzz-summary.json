@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "toolchain": "nightly-2026-10-31",
+  "cargo_fuzz": "0.13.2",
+  "libfuzzer_sys": "0.4.13",
+  "source_sha256": "f8cfbf884878c7260048e2a009d4775ba9613856e0a86544e0d5ed385a62542c",
+  "application_lock_sha256": "ef0703fab69d9d55b81d39295208598a2f2e0d458fbae35a5c2459a43b140321",
+  "fuzz_lock_sha256": "4ed9b1cd2668c608ae0af8246aa2c5a5c33cf4a628369913dc3d01da0e16f50c",
+  "runs": 224945,
+  "seconds": 61,
+  "exit_code": 0,
+  "max_input_bytes": 65536,
+  "seed": 43,
+  "scope": [
+    "image detection",
+    "metadata",
+    "ICO inventory",
+    "family decode",
+    "core detection",
+    "language identification",
+    "SaveRequest deserialization"
+  ],
+  "limitations": [
+    "Bounded campaign, not exhaustive proof",
+    "Local working-tree result; exact-head hosted campaign remains required"
+  ]
+}

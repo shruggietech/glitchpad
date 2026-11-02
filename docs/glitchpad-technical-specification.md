@@ -1,14 +1,14 @@
-# Glitchpad Technical Specification v0.1.4
+# Glitchpad Technical Specification v0.2.0
 
 | Field | Value |
 | --- | --- |
-| Status | Normative corrective community release |
-| Specification version | 0.1.4 |
-| Product version | 0.1.4 |
-| Release class | Installable community release |
+| Status | Normative image-activation candidate |
+| Specification version | 0.2.0 |
+| Product version | 0.2.0 |
+| Release class | Installable community release candidate |
 | Audience | Maintainers, contributors, reviewers, release operators, and implementation agents |
 | Issued | 2026-08-30 |
-| Updated | 2026-09-29 |
+| Updated | 2026-11-02 |
 | Repository | `github.com/ShruggieTech/glitchpad` |
 | License | Apache License 2.0 (`Apache-2.0`) |
 
@@ -49,13 +49,13 @@
 33. [Release and Versioning Process](#33-release-and-versioning-process)
 34. [Brand System and Required Brand Kit](#34-brand-system-and-required-brand-kit)
 35. [Spec Kit Decomposition and Decision Records](#35-spec-kit-decomposition-and-decision-records)
-36. [Roadmap Beyond v0.1.4](#36-roadmap-beyond-v014)
+36. [Roadmap Beyond v0.2.0](#36-roadmap-beyond-v020)
 37. [Open Questions](#37-open-questions)
 38. [Appendices](#38-appendices)
 
 ## 1. Document Control and Authority
 
-This document is the architecture, behavior, platform, security, development, and delivery contract for Glitchpad v0.1.4, the fourth corrective successor to the first installable community release. Its version MUST equal the product version.
+This document is the architecture, behavior, platform, security, development, and delivery contract for Glitchpad v0.2.0, the image-activation release candidate. Its version MUST equal the product version.
 
 The root Rust workspace version becomes the canonical product-version authority when the repository-foundation slice creates application manifests. Tauri configuration, npm package metadata, Android version name, this document, changelog release heading, release tag, artifact filenames, SBOM metadata, and provenance attestations MUST mirror that value. Automated consistency checks MUST reject any mismatch.
 
@@ -84,6 +84,7 @@ flowchart TB
 | 0.1.2 | 2026-09-09 | 0.1.2 | Reconciled public presentation and brand corrections, Markdown rendering resilience, stable menu placement, README cleanup, and Android provider-backed file delivery |
 | 0.1.3 | 2026-09-11 | 0.1.3 | Reconciled universal Markdown recovery, reserved shell chrome, sectioned public specification documentation, automated post-merge housekeeping, and exact-package practical-use evidence |
 | 0.1.4 | 2026-09-29 | 0.1.4 | Reconciled the BrandBuilder 2.0.3 kit, AppFrame shell geometry, refreshed web and Android brand assets, and compatible dependency updates while keeping image-format activation at the v0.2.0 gate |
+| 0.2.0 | 2026-11-02 | 0.2.0 | S043 image qualification and stable activation candidate; owner removes unavailable physical-device and manual screen-reader gates; automated accessibility and hosted native qualification retained |
 
 Changes to normative released behavior require a product release and a matching specification version. Typographical corrections that do not alter meaning may be applied to the current version with a dated revision-history note and reviewed pull request.
 
@@ -121,7 +122,7 @@ Public descriptions MUST follow the released capability matrix. “Everything vi
 
 ### Product success criteria
 
-- v0.1.4 ships official Windows, macOS, Linux, and Android artifacts with Markdown, Mermaid, and text/source view/edit, tabs, metadata inspection, save conflict protection, and crash recovery.
+- v0.2.0 ships official Windows, macOS, Linux, and Android artifacts with Markdown, Mermaid, and text/source view/edit, tabs, metadata inspection, save conflict protection, and crash recovery.
 - Every official support claim has automated evidence or an explicit, repeatable manual verification record.
 - No save path silently overwrites a conflicting external revision or discards dirty editor state.
 - A user can open a file, switch among tabs, inspect metadata, search, edit supported text, and save using keyboard alone on desktop and touch alone on Android.
@@ -152,16 +153,16 @@ Notes and rationale are non-normative. Tables labeled as matrices are normative 
 
 ## 5. Scope and Capability Status
 
-v0.1.4 retains the text-family capabilities promoted to `stable` in v0.1.0 and adopts the released BrandBuilder AppFrame and platform artwork. Image preview and inspection code merged in S039 and S040 remains outside the stable support matrix and operating-system associations until the v0.2.0 conformance and activation gates pass. A capability becomes `experimental` or `stable` only through a release that includes its implementation, platform artifacts, conformance evidence, associations, documentation, and notices.
+v0.2.0 retains the text-family capabilities promoted in v0.1.0 and activates bounded raster, animation, SVG and ICO viewing/inspection through S043. Candidate declarations become official release claims only after the release gate and publication. PDF and office formats remain planned.
 
-| Format family | Examples | v0.1.4 status | First release | Capabilities | Fidelity boundary |
+| Format family | Examples | v0.2.0 status | First release | Capabilities | Fidelity boundary |
 | --- | --- | --- | --- | --- | --- |
 | Markdown | `.md`, `.markdown` | Stable | v0.1.0 | View, edit, save, search, navigate, inspect, print | CommonMark, GFM, footnotes, independently bounded fenced Mermaid blocks |
 | Mermaid diagrams | `.mmd`, `.mermaid` | Stable | v0.1.0 | View, edit, save, search, zoom, pan, inspect | Local strict rendering; no active links, callbacks, source rewriting, or generated-output export |
 | Plain text and source | `.txt`, recognized language files | Stable | v0.1.0 | View, edit, save, search, inspect, syntax highlight | Text editing without IDE services |
-| Raster images | PNG, JPEG, GIF, WebP, BMP, TIFF | Planned | v0.2.0 | View, zoom, pan, frame navigation, inspect | Bounded decode and metadata; no editing |
-| Vector images | SVG | Planned | v0.2.0 | View, zoom, inspect | Script-free, remote-resource-free rendering |
-| Icon containers | ICO | Planned | v0.2.0 | View, inspect entries, export selected entry | Every embedded entry listed independently |
+| Raster images | PNG, JPEG, GIF, WebP, BMP, TIFF | Stable candidate | v0.2.0 | View, zoom, pan, frame navigation, inspect | Bounded decode and metadata; no editing |
+| Vector images | SVG | Stable candidate | v0.2.0 | View, zoom, inspect | Script-free, remote-resource-free rendering |
+| Icon containers | ICO | Stable candidate | v0.2.0 | View, inspect entries, export selected entry | Every embedded entry listed independently |
 | PDF | `.pdf` | Planned | v0.3.0 | View, search, outline navigation, zoom, rotate, print, inspect | Viewing only; no JavaScript, forms submission, or editing |
 | Office Open XML | `.docx` | Planned | v0.4.0 | View, heading navigation, search, inspect | Semantic readability, not page-perfect layout |
 | OpenDocument Text | `.odt` | Planned | v0.5.0 | View, heading navigation, search, inspect | Semantic readability, not office-suite fidelity |
@@ -176,7 +177,7 @@ File dialogs, Android intent filters, desktop file associations, website copy, R
 - Tauri 2 is the application and packaging framework. Electron is prohibited.
 - Rust owns privileged native operations and untrusted-byte services. TypeScript owns the shared interface and renderer presentation. Kotlin is limited to Android platform integration.
 - The application core works offline, without an account, remote service, or telemetry dependency.
-- Windows, macOS, Linux, and Android are foundational targets and release-blocking for v0.1.4.
+- Windows, macOS, Linux, and Android are foundational targets and release-blocking for v0.2.0.
 - Markdown prose uses one physical line per paragraph. Project text files use UTF-8 without BOM.
 - Normative project diagrams use Mermaid. Project flowcharts and explicit project subgraph directions use top-to-bottom layout; this documentation convention MUST NOT rewrite, reject, or warn about a valid direction authored in an opened user file.
 - Original project source and distributable original assets use Apache-2.0.
@@ -238,7 +239,7 @@ Budgets are measured on release builds with fixtures stored in the repository co
 | Desktop compressed installer | ≤ 35 MiB | > 35 MiB | > 60 MiB |
 | Universal Android APK | ≤ 40 MiB | > 40 MiB | > 65 MiB |
 | Save durability | 100% revision precondition and recovery corpus pass | Any non-durable fallback | Any silent loss or partial destination |
-| Accessibility | WCAG 2.2 AA automated and manual critical-flow pass | Minor non-blocking defect | Keyboard, touch, screen-reader, or contrast blocker |
+| Accessibility | WCAG 2.2 AA automated critical-flow pass | Minor non-blocking defect | Automated keyboard, touch, semantics or contrast blocker |
 
 Package-size hard limits may change only through a dated decision that identifies the dependency or artifact responsible and measures user value against download and storage impact.
 
@@ -414,7 +415,7 @@ Rename, deletion, watcher overflow, permission revocation, provider unavailabili
 
 ## 15. Tabs, Windows, Sessions, and Recovery
 
-Desktop uses one application window with one compact tab strip. Android uses one activity; phones show the active title and a tab-count switcher that opens a sheet, while tablets may show the desktop-style strip. v0.1.4 does not support multiple application windows.
+Desktop uses one application window with one compact tab strip. Android uses one activity; phones show the active title and a tab-count switcher that opens a sheet, while tablets may show the desktop-style strip. v0.2.0 does not support multiple application windows.
 
 Tabs have a 32-pixel desktop height, 96-pixel minimum width, 180-pixel preferred maximum width, filename, dirty indicator, close action, accessible full-location tooltip, and drag reorder. Overflow moves excess tabs into a searchable list without creating persistent navigation. The ordinary limit is 32 sessions; opening the thirty-third requires closing a tab or explicitly increasing the safety limit in a future specification.
 
@@ -536,9 +537,9 @@ The initial language is US English. All user-visible strings, dates, units, plur
 
 ## 24. Platform Strategy
 
-All four target families are Tier 1 for v0.1.4. A Tier 1 platform requires an official artifact, native build host, automated shared suite, adapter tests, installation smoke tests, core user-flow evidence, version and license evidence, and a named support baseline.
+All four target families are Tier 1 for v0.2.0. A Tier 1 platform requires an official artifact, native build host, automated shared suite, adapter tests, installation smoke tests, core user-flow evidence, version and license evidence, and a named support baseline.
 
-| Platform | Runtime baseline | Architectures | Official v0.1.4 artifacts | Native WebView |
+| Platform | Runtime baseline | Architectures | Official v0.2.0 artifacts | Native WebView |
 | --- | --- | --- | --- | --- |
 | Windows | Windows 11 | x86_64 | NSIS installer, portable ZIP | WebView2 Evergreen |
 | macOS | macOS 13+ | arm64 and x86_64 universal | Ad-hoc-signed application in a non-notarized DMG | WKWebView |
@@ -547,7 +548,7 @@ All four target families are Tier 1 for v0.1.4. A Tier 1 platform requires an of
 
 Windows file associations and command-line delivery route to the running instance. macOS handles open-document application events. Linux follows freedesktop MIME registration and desktop-entry conventions. Android registers only released format MIME types and extensions and accepts view/open/share intents according to provider grants. `.mmd` and `.mermaid` associations and intent filters activate only when the standalone Mermaid capability reaches stable status on the complete Tier 1 matrix.
 
-Windows ARM64 and Linux ARM64 are planned platform expansions after v0.1.4 and require their own build, package, and device evidence. iOS is outside the current platform boundary.
+Windows ARM64 and Linux ARM64 are planned platform expansions after v0.2.0 and require their own build, package, and device evidence. iOS is outside the current platform boundary.
 
 System WebView versions are recorded in diagnostics and test evidence. Glitchpad does not bundle a browser engine to mask obsolete or broken system WebViews; unsupported runtimes receive a precise prerequisite error.
 
@@ -588,7 +589,7 @@ Performance tests use small, medium, boundary, and hostile fixtures with stable 
 
 ## 27. Configuration, Persistence, and Diagnostics
 
-The v0.1.4 preference schema contains theme, editor font family and size, line wrapping, tab width, Markdown default mode, and explicit language overrides. It contains no account, synchronization, workspace, telemetry, remote-resource, plugin, or recent-file setting.
+The v0.2.0 preference schema contains theme, editor font family and size, line wrapping, tab width, Markdown default mode, and explicit language overrides. It contains no account, synchronization, workspace, telemetry, remote-resource, plugin, or recent-file setting.
 
 Preferences are schema-versioned JSON in the platform application-config directory. Writes are atomic. A migration is deterministic and covered by fixtures; an unreadable future schema is preserved and reported instead of overwritten.
 
@@ -644,14 +645,14 @@ The bootstrap sequence is `cargo xtask doctor`, `cargo xtask bootstrap`, and `ca
 - Visual Studio 2022 Build Tools with Desktop development with C++, MSVC toolset, CMake tools, and Windows 11 SDK.
 - WebView2 Evergreen Runtime and a matching test runtime where CI pins one.
 - Rust target `x86_64-pc-windows-msvc`.
-- NSIS tooling selected by the Tauri lock. v0.1.4 is distributed as an unsigned community release.
+- NSIS tooling selected by the Tauri lock. v0.2.0 is distributed as an unsigned community release.
 
 ### macOS host
 
 - macOS 13 or newer on Apple Silicon or Intel.
 - Full Xcode selected by `xcode-select`, accepted license, command-line tools, and SDK version matching the release runner.
 - Rust targets `aarch64-apple-darwin` and `x86_64-apple-darwin` for universal artifacts.
-- Standard Apple command-line packaging tools. v0.1.4 uses an ad-hoc application signature and is not notarized.
+- Standard Apple command-line packaging tools. v0.2.0 uses an ad-hoc application signature and is not notarized.
 
 ### Linux host
 
@@ -668,7 +669,7 @@ The bootstrap sequence is `cargo xtask doctor`, `cargo xtask bootstrap`, and `ca
 - NDK `28.2.13676358`, owned by the Android Gradle configuration.
 - `ANDROID_HOME`, `NDK_HOME`, and `JAVA_HOME` set to doctor-verifiable locations.
 - Rust targets `aarch64-linux-android`, `armv7-linux-androideabi`, `i686-linux-android`, and `x86_64-linux-android` installed through rustup.
-- `adb`, hardware virtualization, one API 36 emulator, one physical ARM64 device at API 36, and one physical or hosted device at API 24 for release evidence.
+- `adb`, hardware virtualization, hosted API 24 and API 36 emulators for native provider/WebView release evidence.
 - Stable project-owned Android update keystore for release operators; store credentials are outside direct-release scope.
 
 ### Test and documentation tools
@@ -682,7 +683,7 @@ The bootstrap sequence is `cargo xtask doctor`, `cargo xtask bootstrap`, and `ca
 
 ### Workstation requirements
 
-Ordinary development requires 16 GiB RAM, 8 logical CPU cores, 40 GiB free disk after toolchains, and hardware virtualization for Android emulator work. Packaging and full local matrix work SHOULD use 32 GiB RAM and 80 GiB free disk. A physical Android release device and platform-specific signing identities are release-only resources.
+Ordinary development requires 16 GiB RAM, 8 logical CPU cores, 40 GiB free disk after toolchains, and hardware virtualization for Android emulator work. Packaging and full local matrix work SHOULD use 32 GiB RAM and 80 GiB free disk. Platform-specific signing identities remain release-only resources. Physical-device testing is unavailable and is not a release prerequisite under the 2026-11-02 owner decision.
 
 ## 30. Build, Continuous Integration, and Documentation
 
@@ -719,7 +720,7 @@ Release CI performs no unreviewed source rewrite. Documentation reconciliation, 
 | Fixture/golden | Markdown HTML, standalone and embedded Mermaid, syntax modes, images, PDFs, DOCX, ODT, metadata, errors | Licensed corpus with expected semantic outputs |
 | Shared UI | Tabs, commands, inspector, dirty/conflict/recovery, accessibility | Vitest, Testing Library, Playwright, axe-core |
 | Native adapter | Desktop paths/watch/save and Android intents/providers/grants | Platform tests, JVM tests, instrumentation tests |
-| Package smoke | Install, launch, association/open-with, core view/edit/save, metadata, recovery, uninstall | Clean OS images and physical Android devices |
+| Package smoke | Install, launch, association/open-with, core view/edit/save, metadata, recovery, uninstall | Clean hosted OS images and Android API 24/36 emulators |
 | Manual | Visual polish, assistive technology, office semantic readability, signing/store presentation | Versioned checklist with operator and evidence |
 
 Fixture provenance is recorded in `fixtures/provenance.toml` with source, author, license, redistribution permission, format, feature purpose, digest, sensitivity review, and expected result. Production documents and private user data are prohibited as fixtures. Hostile fixtures remain inert outside the parser harness and carry clear warnings.
@@ -736,13 +737,13 @@ Windows publishes an unsigned x86_64 NSIS current-user installer and portable ZI
 
 Desktop packages register only stable editable/viewable formats from the release matrix. Android intent filters follow the same rule. Uninstall removes application binaries and registered associations while preserving user-created documents; platform conventions decide whether preferences and recovery data remain, and the uninstaller must disclose any removal option.
 
-v0.1.4 has no in-app updater. Direct-distribution users obtain community releases through the project release channel. A future updater requires a separate threat model, authenticated manifest, rollback policy, channel model, proxy/offline behavior, and recovery test matrix.
+v0.2.0 has no in-app updater. Direct-distribution users obtain community releases through the project release channel. A future updater requires a separate threat model, authenticated manifest, rollback policy, channel model, proxy/offline behavior, and recovery test matrix.
 
-No artifact is official without its declared trust state, checksum, SBOM, provenance, license notices, source revision, and exact version evidence. Windows is explicitly unsigned, macOS is ad-hoc signed and non-notarized, Linux is repository-attested, and Android uses the stable project-owned update key. Manual validation tracked by issue #66 continues after v0.1.4 publication.
+No artifact is official without its declared trust state, checksum, SBOM, provenance, license notices, source revision, and exact version evidence. Windows is explicitly unsigned, macOS is ad-hoc signed and non-notarized, Linux is repository-attested, and Android uses the stable project-owned update key. S043 removes mandatory physical-device and manual screen-reader testing under the 2026-11-02 owner decision. Automated accessibility and hosted platform qualification remain required; neither physical-device nor manual screen-reader validation is claimed.
 
 ## 33. Release and Versioning Process
 
-Glitchpad follows semantic versioning. Before 1.0.0, a minor release may change unstable application behavior, but save integrity, source privacy, license, and release-evidence guarantees remain compatibility commitments. Patch releases contain compatible fixes and documentation corrections. v0.0.0 is the foundation release, v0.1.0 is the first binary release, v0.1.1 is its first corrective successor, v0.1.2 is its second corrective successor, v0.1.3 is its third corrective successor, and v0.1.4 is its fourth corrective successor.
+Glitchpad follows semantic versioning. Before 1.0.0, a minor release may change unstable application behavior, but save integrity, source privacy, license, and release-evidence guarantees remain compatibility commitments. Patch releases contain compatible fixes and documentation corrections. v0.0.0 is the foundation release, v0.1.0 is the first binary release, v0.1.1 is its first corrective successor, v0.1.2 is its second corrective successor, v0.1.3 is its third corrective successor, and v0.2.0 is its fourth corrective successor.
 
 Every change reaches the default branch through a reviewed pull request with a green aggregate gate. Changelog entries are contributed as fragments to avoid concurrent edits. The release operator assembles fragments, performs the documentation pass, updates the canonical product version and mirrors, reviews generated notices, commits the release, and pushes `vX.Y.Z`.
 
@@ -781,7 +782,7 @@ The unreleased S007 repository delta imports approved brand canon 1.0.0 under `b
 
 The S025 delivery superseded the original imported brand with Glitchpad brand 1.1.0 under ShruggieTech canon 1.2.1 from upstream commit `1681fcd444ff851d5bffc2cf67e23bbcedd753cd`. The permanent square identity, pure-sulfur contextual treatment, accessible light and dark tokens, local typography, and verified web, Windows, macOS, Linux, and Android icon suites replace all public copies and distributable foundation icons. `brand/manifest.json` remains the immutable delivery authority, `brand/INTEGRATION.md` records project provenance, and automated byte comparisons prevent locally altered derivatives from entering release packages.
 
-The current v0.1.4 delivery adopts the formal Glitchpad brand 1.1.1 kit from BrandBuilder 2.0.3 under ShruggieTech Brand Canon 1.3.0. The pinned `brand/enforcement/consumer-contract.json` and `brand/enforcement/IMPLEMENTATION.md` govern consumer copies and conformance. The released kit refreshes Android launcher artwork and supplies separate ordinary and maskable web icons; the approved square identity and previously released Windows and macOS icon binaries remain. The generated React AppFrame is the single web-shell owner. `brand/INTEGRATION.json` records source and integrated digests, and the bundled BrandBuilder verifiers plus copy checks reject drift.
+The current v0.2.0 delivery adopts the formal Glitchpad brand 1.1.1 kit from BrandBuilder 2.0.3 under ShruggieTech Brand Canon 1.3.0. The pinned `brand/enforcement/consumer-contract.json` and `brand/enforcement/IMPLEMENTATION.md` govern consumer copies and conformance. The released kit refreshes Android launcher artwork and supplies separate ordinary and maskable web icons; the approved square identity and previously released Windows and macOS icon binaries remain. The generated React AppFrame is the single web-shell owner. `brand/INTEGRATION.json` records source and integrated digests, and the bundled BrandBuilder verifiers plus copy checks reject drift.
 
 The unreleased S009 operational delta transferred `glitchpad.com` from the legacy personal GitHub Pages attachment to the `shruggietech/glitchpad` workflow deployment. Cloudflare remains authoritative DNS with DNS-only website records, GitHub organization verification protects the apex and immediate subdomains through a persistent challenge, `glitchpad.com` is canonical, `www` redirects to the apex, and HTTPS is enforced with certificate coverage for both hosts. The migration committed a sanitized baseline, validated the reviewed `main` deployment on a temporary preview, applied expected-state guards to every provider mutation, preserved unrelated DNS and account configuration, and proved production over IPv4 and IPv6. Legacy Pages was then disabled with its repository recovery source retained, but this retirement violated its complete-asset-inventory prerequisite: two manifest-declared Android icons were discovered missing after retirement, subsequently restored and verified, so FR-014 and SC-009 remain recorded as not passed. The durable runbook and final evidence live under `docs/operations/`. Recovery is phase-specific because organization verification must be removed before an exact post-transfer return to a personal-account Pages attachment.
 
@@ -803,7 +804,7 @@ The required sequence is specify, clarify when material ambiguity exists, plan a
 
 The architecture of record changes only during a release documentation pass. Feature artifacts remain in the repository as historical intent and evidence; they do not override a later released specification.
 
-## 36. Roadmap Beyond v0.1.4
+## 36. Roadmap Beyond v0.2.0
 
 | Release target | Required scope | Exit condition |
 | --- | --- | --- |
@@ -819,7 +820,7 @@ Later quality slices may add Windows ARM64, Linux ARM64, an opt-in session resto
 
 ## 37. Open Questions
 
-There are no unresolved architecture or product questions in v0.1.4. Implementation discoveries that materially challenge this specification MUST create a Spec Kit clarification or architecture-amendment slice before code selects a different behavior.
+There are no unresolved architecture or product questions in v0.2.0. Implementation discoveries that materially challenge this specification MUST create a Spec Kit clarification or architecture-amendment slice before code selects a different behavior.
 
 Risks with fixed containment and blocking gates are recorded in `specs/002-v000-technical-specification/plan.md`; they are not permission to choose alternatives silently.
 
@@ -841,9 +842,9 @@ Risks with fixed containment and blocking gates are recorded in `specs/002-v000-
 | Platform | Build | Package | Core behavior | Association/intents | Signature | Clean install | Physical device |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Windows x86_64 | Required | NSIS and ZIP | Required | Required | Explicitly unsigned community artifacts | Automated package gate | Not applicable |
-| macOS universal | Required | DMG | Required | Required | Ad-hoc application; non-notarized DMG | Automated package gate | Post-release issue #66 |
+| macOS universal | Required | DMG | Required | Required | Ad-hoc application; non-notarized DMG | Automated package gate | Unavailable, not required |
 | Linux x86_64 | Required | AppImage and DEB | Required | Required | Repository signature/attestation required | Required | Not applicable |
-| Android | Required | APK and AAB | Required | Required | APK/AAB signing required | Required | API 24 and API 36 evidence |
+| Android | Required | APK and AAB | Required | Required | APK/AAB signing required | Required | Unavailable, not required |
 
 ### Appendix C. Metadata catalog groups
 
@@ -924,7 +925,7 @@ Shortcuts MUST yield to platform-reserved behavior and remain discoverable in co
 | Pure-Rust bounded image pipeline                        | 19      |
 | PDF.js custom viewer                                    | 20      |
 | Semantic DOCX and ODT fidelity                          | 21      |
-| Four Tier 1 v0.1.4 platform families                    | 24      |
+| Four Tier 1 v0.2.0 platform families                    | 24      |
 | Deny-by-default local security boundary                 | 25      |
 | Apache-2.0 dependency posture                           | 28      |
 | Tag-driven, documentation-gated releases                | 33      |

@@ -49,3 +49,8 @@ Thumbs.db
 
 # Spec Kit local state
 .specify/memory/active-feature.md
+
+# Development-only fuzz build and generated findings
+/fuzz/target/
+/fuzz/artifacts/
+/fuzz/corpus/

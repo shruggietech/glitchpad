@@ -37,6 +37,15 @@
                 <data android:mimeType="text/rust" />
                 <data android:mimeType="text/vnd.mermaid" />
                 <data android:mimeType="text/x-python" />
+                <data android:mimeType="image/png" />
+                <data android:mimeType="image/jpeg" />
+                <data android:mimeType="image/webp" />
+                <data android:mimeType="image/bmp" />
+                <data android:mimeType="image/tiff" />
+                <data android:mimeType="image/gif" />
+                <data android:mimeType="image/svg+xml" />
+                <data android:mimeType="image/vnd.microsoft.icon" />
+                <data android:mimeType="image/x-icon" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
@@ -53,6 +62,15 @@
                 <data android:mimeType="text/rust" />
                 <data android:mimeType="text/vnd.mermaid" />
                 <data android:mimeType="text/x-python" />
+                <data android:mimeType="image/png" />
+                <data android:mimeType="image/jpeg" />
+                <data android:mimeType="image/webp" />
+                <data android:mimeType="image/bmp" />
+                <data android:mimeType="image/tiff" />
+                <data android:mimeType="image/gif" />
+                <data android:mimeType="image/svg+xml" />
+                <data android:mimeType="image/vnd.microsoft.icon" />
+                <data android:mimeType="image/x-icon" />
             </intent-filter>
         </activity>
 

@@ -2,7 +2,7 @@
   "schema_version": 1,
   "platform": "linux",
   "architecture": "x86_64",
-  "candidate_version": "0.1.4",
+  "candidate_version": "0.2.0",
   "build_baseline": {
     "distribution": "ubuntu",
     "release": "22.04",
@@ -20,11 +20,11 @@
   "artifacts": [
     {
       "kind": "appimage",
-      "name": "glitchpad-0.1.4-linux-x86_64.AppImage"
+      "name": "glitchpad-0.2.0-linux-x86_64.AppImage"
     },
     {
       "kind": "deb",
-      "name": "glitchpad-0.1.4-linux-x86_64.deb"
+      "name": "glitchpad-0.2.0-linux-x86_64.deb"
     }
   ],
   "desktop_entry": {
@@ -38,6 +38,14 @@
       "application/toml",
       "application/x-typescript",
       "application/x-yaml",
+      "image/bmp",
+      "image/gif",
+      "image/jpeg",
+      "image/png",
+      "image/svg+xml",
+      "image/tiff",
+      "image/vnd.microsoft.icon",
+      "image/webp",
       "text/css",
       "text/html",
       "text/javascript",
@@ -95,7 +103,7 @@
   "official": {
     "authorized_event": "push_tag",
     "attestation_build_trigger": "push",
-    "tag_pattern": "v0.1.4",
+    "tag_pattern": "v0.2.0",
     "repository": "shruggietech/glitchpad",
     "required_attestation_status": "verified",
     "maximum_evidence_age_seconds": 86400,

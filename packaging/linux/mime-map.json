@@ -4,37 +4,141 @@
     {
       "id": "markdown",
       "mappings": [
-        { "media_type": "text/markdown", "extensions": ["md", "markdown"] }
+        {
+          "media_type": "text/markdown",
+          "extensions": ["md", "markdown"]
+        }
       ]
     },
     {
       "id": "mermaid",
       "mappings": [
-        { "media_type": "text/vnd.mermaid", "extensions": ["mmd", "mermaid"] }
+        {
+          "media_type": "text/vnd.mermaid",
+          "extensions": ["mmd", "mermaid"]
+        }
       ]
     },
     {
       "id": "plain-text",
-      "mappings": [{ "media_type": "text/plain", "extensions": ["txt"] }]
+      "mappings": [
+        {
+          "media_type": "text/plain",
+          "extensions": ["txt"]
+        }
+      ]
     },
     {
       "id": "source",
       "mappings": [
-        { "media_type": "application/json", "extensions": ["json", "jsonc"] },
-        { "media_type": "application/toml", "extensions": ["toml"] },
+        {
+          "media_type": "application/json",
+          "extensions": ["json", "jsonc"]
+        },
+        {
+          "media_type": "application/toml",
+          "extensions": ["toml"]
+        },
         {
           "media_type": "application/x-typescript",
           "extensions": ["ts", "tsx"]
         },
-        { "media_type": "application/x-yaml", "extensions": ["yaml", "yml"] },
-        { "media_type": "text/css", "extensions": ["css"] },
-        { "media_type": "text/html", "extensions": ["htm", "html"] },
+        {
+          "media_type": "application/x-yaml",
+          "extensions": ["yaml", "yml"]
+        },
+        {
+          "media_type": "text/css",
+          "extensions": ["css"]
+        },
+        {
+          "media_type": "text/html",
+          "extensions": ["htm", "html"]
+        },
         {
           "media_type": "text/javascript",
           "extensions": ["cjs", "js", "jsx", "mjs"]
         },
-        { "media_type": "text/rust", "extensions": ["rs"] },
-        { "media_type": "text/x-python", "extensions": ["py"] }
+        {
+          "media_type": "text/rust",
+          "extensions": ["rs"]
+        },
+        {
+          "media_type": "text/x-python",
+          "extensions": ["py"]
+        }
+      ]
+    },
+    {
+      "id": "png",
+      "mappings": [
+        {
+          "media_type": "image/png",
+          "extensions": ["png"]
+        }
+      ]
+    },
+    {
+      "id": "jpeg",
+      "mappings": [
+        {
+          "media_type": "image/jpeg",
+          "extensions": ["jpg", "jpeg"]
+        }
+      ]
+    },
+    {
+      "id": "webp",
+      "mappings": [
+        {
+          "media_type": "image/webp",
+          "extensions": ["webp"]
+        }
+      ]
+    },
+    {
+      "id": "bmp",
+      "mappings": [
+        {
+          "media_type": "image/bmp",
+          "extensions": ["bmp"]
+        }
+      ]
+    },
+    {
+      "id": "tiff",
+      "mappings": [
+        {
+          "media_type": "image/tiff",
+          "extensions": ["tif", "tiff"]
+        }
+      ]
+    },
+    {
+      "id": "gif",
+      "mappings": [
+        {
+          "media_type": "image/gif",
+          "extensions": ["gif"]
+        }
+      ]
+    },
+    {
+      "id": "svg",
+      "mappings": [
+        {
+          "media_type": "image/svg+xml",
+          "extensions": ["svg"]
+        }
+      ]
+    },
+    {
+      "id": "ico",
+      "mappings": [
+        {
+          "media_type": "image/vnd.microsoft.icon",
+          "extensions": ["ico"]
+        }
       ]
     }
   ],

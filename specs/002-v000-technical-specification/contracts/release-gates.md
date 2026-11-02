@@ -18,7 +18,7 @@ The root Rust workspace package version is the canonical product version after r
 | Automated package validation | Assembly, inventory, package identity, checksum, size, and supported lifecycle automation pass | Block platform artifact |
 | Supply chain | Declared trust state, SHA-256 checksum, SBOM, provenance attestation, `LICENSE`, `NOTICE`, and third-party notices exist | Block platform artifact |
 | Final join | Every release-blocking platform and documentation gate succeeds | Permit publication |
-| Post-release validation | Assets remain downloadable and checksums valid; manual, accessibility, physical-device, and real-world checks proceed under issue #66 | File defects before v0.2 feature work |
+| Post-release validation | Assets remain downloadable and checksums valid; automated accessibility and hosted native checks are retained under issue #66; physical-device and manual screen-reader checks are unavailable and not required under the 2026-11-02 owner decision | File defects before v0.2 feature work |
 
 Windows v0.1.0 artifacts are explicitly unsigned community packages. The macOS application is ad-hoc signed and its DMG is not Apple-notarized. These states are valid only when prominently disclosed and must never be represented as platform endorsement. Linux retains repository attestations. Android retains a stable project-owned update key because package installation and upgrade continuity technically require it; private key material remains external to the repository.
 

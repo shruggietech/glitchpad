@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.0 - 2026-11-02 (candidate)
+
+S043 adds image qualification and stable image entry points, retaining S042 BrandBuilder and AppFrame. Automated accessibility and hosted native evidence replace unavailable mandatory physical-device and manual screen-reader checks under the owner decision. Final publication remains pending.
+
 All notable changes to Glitchpad are documented in this file. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
@@ -73,3 +77,5 @@ All notable changes to Glitchpad are documented in this file. The format follows
 - Replaced focus-stealing Windows validation launchers with bounded hidden container execution and corrected public brand presentation.
 
 Release changes are authored as fragments under `changelog.d` and reconciled into this file during each mandatory release documentation pass.
+
+S043 image activation is part of the reviewed candidate.

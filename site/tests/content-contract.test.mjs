@@ -115,10 +115,14 @@ test('versioned section titles keep stable routes and preserve published links',
       route: '/docs/36-roadmap-beyond-v013',
       target: roadmap.route,
     },
+    {
+      route: '/docs/36-roadmap-beyond-v014',
+      target: roadmap.route,
+    },
   ]);
   assert.match(
     documentation.files.get('36-roadmap-beyond-v013.mdx'),
-    /\[Open Roadmap Beyond v0\.1\.4\]\(\/docs\/36-roadmap-beyond\)/,
+    /\[Open Roadmap Beyond v0\.2\.0\]\(\/docs\/36-roadmap-beyond\)/,
   );
 });
 
@@ -126,7 +130,7 @@ test('documentation rendering rewrites owned fragments and preserves fenced exam
   const documentation = buildDocumentation({
     technicalSpecification: fixture,
     workspace: { version: '1.2.3', license: 'Apache-2.0' },
-    readme: 'Glitchpad v1.2.3 is the current corrective community release.\n',
+    readme: 'Glitchpad v1.2.3 is the image-activation release candidate.\n',
   });
   const first = documentation.files.get('01-first-section.mdx');
   const second = documentation.files.get('02-second-section.mdx');
@@ -146,7 +150,7 @@ test('documentation rendering rewrites owned fragments and preserves fenced exam
   assert.doesNotMatch(first, /Table of Contents/);
 });
 
-test('canonical technical specification produces 38 ordered sections and one legacy section route', async () => {
+test('canonical technical specification produces 38 ordered sections and two legacy section routes', async () => {
   const source = await readFile(
     join(repositoryRoot, 'docs', 'glitchpad-technical-specification.md'),
     'utf8',
@@ -168,7 +172,7 @@ test('canonical technical specification produces 38 ordered sections and one leg
   assert.equal(
     [...documentation.files].filter(([name]) => /^\d{2}-.+\.mdx$/.test(name))
       .length,
-    39,
+    40,
   );
   assert.match(
     documentation.files.get('01-document-control-and-authority.mdx'),
@@ -180,7 +184,7 @@ test('canonical technical specification produces 38 ordered sections and one leg
   );
   assert.match(
     documentation.files.get('index.mdx'),
-    /\| Updated \| 2026-09-29 \|/,
+    /\| Updated \| 2026-11-02 \|/,
   );
   assert.doesNotMatch(
     [...documentation.files.values()].join('\n'),
@@ -247,8 +251,7 @@ test('generation validates specification, workspace, license, and README authori
       buildDocumentation({
         technicalSpecification: fixture,
         workspace: { version: '1.2.4', license: 'Apache-2.0' },
-        readme:
-          'Glitchpad v1.2.4 is the current corrective community release.\n',
+        readme: 'Glitchpad v1.2.4 is the image-activation release candidate.\n',
       }),
     /specification version 1\.2\.3 does not match workspace version 1\.2\.4/i,
   );
@@ -257,8 +260,7 @@ test('generation validates specification, workspace, license, and README authori
       buildDocumentation({
         technicalSpecification: fixture,
         workspace: { version: '1.2.3', license: 'MIT' },
-        readme:
-          'Glitchpad v1.2.3 is the current corrective community release.\n',
+        readme: 'Glitchpad v1.2.3 is the image-activation release candidate.\n',
       }),
     /document-control license does not include workspace license MIT/i,
   );
@@ -281,7 +283,7 @@ test('complete-set publication removes stale output and is deterministic', async
     const documentation = buildDocumentation({
       technicalSpecification: fixture,
       workspace: { version: '1.2.3', license: 'Apache-2.0' },
-      readme: 'Glitchpad v1.2.3 is the current corrective community release.\n',
+      readme: 'Glitchpad v1.2.3 is the image-activation release candidate.\n',
     });
     await publishDocumentation({
       docsDirectory,
@@ -361,7 +363,7 @@ test('publication recovery restores both outputs after an interrupted install', 
     const documentation = buildDocumentation({
       technicalSpecification: fixture,
       workspace: { version: '1.2.3', license: 'Apache-2.0' },
-      readme: 'Glitchpad v1.2.3 is the current corrective community release.\n',
+      readme: 'Glitchpad v1.2.3 is the image-activation release candidate.\n',
     });
     await publishDocumentation({
       docsDirectory,
@@ -426,7 +428,7 @@ test('landing copy keeps the current release, canonical brand, and navigation co
     join(siteRoot, 'components', 'footer.tsx'),
     'utf8',
   );
-  assert.match(home, /v0\.1\.4 community release/i);
+  assert.match(home, /v0\.2\.0 image-activation candidate/i);
   assert.match(home, /View your files\./);
   assert.match(
     home,

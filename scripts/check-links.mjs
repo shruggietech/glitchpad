@@ -14,6 +14,9 @@ const linkExcludedDirectories = new Set([
   'gen',
   'node_modules',
   'target',
+  // Preserve upstream prose verbatim; local vendor/README.md remains checked.
+  'tauri-plugin-opener-2.5.5',
+  'tauri-plugin-single-instance-2.4.5',
 ]);
 const defaultCheckLinks = promisify(markdownLinkCheck);
 

@@ -50,6 +50,16 @@
   !insertmacro GLITCHPAD_BACKUP_ASSOCIATION "tsx" "Glitchpad Source"
   !insertmacro GLITCHPAD_BACKUP_ASSOCIATION "yaml" "Glitchpad Source"
   !insertmacro GLITCHPAD_BACKUP_ASSOCIATION "yml" "Glitchpad Source"
+  !insertmacro GLITCHPAD_BACKUP_ASSOCIATION "png" "Glitchpad PNG"
+  !insertmacro GLITCHPAD_BACKUP_ASSOCIATION "jpg" "Glitchpad JPEG"
+  !insertmacro GLITCHPAD_BACKUP_ASSOCIATION "jpeg" "Glitchpad JPEG"
+  !insertmacro GLITCHPAD_BACKUP_ASSOCIATION "webp" "Glitchpad WEBP"
+  !insertmacro GLITCHPAD_BACKUP_ASSOCIATION "bmp" "Glitchpad BMP"
+  !insertmacro GLITCHPAD_BACKUP_ASSOCIATION "tif" "Glitchpad TIFF"
+  !insertmacro GLITCHPAD_BACKUP_ASSOCIATION "tiff" "Glitchpad TIFF"
+  !insertmacro GLITCHPAD_BACKUP_ASSOCIATION "gif" "Glitchpad GIF"
+  !insertmacro GLITCHPAD_BACKUP_ASSOCIATION "svg" "Glitchpad SVG"
+  !insertmacro GLITCHPAD_BACKUP_ASSOCIATION "ico" "Glitchpad ICO"
 !macroend
 
 !macro NSIS_HOOK_POSTUNINSTALL
@@ -74,4 +84,14 @@
   !insertmacro GLITCHPAD_RESTORE_ASSOCIATION "tsx" "Glitchpad Source"
   !insertmacro GLITCHPAD_RESTORE_ASSOCIATION "yaml" "Glitchpad Source"
   !insertmacro GLITCHPAD_RESTORE_ASSOCIATION "yml" "Glitchpad Source"
+  !insertmacro GLITCHPAD_RESTORE_ASSOCIATION "png" "Glitchpad PNG"
+  !insertmacro GLITCHPAD_RESTORE_ASSOCIATION "jpg" "Glitchpad JPEG"
+  !insertmacro GLITCHPAD_RESTORE_ASSOCIATION "jpeg" "Glitchpad JPEG"
+  !insertmacro GLITCHPAD_RESTORE_ASSOCIATION "webp" "Glitchpad WEBP"
+  !insertmacro GLITCHPAD_RESTORE_ASSOCIATION "bmp" "Glitchpad BMP"
+  !insertmacro GLITCHPAD_RESTORE_ASSOCIATION "tif" "Glitchpad TIFF"
+  !insertmacro GLITCHPAD_RESTORE_ASSOCIATION "tiff" "Glitchpad TIFF"
+  !insertmacro GLITCHPAD_RESTORE_ASSOCIATION "gif" "Glitchpad GIF"
+  !insertmacro GLITCHPAD_RESTORE_ASSOCIATION "svg" "Glitchpad SVG"
+  !insertmacro GLITCHPAD_RESTORE_ASSOCIATION "ico" "Glitchpad ICO"
 !macroend

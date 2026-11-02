@@ -14,19 +14,28 @@ import {
 } from './check-windows-package.mjs';
 import { generateWindowsSbom } from './generate-windows-sbom.mjs';
 
-const repositoryRoot = new URL('../', import.meta.url).pathname.replace(/^\/(?:[A-Za-z]:)/u, (value) => value.slice(1));
-const contract = JSON.parse(await readFile(join(repositoryRoot, 'packaging', 'windows', 'package-contract.json'), 'utf8'));
+const repositoryRoot = new URL('../', import.meta.url).pathname.replace(
+  /^\/(?:[A-Za-z]:)/u,
+  (value) => value.slice(1),
+);
+const contract = JSON.parse(
+  await readFile(
+    join(repositoryRoot, 'packaging', 'windows', 'package-contract.json'),
+    'utf8',
+  ),
+);
 const digest = 'a'.repeat(64);
 const sourceCommit = 'b'.repeat(40);
 
 function candidate() {
   return {
     schema_version: 1,
-    version: '0.1.4',
+    version: '0.2.0',
     platform: 'windows',
     architecture: 'x86_64',
     source_commit: sourceCommit,
-    workflow_identity: 'shruggietech/glitchpad/.github/workflows/windows-package.yml@refs/tags/v0.1.4',
+    workflow_identity:
+      'shruggietech/glitchpad/.github/workflows/windows-package.yml@refs/tags/v0.2.0',
     official: false,
     gate_status: 'candidate_valid',
     artifacts: contract.artifacts.map((artifact) => ({
@@ -36,145 +45,345 @@ function candidate() {
       size_classification: 'pass',
       signature_status: 'not_applicable_unsigned_candidate',
     })),
-    portable_inventory: contract.portable_required_files.map((relative_path) => ({
-      relative_path,
-      sha256: digest,
-      bytes: 1,
-    })),
+    portable_inventory: contract.portable_required_files.map(
+      (relative_path) => ({
+        relative_path,
+        sha256: digest,
+        bytes: 1,
+      }),
+    ),
   };
 }
 
 test('repository Windows package configuration is internally consistent', async () => {
   assert.deepEqual(await checkWindowsConfiguration(repositoryRoot), {
-    capabilityCount: 21,
+    capabilityCount: 31,
     artifactCount: 2,
   });
 });
 test('Windows lifecycle policy rejects removal of content-first release assertions', async () => {
   const [lifecycle, installerLifecycle, workflow] = await Promise.all([
-    readFile(join(repositoryRoot, 'scripts', 'windows', 'test-portable-lifecycle.ps1'), 'utf8'),
-    readFile(join(repositoryRoot, 'scripts', 'windows', 'test-installer-lifecycle.ps1'), 'utf8'),
-    readFile(join(repositoryRoot, '.github', 'workflows', 'windows-package.yml'), 'utf8'),
+    readFile(
+      join(repositoryRoot, 'scripts', 'windows', 'test-portable-lifecycle.ps1'),
+      'utf8',
+    ),
+    readFile(
+      join(
+        repositoryRoot,
+        'scripts',
+        'windows',
+        'test-installer-lifecycle.ps1',
+      ),
+      'utf8',
+    ),
+    readFile(
+      join(repositoryRoot, '.github', 'workflows', 'windows-package.yml'),
+      'utf8',
+    ),
   ]);
   assert.equal(validatePortableSmokeContract(lifecycle, workflow), true);
   assert.throws(
-    () => validatePortableSmokeContract(lifecycle.replace("conditional_tabs = 'pass'", ''), workflow),
+    () =>
+      validatePortableSmokeContract(
+        lifecycle.replace("conditional_tabs = 'pass'", ''),
+        workflow,
+      ),
     /portable smoke lifecycle omits/u,
   );
   assert.throws(
-    () => validatePortableSmokeContract(lifecycle.replace("geometry_scale_125 = 'pass'", ''), workflow),
+    () =>
+      validatePortableSmokeContract(
+        lifecycle.replace("geometry_scale_125 = 'pass'", ''),
+        workflow,
+      ),
     /portable smoke lifecycle omits/u,
   );
   assert.throws(
-    () => validatePortableSmokeContract(lifecycle, workflow.replaceAll('s038-installed-editable.md', 's038-portable-editable.md')),
+    () =>
+      validatePortableSmokeContract(
+        lifecycle,
+        workflow.replaceAll(
+          's038-installed-editable.md',
+          's038-portable-editable.md',
+        ),
+      ),
     /Windows workflow omits/u,
   );
   assert.throws(
-    () => validatePortableSmokeContract(lifecycle, workflow.replace('- name: Promote truthful community evidence', '- name: Late community evidence promotion')),
+    () =>
+      validatePortableSmokeContract(
+        lifecycle,
+        workflow.replace(
+          '- name: Promote truthful community evidence',
+          '- name: Late community evidence promotion',
+        ),
+      ),
     /promotion and receipt binding are out of order/u,
   );
   assert.throws(
-    () => validatePortableSmokeContract(lifecycle, workflow.replace('puppeteer browsers install chrome-headless-shell', 'echo browser unavailable')),
+    () =>
+      validatePortableSmokeContract(
+        lifecycle,
+        workflow.replace(
+          'puppeteer browsers install chrome-headless-shell',
+          'echo browser unavailable',
+        ),
+      ),
     /Windows final-byte validation omits/u,
   );
   assert.throws(
-    () => validatePortableSmokeContract(lifecycle, workflow.replace('--official --artifact-root artifacts/windows', '')),
+    () =>
+      validatePortableSmokeContract(
+        lifecycle,
+        workflow.replace('--official --artifact-root artifacts/windows', ''),
+      ),
     /Windows final-byte validation omits/u,
   );
   assert.throws(
-    () => validatePortableSmokeContract(lifecycle.replaceAll('System.Text.Json.JsonDocument', 'System.Text.Json.JsonNode'), workflow),
+    () =>
+      validatePortableSmokeContract(
+        lifecycle.replaceAll(
+          'System.Text.Json.JsonDocument',
+          'System.Text.Json.JsonNode',
+        ),
+        workflow,
+      ),
     /Windows Markdown lifecycle omits/u,
   );
   assert.throws(
-    () => validatePortableSmokeContract(lifecycle.replaceAll("GetProperty('source_commit').GetString()", "GetProperty('sourceCommit').GetString()"), workflow),
+    () =>
+      validatePortableSmokeContract(
+        lifecycle.replaceAll(
+          "GetProperty('source_commit').GetString()",
+          "GetProperty('sourceCommit').GetString()",
+        ),
+        workflow,
+      ),
     /Windows Markdown lifecycle omits/u,
   );
   assert.throws(
-    () => validatePortableSmokeContract(lifecycle.replace('Click-AutomationElement $Process $item $Name', 'Invoke-AutomationElement $Process $item $Name'), workflow),
+    () =>
+      validatePortableSmokeContract(
+        lifecycle.replace(
+          'Click-AutomationElement $Process $item $Name',
+          'Invoke-AutomationElement $Process $item $Name',
+        ),
+        workflow,
+      ),
     /Windows Markdown lifecycle omits/u,
   );
   assert.throws(
-    () => validatePortableSmokeContract(lifecycle.replace('catch { }', ''), workflow),
+    () =>
+      validatePortableSmokeContract(
+        lifecycle.replace('catch { }', ''),
+        workflow,
+      ),
     /Windows Markdown lifecycle omits/u,
   );
   assert.throws(
-    () => validatePortableSmokeContract(lifecycle.replace('Wait-FileText $Path $savedText', ''), workflow),
+    () =>
+      validatePortableSmokeContract(
+        lifecycle.replace('Wait-FileText $Path $savedText', ''),
+        workflow,
+      ),
     /Windows Markdown lifecycle omits/u,
   );
   assert.throws(
-    () => validatePortableSmokeContract(lifecycle.replace("Invoke-MenuCommand $Process 'Save' 'Ctrl+S'", ''), workflow),
+    () =>
+      validatePortableSmokeContract(
+        lifecycle.replace("Invoke-MenuCommand $Process 'Save' 'Ctrl+S'", ''),
+        workflow,
+      ),
     /Windows Markdown lifecycle omits/u,
   );
   assert.throws(
-    () => validatePortableSmokeContract(lifecycle.replace("[Regex]::Escape($Shortcut)", ''), workflow),
+    () =>
+      validatePortableSmokeContract(
+        lifecycle.replace('[Regex]::Escape($Shortcut)', ''),
+        workflow,
+      ),
     /Windows Markdown lifecycle omits/u,
   );
   assert.throws(
-    () => validatePortableSmokeContract(lifecycle.replace('$bounds = $Element.Current.BoundingRectangle', ''), workflow),
+    () =>
+      validatePortableSmokeContract(
+        lifecycle.replace('$bounds = $Element.Current.BoundingRectangle', ''),
+        workflow,
+      ),
     /Windows Markdown lifecycle omits/u,
   );
   assert.throws(
-    () => validatePortableSmokeContract(lifecycle.replace('$item = Wait-ActionableNamedElement $Process $Name', '$item = Wait-NamedElement $Process $Name'), workflow),
+    () =>
+      validatePortableSmokeContract(
+        lifecycle.replace(
+          '$item = Wait-ActionableNamedElement $Process $Name',
+          '$item = Wait-NamedElement $Process $Name',
+        ),
+        workflow,
+      ),
     /Windows Markdown lifecycle omits/u,
   );
-  assert.match(installerLifecycle, /Wait-RenderedMarkdownHeading \$associationProcess 'S035 Minimal Markdown 5E8A'/u);
+  assert.match(
+    installerLifecycle,
+    /Wait-RenderedMarkdownHeading \$associationProcess 'S035 Minimal Markdown 5E8A'/u,
+  );
 });
 
 test('desktop menu geometry reserves shell chrome and keeps its popup independently positioned', async () => {
   const [app, menu, styles] = await Promise.all([
-    readFile(join(repositoryRoot, 'apps', 'glitchpad', 'src', 'App.tsx'), 'utf8'),
-    readFile(join(repositoryRoot, 'apps', 'glitchpad', 'src', 'components', 'ApplicationMenu.tsx'), 'utf8'),
-    readFile(join(repositoryRoot, 'apps', 'glitchpad', 'src', 'styles.css'), 'utf8'),
+    readFile(
+      join(repositoryRoot, 'apps', 'glitchpad', 'src', 'App.tsx'),
+      'utf8',
+    ),
+    readFile(
+      join(
+        repositoryRoot,
+        'apps',
+        'glitchpad',
+        'src',
+        'components',
+        'ApplicationMenu.tsx',
+      ),
+      'utf8',
+    ),
+    readFile(
+      join(repositoryRoot, 'apps', 'glitchpad', 'src', 'styles.css'),
+      'utf8',
+    ),
   ]);
   const chrome = styles.match(/\.shell-chrome\s*\{([^}]*)\}/su)?.[1] ?? '';
-  const shell = styles.match(/\.application-menu-shell\s*\{([^}]*)\}/su)?.[1] ?? '';
-  const trigger = styles.match(/\.application-menu-trigger\s*\{([^}]*)\}/su)?.[1] ?? '';
+  const shell =
+    styles.match(/\.application-menu-shell\s*\{([^}]*)\}/su)?.[1] ?? '';
+  const trigger =
+    styles.match(/\.application-menu-trigger\s*\{([^}]*)\}/su)?.[1] ?? '';
   const popup = styles.match(/\.application-menu\s*\{([^}]*)\}/su)?.[1] ?? '';
   assert.match(app, /className="shell-chrome"/u);
   assert.match(app, /<ApplicationMenu[\s\S]*<TabStrip/u);
   assert.match(menu, /application-menu-shell application-toolbar/u);
   assert.match(chrome, /display:\s*grid/u);
-  assert.match(chrome, /grid-template-columns:\s*var\(--application-toolbar-size\) minmax\(0, 1fr\)/u);
+  assert.match(
+    chrome,
+    /grid-template-columns:\s*var\(--application-toolbar-size\) minmax\(0, 1fr\)/u,
+  );
   assert.match(shell, /position:\s*relative/u);
   assert.doesNotMatch(shell, /position:\s*absolute/u);
   assert.match(trigger, /width:\s*100%/u);
   assert.match(styles, /--application-toolbar-size:\s*32px/u);
   assert.match(styles, /--application-toolbar-size:\s*44px/u);
-  assert.match(styles, /\.application-menu-glyph\s*\{[\s\S]*width:\s*18px[\s\S]*height:\s*18px/u);
+  assert.match(
+    styles,
+    /\.application-menu-glyph\s*\{[\s\S]*width:\s*18px[\s\S]*height:\s*18px/u,
+  );
   assert.match(popup, /position:\s*absolute/u);
   assert.match(popup, /left:\s*0/u);
-  assert.match(popup, /max-height:\s*calc\(100vh - var\(--shell-row-height\) - 0\.5rem\)/u);
-  assert.match(styles, /@media \(forced-colors: active\)[\s\S]*\.application-menu-trigger/u);
+  assert.match(
+    popup,
+    /max-height:\s*calc\(100vh - var\(--shell-row-height\) - 0\.5rem\)/u,
+  );
+  assert.match(
+    styles,
+    /@media \(forced-colors: active\)[\s\S]*\.application-menu-trigger/u,
+  );
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/u);
 });
 
 test('Markdown recovery stays intrinsic and avoids unsupported Chrome 69 globals', async () => {
-  const [documentSurface, markdownSurface, worker, styles, shellLayout] = await Promise.all([
-    readFile(join(repositoryRoot, 'apps', 'glitchpad', 'src', 'components', 'DocumentSurface.tsx'), 'utf8'),
-    readFile(join(repositoryRoot, 'apps', 'glitchpad', 'src', 'components', 'MarkdownSurface.tsx'), 'utf8'),
-    readFile(join(repositoryRoot, 'apps', 'glitchpad', 'src', 'domain', 'markdown-worker.ts'), 'utf8'),
-    readFile(join(repositoryRoot, 'apps', 'glitchpad', 'src', 'styles.css'), 'utf8'),
-    readFile(join(repositoryRoot, 'scripts', 'check-shell-layout.mjs'), 'utf8'),
-  ]);
+  const [documentSurface, markdownSurface, worker, styles, shellLayout] =
+    await Promise.all([
+      readFile(
+        join(
+          repositoryRoot,
+          'apps',
+          'glitchpad',
+          'src',
+          'components',
+          'DocumentSurface.tsx',
+        ),
+        'utf8',
+      ),
+      readFile(
+        join(
+          repositoryRoot,
+          'apps',
+          'glitchpad',
+          'src',
+          'components',
+          'MarkdownSurface.tsx',
+        ),
+        'utf8',
+      ),
+      readFile(
+        join(
+          repositoryRoot,
+          'apps',
+          'glitchpad',
+          'src',
+          'domain',
+          'markdown-worker.ts',
+        ),
+        'utf8',
+      ),
+      readFile(
+        join(repositoryRoot, 'apps', 'glitchpad', 'src', 'styles.css'),
+        'utf8',
+      ),
+      readFile(
+        join(repositoryRoot, 'scripts', 'check-shell-layout.mjs'),
+        'utf8',
+      ),
+    ]);
   assert.match(documentSurface, /Retry preview/u);
   assert.match(documentSurface, /attempt:\s*recoveryAttempt \+ 1/u);
-  assert.match(styles, /\.markdown-failure,\s*\.document-render-failure\s*\{[^}]*grid-auto-rows:\s*max-content[^}]*align-content:\s*start/u);
-  assert.match(styles, /@media \(max-width: 640px\), \(pointer: coarse\)[\s\S]*\.document-render-failure button,[\s\S]*\.markdown-recovery-banner button\s*\{[\s\S]*min-height:\s*44px/u);
+  assert.match(
+    styles,
+    /\.markdown-failure,\s*\.document-render-failure\s*\{[^}]*grid-auto-rows:\s*max-content[^}]*align-content:\s*start/u,
+  );
+  assert.match(
+    styles,
+    /@media \(max-width: 640px\), \(pointer: coarse\)[\s\S]*\.document-render-failure button,[\s\S]*\.markdown-recovery-banner button\s*\{[\s\S]*min-height:\s*44px/u,
+  );
   assert.match(shellLayout, /documentSurface\.scrollTop = 37/u);
   assert.match(shellLayout, /before\.scrollTop > 0/u);
   assert.doesNotMatch(markdownSurface, /Object\.hasOwn\(/u);
   assert.doesNotMatch(markdownSurface, /queueMicrotask\(/u);
   assert.match(documentSurface, /lifecycleFailureProbe/u);
   assert.match(markdownSurface, /LifecycleMarkdownFailure/u);
-  assert.match(markdownSurface, /lifecycleFailureProbe && recoveryAttempt === 0/u);
+  assert.match(
+    markdownSurface,
+    /lifecycleFailureProbe && recoveryAttempt === 0/u,
+  );
   assert.doesNotMatch(worker, /globalThis/u);
 });
 
 test('size classification preserves exact S018 boundaries', () => {
-  assert.equal(classifyPackageSize(contract.size_budget.target_bytes, contract.size_budget), 'pass');
-  assert.equal(classifyPackageSize(contract.size_budget.target_bytes + 1, contract.size_budget), 'warning');
-  assert.equal(classifyPackageSize(contract.size_budget.hard_limit_bytes, contract.size_budget), 'warning');
-  assert.equal(classifyPackageSize(contract.size_budget.hard_limit_bytes + 1, contract.size_budget), 'failure');
+  assert.equal(
+    classifyPackageSize(
+      contract.size_budget.target_bytes,
+      contract.size_budget,
+    ),
+    'pass',
+  );
+  assert.equal(
+    classifyPackageSize(
+      contract.size_budget.target_bytes + 1,
+      contract.size_budget,
+    ),
+    'warning',
+  );
+  assert.equal(
+    classifyPackageSize(
+      contract.size_budget.hard_limit_bytes,
+      contract.size_budget,
+    ),
+    'warning',
+  );
+  assert.equal(
+    classifyPackageSize(
+      contract.size_budget.hard_limit_bytes + 1,
+      contract.size_budget,
+    ),
+    'failure',
+  );
 });
 
 test('a complete unsigned candidate passes candidate mode', () => {
@@ -182,7 +391,10 @@ test('a complete unsigned candidate passes candidate mode', () => {
 });
 
 test('an unsigned candidate can never pass official mode', () => {
-  assert.throws(() => validateWindowsEvidence(candidate(), contract, { official: true }), /live final-byte and Authenticode verification/u);
+  assert.throws(
+    () => validateWindowsEvidence(candidate(), contract, { official: true }),
+    /live final-byte and Authenticode verification/u,
+  );
 });
 
 test('a self-asserted official manifest cannot bypass live verification', () => {
@@ -190,7 +402,7 @@ test('a self-asserted official manifest cannot bypass live verification', () => 
   evidence.official = true;
   evidence.gate_status = 'official_valid';
   evidence.event = 'push_tag';
-  evidence.tag = 'v0.1.4';
+  evidence.tag = 'v0.2.0';
   evidence.evidence_files = [...contract.official.required_evidence];
   evidence.artifacts = evidence.artifacts.map((artifact) => ({
     ...artifact,
@@ -212,7 +424,7 @@ test('official community mode binds unsigned final bytes and recorded trust evid
     evidence.official = true;
     evidence.gate_status = 'official_valid';
     evidence.event = 'push_tag';
-    evidence.tag = 'v0.1.4';
+    evidence.tag = 'v0.2.0';
     evidence.evidence_files = [...contract.official.required_evidence];
     for (const artifact of evidence.artifacts) {
       const bytes = Buffer.from(artifact.kind);
@@ -236,15 +448,23 @@ test('official community mode binds unsigned final bytes and recorded trust evid
       timestamp_thumbprint: 'b'.repeat(40),
     };
     const installer = evidence.artifacts.find(({ kind }) => kind === 'nsis');
-    const portable = evidence.artifacts.find(({ kind }) => kind === 'portable_zip');
-    const portableExecutable = evidence.portable_inventory.find(({ relative_path }) => relative_path === 'Glitchpad.exe');
+    const portable = evidence.artifacts.find(
+      ({ kind }) => kind === 'portable_zip',
+    );
+    const portableExecutable = evidence.portable_inventory.find(
+      ({ relative_path }) => relative_path === 'Glitchpad.exe',
+    );
     installer.signature_sha256 = installer.sha256;
     portable.signature_sha256 = portableExecutable.sha256;
     const signatures = {
       schema_version: 1,
       artifacts: [
         { kind: 'nsis', sha256: installer.sha256, ...observed },
-        { kind: 'portable_executable', sha256: portableExecutable.sha256, ...observed },
+        {
+          kind: 'portable_executable',
+          sha256: portableExecutable.sha256,
+          ...observed,
+        },
       ],
     };
     const manifestBytes = Buffer.from(JSON.stringify(evidence));
@@ -253,53 +473,114 @@ test('official community mode binds unsigned final bytes and recorded trust evid
       join(root, 'SHA256SUMS'),
       `${evidence.artifacts.map(({ sha256, name }) => `${sha256}  ${name}`).join('\n')}\n`,
     );
-    await writeFile(join(root, 'glitchpad-windows.cdx.json'), JSON.stringify({
-      bomFormat: 'CycloneDX',
-      specVersion: '1.6',
-      metadata: {
-        component: { name: 'Glitchpad for Windows', version: evidence.version },
-        properties: [{ name: 'glitchpad:source_commit', value: evidence.source_commit }],
-      },
-      components: [
-        { 'bom-ref': 'pkg:cargo/glitchpad-core@0.1.4' },
-        { 'bom-ref': 'pkg:npm/react@19.2.8' },
-      ],
-    }));
-    await writeFile(join(root, 'provenance.json'), JSON.stringify({
-      schema_version: 1,
-      predicate_type: 'https://slsa.dev/provenance/v1',
-      candidate_only: false,
-      repository: 'shruggietech/glitchpad',
-      source_commit: evidence.source_commit,
-      workflow_identity: evidence.workflow_identity,
-      subjects: evidence.artifacts.map(({ name, sha256 }) => ({ name, sha256 })),
-    }));
-    const passed = Object.fromEntries([
-      'install', 'launch', 'command_line', 'association', 'read', 'edit', 'save', 'metadata', 'recovery', 'uninstall', 'portable', 'cleanup', 'performance',
-    ].map((key) => [key, 'pass']));
-    const manualPassed = Object.fromEntries([
-      'dialog', 'drag_drop', 'save_as', 'print', 'keyboard', 'focus', 'text_scale', 'forced_colors', 'screen_reader',
-    ].map((key) => [key, 'pass']));
-    await writeFile(join(root, 'clean-machine-receipt.json'), JSON.stringify({
-      schema_version: 1,
-      candidate_manifest_sha256: createHash('sha256').update(manifestBytes).digest('hex'),
-      windows: { edition: 'Windows 11 Pro', build: '26100', architecture: 'x86_64', webview2_version: '1.0.0' },
-      automated: passed,
-      manual: manualPassed,
-      content_free: true,
-      completed_utc: new Date().toISOString(),
-    }));
-    await writeFile(join(root, 'signature-evidence.json'), JSON.stringify(signatures));
-    await writeFile(join(root, 'community-trust-evidence.json'), JSON.stringify({
-      schema_version: 1,
-      trust_state: 'unsigned_community',
-      source_commit: evidence.source_commit,
-      artifacts: evidence.artifacts.map(({ name }) => ({ name, signature_status: 'not_signed' })),
-    }));
-    assert.equal(await validateOfficialWindowsEvidence(evidence, contract, {
-      artifactRoot: root,
-      authenticodeInspector: async () => observed,
-    }), true);
+    await writeFile(
+      join(root, 'glitchpad-windows.cdx.json'),
+      JSON.stringify({
+        bomFormat: 'CycloneDX',
+        specVersion: '1.6',
+        metadata: {
+          component: {
+            name: 'Glitchpad for Windows',
+            version: evidence.version,
+          },
+          properties: [
+            { name: 'glitchpad:source_commit', value: evidence.source_commit },
+          ],
+        },
+        components: [
+          { 'bom-ref': 'pkg:cargo/glitchpad-core@0.2.0' },
+          { 'bom-ref': 'pkg:npm/react@19.2.8' },
+        ],
+      }),
+    );
+    await writeFile(
+      join(root, 'provenance.json'),
+      JSON.stringify({
+        schema_version: 1,
+        predicate_type: 'https://slsa.dev/provenance/v1',
+        candidate_only: false,
+        repository: 'shruggietech/glitchpad',
+        source_commit: evidence.source_commit,
+        workflow_identity: evidence.workflow_identity,
+        subjects: evidence.artifacts.map(({ name, sha256 }) => ({
+          name,
+          sha256,
+        })),
+      }),
+    );
+    const passed = Object.fromEntries(
+      [
+        'install',
+        'launch',
+        'command_line',
+        'association',
+        'read',
+        'edit',
+        'save',
+        'metadata',
+        'recovery',
+        'uninstall',
+        'portable',
+        'cleanup',
+        'performance',
+      ].map((key) => [key, 'pass']),
+    );
+    const manualPassed = Object.fromEntries(
+      [
+        'dialog',
+        'drag_drop',
+        'save_as',
+        'print',
+        'keyboard',
+        'focus',
+        'text_scale',
+        'forced_colors',
+        'screen_reader',
+      ].map((key) => [key, 'pass']),
+    );
+    manualPassed.screen_reader = 'unavailable_owner_decision_2026_11_02';
+    await writeFile(
+      join(root, 'clean-machine-receipt.json'),
+      JSON.stringify({
+        schema_version: 1,
+        candidate_manifest_sha256: createHash('sha256')
+          .update(manifestBytes)
+          .digest('hex'),
+        windows: {
+          edition: 'Windows 11 Pro',
+          build: '26100',
+          architecture: 'x86_64',
+          webview2_version: '1.0.0',
+        },
+        automated: passed,
+        manual: manualPassed,
+        content_free: true,
+        completed_utc: new Date().toISOString(),
+      }),
+    );
+    await writeFile(
+      join(root, 'signature-evidence.json'),
+      JSON.stringify(signatures),
+    );
+    await writeFile(
+      join(root, 'community-trust-evidence.json'),
+      JSON.stringify({
+        schema_version: 1,
+        trust_state: 'unsigned_community',
+        source_commit: evidence.source_commit,
+        artifacts: evidence.artifacts.map(({ name }) => ({
+          name,
+          signature_status: 'not_signed',
+        })),
+      }),
+    );
+    assert.equal(
+      await validateOfficialWindowsEvidence(evidence, contract, {
+        artifactRoot: root,
+        authenticodeInspector: async () => observed,
+      }),
+      true,
+    );
     await writeFile(join(root, installer.name), 'tampered');
     await assert.rejects(
       validateOfficialWindowsEvidence(evidence, contract, {
@@ -314,42 +595,98 @@ test('official community mode binds unsigned final bytes and recorded trust evid
 });
 
 test('portable inventory rejects traversal, case collisions, and extra executables', () => {
-  for (const relative_path of ['../Glitchpad.exe', 'C:/Glitchpad.exe', 'bin\\Glitchpad.exe', 'evil.exe']) {
+  for (const relative_path of [
+    '../Glitchpad.exe',
+    'C:/Glitchpad.exe',
+    'bin\\Glitchpad.exe',
+    'evil.exe',
+  ]) {
     const evidence = candidate();
-    evidence.portable_inventory.push({ relative_path, sha256: digest, bytes: 1 });
-    assert.throws(() => validateWindowsEvidence(evidence, contract), /unsafe|unexpected executable/u);
+    evidence.portable_inventory.push({
+      relative_path,
+      sha256: digest,
+      bytes: 1,
+    });
+    assert.throws(
+      () => validateWindowsEvidence(evidence, contract),
+      /unsafe|unexpected executable/u,
+    );
   }
   const collision = candidate();
-  collision.portable_inventory.push({ relative_path: 'glitchpad.EXE', sha256: digest, bytes: 1 });
-  assert.throws(() => validateWindowsEvidence(collision, contract), /case-colliding/u);
+  collision.portable_inventory.push({
+    relative_path: 'glitchpad.EXE',
+    sha256: digest,
+    bytes: 1,
+  });
+  assert.throws(
+    () => validateWindowsEvidence(collision, contract),
+    /case-colliding/u,
+  );
 });
 
 test('missing notices, bad size results, and secret-shaped evidence fail closed', () => {
   const badCommit = candidate();
   badCommit.source_commit = 'c'.repeat(39);
-  assert.throws(() => validateWindowsEvidence(badCommit, contract), /source commit is invalid/u);
+  assert.throws(
+    () => validateWindowsEvidence(badCommit, contract),
+    /source commit is invalid/u,
+  );
   const missing = candidate();
   missing.portable_inventory.pop();
-  assert.throws(() => validateWindowsEvidence(missing, contract), /portable inventory omits/u);
+  assert.throws(
+    () => validateWindowsEvidence(missing, contract),
+    /portable inventory omits/u,
+  );
   const oversized = candidate();
   oversized.artifacts[0].bytes = contract.size_budget.hard_limit_bytes + 1;
   oversized.artifacts[0].size_classification = 'failure';
-  assert.throws(() => validateWindowsEvidence(oversized, contract), /invalid size result/u);
+  assert.throws(
+    () => validateWindowsEvidence(oversized, contract),
+    /invalid size result/u,
+  );
   const secret = candidate();
   secret.note = 'client_secret';
-  assert.throws(() => validateWindowsEvidence(secret, contract), /secret-shaped/u);
+  assert.throws(
+    () => validateWindowsEvidence(secret, contract),
+    /secret-shaped/u,
+  );
 });
 
 test('Windows SBOM combines Cargo and transitive production JavaScript dependencies', () => {
   const bom = generateWindowsSbom(
-    { packages: [{ name: 'glitchpad-core', version: '0.1.4', source: null, license: 'Apache-2.0' }] },
-    [{ dependencies: { react: { version: '19.2.4', dependencies: { scheduler: { version: '0.27.0' } } } } }],
+    {
+      packages: [
+        {
+          name: 'glitchpad-core',
+          version: '0.2.0',
+          source: null,
+          license: 'Apache-2.0',
+        },
+      ],
+    },
+    [
+      {
+        dependencies: {
+          react: {
+            version: '19.2.4',
+            dependencies: { scheduler: { version: '0.27.0' } },
+          },
+        },
+      },
+    ],
     sourceCommit,
   );
-  assert.deepEqual(
-    bom.components.map(({ name }) => name).sort(),
-    ['glitchpad-core', 'react', 'scheduler'],
+  assert.deepEqual(bom.components.map(({ name }) => name).sort(), [
+    'glitchpad-core',
+    'react',
+    'scheduler',
+  ]);
+  assert.ok(
+    bom.components
+      .find(({ name }) => name === 'react')
+      ?.purl.startsWith('pkg:npm/'),
   );
-  assert.ok(bom.components.find(({ name }) => name === 'react')?.purl.startsWith('pkg:npm/'));
-  assert.deepEqual(bom.metadata.properties, [{ name: 'glitchpad:source_commit', value: sourceCommit }]);
+  assert.deepEqual(bom.metadata.properties, [
+    { name: 'glitchpad:source_commit', value: sourceCommit },
+  ]);
 });

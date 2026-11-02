@@ -376,3 +376,29 @@ for (const [label, source] of [
     );
   });
 }
+
+test('link validation keeps local provenance while excluding exact upstream vendor documentation', async (t) => {
+  const root = await temporaryRepository(t);
+  await writeFixture(root, 'vendor/README.md', '# Local patch provenance\n');
+  await writeFixture(
+    root,
+    'vendor/tauri-plugin-opener-2.5.5/README.md',
+    '# Upstream opener\n',
+  );
+  await writeFixture(
+    root,
+    'vendor/tauri-plugin-single-instance-2.4.5/CHANGELOG.md',
+    '# Upstream changelog\n',
+  );
+  const seen = [];
+  const result = await validateLinks({
+    repositoryRoot: root,
+    configuration: {},
+    checkLinks: async (markdown) => {
+      seen.push(markdown);
+      return [];
+    },
+  });
+  assert.equal(result.fileCount, 1);
+  assert.deepEqual(seen, ['# Local patch provenance\n']);
+});

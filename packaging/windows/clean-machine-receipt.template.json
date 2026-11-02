@@ -31,7 +31,7 @@
     "focus": "REQUIRED",
     "text_scale": "REQUIRED",
     "forced_colors": "REQUIRED",
-    "screen_reader": "REQUIRED"
+    "screen_reader": "unavailable_owner_decision_2026_11_02"
   },
   "content_free": true,
   "completed_utc": "REQUIRED"

@@ -1,0 +1,25 @@
+[package]
+name = "glitchpad-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2024"
+license = "Apache-2.0"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "=0.4.13"
+glitchpad-core = { path = "../crates/glitchpad-core" }
+
+serde_json = "1.0.145"
+
+[workspace]
+members = ["."]
+
+[[bin]]
+name = "image_boundaries"
+path = "fuzz_targets/image_boundaries.rs"
+test = false
+doc = false
+bench = false

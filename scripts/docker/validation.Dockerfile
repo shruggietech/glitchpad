@@ -159,7 +159,7 @@ RUN rustup target add aarch64-linux-android x86_64-linux-android \
 ENV GRADLE_USER_HOME=/opt/gradle
 WORKDIR /workspace
 
-FROM rust:1.96.0-bookworm
+FROM rust:1.96.0-bookworm AS validation
 
 ARG NODE_VERSION=24.11.0
 ARG CARGO_DENY_VERSION=0.20.2
@@ -214,3 +214,19 @@ RUN ln -s /opt/microsoft/powershell/7/pwsh /usr/local/bin/pwsh
 ENV PATH="/usr/local/cargo/bin:${PATH}"
 ENV GLITCHPAD_VALIDATION_CONTAINER=true
 WORKDIR /workspace
+
+FROM validation AS qualification
+ARG CARGO_FUZZ_VERSION=0.13.2
+ARG FUZZ_TOOLCHAIN=nightly-2026-10-31
+RUN apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends clang \
+    && rm -rf /var/lib/apt/lists/*
+RUN cargo install cargo-fuzz --version "${CARGO_FUZZ_VERSION}" --locked \
+    && rustup toolchain install "${FUZZ_TOOLCHAIN}" --profile minimal
+
+RUN apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends python3-venv \
+    && rm -rf /var/lib/apt/lists/* \
+    && python3 -m venv /opt/brand-venv \
+    && /opt/brand-venv/bin/pip install --disable-pip-version-check --no-cache-dir coloraide==8.12.1 pillow==12.3.0 fonttools==4.65.0 brotli==1.2.0 pikepdf==10.13.0.post1 svgelements==1.9.6
+ENV PATH="/opt/brand-venv/bin:${PATH}"

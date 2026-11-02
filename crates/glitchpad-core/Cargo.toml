@@ -23,3 +23,6 @@ sha2.workspace = true
 
 [lints]
 workspace = true
+
+[dev-dependencies]
+sysinfo.workspace = true

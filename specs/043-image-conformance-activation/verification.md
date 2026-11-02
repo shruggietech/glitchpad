@@ -44,7 +44,7 @@ Each automated row requires its actual current-candidate local/hosted result bel
 
 - The activation regression failed against the original text-only matrix. The completed matrix has 31 extensions (21 text/source plus ten images) with image Viewer roles, native chooser admission, Windows backup/restore hooks, Linux MIME registration and Android exact-type resolver declarations.
 - Focused activation/community-release/macOS tests pass 33/33. Native image-family decode tests pass 10/10. The frontend gate passes 305 tests across 51 files, with lint, types and production build.
-- Initial fuzz campaign completed 334706 runs in 61 seconds. The second campaign adds core detection, language and SaveRequest deserialization. The final campaign uses the current product-seeded dependency lock and completes 224945 runs in 61 seconds with exit 0 and no crash/timeout/OOM. These are bounded 64 KiB input campaigns, not exhaustive proofs.
+- Historical pre-review fuzz campaigns completed without process failures but had incomplete JPEG/GIF pixel coverage because cancellation/selection were derived from payload bytes. Review comment 4445989730 exposed the JPEG gap. The corrected shared library always decodes frame/entry zero uncancelled, tests arbitrary selection separately and independently asserts cancellation. The valid JPEG/GIF/animated-WebP/SVG/ICO seed regression failed before correction and passes afterward. The corrected campaign completes 167825 runs in 61 seconds with exit 0 and no crash/timeout/OOM; its source/library and lock digests are retained in `evidence/fuzz-summary.json`.
 - Native resource qualification samples process resident memory every 5 ms and measures 20 iterations for original image fixtures plus a generated 1MP BMP. The first Linux result is 28127232 sampled peak bytes; generated BMP p95 is 469886 microseconds. This campaign is not maximum-input peak-memory proof. Current-head hosted measurements are retained independently.
 - The aggregate advisory gate refused Tokio 1.53.1 and retired zbus names/wire crates. Tokio 1.53.3 and exact licensed plugin sources with scoped Linux zbus 6 migration remove those findings. The unchanged gate now reports advisories/bans/licenses/sources all OK.
 - The real session-bus regression passes: the persistent Tauri runtime serves repeated calls from a nested runtime context, releases its bus name, and permits a new owner. Hosted Linux package lifecycle still must verify actual secondary application forwarding.
@@ -65,7 +65,7 @@ The complete `cargo xtask check` rerun finished with exit 0. It includes 305 fro
 
 ## External review ledger
 
-PR not yet published. Initial review: pending publication. Explicit follow-up requests used: 0 of 1. Total permitted rounds: 2. No merge, tag, release or third review request is authorized.
+Official [PR #238](https://github.com/shruggietech/glitchpad/pull/238) was automatically published non-draft at initial head `ba354f5035c95da31b5b0b6873786cde40cae68e`. The initial external Codex code review completed with no findings. The single authorized follow-up was requested as a dedicated security review in comment 6584595465; the service returned it as a manual code review, with one P2 finding (4445989730). The correction and failing-then-passing seed regression are complete. No separate security-review receipt is inferred. Explicit follow-up requests used: 1 of 1. No further review trigger is permitted. Total permitted rounds: 2. No merge, tag, release or third review request is authorized.
 
 ## Convergence
 

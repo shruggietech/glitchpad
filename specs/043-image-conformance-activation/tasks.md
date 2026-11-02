@@ -50,7 +50,7 @@
 ## Phase 6: Delivery and Review
 
 - [x] T017 Perform convergence against all requirements, scenarios and decisions; append remaining work only to `tasks.md` (FR-010, FR-012).
-- [ ] T018 Commit, automatically push and publish one official S043 PR; record its URL and head in `verification.md` (FR-011).
+- [x] T018 Commit, automatically push and publish one official S043 PR; record its URL and head in `verification.md` (FR-011).
 - [ ] T019 Resolve every first-round CI/review result and record the external review ledger in `verification.md` (FR-010, FR-011).
 - [ ] T020 Request at most one explicit follow-up review, address/resolve every finding, and verify terminal current-head platform/package/security checks in `verification.md` (FR-010, FR-011).
 - [ ] T021 Record issue-level completion and remaining release-only obligations; deliver the unmerged PR for owner merge ritual in `verification.md` (FR-012; SC-005).
@@ -73,3 +73,7 @@ Retain the existing image engines and core source lifecycle. Add missing qualifi
 - [x] T023 Replace obsolete deferred physical/TalkBack wording in `packaging/android/README.md` with the owner-amended unavailable/not-required policy (FR-005, partial).
 
 T022/T023 are convergence prerequisites to T018 publication; the appended placement preserves the installed convergence command's task-history contract.
+
+## Phase 8: External Review Remediation
+
+- [ ] T024 Decouple cancellation and frame/entry selection from format signatures in `fuzz/src/lib.rs`, prove valid JPEG/GIF/WebP/SVG/ICO seed pixel output with a regression, rerun the campaign and resolve review comment 4445989730 (FR-002, FR-007).

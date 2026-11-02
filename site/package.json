@@ -12,23 +12,23 @@
     "check": "pnpm build && pnpm test:unit && pnpm test:browser"
   },
   "dependencies": {
-    "fumadocs-core": "16.15.14",
-    "fumadocs-ui": "16.15.14",
-    "mermaid": "12.0.0",
-    "next": "16.3.6",
-    "react": "19.3.0",
-    "react-dom": "19.3.0",
+    "fumadocs-core": "16.17.9",
+    "fumadocs-ui": "16.17.9",
+    "mermaid": "12.2.0",
+    "next": "16.4.3",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
     "react-markdown": "10.1.0",
-    "zod": "4.6.5"
+    "zod": "4.6.7"
   },
   "devDependencies": {
-    "@playwright/test": "1.63.0",
+    "@playwright/test": "1.64.1",
     "@tailwindcss/postcss": "4.3.3",
     "@types/mdx": "2.0.14",
-    "@types/node": "24.13.6",
+    "@types/node": "24.19.2",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
-    "fumadocs-mdx": "15.4.4",
+    "fumadocs-mdx": "15.4.10",
     "tailwindcss": "4.3.3",
     "typescript": "5.9.3"
   }

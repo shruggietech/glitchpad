@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises';
+import { verifyHomepageReleaseDestination } from './lib/site-release-destination.mjs';
 
 const baseUrl = new URL(
   process.env.GLITCHPAD_SITE_URL ?? 'https://glitchpad.com',
@@ -60,29 +61,32 @@ async function verifyExpectedDeployment() {
     finalSection,
     colorLockup,
     lightLockup,
-  ] =
-    await Promise.all([
-      fetchText('/'),
-      fetchText(documentation.introductionRoute),
-      fetchText(documentation.compatibilityRoute),
-      ...representativeSections.map(({ route }) => fetchText(route)),
-      fetchText('/logos/glitchpad-horizontal-color.svg'),
-      fetchText('/logos/glitchpad-horizontal-light.svg'),
-    ]);
+  ] = await Promise.all([
+    fetchText('/'),
+    fetchText(documentation.introductionRoute),
+    fetchText(documentation.compatibilityRoute),
+    ...representativeSections.map(({ route }) => fetchText(route)),
+    fetchText('/logos/glitchpad-horizontal-color.svg'),
+    fetchText('/logos/glitchpad-horizontal-light.svg'),
+  ]);
   for (const expected of [
     'View your files.',
     'A fast, cross-platform viewer and editor for local files.',
     'A ShruggieTech project.',
-    `/releases/tag/v${expectedVersion}`,
   ]) {
     if (!home.includes(expected))
       throw new Error(`production homepage is missing ${expected}`);
   }
+  await verifyHomepageReleaseDestination(home, expectedVersion);
   if (!docs.includes(`v${expectedVersion}`))
     throw new Error(`production docs are missing v${expectedVersion}`);
   if (!docs.includes('Technical Specification authority'))
     throw new Error('production docs are missing the authority introduction');
-  if (!docs.includes(`<tr><td>Product version</td><td>${expectedVersion}</td></tr>`))
+  if (
+    !docs.includes(
+      `<tr><td>Product version</td><td>${expectedVersion}</td></tr>`,
+    )
+  )
     throw new Error(
       `production documentation is missing product version ${expectedVersion}`,
     );
@@ -91,20 +95,28 @@ async function verifyExpectedDeployment() {
     !compatibility.includes('href="/docs"') ||
     /TS-FR-\d{3}|Table of Contents/.test(compatibility)
   )
-    throw new Error('production legacy documentation route is not a clean forwarder');
-  for (const [section, source] of representativeSections.map((section, index) => [
-    section,
-    [earlySection, middleSection, finalSection][index],
-  ])) {
+    throw new Error(
+      'production legacy documentation route is not a clean forwarder',
+    );
+  for (const [section, source] of representativeSections.map(
+    (section, index) => [
+      section,
+      [earlySection, middleSection, finalSection][index],
+    ],
+  )) {
     const expectedTitle = `${section.number}. ${section.title}`;
     if (!source.includes(expectedTitle))
       throw new Error(`production section is missing ${expectedTitle}`);
     if (!source.includes(`https://glitchpad.com${section.route}`))
-      throw new Error(`production section metadata is missing ${section.route}`);
+      throw new Error(
+        `production section metadata is missing ${section.route}`,
+      );
   }
   if (!earlySection.includes('flowchart TB'))
     throw new Error('production early section is missing its Mermaid source');
-  if (!finalSection.includes('Appendix K. Release documentation pass checklist'))
+  if (
+    !finalSection.includes('Appendix K. Release documentation pass checklist')
+  )
     throw new Error('production final section is incomplete');
   if (
     !middleSection.includes(documentation.sections[17].route) ||

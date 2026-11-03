@@ -1,3 +1,4 @@
+import workflowProof from './test-fixtures/document-workflow-proof.json' with { type: 'json' };
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import {
@@ -179,6 +180,7 @@ function receipt(
         'recovery_conformance',
       ],
     },
+    document_workflow: structuredClone(workflowProof),
     macos: {
       product_version: '15.7.7',
       build_version: '24G720',

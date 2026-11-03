@@ -1,3 +1,4 @@
+import { validateDocumentWorkflowProof } from './lib/package-document-workflow.mjs';
 import { createHash } from 'node:crypto';
 import { cp, mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import { basename, dirname, join, resolve } from 'node:path';
@@ -170,6 +171,14 @@ export async function assembleCommunityRelease({
           throw new Error(
             `${platform} practical-use evidence contains prohibited field ${key}`,
           );
+      }
+      if (platform === 'linux' || platform === 'macos') {
+        validateDocumentWorkflowProof(receipt.document_workflow);
+        for (const key of Object.keys(receipt.document_workflow.checks))
+          if (receipt.automated?.[key] !== 'pass')
+            throw new Error(
+              platform + ' packaged document workflow result contradicts proof',
+            );
       }
       for (const path of requiredPasses) {
         if (valueAtPath(receipt, path) !== 'pass')

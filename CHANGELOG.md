@@ -1,19 +1,30 @@
 # Changelog
 
-## 0.2.0 - 2026-11-02 (candidate)
-
-S043 adds image qualification and stable image entry points, retaining S042 BrandBuilder and AppFrame. Automated accessibility and hosted native evidence replace unavailable mandatory physical-device and manual screen-reader checks under the owner decision. Final publication remains pending.
+S043 adds image qualification and stable image entry points, retaining S042 BrandBuilder and AppFrame. Automated accessibility and hosted native evidence replace unavailable mandatory physical-device and manual screen-reader checks under the owner decision. S045 publishes v0.2.0 and records exact-source qualification and independent public readback.
 
 All notable changes to Glitchpad are documented in this file. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- Production deployment verification follows the approved homepage release destination and requires its redirect to the exact published tag, while retaining source, version, documentation and brand checks.
+
+### Decisions
+
+- 2026-11-03 (S045): Reconcile the production verifier with the approved releases/latest homepage destination by requiring its redirect to the exact published tag. Preserve the deployed f6a1515 site, immutable product bytes and all version/source/content checks; retain the automatic Pages rejection and stale-verifier failure with their recovery evidence.
+
+## [0.2.0] - 2026-11-03
+
 ### Changed
 
+- S045 publishes official v0.2.0 from its qualified source and independently verifies every public asset and the deployed site.
 - S044 converges compatible Cargo and application patch dependencies for the v0.2.0 candidate, including the SVG parser patch, while preserving existing admission limits and licensed Linux plugin patches.
 
 ### Fixed
 
+- Linux and macOS package receipts require a separate installed-app read/edit/save/metadata/recovery round trip, exact saved bytes, isolated recovery cleanup and source closure. Official mode cannot promote unperformed operations to passing evidence.
+- Linux package provenance reuses the complete locked Cargo inputs across containers and generates final metadata offline, avoiding a fresh registry connection after final package assembly.
 - Native macOS qualification retains startup failures before gating and cleans processes discovered before readiness completes. Paired baseline/candidate measurements preserve first-launch samples and identify later restarts with warm OS caches.
 - Windows portable and Android AppFrame readiness failures include bounded content-free diagnostics without relaxing assertions or timeouts.
 
@@ -23,6 +34,12 @@ All notable changes to Glitchpad are documented in this file. The format follows
 
 - 2026-11-02 (S044): Align the reusable Docker validation browser with the workspace Puppeteer25.12.0 pin after aggregate validation exposed a missing executable.
 - 2026-11-02 (S044): Extend existing package workflows with an exact-byte historical macOS comparison and always-upload failure evidence. Keep reference and hosted-smoke performance classifications separate. Publication remains owner-authorized after review/merge; #76/#10 remain open until actual release readback.
+
+- 2026-11-02 (S045): Under explicit owner authorization, publish v0.2.0 from the exact reviewed and qualified S045 source before final PR merge; leave the PR open for owner merge. Preserve full SBOM graphs, immutable tags/bytes, failed campaign evidence, existing community trust, and remaining #66/#239 limitations.
+
+- 2026-11-03 (S045): Qualification exposed inherited Linux/macOS workflow rows that had not exercised the installed app. Block publication, add a one-shot fixed-fixture JS/native proof outside startup samples, and require it in platform validators and release assembly. Preserve the two-round external review cap; the evidence repair receives internal review and fresh source qualification, with the earlier bot coverage identified explicitly.
+
+- 2026-11-03 (S045): The owner retires the unavailable reference-hardware startup prerequisite for v0.2.0. Preserve the 1500/2500 ms classifications, unchanged 10000 ms hosted ceiling and open #239; qualify with the existing automated hosted platform checks.
 
 ## [0.1.4] - 2026-09-29
 

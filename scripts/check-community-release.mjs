@@ -161,13 +161,20 @@ export function validateFinalReleaseHandoff({
 }) {
   const tagInstruction = operatorRunbook.match(/^5\.\s+(.+)$/mu)?.[1] ?? '';
   if (
-    !operatorRunbook.includes('v0.2.0 release pull request is merged') ||
-    !operatorRunbook.includes('reviewed v0.2.0 merge commit')
+    !operatorRunbook.includes(
+      'exact reviewed and qualified S045 source commit',
+    ) ||
+    !operatorRunbook.includes(
+      'owner explicitly authorizes publication before final PR merge',
+    ) ||
+    !operatorRunbook.includes(
+      'leave the S045 pull request open for owner review and merge',
+    )
   )
     throw new Error('final handoff omits the v0.2.0 release authority');
   if (
     tagInstruction !==
-    'Create the annotated tag `v0.2.0` on the reviewed v0.2.0 merge commit and push only that tag.'
+    'Create the annotated tag `v0.2.0` on the exact reviewed and qualified S045 source commit and push only that tag.'
   )
     throw new Error('final handoff tag instruction does not target v0.2.0');
   for (const [source, content] of [
@@ -289,6 +296,47 @@ export function validateTagPackageWorkflows({
   return true;
 }
 
+export function validateLinuxOfflineProvenance(workflow) {
+  const stages = [
+    'Validate source and package contracts',
+    'Prove locked metadata is independent of network',
+    'Build governed AppImage and Debian candidates',
+    'Assemble final-byte candidate and evidence',
+  ].map((name) => {
+    const start = workflow.indexOf('- name: ' + name);
+    return start < 0
+      ? ''
+      : workflow.slice(start).split(/\n[ \t]*- name:/u, 1)[0];
+  });
+  const mounts = [
+    '--volume "$RUNNER_TEMP/glitchpad-cargo/registry:/usr/local/cargo/registry"',
+    '--volume "$RUNNER_TEMP/glitchpad-cargo/git:/usr/local/cargo/git"',
+  ];
+  if (
+    stages.some(
+      (stage) =>
+        !stage.includes('docker run --rm') ||
+        mounts.some((mount) => !stage.includes(mount)),
+    ) ||
+    !stages[0].includes('cargo fetch --locked') ||
+    !stages[1].includes('--network none') ||
+    !stages[1].includes(
+      'cargo metadata --locked --offline --format-version 1',
+    ) ||
+    !stages[3].includes(
+      'cargo metadata --locked --offline --format-version 1 > artifacts/linux/cargo-metadata.json',
+    ) ||
+    stages.some(
+      (stage) =>
+        stage.includes('--no-deps') || stage.includes('--filter-platform'),
+    )
+  )
+    throw new Error(
+      'Linux offline provenance must preserve complete locked inputs across containers',
+    );
+  return true;
+}
+
 export async function checkCommunityRelease(repositoryRoot = root) {
   const [
     contract,
@@ -341,6 +389,7 @@ export async function checkCommunityRelease(repositoryRoot = root) {
     androidContract,
     releaseNotes,
   });
+  validateLinuxOfflineProvenance(linuxWorkflow);
   validateTagPackageWorkflows({
     androidWorkflow,
     macosWorkflow,

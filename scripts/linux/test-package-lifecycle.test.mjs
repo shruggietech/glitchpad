@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import workflowProof from '../test-fixtures/document-workflow-proof.json' with { type: 'json' };
 
 import {
   buildCleanEnvironmentReceipt,
@@ -82,6 +83,7 @@ test('official receipt records proven automation and defers manual validation', 
     startupClassification: 'pass',
     artifactSizeClassification: 'pass',
     official: true,
+    documentWorkflow: workflowProof,
   });
   for (const [key, value] of Object.entries(receipt.automated))
     assert.equal(
@@ -91,4 +93,17 @@ test('official receipt records proven automation and defers manual validation', 
   for (const value of Object.values(receipt.manual))
     assert.equal(value, 'deferred_post_release');
   assert.equal(receipt.performance.startup_evidence_class, 'hosted_smoke');
+});
+
+test('official flag alone cannot manufacture document workflow passes', () => {
+  assert.throws(
+    () =>
+      buildCleanEnvironmentReceipt({
+        official: true,
+        release: '24.04',
+        packageForm: 'deb',
+        startupSamplesMs: [600, 620, 640, 660, 680],
+      }),
+    /packaged document workflow|packaged_document_workflow/u,
+  );
 });

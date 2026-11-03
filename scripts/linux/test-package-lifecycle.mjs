@@ -15,6 +15,10 @@ import { tmpdir } from 'node:os';
 import { basename, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
+import {
+  runPackagedDocumentWorkflow,
+  validateDocumentWorkflowProof,
+} from '../lib/package-document-workflow.mjs';
 
 import {
   classifyPackageSize,
@@ -96,8 +100,11 @@ export function buildCleanEnvironmentReceipt({
   startupClassification,
   artifactSizeClassification,
   official = false,
+  documentWorkflow = null,
 }) {
   validateLifecycleOptions({ packageForm, release });
+  if (documentWorkflow !== null || official)
+    validateDocumentWorkflowProof(documentWorkflow);
   return {
     schema_version: 1,
     candidate_manifest_sha256: manifestSha256,
@@ -120,11 +127,12 @@ export function buildCleanEnvironmentReceipt({
       product_version: productVersion,
       webkitgtk_version: webkitgtkVersion,
     },
+    document_workflow: documentWorkflow,
     automated: {
       ...Object.fromEntries(
         resultKeys.map((key) => [
           key,
-          !official && candidateUnexercisedKeys.has(key)
+          documentWorkflow === null && candidateUnexercisedKeys.has(key)
             ? 'not_run_candidate'
             : 'pass',
         ]),
@@ -219,7 +227,7 @@ async function resetProbeDirectory(probeRoot) {
 }
 
 async function stop(child) {
-  if (!child || child.exitCode !== null) return;
+  if (!child || child.exitCode !== null || child.signalCode !== null) return;
   child.kill('SIGTERM');
   const exitedAfterTerm = await Promise.race([
     new Promise((resolvePromise) =>
@@ -227,7 +235,8 @@ async function stop(child) {
     ),
     delay(2_000).then(() => false),
   ]);
-  if (exitedAfterTerm || child.exitCode !== null) return;
+  if (exitedAfterTerm || child.exitCode !== null || child.signalCode !== null)
+    return;
   child.kill('SIGKILL');
   const exitedAfterKill = await Promise.race([
     new Promise((resolvePromise) =>
@@ -235,7 +244,7 @@ async function stop(child) {
     ),
     delay(2_000).then(() => false),
   ]);
-  if (!exitedAfterKill && child.exitCode === null)
+  if (!exitedAfterKill && child.exitCode === null && child.signalCode === null)
     throw new Error('application_process_did_not_exit');
 }
 
@@ -457,6 +466,22 @@ async function main() {
       child = undefined;
       await delay(250);
     }
+    const documentWorkflow = await runPackagedDocumentWorkflow({
+      root,
+      originalFixture: fixture,
+      originalBytes: fixtureBytes,
+      launch: async (workflowRoot) => {
+        child = spawn(installed.executable, [], {
+          env: { ...environment, GLITCHPAD_LIFECYCLE_PROBE_DIR: workflowRoot },
+          stdio: 'ignore',
+        });
+        return child;
+      },
+      stop: async (owned) => {
+        await stop(owned);
+        child = undefined;
+      },
+    });
     if (Buffer.compare(await readFile(fixture), fixtureBytes) !== 0)
       throw new Error('document_preservation_failed');
     const p95 = percentile95(startupSamplesMs);
@@ -482,6 +507,7 @@ async function main() {
         contract.size_budget,
       ),
       official: options.official,
+      documentWorkflow,
     });
     validateCleanEnvironmentReceipt(receipt, manifestBytes, contract, {
       official: options.official,

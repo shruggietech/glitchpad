@@ -1,3 +1,4 @@
+import workflowProof from './test-fixtures/document-workflow-proof.json' with { type: 'json' };
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
@@ -72,13 +73,19 @@ const practicalUseRequiredPasses = {
 };
 
 function passingReceipt(platform) {
-  const receipt = {};
+  const receipt =
+    platform === 'linux' || platform === 'macos'
+      ? { document_workflow: structuredClone(workflowProof) }
+      : {};
   for (const path of practicalUseRequiredPasses[platform]) {
     const parts = path.split('.');
     let target = receipt;
     for (const part of parts.slice(0, -1)) target = target[part] ??= {};
     target[parts.at(-1)] = 'pass';
   }
+  if (platform === 'linux' || platform === 'macos')
+    for (const key of Object.keys(workflowProof.checks))
+      receipt.automated[key] = 'pass';
   return receipt;
 }
 
@@ -287,3 +294,29 @@ test('preserves a disclosed non-gating failure when every required result passes
 
   assert.deepEqual(manifest.practical_use_evidence, practicalUseEvidence);
 });
+
+for (const platform of ['linux', 'macos'])
+  for (const missing of [true, false])
+    test(
+      platform +
+        ' release assembly requires observed workflow proof and consistent metadata result ' +
+        missing,
+      async () => {
+        const fixture = await releaseFixture();
+        const target = fixture.receipts.get(
+          platform + '/' + practicalUseEvidence[platform][0],
+        );
+        if (missing) delete target.receipt.document_workflow;
+        else target.receipt.automated.metadata = 'not_run_candidate';
+        await writeFile(target.path, JSON.stringify(target.receipt));
+        await assert.rejects(
+          assembleCommunityRelease({
+            input: fixture.input,
+            output: fixture.output,
+            sourceCommit,
+            contractPath: fixture.contractPath,
+          }),
+          /packaged_document_workflow|contradicts proof/u,
+        );
+      },
+    );

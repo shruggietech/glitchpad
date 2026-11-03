@@ -7,6 +7,7 @@ import {
   validateReleaseContract,
   validateReleaseReadinessEvidence,
   validateTagPackageWorkflows,
+  validateLinuxOfflineProvenance,
 } from './check-community-release.mjs';
 
 const finalHandoff = () => ({
@@ -15,7 +16,7 @@ const finalHandoff = () => ({
   releaseReceipt:
     '| Brand slice | S043 BrandBuilder and image activation |\n| Deferred image gates | #75 and #76 |',
   operatorRunbook:
-    '1. Confirm the v0.2.0 release pull request is merged at the reviewed v0.2.0 merge commit with S043 BrandBuilder and image activation.\n5. Create the annotated tag `v0.2.0` on the reviewed v0.2.0 merge commit and push only that tag.',
+    '1. Pin the exact reviewed and qualified S045 source commit for v0.2.0, including S043 BrandBuilder and image activation. The owner explicitly authorizes publication before final PR merge; leave the S045 pull request open for owner review and merge.\n5. Create the annotated tag `v0.2.0` on the exact reviewed and qualified S045 source commit and push only that tag.',
   changelog: 'S043 adopted BrandBuilder and image activation before release.',
 });
 
@@ -27,8 +28,8 @@ for (const [name, mutate, expected] of [
     'stale release authority',
     (handoff) => {
       handoff.operatorRunbook = handoff.operatorRunbook.replaceAll(
-        'v0.2.0 merge commit',
-        'prior merge commit',
+        'reviewed and qualified S045 source commit',
+        'unqualified source commit',
       );
     },
     /v0.2.0 release authority/u,
@@ -37,8 +38,8 @@ for (const [name, mutate, expected] of [
     'tag instruction targeting another commit',
     (handoff) => {
       handoff.operatorRunbook = handoff.operatorRunbook.replace(
-        'on the reviewed v0.2.0 merge commit and push only that tag',
-        'on a different merge commit and push only that tag',
+        'on the exact reviewed and qualified S045 source commit and push only that tag',
+        'on an unqualified source commit and push only that tag',
       );
     },
     /tag instruction does not target v0.2.0/u,
@@ -361,3 +362,46 @@ test('rejects removed brand evidence in tag-context readiness', () =>
       ),
     /current brand evidence|removed brand evidence/u,
   ));
+
+const offlineLinuxWorkflow = `
+- name: Prepare job-local Cargo inputs
+  run: mkdir -p "$RUNNER_TEMP/glitchpad-cargo/registry" "$RUNNER_TEMP/glitchpad-cargo/git"
+- name: Validate source and package contracts
+  run: |
+    docker run --rm --volume "$RUNNER_TEMP/glitchpad-cargo/registry:/usr/local/cargo/registry" --volume "$RUNNER_TEMP/glitchpad-cargo/git:/usr/local/cargo/git" image sh -c '
+      cargo fetch --locked
+    '
+- name: Prove locked metadata is independent of network
+  run: |
+    docker run --rm --network none --volume "$RUNNER_TEMP/glitchpad-cargo/registry:/usr/local/cargo/registry" --volume "$RUNNER_TEMP/glitchpad-cargo/git:/usr/local/cargo/git" image sh -c '
+      cargo metadata --locked --offline --format-version 1
+    '
+- name: Build governed AppImage and Debian candidates
+  run: |
+    docker run --rm --volume "$RUNNER_TEMP/glitchpad-cargo/registry:/usr/local/cargo/registry" --volume "$RUNNER_TEMP/glitchpad-cargo/git:/usr/local/cargo/git" image sh -c build
+- name: Assemble final-byte candidate and evidence
+  run: |
+    docker run --rm --volume "$RUNNER_TEMP/glitchpad-cargo/registry:/usr/local/cargo/registry" --volume "$RUNNER_TEMP/glitchpad-cargo/git:/usr/local/cargo/git" image sh -c '
+      cargo metadata --locked --offline --format-version 1 > artifacts/linux/cargo-metadata.json
+    '
+`;
+
+test('requires complete locked offline Linux provenance across container boundaries', () => {
+  assert.equal(validateLinuxOfflineProvenance(offlineLinuxWorkflow), true);
+  for (const [before, after] of [
+    ['cargo fetch --locked', 'cargo fetch'],
+    ['--network none', ''],
+    ['cargo metadata --locked --offline', 'cargo metadata --locked'],
+    ['--format-version 1', '--no-deps --format-version 1'],
+    ['registry:/usr/local/cargo/registry', 'registry:/tmp/unshared-registry'],
+    ['git:/usr/local/cargo/git', 'git:/tmp/unshared-git'],
+  ]) {
+    assert.throws(
+      () =>
+        validateLinuxOfflineProvenance(
+          offlineLinuxWorkflow.replace(before, after),
+        ),
+      /Linux offline provenance/u,
+    );
+  }
+});

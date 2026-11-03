@@ -14,12 +14,56 @@ const CLEANUP_RETRY_MS = 30_000;
 const CLEANUP_WARNING =
   'Resolved recovery cleanup is pending and will be retried safely.';
 
-const createRecordId = (): string => {
+export const createRecoveryRecordId = (): string => {
   const bytes = crypto.getRandomValues(new Uint8Array(16));
   bytes[6] = (bytes[6] & 0x0f) | 0x40;
   bytes[8] = (bytes[8] & 0x3f) | 0x80;
   const hex = [...bytes].map((byte) => byte.toString(16).padStart(2, '0'));
   return `${hex.slice(0, 4).join('')}-${hex.slice(4, 6).join('')}-${hex.slice(6, 8).join('')}-${hex.slice(8, 10).join('')}-${hex.slice(10).join('')}`;
+};
+
+export const buildRecoveryRecordDraft = (
+  session: ShellSession,
+  recordId: string,
+  createdUnixMs: number,
+  now: number,
+): RecoveryRecordDraft => {
+  const savedRevision =
+    session.saved_revision ?? Math.max(0, session.revision - 1);
+  const snapshotRevision = Math.max(session.revision, savedRevision + 1);
+  const document = session.text_document;
+  const record: RecoveryRecordDraft = {
+    record_id: recordId,
+    display_hint: session.source.display_name,
+    source_identity_evidence: JSON.stringify(session.source.identity),
+    base_revision_evidence: JSON.stringify(
+      session.external_revision ?? {
+        byte_length: session.source.byte_length,
+        modified_unix_ms: session.source.modified_unix_ms,
+      },
+    ),
+    saved_session_revision: savedRevision,
+    snapshot_session_revision: snapshotRevision,
+    text_profile: {
+      encoding: document?.profile.encoding ?? 'utf8',
+      bom: document?.profile.bom ?? 'absent',
+      newlines: document?.profile.newline_pattern ?? 'lf',
+      terminal_newline:
+        document?.profile.terminal_newline === null
+          ? 'unknown'
+          : (document?.profile.terminal_newline ??
+              session.content.endsWith('\n'))
+            ? 'present'
+            : 'absent',
+      undecodable_bytes: document?.profile.undecodable_bytes ?? 'none',
+    },
+    created_unix_ms: createdUnixMs,
+    updated_unix_ms: now,
+    content: document?.raw_text ?? session.content,
+    eviction_eligible: false,
+  };
+
+  return record;
 };
 
 interface RecordBinding {
@@ -107,45 +151,17 @@ export const useRecovery = (
       if (existing?.lastSnapshotRevision === session.revision) return;
       const now = Date.now();
       const binding = existing ?? {
-        recordId: createRecordId(),
+        recordId: createRecoveryRecordId(),
         createdUnixMs: now,
         lastSnapshotRevision: null,
       };
       bindings.current.set(session.id, binding);
-      const savedRevision =
-        session.saved_revision ?? Math.max(0, session.revision - 1);
-      const snapshotRevision = Math.max(session.revision, savedRevision + 1);
-      const document = session.text_document;
-      const record: RecoveryRecordDraft = {
-        record_id: binding.recordId,
-        display_hint: session.source.display_name,
-        source_identity_evidence: JSON.stringify(session.source.identity),
-        base_revision_evidence: JSON.stringify(
-          session.external_revision ?? {
-            byte_length: session.source.byte_length,
-            modified_unix_ms: session.source.modified_unix_ms,
-          },
-        ),
-        saved_session_revision: savedRevision,
-        snapshot_session_revision: snapshotRevision,
-        text_profile: {
-          encoding: document?.profile.encoding ?? 'utf8',
-          bom: document?.profile.bom ?? 'absent',
-          newlines: document?.profile.newline_pattern ?? 'lf',
-          terminal_newline:
-            document?.profile.terminal_newline === null
-              ? 'unknown'
-              : (document?.profile.terminal_newline ??
-                  session.content.endsWith('\n'))
-                ? 'present'
-                : 'absent',
-          undecodable_bytes: document?.profile.undecodable_bytes ?? 'none',
-        },
-        created_unix_ms: binding.createdUnixMs,
-        updated_unix_ms: now,
-        content: document?.raw_text ?? session.content,
-        eviction_eligible: false,
-      };
+      const record = buildRecoveryRecordDraft(
+        session,
+        binding.recordId,
+        binding.createdUnixMs,
+        now,
+      );
       void gateway
         .persist(record)
         .then(() => {
@@ -179,7 +195,9 @@ export const useRecovery = (
       sessions.filter(({ dirty }) => dirty).map(({ id }) => id),
     );
     const sessionIds = new Set(sessions.map(({ id }) => id));
-    sessionIds.forEach((sessionId) => pendingAcceptedSessions.current.delete(sessionId));
+    sessionIds.forEach((sessionId) =>
+      pendingAcceptedSessions.current.delete(sessionId),
+    );
     for (const [sessionId, binding] of bindings.current) {
       if (dirtyIds.has(sessionId)) continue;
       if (pendingAcceptedSessions.current.has(sessionId)) continue;
@@ -241,7 +259,9 @@ export const useRecovery = (
         lastSnapshotRevision: record.snapshot_session_revision,
       });
       pendingAcceptedSessions.current.add(sessionId);
-      setRecordIds((current) => new Map(current).set(sessionId, entry.record_id));
+      setRecordIds((current) =>
+        new Map(current).set(sessionId, entry.record_id),
+      );
       dismiss(entry.record_id);
       return record;
     },

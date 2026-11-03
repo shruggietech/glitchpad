@@ -1,8 +1,13 @@
 //! Content-free lifecycle acknowledgements for native package validation.
 
 use std::ffi::OsString;
-use std::fs::{self, OpenOptions};
-use std::io::Write;
+use std::fs::{self, File, OpenOptions};
+use std::io::{Read, Write};
+use std::sync::Mutex;
+
+use crate::desktop_delivery::{DesktopDeliveryResult, DesktopDeliveryStatus};
+use crate::source::{DesktopDelivery, DesktopDeliveryKind, DesktopSourceHost};
+use glitchpad_core::source::SourceId;
 use std::path::{Path, PathBuf};
 
 use glitchpad_core::contracts::{CoreError, CoreErrorCategory};
@@ -17,7 +22,14 @@ fn probe_error(category: CoreErrorCategory, summary: &str) -> CoreError {
 
 fn marker_name(event: &str, sequence: Option<u64>) -> Result<String, CoreError> {
     match (event, sequence) {
+        ("document-workflow-read", None) => Ok("document-workflow-read.marker".into()),
+        ("document-workflow-edit", None) => Ok("document-workflow-edit.marker".into()),
+        ("document-workflow-save", None) => Ok("document-workflow-save.marker".into()),
+        ("document-workflow-metadata", None) => Ok("document-workflow-metadata.marker".into()),
+        ("document-workflow-recovery", None) => Ok("document-workflow-recovery.marker".into()),
         ("shell-ready", None) => Ok("shell-ready.marker".into()),
+        ("document-workflow-ready", None) => Ok("document-workflow-ready.marker".into()),
+        ("document-workflow-failed", None) => Ok("document-workflow-failed.marker".into()),
         ("delivery-ready", Some(sequence)) if sequence > 0 => {
             Ok(format!("delivery-{sequence}.marker"))
         }
@@ -92,6 +104,7 @@ const PROBE_ARGUMENT_PREFIX: &str = "--glitchpad-lifecycle-probe=";
 #[derive(Default)]
 pub struct LifecycleProbeState {
     root: Option<PathBuf>,
+    workflow_source: Mutex<Option<SourceId>>,
 }
 
 impl LifecycleProbeState {
@@ -108,7 +121,10 @@ impl LifecycleProbeState {
                     .map(PathBuf::from)
             })
         });
-        Self { root }
+        Self {
+            root,
+            ..Self::default()
+        }
     }
 
     /// Creates lifecycle state from the explicit validation environment or launch argument.
@@ -256,6 +272,7 @@ mod tests {
 
         let state = LifecycleProbeState {
             root: Some(root.clone()),
+            ..LifecycleProbeState::default()
         };
         assert!(
             state
@@ -324,4 +341,409 @@ mod tests {
             .is_none()
         );
     }
+
+    fn workflow_state() -> (
+        PathBuf,
+        LifecycleProbeState,
+        crate::source::DesktopSourceHost,
+    ) {
+        let root = temporary_root();
+        fs::create_dir(&root).unwrap();
+        fs::create_dir(root.join("recovery")).unwrap();
+        fs::write(root.join("enabled.marker"), PROBE_ENABLE_MARKER).unwrap();
+        fs::write(
+            root.join("document-workflow-request.marker"),
+            b"requested\n",
+        )
+        .unwrap();
+        fs::write(
+            root.join("document-workflow.md"),
+            workflow_contract().unwrap().initial_text,
+        )
+        .unwrap();
+        let state = LifecycleProbeState {
+            root: Some(root.clone()),
+            ..LifecycleProbeState::default()
+        };
+        (root, state, crate::source::DesktopSourceHost::new())
+    }
+
+    #[test]
+    fn document_workflow_requires_opt_in_isolated_recovery_and_observed_saved_bytes() {
+        let disabled = LifecycleProbeState::default();
+        let host = crate::source::DesktopSourceHost::new();
+        assert!(
+            disabled
+                .begin_document_workflow(&host, None)
+                .unwrap()
+                .is_none()
+        );
+        let (root, state, host) = workflow_state();
+        assert!(
+            state
+                .complete_document_workflow(&host, Some(&root))
+                .is_err()
+        );
+        assert!(state.begin_document_workflow(&host, None).is_err());
+        assert!(root.join("document-workflow-request.marker").exists());
+        assert_eq!(
+            state.document_workflow_root().unwrap(),
+            Some(fs::canonicalize(&root).unwrap())
+        );
+        let source = state
+            .begin_document_workflow(&host, Some(&root))
+            .unwrap()
+            .unwrap()
+            .source
+            .unwrap();
+        assert!(
+            state
+                .begin_document_workflow(&host, Some(&root))
+                .unwrap()
+                .is_none()
+        );
+        assert!(
+            state
+                .complete_document_workflow(&host, Some(&root))
+                .is_err()
+        );
+        host.close(&source.source_id).unwrap();
+        assert!(
+            state
+                .complete_document_workflow(&host, Some(&root))
+                .is_err()
+        );
+        fs::write(
+            root.join("document-workflow.md"),
+            workflow_contract().unwrap().saved_text,
+        )
+        .unwrap();
+        fs::write(root.join("recovery/owned.json"), b"leftover").unwrap();
+        assert!(
+            state
+                .complete_document_workflow(&host, Some(&root))
+                .is_err()
+        );
+        fs::remove_file(root.join("recovery/owned.json")).unwrap();
+        for check in ["read", "edit", "save", "metadata", "recovery"] {
+            fs::write(
+                root.join(format!("document-workflow-{check}.marker")),
+                b"ready\n",
+            )
+            .unwrap();
+        }
+        assert!(
+            state
+                .complete_document_workflow(&host, Some(&root))
+                .unwrap()
+        );
+        assert_eq!(
+            fs::read(root.join("document-workflow-complete.marker")).unwrap(),
+            b"ready\n"
+        );
+        assert!(
+            state
+                .complete_document_workflow(&host, Some(&root))
+                .is_err()
+        );
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn document_workflow_rejects_malformed_oversized_and_stale_inputs() {
+        for (name, bytes) in [
+            ("enabled.marker", b"wrong".as_slice()),
+            ("document-workflow-request.marker", b"wrong".as_slice()),
+            ("document-workflow-request.marker", &[0_u8; 256]),
+            ("document-workflow.md", b"private user document".as_slice()),
+            ("document-workflow-complete.marker", b"ready\n".as_slice()),
+        ] {
+            let (root, state, host) = workflow_state();
+            fs::write(root.join(name), bytes).unwrap();
+            assert!(state.begin_document_workflow(&host, Some(&root)).is_err());
+            assert_eq!(host.resource_snapshot().unwrap().sources, 0);
+            fs::remove_dir_all(root).unwrap();
+        }
+        let (root, state, host) = workflow_state();
+        fs::remove_file(root.join("document-workflow-request.marker")).unwrap();
+        assert!(
+            state
+                .begin_document_workflow(&host, Some(&root))
+                .unwrap()
+                .is_none()
+        );
+        fs::create_dir(root.join("document-workflow-request.marker")).unwrap();
+        assert!(state.begin_document_workflow(&host, Some(&root)).is_err());
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn document_workflow_refuses_symlink_substitution() {
+        for name in [
+            "enabled.marker",
+            "document-workflow-request.marker",
+            "document-workflow.md",
+        ] {
+            let (root, state, host) = workflow_state();
+            let path = root.join(name);
+            let target = root.join("unrelated");
+            fs::rename(&path, &target).unwrap();
+            std::os::unix::fs::symlink(&target, &path).unwrap();
+            assert!(state.begin_document_workflow(&host, Some(&root)).is_err());
+            fs::remove_dir_all(root).unwrap();
+        }
+    }
+    #[test]
+    fn document_workflow_consumes_once_under_concurrent_calls() {
+        let (root, state, host) = workflow_state();
+        let state = std::sync::Arc::new(state);
+        let host = std::sync::Arc::new(host);
+        let threads = (0..2)
+            .map(|_| {
+                let state = state.clone();
+                let host = host.clone();
+                let root = root.clone();
+                std::thread::spawn(move || {
+                    state.begin_document_workflow(&host, Some(&root)).unwrap()
+                })
+            })
+            .collect::<Vec<_>>();
+        let deliveries = threads
+            .into_iter()
+            .filter_map(|t| t.join().unwrap())
+            .collect::<Vec<_>>();
+        assert_eq!(deliveries.len(), 1);
+        assert_eq!(host.resource_snapshot().unwrap().sources, 1);
+        host.close(&deliveries[0].source.as_ref().unwrap().source_id)
+            .unwrap();
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn document_workflow_refuses_recovery_and_root_symlinks() {
+        let (root, state, host) = workflow_state();
+        let other = temporary_root();
+        fs::create_dir(&other).unwrap();
+        fs::remove_dir(root.join("recovery")).unwrap();
+        std::os::unix::fs::symlink(&other, root.join("recovery")).unwrap();
+        assert!(state.begin_document_workflow(&host, Some(&root)).is_err());
+        fs::remove_file(root.join("recovery")).unwrap();
+        fs::remove_dir(other).unwrap();
+        let other = temporary_root();
+        fs::rename(&root, &other).unwrap();
+        std::os::unix::fs::symlink(&other, &root).unwrap();
+        assert!(state.begin_document_workflow(&host, Some(&root)).is_err());
+        fs::remove_file(root).unwrap();
+        fs::remove_dir_all(other).unwrap();
+    }
+}
+
+#[derive(serde::Deserialize)]
+struct WorkflowContract {
+    filename: String,
+    initial_text: String,
+    saved_text: String,
+}
+
+fn workflow_contract() -> Result<WorkflowContract, CoreError> {
+    let contract: WorkflowContract = serde_json::from_str(include_str!(
+        "../../../packaging/desktop/document-workflow-probe.json"
+    ))
+    .map_err(|_| workflow_error())?;
+    if contract.filename != "document-workflow.md"
+        || contract.initial_text.len() > 4096
+        || contract.saved_text.len() > 4096
+    {
+        return Err(workflow_error());
+    }
+    Ok(contract)
+}
+
+fn workflow_error() -> CoreError {
+    probe_error(
+        CoreErrorCategory::InvalidInput,
+        "Packaged document workflow evidence is invalid",
+    )
+}
+
+fn regular_exact(path: &Path, expected: &[u8]) -> Result<(), CoreError> {
+    let metadata = fs::symlink_metadata(path).map_err(|_| workflow_error())?;
+    if !metadata.is_file()
+        || metadata.file_type().is_symlink()
+        || metadata.len() != expected.len() as u64
+    {
+        return Err(workflow_error());
+    }
+    let mut actual = Vec::with_capacity(expected.len() + 1);
+    File::open(path)
+        .map_err(|_| workflow_error())?
+        .take(expected.len() as u64 + 1)
+        .read_to_end(&mut actual)
+        .map_err(|_| workflow_error())?;
+    if actual != expected {
+        return Err(workflow_error());
+    }
+    Ok(())
+}
+
+fn absent(path: &Path) -> Result<bool, CoreError> {
+    match fs::symlink_metadata(path) {
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(true),
+        Ok(_) => Ok(false),
+        Err(_) => Err(workflow_error()),
+    }
+}
+
+fn checked_workflow_root(root: &Path) -> Result<PathBuf, CoreError> {
+    let metadata = fs::symlink_metadata(root).map_err(|_| workflow_error())?;
+    if !metadata.is_dir() || metadata.file_type().is_symlink() {
+        return Err(workflow_error());
+    }
+    regular_exact(&root.join("enabled.marker"), PROBE_ENABLE_MARKER)?;
+    let root = fs::canonicalize(root).map_err(|_| workflow_error())?;
+    let recovery = root.join("recovery");
+    if !absent(&recovery)? {
+        let metadata = fs::symlink_metadata(&recovery).map_err(|_| workflow_error())?;
+        if !metadata.is_dir()
+            || metadata.file_type().is_symlink()
+            || fs::read_dir(&recovery)
+                .map_err(|_| workflow_error())?
+                .next()
+                .is_some()
+        {
+            return Err(workflow_error());
+        }
+    }
+    Ok(root)
+}
+
+impl LifecycleProbeState {
+    /// Selects isolated recovery storage only for a fully prepared, native-owned proof request.
+    pub(crate) fn document_workflow_root(&self) -> Result<Option<PathBuf>, CoreError> {
+        let Some(root) = self.root.as_deref() else {
+            return Ok(None);
+        };
+        if absent(&root.join("document-workflow-request.marker"))? {
+            return Ok(None);
+        }
+        let root = checked_workflow_root(root)?;
+        regular_exact(
+            &root.join("document-workflow-request.marker"),
+            b"requested\n",
+        )?;
+        regular_exact(
+            &root.join("document-workflow.md"),
+            workflow_contract()?.initial_text.as_bytes(),
+        )?;
+        for name in [
+            "document-workflow-complete.marker",
+            "document-workflow-ready.marker",
+            "document-workflow-failed.marker",
+            "document-workflow-read.marker",
+            "document-workflow-edit.marker",
+            "document-workflow-save.marker",
+            "document-workflow-metadata.marker",
+            "document-workflow-recovery.marker",
+        ] {
+            if !absent(&root.join(name))? {
+                return Err(workflow_error());
+            }
+        }
+        Ok(Some(root))
+    }
+
+    fn begin_document_workflow(
+        &self,
+        host: &DesktopSourceHost,
+        recovery_root: Option<&Path>,
+    ) -> Result<Option<DesktopDeliveryResult>, CoreError> {
+        let mut active = self.workflow_source.lock().map_err(|_| workflow_error())?;
+        if active.is_some() {
+            return Ok(None);
+        }
+        let Some(root) = self.document_workflow_root()? else {
+            return Ok(None);
+        };
+        if recovery_root
+            .and_then(|p| fs::canonicalize(p).ok())
+            .as_ref()
+            != Some(&root)
+        {
+            return Err(workflow_error());
+        }
+        fs::remove_file(root.join("document-workflow-request.marker"))
+            .map_err(|_| workflow_error())?;
+        let source = host.acquire(DesktopDelivery::command_line(
+            root.join("document-workflow.md"),
+        ))?;
+        *active = Some(source.source_id.clone());
+        Ok(Some(DesktopDeliveryResult {
+            sequence: 1,
+            kind: DesktopDeliveryKind::CommandLine,
+            status: DesktopDeliveryStatus::Opened,
+            source: Some(source),
+            error: None,
+        }))
+    }
+
+    fn complete_document_workflow(
+        &self,
+        host: &DesktopSourceHost,
+        recovery_root: Option<&Path>,
+    ) -> Result<bool, CoreError> {
+        let mut active = self.workflow_source.lock().map_err(|_| workflow_error())?;
+        let source_id = active.as_ref().ok_or_else(workflow_error)?;
+        let root = checked_workflow_root(self.root.as_deref().ok_or_else(workflow_error)?)?;
+        if recovery_root
+            .and_then(|p| fs::canonicalize(p).ok())
+            .as_ref()
+            != Some(&root)
+            || host.contains_source(source_id)?
+        {
+            return Err(workflow_error());
+        }
+        regular_exact(
+            &root.join("document-workflow.md"),
+            workflow_contract()?.saved_text.as_bytes(),
+        )?;
+        for check in ["read", "edit", "save", "metadata", "recovery"] {
+            regular_exact(
+                &root.join(format!("document-workflow-{check}.marker")),
+                b"ready\n",
+            )?;
+        }
+        let mut marker = OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(root.join("document-workflow-complete.marker"))
+            .map_err(|_| workflow_error())?;
+        marker.write_all(b"ready\n").map_err(|_| workflow_error())?;
+        marker.sync_all().map_err(|_| workflow_error())?;
+        *active = None;
+        Ok(true)
+    }
+}
+
+/// Begins one opt-in packaged workflow on a fixed synthetic source, with isolated recovery storage.
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
+pub(crate) fn begin_desktop_document_workflow_probe(
+    state: tauri::State<'_, LifecycleProbeState>,
+    host: tauri::State<'_, DesktopSourceHost>,
+    recovery: tauri::State<'_, crate::RecoveryHostState>,
+) -> Result<Option<DesktopDeliveryResult>, CoreError> {
+    state.begin_document_workflow(&host, recovery.probe_root.as_deref())
+}
+
+/// Records a fresh completion only after the fixed saved bytes, recovery cleanup and source closure are observed.
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
+pub(crate) fn complete_desktop_document_workflow_probe(
+    state: tauri::State<'_, LifecycleProbeState>,
+    host: tauri::State<'_, DesktopSourceHost>,
+    recovery: tauri::State<'_, crate::RecoveryHostState>,
+) -> Result<bool, CoreError> {
+    state.complete_document_workflow(&host, recovery.probe_root.as_deref())
 }

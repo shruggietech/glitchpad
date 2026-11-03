@@ -1,3 +1,5 @@
+import { validateDocumentWorkflowProof } from './lib/package-document-workflow.mjs';
+
 import { createHash } from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { readFile, stat, writeFile } from 'node:fs/promises';
@@ -371,6 +373,7 @@ export function validateCleanEnvironmentReceipt(
       'candidate_manifest_sha256',
       'evidence_authority',
       'linux',
+      'document_workflow',
       'automated',
       'manual',
       'performance',
@@ -460,21 +463,21 @@ export function validateCleanEnvironmentReceipt(
   if (
     receipt.performance.startup_p95_ms !== p95 ||
     receipt.performance.startup_classification !== classification ||
-    (official && classification === 'failure') ||
-    (!official && p95 > contract.performance.hosted_smoke_startup_hard_limit_ms)
+    p95 > contract.performance.hosted_smoke_startup_hard_limit_ms
   )
     fail('startup evidence exceeds or misstates the S018 budget');
   if (receipt.performance.startup_evidence_class !== 'hosted_smoke')
     fail('receipt requires truthful hosted_smoke startup evidence');
+  if (receipt.document_workflow !== null || official)
+    validateDocumentWorkflowProof(receipt.document_workflow);
   for (const [key, value] of Object.entries(receipt.automated)) {
     const expected =
       key === 'performance'
         ? 'measured_hosted_smoke'
-        : official
-          ? 'pass'
-          : candidateUnexercisedAutomatedKeys.has(key)
-            ? 'not_run_candidate'
-            : 'pass';
+        : receipt.document_workflow === null &&
+            candidateUnexercisedAutomatedKeys.has(key)
+          ? 'not_run_candidate'
+          : 'pass';
     if (value !== expected)
       fail(
         `automated receipt result ${key} is not valid for its evidence class`,

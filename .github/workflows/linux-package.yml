@@ -30,19 +30,47 @@ jobs:
       - name: Build governed Ubuntu 22.04 environment
         run: docker build --target linux-package --tag glitchpad-linux-package:local --file scripts/docker/validation.Dockerfile .
 
+      - name: Prepare job-local Cargo inputs
+        run: mkdir -p "$RUNNER_TEMP/glitchpad-cargo/registry" "$RUNNER_TEMP/glitchpad-cargo/git"
+
       - name: Validate source and package contracts
         run: |
-          docker run --rm --volume "$PWD:/workspace" --workdir /workspace glitchpad-linux-package:local sh -lc '
+          docker run --rm --volume "$PWD:/workspace" --workdir /workspace \
+            --volume "$RUNNER_TEMP/glitchpad-cargo/registry:/usr/local/cargo/registry" \
+            --volume "$RUNNER_TEMP/glitchpad-cargo/git:/usr/local/cargo/git" glitchpad-linux-package:local sh -lc '
             set -eu
+            cargo fetch --locked
             pnpm install --frozen-lockfile
             pnpm run check:linux-package
             cargo test -p glitchpad-host --locked
             pnpm test
           '
 
+      - name: Prove locked metadata is independent of network
+        run: |
+          docker run --rm --network none --volume "$PWD:/workspace" --workdir /workspace \
+            --volume "$RUNNER_TEMP/glitchpad-cargo/registry:/usr/local/cargo/registry" \
+            --volume "$RUNNER_TEMP/glitchpad-cargo/git:/usr/local/cargo/git" \
+            glitchpad-linux-package:local sh -lc '
+              set -eu
+              lock_before="$(sha256sum Cargo.lock)"
+              proof_root="$(mktemp -d)"
+              trap "rm -rf \"$proof_root\"" EXIT
+              cargo metadata --locked --offline --format-version 1 > "$proof_root/metadata.json"
+              jq -e ".packages | length > 1" "$proof_root/metadata.json" >/dev/null
+              jq -e ".resolve.nodes | length > 1" "$proof_root/metadata.json" >/dev/null
+              if CARGO_HOME="$proof_root/empty-cache" cargo metadata --locked --offline --format-version 1 > "$proof_root/empty.json" 2> "$proof_root/empty-error.log"; then
+                echo "::error::Offline metadata unexpectedly accepted an empty cache."
+                exit 1
+              fi
+              test "$lock_before" = "$(sha256sum Cargo.lock)"
+            '
+
       - name: Build governed AppImage and Debian candidates
         run: |
-          docker run --rm --volume "$PWD:/workspace" --workdir /workspace glitchpad-linux-package:local sh -lc '
+          docker run --rm --volume "$PWD:/workspace" --workdir /workspace \
+            --volume "$RUNNER_TEMP/glitchpad-cargo/registry:/usr/local/cargo/registry" \
+            --volume "$RUNNER_TEMP/glitchpad-cargo/git:/usr/local/cargo/git" glitchpad-linux-package:local sh -lc '
             set -eu
             pnpm tauri build --bundles appimage,deb --config tauri.s021-linux.conf.json
           '
@@ -53,6 +81,8 @@ jobs:
           WORKFLOW_IDENTITY: ${{ github.workflow_ref }}
         run: |
           docker run --rm --volume "$PWD:/workspace" --workdir /workspace \
+            --volume "$RUNNER_TEMP/glitchpad-cargo/registry:/usr/local/cargo/registry" \
+            --volume "$RUNNER_TEMP/glitchpad-cargo/git:/usr/local/cargo/git" \
             --env SOURCE_COMMIT --env WORKFLOW_IDENTITY \
             glitchpad-linux-package:local sh -lc '
               set -eu
@@ -79,7 +109,7 @@ jobs:
                 --baseline "$work_root/build-baseline.json" \
                 --appimage-inventory "$work_root/appimage-inventory.json" \
                 --deb-inventory "$work_root/deb-inventory.json"
-              cargo metadata --locked --format-version 1 > artifacts/linux/cargo-metadata.json
+              cargo metadata --locked --offline --format-version 1 > artifacts/linux/cargo-metadata.json
               pnpm list --prod --recursive --json --depth Infinity > artifacts/linux/pnpm-list.json
               node scripts/generate-linux-sbom.mjs artifacts/linux/cargo-metadata.json artifacts/linux/pnpm-list.json artifacts/linux/glitchpad-linux.cdx.json "$SOURCE_COMMIT"
               node scripts/check-linux-package.mjs --evidence artifacts/linux/linux-package-manifest.json --artifact-root artifacts/linux
@@ -178,7 +208,9 @@ jobs:
 
       - name: Exercise install, launch, delivery, and removal
         run: |
-          docker run --rm --volume "$PWD:/workspace" --workdir /workspace glitchpad-linux-lifecycle:local \
+          docker run --rm --volume "$PWD:/workspace" --workdir /workspace \
+            --volume "$RUNNER_TEMP/glitchpad-cargo/registry:/usr/local/cargo/registry" \
+            --volume "$RUNNER_TEMP/glitchpad-cargo/git:/usr/local/cargo/git" glitchpad-linux-lifecycle:local \
             timeout --signal=KILL 120s xvfb-run -a dbus-run-session -- node scripts/linux/test-package-lifecycle.mjs \
               --package 'artifacts/linux/${{ matrix.artifact_name }}' \
               --manifest artifacts/linux/linux-package-manifest.json \

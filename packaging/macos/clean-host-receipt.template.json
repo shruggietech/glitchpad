@@ -58,5 +58,6 @@
     "dmg_size_classification": "REQUIRED"
   },
   "content_free": true,
-  "completed_utc": "REQUIRED"
+  "completed_utc": "REQUIRED",
+  "document_workflow": null
 }

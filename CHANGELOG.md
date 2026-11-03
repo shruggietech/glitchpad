@@ -1,16 +1,24 @@
 # Changelog
 
-S043 adds image qualification and stable image entry points, retaining S042 BrandBuilder and AppFrame. Automated accessibility and hosted native evidence replace unavailable mandatory physical-device and manual screen-reader checks under the owner decision. S045 prepares exact-source official publication and independent public readback.
+S043 adds image qualification and stable image entry points, retaining S042 BrandBuilder and AppFrame. Automated accessibility and hosted native evidence replace unavailable mandatory physical-device and manual screen-reader checks under the owner decision. S045 publishes v0.2.0 and records exact-source qualification and independent public readback.
 
 All notable changes to Glitchpad are documented in this file. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- Production deployment verification follows the approved homepage release destination and requires its redirect to the exact published tag, while retaining source, version, documentation and brand checks.
+
+### Decisions
+
+- 2026-11-03 (S045): Reconcile the production verifier with the approved releases/latest homepage destination by requiring its redirect to the exact published tag. Preserve the deployed f6a1515 site, immutable product bytes and all version/source/content checks; retain the automatic Pages rejection and stale-verifier failure with their recovery evidence.
+
 ## [0.2.0] - 2026-11-03
 
 ### Changed
 
-- S045 prepares official v0.2.0 publication with an exact-source qualification and independent public artifact/site readback contract.
+- S045 publishes official v0.2.0 from its qualified source and independently verifies every public asset and the deployed site.
 - S044 converges compatible Cargo and application patch dependencies for the v0.2.0 candidate, including the SVG parser patch, while preserving existing admission limits and licensed Linux plugin patches.
 
 ### Fixed
@@ -31,7 +39,7 @@ All notable changes to Glitchpad are documented in this file. The format follows
 
 - 2026-11-03 (S045): Qualification exposed inherited Linux/macOS workflow rows that had not exercised the installed app. Block publication, add a one-shot fixed-fixture JS/native proof outside startup samples, and require it in platform validators and release assembly. Preserve the two-round external review cap; the evidence repair receives internal review and fresh source qualification, with the earlier bot coverage identified explicitly.
 
-- 2026-11-03 (S045): The owner retires the unavailable reference-hardware startup prerequisite for v0.2.0. Preserve the1500/2500ms classifications, unchanged10000ms hosted ceiling and open #239; qualify with the existing automated hosted platform checks.
+- 2026-11-03 (S045): The owner retires the unavailable reference-hardware startup prerequisite for v0.2.0. Preserve the 1500/2500 ms classifications, unchanged 10000 ms hosted ceiling and open #239; qualify with the existing automated hosted platform checks.
 
 ## [0.1.4] - 2026-09-29
 

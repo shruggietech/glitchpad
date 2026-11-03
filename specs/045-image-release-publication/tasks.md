@@ -19,26 +19,26 @@
 - [x] T005 [US1] Share job-local registry/git inputs, prefetch full locked graph, prove network-disabled metadata and require offline final metadata in .github/workflows/linux-package.yml.
 - [x] T006 [US1] Amend source/tag authority in docs/releases/v0.2.0-operator-runbook.md and scripts/check-community-release.mjs for explicit owner publish-before-final-merge direction.
 - [x] T007 [US1] Run focused and aggregate validation, retain offline-boundary results and lock identity in specs/045-image-release-publication/verification.md.
-- [ ] T008 [US1] Push/open official PR, resolve first bot round and any one second round, and qualify exact-head CI/platform campaigns; retain receipt in .tmp/s045-candidate-handoff.json.
+- [x] T008 [US1] Push/open official PR, resolve first bot round and any one second round, and qualify exact-head CI/platform campaigns; retain receipt in .tmp/s045-candidate-handoff.json.
 
 ## Phase 4: US2 - Official image release (P1)
 
-**Goal**: Publish immutable v0.2.0 and verify complete public packages/evidence and site. **Independent Test**: All14 official assets pass independent inventory/hash/source/trust checks and Pages tag/source matches.
+**Goal**: Publish immutable v0.2.0 and verify complete public packages/evidence and site. **Independent Test**: All 14 official assets pass independent inventory/hash/source/trust checks and Pages tag/source matches.
 
-- [ ] T009 [US2] Pin the qualified source and create/push annotated v0.2.0; monitor existing .github/workflows/release.yml and four tag package workflows without replacing public identities.
-- [ ] T010 [US2] Download and independently verify all14 assets and public Pages identity; retain readback in .tmp/s045-public-readback/.
-- [ ] T011 [US2] Record actual published source, campaigns, signing/trust, evidence limits, public asset hashes and site identity in docs/releases/v0.2.0-receipt.md.
+- [x] T009 [US2] Pin the qualified source and create/push annotated v0.2.0; monitor existing .github/workflows/release.yml and four tag package workflows without replacing public identities.
+- [x] T010 [US2] Download and independently verify all 14 assets and public Pages identity; retain readback in .tmp/s045-public-readback/.
+- [x] T011 [US2] Record actual published source, campaigns, signing/trust, evidence limits, public asset hashes and site identity in docs/releases/v0.2.0-receipt.md.
 
 ## Phase 5: US3 - Owner closeout (P2)
 
 **Goal**: Truthful issue-level closeout and an open green PR for owner review. **Independent Test**: #76/#10 actual criteria have evidence-backed dispositions, all bot feedback addressed and final applicable checks green; owner retains merge control.
 
-- [ ] T012 [US3] Close #76 then #10 only after complete public release verification, retain #66/#239 limitations, and record disposition in docs/releases/v0.2.0-receipt.md.
+- [x] T012 [US3] Close #76 then #10 only after complete public release verification, retain #66/#239 limitations, and record disposition in docs/releases/v0.2.0-receipt.md.
 - [ ] T013 [US3] Verify final PR head CI and every review disposition, retaining current state in .tmp/s045-state.json; never exceed two review rounds.
 
 ## Phase 6: Polish and handoff
 
-- [ ] T014 Run final cross-artifact/convergence review, UTF-8/mojibake and diff sanity checks; update specs/045-image-release-publication/verification.md and tasks.md with actual outcomes.
+- [x] T014 Run final cross-artifact/convergence review, UTF-8/mojibake and diff sanity checks; update specs/045-image-release-publication/verification.md and tasks.md with actual outcomes.
 - [ ] T015 Stop S045 owned container, retain evidence/caches, and ping owner with open PR/release links and actual limits documented in docs/releases/v0.2.0-receipt.md.
 
 ## Dependencies and execution order
@@ -60,6 +60,9 @@ Qualification found one HIGH partial gap against FR-004/FR-007/SC-001: Linux off
 - [x] T016 Add failing guarded-native, real-bridge failure-injection and receipt-negative cases in crates/glitchpad-host/src/lifecycle_probe.rs, apps/glitchpad/src/domain/package-workflow-probe.test.ts and scripts/{linux,macos}/test-package-lifecycle.test.mjs per FR-004/FR-007 (partial).
 - [x] T017 Implement a one-shot fixed-fixture native begin/complete guard and packaged production-bridge workflow in crates/glitchpad-host/src/lifecycle_probe.rs, crates/glitchpad-host/src/lib.rs, apps/glitchpad/src/domain/package-workflow-probe.ts and apps/glitchpad/src/App.tsx per FR-004/SC-001 (missing).
 - [x] T018 Exercise the separate proof launch in scripts/linux/test-package-lifecycle.mjs and scripts/macos/test-package-lifecycle.mjs, bind actual observed workflow evidence in receipt validators and scripts/assemble-community-release.mjs, and preserve all startup samples/manual limitations per FR-004/FR-007 (partial).
-- [ ] T019 Review the proof internally, run full validation, and requalify the changed exact source before completing T008/T009; record the two external review rounds already used and their earlier source coverage in specs/045-image-release-publication/verification.md per FR-002/FR-008/FR-009 (partial).
+- [x] T019 Review the proof internally, run full validation, and requalify the changed exact source before completing T008/T009; record the two external review rounds already used and their earlier source coverage in specs/045-image-release-publication/verification.md per FR-002/FR-008/FR-009 (partial).
 
-- [x] T020 Apply the owner-approved v0.2.0 reference-hardware eligibility amendment in specs/021-linux-packaging/spec.md, scripts/check-linux-package.mjs and scripts/check-linux-package.test.mjs; retain the10000ms hosted gate, actual classifications and #239 per FR-007/SC-004.
+- [x] T020 Apply the owner-approved v0.2.0 reference-hardware eligibility amendment in specs/021-linux-packaging/spec.md, scripts/check-linux-package.mjs and scripts/check-linux-package.test.mjs; retain the 10000 ms hosted gate, actual classifications and #239 per FR-007/SC-004.
+
+- [x] T021 Add failing homepage-destination tests in scripts/lib/site-release-destination.test.mjs, require exact version-tag resolution for the approved latest link in scripts/verify-site-deployment.mjs, and integrate tests into package.json per FR-005/FR-006/SC-002 (partial).
+- [ ] T022 Independently verify the deployed published f6a1515 site with the corrected operator verifier, retain both Pages failure/recovery observations, and complete final-head CI before owner handoff per FR-007/FR-010/SC-003 (partial).

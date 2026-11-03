@@ -10,8 +10,12 @@ Linux/macOS practical receipts include document_workflow with schema_version1, m
 
 ## Release
 
-Fields: annotated tag v0.2.0, source_commit, version0.2.0, release URL, 8 package records, 4 evidence archives, SHA256SUMS, community-release-manifest.json, Pages tag/source identity. Package records carry name, byte size, SHA256, manifest, trust/signing status, SBOM/notices, attestation and practical-use evidence. Public bytes are retained and immutable after acceptance.
+Fields: annotated tag v0.2.0, source_commit, version 0.2.0, release URL, 8 package records, 4 evidence archives, SHA256SUMS, community-release-manifest.json, Pages tag/source identity. Package records carry name, byte size, SHA256, manifest, trust/signing status, SBOM/notices, attestation and practical-use evidence. Public bytes are retained and immutable after acceptance.
 
 ## Closeout
 
 Fields: released_source, final_pr_head, public_asset_readback, public_site_readback, issue_dispositions, review_threads, CI outcomes, limitations. States: specified -> implemented -> candidate_qualified -> tagged -> published -> independently_verified -> owner_review. Failure retains the last true state and exact failing evidence. PR merge is owner-controlled.
+
+## Site verification
+
+Fields distinguish workflow context/source (approved main/acdd434), checked-out and deployed release source (f6a1515), metadata productVersion/sourceRevision/releaseUrl/builtAt, resolved homepage release destination, operator script/helper digests and verification timestamp. An operator correction after publication has its own PR-head checks; the immutable release/site source remains f6a1515. Failed deployment/verification observations remain in history rather than being relabeled successful.

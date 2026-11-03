@@ -10,10 +10,12 @@ All notable changes to Glitchpad are documented in this file. The format follows
 
 ### Changed
 
+- S045 prepares official v0.2.0 publication with an exact-source qualification and independent public artifact/site readback contract.
 - S044 converges compatible Cargo and application patch dependencies for the v0.2.0 candidate, including the SVG parser patch, while preserving existing admission limits and licensed Linux plugin patches.
 
 ### Fixed
 
+- Linux package provenance reuses the complete locked Cargo inputs across containers and generates final metadata offline, avoiding a fresh registry connection after final package assembly.
 - Native macOS qualification retains startup failures before gating and cleans processes discovered before readiness completes. Paired baseline/candidate measurements preserve first-launch samples and identify later restarts with warm OS caches.
 - Windows portable and Android AppFrame readiness failures include bounded content-free diagnostics without relaxing assertions or timeouts.
 
@@ -23,6 +25,8 @@ All notable changes to Glitchpad are documented in this file. The format follows
 
 - 2026-11-02 (S044): Align the reusable Docker validation browser with the workspace Puppeteer25.12.0 pin after aggregate validation exposed a missing executable.
 - 2026-11-02 (S044): Extend existing package workflows with an exact-byte historical macOS comparison and always-upload failure evidence. Keep reference and hosted-smoke performance classifications separate. Publication remains owner-authorized after review/merge; #76/#10 remain open until actual release readback.
+
+- 2026-11-02 (S045): Under explicit owner authorization, publish v0.2.0 from the exact reviewed and qualified S045 source before final PR merge; leave the PR open for owner merge. Preserve full SBOM graphs, immutable tags/bytes, failed campaign evidence, existing community trust, and remaining #66/#239 limitations.
 
 ## [0.1.4] - 2026-09-29
 

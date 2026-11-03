@@ -34,12 +34,12 @@
 **Goal**: Truthful issue-level closeout and an open green PR for owner review. **Independent Test**: #76/#10 actual criteria have evidence-backed dispositions, all bot feedback addressed and final applicable checks green; owner retains merge control.
 
 - [x] T012 [US3] Close #76 then #10 only after complete public release verification, retain #66/#239 limitations, and record disposition in docs/releases/v0.2.0-receipt.md.
-- [ ] T013 [US3] Verify final PR head CI and every review disposition, retaining current state in .tmp/s045-state.json; never exceed two review rounds.
+- [x] T013 [US3] Verify final PR head CI and every review disposition, retaining current state in .tmp/s045-state.json; never exceed two review rounds.
 
 ## Phase 6: Polish and handoff
 
 - [x] T014 Run final cross-artifact/convergence review, UTF-8/mojibake and diff sanity checks; update specs/045-image-release-publication/verification.md and tasks.md with actual outcomes.
-- [ ] T015 Stop S045 owned container, retain evidence/caches, and ping owner with open PR/release links and actual limits documented in docs/releases/v0.2.0-receipt.md.
+- [x] T015 Stop S045 owned container, retain evidence/caches, and ping owner with open PR/release links and actual limits documented in docs/releases/v0.2.0-receipt.md.
 
 ## Dependencies and execution order
 
@@ -65,4 +65,4 @@ Qualification found one HIGH partial gap against FR-004/FR-007/SC-001: Linux off
 - [x] T020 Apply the owner-approved v0.2.0 reference-hardware eligibility amendment in specs/021-linux-packaging/spec.md, scripts/check-linux-package.mjs and scripts/check-linux-package.test.mjs; retain the 10000 ms hosted gate, actual classifications and #239 per FR-007/SC-004.
 
 - [x] T021 Add failing homepage-destination tests in scripts/lib/site-release-destination.test.mjs, require exact version-tag resolution for the approved latest link in scripts/verify-site-deployment.mjs, and integrate tests into package.json per FR-005/FR-006/SC-002 (partial).
-- [ ] T022 Independently verify the deployed published f6a1515 site with the corrected operator verifier, retain both Pages failure/recovery observations, and complete final-head CI before owner handoff per FR-007/FR-010/SC-003 (partial).
+- [x] T022 Independently verify the deployed published f6a1515 site with the corrected operator verifier, retain both Pages failure/recovery observations, and complete final-head CI before owner handoff per FR-007/FR-010/SC-003 (partial).

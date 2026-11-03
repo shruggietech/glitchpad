@@ -94,6 +94,9 @@ jobs:
       - name: Rust tests
         run: cargo test --workspace --locked
 
+      - name: Audit JavaScript dependency advisories
+        run: pnpm run check:advisories
+
       - name: Frontend checks
         run: pnpm run check:frontend
 

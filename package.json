@@ -12,7 +12,17 @@
   "pnpm": {
     "overrides": {
       "lodash-es": "4.18.1",
-      "smol-toml": "1.7.1"
+      "smol-toml": "1.9.0",
+      "undici@>=7.0.0 <7.30.1": "7.30.1",
+      "ip-address@>=10.0.0 <10.7.4": "10.7.4",
+      "source-map-js@>=1.0.0 <1.2.2": "1.2.2",
+      "katex@>=0.11.0 <0.18.2": "0.18.2",
+      "sharp@<0.35.5": "0.35.5",
+      "markdown-it@>=15.0.0 <15.0.3": "15.0.3",
+      "zod@>=4.0.0 <4.6.6": "4.6.7",
+      "basic-ftp@5.3.1": "6.2.1",
+      "re2js@>=2.0.0 <2.8.7": "2.8.7",
+      "minimatch@10.2.6": "11.0.1"
     }
   },
   "scripts": {
@@ -30,7 +40,7 @@
     "check:shell-layout": "pnpm run build && node scripts/check-shell-layout.mjs",
     "check:android-package": "node --test scripts/check-android-package.test.mjs scripts/android/assemble-package.test.mjs && node scripts/check-android-package.mjs --source-manifest crates/glitchpad-host/gen/android/app/src/main/AndroidManifest.xml",
     "check:linux-package": "node --test scripts/check-linux-package.test.mjs scripts/linux/assemble-package.test.mjs scripts/linux/test-package-lifecycle.test.mjs scripts/linux/thin-appimage.test.mjs && node scripts/check-linux-package.mjs",
-    "check:macos-package": "node --test scripts/check-macos-package.test.mjs scripts/macos/assemble-package.test.mjs scripts/macos/test-package-lifecycle.test.mjs && node scripts/check-macos-package.mjs",
+    "check:macos-package": "node --test scripts/check-macos-package.test.mjs scripts/macos/assemble-package.test.mjs scripts/macos/test-package-lifecycle.test.mjs scripts/macos/startup-sampler.test.mjs scripts/macos/compare-startup.test.mjs && node scripts/check-macos-package.mjs",
     "check:windows-package": "node --test scripts/check-windows-package.test.mjs && node scripts/check-windows-package.mjs",
     "check:community-release": "node --test scripts/check-community-release.test.mjs scripts/assemble-community-release.test.mjs scripts/promote-community-package.test.mjs && node scripts/check-community-release.mjs",
     "check:frontend": "pnpm --filter @shruggietech/glitchpad check",
@@ -45,7 +55,8 @@
     "performance:smoke": "node scripts/run-performance.mjs --profile hosted_windows_smoke_v1 --build-id local-smoke",
     "docs": "cargo xtask docs",
     "tauri": "cd crates/glitchpad-host && tauri",
-    "test": "pnpm --filter @shruggietech/glitchpad test:run"
+    "test": "pnpm --filter @shruggietech/glitchpad test:run",
+    "check:advisories": "pnpm audit --audit-level=moderate"
   },
   "devDependencies": {
     "@mermaid-js/mermaid-cli": "11.17.0",
@@ -54,13 +65,13 @@
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "markdown-link-check": "3.15.0",
-    "markdownlint-cli2": "0.23.3",
+    "markdownlint-cli2": "0.24.0",
     "prettier": "3.9.9",
-    "puppeteer": "25.12.0",
+    "puppeteer": "25.16.0",
     "yaml": "2.9.1"
   },
   "dependencies": {
-    "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
   }
 }

@@ -85,6 +85,17 @@ test('Windows lifecycle policy rejects removal of content-first release assertio
   assert.throws(
     () =>
       validatePortableSmokeContract(
+        lifecycle.replace(
+          '-PassThru -WindowStyle Normal',
+          '-PassThru -WindowStyle Hidden',
+        ),
+        workflow,
+      ),
+    /primary window must launch visibly/u,
+  );
+  assert.throws(
+    () =>
+      validatePortableSmokeContract(
         lifecycle.replace("conditional_tabs = 'pass'", ''),
         workflow,
       ),
@@ -175,7 +186,7 @@ test('Windows lifecycle policy rejects removal of content-first release assertio
   assert.throws(
     () =>
       validatePortableSmokeContract(
-        lifecycle.replace('catch { }', ''),
+        lifecycle.replace('        catch { }', ''),
         workflow,
       ),
     /Windows Markdown lifecycle omits/u,

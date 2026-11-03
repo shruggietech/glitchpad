@@ -277,6 +277,7 @@ fn check(repository: &Path) -> Result<(), String> {
     )?;
     run(repository, "cargo", ["test", "--workspace", "--locked"])?;
     run(repository, "cargo", ["deny", "check"])?;
+    run(repository, "pnpm", ["run", "check:advisories"])?;
     run(repository, "pnpm", ["run", "check:frontend"])?;
     docs(repository)?;
     Ok(())

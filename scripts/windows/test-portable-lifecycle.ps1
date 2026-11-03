@@ -15,6 +15,8 @@ param(
 
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
+. "$PSScriptRoot/startup-diagnostics.ps1"
+$startupDiagnostics = [Collections.Generic.List[object]]::new()
 
 $root = (Resolve-Path -LiteralPath $PortableRoot).Path
 $manifestPath = (Resolve-Path -LiteralPath $Manifest).Path
@@ -57,6 +59,30 @@ if (-not (Test-Path -LiteralPath $application -PathType Leaf)) { throw 'Portable
 $capabilities = Get-Content -LiteralPath 'packaging/desktop/capabilities.json' -Raw | ConvertFrom-Json
 $extensions = @($capabilities.families | ForEach-Object { $_.extensions } | Sort-Object -Unique)
 
+function Save-StartupDiagnostic([Diagnostics.Process] $Process, [string] $Scenario, [Diagnostics.Stopwatch] $Clock, [bool] $Succeeded) {
+    $observation = @{ exited = $false; exit_code = $null; main_window_present = $false; main_window_visible = $null; automation_descendant_present = $null; process_state_available = $false }
+    try {
+        $Process.Refresh()
+        $observation.exited = $Process.HasExited
+        if ($observation.exited) { $observation.exit_code = $Process.ExitCode }
+        else {
+            $handle = $Process.MainWindowHandle
+            $observation.main_window_present = $handle -ne [IntPtr]::Zero
+            if ($observation.main_window_present) {
+                $observation.main_window_visible = [GlitchpadNativeInput]::IsWindowVisible($handle)
+                try {
+                    $automationRoot = [System.Windows.Automation.AutomationElement]::FromHandle($handle)
+                    $observation.automation_descendant_present = $null -ne $automationRoot.FindFirst([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)
+                } catch { }
+            }
+        }
+        $observation.process_state_available = $true
+    } catch { }
+    $record = New-PortableStartupDiagnostic -Observation $observation -Scenario $Scenario -Stage $script:readinessStage -SourceCommit $manifestSourceCommit -ManifestDigest $manifestDigest -Succeeded $Succeeded -ElapsedMilliseconds $Clock.ElapsedMilliseconds
+    $startupDiagnostics.Add($record)
+    [IO.File]::WriteAllText([IO.Path]::GetFullPath("$Receipt.startup.json"), (ConvertTo-Json -InputObject @($startupDiagnostics.ToArray()) -Depth 5) + [Environment]::NewLine, [Text.UTF8Encoding]::new($false))
+}
+
 function Get-AssociationSnapshot {
     @($extensions | ForEach-Object {
         $extensionKeyPath = "Registry::HKEY_CURRENT_USER\Software\Classes\.$_"
@@ -96,19 +122,21 @@ function Find-LargestNamedElement([System.Windows.Automation.AutomationElement] 
 }
 
 function Wait-NamedElement([Diagnostics.Process] $Process, [string] $Name, [int] $Seconds = 20) {
+    $script:readinessStage = 'named_element_wait'
     $deadline = [DateTimeOffset]::UtcNow.AddSeconds($Seconds)
     do {
         Start-Sleep -Milliseconds 250
         $window = Get-WindowRoot $Process
         if ($window) {
             $element = Find-NamedElement $window $Name
-            if ($element) { return $element }
+            if ($element) { $script:readinessStage = 'named_element_ready'; return $element }
         }
     } while ([DateTimeOffset]::UtcNow -lt $deadline)
-    throw "Portable UI did not expose '$Name'."
+    throw 'portable_named_element_timeout'
 }
 
 function Wait-ElementText([Diagnostics.Process] $Process, [string] $ElementName, [string] $ExpectedText, [int] $Seconds = 20) {
+    $script:readinessStage = 'content_wait'
     $deadline = [DateTimeOffset]::UtcNow.AddSeconds($Seconds)
     do {
         Start-Sleep -Milliseconds 250
@@ -130,7 +158,7 @@ function Wait-ElementText([Diagnostics.Process] $Process, [string] $ElementName,
             }
         }
     } while ([DateTimeOffset]::UtcNow -lt $deadline)
-    throw "Portable UI did not expose expected content '$ExpectedText'."
+    throw 'portable_text_readiness_timeout'
 }
 
 function Get-TabCount([Diagnostics.Process] $Process) {
@@ -438,6 +466,9 @@ public static class GlitchpadNativeInput
     public static extern bool SetForegroundWindow(IntPtr window);
 
     [DllImport("user32.dll")]
+    public static extern bool IsWindowVisible(IntPtr window);
+
+    [DllImport("user32.dll")]
     public static extern bool SetCursorPos(int x, int y);
 
     [DllImport("user32.dll")]
@@ -447,7 +478,10 @@ public static class GlitchpadNativeInput
 $isolatedState = Join-Path ([IO.Path]::GetTempPath()) ("glitchpad-s027-{0}" -f [Guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $isolatedState -Force | Out-Null
 $isolatedEnvironment = @{ APPDATA = $isolatedState; LOCALAPPDATA = $isolatedState }
-$process = Start-Process -FilePath $application -PassThru -WindowStyle Hidden -Environment $isolatedEnvironment
+$scenarioClock = [Diagnostics.Stopwatch]::StartNew()
+$script:readinessStage = 'launch'
+$scenarioSucceeded = $false
+$process = Start-Process -FilePath $application -PassThru -WindowStyle Normal -Environment $isolatedEnvironment
 try {
     Wait-NamedElement $process 'Open file…' | Out-Null
     if ((Get-TabCount $process) -ne 0) { throw 'A clean launch exposed document tabs.' }
@@ -478,17 +512,24 @@ try {
     do { Start-Sleep -Milliseconds 250 } while ((Get-TabCount $process) -ne 0 -and [DateTimeOffset]::UtcNow -lt $deadline)
     if ((Get-TabCount $process) -ne 0) { throw 'Closing from two documents back to one did not hide the tab strip.' }
     Wait-ElementText $process ("{0} text editor" -f [IO.Path]::GetFileName($textFixturePath)) 'S027 TXT CONTENT 7E5A'
+    $scenarioSucceeded = $true
 }
 finally {
-    if (-not $process.HasExited) { Stop-Process -Id $process.Id -Force }
-    Remove-Item -LiteralPath $isolatedState -Recurse -Force -ErrorAction SilentlyContinue
+    try { Save-StartupDiagnostic $process 'clean' $scenarioClock $scenarioSucceeded }
+    finally {
+        if (-not $process.HasExited) { Stop-Process -Id $process.Id -Force }
+        Remove-Item -LiteralPath $isolatedState -Recurse -Force -ErrorAction SilentlyContinue
+    }
 }
 
 
 $reverseState = Join-Path ([IO.Path]::GetTempPath()) ("glitchpad-s030-reverse-{0}" -f [Guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $reverseState -Force | Out-Null
 $isolatedEnvironment = @{ APPDATA = $reverseState; LOCALAPPDATA = $reverseState }
-$reverseProcess = Start-Process -FilePath $application -PassThru -WindowStyle Hidden -Environment $isolatedEnvironment
+$scenarioClock = [Diagnostics.Stopwatch]::StartNew()
+$script:readinessStage = 'launch'
+$scenarioSucceeded = $false
+$reverseProcess = Start-Process -FilePath $application -PassThru -WindowStyle Normal -Environment $isolatedEnvironment
 try {
     Wait-NamedElement $reverseProcess 'Open file…' | Out-Null
     Send-MarkdownDelivery $markdownFixtureBPath $reverseProcess 'S030 Markdown Beta 9D4E' 'S030_BETA_RAW_SENTINEL'
@@ -497,33 +538,51 @@ try {
     Send-MarkdownDelivery $markdownFixtureAPath $reverseProcess 'S030 Markdown Alpha 2B7C' 'S030_ALPHA_RAW_SENTINEL'
     Wait-WindowText $reverseProcess 'S030 Alpha Footnote 6A1E'
     if ((Get-TabCount $reverseProcess) -ne 2) { throw 'The reverse-order pair did not expose exactly two tabs.' }
+    $scenarioSucceeded = $true
 }
 finally {
-    if (-not $reverseProcess.HasExited) { Stop-Process -Id $reverseProcess.Id -Force }
-    Remove-Item -LiteralPath $reverseState -Recurse -Force -ErrorAction SilentlyContinue
+    try { Save-StartupDiagnostic $reverseProcess 'reverse' $scenarioClock $scenarioSucceeded }
+    finally {
+        if (-not $reverseProcess.HasExited) { Stop-Process -Id $reverseProcess.Id -Force }
+        Remove-Item -LiteralPath $reverseState -Recurse -Force -ErrorAction SilentlyContinue
+    }
 }
 $minimalState = Join-Path ([IO.Path]::GetTempPath()) ("glitchpad-s035-minimal-{0}" -f [Guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $minimalState -Force | Out-Null
 $minimalEnvironment = @{ APPDATA = $minimalState; LOCALAPPDATA = $minimalState }
-$minimalProcess = Start-Process -FilePath $application -ArgumentList ('"{0}"' -f $markdownFixtureMinimalPath) -PassThru -WindowStyle Hidden -Environment $minimalEnvironment
+$scenarioClock = [Diagnostics.Stopwatch]::StartNew()
+$script:readinessStage = 'launch'
+$scenarioSucceeded = $false
+$minimalProcess = Start-Process -FilePath $application -ArgumentList ('"{0}"' -f $markdownFixtureMinimalPath) -PassThru -WindowStyle Normal -Environment $minimalEnvironment
 try {
     Wait-NamedElement $minimalProcess 'S035 Minimal Markdown 5E8A' | Out-Null
     if ((Get-TabCount $minimalProcess) -ne 0) { throw 'A single minimal Markdown document exposed tab chrome.' }
+    $scenarioSucceeded = $true
 }
 finally {
-    if (-not $minimalProcess.HasExited) { Stop-Process -Id $minimalProcess.Id -Force }
-    Remove-Item -LiteralPath $minimalState -Recurse -Force -ErrorAction SilentlyContinue
+    try { Save-StartupDiagnostic $minimalProcess 'minimal' $scenarioClock $scenarioSucceeded }
+    finally {
+        if (-not $minimalProcess.HasExited) { Stop-Process -Id $minimalProcess.Id -Force }
+        Remove-Item -LiteralPath $minimalState -Recurse -Force -ErrorAction SilentlyContinue
+    }
 }
 $editableState = Join-Path ([IO.Path]::GetTempPath()) ("glitchpad-s038-editable-{0}" -f [Guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $editableState -Force | Out-Null
 $isolatedEnvironment = @{ APPDATA = $editableState; LOCALAPPDATA = $editableState }
-$editableProcess = Start-Process -FilePath $application -ArgumentList ('"{0}"' -f $markdownFixtureEditablePath) -PassThru -WindowStyle Hidden -Environment $isolatedEnvironment
+$scenarioClock = [Diagnostics.Stopwatch]::StartNew()
+$script:readinessStage = 'launch'
+$scenarioSucceeded = $false
+$editableProcess = Start-Process -FilePath $application -ArgumentList ('"{0}"' -f $markdownFixtureEditablePath) -PassThru -WindowStyle Normal -Environment $isolatedEnvironment
 try {
     Exercise-MarkdownEditSavePreview $editableProcess $markdownFixtureEditablePath
+    $scenarioSucceeded = $true
 }
 finally {
-    if (-not $editableProcess.HasExited) { Stop-Process -Id $editableProcess.Id -Force }
-    Remove-Item -LiteralPath $editableState -Recurse -Force -ErrorAction SilentlyContinue
+    try { Save-StartupDiagnostic $editableProcess 'editable' $scenarioClock $scenarioSucceeded }
+    finally {
+        if (-not $editableProcess.HasExited) { Stop-Process -Id $editableProcess.Id -Force }
+        Remove-Item -LiteralPath $editableState -Recurse -Force -ErrorAction SilentlyContinue
+    }
 }
 $recoveryState = Join-Path ([IO.Path]::GetTempPath()) ("glitchpad-s038-recovery-{0}" -f [Guid]::NewGuid().ToString('N'))
 $recoveryProbe = Join-Path $recoveryState 'probe'
@@ -531,13 +590,20 @@ New-Item -ItemType Directory -Path $recoveryProbe -Force | Out-Null
 [IO.File]::WriteAllText((Join-Path $recoveryProbe 'enabled.marker'), "enabled`n", [Text.UTF8Encoding]::new($false))
 [IO.File]::WriteAllText((Join-Path $recoveryProbe 'markdown-failure-request.marker'), "requested`n", [Text.UTF8Encoding]::new($false))
 $recoveryEnvironment = @{ APPDATA = $recoveryState; LOCALAPPDATA = $recoveryState; GLITCHPAD_LIFECYCLE_PROBE_DIR = $recoveryProbe }
-$recoveryProcess = Start-Process -FilePath $application -ArgumentList ('"{0}"' -f $markdownFixtureRecoveryPath) -PassThru -WindowStyle Hidden -Environment $recoveryEnvironment
+$scenarioClock = [Diagnostics.Stopwatch]::StartNew()
+$script:readinessStage = 'launch'
+$scenarioSucceeded = $false
+$recoveryProcess = Start-Process -FilePath $application -ArgumentList ('"{0}"' -f $markdownFixtureRecoveryPath) -PassThru -WindowStyle Normal -Environment $recoveryEnvironment
 try {
     Exercise-MarkdownRecovery $recoveryProcess $markdownFixtureRecoveryPath $recoveryProbe
+    $scenarioSucceeded = $true
 }
 finally {
-    if (-not $recoveryProcess.HasExited) { Stop-Process -Id $recoveryProcess.Id -Force }
-    Remove-Item -LiteralPath $recoveryState -Recurse -Force -ErrorAction SilentlyContinue
+    try { Save-StartupDiagnostic $recoveryProcess 'recovery' $scenarioClock $scenarioSucceeded }
+    finally {
+        if (-not $recoveryProcess.HasExited) { Stop-Process -Id $recoveryProcess.Id -Force }
+        Remove-Item -LiteralPath $recoveryState -Recurse -Force -ErrorAction SilentlyContinue
+    }
 }
 $webviewState = Join-Path ([IO.Path]::GetTempPath()) ("glitchpad-s035-webview-{0}" -f [Guid]::NewGuid().ToString('N'))
 $webviewProbe = Join-Path $webviewState 'probe'
@@ -548,15 +614,22 @@ $webviewEnvironment = @{
     LOCALAPPDATA = $webviewState
     GLITCHPAD_LIFECYCLE_PROBE_DIR = $webviewProbe
 }
-$webviewProcess = Start-Process -FilePath $application -ArgumentList ('"{0}"' -f $markdownFixtureMinimalPath) -PassThru -WindowStyle Hidden -Environment $webviewEnvironment
+$scenarioClock = [Diagnostics.Stopwatch]::StartNew()
+$script:readinessStage = 'launch'
+$scenarioSucceeded = $false
+$webviewProcess = Start-Process -FilePath $application -ArgumentList ('"{0}"' -f $markdownFixtureMinimalPath) -PassThru -WindowStyle Normal -Environment $webviewEnvironment
 try {
     Wait-NamedElement $webviewProcess 'S035 Minimal Markdown 5E8A' | Out-Null
     Wait-DeviceScaleMarker $webviewProbe | Out-Null
     Assert-MenuGeometry $webviewProcess ([IO.Path]::GetFileName($markdownFixtureMinimalPath))
+    $scenarioSucceeded = $true
 }
 finally {
-    if (-not $webviewProcess.HasExited) { Stop-Process -Id $webviewProcess.Id -Force }
-    Remove-Item -LiteralPath $webviewState -Recurse -Force -ErrorAction SilentlyContinue
+    try { Save-StartupDiagnostic $webviewProcess 'webview' $scenarioClock $scenarioSucceeded }
+    finally {
+        if (-not $webviewProcess.HasExited) { Stop-Process -Id $webviewProcess.Id -Force }
+        Remove-Item -LiteralPath $webviewState -Recurse -Force -ErrorAction SilentlyContinue
+    }
 }
 $associationAfter = Get-AssociationSnapshot | ConvertTo-Json -Compress
 if ($associationAfter -cne $associationBefore) { throw 'Portable launch changed governed file associations.' }

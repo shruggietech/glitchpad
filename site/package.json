@@ -15,11 +15,11 @@
     "fumadocs-core": "16.15.14",
     "fumadocs-ui": "16.15.14",
     "mermaid": "12.0.0",
-    "next": "16.3.6",
-    "react": "19.3.0",
-    "react-dom": "19.3.0",
+    "next": "16.4.3",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
     "react-markdown": "10.1.0",
-    "zod": "4.6.5"
+    "zod": "4.6.7"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",

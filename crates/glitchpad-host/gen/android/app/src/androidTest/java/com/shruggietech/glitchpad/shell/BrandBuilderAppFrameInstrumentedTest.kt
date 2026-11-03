@@ -48,20 +48,52 @@ class BrandBuilderAppFrameInstrumentedTest {
     ): String {
         val completed = CountDownLatch(1)
         var result: String? = null
+        var nativeState = JSONObject().put("stage", "activity_callback_pending")
         scenario.onActivity { activity ->
             val webView = findWebView(activity.window.decorView)
             assertNotNull("Tauri must host a real Android WebView", webView)
-            webView!!.evaluateJavascript(script) { value ->
+            nativeState = readinessSnapshot(
+                Build.VERSION.SDK_INT,
+                activity.resources.configuration.orientation,
+                webView!!.isAttachedToWindow,
+                webView.hasWindowFocus(),
+                webView.hasFocus(),
+                webView.visibility,
+                webView.width,
+                webView.height,
+            )
+            webView.evaluateJavascript(script) { value ->
                 result = value
                 completed.countDown()
             }
         }
-        assertTrue("WebView JavaScript evaluation timed out", completed.await(timeoutSeconds, TimeUnit.SECONDS))
+        assertTrue("WebView JavaScript evaluation timed out (stage=evaluate_callback; native=$nativeState)", completed.await(timeoutSeconds, TimeUnit.SECONDS))
         return result ?: "null"
     }
 
     private fun decodedJavascriptString(result: String): String =
         JSONArray("[$result]").getString(0)
+
+    private fun readinessSnapshot(
+        api: Int, orientation: Int, attached: Boolean, windowFocused: Boolean,
+        viewFocused: Boolean, visibility: Int, width: Int, height: Int,
+    ): JSONObject = JSONObject()
+        .put("api_level", api)
+        .put("orientation", orientation)
+        .put("attached", attached)
+        .put("window_focused", windowFocused)
+        .put("view_focused", viewFocused)
+        .put("visibility", visibility)
+        .put("width_px", width)
+        .put("height_px", height)
+
+    private fun focusCategory(line: String): String = when {
+        line.contains("com.shruggietech.glitchpad.test/") -> "test"
+        line.contains("com.shruggietech.glitchpad/") -> "target"
+        line.contains("com.android.") || line.contains("android/") -> "system"
+        line.contains("=null") -> "none"
+        else -> "other"
+    }
 
     private fun focusedWindowState(): String =
         ParcelFileDescriptor.AutoCloseInputStream(
@@ -70,8 +102,22 @@ class BrandBuilderAppFrameInstrumentedTest {
             reader.lineSequence()
                 .filter { it.contains("mCurrentFocus=") || it.contains("mFocusedApp=") }
                 .take(4)
-                .joinToString("; ") { it.trim() }
+                .map { focusCategory(it) }
+                .distinct()
+                .joinToString(";")
+                .ifEmpty { "unavailable" }
         }
+
+    private fun assertCallbackDiagnosticsContainOnlyBoundedNativeState() {
+        val diagnostic = readinessSnapshot(36, 1, true, false, false, 0, 1080, 1920)
+        assertEquals(
+            setOf("api_level", "orientation", "attached", "window_focused", "view_focused", "visibility", "width_px", "height_px"),
+            diagnostic.keys().asSequence().toSet(),
+        )
+        assertEquals("other", focusCategory("mCurrentFocus=private-title /private/user/document.pdf"))
+        assertEquals("target", focusCategory("mCurrentFocus=com.shruggietech.glitchpad/MainActivity private-title"))
+        assertEquals("system", focusCategory("mFocusedApp=com.android.launcher/Launcher private-title"))
+    }
 
     private fun waitForShell(scenario: ActivityScenario<MainActivity>) {
         val deadline = SystemClock.elapsedRealtime() + 60_000L
@@ -383,6 +429,7 @@ class BrandBuilderAppFrameInstrumentedTest {
 
     @Test
     fun appFrameOwnsActualAndroidWebViewGeometry() {
+        assertCallbackDiagnosticsContainOnlyBoundedNativeState()
         assertTrue("reference API must be governed", Build.VERSION.SDK_INT == 24 || Build.VERSION.SDK_INT == 36)
         val scenario = ActivityScenario.launch(MainActivity::class.java)
         scenario.onActivity { activity ->
@@ -465,6 +512,7 @@ class BrandBuilderAppFrameInstrumentedTest {
             .put("schema_version", 1)
             .put("api_level", Build.VERSION.SDK_INT)
             .put("actual_tauri_webview", true)
+            .put("callback_diagnostics_contract", "pass")
             .put("portrait", portrait)
             .put("landscape", landscape)
             .put("open_menu", openMenu)

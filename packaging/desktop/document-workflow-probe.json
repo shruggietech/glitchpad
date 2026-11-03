@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "method": "packaged_js_native_roundtrip",
+  "filename": "document-workflow.md",
+  "initial_text": "# Glitchpad package workflow\n\nInitial synthetic document.\n",
+  "saved_text": "# Glitchpad package workflow\n\nSaved synthetic document.\n",
+  "checks": ["read", "edit", "save", "metadata", "recovery"]
+}

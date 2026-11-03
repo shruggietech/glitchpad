@@ -39,8 +39,18 @@ See [data-model.md](data-model.md), [contracts/publication.md](contracts/publica
 - `docs/releases/v0.2.0-operator-runbook.md` and `docs/releases/v0.2.0-receipt.md`: dated authority/source policy and actual public readback.
 - Existing four platform workflows, `release.yml`, assembler and package validators: reuse for official tag campaign, change only if qualification demonstrates a blocker.
 
-**Structure Decision**: Modify the existing release path only. No application implementation or dependency upgrades planned.
+**Structure Decision**: Modify the existing release path only. A fixed opt-in native/JS validation hook is required by the demonstrated evidence blocker below; no product capability or dependency upgrade is added.
 
 ## Complexity Tracking
 
 No constitutional violation or added architectural layer. The dated runbook amendment replaces a legacy merge-first operator rule under the owner's explicit newer instruction; it does not grant merge authority or relax qualification.
+
+## 2026-11-02: Qualification remediation
+
+The independent candidate readback exposed a false-evidence branch: --official converts Linux's unperformed read/edit/save/metadata/recovery rows to pass, while macOS hardcodes them. A second plan research pass with the two read-only agents confirmed that S021 FR-018 forbids substituting separately executed source suites. Add a bounded opt-in packaged bridge workflow on a fixed disposable document, using production materialization, text transaction/reducer, save, metadata and recovery APIs. Native begin/complete commands accept no filesystem path; only the existing explicitly enabled probe root, an exact one-shot request and a fixed synthetic fixture authorize it. A fresh completion marker follows exact saved-byte verification. A separate harness launch runs after startup sampling and never edits the startup fixture. Candidate and official receipts derive the same five passes from observed proof, and final release assembly requires it. No thresholds, required results, physical/manual gates, or product-use restrictions change.
+
+This necessary release-blocker fix changes application validation hooks and requires a new exact-source campaign. Both permitted external rounds already completed without findings before this discovery (last reviewed SHA184c762); no third request is authorized. Perform an internal critical review of the remediation and disclose the external coverage boundary in the final receipt. The owner still performs final PR review/merge.
+
+## 2026-11-03: Owner startup eligibility amendment
+
+Internal review found the older S021 FR-020/SC-006 reference-hardware prerequisite was not explicitly retired by S044/S045. The owner approved retiring it for v0.2.0 and using the existing automated hosted checks. Linux tag validation now uses the unchanged10000ms hosted ceiling while preserving actual1500/2500ms classifications. A focused regression first failed with the old gate; the approved behavior accepts a truthful2600ms reference classification failure as hosted smoke and still rejects10001ms. #239 remains open, and no reference-hardware pass is inferred. See [reference-gate-decision.md](reference-gate-decision.md).

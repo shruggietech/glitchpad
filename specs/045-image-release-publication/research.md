@@ -23,3 +23,15 @@
 **Rationale**: Native dependency changes invalidate the current graph without delivering the requested release. Owner removed unavailable physical Android and manual screen-reader gates; existing other manual rows remain unperformed. Hosted evidence is not reference-hardware evidence.
 
 **Alternatives considered**: Folding new native dependency churn or inventing manual acceptance prerequisites delays the release without a demonstrated blocker.
+
+## 2026-11-02: Observed packaged document proof
+
+**Decision**: Execute an opt-in workflow inside the actual installed/extracted app through its production JS-to-Rust bridges, on a native-owned fixed synthetic fixture, and independently read back the saved bytes. Require observed proof for read/edit/save/metadata/recovery in both candidate and official receipts.
+
+**Rationale**: The existing flag-driven receipt builder fabricates results and contradicts S021 FR-018. Separate source tests are useful but cannot prove the package path. A fixed one-shot native guard and production bridge helper prove the existing app behavior without adding general command/file authority. Keep the workflow outside startup percentile samples and remove only its owned recovery record/source.
+
+**Alternatives considered**: Inheriting source-suite passes violates explicit requirements. Dropping required rows weakens qualification. Broad native UI/keyboard automation would add platform permission/focus dependencies when real packaged bridges and existing synthetic fixture opt-in can exercise the required data operations. Keyboard, focus and other manual UI rows remain unperformed and explicit.
+
+## 2026-11-03: Owner startup eligibility amendment
+
+Internal review found the older S021 FR-020/SC-006 reference-hardware prerequisite was not explicitly retired by S044/S045. The owner approved retiring it for v0.2.0 and using the existing automated hosted checks. Linux tag validation now uses the unchanged10000ms hosted ceiling while preserving actual1500/2500ms classifications. A focused regression first failed with the old gate; the approved behavior accepts a truthful2600ms reference classification failure as hosted smoke and still rejects10001ms. #239 remains open, and no reference-hardware pass is inferred. See [reference-gate-decision.md](reference-gate-decision.md).

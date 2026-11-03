@@ -93,6 +93,11 @@ import {
   type DesktopDeliveryResult,
 } from './domain/desktop-delivery-gateway';
 
+import {
+  runPackageWorkflowProbe,
+  reportPackageWorkflowFailure,
+} from './domain/package-workflow-probe';
+
 interface AppProps {
   sessions?: ShellSession[];
   recoveryGateway?: RecoveryGateway | null;
@@ -209,6 +214,10 @@ export function App({
   const pendingDesktopDeliveryProbesRef = useRef(new Map<string, number[]>());
   useEffect(() => {
     void reportDesktopLifecycleProbe('shell-ready').catch(() => undefined);
+    if (nativeDesktopDeliveryAvailable())
+      void runPackageWorkflowProbe().catch(() => {
+        void reportPackageWorkflowFailure().catch(() => undefined);
+      });
     if (/Windows/iu.test(navigator.userAgent))
       void reportDesktopDeviceScaleProbe(window.devicePixelRatio).catch(
         () => undefined,

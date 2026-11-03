@@ -17,6 +17,8 @@ pub mod source;
 pub mod android_source;
 
 struct RecoveryHostState {
+    #[cfg(not(mobile))]
+    probe_root: Option<std::path::PathBuf>,
     store: Result<recovery::RecoveryStore, glitchpad_core::contracts::CoreError>,
 }
 
@@ -49,11 +51,19 @@ fn application_state_for(app: &tauri::App) -> ApplicationStateHost {
 
 impl RecoveryHostState {
     fn available(store: recovery::RecoveryStore) -> Self {
-        Self { store: Ok(store) }
+        Self {
+            store: Ok(store),
+            #[cfg(not(mobile))]
+            probe_root: None,
+        }
     }
 
     fn unavailable(error: glitchpad_core::contracts::CoreError) -> Self {
-        Self { store: Err(error) }
+        Self {
+            store: Err(error),
+            #[cfg(not(mobile))]
+            probe_root: None,
+        }
     }
 
     fn store(&self) -> Result<&recovery::RecoveryStore, glitchpad_core::contracts::CoreError> {
@@ -144,6 +154,8 @@ pub fn run() {
         lifecycle_probe::record_desktop_lifecycle_probe,
         lifecycle_probe::record_desktop_device_scale_probe,
         lifecycle_probe::consume_desktop_markdown_failure_probe,
+        lifecycle_probe::begin_desktop_document_workflow_probe,
+        lifecycle_probe::complete_desktop_document_workflow_probe,
     ]);
     #[cfg(target_os = "android")]
     let builder = builder.invoke_handler(tauri::generate_handler![
@@ -197,16 +209,49 @@ pub fn run() {
             } else {
                 recovery::DESKTOP_RECOVERY_QUOTA_BYTES
             };
-            let recovery_state = match app.path().app_local_data_dir() {
-                Ok(root) => recovery::RecoveryStore::open(root.join("recovery-v1"), recovery_quota)
-                    .map_or_else(RecoveryHostState::unavailable, RecoveryHostState::available),
-                Err(_) => RecoveryHostState::unavailable(recovery_unavailable()),
+            #[cfg(not(mobile))]
+            let lifecycle_probe =
+                lifecycle_probe::LifecycleProbeState::from_environment_or_arguments();
+            #[cfg(not(mobile))]
+            let probe_root = lifecycle_probe.document_workflow_root();
+            #[cfg(mobile)]
+            let probe_root: Result<
+                Option<std::path::PathBuf>,
+                glitchpad_core::contracts::CoreError,
+            > = Ok(None);
+            let recovery_state = match probe_root {
+                Ok(Some(root)) => {
+                    let state =
+                        recovery::RecoveryStore::open(root.join("recovery"), recovery_quota)
+                            .map_or_else(
+                                RecoveryHostState::unavailable,
+                                RecoveryHostState::available,
+                            );
+                    #[cfg(not(mobile))]
+                    let state = {
+                        let mut state = state;
+                        state.probe_root = Some(root);
+                        state
+                    };
+                    state
+                }
+                Ok(None) => match app.path().app_local_data_dir() {
+                    Ok(root) => {
+                        recovery::RecoveryStore::open(root.join("recovery-v1"), recovery_quota)
+                            .map_or_else(
+                                RecoveryHostState::unavailable,
+                                RecoveryHostState::available,
+                            )
+                    }
+                    Err(_) => RecoveryHostState::unavailable(recovery_unavailable()),
+                },
+                Err(error) => RecoveryHostState::unavailable(error),
             };
             app.manage(recovery_state);
             app.manage(application_state_for(app));
             #[cfg(not(mobile))]
             {
-                app.manage(lifecycle_probe::LifecycleProbeState::from_environment_or_arguments());
+                app.manage(lifecycle_probe);
                 let host = source::DesktopSourceHost::new();
                 let queue = desktop_delivery::DesktopDeliveryQueue::new();
                 if let Ok(working_directory) = std::env::current_dir() {

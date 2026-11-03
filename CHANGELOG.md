@@ -6,7 +6,7 @@ All notable changes to Glitchpad are documented in this file. The format follows
 
 ## [Unreleased]
 
-## [0.2.0] - 2026-11-02
+## [0.2.0] - 2026-11-03
 
 ### Changed
 
@@ -15,6 +15,7 @@ All notable changes to Glitchpad are documented in this file. The format follows
 
 ### Fixed
 
+- Linux and macOS package receipts require a separate installed-app read/edit/save/metadata/recovery round trip, exact saved bytes, isolated recovery cleanup and source closure. Official mode cannot promote unperformed operations to passing evidence.
 - Linux package provenance reuses the complete locked Cargo inputs across containers and generates final metadata offline, avoiding a fresh registry connection after final package assembly.
 - Native macOS qualification retains startup failures before gating and cleans processes discovered before readiness completes. Paired baseline/candidate measurements preserve first-launch samples and identify later restarts with warm OS caches.
 - Windows portable and Android AppFrame readiness failures include bounded content-free diagnostics without relaxing assertions or timeouts.
@@ -27,6 +28,10 @@ All notable changes to Glitchpad are documented in this file. The format follows
 - 2026-11-02 (S044): Extend existing package workflows with an exact-byte historical macOS comparison and always-upload failure evidence. Keep reference and hosted-smoke performance classifications separate. Publication remains owner-authorized after review/merge; #76/#10 remain open until actual release readback.
 
 - 2026-11-02 (S045): Under explicit owner authorization, publish v0.2.0 from the exact reviewed and qualified S045 source before final PR merge; leave the PR open for owner merge. Preserve full SBOM graphs, immutable tags/bytes, failed campaign evidence, existing community trust, and remaining #66/#239 limitations.
+
+- 2026-11-03 (S045): Qualification exposed inherited Linux/macOS workflow rows that had not exercised the installed app. Block publication, add a one-shot fixed-fixture JS/native proof outside startup samples, and require it in platform validators and release assembly. Preserve the two-round external review cap; the evidence repair receives internal review and fresh source qualification, with the earlier bot coverage identified explicitly.
+
+- 2026-11-03 (S045): The owner retires the unavailable reference-hardware startup prerequisite for v0.2.0. Preserve the1500/2500ms classifications, unchanged10000ms hosted ceiling and open #239; qualify with the existing automated hosted platform checks.
 
 ## [0.1.4] - 2026-09-29
 

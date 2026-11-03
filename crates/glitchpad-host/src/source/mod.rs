@@ -278,6 +278,10 @@ impl DesktopSourceHost {
         })
     }
 
+    pub(crate) fn contains_source(&self, source_id: &SourceId) -> Result<bool, CoreError> {
+        Ok(self.lock_state()?.sources.contains_key(source_id))
+    }
+
     /// Acquires or returns an existing strongly identified regular file.
     ///
     /// # Errors

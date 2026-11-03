@@ -1,3 +1,5 @@
+import { validateDocumentWorkflowProof } from './lib/package-document-workflow.mjs';
+
 import { createHash } from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
@@ -312,7 +314,7 @@ export async function checkMacosConfiguration(
     'initialLaunchArguments(',
     'sampleStartup({',
     'createStartupJournal(',
-    'cleanupApplication(executable,' ,
+    'cleanupApplication(executable,',
     "'enabled.marker'",
     "'--args'",
     "command('open'",
@@ -724,6 +726,7 @@ export function validateCleanHostReceipt(
       'candidate_manifest_sha256',
       'evidence_authority',
       'macos',
+      'document_workflow',
       'automated',
       'manual',
       'performance',
@@ -805,6 +808,7 @@ export function validateCleanHostReceipt(
     )
   )
     fail('clean-host macOS facts are incomplete');
+  validateDocumentWorkflowProof(receipt.document_workflow);
   if (
     automatedReceiptKeys
       .filter((key) => key !== 'performance')

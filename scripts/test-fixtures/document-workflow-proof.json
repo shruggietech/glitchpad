@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "method": "packaged_js_native_roundtrip",
+  "checks": {
+    "read": "pass",
+    "edit": "pass",
+    "save": "pass",
+    "metadata": "pass",
+    "recovery": "pass"
+  },
+  "input_sha256": "0808cdd99306a70948ef83b695a4fecf506f872eb90651ddd2ffb259871b99ee",
+  "saved_sha256": "1a45fd6faaaacaedf2621ddf897eb7f3eb6766d960e83551e42e391f527bed3a",
+  "original_document_preserved": true,
+  "owned_recovery_removed": true,
+  "source_closed": true,
+  "process_stopped": true,
+  "probe_removed": true
+}

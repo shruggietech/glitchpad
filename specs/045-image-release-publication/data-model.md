@@ -4,6 +4,10 @@
 
 Fields: full source_commit, branch, tree, review_rounds (0..2), check_runs (identity/SHA/status/conclusion), package_runs per platform, retained_failed_campaigns, qualification_status. A candidate becomes qualified only with all required successful terminal checks and resolved actionable reviews. Any source mutation creates a new candidate; receipts are not reassigned.
 
+## Packaged document workflow proof
+
+Linux/macOS practical receipts include document_workflow with schema_version1, method packaged_js_native_roundtrip, exact read/edit/save/metadata/recovery passes, fixed input/saved SHA256, and true original_document_preserved, owned_recovery_removed, source_closed, process_stopped and probe_removed. The native one-shot workflow, separate installed-app launch and cleanup produce these observations; validators reject missing, extra, incorrect or contradictory fields. Startup samples remain separate.
+
 ## Release
 
 Fields: annotated tag v0.2.0, source_commit, version0.2.0, release URL, 8 package records, 4 evidence archives, SHA256SUMS, community-release-manifest.json, Pages tag/source identity. Package records carry name, byte size, SHA256, manifest, trust/signing status, SBOM/notices, attestation and practical-use evidence. Public bytes are retained and immutable after acceptance.

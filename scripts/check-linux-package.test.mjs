@@ -1,3 +1,4 @@
+import workflowProof from './test-fixtures/document-workflow-proof.json' with { type: 'json' };
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
@@ -160,6 +161,7 @@ function receipt(
         'recovery_conformance',
       ],
     },
+    document_workflow: null,
     linux: {
       distribution: 'ubuntu',
       release,
@@ -350,6 +352,7 @@ test('official receipts preserve hosted evidence and defer manual validation', (
     `${JSON.stringify(candidate(), null, 2)}\n`,
   );
   const invalid = receipt(manifestBytes, '24.04', 'deb');
+  invalid.document_workflow = structuredClone(workflowProof);
   for (const key of Object.keys(invalid.automated))
     invalid.automated[key] =
       key === 'performance' ? 'measured_hosted_smoke' : 'pass';
@@ -361,6 +364,7 @@ test('official receipts preserve hosted evidence and defer manual validation', (
     /release validation policy/u,
   );
   const valid = receipt(manifestBytes, '24.04', 'deb', 'deferred_post_release');
+  valid.document_workflow = structuredClone(workflowProof);
   for (const key of Object.keys(valid.automated))
     valid.automated[key] =
       key === 'performance' ? 'measured_hosted_smoke' : 'pass';
@@ -386,14 +390,21 @@ test('official receipts preserve hosted evidence and defer manual validation', (
   ];
   failedReference.performance.startup_p95_ms = 2_600;
   failedReference.performance.startup_classification = 'failure';
+  assert.equal(
+    validateCleanEnvironmentReceipt(failedReference, manifestBytes, contract, {
+      official: true,
+    }),
+    true,
+  );
+  assert.equal(failedReference.performance.startup_classification, 'failure');
+  const exceededHosted = structuredClone(failedReference);
+  exceededHosted.performance.startup_samples_ms = Array(5).fill(10_001);
+  exceededHosted.performance.startup_p95_ms = 10_001;
   assert.throws(
     () =>
-      validateCleanEnvironmentReceipt(
-        failedReference,
-        manifestBytes,
-        contract,
-        { official: true },
-      ),
+      validateCleanEnvironmentReceipt(exceededHosted, manifestBytes, contract, {
+        official: true,
+      }),
     /S018 budget/u,
   );
 });

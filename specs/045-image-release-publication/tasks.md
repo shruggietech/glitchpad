@@ -52,3 +52,14 @@ Within US1, read-only CI and bot inspection may overlap independent platform cam
 ## Implementation strategy
 
 Deliver US1's provenance repair and exact-source qualification first, then publish through the existing tag workflow and independently prove US2. Finish US3 and evidence-only handoff without auto-merging. No unrelated application feature, dependency upgrade, or newly invented manual gate is included.
+
+## Phase 7: Convergence
+
+Qualification found one HIGH partial gap against FR-004/FR-007/SC-001: Linux official mode upgrades unperformed read/edit/save/metadata/recovery rows, and macOS hardcodes the same operations. S021 FR-018 explicitly forbids borrowing separately run source suites as clean-package passes. The following remediation blocks unfinished T008-T015 and publication; the existing tasks remain unchanged.
+
+- [x] T016 Add failing guarded-native, real-bridge failure-injection and receipt-negative cases in crates/glitchpad-host/src/lifecycle_probe.rs, apps/glitchpad/src/domain/package-workflow-probe.test.ts and scripts/{linux,macos}/test-package-lifecycle.test.mjs per FR-004/FR-007 (partial).
+- [x] T017 Implement a one-shot fixed-fixture native begin/complete guard and packaged production-bridge workflow in crates/glitchpad-host/src/lifecycle_probe.rs, crates/glitchpad-host/src/lib.rs, apps/glitchpad/src/domain/package-workflow-probe.ts and apps/glitchpad/src/App.tsx per FR-004/SC-001 (missing).
+- [x] T018 Exercise the separate proof launch in scripts/linux/test-package-lifecycle.mjs and scripts/macos/test-package-lifecycle.mjs, bind actual observed workflow evidence in receipt validators and scripts/assemble-community-release.mjs, and preserve all startup samples/manual limitations per FR-004/FR-007 (partial).
+- [ ] T019 Review the proof internally, run full validation, and requalify the changed exact source before completing T008/T009; record the two external review rounds already used and their earlier source coverage in specs/045-image-release-publication/verification.md per FR-002/FR-008/FR-009 (partial).
+
+- [x] T020 Apply the owner-approved v0.2.0 reference-hardware eligibility amendment in specs/021-linux-packaging/spec.md, scripts/check-linux-package.mjs and scripts/check-linux-package.test.mjs; retain the10000ms hosted gate, actual classifications and #239 per FR-007/SC-004.

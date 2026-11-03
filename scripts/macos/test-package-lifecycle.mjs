@@ -22,6 +22,7 @@ import {
   validateMacosLifecycleEvidence,
 } from '../check-macos-package.mjs';
 import { createStartupJournal, sampleStartup } from './startup-sampler.mjs';
+import { runPackagedDocumentWorkflow } from '../lib/package-document-workflow.mjs';
 
 import {
   collectApplicationInventory,
@@ -449,6 +450,25 @@ async function main() {
       createHash('sha256').update(fixtureBytes).digest('hex')
     )
       throw new Error('fixture_document_modified');
+    const documentWorkflow = await runPackagedDocumentWorkflow({
+      root,
+      originalFixture: fixture,
+      originalBytes: fixtureBytes,
+      launch: async (workflowRoot) => {
+        await command(
+          'open',
+          [
+            '-n',
+            installedApplication,
+            '--args',
+            lifecycleProbeArgument(workflowRoot),
+          ],
+          { timeout: 30000 },
+        );
+        return (await waitForProcess(executable)).pid;
+      },
+      stop: (pid) => cleanupApplication(executable, pid),
+    });
     const { stdout: productVersion } = await command('sw_vers', [
       '-productVersion',
     ]);
@@ -517,6 +537,7 @@ async function main() {
         application_architectures: applicationArchitectures,
         wkwebview_version: wkwebviewVersion.trim(),
       },
+      document_workflow: documentWorkflow,
       automated: Object.fromEntries(
         [
           'mount',

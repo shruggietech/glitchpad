@@ -1,4 +1,8 @@
-import type { PluginListener } from '@tauri-apps/api/core';
+import { addPluginListener, type PluginListener } from '@tauri-apps/api/core';
+vi.mock('@tauri-apps/api/core', async (original) => ({
+  ...(await original<typeof import('@tauri-apps/api/core')>()),
+  addPluginListener: vi.fn(),
+}));
 
 import type { AndroidSourceSummary } from './contracts';
 import { createNativeAndroidDeliveryGateway } from './android-delivery-gateway';
@@ -81,7 +85,7 @@ describe('Android delivery gateway', () => {
     );
     const unregister = vi.fn().mockResolvedValue(undefined);
     const listener: PluginListener = {
-      plugin: 'android-source',
+      plugin: 'glitchpad-android-source',
       event: 'deliveriesReady',
       channelId: 1,
       unregister,
@@ -112,4 +116,33 @@ describe('Android delivery gateway', () => {
       sourceId: 'android-source',
     });
   });
+});
+
+it('registers delivery and committed Back listeners in the generated plugin permission scope', async () => {
+  const unregister = vi.fn().mockResolvedValue(undefined);
+  const register = vi.mocked(addPluginListener);
+  register.mockReset();
+  register.mockResolvedValue({
+    plugin: 'glitchpad-android-source',
+    event: 'deliveriesReady',
+    channelId: 1,
+    unregister,
+  });
+  const gateway = createNativeAndroidDeliveryGateway();
+  const delivered = vi.fn();
+  const back = vi.fn();
+  const disposeDelivery = await gateway.subscribe(delivered);
+  const disposeBack = await gateway.subscribeBack!(back);
+  expect(register.mock.calls[0]).toEqual([
+    'glitchpad-android-source',
+    'deliveriesReady',
+    delivered,
+  ]);
+  expect(register.mock.calls[1][0]).toBe('glitchpad-android-source');
+  expect(register.mock.calls[1][1]).toBe('androidBackRequested');
+  register.mock.calls[1][2]({ requestId: 'committed-back' });
+  expect(back).toHaveBeenCalledExactlyOnceWith('committed-back');
+  disposeDelivery();
+  disposeBack();
+  expect(unregister).toHaveBeenCalledTimes(2);
 });

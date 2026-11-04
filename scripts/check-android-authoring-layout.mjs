@@ -129,7 +129,7 @@ function installNativeSeams() {
           context: { reason: 'picker_cancelled' },
         };
       if (
-        command.startsWith('plugin:android-source|') ||
+        command.startsWith('plugin:glitchpad-android-source|') ||
         [
           'append_diagnostic',
           'persist_preferences',

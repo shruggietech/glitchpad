@@ -88,3 +88,7 @@ The hosted API24 snapshot observes a 300-byte governed Markdown document in Larg
 ## Chrome 69 overlay positioning
 
 Actual API24 geometry exposes the Add document target outside the viewport. Logical inset declarations and max() cannot be the only positioning/target-size authorities for the supported Chromium 69 baseline. Add physical-offset and minimum-size fallbacks in consumer-owned CSS while retaining the pinned generated brand contract and strict geometry assertions.
+
+## Android listener namespace alignment
+
+The API36 campaign exposes delivery fallback polling and missing native Back acknowledgement. The generated ACL manifest names glitchpad-android-source while runtime/frontend event registration names android-source. Verify the exact Tauri command resolver, then align runtime and frontend names with the existing generated permission namespace. Keep the App layer priority and its acknowledgement contract; add a controlled callback regression and retain actual packaged Back proof as a separate requirement. The editing harness must establish real native WebView focus before browser editing and retain strict document-byte assertions.

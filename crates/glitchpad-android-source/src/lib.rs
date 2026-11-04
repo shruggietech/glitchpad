@@ -13,7 +13,7 @@ use tauri::Manager;
 pub use mobile::AndroidSource;
 
 pub fn init<R: Runtime>() -> TauriPlugin<R> {
-    let builder = Builder::new("android-source");
+    let builder = Builder::new(env!("CARGO_PKG_NAME"));
     #[cfg(target_os = "android")]
     let builder = builder.setup(|app, api| {
         app.manage(mobile::init(app, &api)?);

@@ -42,7 +42,8 @@ export const createNativeAndroidDeliveryGateway = (
   call: NativeInvoke = invoke,
   subscribeEvent: (handler: () => void) => Promise<PluginListener> = (
     handler,
-  ) => addPluginListener('android-source', 'deliveriesReady', handler),
+  ) =>
+    addPluginListener('glitchpad-android-source', 'deliveriesReady', handler),
 ): AndroidDeliveryGateway => ({
   async choose() {
     try {
@@ -56,7 +57,7 @@ export const createNativeAndroidDeliveryGateway = (
   },
   async subscribeBack(handler) {
     const listener = await addPluginListener<{ requestId: string }>(
-      'android-source',
+      'glitchpad-android-source',
       'androidBackRequested',
       (value) => handler(value.requestId),
     );

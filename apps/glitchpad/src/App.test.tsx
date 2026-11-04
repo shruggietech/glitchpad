@@ -563,6 +563,47 @@ describe('document foundation shell', () => {
     expect(completeBack).toHaveBeenCalledWith('empty-back', false);
   });
 
+  it('consumes committed native Back at exactly the focused Add document layer', async () => {
+    let back: ((id: string) => void) | undefined;
+    const completeBack = vi.fn().mockResolvedValue(undefined);
+    render(
+      <App
+        sessions={[initialSessions[2]]}
+        androidDeliveryGateway={authoringDelivery({
+          subscribeBack: (handler) => {
+            back = handler;
+            return Promise.resolve(() => undefined);
+          },
+          completeBack,
+        })}
+        recoveryGateway={null}
+      />,
+    );
+    await waitFor(() => expect(back).toBeDefined());
+    const trigger = await screen.findByRole('button', { name: 'Add document' });
+    fireEvent.click(trigger);
+    expect(
+      await screen.findByRole('menu', { name: 'Add document choices' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('menuitem', { name: 'New Markdown' }),
+    ).toHaveFocus();
+    act(() => back?.('add-layer'));
+    expect(
+      screen.queryByRole('menu', { name: 'Add document choices' }),
+    ).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+    expect(
+      screen.getByRole('region', { name: 'notes.txt' }),
+    ).toBeInTheDocument();
+    expect(completeBack).toHaveBeenCalledExactlyOnceWith('add-layer', true);
+    act(() => back?.('document-layer'));
+    expect(
+      screen.queryByRole('region', { name: 'notes.txt' }),
+    ).not.toBeInTheDocument();
+    expect(completeBack).toHaveBeenCalledWith('document-layer', true);
+  });
+
   it('consumes measured IME Back before requesting dirty document close', async () => {
     let back: ((id: string) => void) | undefined;
     const delivery = authoringDelivery({

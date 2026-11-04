@@ -74,3 +74,5 @@ T001-T004 precede implementation. Native contracts/writer (T008-T009/T017) and r
 
 - [x] T027 Correct bounded Android text materialization for native exact-length reads that do not signal EOF; verify completion with bounded lookahead and preserve unknown/large-source limits in domain/android-source tests per FR-001/004/016.
 - [x] T028 Add consumer-owned Chrome 69 physical positioning and target-size fallbacks for the Add document overlay without modifying pinned generated brand assets; retain strict viewport/target/scroll assertions per FR-003/005/017.
+
+- [x] T029 Align the Android event plugin runtime/frontend registration namespace with its generated ACL manifest; verify native listener registration and Add-layer Back acknowledgement without broadening permissions per FR-004/005/015/016.

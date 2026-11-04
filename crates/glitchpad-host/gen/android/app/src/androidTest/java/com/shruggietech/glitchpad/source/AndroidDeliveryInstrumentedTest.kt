@@ -10,7 +10,9 @@ import android.net.Uri
 import android.os.SystemClock
 import android.provider.DocumentsContract
 import android.view.View
+import android.view.InputDevice
 import android.view.KeyEvent
+import android.view.MotionEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import android.content.pm.ActivityInfo
 import android.graphics.Bitmap
@@ -148,8 +150,7 @@ class AndroidDeliveryInstrumentedTest {
     val selector = JSONObject.quote(linkSelector)
     assertEquals("governed external link must open its confirmation", "true", evaluate(scenario, "(()=>{const link=document.querySelector(" + selector + ");if(!link)return false;link.click();return true;})()"))
     waitForBodyText(scenario, "Open external destination?", "https://example.invalid/s046", "Cancel")
-    scenario.onActivity { activity -> requireNotNull(findWebView(activity.window.decorView)).requestFocus() }
-    instrumentation.waitForIdleSync()
+    focusNativeWebView(scenario)
     instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
     waitForCondition(scenario, "(()=>{const surface=document.querySelector('.document-surface');return !document.querySelector('.markdown-link-dialog') && !!surface && surface.id===" + JSONObject.quote(documentId) + " && document.activeElement===document.querySelector(" + selector + ");})()", "native Back must dismiss the link confirmation, retain its document, and restore trigger focus")
     waitForDocumentIdentity(scenario, name)
@@ -378,6 +379,8 @@ class AndroidDeliveryInstrumentedTest {
     waitForCondition(scenario, "!document.querySelector('[aria-label=\"Add document choices\"]') && document.activeElement===document.querySelector('.add-document-trigger')", "Close must restore Add document focus")
     assertAddDocumentReachability(scenario, null)
     clickControl(scenario, "Add document")
+    waitForCondition(scenario, "!!document.querySelector('[aria-label=\"Add document choices\"]')", "Add document must be open before native Back")
+    focusNativeWebView(scenario)
     instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
     waitForCondition(scenario, "!document.querySelector('[aria-label=\"Add document choices\"]') && !!document.querySelector('.app-shell')", "Android Back must dismiss exactly the Add document layer")
     clickControl(scenario, "Add document")
@@ -578,7 +581,7 @@ class AndroidDeliveryInstrumentedTest {
   }
 
   private fun keyboardSave(scenario: ActivityScenario<MainActivity>) {
-    scenario.onActivity { activity -> requireNotNull(findWebView(activity.window.decorView)).requestFocus() }
+    focusNativeWebView(scenario)
     assertEquals("actual editor must hold DOM focus before keyboard Save", "true", evaluate(scenario, "(()=>{const editor=document.querySelector('.cm-content[contenteditable=true]');if(!editor)return false;editor.focus();return document.activeElement===editor;})()"))
     instrumentation.waitForIdleSync()
     val downTime = SystemClock.uptimeMillis()
@@ -586,9 +589,66 @@ class AndroidDeliveryInstrumentedTest {
     instrumentation.sendKeySync(KeyEvent(downTime, SystemClock.uptimeMillis(), KeyEvent.ACTION_UP, KeyEvent.KEYCODE_S, 0, KeyEvent.META_CTRL_ON))
   }
 
+  private fun focusNativeWebView(scenario: ActivityScenario<MainActivity>): JSONObject {
+    scenario.onActivity { activity -> requireNotNull(findWebView(activity.window.decorView)).requestFocus() }
+    instrumentation.waitForIdleSync()
+    val deadline = SystemClock.elapsedRealtime() + 10_000L
+    var latest = JSONObject()
+    while (SystemClock.elapsedRealtime() < deadline) {
+      scenario.onActivity { activity ->
+        val view = requireNotNull(findWebView(activity.window.decorView))
+        latest = JSONObject().put("activity_window_focus", activity.hasWindowFocus()).put("webview_focus", view.hasFocus()).put("webview_window_focus", view.hasWindowFocus()).put("webview_shown", view.isShown)
+      }
+      if (latest.getBoolean("activity_window_focus") && latest.getBoolean("webview_focus") && latest.getBoolean("webview_window_focus") && latest.getBoolean("webview_shown")) return latest
+      SystemClock.sleep(100L)
+    }
+    throw AssertionError("the actual app WebView must own native input focus before input: " + latest)
+  }
+
   private fun replaceEditorText(scenario: ActivityScenario<MainActivity>, text: String) {
     waitForCondition(scenario, "!!document.querySelector('.cm-content[contenteditable=true]')", "draft must expose the actual editable surface")
-    assertEquals("browser editing must insert actual document content", "true", evaluate(scenario, "(()=>{const editor=document.querySelector('.cm-content[contenteditable=true]');editor.focus();document.execCommand('selectAll',false,null);return document.execCommand('insertText',false," + JSONObject.quote(text) + ");})()"))
+    val nativeFocus = focusNativeWebView(scenario)
+    val target = JSONObject(evaluate(scenario, """
+      (()=>{
+        const editor=document.querySelector('.cm-content[contenteditable=true]');
+        editor.scrollIntoView({block:'nearest',inline:'nearest'});
+        const rect=editor.getBoundingClientRect();
+        const viewport=window.visualViewport;
+        const left=viewport?viewport.offsetLeft:0;
+        const top=viewport?viewport.offsetTop:0;
+        const width=viewport?viewport.width:window.innerWidth;
+        const height=viewport?viewport.height:window.innerHeight;
+        const visible={left:Math.max(rect.left,left),right:Math.min(rect.right,left+width),top:Math.max(rect.top,top),bottom:Math.min(rect.bottom,top+height)};
+        return {x:visible.left-left+Math.min(16,(visible.right-visible.left)/2),y:visible.top-top+Math.min(16,(visible.bottom-visible.top)/2),viewport_width:width,visible_width:visible.right-visible.left,visible_height:visible.bottom-visible.top};
+      })()
+    """.trimIndent()))
+    assertTrue("the native edit tap must target visible editor content: " + target, target.getDouble("visible_width") > 0 && target.getDouble("visible_height") > 0)
+    val point = FloatArray(2)
+    scenario.onActivity { activity ->
+      val view = requireNotNull(findWebView(activity.window.decorView))
+      val location = IntArray(2)
+      view.getLocationOnScreen(location)
+      val scale = view.width / target.getDouble("viewport_width")
+      point[0] = (location[0] + target.getDouble("x") * scale).toFloat()
+      point[1] = (location[1] + target.getDouble("y") * scale).toFloat()
+    }
+    val downTime = SystemClock.uptimeMillis()
+    val down = MotionEvent.obtain(downTime, downTime, MotionEvent.ACTION_DOWN, point[0], point[1], 0)
+    val up = MotionEvent.obtain(downTime, SystemClock.uptimeMillis(), MotionEvent.ACTION_UP, point[0], point[1], 0)
+    try {
+      down.source = InputDevice.SOURCE_TOUCHSCREEN
+      up.source = InputDevice.SOURCE_TOUCHSCREEN
+      instrumentation.sendPointerSync(down)
+      instrumentation.sendPointerSync(up)
+    } finally { down.recycle(); up.recycle() }
+    instrumentation.waitForIdleSync()
+    waitForCondition(scenario, "document.hasFocus() && document.activeElement===document.querySelector('.cm-content[contenteditable=true]')", "the actual editor must own browser focus after a native touch before editing")
+    val edit = JSONObject(evaluate(scenario, "(()=>{const editor=document.querySelector('.cm-content[contenteditable=true]');const before={document_focus:document.hasFocus(),editor_focus:document.activeElement===editor,insert_supported:document.queryCommandSupported('insertText'),insert_enabled:document.queryCommandEnabled('insertText'),user_activation:navigator.userActivation?navigator.userActivation.isActive:null};const selected=document.execCommand('selectAll',false,null);const inserted=document.execCommand('insertText',false," + JSONObject.quote(text) + ");return {before,selected,inserted,editor_focus:document.activeElement===editor};})()"))
+    println("native_editor_input=" + JSONObject().put("api_level", Build.VERSION.SDK_INT).put("native_focus", nativeFocus).put("browser_edit", edit).toString())
+    System.out.flush()
+    assertTrue("browser editing must insert actual document content: " + edit, edit.getBoolean("inserted"))
+    val expected = JSONObject.quote(text)
+    waitForCondition(scenario, "(()=>{const editor=document.querySelector('.cm-content[contenteditable=true]');return !!editor && Array.from(editor.querySelectorAll(':scope > .cm-line')).map(line=>line.textContent).join('\\n')===" + expected + ";})()", "the actual editor must display every inserted character and line")
     waitForBodyText(scenario, text.lineSequence().first())
   }
 

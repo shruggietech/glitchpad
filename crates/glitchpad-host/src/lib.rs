@@ -471,6 +471,42 @@ mod tests {
     }
 
     #[test]
+    fn native_android_listener_commands_match_the_runtime_plugin_acl() {
+        use std::collections::BTreeMap;
+        use tauri::plugin::Plugin as _;
+        use tauri::utils::acl::{capability::Capability, manifest::Manifest, resolved::Resolved};
+
+        let manifests: BTreeMap<String, Manifest> =
+            serde_json::from_str(include_str!("../gen/schemas/acl-manifests.json"))
+                .expect("generated plugin manifests parse");
+        let capabilities: BTreeMap<String, Capability> =
+            serde_json::from_str(include_str!("../gen/schemas/capabilities.json"))
+                .expect("generated capabilities parse");
+        let acl = Resolved::resolve(
+            &manifests,
+            capabilities,
+            tauri::utils::platform::Target::Android,
+        )
+        .expect("Android capabilities resolve");
+        let plugin = glitchpad_android_source::init::<tauri::Wry>();
+        let name = plugin.name();
+        for command in ["register_listener", "remove_listener"] {
+            let qualified = format!("plugin:{name}|{command}");
+            assert!(
+                acl.allowed_commands.contains_key(&qualified),
+                "runtime listener command {qualified} must be granted by the generated Android ACL"
+            );
+        }
+        let prefix = format!("plugin:{name}|");
+        let private_commands = acl
+            .allowed_commands
+            .keys()
+            .filter(|command| command.starts_with(&prefix))
+            .count();
+        assert_eq!(private_commands, 2);
+    }
+
+    #[test]
     fn unavailable_recovery_storage_degrades_to_a_safe_command_error() {
         let state = RecoveryHostState::unavailable(recovery_unavailable());
         let Err(error) = state.store() else {

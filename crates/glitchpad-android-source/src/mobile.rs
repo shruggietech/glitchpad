@@ -225,9 +225,13 @@ impl<R: Runtime> AndroidSource<R> {
     /// Returns a bridge failure when the environment query is unavailable.
     pub fn diagnostic_environment(
         &self,
+        include_viewport: bool,
     ) -> Result<crate::models::AndroidDiagnosticEnvironment, String> {
         self.0
-            .run_mobile_plugin("diagnosticEnvironment", ())
+            .run_mobile_plugin(
+                "diagnosticEnvironment",
+                crate::models::DiagnosticEnvironmentRequest { include_viewport },
+            )
             .map_err(|error| error.to_string())
     }
 

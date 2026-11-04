@@ -115,3 +115,7 @@ T001-T004 precede implementation. Native contracts/writer (T008-T009/T017) and r
 - [x] T048 Use owner-verified UiAutomation Back DOWN/UP only for intentional system document-picker and Share cancellation in AndroidDeliveryInstrumentedTest.kt; preserve app-owned Back, one chooser, native return/cancel/preview/source checks and existing deadlines, with bounded failure facts and focused policy/SDK verification per FR-005/008/013/016.
 
 - [x] T049 Make external picker/Share cancellation observe actual IME and window layers in AndroidDeliveryInstrumentedTest.kt, use at most one Back pair per observed layer with verified ownership and one existing absolute return deadline, reuse native window observations and preserve cancel/source/preview/count assertions per FR-005/008/013/016.
+
+## Phase 12: Convergence
+
+- [x] T050 Fit the diagnostic sheet to actual native-visible WebView bounds through the existing optional diagnostic environment read and asynchronous host scheduling, preserve frozen payload identity and inset ownership, correct local stacking, and prove all controls plus first/final preview lines remain reachable across scaled/short/rotated layouts and fresh APK journeys per FR-013/014/016/017 (partial, HIGH F3).

@@ -1,6 +1,10 @@
 import { pickerCancelled } from './android-authoring-gateway';
 import { recordFailure, collectFailureEvents } from './diagnostic-failures';
 import { invoke } from '@tauri-apps/api/core';
+import {
+  diagnosticViewport,
+  type DiagnosticViewport,
+} from './diagnostic-viewport';
 
 import type {
   AppStateCategory,
@@ -32,6 +36,7 @@ export type DiagnosticExportResult = {
 export interface DiagnosticExportGateway {
   export: (bundle: DiagnosticBundle) => Promise<DiagnosticExportResult | void>;
   share?: (bundle: DiagnosticBundle) => Promise<DiagnosticExportResult>;
+  viewport?: () => Promise<DiagnosticViewport | null>;
 }
 
 export const nativePersistenceAvailable = (): boolean =>
@@ -72,6 +77,13 @@ export const browserDiagnosticExportGateway: DiagnosticExportGateway = {
 export const createAndroidDiagnosticExportGateway = (
   call: typeof invoke = invoke,
 ): DiagnosticExportGateway => ({
+  async viewport() {
+    const runtime = await call<{ viewport?: unknown }>(
+      'android_diagnostic_environment',
+      { includeViewport: true },
+    );
+    return diagnosticViewport(runtime?.viewport);
+  },
   async export(bundle) {
     const bytes = [
       ...new TextEncoder().encode(JSON.stringify(bundle, null, 2)),
@@ -137,7 +149,16 @@ export const enrichDiagnosticPreview = async (
       webview_version:
         runtime?.webview_version ?? bundle.environment.webview_version,
     },
-    ...(runtime ? { native_environment: runtime } : {}),
+    ...(runtime
+      ? {
+          native_environment: {
+            android_version: runtime.android_version,
+            api_level: runtime.api_level,
+            webview_version: runtime.webview_version,
+            webview_package: runtime.webview_package,
+          },
+        }
+      : {}),
     events: [...bundle.events, ...events],
   };
 };

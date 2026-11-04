@@ -66,6 +66,73 @@ export function assertAuthoringMeasurement(measurement) {
   );
 }
 
+export function assertDiagnosticMeasurement(measurement) {
+  assert.equal(
+    measurement.inactiveAddInvisible,
+    true,
+    'Inactive Add chrome must be hidden, not painted above diagnostic controls',
+  );
+  assert.ok(
+    measurement.addReservedHeight > 0,
+    'Hidden inactive Add chrome must retain its mounted geometry measurement',
+  );
+  assert.equal(
+    measurement.frameCount,
+    1,
+    'Diagnostics must retain one AppFrame',
+  );
+  assert.equal(
+    measurement.actions.length,
+    4,
+    'Every diagnostic control must be measured',
+  );
+  for (const action of measurement.actions) {
+    assert.ok(
+      action.width >= 44 - tolerance && action.height >= 44 - tolerance,
+      action.label + ' must retain its touch target',
+    );
+    assert.ok(
+      action.left >= measurement.visible.left - tolerance &&
+        action.right <= measurement.visible.right + tolerance &&
+        action.top >= measurement.visible.top - tolerance &&
+        action.bottom <= measurement.visible.bottom + tolerance,
+      action.label +
+        ' must be fully inside the actual modeled native visible frame',
+    );
+    assert.equal(
+      action.hit,
+      true,
+      action.label + ' must receive input after ordinary local scrolling',
+    );
+  }
+  assert.equal(
+    measurement.previewUnchanged,
+    true,
+    'Geometry and scrolling must retain the exact frozen preview',
+  );
+  for (const endpoint of measurement.preview) {
+    assert.equal(endpoint.character, endpoint.end === 'first' ? '{' : '}');
+    assert.ok(
+      endpoint.top >= measurement.visible.top &&
+        endpoint.bottom <= measurement.visible.bottom &&
+        endpoint.top >= endpoint.clipTop &&
+        endpoint.bottom <= endpoint.clipBottom,
+      endpoint.end +
+        ' JSON line must be completely readable after real inner and outer scrolling',
+    );
+    assert.equal(
+      endpoint.hit,
+      true,
+      endpoint.end + ' JSON line must remain unobscured',
+    );
+  }
+  assert.equal(
+    measurement.remainingBottom,
+    measurement.expectedRemainingBottom,
+    'Already applied safe insets must not be duplicated',
+  );
+}
+
 function installNativeSeams() {
   let callbackId = 0;
   const callbacks = new Map();
@@ -98,6 +165,45 @@ function installNativeSeams() {
     },
     async invoke(command, args = {}) {
       calls.push(command);
+      if (command === 'preview_diagnostics')
+        return {
+          status: 'loaded',
+          warning_code: null,
+          value: {
+            schema_version: 1,
+            generated_unix_ms: 1,
+            environment: {
+              product_version: '0.2.0',
+              specification_version: '1',
+              platform: 'android',
+              architecture: 'x86_64',
+              webview_version: '131',
+              core_version: '0.2.0',
+              build_commit: 'a'.repeat(40),
+            },
+            events: Array.from({ length: 12 }, (_, index) => ({
+              event_id: 'task_failed',
+              unix_ms: index,
+              environment: { platform: 'android' },
+              failure: {
+                component: 'markdown',
+                stage: 'parse',
+                reason: 'markdown_parse_failed',
+                correlation_id: 'a'.repeat(32),
+              },
+            })),
+          },
+        };
+      if (command === 'android_diagnostic_environment')
+        return {
+          android_version: '16',
+          api_level: 36,
+          webview_version: '131',
+          webview_package: 'com.android.webview',
+          ...(args.includeViewport
+            ? { viewport: window.__diagnosticNativeViewport ?? null }
+            : {}),
+        };
       if (command === 'load_preferences')
         return { status: 'defaulted', warning_code: null, value: preferences };
       if (command === 'load_session_state')
@@ -145,6 +251,102 @@ function installNativeSeams() {
         context: { reason: 'provider_unavailable' },
       };
     },
+  };
+}
+
+async function measureDiagnostics(page, expectedRemainingBottom) {
+  const before = await page.$eval(
+    '.diagnostic-preview',
+    (node) => node.textContent,
+  );
+  const visible = await page.evaluate(() => window.__diagnosticVisibleFrame);
+  const actions = [];
+  for (const label of [
+    'Close diagnostics',
+    'Save previewed bundle',
+    'Share previewed bundle',
+    'Clear diagnostics',
+  ]) {
+    actions.push(
+      await page.evaluate((label) => {
+        const button = Array.from(
+          document.querySelectorAll('.diagnostics-sheet button'),
+        ).find((node) => node.textContent.trim() === label);
+        const panel = button.closest('.diagnostics-sheet');
+        panel.scrollTop = 0;
+        button.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        const rect = button.getBoundingClientRect();
+        const hit = document.elementFromPoint(
+          (rect.left + rect.right) / 2,
+          (rect.top + rect.bottom) / 2,
+        );
+        return {
+          label,
+          ...rect.toJSON(),
+          hit: hit === button || button.contains(hit),
+        };
+      }, label),
+    );
+  }
+  const preview = [];
+  for (const end of ['first', 'last']) {
+    preview.push(
+      await page.evaluate((end) => {
+        const pre = document.querySelector('.diagnostic-preview');
+        pre.scrollTop = end === 'first' ? 0 : pre.scrollHeight;
+        pre.scrollIntoView({ block: 'center', inline: 'nearest' });
+        const text = pre.firstChild;
+        const from = end === 'first' ? 0 : text.textContent.length - 1;
+        const range = document.createRange();
+        range.setStart(text, from);
+        range.setEnd(text, from + 1);
+        const rect = range.getBoundingClientRect();
+        const clip = pre.getBoundingClientRect();
+        const panel = pre.closest('.diagnostics-sheet').getBoundingClientRect();
+        const hit = document.elementFromPoint(
+          (rect.left + rect.right) / 2,
+          (rect.top + rect.bottom) / 2,
+        );
+        return {
+          end,
+          character: text.textContent.slice(from, from + 1),
+          ...rect.toJSON(),
+          clipTop: Math.max(clip.top, panel.top),
+          clipBottom: Math.min(clip.bottom, panel.bottom),
+          hit: hit === pre || pre.contains(hit),
+          innerScrollTop: pre.scrollTop,
+          outerScrollTop: pre.closest('.diagnostics-sheet').scrollTop,
+        };
+      }, end),
+    );
+  }
+  return {
+    visible,
+    actions,
+    preview,
+    previewUnchanged:
+      before ===
+      (await page.$eval('.diagnostic-preview', (node) => node.textContent)),
+    previewSha256: createHash('sha256').update(before).digest('hex'),
+    frameCount: await page.$$eval(
+      '[data-bb-app-frame]',
+      (nodes) => nodes.length,
+    ),
+    remainingBottom: await page.$eval('.diagnostics-sheet', (node) =>
+      Number.parseFloat(
+        node.style.getPropertyValue('--gl-diagnostic-block-end'),
+      ),
+    ),
+    expectedRemainingBottom,
+    ...(await page.evaluate(() => {
+      const add = document.querySelector('[data-add-document]');
+      const trigger = document.querySelector('.add-document-trigger');
+      return {
+        inactiveAddInvisible:
+          trigger.disabled && getComputedStyle(add).visibility === 'hidden',
+        addReservedHeight: trigger.getBoundingClientRect().height,
+      };
+    })),
   };
 }
 
@@ -320,6 +522,7 @@ export async function checkAndroidAuthoringLayout({
   let browser;
   const cases = [];
   const failures = [];
+  const diagnosticCases = [];
   const audit = (profile, textScale, stage, measurement) => {
     try {
       assertAuthoringMeasurement(measurement);
@@ -500,6 +703,187 @@ export async function checkAndroidAuthoringLayout({
         }
       }
     }
+    for (const profile of [
+      { width: 320, height: 640 },
+      { width: 480, height: 240 },
+      { width: 640, height: 360 },
+    ]) {
+      for (const textScale of [1, 2])
+        for (const alreadyConsumed of [false, true]) {
+          const page = await browser.newPage();
+          try {
+            const errors = [];
+            page.on('pageerror', (error) => errors.push(error.message));
+            await page.setViewport({
+              ...profile,
+              height: alreadyConsumed ? profile.height - 48 : profile.height,
+              deviceScaleFactor: 1,
+              isMobile: true,
+              hasTouch: true,
+            });
+            await page.setUserAgent(
+              'Mozilla/5.0 (Linux; Android 16) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Mobile Safari/537.36',
+            );
+            await page.evaluateOnNewDocument(installNativeSeams);
+            await page.goto(origin, { waitUntil: 'load' });
+            await page.waitForSelector('.application-menu-trigger');
+            await page.evaluate(
+              ({ scale, consumed }) => {
+                document.documentElement.style.fontSize = scale * 100 + '%';
+                document.documentElement.style.setProperty(
+                  '--bb-host-titlebar-block-end',
+                  '48px',
+                );
+
+                // Fixed observations reproduce the actual API36 safe frame; production supplies live native rectangles.
+                const width = window.innerWidth * 2,
+                  height = window.innerHeight * 2;
+                window.__diagnosticVisibleFrame = {
+                  left: 0,
+                  top: 48,
+                  right: window.innerWidth,
+                  bottom: consumed
+                    ? window.innerHeight
+                    : window.innerHeight - 48,
+                };
+                window.__diagnosticNativeViewport = {
+                  webview_screen: {
+                    left: 17,
+                    top: 29,
+                    right: 17 + width,
+                    bottom: 29 + height,
+                  },
+                  visible_screen: {
+                    left: 17,
+                    top: 29 + 96,
+                    right: 17 + width,
+                    bottom: 29 + height - (consumed ? 0 : 96),
+                  },
+                  view_width: width,
+                  view_height: height,
+                  density: 2,
+                };
+              },
+              { scale: textScale, consumed: alreadyConsumed },
+            );
+            const layerCase =
+              profile.width === 320 &&
+              profile.height === 640 &&
+              textScale === 1 &&
+              !alreadyConsumed;
+            if (layerCase) {
+              await page.click('.add-document-trigger');
+              await clickChoice(page, 'New text file');
+              await page.waitForSelector('.cm-content[contenteditable="true"]');
+              await page.click('.cm-content');
+              await page.keyboard.type('S046_LAYER_FIXTURE');
+            }
+            await page.click('.application-menu-trigger');
+            await page.evaluate(() =>
+              Array.from(document.querySelectorAll('.application-menu button'))
+                .find((node) => node.textContent.trim() === 'Diagnostics')
+                .click(),
+            );
+            await page.waitForSelector('.diagnostic-preview');
+            await page.waitForSelector(
+              '.diagnostics-sheet[data-native-viewport="true"]',
+            );
+            const measured = await measureDiagnostics(
+              page,
+              alreadyConsumed ? 0 : 48,
+            );
+            try {
+              assertDiagnosticMeasurement(measured);
+            } catch (error) {
+              failures.push({
+                profile: profile.width + 'x' + profile.height,
+                text_scale: textScale,
+                stage: 'diagnostics_consumed_' + alreadyConsumed,
+                message: error.message,
+                measurement: measured,
+              });
+            }
+            assert.deepEqual(
+              errors,
+              [],
+              'The actual diagnostic flow must not throw',
+            );
+            if (layerCase) {
+              await page.$eval('.diagnostics-sheet', (sheet) =>
+                sheet.dispatchEvent(
+                  new KeyboardEvent('keydown', {
+                    key: 'w',
+                    ctrlKey: true,
+                    bubbles: true,
+                  }),
+                ),
+              );
+              await page.waitForSelector('.resolution-dialog');
+              const modal = await page.evaluate(() => {
+                const dialog = document.querySelector('.resolution-dialog');
+                const button = Array.from(
+                  dialog.querySelectorAll('button'),
+                ).find((node) => node.textContent.trim() === 'Cancel');
+                const rect = button.getBoundingClientRect();
+                const hit = document.elementFromPoint(
+                  (rect.left + rect.right) / 2,
+                  (rect.top + rect.bottom) / 2,
+                );
+                return {
+                  hit: hit === button || button.contains(hit),
+                  diagnosticsMounted:
+                    !!document.querySelector('.diagnostics-sheet'),
+                  title: dialog.querySelector('h2').textContent,
+                };
+              });
+              assert.equal(modal.diagnosticsMounted, true);
+              assert.equal(
+                modal.hit,
+                true,
+                'Actual dirty-close modal must remain above Diagnostics',
+              );
+              await page.evaluate(() =>
+                Array.from(
+                  document.querySelectorAll('.resolution-dialog button'),
+                )
+                  .find((node) => node.textContent.trim() === 'Cancel')
+                  .click(),
+              );
+              await page.waitForFunction(
+                () => !document.querySelector('.resolution-dialog'),
+              );
+              measured.modalPriority = modal;
+            }
+            await page.evaluate(() =>
+              Array.from(document.querySelectorAll('.diagnostics-sheet button'))
+                .find((node) => node.textContent.trim() === 'Close diagnostics')
+                .click(),
+            );
+            await page.waitForFunction(
+              () => !document.querySelector('.diagnostics-sheet'),
+            );
+            assert.equal(
+              await page.$eval(
+                '.add-document-trigger',
+                (trigger) =>
+                  !trigger.disabled &&
+                  getComputedStyle(trigger).visibility === 'visible' &&
+                  trigger.getBoundingClientRect().height > 0,
+              ),
+              true,
+              'Closing Diagnostics must restore visible mounted Add chrome',
+            );
+            diagnosticCases.push({
+              profile,
+              text_scale: textScale,
+              native_inset_already_consumed: alreadyConsumed,
+              ...measured,
+            });
+          } finally {
+            await page.close();
+          }
+        }
+    }
     const receipt = {
       schema_version: 1,
       status: failures.length ? 'failed' : 'passed',
@@ -513,8 +897,10 @@ export async function checkAndroidAuthoringLayout({
         'Tauri storage, picker cancellation, and listener seams only; no synthetic application markup',
       limits: [
         'Root font scaling and viewport contraction supplement Android qualification; they do not prove Android WebView textZoom, native IME, system insets, native Back, or APK behavior.',
+        'Diagnostic visible-frame rectangles model the retained API36 observation with synthetic native identity/preview payloads; native input predicates and APK proof remain independent.',
       ],
       cases,
+      diagnostic_cases: diagnosticCases,
     };
     if (receiptPath) {
       await mkdir(dirname(receiptPath), { recursive: true });

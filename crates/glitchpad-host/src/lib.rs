@@ -698,10 +698,15 @@ async fn share_diagnostics(
 
 #[cfg(target_os = "android")]
 #[tauri::command]
-fn android_diagnostic_environment(
-    host: tauri::State<'_, android_source::AndroidSourceHost>,
+async fn android_diagnostic_environment(
+    app: tauri::AppHandle,
+    include_viewport: Option<bool>,
 ) -> Result<serde_json::Value, glitchpad_core::contracts::CoreError> {
-    host.diagnostic_environment()
+    android_interactive::run(move || {
+        app.state::<android_source::AndroidSourceHost>()
+            .diagnostic_environment(include_viewport.unwrap_or(false))
+    })
+    .await
 }
 
 #[cfg(target_os = "android")]

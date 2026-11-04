@@ -137,6 +137,31 @@ pub struct DiagnosticShareResponse {
     pub status: String,
 }
 
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DiagnosticEnvironmentRequest {
+    pub include_viewport: bool,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AndroidViewportRect {
+    pub left: i32,
+    pub top: i32,
+    pub right: i32,
+    pub bottom: i32,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AndroidDiagnosticViewport {
+    pub webview_screen: AndroidViewportRect,
+    pub visible_screen: AndroidViewportRect,
+    pub view_width: u32,
+    pub view_height: u32,
+    pub density: f64,
+}
+
 #[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AndroidDiagnosticEnvironment {
@@ -144,6 +169,8 @@ pub struct AndroidDiagnosticEnvironment {
     pub api_level: u32,
     pub webview_version: Option<String>,
     pub webview_package: Option<String>,
+    #[serde(default)]
+    pub viewport: Option<AndroidDiagnosticViewport>,
 }
 
 #[derive(Clone, Debug, Serialize)]

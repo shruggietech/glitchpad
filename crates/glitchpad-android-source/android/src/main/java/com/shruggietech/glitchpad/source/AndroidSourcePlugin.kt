@@ -505,9 +505,32 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
 
   @Command
   fun diagnosticEnvironment(invoke: Invoke) {
-    val webview = runCatching { WebViewCompat.getCurrentWebViewPackage(activity) }.getOrNull()
-    invoke.resolve(JSObject().put("androidVersion", Build.VERSION.RELEASE.take(64)).put("apiLevel", Build.VERSION.SDK_INT)
-      .put("webviewVersion", webview?.versionName?.take(128)).put("webviewPackage", webview?.packageName?.take(128)))
+    val args = invoke.parseArgs(DiagnosticEnvironmentArgs::class.java)
+    activity.runOnUiThread {
+      val webview = runCatching { WebViewCompat.getCurrentWebViewPackage(activity) }.getOrNull()
+      val response = JSObject().put("androidVersion", Build.VERSION.RELEASE.take(64)).put("apiLevel", Build.VERSION.SDK_INT)
+        .put("webviewVersion", webview?.versionName?.take(128)).put("webviewPackage", webview?.packageName?.take(128))
+      if (args.includeViewport) response.put("viewport", runCatching { diagnosticViewportSnapshot() }.getOrNull() ?: org.json.JSONObject.NULL)
+      invoke.resolve(response)
+    }
+  }
+
+  private fun diagnosticViewportSnapshot(): JSObject? {
+    val view = deliveryWebView ?: return null
+    if (!view.isAttachedToWindow || !view.isShown || view.windowVisibility != android.view.View.VISIBLE) return null
+    val location = IntArray(2)
+    view.getLocationOnScreen(location)
+    val local = android.graphics.Rect()
+    if (!view.getLocalVisibleRect(local)) return null
+    val window = android.graphics.Rect()
+    view.getWindowVisibleDisplayFrame(window)
+    val observed = DiagnosticViewportGeometry.snapshot(location[0], location[1], view.width, view.height, view.scrollX, view.scrollY,
+      DiagnosticPixelRect(local.left, local.top, local.right, local.bottom),
+      DiagnosticPixelRect(window.left, window.top, window.right, window.bottom), view.resources.displayMetrics.density) ?: return null
+    fun rectangle(value: DiagnosticPixelRect): JSObject = JSObject().put("left", value.left).put("top", value.top)
+      .put("right", value.right).put("bottom", value.bottom)
+    return JSObject().put("webviewScreen", rectangle(observed.webviewScreen)).put("visibleScreen", rectangle(observed.visibleScreen))
+      .put("viewWidth", observed.viewWidth).put("viewHeight", observed.viewHeight).put("density", observed.density.toDouble())
   }
 
   @Command

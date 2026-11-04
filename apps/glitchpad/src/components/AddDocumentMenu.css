@@ -13,6 +13,9 @@
   max-block-size: calc(100% - var(--bb-spacing-component));
   pointer-events: auto;
 }
+.add-document[data-disabled='true'] {
+  visibility: hidden;
+}
 .add-document-menu {
   display: grid;
   flex: 1 1 auto;

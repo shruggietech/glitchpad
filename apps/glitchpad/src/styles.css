@@ -982,6 +982,29 @@ button:focus-visible,
   box-shadow: -0.75rem 0 2rem #0008;
 }
 
+/* A local sheet stays above shell and Add chrome; AppFrame retains platform inset ownership. */
+.diagnostics-sheet {
+  z-index: 9;
+}
+.diagnostics-sheet .application-sheet-header {
+  flex-wrap: wrap;
+}
+.diagnostics-sheet .application-sheet-header > div {
+  min-width: 0;
+  max-width: 100%;
+}
+.diagnostics-sheet .application-sheet-header > button {
+  flex: 0 0 auto;
+  max-width: 100%;
+}
+.diagnostics-sheet[data-native-viewport='true'] {
+  top: auto;
+  right: var(--gl-diagnostic-inline-end);
+  bottom: var(--gl-diagnostic-block-end);
+  height: var(--gl-diagnostic-block-size);
+  max-width: var(--gl-diagnostic-inline-size);
+}
+
 .application-sheet-header {
   display: flex;
   align-items: flex-start;
@@ -1493,4 +1516,14 @@ button:focus-visible,
   }
 }
 
-.command-result { position:absolute; z-index:9; inset-block-start:var(--shell-row-height); inset-inline:var(--bb-spacing-control-block); padding:var(--bb-spacing-control-block); border:var(--bb-border-default) solid var(--gl-border); background:var(--gl-panel-raised); color:var(--gl-fg); overflow-wrap:anywhere; }
+.command-result {
+  position: absolute;
+  z-index: 9;
+  inset-block-start: var(--shell-row-height);
+  inset-inline: var(--bb-spacing-control-block);
+  padding: var(--bb-spacing-control-block);
+  border: var(--bb-border-default) solid var(--gl-border);
+  background: var(--gl-panel-raised);
+  color: var(--gl-fg);
+  overflow-wrap: anywhere;
+}

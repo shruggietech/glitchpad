@@ -35,7 +35,11 @@ describe('DiagnosticsPanel', () => {
     fireEvent.click(
       screen.getByRole('button', { name: 'Export previewed bundle' }),
     );
-    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Download requested'));
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Download requested',
+      ),
+    );
     expect(exporter.export).toHaveBeenCalledWith(bundle);
   });
 
@@ -95,5 +99,34 @@ it('retains immutable preview and truthful outcome after cancellation or failed 
     expect(screen.getByRole('status')).toHaveTextContent(
       'Recipient delivery is unconfirmed.',
     ),
+  );
+});
+
+it('keeps the frozen export payload identical while live native viewport observations refresh', async () => {
+  const viewport = vi.fn().mockResolvedValue(null);
+  const exporter = {
+    export: vi.fn().mockResolvedValue({ status: 'saved' }),
+    viewport,
+  };
+  render(
+    <DiagnosticsPanel
+      load={() => Promise.resolve(bundle)}
+      exporter={exporter}
+      onReset={vi.fn()}
+      onClose={vi.fn()}
+    />,
+  );
+  const preview = await screen.findByText(/"generated_unix_ms": 42/u);
+  const exact = preview.textContent;
+  await waitFor(() => expect(viewport).toHaveBeenCalledOnce());
+  fireEvent(window, new Event('resize'));
+  await waitFor(() => expect(viewport).toHaveBeenCalledTimes(2));
+  expect(preview.textContent).toBe(exact);
+  fireEvent.click(
+    screen.getByRole('button', { name: 'Export previewed bundle' }),
+  );
+  await waitFor(() => expect(exporter.export).toHaveBeenCalledWith(bundle));
+  expect(JSON.stringify(exporter.export.mock.calls[0])).not.toContain(
+    'viewport',
   );
 });

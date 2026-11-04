@@ -95,6 +95,9 @@ internal data class NativeStream(
 }
 
 @InvokeArg
+class DiagnosticEnvironmentArgs { var includeViewport: Boolean = false }
+
+@InvokeArg
 class DiagnosticShareArgs { lateinit var json: String }
 
 @InvokeArg

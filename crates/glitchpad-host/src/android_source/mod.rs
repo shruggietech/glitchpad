@@ -1337,17 +1337,18 @@ impl AndroidSourceHost {
     }
 
     #[cfg(target_os = "android")]
-    pub fn diagnostic_environment(&self) -> Result<serde_json::Value, CoreError> {
+    pub fn diagnostic_environment(
+        &self,
+        include_viewport: bool,
+    ) -> Result<serde_json::Value, CoreError> {
         let environment = self
             .plugin
-            .diagnostic_environment()
+            .diagnostic_environment(include_viewport)
             .map_err(|error| plugin_error(&error))?;
-        Ok(serde_json::json!({
-            "android_version": environment.android_version,
-            "api_level": environment.api_level,
-            "webview_version": environment.webview_version,
-            "webview_package": environment.webview_package,
-        }))
+        Ok(diagnostic_environment_response(
+            environment,
+            include_viewport,
+        ))
     }
 
     #[cfg(target_os = "android")]
@@ -1596,6 +1597,48 @@ fn safe_error(category: CoreErrorCategory, summary: &'static str, retryable: boo
 }
 
 #[cfg(any(target_os = "android", test))]
+fn diagnostic_environment_response(
+    environment: glitchpad_android_source::models::AndroidDiagnosticEnvironment,
+    include_viewport: bool,
+) -> serde_json::Value {
+    let mut response = serde_json::json!({
+        "android_version": environment.android_version,
+        "api_level": environment.api_level,
+        "webview_version": environment.webview_version,
+        "webview_package": environment.webview_package,
+    });
+    if include_viewport {
+        let viewport = environment.viewport.filter(|value| {
+            let view = &value.webview_screen;
+            let visible = &value.visible_screen;
+            value.view_width > 0
+                && value.view_height > 0
+                && i64::from(view.right) - i64::from(view.left) == i64::from(value.view_width)
+                && i64::from(view.bottom) - i64::from(view.top) == i64::from(value.view_height)
+                && visible.left < visible.right
+                && visible.top < visible.bottom
+                && visible.left >= view.left
+                && visible.top >= view.top
+                && visible.right <= view.right
+                && visible.bottom <= view.bottom
+                && value.density.is_finite()
+                && value.density > 0.0
+        });
+        let rectangle = |value: &glitchpad_android_source::models::AndroidViewportRect| {
+            serde_json::json!({
+                "left": value.left, "top": value.top, "right": value.right, "bottom": value.bottom,
+            })
+        };
+        response["viewport"] = viewport.map_or(serde_json::Value::Null, |value| serde_json::json!({
+            "webview_screen": rectangle(&value.webview_screen),
+            "visible_screen": rectangle(&value.visible_screen),
+            "view_width": value.view_width, "view_height": value.view_height, "density": value.density,
+        }));
+    }
+    response
+}
+
+#[cfg(any(target_os = "android", test))]
 fn validate_diagnostic_share(json: &str) -> Result<(), CoreError> {
     if json.len() > glitchpad_core::persistence::MAX_DIAGNOSTIC_BYTES {
         return Err(safe_error(
@@ -1691,6 +1734,83 @@ fn revalidation_failure_status(error: &str) -> RevalidationStatus {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn observed_diagnostic_environment()
+    -> glitchpad_android_source::models::AndroidDiagnosticEnvironment {
+        serde_json::from_value(serde_json::json!({
+            "androidVersion": "16", "apiLevel": 36,
+            "webviewVersion": "142.0", "webviewPackage": "com.android.webview",
+            "viewport": {
+                "webviewScreen": {"left": 120, "top": 80, "right": 440, "bottom": 720},
+                "visibleScreen": {"left": 130, "top": 128, "right": 430, "bottom": 672},
+                "viewWidth": 320, "viewHeight": 640, "density": 2.5
+            }
+        }))
+        .unwrap()
+    }
+
+    #[test]
+    fn diagnostic_environment_default_keeps_the_frozen_identity_shape() {
+        let response = diagnostic_environment_response(observed_diagnostic_environment(), false);
+        assert_eq!(
+            response,
+            serde_json::json!({
+                "android_version": "16", "api_level": 36,
+                "webview_version": "142.0", "webview_package": "com.android.webview"
+            })
+        );
+        let request = glitchpad_android_source::models::DiagnosticEnvironmentRequest {
+            include_viewport: true,
+        };
+        assert_eq!(
+            serde_json::to_value(request).unwrap(),
+            serde_json::json!({"includeViewport": true})
+        );
+    }
+
+    #[test]
+    fn diagnostic_environment_requested_viewport_preserves_actual_screen_coordinates() {
+        let response = diagnostic_environment_response(observed_diagnostic_environment(), true);
+        assert_eq!(
+            response["viewport"],
+            serde_json::json!({
+                "webview_screen": {"left": 120, "top": 80, "right": 440, "bottom": 720},
+                "visible_screen": {"left": 130, "top": 128, "right": 430, "bottom": 672},
+                "view_width": 320, "view_height": 640, "density": 2.5
+            })
+        );
+        assert_eq!(response["android_version"], "16");
+        assert_eq!(response["api_level"], 36);
+    }
+
+    #[test]
+    fn diagnostic_environment_unavailable_and_invalid_viewports_are_explicit_null() {
+        let legacy = serde_json::from_value(serde_json::json!({
+            "androidVersion": "7.0", "apiLevel": 24,
+            "webviewVersion": null, "webviewPackage": null
+        }))
+        .unwrap();
+        let response = diagnostic_environment_response(legacy, true);
+        assert!(response.as_object().unwrap().contains_key("viewport"));
+        assert!(response["viewport"].is_null());
+        assert_eq!(response["android_version"], "7.0");
+        for invalid in ["outside", "empty", "dimensions", "density"] {
+            let mut environment = observed_diagnostic_environment();
+            let viewport = environment.viewport.as_mut().unwrap();
+            match invalid {
+                "outside" => viewport.visible_screen.bottom = 721,
+                "empty" => viewport.visible_screen.bottom = viewport.visible_screen.top,
+                "dimensions" => viewport.view_width = 0,
+                _ => viewport.density = f64::NAN,
+            }
+            let response = diagnostic_environment_response(environment, true);
+            assert!(
+                response["viewport"].is_null(),
+                "invalid geometry must not become layout facts: {invalid}"
+            );
+            assert_eq!(response["webview_version"], "142.0");
+        }
+    }
 
     #[test]
     fn android_errors_preserve_neutral_cancellation_and_only_allowlisted_reasons() {

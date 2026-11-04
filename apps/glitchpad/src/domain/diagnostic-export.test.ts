@@ -37,13 +37,11 @@ describe('native frozen diagnostic export', () => {
         },
       },
     ]);
-    const mismatch = vi
-      .fn()
-      .mockResolvedValue({
-        source: { source_id: 'saved' },
-        byte_count: 1,
-        saved_revision: 0,
-      });
+    const mismatch = vi.fn().mockResolvedValue({
+      source: { source_id: 'saved' },
+      byte_count: 1,
+      saved_revision: 0,
+    });
     await expect(
       createAndroidDiagnosticExportGateway(mismatch as typeof invoke).export(
         bundle,
@@ -65,5 +63,22 @@ describe('native frozen diagnostic export', () => {
         bundle,
       ),
     ).toEqual({ status: 'handed_off' });
+  });
+});
+
+it('reads live native visible geometry separately from the exact exported bundle', async () => {
+  const viewport = {
+    webview_screen: { left: 20, top: 40, right: 660, bottom: 1320 },
+    visible_screen: { left: 20, top: 136, right: 660, bottom: 1224 },
+    view_width: 640,
+    view_height: 1280,
+    density: 2,
+  };
+  const call = vi.fn().mockResolvedValue({ viewport });
+  const gateway = createAndroidDiagnosticExportGateway(call as typeof invoke);
+  expect(typeof gateway.viewport).toBe('function');
+  expect(await gateway.viewport?.()).toEqual(viewport);
+  expect(call).toHaveBeenCalledWith('android_diagnostic_environment', {
+    includeViewport: true,
   });
 });

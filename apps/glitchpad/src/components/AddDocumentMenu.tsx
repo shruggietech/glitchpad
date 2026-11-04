@@ -152,7 +152,7 @@ export function AddDocumentMenu({
           aria-hidden="true"
         />
       )}
-      <div className="add-document" data-add-document>
+      <div className="add-document" data-add-document data-disabled={disabled}>
         {open && (
           <div
             className="add-document-menu"

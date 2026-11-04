@@ -15,3 +15,9 @@ Freeze one redacted serialized preview. Save reads back exact bytes and returns 
 ## Acceptance mapping
 
 FR-001/002 -> Markdown/root corpus and fault injection. FR-003/004/005 -> real Add document picker/draft/dismissal/geometry tests. FR-006/007/008/009 -> provider alias/nonempty/exact-byte/cancel/failure/race/recreation tests. FR-010/011/012 -> current-session action/clipboard/history/Zoom/keyboard tests. FR-013/014/015 -> immutable diagnostic save/share/redaction/runtime tests. FR-016/017/018 -> exact APK identity, CI-parity/native package, resource/privacy/brand gates and two-round handoff ledger.
+
+## Ephemeral diagnostic viewport observation
+
+The existing Android diagnostic environment command accepts optional includeViewport, default false. A requested viewport is null or actual physical-screen rectangles webview_screen and visible_screen (left/top/right/bottom), view_width/view_height and density. Read the current attached visible WebView on the UI thread and intersect its correctly translated ancestor-visible and window-visible bounds. Unavailable geometry is explicit; no fixed system-bar estimate is permitted. The async host uses the existing owned scheduling boundary, with no new grant.
+
+The diagnostic exporter exposes viewport observation separately from bundle export. The consumer maps the uniform physical width scale into its current CSS viewport and intersects those bounds with its already AppFrame-laid-out parent. Apply only remaining crop and the existing height cap; discard stale/out-of-orientation responses and refresh from relevant viewport/focus events without polling. Default environment projection and frozen exported JSON exclude geometry. Native return, cancellation, exact preview/readback and receiver checks remain independent requirements.

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { DiagnosticBundle } from '../domain/persistence';
 import type { DiagnosticExportGateway } from '../domain/persistence-gateway';
+import { useDiagnosticViewport } from './use-diagnostic-viewport';
 interface DiagnosticsPanelProps {
   load: () => Promise<DiagnosticBundle>;
   exporter: DiagnosticExportGateway;
@@ -29,6 +30,8 @@ export function DiagnosticsPanel({
   const [pending, setPending] = useState(false);
   const busy = useRef(false);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const sheetRef = useRef<HTMLElement>(null);
+  useDiagnosticViewport(sheetRef, exporter.viewport);
   useEffect(() => {
     closeRef.current?.focus();
     let active = true;
@@ -89,7 +92,8 @@ export function DiagnosticsPanel({
   };
   return (
     <aside
-      className="application-sheet"
+      ref={sheetRef}
+      className="application-sheet diagnostics-sheet"
       aria-label="Diagnostics"
       aria-busy={pending}
       onKeyDown={(event) => {

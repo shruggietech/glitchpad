@@ -473,7 +473,6 @@ mod tests {
     #[test]
     fn native_android_listener_commands_match_the_runtime_plugin_acl() {
         use std::collections::BTreeMap;
-        use tauri::plugin::Plugin as _;
         use tauri::utils::acl::{capability::Capability, manifest::Manifest, resolved::Resolved};
 
         let manifests: BTreeMap<String, Manifest> =
@@ -488,14 +487,16 @@ mod tests {
             tauri::utils::platform::Target::Android,
         )
         .expect("Android capabilities resolve");
-        let plugin = glitchpad_android_source::init::<tauri::Wry>();
-        let name = plugin.name();
+        // The runtime Builder consumes this same identity without requiring a GUI here.
+        let name = glitchpad_android_source::PLUGIN_NAME;
         for command in ["register_listener", "remove_listener"] {
             let qualified = format!("plugin:{name}|{command}");
             assert!(
                 acl.allowed_commands.contains_key(&qualified),
                 "runtime listener command {qualified} must be granted by the generated Android ACL"
             );
+            let stale_command = format!("plugin:android-source|{command}");
+            assert!(!acl.allowed_commands.contains_key(&stale_command));
         }
         let prefix = format!("plugin:{name}|");
         let private_commands = acl

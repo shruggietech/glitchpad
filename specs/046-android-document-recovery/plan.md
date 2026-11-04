@@ -92,3 +92,11 @@ Actual API24 geometry exposes the Add document target outside the viewport. Logi
 ## Android listener namespace alignment
 
 The API36 campaign exposes delivery fallback polling and missing native Back acknowledgement. The generated ACL manifest names glitchpad-android-source while runtime/frontend event registration names android-source. Verify the exact Tauri command resolver, then align runtime and frontend names with the existing generated permission namespace. Keep the App layer priority and its acknowledgement contract; add a controlled callback regression and retain actual packaged Back proof as a separate requirement. The editing harness must establish real native WebView focus before browser editing and retain strict document-byte assertions.
+
+## Headless listener ACL qualification
+
+The Windows host test binary exits before the test harness starts with STATUS_ENTRYPOINT_NOT_FOUND after the listener regression constructs a Wry runtime plugin. The missing DLL/symbol is unavailable in retained logs. Keep the plugin name as a shared production contract consumed by Builder and validate it against the actual generated ACL resolver without constructing GUI runtime types. Retain both valid listener grants, stale-name refusal and the exact two private grants on all platforms. Preserve the Windows hosted check; do not skip the regression or alter permissions.
+
+## Package failure observation
+
+A current Windows lifecycle timeout lacks the precise named-wait call site, and Linux bundling exposes only a linuxdeploy failure. Retain bounded content-free call-site context and enable the existing Tauri build verbosity for the next candidate. Keep package assertions, budgets and toolchain policy unchanged; do not infer a product cause from either opaque failure.

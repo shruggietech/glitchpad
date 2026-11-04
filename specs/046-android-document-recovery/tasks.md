@@ -76,3 +76,5 @@ T001-T004 precede implementation. Native contracts/writer (T008-T009/T017) and r
 - [x] T028 Add consumer-owned Chrome 69 physical positioning and target-size fallbacks for the Add document overlay without modifying pinned generated brand assets; retain strict viewport/target/scroll assertions per FR-003/005/017.
 
 - [x] T029 Align the Android event plugin runtime/frontend registration namespace with its generated ACL manifest; verify native listener registration and Add-layer Back acknowledgement without broadening permissions per FR-004/005/015/016.
+
+- [x] T030 Remove GUI runtime construction from the cross-platform listener ACL regression while retaining one production plugin-name contract, generated ACL resolution, both valid/stale listener checks and the exact private grant count per FR-017/018.

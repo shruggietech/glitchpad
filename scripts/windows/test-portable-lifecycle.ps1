@@ -17,6 +17,8 @@ $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 . "$PSScriptRoot/startup-diagnostics.ps1"
 $startupDiagnostics = [Collections.Generic.List[object]]::new()
+$script:readinessWaitKind = 'none'
+$script:readinessWaitCallerLine = 0
 
 $root = (Resolve-Path -LiteralPath $PortableRoot).Path
 $manifestPath = (Resolve-Path -LiteralPath $Manifest).Path
@@ -78,7 +80,7 @@ function Save-StartupDiagnostic([Diagnostics.Process] $Process, [string] $Scenar
         }
         $observation.process_state_available = $true
     } catch { }
-    $record = New-PortableStartupDiagnostic -Observation $observation -Scenario $Scenario -Stage $script:readinessStage -SourceCommit $manifestSourceCommit -ManifestDigest $manifestDigest -Succeeded $Succeeded -ElapsedMilliseconds $Clock.ElapsedMilliseconds
+    $record = New-PortableStartupDiagnostic -Observation $observation -Scenario $Scenario -Stage $script:readinessStage -SourceCommit $manifestSourceCommit -ManifestDigest $manifestDigest -Succeeded $Succeeded -ElapsedMilliseconds $Clock.ElapsedMilliseconds -WaitKind $script:readinessWaitKind -WaitCallerLine $script:readinessWaitCallerLine
     $startupDiagnostics.Add($record)
     [IO.File]::WriteAllText([IO.Path]::GetFullPath("$Receipt.startup.json"), (ConvertTo-Json -InputObject @($startupDiagnostics.ToArray()) -Depth 5) + [Environment]::NewLine, [Text.UTF8Encoding]::new($false))
 }
@@ -122,6 +124,8 @@ function Find-LargestNamedElement([System.Windows.Automation.AutomationElement] 
 }
 
 function Wait-NamedElement([Diagnostics.Process] $Process, [string] $Name, [int] $Seconds = 20) {
+    $script:readinessWaitKind = 'named_element'
+    $script:readinessWaitCallerLine = $MyInvocation.ScriptLineNumber
     $script:readinessStage = 'named_element_wait'
     $deadline = [DateTimeOffset]::UtcNow.AddSeconds($Seconds)
     do {
@@ -129,7 +133,12 @@ function Wait-NamedElement([Diagnostics.Process] $Process, [string] $Name, [int]
         $window = Get-WindowRoot $Process
         if ($window) {
             $element = Find-NamedElement $window $Name
-            if ($element) { $script:readinessStage = 'named_element_ready'; return $element }
+            if ($element) {
+                $script:readinessStage = 'named_element_ready'
+                $script:readinessWaitKind = 'none'
+                $script:readinessWaitCallerLine = 0
+                return $element
+            }
         }
     } while ([DateTimeOffset]::UtcNow -lt $deadline)
     throw 'portable_named_element_timeout'

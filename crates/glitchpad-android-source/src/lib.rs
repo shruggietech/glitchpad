@@ -12,8 +12,11 @@ use tauri::Manager;
 #[cfg(target_os = "android")]
 pub use mobile::AndroidSource;
 
+/// Plugin identity shared by native registration and its command permissions.
+pub const PLUGIN_NAME: &str = env!("CARGO_PKG_NAME");
+
 pub fn init<R: Runtime>() -> TauriPlugin<R> {
-    let builder = Builder::new(env!("CARGO_PKG_NAME"));
+    let builder = Builder::new(PLUGIN_NAME);
     #[cfg(target_os = "android")]
     let builder = builder.setup(|app, api| {
         app.manage(mobile::init(app, &api)?);

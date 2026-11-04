@@ -273,6 +273,7 @@ export const usePersistence = (
         environment: diagnosticEnvironment(),
         events: [],
       });
+    await collectFailureEvents();
     const result = await gateway.previewDiagnostics(Date.now());
     return enrichDiagnosticPreview(result.value);
   }, [gateway]);

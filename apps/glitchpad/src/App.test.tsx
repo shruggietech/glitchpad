@@ -10,6 +10,7 @@ import {
 } from '@testing-library/react';
 
 import { App } from './App';
+import { collectFailureEvents } from './domain/diagnostic-failures';
 import { createDraftSession } from './domain/drafts';
 import type {
   AndroidDestinationReceipt,
@@ -743,6 +744,206 @@ describe('document foundation shell', () => {
       'The selected file cannot be read.',
     );
   });
+
+  for (const platform of ['desktop', 'android'] as const) {
+    const boundaries =
+      platform === 'android'
+        ? ([
+            'rejection',
+            'drain',
+            'read',
+            'picker',
+            'subscription',
+            'picker_read',
+          ] as const)
+        : (['rejection', 'drain', 'read', 'picker', 'subscription'] as const);
+    for (const boundary of boundaries) {
+      it(
+        'captures one bounded ' +
+          platform +
+          ' source failure at the ' +
+          boundary +
+          ' boundary',
+        async () => {
+          const baseline = new Set(
+            (await collectFailureEvents()).map(
+              (event) => event.failure?.correlation_id,
+            ),
+          );
+          const privateDetail =
+            'Secret-document content://private/provider C:\\private\\document';
+          const error = new Error(privateDetail);
+          const source = destinationFor(createDraftSession('text')).source;
+          source.source_id = privateDetail;
+          source.descriptor.display_name = privateDetail;
+          const close = vi.fn().mockResolvedValue(undefined);
+          const choose = vi.fn();
+          const drain = vi.fn();
+          const materialize = vi.fn().mockRejectedValue(error);
+          const subscribe = vi.fn().mockResolvedValue(() => undefined);
+          if (platform === 'desktop') {
+            const delivered = {
+              sequence: 1,
+              kind: 'association',
+              status: 'opened',
+              source,
+              error: null,
+            };
+            choose.mockResolvedValue([]);
+            drain.mockResolvedValue([]);
+            if (boundary === 'rejection')
+              drain.mockResolvedValueOnce([
+                {
+                  ...delivered,
+                  status: 'rejected',
+                  source: null,
+                  error: {
+                    summary: 'The selected file cannot be read.',
+                    retryable: true,
+                  },
+                },
+              ]);
+            if (boundary === 'read') drain.mockResolvedValueOnce([delivered]);
+            if (boundary === 'drain') drain.mockRejectedValueOnce(error);
+            if (boundary === 'picker') choose.mockRejectedValue(error);
+            if (boundary === 'subscription') subscribe.mockRejectedValue(error);
+            const gateway: DesktopDeliveryGateway = {
+              choose,
+              drain,
+              materialize,
+              subscribe,
+              close,
+              save: vi.fn(),
+              saveAs: vi.fn(),
+            };
+            render(
+              <App
+                sessions={[initialSessions[2]]}
+                desktopDeliveryGateway={gateway}
+                recoveryGateway={null}
+              />,
+            );
+          } else {
+            choose.mockResolvedValue(null);
+            drain.mockResolvedValue({ sources: [], rejections: [] });
+            if (boundary === 'rejection')
+              drain.mockResolvedValueOnce({
+                sources: [],
+                rejections: [{ code: privateDetail, retryable: true }],
+              });
+            if (boundary === 'read')
+              drain.mockResolvedValueOnce({
+                sources: [source],
+                rejections: [],
+              });
+            if (boundary === 'drain') drain.mockRejectedValueOnce(error);
+            if (boundary === 'picker') choose.mockRejectedValue(error);
+            if (boundary === 'picker_read') choose.mockResolvedValue(source);
+            if (boundary === 'subscription') subscribe.mockRejectedValue(error);
+            render(
+              <App
+                sessions={[initialSessions[2]]}
+                androidDeliveryGateway={authoringDelivery({
+                  choose,
+                  drain,
+                  materialize,
+                  subscribe,
+                  close,
+                })}
+                recoveryGateway={null}
+              />,
+            );
+          }
+          if (boundary === 'picker' || boundary === 'picker_read')
+            invokeMenu('Open…');
+          const captured = () =>
+            collectFailureEvents().then((events) =>
+              events.filter(
+                (event) =>
+                  event.failure?.component === 'source' &&
+                  !baseline.has(event.failure.correlation_id),
+              ),
+            );
+          await waitFor(async () => expect(await captured()).toHaveLength(1));
+          const events = await captured();
+          const isRead = boundary === 'read' || boundary === 'picker_read';
+          expect(events[0]).toMatchObject({
+            event_id: 'task_failed',
+            error_code: isRead
+              ? 'source_read_failed'
+              : 'source_delivery_failed',
+            failure: {
+              component: 'source',
+              stage: isRead ? 'read' : 'delivery',
+              reason: isRead ? 'source_read_failed' : 'source_delivery_failed',
+            },
+          });
+          expect(events[0].failure?.correlation_id).toMatch(/^[0-9a-f]{32}$/u);
+          expect(JSON.stringify(events)).not.toMatch(
+            /Secret-document|content:|private|provider|Error:/u,
+          );
+          expect(
+            screen.getByRole('region', { name: 'notes.txt' }),
+          ).toBeInTheDocument();
+          if (boundary === 'subscription' && platform === 'android') {
+            expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+            await waitFor(() => expect(drain).toHaveBeenCalled());
+          } else
+            expect(await screen.findByRole('alert')).not.toBeEmptyDOMElement();
+          if (isRead)
+            expect(close).toHaveBeenCalledExactlyOnceWith(privateDetail);
+        },
+      );
+    }
+
+    it(
+      'keeps a neutral ' +
+        platform +
+        ' Open cancellation out of failure diagnostics',
+      async () => {
+        const before = await collectFailureEvents();
+        const choose = vi
+          .fn()
+          .mockResolvedValue(platform === 'android' ? null : []);
+        if (platform === 'android')
+          render(
+            <App
+              sessions={[initialSessions[2]]}
+              androidDeliveryGateway={authoringDelivery({ choose })}
+              recoveryGateway={null}
+            />,
+          );
+        else {
+          const gateway: DesktopDeliveryGateway = {
+            choose,
+            drain: vi.fn().mockResolvedValue([]),
+            materialize: vi.fn(),
+            close: vi.fn(),
+            save: vi.fn(),
+            saveAs: vi.fn(),
+            subscribe: vi.fn().mockResolvedValue(() => undefined),
+          };
+          render(
+            <App
+              sessions={[initialSessions[2]]}
+              desktopDeliveryGateway={gateway}
+              recoveryGateway={null}
+            />,
+          );
+        }
+        invokeMenu('Open…');
+        await waitFor(() => expect(choose).toHaveBeenCalledOnce());
+        await act(async () => {
+          await Promise.resolve();
+        });
+        expect(await collectFailureEvents()).toEqual(before);
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+        expect(
+          screen.getByRole('region', { name: 'notes.txt' }),
+        ).toBeInTheDocument();
+      },
+    );
+  }
 
   it('opens initial and warm Android deliveries and releases closed sources', async () => {
     const delivered = {

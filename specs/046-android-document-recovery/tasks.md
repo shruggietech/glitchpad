@@ -52,3 +52,11 @@
 ## Dependencies & Execution Order
 
 T001-T004 precede implementation. Native contracts/writer (T008-T009/T017) and renderer containment/providers (T005-T006/T014-T015) can run in parallel on distinct files after contract agreement. App/shared schema edits are coordinated sequentially by the root agent. T010-T013/T016-T018 follow applicable contracts; T019-T021 require integrated behavior. Parallel examples: native writer tests alongside Markdown response tests; diagnostic panel tests alongside provider receiver tests. No task completion substitutes for its required package evidence. All five issues remain included; no MVP-only stop is authorized.
+
+## Phase 7: Convergence
+
+- [x] T022 Capture bounded correlated external-delivery rejection, chooser/drain/subscription and materialization failure events at their source delivery/read boundaries in App.tsx; add component redaction/outcome regressions without logging raw rejection details per FR-001/FR-015 (partial).
+
+## Phase 8: Convergence
+
+- [x] T023 Drain pending captured failure writes before taking the native diagnostic preview snapshot in domain/use-persistence.ts; retain delayed-success, frozen-preview and subsequent-event regressions per FR-013/FR-015 (partial).

@@ -58,12 +58,24 @@ Round-1 keyboard repair passes 48 App component regressions plus format/lint/typ
 
 ### Initial exact-head Windows package readback
 
-The push workflow41782975506 for f6b6078 completed the installed/portable lifecycles. Downloaded artifact13300012918 matches its GitHub archive digest efe6b88307b02284b4946a3f7100ebb7b84fca4eb23ba1b312977b5dfd291fd1. Independent readback verifies both distribution hashes/lengths, four portable inventory files, nested portable ZIP equality and the lifecycle receipt's manifest/source binding. The governed Markdown corpus, editing/reopen, document recovery, no-blank and original preservation markers pass; the original incident is explicitly unavailable_not_replayed. This initial candidate is retained diagnostically and does not replace later source requalification.
+The push workflow 41782975506 for f6b6078 completed the installed/portable lifecycles. Downloaded artifact 13300012918 matches its GitHub archive digest efe6b88307b02284b4946a3f7100ebb7b84fca4eb23ba1b312977b5dfd291fd1. Independent readback verifies both distribution hashes/lengths, four portable inventory files, nested portable ZIP equality and the lifecycle receipt's manifest/source binding. The governed Markdown corpus, editing/reopen, document recovery, no-blank and original preservation markers pass; the original incident is explicitly unavailable_not_replayed. This initial candidate is retained diagnostically and does not replace later source requalification.
 
 ### Round-1 original preservation and lease ownership
 
-The native protected desktop Save As path checks captured original revision and actual destination identity before staging/commit; original/hardlink/symlink aliases and stale/closed/partial authority refuse replacement. Ordinary unprotected Save As and picker cancellation retain their existing outcomes. Host source39/39 and core source10/10 tests plus exact workspace Clippy/format pass. App retains original authority while any copy reference remains and releases it exactly once after the final copy closes; the full App suite passes49/49.
+The native protected desktop Save As path checks captured original revision and actual destination identity before staging/commit; original/hardlink/symlink aliases and stale/closed/partial authority refuse replacement. Ordinary unprotected Save As and picker cancellation retain their existing outcomes. Host source 39/39 and core source 10/10 tests plus exact workspace Clippy/format pass. App retains original authority while any copy reference remains and releases it exactly once after the final copy closes; the full App suite passes 49/49.
 
 ### Initial Android capture failure and correction
 
-API24 ran eight controlled-provider tests successfully, then capture failed because connectedAndroidTest had removed its packages. No S046 UI journey or APK capture is claimed from that failed attempt. The corrected runner explicitly installs both built APKs, pulls them from the device, verifies byte equality/digests, and records capture_boundary=post_connected_suite_reinstall. The following governed UI journeys reinstall/use those retained exact APKs. The install/capture/order/failure policy suite passes31/31 and shell syntax passes. The failed attempt/artifact13300344232 remains retained diagnostically.
+API24 ran eight controlled-provider tests successfully, then capture failed because connectedAndroidTest had removed its packages. No S046 UI journey or APK capture is claimed from that failed attempt. The corrected runner explicitly installs both built APKs, pulls them from the device, verifies byte equality/digests, and records capture_boundary=post_connected_suite_reinstall. The following governed UI journeys reinstall/use those retained exact APKs. The install/capture/order/failure policy suite passes 31/31 and shell syntax passes. The failed attempt/artifact 13300344232 remains retained diagnostically.
+
+### Reviewed-source aggregate
+
+After the round-1 source repairs, cargo xtask check again completes successfully with 383 frontend tests and the Rust/native-contract, security, documentation, package-policy and geometry gates. The capture boundary changed after the aggregate's policy step and has its own subsequent 31/31 policy-test/shell-syntax pass. Both round-1 threads are replied to with test evidence and resolved on d7148927e5575ae76b9349c018c614cdfe1fe24f. Hosted requalification and the final permitted external round remain pending.
+
+### Convergence T022
+
+Source delivery/read capture now covers Android and desktop external rejections, drain/subscription, picker and materialization boundaries. Static allowlisted values produce a correlation ID; raw native reason strings, exception text, names, paths and URIs never enter these events. Android picker read failures are counted once at read stage; neutral cancellation stays unrecorded. Nine regressions reproduced the missing capture before implementation; thirteen new cases plus the existing suite pass 62/62 App tests, format/lint/type checks.
+
+### Convergence T023
+
+Diagnostic preview now drains pending captured failure writes before reading the native snapshot. The red-first delayed-success test proves the event appears in the frozen preview; later events leave that preview unchanged and appear in the next preview. The eighteen focused hook/capture/gateway/export/panel tests, frontend lint/type checks and owned-file formatting pass. Clear success/new-event/failure behavior is unchanged and verified.

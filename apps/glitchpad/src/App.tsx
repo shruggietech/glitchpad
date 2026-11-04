@@ -269,6 +269,7 @@ export function App({
       if (!selectedDesktopDeliveryGateway) return;
       for (const result of results) {
         if (result.status === 'rejected') {
+          recordFailure('source', 'delivery', 'source_delivery_failed');
           setDeliveryError(
             result.error?.summary ?? 'The delivered file could not be opened.',
           );
@@ -302,8 +303,11 @@ export function App({
             dispatch({ type: 'open', session });
           }
         } catch {
+          recordFailure('source', 'read', 'source_read_failed');
           if (result.source)
-            void selectedDesktopDeliveryGateway.close(result.source.source_id);
+            void selectedDesktopDeliveryGateway
+              .close(result.source.source_id)
+              .catch(() => undefined);
           setDeliveryError(
             'The delivered file could not be decoded safely. Check that it is readable UTF-8 or UTF-16 text.',
           );
@@ -319,13 +323,15 @@ export function App({
       void selectedDesktopDeliveryGateway
         .drain()
         .then((results) => {
-          if (active) void applyDesktopDeliveries(results);
+          if (active) return applyDesktopDeliveries(results);
         })
         .catch(() => {
-          if (active)
+          if (active) {
+            recordFailure('source', 'delivery', 'source_delivery_failed');
             setDeliveryError(
               'Desktop delivery is temporarily unavailable. Try Open again.',
             );
+          }
         });
     };
     let unlisten: (() => void) | undefined;
@@ -338,10 +344,12 @@ export function App({
         } else dispose();
       })
       .catch(() => {
-        if (active)
+        if (active) {
+          recordFailure('source', 'delivery', 'source_delivery_failed');
           setDeliveryError(
             'Desktop delivery is temporarily unavailable. Try Open again.',
           );
+        }
       });
     return () => {
       active = false;
@@ -384,10 +392,12 @@ export function App({
   const applyAndroidDeliveries = useCallback(async () => {
     if (!selectedAndroidDeliveryGateway) return;
     const delivery = await selectedAndroidDeliveryGateway.drain();
-    for (const rejection of delivery.rejections)
+    for (const rejection of delivery.rejections) {
+      recordFailure('source', 'delivery', 'source_delivery_failed');
       setDeliveryError(
         `The delivered Android file could not be opened (${rejection.code}).`,
       );
+    }
     for (const source of delivery.sources) {
       try {
         const session =
@@ -396,7 +406,9 @@ export function App({
         dispatch({ type: 'open', session });
       } catch {
         recordFailure('source', 'read', 'source_read_failed');
-        void selectedAndroidDeliveryGateway.close(source.source_id);
+        void selectedAndroidDeliveryGateway
+          .close(source.source_id)
+          .catch(() => undefined);
         setDeliveryError(
           'The delivered Android file could not be decoded safely. Check that it is readable UTF-8 or UTF-16 text.',
         );
@@ -408,10 +420,12 @@ export function App({
     let active = true;
     const drain = () => {
       void applyAndroidDeliveries().catch(() => {
-        if (active)
+        if (active) {
+          recordFailure('source', 'delivery', 'source_delivery_failed');
           setDeliveryError(
             'Android file delivery is temporarily unavailable. Open the file again.',
           );
+        }
       });
     };
     let unlisten: (() => void) | undefined;
@@ -424,7 +438,10 @@ export function App({
         } else dispose();
       })
       .catch(() => {
-        if (active) fallbackTimer = setInterval(drain, 500);
+        if (active) {
+          recordFailure('source', 'delivery', 'source_delivery_failed');
+          fallbackTimer = setInterval(drain, 500);
+        }
       })
       .finally(drain);
     return () => {
@@ -940,11 +957,12 @@ export function App({
     void selectedDesktopDeliveryGateway
       .choose()
       .then(applyDesktopDeliveries)
-      .catch(() =>
+      .catch(() => {
+        recordFailure('source', 'delivery', 'source_delivery_failed');
         setDeliveryError(
           'The native Open dialog is unavailable. Try again or open the file from your desktop.',
-        ),
-      );
+        );
+      });
   };
 
   const publishMetadata = (contribution: MetadataContribution) =>
@@ -1161,9 +1179,11 @@ export function App({
       return;
     }
     setDeliveryError('');
+    let readingSource = false;
     try {
       const source = await selectedAndroidDeliveryGateway.choose?.();
       if (!source) return;
+      readingSource = true;
       try {
         dispatch({
           type: 'open',
@@ -1174,7 +1194,11 @@ export function App({
         throw error;
       }
     } catch {
-      recordFailure('source', 'delivery', 'source_delivery_failed');
+      recordFailure(
+        'source',
+        readingSource ? 'read' : 'delivery',
+        readingSource ? 'source_read_failed' : 'source_delivery_failed',
+      );
       setDeliveryError(
         'This file could not be opened. Check access or choose it again.',
       );

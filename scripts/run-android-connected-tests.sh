@@ -19,12 +19,13 @@ run_connected_suite() {
 retain_tested_candidate() {
   export GLITCHPAD_TESTED_CANDIDATE_DIR="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/android-tested-candidate"
   node --input-type=module <<'NODE'
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
 const directory = process.env.GLITCHPAD_TESTED_CANDIDATE_DIR;
 await mkdir(directory, { recursive: true });
+await rm(join(directory, 'tested-apk-receipt.json'), { force: true });
 const variants = [
   ['application', 'com.shruggietech.glitchpad', 'crates/glitchpad-host/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk'],
   ['instrumentation', 'com.shruggietech.glitchpad.test', 'crates/glitchpad-host/gen/android/app/build/outputs/apk/androidTest/universal/debug/app-universal-debug-androidTest.apk'],
@@ -34,16 +35,72 @@ const variants = [
 for (const [, , builtPath] of variants) {
   execFileSync('adb', ['install', '-r', '-t', builtPath], { stdio: 'pipe', windowsHide: true });
 }
+const failedCapture = (method, error) => ({
+  method,
+  status: Number.isInteger(error.status) ? error.status : null,
+  code: typeof error.code === 'string' ? error.code : null,
+  signal: error.signal ?? null,
+  stderr: String(error.stderr ?? '').slice(0, 8192),
+  stderr_truncated: (error.stderr?.length ?? 0) > 8192,
+  stdout_byte_count: error.stdout?.length ?? 0,
+  cause: 'unknown',
+});
 const artifacts = [];
 for (const [kind, packageName, builtPath] of variants) {
   const paths = execFileSync('adb', ['shell', 'pm', 'path', packageName], { encoding: 'utf8', windowsHide: true }).trim().split(/\r?\n/).filter(Boolean);
   if (paths.length !== 1 || !paths[0].startsWith('package:')) throw new Error('Expected one installed universal APK for ' + kind);
+  const remotePath = paths[0].slice('package:'.length);
+  if (remotePath.length > 4096 || !/^\/[a-zA-Z0-9_./+=~:@%-]+$/u.test(remotePath)) throw new Error('Invalid installed APK path for ' + kind);
   const installedPath = join(directory, kind + '.apk');
-  execFileSync('adb', ['pull', paths[0].slice('package:'.length), installedPath], { stdio: 'pipe', windowsHide: true });
-  const installed = await readFile(installedPath);
+  const diagnosticFilename = kind + '-capture.json';
   const built = await readFile(builtPath);
-  if (!installed.equals(built)) throw new Error('Installed APK differs from built candidate for ' + kind);
-  artifacts.push({ kind, package: packageName, filename: kind + '.apk', sha256: createHash('sha256').update(installed).digest('hex'), byte_count: installed.length });
+  const capture = { package: packageName, installed_path: remotePath, expected_byte_count: built.length, attempts: [], validation: 'not_completed' };
+  let installed;
+  let method = 'adb_pull';
+  let matched = false;
+  await rm(installedPath, { force: true });
+  try {
+    try {
+      execFileSync('adb', ['pull', remotePath, installedPath], { stdio: 'pipe', timeout: 60_000, maxBuffer: 64 * 1024, windowsHide: true });
+      capture.attempts.push({ method, status: 0 });
+    } catch (error) {
+      const failure = failedCapture(method, error);
+      capture.attempts.push(failure);
+      console.warn('installed_apk_capture_attempt=' + JSON.stringify({ kind, ...failure }));
+      await rm(installedPath, { force: true });
+      method = 'adb_exec_out_run_as_cat';
+      // Read the same PM-reported installed path as the debuggable application.
+      // Never substitute build output when the installed file cannot be read.
+      try {
+        installed = execFileSync('adb', ['exec-out', 'run-as', packageName, 'cat', remotePath], { stdio: 'pipe', timeout: 60_000, maxBuffer: built.length + 1, windowsHide: true });
+        capture.attempts.push({ method, status: 0, byte_count: installed.length });
+      } catch (error) {
+        const failure = failedCapture(method, error);
+        capture.attempts.push(failure);
+        console.warn('installed_apk_capture_attempt=' + JSON.stringify({ kind, ...failure }));
+        throw new Error('Installed APK alternate read failed for ' + kind);
+      }
+    }
+    if (!installed) {
+      const information = await stat(installedPath);
+      if (information.size !== built.length) {
+        capture.validation = 'installed_length_differs';
+        throw new Error('Installed APK length differs from built candidate for ' + kind);
+      }
+      installed = await readFile(installedPath);
+    }
+    if (!installed.equals(built)) {
+      capture.validation = 'installed_bytes_differ';
+      throw new Error('Installed APK differs from built candidate for ' + kind);
+    }
+    if (method === 'adb_exec_out_run_as_cat') await writeFile(installedPath, installed);
+    capture.validation = 'matched_built_candidate';
+    matched = true;
+    artifacts.push({ kind, package: packageName, filename: kind + '.apk', sha256: createHash('sha256').update(installed).digest('hex'), byte_count: installed.length, capture_method: method, capture_diagnostics: diagnosticFilename });
+  } finally {
+    if (!matched) await rm(installedPath, { force: true });
+    await writeFile(join(directory, diagnosticFilename), JSON.stringify(capture, null, 2) + '\n', 'utf8');
+  }
 }
 const product = JSON.parse(await readFile('apps/glitchpad/package.json', 'utf8'));
 const source = process.env.GITHUB_SHA || process.env.GLITCHPAD_BUILD_COMMIT || null;

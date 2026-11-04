@@ -72,3 +72,7 @@ Expose Save As for editable desktop copies without requiring a destination sourc
 ## 2026-11-04: Final-review selection and renderer-modal ownership
 
 Rendered Markdown Copy resolves a nonempty browser selection only when it belongs to the current renderer content, then uses the existing awaited clipboard operation; absent/foreign selection keeps the established whole-document fallback. Android committed Back delegates active renderer modal dismissal through one optional synchronous handle method before search/document close, while IME and shell-owned layers retain their existing priority. Reuse existing Cancel/Escape/focus behavior and add no new advertised command or overlay registry. These decisions address the two final external-review findings without expanding the product scope.
+
+## 2026-11-04: API24 installed-file read fallback
+
+Keep installed-byte capture separate from Gradle's package cleanup and use only bytes read from the device. After reinstall and a failed adb pull, allow one bounded exec-out run-as read of the same Package Manager path, retaining both method diagnostics and an explicit unknown cause. Require exact built-byte equality before the source-bound receipt; no retry may substitute build output as observed installed bytes. The [API24 run-as implementation](https://android.googlesource.com/platform/system/core/+/refs/tags/android-7.0.0_r1/run-as/run-as.c) checks installed/debuggable package authority before executing under its application identity; actual access is still established by the read, not assumed from that contract.

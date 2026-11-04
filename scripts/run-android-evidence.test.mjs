@@ -37,6 +37,7 @@ elif [[ "$1" = shell && "$2" = pm && "$3" = path ]]; then
   if [[ "$4" = com.shruggietech.glitchpad ]]; then [[ -f "$RUNNER_TEMP/application-installed" ]]; echo "package:$FIXTURE_APPLICATION"; else [[ -f "$RUNNER_TEMP/instrumentation-installed" ]]; echo "package:$FIXTURE_INSTRUMENTATION"; fi
   if [[ "\${MOCK_SPLIT:-0}" = 1 ]]; then echo 'package:split.apk'; fi
 elif [[ "$1" = pull ]]; then
+  if [[ "\${MOCK_PULL_FAILURE:-0}" = 1 ]]; then echo "adb: error: remote object '$2' does not exist" >&2; exit 1; fi
   original="$2"
   if [[ "\${MOCK_MISMATCH:-0}" = 1 && "$2" = "$FIXTURE_APPLICATION" ]]; then original="$FIXTURE_WRONG"; fi
   cp "$original" "$3"
@@ -48,6 +49,12 @@ elif [[ "$1" = shell && "$2" = am && "$3" = instrument ]]; then
   echo "instrumentation attempt $count"
   if [[ "\${MOCK_NEVER_PASSES:-0}" != 1 && "$count" = 2 ]]; then echo 'journey_marker=pass'; else echo 'INSTRUMENTATION_FAILED: synthetic failure'; fi
 elif [[ "$1" = logcat && "\${2:-}" != -c ]]; then echo 'synthetic bounded logcat'
+elif [[ "$1" = exec-out && "$2" = run-as && "$4" = cat ]]; then
+  if [[ "\${MOCK_RUN_AS_FAILURE:-0}" = 1 ]]; then echo "run-as: installed APK read refused" >&2; exit 1; fi
+  original="$5"
+  if [[ "\${MOCK_RUN_AS_MISMATCH:-0}" = 1 ]]; then original="$FIXTURE_WRONG"; fi
+  cat "$original"
+  if [[ "\${MOCK_RUN_AS_OVERSIZE:-0}" = 1 ]]; then head -c 4096 /dev/zero; fi
 elif [[ "$1" = exec-out ]]; then exit 1
 fi
 `);
@@ -87,6 +94,50 @@ for (const [name, environment, expected] of [
           assert.equal(artifact.byte_count, bytes.length);
         }
       } else await assert.rejects(access(receiptPath));
+    } finally { await state.dispose(); }
+  });
+}
+
+test('captures exact queried installed bytes with run-as after adb pull fails and retains the failed attempt', posix, async () => {
+  const state = await fixture();
+  try {
+    const result = run('run-android-connected-tests.sh', state, [], { MOCK_PULL_FAILURE: '1' });
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    const directory = join(state.evidence, 'android-tested-candidate');
+    const receipt = JSON.parse(await readFile(join(directory, 'tested-apk-receipt.json'), 'utf8'));
+    assert.deepEqual(receipt.artifacts.map(artifact => artifact.capture_method), ['adb_exec_out_run_as_cat', 'adb_exec_out_run_as_cat']);
+    for (const [index, built] of [state.application, state.instrumentation].entries()) {
+      const artifact = receipt.artifacts[index];
+      assert.deepEqual(await readFile(join(directory, artifact.filename)), await readFile(built));
+      const diagnostic = JSON.parse(await readFile(join(directory, artifact.capture_diagnostics), 'utf8'));
+      assert.equal(diagnostic.installed_path, built);
+      assert.equal(diagnostic.attempts[0].method, 'adb_pull');
+      assert.equal(diagnostic.attempts[0].status, 1);
+      assert.equal(diagnostic.attempts[0].cause, 'unknown');
+      assert.match(diagnostic.attempts[0].stderr, /remote object.*does not exist/u);
+      assert.equal(diagnostic.validation, 'matched_built_candidate');
+    }
+    const events = await readFile(join(state.evidence, 'adb-events.txt'), 'utf8');
+    assert.ok(events.includes('exec-out run-as com.shruggietech.glitchpad cat ' + state.application));
+    assert.ok(events.includes('exec-out run-as com.shruggietech.glitchpad.test cat ' + state.instrumentation));
+  } finally { await state.dispose(); }
+});
+
+for (const [name, variable] of [['wrong bytes', 'MOCK_RUN_AS_MISMATCH'], ['remote read failure', 'MOCK_RUN_AS_FAILURE'], ['oversized read', 'MOCK_RUN_AS_OVERSIZE']]) {
+  test('refuses run-as fallback ' + name + ' without a candidate receipt', posix, async () => {
+    const state = await fixture();
+    try {
+      const result = run('run-android-connected-tests.sh', state, [], { MOCK_PULL_FAILURE: '1', [variable]: '1' });
+      assert.equal(result.status, 1, result.stdout + result.stderr);
+      const directory = join(state.evidence, 'android-tested-candidate');
+      await assert.rejects(access(join(directory, 'tested-apk-receipt.json')));
+      await assert.rejects(access(join(directory, 'application.apk')));
+      const diagnostic = JSON.parse(await readFile(join(directory, 'application-capture.json'), 'utf8'));
+      assert.equal(diagnostic.attempts.length, 2);
+      assert.equal(diagnostic.attempts[0].status, 1);
+      assert.notEqual(diagnostic.validation, 'matched_built_candidate');
+      if (variable === 'MOCK_RUN_AS_FAILURE') assert.match(diagnostic.attempts[1].stderr, /read refused/u);
+      if (variable === 'MOCK_RUN_AS_OVERSIZE') assert.equal(diagnostic.attempts[1].code, 'ENOBUFS');
     } finally { await state.dispose(); }
   });
 }

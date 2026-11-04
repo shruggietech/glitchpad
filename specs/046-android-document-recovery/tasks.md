@@ -87,3 +87,5 @@ T001-T004 precede implementation. Native contracts/writer (T008-T009/T017) and r
 - [x] T034 Re-notify the existing delivery channel after the actual Activity resumes when native work remains queued; coalesce/cancel the owned frame callback and preserve immediate notification, queue bounds and permissions per FR-001/004/016/017.
 
 - [x] T035 Use semantic document selection bounds while verifying the complete native editing representation, align the deliberate write-refusal expectation with the existing Save-specific failure contract, and retain bounded chooser-failure observations in AndroidDeliveryInstrumentedTest.kt per FR-006/008/016.
+
+- [x] T036 Align native dirty-close cancellation qualification with the existing cancelled transition by checking the dismissed dialog, retained editable/unsaved draft and exact semantic source before the subsequent verified Save/readback per FR-008/009/016.

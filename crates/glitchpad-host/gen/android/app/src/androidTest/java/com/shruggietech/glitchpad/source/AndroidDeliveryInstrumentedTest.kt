@@ -494,8 +494,15 @@ class AndroidDeliveryInstrumentedTest {
       waitForBodyText(scenario, "Save cancelled. Edits remain open.")
       assertTrue("one native create chooser must own the pending save", monitor.hits == 1)
     } finally { instrumentation.removeMonitor(monitor) }
-    waitForBodyText(scenario, "Unsaved changes in Untitled.txt")
-    clickControl(scenario, "Cancel")
+    waitForCondition(scenario, """
+      (()=>{
+        const identity=document.querySelector('[data-draft-identity]');
+        const rect=identity?identity.getBoundingClientRect():null;
+        return !document.querySelector('.resolution-dialog')&&!!document.querySelector('.cm-content[contenteditable=true]')&&
+          !!identity&&identity.textContent.includes('Untitled.txt')&&identity.textContent.includes('Unsaved changes')&&rect.width>0&&rect.height>0;
+      })()
+    """.trimIndent(), "cancelled native Save must dismiss the close decision and retain the visible editable unsaved draft")
+    assertEquals("cancelled native Save and blocked Discard must retain every draft character", "S046_DIRTY_CLOSE_BYTES\n", browserEditorInputSnapshot(scenario).getString("semantic_text"))
     chooseNative(scenario, Intent.ACTION_CREATE_DOCUMENT, chosen(destination), { menuAction(scenario, "Save") }, "Saved after native verification.")
     assertTrue("pending Discard attempt must not lose draft bytes", "S046_DIRTY_CLOSE_BYTES\n".toByteArray(Charsets.UTF_8).contentEquals(readBytes(destination)))
   }

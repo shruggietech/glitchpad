@@ -120,3 +120,7 @@ The C15 API24 snapshot proves one warm candidate queued with its native listener
 ## API24 native selection and Save failure assertions
 
 The D724 API24 artifact verifies exact native editing text, then exposes a selection boundary mismatch: CodeMirror maps the non-Tile filler BR to semantic document end, so selecting the rendered placeholder LF can settle at zero rather than the requested one. Request native selection over the actual semantic document length while continuing to compare the complete extracted native text with its editing representation. Keep exact post-commit semantic text, cursor and UTF-8 destination checks. The write-refusal journey must expect the existing Save-specific failure contract, rather than the generic non-Save action message. Retain bounded chooser failure context for future mismatches; do not change product outcomes or weaken byte assertions.
+
+## Dirty-close native cancellation qualification
+
+After a cancelled native Save from dirty Close, the existing reducer clears the pending transition and the shell returns to the still-dirty editable draft with its Save-cancelled outcome. Qualification must assert that actual state instead of waiting for the dismissed resolution dialog and clicking an absent Cancel action. Keep pending-choice disabling, rejected Discard, one native chooser, exact retained semantic source and subsequent verified-save readback. This is an instrumentation correction; no product transition changes.

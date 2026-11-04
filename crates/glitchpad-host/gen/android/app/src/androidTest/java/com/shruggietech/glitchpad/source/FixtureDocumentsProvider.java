@@ -4,6 +4,8 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.MatrixCursor;
 import android.os.CancellationSignal;
+import android.os.Bundle;
+import android.os.Looper;
 import android.os.ParcelFileDescriptor;
 import android.provider.DocumentsContract.Document;
 import android.provider.DocumentsContract.Root;
@@ -16,9 +18,85 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 public final class FixtureDocumentsProvider extends DocumentsProvider {
   private static final String ROOT_ID = "fixture-root";
+  private static volatile int providerProcessId;
+  private static HeldWrite heldWrite;
+
+  private static final class HeldWrite {
+    final String documentId;
+    final CountDownLatch release = new CountDownLatch(1);
+    volatile boolean finished;
+    volatile boolean timedOut;
+    int enteredCount;
+    int enteredProcessId;
+    boolean enteredOnMainThread;
+
+    HeldWrite(String documentId) { this.documentId = documentId; }
+  }
+
+  static synchronized Bundle armHeldWrite(String documentId) {
+    if (providerProcessId != android.os.Process.myPid()) {
+      throw new IllegalStateException("fixture_providers_do_not_share_process");
+    }
+    if (heldWrite != null && !heldWrite.finished) {
+      throw new IllegalStateException("fixture_write_already_armed");
+    }
+    heldWrite = new HeldWrite(documentId);
+    return heldWriteStatus(documentId);
+  }
+
+  static synchronized Bundle heldWriteStatus(String documentId) {
+    if (heldWrite == null || !heldWrite.documentId.equals(documentId)) {
+      throw new IllegalStateException("fixture_write_not_armed");
+    }
+    Bundle status = new Bundle();
+    status.putInt("provider_process_id", providerProcessId);
+    status.putInt("entered_process_id", heldWrite.enteredProcessId);
+    status.putInt("entered_count", heldWrite.enteredCount);
+    status.putBoolean("entered_on_main_thread", heldWrite.enteredOnMainThread);
+    status.putBoolean("released", heldWrite.release.getCount() == 0);
+    status.putBoolean("finished", heldWrite.finished);
+    status.putBoolean("timed_out", heldWrite.timedOut);
+    return status;
+  }
+
+  static synchronized Bundle releaseHeldWrite(String documentId) {
+    if (heldWrite == null || !heldWrite.documentId.equals(documentId)) {
+      throw new IllegalStateException("fixture_write_not_armed");
+    }
+    heldWrite.release.countDown();
+    return heldWriteStatus(documentId);
+  }
+
+  private static void awaitHeldWrite(String documentId) throws FileNotFoundException {
+    final HeldWrite barrier;
+    synchronized (FixtureDocumentsProvider.class) {
+      if (heldWrite == null || !heldWrite.documentId.equals(documentId) || heldWrite.finished) return;
+      barrier = heldWrite;
+      barrier.enteredCount++;
+      barrier.enteredProcessId = android.os.Process.myPid();
+      barrier.enteredOnMainThread = Looper.myLooper() == Looper.getMainLooper();
+    }
+    try {
+      if (!barrier.release.await(30, TimeUnit.SECONDS)) {
+        barrier.timedOut = true;
+        throw new FileNotFoundException("fixture_held_write_timed_out");
+      }
+      // Refuse before opening the rw descriptor: no destination bytes can be changed.
+      throw new FileNotFoundException("fixture_held_write_refused");
+    } catch (InterruptedException error) {
+      Thread.currentThread().interrupt();
+      FileNotFoundException failure = new FileNotFoundException("fixture_held_write_interrupted");
+      failure.initCause(error);
+      throw failure;
+    } finally {
+      barrier.finished = true;
+    }
+  }
   private static final String[] ROOT_COLUMNS = {
     Root.COLUMN_ROOT_ID,
     Root.COLUMN_DOCUMENT_ID,
@@ -38,6 +116,7 @@ public final class FixtureDocumentsProvider extends DocumentsProvider {
 
   @Override
   public boolean onCreate() {
+    providerProcessId = android.os.Process.myPid();
     File directory = fixtureDirectory();
     if (!directory.exists() && !directory.mkdirs()) {
       throw new IllegalStateException("fixture_directory_create_failed");
@@ -137,6 +216,7 @@ public final class FixtureDocumentsProvider extends DocumentsProvider {
     if ("pipe.txt".equals(documentId) && !mode.contains("w")) {
       return openPipe(file);
     }
+    if (mode.contains("w")) awaitHeldWrite(documentId);
     int access =
         mode.contains("w")
             ? ParcelFileDescriptor.MODE_READ_WRITE | ParcelFileDescriptor.MODE_CREATE

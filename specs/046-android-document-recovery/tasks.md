@@ -99,3 +99,7 @@ T001-T004 precede implementation. Native contracts/writer (T008-T009/T017) and r
 - [x] T040 Honor stale dirty-close Save/Save As admission before native I/O in App.tsx, retain red-first withheld-receipt/stale-editor regression coverage and existing feedback in App.test.tsx, and distinguish actual pending button values from callback-evaluation failures in AndroidDeliveryInstrumentedTest.kt per FR-008/009/010/016.
 
 - [x] T041 Apply the pinned single-owner keyboard-inset contract in App.tsx for the native-resized Android WebView, retain red-first default-layout and visual-only inset regressions, and verify exact Chromium69 editor/target geometry without changing generated brand assets or native input assertions per FR-005/006/016/017.
+
+- [x] T042 Align BrandBuilderAppFrameInstrumentedTest.kt keyboard qualification with the pinned single-owner inset contract using independent before/show/hide native/browser bounds and real IME facts, preserving actual keyboard input, focus, strict geometry, restoration and existing deadlines per FR-005/016/017.
+
+- [x] T043 Separate real system-picker cancellation from actual held native-write pending qualification in AndroidDeliveryInstrumentedTest.kt and the existing test-only FixtureDocumentsProvider.java/FixtureGrantProvider.java; preserve one chooser, strict disabled/rejected-Discard state, bounded entry, deliberate pre-open refusal, cleanup, dirty/original preservation and exact final UTF-8 readback per FR-008/009/016.

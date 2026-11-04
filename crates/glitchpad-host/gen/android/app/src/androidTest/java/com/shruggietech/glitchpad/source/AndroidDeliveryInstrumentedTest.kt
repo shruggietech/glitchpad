@@ -481,24 +481,16 @@ class AndroidDeliveryInstrumentedTest {
     waitForCondition(scenario, "!document.querySelector('.resolution-dialog') && !!document.querySelector('.cm-content[contenteditable=true]')", "dirty close cancellation must retain the draft")
     assertEquals("true", evaluate(scenario, "(()=>{document.querySelector('.app-shell').dispatchEvent(new KeyboardEvent('keydown',{key:'w',ctrlKey:true,bubbles:true}));return true;})()"))
     waitForBodyText(scenario, "Unsaved changes in Untitled.txt")
+    val pickerPackage = createDocumentPickerPackage()
     val monitor = instrumentation.addMonitor(IntentFilter(Intent.ACTION_CREATE_DOCUMENT).apply { addCategory(Intent.CATEGORY_OPENABLE); addDataType("*/*") }, null, false)
     try {
-      val pickerPackage = createDocumentPickerPackage()
       tapUnblockedNativeControl(scenario, "Save As")
       waitForNativePickerWindow(scenario, "Save As", pickerPackage)
-      val pendingObservations = JSONObject()
-      try {
-        waitForCondition(scenario, "Array.from(document.querySelectorAll('.resolution-dialog button')).every(b=>b.disabled)", "pending native Save must disable Discard/Close decisions", pendingObservations)
-      } catch (failure: AssertionError) {
-        runCatching { capturePendingResolutionFailure(scenario, pickerPackage, monitor.hits, pendingObservations) }
-          .onFailure { println("native_pending_resolution_capture_failed=" + it.javaClass.simpleName); System.out.flush() }
-        throw failure
-      }
-      assertEquals("true", evaluate(scenario, "(()=>{const discard=Array.from(document.querySelectorAll('.resolution-dialog button')).find(b=>b.textContent.trim()==='Discard');if(!discard||!discard.disabled)return false;discard.click();return !!document.querySelector('.cm-content');})()"))
+      assertTrue("one real native create chooser must own the cancelled save", monitor.hits == 1)
       instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
       waitForAppNativeWindow(scenario, "Save As", pickerPackage)
       waitForBodyText(scenario, "Save cancelled. Edits remain open.")
-      assertTrue("one native create chooser must own the pending save", monitor.hits == 1)
+      assertTrue("native Back must not launch another create chooser", monitor.hits == 1)
     } finally { instrumentation.removeMonitor(monitor) }
     waitForCondition(scenario, """
       (()=>{
@@ -508,9 +500,72 @@ class AndroidDeliveryInstrumentedTest {
           !!identity&&identity.textContent.includes('Untitled.txt')&&identity.textContent.includes('Unsaved changes')&&rect.width>0&&rect.height>0;
       })()
     """.trimIndent(), "cancelled native Save must dismiss the close decision and retain the visible editable unsaved draft")
-    assertEquals("cancelled native Save and blocked Discard must retain every draft character", "S046_DIRTY_CLOSE_BYTES\n", browserEditorInputSnapshot(scenario).getString("semantic_text"))
+    assertEquals("cancelled native Save must retain every draft character", "S046_DIRTY_CLOSE_BYTES\n", browserEditorInputSnapshot(scenario).getString("semantic_text"))
+    assertEquals("the controlled destination must remain empty before the held native write", 0, readBytes(destination).size)
+
+    // Observe pending choices while real native I/O is held in the fixture provider.
+    // The separate real picker above owns native Back/cancellation coverage.
+    val heldMonitor = instrumentation.addMonitor(IntentFilter(Intent.ACTION_CREATE_DOCUMENT).apply { addCategory(Intent.CATEGORY_OPENABLE); addDataType("*/*") }, chosen(destination), true)
+    val pendingObservations = JSONObject()
+    var armRequested = false
+    var originalFailure: Throwable? = null
+    try {
+      armRequested = true
+      val armed = heldFixtureWriteState("arm_held_write", destination)
+      val providerProcess = armed.getInt("provider_process_id")
+      assertTrue("the fixture document provider must report its actual process", providerProcess > 0)
+      assertEquals("fixture control and document providers must actually share the barrier process", providerProcess, armed.getInt("control_process_id"))
+      assertEquals("true", evaluate(scenario, "(()=>{document.querySelector('.app-shell').dispatchEvent(new KeyboardEvent('keydown',{key:'w',ctrlKey:true,bubbles:true}));return true;})()"))
+      waitForBodyText(scenario, "Unsaved changes in Untitled.txt")
+      clickControl(scenario, "Save As")
+      waitForCondition(scenario, "Array.from(document.querySelectorAll('.resolution-dialog button')).every(b=>b.disabled)", "pending native Save must disable Discard/Close decisions", pendingObservations) {
+        val held = heldFixtureWriteState("held_write_status", destination)
+        val window = nativeHandoffState(scenario, "Save As")
+        pendingObservations.put("held_provider", held).put("foreground_window", window)
+        held.getInt("entered_count") == 1 && held.getInt("entered_process_id") == providerProcess &&
+          held.getInt("control_process_id") == providerProcess && !held.getBoolean("entered_on_main_thread") &&
+          !held.getBoolean("released") && !held.getBoolean("finished") && !held.getBoolean("timed_out") &&
+          window.getString("scenario_state") == androidx.lifecycle.Lifecycle.State.RESUMED.name &&
+          window.optBoolean("activity_window_focus") && window.optBoolean("webview_window_focus") && window.optBoolean("webview_shown")
+      }
+      assertEquals("one native create result must own the held write", 1, heldMonitor.hits)
+      assertEquals("true", evaluate(scenario, "(()=>{const discard=Array.from(document.querySelectorAll('.resolution-dialog button')).find(b=>b.textContent.trim()==='Discard');if(!discard||!discard.disabled)return false;discard.click();return !!document.querySelector('.cm-content');})()"))
+      assertEquals("blocked Discard during real native I/O must retain every draft character", "S046_DIRTY_CLOSE_BYTES\n", browserEditorInputSnapshot(scenario).getString("semantic_text"))
+    } catch (failure: Throwable) {
+      originalFailure = failure
+      runCatching { capturePendingResolutionFailure(scenario, pickerPackage, heldMonitor.hits, pendingObservations) }
+        .onFailure { println("native_pending_resolution_capture_failed=" + it.javaClass.simpleName); System.out.flush() }
+      throw failure
+    } finally {
+      val release = if (armRequested) runCatching { heldFixtureWriteState("release_held_write", destination) } else null
+      instrumentation.removeMonitor(heldMonitor)
+      if (release?.isFailure == true) {
+        if (originalFailure == null) throw AssertionError("the controlled native write barrier must be released", release.exceptionOrNull())
+        println("native_held_write_release_failed=" + release.exceptionOrNull()?.javaClass?.simpleName)
+        System.out.flush()
+      }
+    }
+    waitForBodyText(scenario, "Save did not complete. Try again or choose another destination. Your edits remain open.")
+    waitForCondition(scenario, "!document.querySelector('.resolution-dialog') && !!document.querySelector('.cm-content[contenteditable=true]')", "refused held native Save must dismiss the close decision and retain the editable draft")
+    val refused = heldFixtureWriteState("held_write_status", destination)
+    assertTrue("the controlled write must finish only after explicit barrier release", refused.getBoolean("released") && refused.getBoolean("finished") && !refused.getBoolean("timed_out"))
+    assertEquals("the held writer must enter exactly once", 1, refused.getInt("entered_count"))
+    assertEquals("refusal before descriptor open must preserve the empty destination", 0, readBytes(destination).size)
+    assertEquals("refused held Save and blocked Discard must retain every draft character", "S046_DIRTY_CLOSE_BYTES\n", browserEditorInputSnapshot(scenario).getString("semantic_text"))
+    println("native_held_write_evidence=" + refused.put("pending_choices_disabled", true).put("disabled_discard_retained_source", true).put("empty_destination_preserved", true))
+    System.out.flush()
     chooseNative(scenario, Intent.ACTION_CREATE_DOCUMENT, chosen(destination), { menuAction(scenario, "Save") }, "Saved after native verification.")
     assertTrue("pending Discard attempt must not lose draft bytes", "S046_DIRTY_CLOSE_BYTES\n".toByteArray(Charsets.UTF_8).contentEquals(readBytes(destination)))
+  }
+
+  private fun heldFixtureWriteState(method: String, destination: Uri): JSONObject {
+    val status = requireNotNull(resolver.call(FixtureGrantProvider.COMMAND_URI, method, destination.toString(), null)) {
+      "the controlled provider must return explicit write barrier state"
+    }
+    return JSONObject().put("control_process_id", status.getInt("control_process_id"))
+      .put("provider_process_id", status.getInt("provider_process_id")).put("entered_process_id", status.getInt("entered_process_id"))
+      .put("entered_count", status.getInt("entered_count")).put("entered_on_main_thread", status.getBoolean("entered_on_main_thread"))
+      .put("released", status.getBoolean("released")).put("finished", status.getBoolean("finished")).put("timed_out", status.getBoolean("timed_out"))
   }
 
   private fun capturePendingResolutionFailure(
@@ -1087,10 +1142,17 @@ class AndroidDeliveryInstrumentedTest {
   }
 
   private fun waitForCondition(
-    scenario: ActivityScenario<MainActivity>, script: String, reason: String, observations: JSONObject? = null
+    scenario: ActivityScenario<MainActivity>, script: String, reason: String, observations: JSONObject? = null,
+    prerequisite: (() -> Boolean)? = null
   ) {
     val deadline = SystemClock.elapsedRealtime() + 30_000L
     while (SystemClock.elapsedRealtime() < deadline) {
+      if (prerequisite != null) {
+        val ready = runCatching { prerequisite() }
+        observations?.let { it.put("prerequisite_count", it.optInt("prerequisite_count") + 1) }
+        if (ready.isFailure) observations?.put("prerequisite_failure_type", ready.exceptionOrNull()?.javaClass?.simpleName)
+        if (!ready.getOrDefault(false)) { SystemClock.sleep(100L); continue }
+      }
       val result = runCatching { evaluate(scenario, script) }
       if (observations != null) {
         observations.put("attempt_count", observations.optInt("attempt_count") + 1)

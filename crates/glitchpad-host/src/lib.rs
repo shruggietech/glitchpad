@@ -651,11 +651,24 @@ async fn save_android_source_as(
     app: tauri::AppHandle,
     request: glitchpad_core::source::AndroidSaveAsRequest,
 ) -> Result<glitchpad_core::source::AndroidSaveAsReceipt, glitchpad_core::contracts::CoreError> {
-    android_interactive::run(move || {
+    let result = android_interactive::run(move || {
         app.state::<android_source::AndroidSourceHost>()
             .save_as(request)
     })
-    .await
+    .await;
+    #[cfg(debug_assertions)]
+    if result.is_ok() {
+        let _ = std::io::Write::write_all(
+            &mut std::io::stderr(),
+            b"android_save_observation=save_as_host_completed_ok\n",
+        );
+    } else {
+        let _ = std::io::Write::write_all(
+            &mut std::io::stderr(),
+            b"android_save_observation=save_as_host_completed_error\n",
+        );
+    }
+    result
 }
 
 #[cfg(target_os = "android")]
@@ -673,11 +686,24 @@ async fn create_android_document(
     app: tauri::AppHandle,
     request: glitchpad_core::source::AndroidCreateRequest,
 ) -> Result<glitchpad_core::source::AndroidCreateReceipt, glitchpad_core::contracts::CoreError> {
-    android_interactive::run(move || {
+    let result = android_interactive::run(move || {
         app.state::<android_source::AndroidSourceHost>()
             .create_document(request)
     })
-    .await
+    .await;
+    #[cfg(debug_assertions)]
+    if result.is_ok() {
+        let _ = std::io::Write::write_all(
+            &mut std::io::stderr(),
+            b"android_save_observation=create_host_completed_ok\n",
+        );
+    } else {
+        let _ = std::io::Write::write_all(
+            &mut std::io::stderr(),
+            b"android_save_observation=create_host_completed_error\n",
+        );
+    }
+    result
 }
 
 #[cfg(target_os = "android")]

@@ -119,3 +119,7 @@ T001-T004 precede implementation. Native contracts/writer (T008-T009/T017) and r
 ## Phase 12: Convergence
 
 - [x] T050 Fit the diagnostic sheet to actual native-visible WebView bounds through the existing optional diagnostic environment read and asynchronous host scheduling, preserve frozen payload identity and inset ownership, correct local stacking, and prove all controls plus first/final preview lines remain reachable across scaled/short/rotated layouts and fresh APK journeys per FR-013/014/016/017 (partial, HIGH F3).
+
+## Phase 13: Convergence
+
+- [x] T051 Capture bounded native picker/result/Rust completion stages and failure-only dirty-close status/dialog/pending/identity observations before instrumentation cleanup, retain strict cancellation/source/byte/deadline assertions and qualify the actual failing boundary before a product repair per FR-001/008/015/016/018 (partial verification, HIGH F4).

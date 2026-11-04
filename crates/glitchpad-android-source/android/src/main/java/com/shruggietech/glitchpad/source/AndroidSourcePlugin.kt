@@ -70,6 +70,15 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
   // Hosted instrumentation reads this private, bounded state by reflection only.
   private val deliveryObservation = if ((activity.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0) DeliveryObservation() else null
 
+  private enum class SaveObservationStage {
+    PICKER_LAUNCH_REQUESTED, PICKER_LAUNCH_RETURNED, PICKER_LAUNCH_FAILED,
+    RESULT_CANCELLED, RESULT_OK, RESULT_OTHER, CANCEL_REJECT_REQUESTED, CANCEL_REJECT_RETURNED
+  }
+
+  private fun observeSave(stage: SaveObservationStage) {
+    if (deliveryObservation != null) runCatching { android.util.Log.d("GlitchpadSaveObs", stage.name) }
+  }
+
   private enum class DeliveryStage {
     CREATED, LOADED, NEW_INTENT_RECEIVED, INBOUND_IGNORED, CANDIDATE_QUEUED,
     CANDIDATE_REJECTED, QUEUE_FULL, NOTIFICATION_CALLED, NOTIFICATION_RETURNED,
@@ -346,8 +355,14 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
       .setType(args.mediaType ?: "application/octet-stream")
       .putExtra(Intent.EXTRA_TITLE, args.suggestedName ?: "document")
       .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
-    try { startActivityForResult(invoke, intent, "saveAsResult") }
-    catch (error: Exception) { invoke.reject("picker_failed") }
+    observeSave(SaveObservationStage.PICKER_LAUNCH_REQUESTED)
+    try {
+      startActivityForResult(invoke, intent, "saveAsResult")
+      observeSave(SaveObservationStage.PICKER_LAUNCH_RETURNED)
+    } catch (error: Exception) {
+      observeSave(SaveObservationStage.PICKER_LAUNCH_FAILED)
+      invoke.reject("picker_failed")
+    }
   }
 
   @Command
@@ -429,8 +444,18 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
 
   @ActivityCallback
   fun saveAsResult(invoke: Invoke, result: ActivityResult) {
-    if (result.resultCode == Activity.RESULT_CANCELED) return invoke.reject("picker_cancelled")
-    if (result.resultCode != Activity.RESULT_OK) return invoke.reject("picker_failed")
+    if (result.resultCode == Activity.RESULT_CANCELED) {
+      observeSave(SaveObservationStage.RESULT_CANCELLED)
+      observeSave(SaveObservationStage.CANCEL_REJECT_REQUESTED)
+      invoke.reject("picker_cancelled")
+      observeSave(SaveObservationStage.CANCEL_REJECT_RETURNED)
+      return
+    }
+    if (result.resultCode != Activity.RESULT_OK) {
+      observeSave(SaveObservationStage.RESULT_OTHER)
+      return invoke.reject("picker_failed")
+    }
+    observeSave(SaveObservationStage.RESULT_OK)
     val args = invoke.parseArgs(PickerArgs::class.java)
     val bytes = args.bytes?.map(Int::toByte)?.toByteArray() ?: ByteArray(0)
     ioExecutor.execute {

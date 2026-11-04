@@ -188,17 +188,33 @@ impl<R: Runtime> AndroidSource<R> {
         bytes: &[u8],
         protected_bridge_token: Option<&str>,
     ) -> Result<SaveAsResponse, String> {
-        self.0
-            .run_mobile_plugin(
-                "saveAs",
-                PickerRequest {
-                    media_type,
-                    suggested_name: Some(suggested_name),
-                    bytes: Some(bytes),
-                    protected_bridge_token,
-                },
-            )
-            .map_err(|error| error.to_string())
+        #[cfg(debug_assertions)]
+        let _ = std::io::Write::write_all(
+            &mut std::io::stderr(),
+            b"android_save_observation=rust_mobile_requested\n",
+        );
+        let response = self.0.run_mobile_plugin(
+            "saveAs",
+            PickerRequest {
+                media_type,
+                suggested_name: Some(suggested_name),
+                bytes: Some(bytes),
+                protected_bridge_token,
+            },
+        );
+        #[cfg(debug_assertions)]
+        if response.is_ok() {
+            let _ = std::io::Write::write_all(
+                &mut std::io::stderr(),
+                b"android_save_observation=rust_mobile_result_ok\n",
+            );
+        } else {
+            let _ = std::io::Write::write_all(
+                &mut std::io::stderr(),
+                b"android_save_observation=rust_mobile_result_error\n",
+            );
+        }
+        response.map_err(|error| error.to_string())
     }
 
     /// Shares frozen JSON through a temporary read grant.

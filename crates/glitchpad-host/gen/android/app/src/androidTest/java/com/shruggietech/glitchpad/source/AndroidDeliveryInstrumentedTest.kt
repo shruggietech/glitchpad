@@ -498,12 +498,21 @@ class AndroidDeliveryInstrumentedTest {
     waitForBodyText(scenario, "Unsaved changes in Untitled.txt")
     val pickerPackage = createDocumentPickerPackage()
     val monitor = instrumentation.addMonitor(IntentFilter(Intent.ACTION_CREATE_DOCUMENT).apply { addCategory(Intent.CATEGORY_OPENABLE); addDataType("*/*") }, null, false)
+    val beforePickerSurfaceId = runCatching {
+      stringValue(evaluate(scenario, "(()=>{const surface=document.querySelector('.document-surface');return surface?surface.id:'';})()"))
+    }.getOrNull()
     try {
       tapNativeControlOnce(scenario, "Save As")
       waitForNativePickerWindow(scenario, "Save As", pickerPackage)
       assertTrue("one real native create chooser must own the cancelled save", monitor.hits == 1)
       cancelExternalNativeWindow(scenario, "document picker", pickerPackage)
-      waitForBodyText(scenario, "Save cancelled. Edits remain open.")
+      try {
+        waitForBodyText(scenario, "Save cancelled. Edits remain open.")
+      } catch (failure: Throwable) {
+        runCatching { captureCancelledSaveFailure(scenario, beforePickerSurfaceId, monitor.hits) }
+          .onFailure { println("native_cancelled_save_capture_failed=true"); System.out.flush() }
+        throw failure
+      }
       assertTrue("native Back must not launch another create chooser", monitor.hits == 1)
     } finally { instrumentation.removeMonitor(monitor) }
     waitForCondition(scenario, """
@@ -582,6 +591,101 @@ class AndroidDeliveryInstrumentedTest {
       .put("provider_process_id", status.getInt("provider_process_id")).put("entered_process_id", status.getInt("entered_process_id"))
       .put("entered_count", status.getInt("entered_count")).put("entered_on_main_thread", status.getBoolean("entered_on_main_thread"))
       .put("released", status.getBoolean("released")).put("finished", status.getBoolean("finished")).put("timed_out", status.getBoolean("timed_out"))
+  }
+
+  private fun cancelledSaveBrowserScript(beforePickerSurfaceId: String?): String = """
+    (()=>{
+      const expectedSurface=EXPECTED_SURFACE;
+      const surface=document.querySelector('.document-surface');
+      const editor=surface&&surface.querySelector('.cm-content[contenteditable=true]');
+      const context=editor&&editor.editContext;
+      const dialogs=Array.from(document.querySelectorAll('.resolution-dialog'));
+      const dialog=dialogs[0];
+      const buttons=dialog?Array.from(dialog.querySelectorAll('button')):[];
+      const statusNodes=Array.from(document.querySelectorAll('[role=status],[role=alert]'));
+      const statuses=statusNodes.slice(0,12).map(node=>node.textContent||'');
+      const command=document.querySelector('.command-result');
+      const commandText=command?command.textContent||'':'';
+      const bodyText=document.body?document.body.innerText:'';
+      const knownFeedback=[
+        ['save_cancelled','Save cancelled. Edits remain open.'],
+        ['save_pending','Saving. Waiting for a verified native write receipt.'],
+        ['save_verified','Saved after native verification.'],
+        ['save_failed','Save did not complete. Try again or choose another destination. Your edits remain open.'],
+        ['destination_conflict','That destination already contains a document. Choose a new name or another destination. Your edits remain open.'],
+        ['source_unavailable','Source access is unavailable. Select the source again, then save a copy to a new destination. Your edits remain open.'],
+        ['source_changed','The source changed. Open it again to review the changes, then save a copy to a new destination. Your edits remain open.'],
+        ['original_destination_denied','Choose a different destination to keep the original unchanged. Your edits remain open.'],
+        ['write_unverified','The destination write could not be verified. Choose another destination or try again. Your edits remain open.'],
+        ['save_budget_exceeded','This document exceeds the native save limit. Keep it open and copy smaller sections to another document.']
+      ];
+      const classify=text=>knownFeedback.filter(entry=>text.includes(entry[1])).map(entry=>entry[0]);
+      const staleSuffix=' changed while the decision was open. Review the current unsaved changes.';
+      const lines=editor?Array.from(editor.querySelectorAll(':scope > .cm-line')):[];
+      const semantic=lines.map(line=>line.textContent||'').join('\n');
+      const identity=document.querySelector('[data-draft-identity]');
+      const identityState=identity&&identity.lastElementChild?identity.lastElementChild.textContent:'';
+      const activeTab=document.querySelector('[role=tab][aria-selected=true]');
+      const revision=surface?Number(surface.getAttribute('data-performance-revision')):NaN;
+      const add=document.querySelector('[data-add-document]');
+      return {
+        app_shell_present:!!document.querySelector('.app-shell'),
+        application_recovery_present:!!document.querySelector('.application-recovery'),
+        bootstrap_recovery_present:!!Array.from(document.querySelectorAll('.application-recovery h1')).find(node=>node.textContent==='Glitchpad could not start'),
+        root_recovery_present:!!Array.from(document.querySelectorAll('.application-recovery h1')).find(node=>node.textContent==='Glitchpad could not continue'),
+        document_recovery_present:!!document.querySelector('.document-render-failure,.markdown-failure,.markdown-recovery-banner'),
+        expected_feedback_in_body:bodyText.includes('Save cancelled. Edits remain open.'),
+        body_length:bodyText.length,
+        command_feedback:classify(commandText),
+        command_status_present:!!command,
+        command_feedback_unclassified:!!commandText&&classify(commandText).length===0,
+        status_count:statusNodes.length,
+        status_feedback:statuses.map(classify),
+        stale_decision_feedback:statuses.some(text=>text.endsWith(staleSuffix)),
+        resolution_count:dialogs.length,
+        dialog_count:document.querySelectorAll('[role=dialog]').length,
+        dialog_aria_busy:!!dialog&&dialog.getAttribute('aria-busy')==='true',
+        dialog_waiting_for_receipt:!!dialog&&!!Array.from(dialog.querySelectorAll('[role=status]')).find(node=>node.textContent==='Save As requested. The document remains open until a durable receipt arrives.'||node.textContent==='Save requested. The document remains open until a durable receipt arrives.'),
+        decision_buttons:buttons.slice(0,8).map(button=>({kind:({'Save':'save','Save As':'save_as','Discard':'discard','Cancel':'cancel'})[button.textContent.trim()]||'unclassified',disabled:button.disabled})),
+        surface_count:document.querySelectorAll('.document-surface').length,
+        surface_present:!!surface,
+        before_picker_surface_available:!!expectedSurface,
+        same_surface_as_before_picker:!!expectedSurface&&!!surface&&surface.id===expectedSurface,
+        active_tab_present:!!activeTab,
+        active_tab_matches_surface:!!activeTab&&!!surface&&activeTab.getAttribute('aria-controls')===surface.id,
+        surface_revision:Number.isFinite(revision)?revision:null,
+        editable_surface_present:!!editor,
+        editor_focused:!!editor&&document.activeElement===editor,
+        semantic_length:editor?semantic.length:null,
+        semantic_utf8_bytes:editor&&typeof TextEncoder==='function'?new TextEncoder().encode(semantic).length:null,
+        editing_length:editor?(context?context.text:editor.innerText).length:null,
+        draft_identity_present:!!identity,
+        draft_saving:identityState==='Saving…',
+        draft_unsaved:identityState==='Unsaved changes',
+        draft_saved:identityState==='Saved',
+        add_disabled:!!add&&add.getAttribute('data-disabled')==='true',
+        add_hidden:!!add&&getComputedStyle(add).visibility==='hidden',
+        document_focused:document.hasFocus()
+      };
+    })()
+  """.trimIndent().replace("EXPECTED_SURFACE", JSONObject.quote(beforePickerSurfaceId ?: ""))
+
+  private fun captureCancelledSaveFailure(
+    scenario: ActivityScenario<MainActivity>, beforePickerSurfaceId: String?, monitorHits: Int
+  ) {
+    val browser = runCatching { JSONObject(evaluate(scenario, cancelledSaveBrowserScript(beforePickerSurfaceId))) }
+      .getOrElse { failure -> JSONObject().put("capture_failed", true)
+        .put("capture_failure", if (failure is AssertionError && failure.message == "WebView image control did not complete") "callback_timeout" else "snapshot_unavailable") }
+    val screenshotSaved = runCatching {
+      val screenshot = File(clientContext.filesDir, "s046-authoring.png")
+      screenshot.delete()
+      saveScreenshot("s046-authoring.png")
+      screenshot.isFile
+    }.getOrDefault(false)
+    println("native_cancelled_save_failure=" + JSONObject().put("phase", "cancelled_native_save_feedback")
+      .put("api_level", Build.VERSION.SDK_INT).put("monitor_hits", monitorHits).put("browser", browser)
+      .put("screenshot_saved", screenshotSaved))
+    System.out.flush()
   }
 
   private fun capturePendingResolutionFailure(

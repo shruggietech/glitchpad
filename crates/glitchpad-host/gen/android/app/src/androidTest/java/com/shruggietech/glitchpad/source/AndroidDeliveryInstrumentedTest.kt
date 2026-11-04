@@ -283,8 +283,9 @@ class AndroidDeliveryInstrumentedTest {
       chooseNative(scenario, Intent.ACTION_CREATE_DOCUMENT, ActivityResult(Activity.RESULT_CANCELED, Intent()), { menuAction(scenario, "Save") }, "Cancelled. Your document and edits remain available.")
       waitForCondition(scenario, "!!document.querySelector('.cm-content[contenteditable=true]')", "cancelled draft must remain editable")
       val refused = destination(type, "s046-write-refused")
-      chooseNative(scenario, Intent.ACTION_CREATE_DOCUMENT, chosen(refused), { menuAction(scenario, "Save") }, "The action failed. Your document and edits remain available.")
+      chooseNative(scenario, Intent.ACTION_CREATE_DOCUMENT, chosen(refused), { menuAction(scenario, "Save") }, "Save did not complete. Try again or choose another destination. Your edits remain open.")
       assertEquals("failed native write must not change its empty destination", 0, readBytes(refused).size)
+      assertEquals("write refusal must retain every edited source character", text, browserEditorInputSnapshot(scenario).getString("semantic_text"))
       val saved = destination(type, "s046-draft")
       chooseNative(scenario, Intent.ACTION_CREATE_DOCUMENT, chosen(saved), { if (choice == "New text file") keyboardSave(scenario) else menuAction(scenario, "Save") }, "Saved after native verification.")
       assertTrue("saved draft must match exact expected UTF-8 bytes", text.toByteArray(Charsets.UTF_8).contentEquals(readBytes(saved)))
@@ -555,6 +556,22 @@ class AndroidDeliveryInstrumentedTest {
     val filter = IntentFilter(action).apply { addCategory(Intent.CATEGORY_OPENABLE); addDataType("*/*") }
     val monitor = instrumentation.addMonitor(filter, result, true)
     try { trigger(); waitForBodyText(scenario, *expected); assertEquals("native chooser must be invoked exactly once", 1, monitor.hits) }
+    catch (failure: AssertionError) {
+      val observed = runCatching { evaluate(scenario, """
+        (()=>({
+          body_text:document.body?document.body.innerText.slice(0,4096):'',
+          statuses:Array.from(document.querySelectorAll('[role=status],[role=alert]')).slice(0,8).map(node=>node.textContent.slice(0,512)),
+          draft_identity:document.querySelector('[data-draft-identity]')?document.querySelector('[data-draft-identity]').textContent.slice(0,256):null,
+          editable_surface_present:!!document.querySelector('.cm-content[contenteditable=true]')
+        }))()
+      """.trimIndent()) }.getOrDefault("null")
+      val screenshotSaved = runCatching { saveScreenshot("s046-authoring.png"); File(clientContext.filesDir, "s046-authoring.png").isFile }.getOrDefault(false)
+      println("native_chooser_failure=" + JSONObject().put("action", action).put("injected_result_code", result.resultCode)
+        .put("monitor_hits", monitor.hits).put("expected", JSONArray(expected.toList()))
+        .put("state_json", observed.take(8192)).put("screenshot_saved", screenshotSaved))
+      System.out.flush()
+      throw failure
+    }
     finally { instrumentation.removeMonitor(monitor) }
   }
 
@@ -683,6 +700,9 @@ class AndroidDeliveryInstrumentedTest {
     browserBefore.remove("semantic_text")
     if (browserBefore.getBoolean("edit_context_attached"))
       assertEquals("the controlled EditContext must expose the complete semantic source", beforeSemanticText, beforeInputText)
+    assertTrue("the complete semantic source must be the prefix of its public editing representation", beforeInputText.startsWith(beforeSemanticText))
+    val semanticSelectionEnd = beforeSemanticText.length
+    browserBefore.put("requested_semantic_selection_start", 0).put("requested_semantic_selection_end", semanticSelectionEnd)
     assertTrue("the controlled native input fixture must fit a bounded complete input buffer", beforeInputText.length <= 16_384 && text.length <= 16_384)
     val connectionReference = AtomicReference<android.view.inputmethod.InputConnection?>()
     val handlerReference = AtomicReference<android.os.Handler?>()
@@ -704,10 +724,10 @@ class AndroidDeliveryInstrumentedTest {
     val handler = requireNotNull(handlerReference.get()) { "native InputConnection must expose its input dispatch handler" }
     waitForNativeEditorState(connection, handler, beforeInputText)
     assertTrue("native IME must finish any active composition", onEditorInputThread(connection, handler) { it.finishComposingText() })
-    assertTrue("native IME must select the complete controlled input buffer", onEditorInputThread(connection, handler) { it.setSelection(0, beforeInputText.length) })
-    val selectedState = waitForNativeEditorState(connection, handler, beforeInputText, 0, beforeInputText.length)
+    assertTrue("native IME must select the complete semantic source, excluding rendered paragraph markers", onEditorInputThread(connection, handler) { it.setSelection(0, semanticSelectionEnd) })
+    val selectedState = waitForNativeEditorState(connection, handler, beforeInputText, 0, semanticSelectionEnd)
     if (browserBefore.getBoolean("edit_context_attached")) {
-      waitForCondition(scenario, "(()=>{const editor=document.querySelector('.cm-content[contenteditable=true]');const context=editor&&editor.editContext;return !!context&&context.selectionStart===0&&context.selectionEnd===" + beforeInputText.length + ";})()", "native IME selection must reach the actual EditContext before replacement")
+      waitForCondition(scenario, "(()=>{const editor=document.querySelector('.cm-content[contenteditable=true]');const context=editor&&editor.editContext;return !!context&&context.selectionStart===0&&context.selectionEnd===" + semanticSelectionEnd + ";})()", "native IME selection must reach the actual EditContext before replacement")
     }
     assertTrue("native IME must accept the exact Unicode and multiline text", onEditorInputThread(connection, handler) { it.commitText(text, 1) })
     val expected = JSONObject.quote(text)

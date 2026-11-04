@@ -97,3 +97,5 @@ T001-T004 precede implementation. Native contracts/writer (T008-T009/T017) and r
 - [x] T039 Freeze the native post-commit expected buffer only from one coherent current-editor observation with exact semantic source and matching public editing representation; retain existing deadlines and exact native cursor/text assertions, and add bounded phase/expected-selection/failure facts in AndroidDeliveryInstrumentedTest.kt per FR-006/008/016.
 
 - [x] T040 Honor stale dirty-close Save/Save As admission before native I/O in App.tsx, retain red-first withheld-receipt/stale-editor regression coverage and existing feedback in App.test.tsx, and distinguish actual pending button values from callback-evaluation failures in AndroidDeliveryInstrumentedTest.kt per FR-008/009/010/016.
+
+- [x] T041 Apply the pinned single-owner keyboard-inset contract in App.tsx for the native-resized Android WebView, retain red-first default-layout and visual-only inset regressions, and verify exact Chromium69 editor/target geometry without changing generated brand assets or native input assertions per FR-005/006/016/017.

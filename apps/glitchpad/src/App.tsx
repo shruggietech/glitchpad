@@ -142,7 +142,8 @@ export function App({
   androidAuthoringGateway = nativeAndroidAuthoringGateway,
   androidRestorationGateway,
   desktopDeliveryGateway,
-  layoutResizeCanBeIme = nativeAndroidDeliveryAvailable(),
+  // MainActivity already resizes the WebView for the IME; reserve only visual obstruction.
+  layoutResizeCanBeIme = false,
 }: AppProps) {
   const [state, dispatch] = useReducer(tabReducer, sessions, createTabState);
   const [commandStatus, setCommandStatus] = useState('');

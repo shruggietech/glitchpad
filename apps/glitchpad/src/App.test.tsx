@@ -915,6 +915,127 @@ describe('document foundation shell', () => {
     }
   });
 
+  it('does not apply a native Android layout contraction twice', () => {
+    const originalInnerHeight = Object.getOwnPropertyDescriptor(
+      window,
+      'innerHeight',
+    );
+    const userAgent = vi
+      .spyOn(navigator, 'userAgent', 'get')
+      .mockReturnValue('Android');
+    vi.stubGlobal('__TAURI_INTERNALS__', {
+      invoke: vi.fn().mockResolvedValue(undefined),
+    });
+    vi.stubGlobal('visualViewport', undefined);
+    const probe = document.createElement('textarea');
+    let view: ReturnType<typeof render> | undefined;
+    try {
+      Object.defineProperty(window, 'innerHeight', {
+        configurable: true,
+        value: 640,
+      });
+      view = render(
+        <App
+          androidDeliveryGateway={authoringDelivery()}
+          androidRestorationGateway={null}
+          desktopDeliveryGateway={null}
+          recoveryGateway={null}
+          metadataGateway={null}
+          persistenceGateway={null}
+        />,
+      );
+      document.body.append(probe);
+      probe.focus();
+      Object.defineProperty(window, 'innerHeight', {
+        configurable: true,
+        value: 370,
+      });
+      act(() => {
+        window.dispatchEvent(new Event('resize'));
+      });
+      expect(
+        document.documentElement.style.getPropertyValue(
+          '--bb-visual-viewport-height',
+        ),
+      ).toBe('370px');
+      expect(
+        document.documentElement.style.getPropertyValue('--bb-ime-block-end'),
+      ).toBe('0px');
+      Object.defineProperty(window, 'innerHeight', {
+        configurable: true,
+        value: 640,
+      });
+      act(() => {
+        window.dispatchEvent(new Event('resize'));
+      });
+      expect(
+        document.documentElement.style.getPropertyValue('--bb-ime-block-end'),
+      ).toBe('0px');
+    } finally {
+      view?.unmount();
+      probe.remove();
+      if (originalInnerHeight)
+        Object.defineProperty(window, 'innerHeight', originalInnerHeight);
+      userAgent.mockRestore();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('retains visual-only Android IME obstruction when the layout has not resized', () => {
+    const originalInnerHeight = Object.getOwnPropertyDescriptor(
+      window,
+      'innerHeight',
+    );
+    const userAgent = vi
+      .spyOn(navigator, 'userAgent', 'get')
+      .mockReturnValue('Android');
+    vi.stubGlobal('__TAURI_INTERNALS__', {
+      invoke: vi.fn().mockResolvedValue(undefined),
+    });
+    const viewport = Object.assign(new EventTarget(), {
+      height: 640,
+      offsetTop: 0,
+    });
+    vi.stubGlobal('visualViewport', viewport);
+    let view: ReturnType<typeof render> | undefined;
+    try {
+      Object.defineProperty(window, 'innerHeight', {
+        configurable: true,
+        value: 640,
+      });
+      view = render(
+        <App
+          androidDeliveryGateway={authoringDelivery()}
+          androidRestorationGateway={null}
+          desktopDeliveryGateway={null}
+          recoveryGateway={null}
+          metadataGateway={null}
+          persistenceGateway={null}
+        />,
+      );
+      act(() => {
+        viewport.height = 370;
+        viewport.dispatchEvent(new Event('resize'));
+      });
+      expect(
+        document.documentElement.style.getPropertyValue('--bb-ime-block-end'),
+      ).toBe('270px');
+      act(() => {
+        viewport.height = 640;
+        viewport.dispatchEvent(new Event('resize'));
+      });
+      expect(
+        document.documentElement.style.getPropertyValue('--bb-ime-block-end'),
+      ).toBe('0px');
+    } finally {
+      view?.unmount();
+      if (originalInnerHeight)
+        Object.defineProperty(window, 'innerHeight', originalInnerHeight);
+      userAgent.mockRestore();
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('retains the focused layout baseline when the host declares resize can be IME', () => {
     const originalInnerHeight = Object.getOwnPropertyDescriptor(
       window,

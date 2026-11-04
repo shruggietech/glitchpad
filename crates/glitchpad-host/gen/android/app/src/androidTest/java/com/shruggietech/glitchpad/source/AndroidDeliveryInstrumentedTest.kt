@@ -486,7 +486,14 @@ class AndroidDeliveryInstrumentedTest {
       val pickerPackage = createDocumentPickerPackage()
       tapUnblockedNativeControl(scenario, "Save As")
       waitForNativePickerWindow(scenario, "Save As", pickerPackage)
-      waitForCondition(scenario, "Array.from(document.querySelectorAll('.resolution-dialog button')).every(b=>b.disabled)", "pending native Save must disable Discard/Close decisions")
+      val pendingObservations = JSONObject()
+      try {
+        waitForCondition(scenario, "Array.from(document.querySelectorAll('.resolution-dialog button')).every(b=>b.disabled)", "pending native Save must disable Discard/Close decisions", pendingObservations)
+      } catch (failure: AssertionError) {
+        runCatching { capturePendingResolutionFailure(scenario, pickerPackage, monitor.hits, pendingObservations) }
+          .onFailure { println("native_pending_resolution_capture_failed=" + it.javaClass.simpleName); System.out.flush() }
+        throw failure
+      }
       assertEquals("true", evaluate(scenario, "(()=>{const discard=Array.from(document.querySelectorAll('.resolution-dialog button')).find(b=>b.textContent.trim()==='Discard');if(!discard||!discard.disabled)return false;discard.click();return !!document.querySelector('.cm-content');})()"))
       instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
       waitForAppNativeWindow(scenario, "Save As", pickerPackage)
@@ -504,6 +511,37 @@ class AndroidDeliveryInstrumentedTest {
     assertEquals("cancelled native Save and blocked Discard must retain every draft character", "S046_DIRTY_CLOSE_BYTES\n", browserEditorInputSnapshot(scenario).getString("semantic_text"))
     chooseNative(scenario, Intent.ACTION_CREATE_DOCUMENT, chosen(destination), { menuAction(scenario, "Save") }, "Saved after native verification.")
     assertTrue("pending Discard attempt must not lose draft bytes", "S046_DIRTY_CLOSE_BYTES\n".toByteArray(Charsets.UTF_8).contentEquals(readBytes(destination)))
+  }
+
+  private fun capturePendingResolutionFailure(
+    scenario: ActivityScenario<MainActivity>, pickerPackage: String, monitorHits: Int, observations: JSONObject
+  ) {
+    val browser = runCatching { JSONObject(evaluate(scenario, """
+      (()=>{
+        const dialogs=Array.from(document.querySelectorAll('.resolution-dialog'));
+        const editor=document.querySelector('.cm-content[contenteditable=true]');
+        const identity=document.querySelector('[data-draft-identity]');
+        const surface=document.querySelector('.document-surface');
+        return {
+          resolution_count:dialogs.length,
+          surface_revision:surface?Number(surface.getAttribute('data-performance-revision')):null,
+          dialog_count:document.querySelectorAll('[role=dialog]').length,
+          buttons:dialogs.slice(0,2).map(dialog=>Array.from(dialog.querySelectorAll('button')).slice(0,8).map(button=>({label:(button.getAttribute('aria-label')||button.textContent).trim().slice(0,96),disabled:button.disabled}))),
+          statuses:Array.from(document.querySelectorAll('[role=status],[role=alert]')).slice(0,8).map(node=>node.textContent.slice(0,256)),
+          draft_identity:identity?identity.textContent.slice(0,256):null,
+          editable_surface_present:!!editor,
+          semantic_length:editor?Array.from(editor.querySelectorAll(':scope > .cm-line')).map(line=>line.textContent).join('\n').length:null
+        };
+      })()
+    """.trimIndent())) }.getOrElse { failure ->
+      JSONObject().put("capture_failed", true).put("failure_type", failure.javaClass.simpleName)
+        .put("callback_timeout", failure.message == "WebView image control did not complete")
+    }
+    val native = runCatching { nativeHandoffState(scenario, "Save As", pickerPackage) }
+      .getOrElse { JSONObject().put("capture_failed", true).put("failure_type", it.javaClass.simpleName) }
+    println("native_pending_resolution_failure=" + JSONObject().put("phase", "pending_native_save").put("api_level", Build.VERSION.SDK_INT)
+      .put("monitor_hits", monitorHits).put("pending_observations", observations).put("browser", browser).put("native_window", native))
+    System.out.flush()
   }
 
   private fun verifySharedImageActions(scenario: ActivityScenario<MainActivity>) {
@@ -1048,9 +1086,28 @@ class AndroidDeliveryInstrumentedTest {
     throw AssertionError("native IME must expose the complete exact editor buffer and selection: " + latest)
   }
 
-  private fun waitForCondition(scenario: ActivityScenario<MainActivity>, script: String, reason: String) {
+  private fun waitForCondition(
+    scenario: ActivityScenario<MainActivity>, script: String, reason: String, observations: JSONObject? = null
+  ) {
     val deadline = SystemClock.elapsedRealtime() + 30_000L
-    while (SystemClock.elapsedRealtime() < deadline) { if (runCatching { evaluate(scenario, script) }.getOrDefault("false") == "true") return; SystemClock.sleep(100L) }
+    while (SystemClock.elapsedRealtime() < deadline) {
+      val result = runCatching { evaluate(scenario, script) }
+      if (observations != null) {
+        observations.put("attempt_count", observations.optInt("attempt_count") + 1)
+        val value = result.getOrNull()
+        if (result.isSuccess) {
+          val kind = if (value == "true") "true" else if (value == "false") "false" else "non_boolean"
+          observations.put(kind + "_result_count", observations.optInt(kind + "_result_count") + 1).put("last_result", kind)
+        } else {
+          val failure = result.exceptionOrNull()
+          observations.put("evaluation_failure_count", observations.optInt("evaluation_failure_count") + 1)
+            .put("last_result", "evaluation_failed").put("last_failure_type", failure?.javaClass?.simpleName)
+            .put("last_callback_timeout", failure?.message == "WebView image control did not complete")
+        }
+      }
+      if (result.getOrDefault("false") == "true") return
+      SystemClock.sleep(100L)
+    }
     throw AssertionError(reason)
   }
 

@@ -1123,14 +1123,26 @@ export function App({
   const resolveDestructiveTransition = (
     decision: 'save' | 'save_as' | 'discard' | 'cancel',
   ) => {
-    if (!resolutionSession || pendingActions.current.has(resolutionSession.id))
+    const transition = stateRef.current.pendingTransition;
+    const session = stateRef.current.sessions.find(
+      (value) => value.id === transition?.target_session_id,
+    );
+    if (!transition || !session || pendingActions.current.has(session.id))
       return;
+    if (
+      (decision === 'save' || decision === 'save_as') &&
+      session.revision !== transition.requested_session_revision
+    ) {
+      setCommandStatus('');
+      dispatch({ type: 'resolve_transition', decision });
+      return;
+    }
     if (
       selectedAndroidDeliveryGateway &&
       (decision === 'save' || decision === 'save_as')
     ) {
       dispatch({ type: 'resolve_transition', decision: 'save_as' });
-      void saveSession(resolutionSession).then((result) => {
+      void saveSession(session).then((result) => {
         if (!mountedRef.current) return;
         if (result.status !== 'performed')
           dispatch({ type: 'resolve_transition', decision: 'cancel' });
@@ -1153,14 +1165,14 @@ export function App({
     }
     dispatch({ type: 'resolve_transition', decision });
     if (decision === 'save') {
-      void saveSession(resolutionSession).then((result) => {
+      void saveSession(session).then((result) => {
         if (result.status !== 'performed')
           dispatch({ type: 'resolve_transition', decision: 'cancel' });
       });
       return;
     }
     void selectedDesktopDeliveryGateway
-      .saveAs(resolutionSession)
+      .saveAs(session)
       .then((saved) =>
         dispatch({
           type: 'resolve_transition',

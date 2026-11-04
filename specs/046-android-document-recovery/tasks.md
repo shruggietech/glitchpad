@@ -95,3 +95,5 @@ T001-T004 precede implementation. Native contracts/writer (T008-T009/T017) and r
 - [x] T038 Trigger the three unblocked native chooser/Share controls with one premeasured native pointer tap, await actual system-window and returned MainActivity readiness, and preserve strict pending-write/cancellation/receiver/byte assertions plus bounded handoff-failure facts in AndroidDeliveryInstrumentedTest.kt per FR-005/008/013/016.
 
 - [x] T039 Freeze the native post-commit expected buffer only from one coherent current-editor observation with exact semantic source and matching public editing representation; retain existing deadlines and exact native cursor/text assertions, and add bounded phase/expected-selection/failure facts in AndroidDeliveryInstrumentedTest.kt per FR-006/008/016.
+
+- [x] T040 Honor stale dirty-close Save/Save As admission before native I/O in App.tsx, retain red-first withheld-receipt/stale-editor regression coverage and existing feedback in App.test.tsx, and distinguish actual pending button values from callback-evaluation failures in AndroidDeliveryInstrumentedTest.kt per FR-008/009/010/016.

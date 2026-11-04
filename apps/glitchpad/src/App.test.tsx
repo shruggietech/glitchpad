@@ -416,6 +416,144 @@ describe('document foundation shell', () => {
     expect(completeBack).toHaveBeenCalledWith('first', true);
   });
 
+  it('keeps every dirty-close decision disabled until the withheld Android Save As receipt settles', async () => {
+    const draft = createDraftSession('text');
+    let finish:
+      ((receipt: AndroidDestinationReceipt | null) => void) | undefined;
+    let back: ((id: string) => void) | undefined;
+    const saveAs = vi.fn(
+      () =>
+        new Promise<AndroidDestinationReceipt | null>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const completeBack = vi.fn().mockResolvedValue(undefined);
+    render(
+      <App
+        sessions={[draft]}
+        androidDeliveryGateway={authoringDelivery({
+          subscribeBack: (handler) => {
+            back = handler;
+            return Promise.resolve(() => undefined);
+          },
+          completeBack,
+        })}
+        androidAuthoringGateway={{ saveAs }}
+        recoveryGateway={null}
+      />,
+    );
+    const editor = screen.getByRole('textbox', {
+      name: 'Untitled.txt text editor',
+    });
+    act(() => {
+      EditorView.findFromDOM(editor)!.dispatch({
+        changes: { from: 0, insert: 'Exact pending draft\n' },
+      });
+    });
+    fireEvent.keyDown(getApplicationShell(), { key: 'w', ctrlKey: true });
+    const dialog = screen.getByRole('dialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save As' }));
+    await waitFor(() => expect(saveAs).toHaveBeenCalledOnce());
+    for (const button of within(dialog).getAllByRole('button'))
+      expect(button).toBeDisabled();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Discard' }));
+    fireEvent.keyDown(dialog, { key: 'Escape' });
+    await waitFor(() => expect(back).toBeDefined());
+    act(() => back?.('pending-close'));
+    expect(completeBack).toHaveBeenCalledWith('pending-close', true);
+    expect(screen.getByRole('dialog')).toBe(dialog);
+    expect(EditorView.findFromDOM(editor)!.state.doc.toString()).toBe(
+      'Exact pending draft\n',
+    );
+    for (const button of within(dialog).getAllByRole('button'))
+      expect(button).toBeDisabled();
+    await act(async () => {
+      finish?.(null);
+      await Promise.resolve();
+    });
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(EditorView.findFromDOM(editor)!.state.doc.toString()).toBe(
+      'Exact pending draft\n',
+    );
+    expect(
+      screen.getByText('Save cancelled. Edits remain open.'),
+    ).toBeInTheDocument();
+    fireEvent.keyDown(getApplicationShell(), { key: 'w', ctrlKey: true });
+    for (const button of within(screen.getByRole('dialog')).getAllByRole(
+      'button',
+    ))
+      expect(button).toBeEnabled();
+  });
+
+  it('does not launch a native save for a dirty-close decision invalidated by a later editor transaction', async () => {
+    let finish:
+      ((receipt: AndroidDestinationReceipt | null) => void) | undefined;
+    const saveAs = vi.fn(
+      () =>
+        new Promise<AndroidDestinationReceipt | null>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    render(
+      <App
+        sessions={[createDraftSession('text')]}
+        androidDeliveryGateway={authoringDelivery()}
+        androidAuthoringGateway={{ saveAs }}
+        recoveryGateway={null}
+      />,
+    );
+    invokeMenu('Toggle wrap');
+    expect(
+      await screen.findByText('Completed Toggle wrap.'),
+    ).toBeInTheDocument();
+    const editor = screen.getByRole('textbox', {
+      name: 'Untitled.txt text editor',
+    });
+    fireEvent.keyDown(getApplicationShell(), { key: 'w', ctrlKey: true });
+    act(() => {
+      EditorView.findFromDOM(editor)!.dispatch({
+        changes: { from: 0, insert: 'Late native commit\n' },
+      });
+    });
+    fireEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'Save As',
+      }),
+    );
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(saveAs).not.toHaveBeenCalled();
+    expect(
+      screen.getByText(
+        'Untitled.txt changed while the decision was open. Review the current unsaved changes.',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText('Completed Toggle wrap.'),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('dialog')).toHaveTextContent(
+      'No content has been discarded.',
+    );
+    expect(EditorView.findFromDOM(editor)!.state.doc.toString()).toBe(
+      'Late native commit\n',
+    );
+    fireEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'Save As',
+      }),
+    );
+    await waitFor(() => expect(saveAs).toHaveBeenCalledOnce());
+    for (const button of within(screen.getByRole('dialog')).getAllByRole(
+      'button',
+    ))
+      expect(button).toBeDisabled();
+    await act(async () => {
+      finish?.(null);
+      await Promise.resolve();
+    });
+  });
+
   it('releases the new Android source after dirty-close Save As completes', async () => {
     const draft = createDraftSession('text');
     let finish: ((receipt: AndroidDestinationReceipt) => void) | undefined;

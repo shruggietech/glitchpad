@@ -40,3 +40,7 @@ The current inventory retains eighteen functional requirements, five success cri
 ## 2026-11-04: External system-input qualification
 
 T048 retains the same eighteen requirements, five success criteria, ten acceptance scenarios and P1-P8 while increasing the plan inventory to thirty-eight decision groups. Clean API24 completion now establishes the terminal-ownership repair. The remaining demonstrated app-scoped Back injection targets an external system window; its narrowly scoped global test-input correction preserves product permissions and all outcome assertions. Full current APK qualification and owner handoff remain pending.
+
+## 2026-11-04: External keyboard/window layer qualification
+
+T049 increases the current plan inventory to thirty-nine decision groups while retaining eighteen functional requirements, five success criteria, ten acceptance scenarios and P1-P8. The c3a API24 archive completes all required journeys with strict clean terminal authority, including actual pending native writes and diagnostic byte/receiver readback, but its retained first authoring attempt demonstrates an accepted Back that removes the keyboard without cancelling DocumentsUI. The bounded layer-aware test correction preserves native owner checks, a single absolute deadline and all product outcome assertions. Eight exact-source supplemental coordinator cases, Android compilation and 61 policy checks pass. Current API36, final-head campaigns and final clean convergence remain open evidence tasks.

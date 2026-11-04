@@ -502,8 +502,7 @@ class AndroidDeliveryInstrumentedTest {
       tapNativeControlOnce(scenario, "Save As")
       waitForNativePickerWindow(scenario, "Save As", pickerPackage)
       assertTrue("one real native create chooser must own the cancelled save", monitor.hits == 1)
-      pressExternalWindowBack("document picker", pickerPackage)
-      waitForAppNativeWindow(scenario, "Save As", pickerPackage)
+      cancelExternalNativeWindow(scenario, "document picker", pickerPackage)
       waitForBodyText(scenario, "Save cancelled. Edits remain open.")
       assertTrue("native Back must not launch another create chooser", monitor.hits == 1)
     } finally { instrumentation.removeMonitor(monitor) }
@@ -653,8 +652,7 @@ class AndroidDeliveryInstrumentedTest {
     resolver.call(FixtureGrantProvider.COMMAND_URI, "clear_share_result", null, null)
     tapNativeControlOnce(scenario, "Share previewed bundle")
     val sharePackage = clickNativeText("Glitchpad diagnostic fixture", false)
-    pressExternalWindowBack("system Share chooser", sharePackage)
-    waitForAppNativeWindow(scenario, "Share previewed bundle")
+    cancelExternalNativeWindow(scenario, "system Share chooser", sharePackage)
     waitForBodyText(scenario, "Cancelled. The preview is retained.")
     assertEquals("Share cancellation must retain the exact preview", frozen, stringValue(evaluate(scenario, "document.querySelector('.diagnostic-preview').textContent")))
     tapNativeControlOnce(scenario, "Share previewed bundle")
@@ -749,11 +747,24 @@ class AndroidDeliveryInstrumentedTest {
   }
 
   // Read native visible bounds and IME windows before mapping a CSS control to screen input.
+  private fun enableNativeWindowObservation() {
+    val service = requireNotNull(instrumentation.uiAutomation.serviceInfo)
+    if (service.flags and android.accessibilityservice.AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS == 0) {
+      service.flags = service.flags or android.accessibilityservice.AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS
+      instrumentation.uiAutomation.serviceInfo = service
+    }
+  }
+
+  private fun visibleNativeImeBounds(): List<android.graphics.Rect> = instrumentation.uiAutomation.windows
+    .filter { it.type == android.view.accessibility.AccessibilityWindowInfo.TYPE_INPUT_METHOD }.take(4)
+    .map { android.graphics.Rect().also { bounds -> it.getBoundsInScreen(bounds) } }.filter { !it.isEmpty }
+
+  private fun nativeRectBounds(rect: android.graphics.Rect): JSONObject = JSONObject()
+    .put("left", rect.left).put("top", rect.top).put("right", rect.right).put("bottom", rect.bottom)
+
   private fun nativeControlGeometry(scenario: ActivityScenario<MainActivity>, target: JSONObject?): JSONObject {
     val observed = JSONObject().put("scenario_state", scenario.state.name)
-    val imeWindows = instrumentation.uiAutomation.windows.filter { it.type == android.view.accessibility.AccessibilityWindowInfo.TYPE_INPUT_METHOD }.take(4)
-      .map { android.graphics.Rect().also { bounds -> it.getBoundsInScreen(bounds) } }
-    fun bounds(rect: android.graphics.Rect) = JSONObject().put("left", rect.left).put("top", rect.top).put("right", rect.right).put("bottom", rect.bottom)
+    val imeWindows = visibleNativeImeBounds()
     scenario.onActivity { activity ->
       val view = requireNotNull(findWebView(activity.window.decorView))
       val location = IntArray(2)
@@ -772,10 +783,10 @@ class AndroidDeliveryInstrumentedTest {
       observed.put("activity_window_focus", activity.hasWindowFocus()).put("webview_window_focus", view.hasWindowFocus()).put("shown", view.isShown)
         .put("view_left", location[0]).put("view_top", location[1]).put("view_width", view.width).put("view_height", view.height)
         .put("view_scroll_x", view.scrollX).put("view_scroll_y", view.scrollY)
-        .put("local_visible_screen", bounds(localOnScreen)).put("window_visible_frame", bounds(window)).put("effective_visible_screen", bounds(visible))
+        .put("local_visible_screen", nativeRectBounds(localOnScreen)).put("window_visible_frame", nativeRectBounds(window)).put("effective_visible_screen", nativeRectBounds(visible))
         .put("ime_reported_visible", insets?.isVisible(androidx.core.view.WindowInsetsCompat.Type.ime()) == true)
         .put("ime_bottom", imeBottom).put("system_bars_bottom", barsBottom).put("input_method_active", input.isActive(view))
-        .put("ime_window_bounds", JSONArray(imeWindows.map { bounds(it) }))
+        .put("ime_window_bounds", JSONArray(imeWindows.map { nativeRectBounds(it) }))
       if (target?.optBoolean("found") == true && target.optDouble("viewport_width") > 0) {
         // CSS coordinates use one physical scale, including when only height is occluded.
         val scale = view.width / target.getDouble("viewport_width")
@@ -830,11 +841,7 @@ class AndroidDeliveryInstrumentedTest {
     var imeDismissRequested = false
     var imeDismissAccepted: Boolean? = null
     try {
-      val service = requireNotNull(instrumentation.uiAutomation.serviceInfo)
-      if (service.flags and android.accessibilityservice.AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS == 0) {
-        service.flags = service.flags or android.accessibilityservice.AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS
-        instrumentation.uiAutomation.serviceInfo = service
-      }
+      enableNativeWindowObservation()
       var ready = false
       while (SystemClock.elapsedRealtime() < deadline) {
         target = runCatching { JSONObject(evaluate(scenario, script)) }
@@ -920,14 +927,19 @@ class AndroidDeliveryInstrumentedTest {
     throw AssertionError("the launched native picker must own a visible accessible window before pending DOM inspection: " + observed)
   }
 
-  private fun waitForAppNativeWindow(scenario: ActivityScenario<MainActivity>, control: String, pickerPackage: String? = null) {
-    val deadline = SystemClock.elapsedRealtime() + 30_000L
+  private fun actualAppNativeWindowReady(observed: JSONObject): Boolean =
+    observed.optString("scenario_state") == androidx.lifecycle.Lifecycle.State.RESUMED.name &&
+      observed.optBoolean("activity_window_focus") && observed.optBoolean("webview_window_focus") && observed.optBoolean("webview_shown") &&
+      observed.optInt("webview_width") > 0 && observed.optInt("webview_height") > 0
+
+  private fun waitForAppNativeWindow(
+    scenario: ActivityScenario<MainActivity>, control: String, pickerPackage: String? = null, returnDeadlineElapsedMs: Long? = null
+  ) {
+    val deadline = returnDeadlineElapsedMs ?: (SystemClock.elapsedRealtime() + 30_000L)
     var observed = JSONObject()
     while (SystemClock.elapsedRealtime() < deadline) {
       observed = nativeHandoffState(scenario, control, pickerPackage)
-      if (observed.getString("scenario_state") == androidx.lifecycle.Lifecycle.State.RESUMED.name &&
-        observed.optBoolean("activity_window_focus") && observed.optBoolean("webview_window_focus") && observed.optBoolean("webview_shown") &&
-        observed.optInt("webview_width") > 0 && observed.optInt("webview_height") > 0) return
+      if (actualAppNativeWindowReady(observed)) return
       SystemClock.sleep(100L)
     }
     throw AssertionError("the actual app must resume with a visible focused WebView window before returned-handoff DOM inspection: " + observed)
@@ -1280,15 +1292,86 @@ class AndroidDeliveryInstrumentedTest {
     throw AssertionError(reason)
   }
 
-  private fun pressExternalWindowBack(control: String, expectedPackage: String) {
-    fun windowState(): JSONObject {
-      val root = instrumentation.uiAutomation.rootInActiveWindow
-      val bounds = android.graphics.Rect()
-      root?.getBoundsInScreen(bounds)
-      return JSONObject().put("package", root?.packageName?.toString() ?: JSONObject.NULL)
-        .put("visible", root?.isVisibleToUser == true).put("width", bounds.width()).put("height", bounds.height())
+  private fun externalNativeWindowState(): JSONObject {
+    val root = instrumentation.uiAutomation.rootInActiveWindow
+    val bounds = android.graphics.Rect()
+    root?.getBoundsInScreen(bounds)
+    return nativeRectBounds(bounds).put("package", root?.packageName?.toString() ?: JSONObject.NULL)
+      .put("visible", root?.isVisibleToUser == true).put("width", bounds.width()).put("height", bounds.height())
+  }
+
+  private fun externalNativeLayerState(expectedPackage: String): JSONObject {
+    val window = externalNativeWindowState()
+    val bounds = android.graphics.Rect(window.getInt("left"), window.getInt("top"), window.getInt("right"), window.getInt("bottom"))
+    val ime = visibleNativeImeBounds().filter { android.graphics.Rect.intersects(it, bounds) }
+    return window.put("verified_owner", expectedPackage.isNotEmpty() && expectedPackage != TARGET_PACKAGE &&
+      window.optString("package") == expectedPackage && window.optBoolean("visible") && window.optInt("width") > 0 && window.optInt("height") > 0)
+      .put("ime_window_bounds", JSONArray(ime.map { nativeRectBounds(it) }))
+  }
+
+  private fun cancelExternalNativeWindow(scenario: ActivityScenario<MainActivity>, control: String, expectedPackage: String) {
+    val deadline = SystemClock.elapsedRealtime() + 30_000L
+    var phase = "observe_layers"
+    var imeBackRequested = false
+    var windowBackRequested = false
+    var layers = JSONObject()
+    var app = JSONObject()
+    fun completed(outcome: String) {
+      assertTrue("external cancellation must finish inside the original handoff-return budget", SystemClock.elapsedRealtime() < deadline)
+      println("external_native_cancel=" + JSONObject().put("control", control).put("expected_package", expectedPackage)
+        .put("outcome", outcome).put("ime_back_requested", imeBackRequested).put("window_back_requested", windowBackRequested)
+        .put("layers", layers).put("app_window", app))
+      System.out.flush()
     }
-    val before = windowState()
+    try {
+      enableNativeWindowObservation()
+      layers = externalNativeLayerState(expectedPackage)
+      assertTrue("cancellation must start at the verified visible external owner", layers.getBoolean("verified_owner"))
+      println("external_native_cancel_layers=" + JSONObject().put("control", control).put("expected_package", expectedPackage).put("layers", layers))
+      System.out.flush()
+      if (layers.getJSONArray("ime_window_bounds").length() > 0) {
+        assertTrue("keyboard dismissal must begin inside the original handoff-return budget", SystemClock.elapsedRealtime() < deadline)
+        phase = "ime_back"
+        imeBackRequested = true
+        pressExternalWindowBack(control + " keyboard", expectedPackage)
+        phase = "await_ime_hidden"
+        var imeHiddenAtOwner = false
+        while (SystemClock.elapsedRealtime() < deadline) {
+          app = nativeHandoffState(scenario, control, expectedPackage)
+          if (actualAppNativeWindowReady(app)) { completed("returned_after_first_pair"); return }
+          layers = externalNativeLayerState(expectedPackage)
+          if (layers.getBoolean("verified_owner") && layers.getJSONArray("ime_window_bounds").length() == 0) {
+            imeHiddenAtOwner = true
+            break
+          }
+          SystemClock.sleep(100L)
+        }
+        assertTrue("the observed external IME must disappear while the same owner persists before any window Back", imeHiddenAtOwner)
+        app = nativeHandoffState(scenario, control, expectedPackage)
+        if (actualAppNativeWindowReady(app)) { completed("returned_after_first_pair"); return }
+      }
+      assertTrue("window cancellation must begin inside the original handoff-return budget", SystemClock.elapsedRealtime() < deadline)
+      phase = "window_back"
+      windowBackRequested = true
+      pressExternalWindowBack(control + " window", expectedPackage)
+      phase = "await_app_return"
+      waitForAppNativeWindow(scenario, control, expectedPackage, deadline)
+      app = nativeHandoffState(scenario, control, expectedPackage)
+      assertTrue("external cancellation must return the actual resumed focused app window", actualAppNativeWindowReady(app))
+      completed("returned_after_window_pair")
+    } catch (failure: Throwable) {
+      val after = runCatching { externalNativeLayerState(expectedPackage) }.getOrElse { JSONObject().put("capture_failed", true) }
+      val appAfter = runCatching { nativeHandoffState(scenario, control, expectedPackage) }.getOrElse { JSONObject().put("capture_failed", true) }
+      println("external_native_cancel_failure=" + JSONObject().put("control", control).put("expected_package", expectedPackage)
+        .put("phase", phase).put("failure_type", failure.javaClass.simpleName).put("ime_back_requested", imeBackRequested)
+        .put("window_back_requested", windowBackRequested).put("last_layers", layers).put("layers_after", after).put("app_window_after", appAfter))
+      System.out.flush()
+      throw failure
+    }
+  }
+
+  private fun pressExternalWindowBack(control: String, expectedPackage: String) {
+    val before = externalNativeWindowState()
     var phase = "owner_check"
     var downAccepted = false
     var upAccepted = false
@@ -1311,7 +1394,7 @@ class AndroidDeliveryInstrumentedTest {
         .put("phase", "event_pair_accepted").put("window_before", before).put("down_accepted", downAccepted).put("up_accepted", upAccepted))
       System.out.flush()
     } catch (failure: Throwable) {
-      val after = runCatching { windowState() }.getOrElse { JSONObject().put("capture_failed", true) }
+      val after = runCatching { externalNativeWindowState() }.getOrElse { JSONObject().put("capture_failed", true) }
       println("external_native_back_failure=" + JSONObject().put("control", control).put("expected_package", expectedPackage)
         .put("phase", phase).put("failure_type", failure.javaClass.simpleName).put("window_before", before).put("window_after", after)
         .put("down_accepted", downAccepted).put("up_accepted", upAccepted))

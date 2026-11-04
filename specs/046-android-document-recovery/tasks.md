@@ -113,3 +113,5 @@ T001-T004 precede implementation. Native contracts/writer (T008-T009/T017) and r
 - [x] T047 Dispatch S046 interactive Android Open/Save As/Create/Share host commands asynchronously with existing native work on spawn_blocking, retain owned state and all receipt/error/cancellation/authority checks, add meaningful gated-worker scheduling/error regressions and compile affected host/Android paths per FR-004/008/010/013/016/017.
 
 - [x] T048 Use owner-verified UiAutomation Back DOWN/UP only for intentional system document-picker and Share cancellation in AndroidDeliveryInstrumentedTest.kt; preserve app-owned Back, one chooser, native return/cancel/preview/source checks and existing deadlines, with bounded failure facts and focused policy/SDK verification per FR-005/008/013/016.
+
+- [x] T049 Make external picker/Share cancellation observe actual IME and window layers in AndroidDeliveryInstrumentedTest.kt, use at most one Back pair per observed layer with verified ownership and one existing absolute return deadline, reuse native window observations and preserve cancel/source/preview/count assertions per FR-005/008/013/016.

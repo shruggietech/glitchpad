@@ -31,7 +31,7 @@
     "check:brand": "node --test scripts/check-brand.test.mjs scripts/sync-brand-kit.test.mjs && node scripts/check-brand.mjs",
     "check:brand:freshness": "node scripts/check-brand.mjs --freshness",
     "check:public-release": "node --test scripts/check-public-release.test.mjs scripts/lib/site-release-destination.test.mjs && node scripts/check-public-release.mjs",
-    "check:validation": "node --test scripts/check-validation.test.mjs scripts/run-android-evidence.test.mjs",
+    "check:validation": "node --test scripts/check-validation.test.mjs scripts/run-android-evidence.test.mjs scripts/run-android-s046-journeys.test.mjs",
     "check:mermaid-runtime": "node --test scripts/check-mermaid-runtime.test.mjs && node scripts/check-mermaid-runtime.mjs",
     "check:metadata": "node --test scripts/check-metadata-fixture.test.mjs && node scripts/check-metadata-fixture.mjs",
     "check:images": "node scripts/check-fuzz-lock.mjs && node --test scripts/check-image-activation.test.mjs && node scripts/check-image-layout.mjs",

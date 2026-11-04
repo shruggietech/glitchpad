@@ -21,6 +21,7 @@ case "$*" in
   *#standaloneAuthoringAndDiagnosticJourneys*) screenshot="s046-authoring" ;;
   *#addDocumentAtMaximumFontScale*) screenshot="s046-font-scale" ;;
   *#rootFailureRetainsDraft*) screenshot="s046-root-recovery" ;;
+  *#governedMarkdownDeliveryRoutes*) screenshot="s046-markdown-delivery-failure" ;;
 esac
 
 for attempt in 1 2; do

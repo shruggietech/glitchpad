@@ -160,6 +160,46 @@ class AndroidDeliveryInstrumentedTest {
     waitForDocumentIdentity(scenario, name)
   }
 
+  private fun captureMarkdownDeliveryFailure(scenario: ActivityScenario<MainActivity>, name: String) {
+    val snapshot = runCatching {
+      evaluate(scenario, """
+        (()=>{
+          const surface=document.querySelector('.document-surface');
+          const articles=Array.from(document.querySelectorAll('.markdown-document')).slice(0,3).map(node=>({
+            class_name:node.className,
+            ready:node.getAttribute('data-performance-ready'),
+            status:node.getAttribute('data-performance-status'),
+            diagnostic:node.getAttribute('data-performance-diagnostic'),
+            text:node.textContent.slice(0,512)
+          }));
+          return {
+            document_ready:document.readyState,
+            user_agent:navigator.userAgent.slice(0,512),
+            viewport:{width:window.innerWidth,height:window.innerHeight},
+            active_surface_id:surface?surface.id:null,
+            active_surface_label:surface?surface.getAttribute('aria-label'):null,
+            active_surface_labelledby:surface?surface.getAttribute('aria-labelledby'):null,
+            semantic_counts:{
+              headings:document.querySelectorAll('.markdown-document h1').length,
+              lists:document.querySelectorAll('.markdown-document ul').length,
+              code:document.querySelectorAll('.markdown-document code').length,
+              tables:document.querySelectorAll('.markdown-document table').length
+            },
+            source_editors:Array.from(document.querySelectorAll('.cm-content')).slice(0,2).map(node=>({editable:node.getAttribute('contenteditable'),text:node.textContent.slice(0,1024)})),
+            articles:articles,
+            alerts:Array.from(document.querySelectorAll('[role=alert]')).slice(0,4).map(node=>node.textContent.slice(0,512)),
+            body_text:document.body?document.body.innerText.slice(0,4096):'',
+            active_surface_html:surface?surface.outerHTML.slice(0,8192):null
+          };
+        })()
+      """.trimIndent())
+    }.getOrElse { JSONObject().put("capture_error", it.javaClass.simpleName).toString() }
+    val screenshotName = "s046-markdown-delivery-failure.png"
+    val screenshotSaved = runCatching { saveScreenshot(screenshotName); File(clientContext.filesDir, screenshotName).isFile }.getOrDefault(false)
+    println("markdown_delivery_failure=" + JSONObject().put("fixture", name).put("route", InstrumentationRegistry.getArguments().getString("deliveryAction")).put("api_level", Build.VERSION.SDK_INT).put("screenshot_saved", screenshotSaved).put("state_json", snapshot.take(24576)).toString())
+    System.out.flush()
+  }
+
   private fun markdownDeliveryIntent(uri: Uri, route: String): Intent = if (route == "view") viewIntent(uri, "text/markdown") else Intent(Intent.ACTION_SEND)
     .addCategory(Intent.CATEGORY_DEFAULT)
     .setType("text/markdown")
@@ -172,7 +212,12 @@ class AndroidDeliveryInstrumentedTest {
     waitForBodyText(scenario, name, "Add document")
     if (outcome == "positive") {
       waitForBodyText(scenario, "S046 Markdown corpus", "S046_CORPUS_MARKER", "list item", "code block", "Unicode Ω")
-      waitForCondition(scenario, "!!document.querySelector('.markdown-document h1') && !!document.querySelector('.markdown-document ul') && !!document.querySelector('.markdown-document code') && !!document.querySelector('.markdown-document table')", "governed OS-delivered Markdown must expose actual rendered heading/list/code/table content")
+      try {
+        waitForCondition(scenario, "!!document.querySelector('.markdown-document h1') && !!document.querySelector('.markdown-document ul') && !!document.querySelector('.markdown-document code') && !!document.querySelector('.markdown-document table')", "governed OS-delivered Markdown must expose actual rendered heading/list/code/table content")
+      } catch (failure: AssertionError) {
+        captureMarkdownDeliveryFailure(scenario, name)
+        throw failure
+      }
     } else {
       waitForCondition(scenario, "!!document.querySelector('.app-shell') && (!!document.querySelector('.cm-content') || Array.from(document.querySelectorAll('.markdown-document')).some(n=>['ready','empty','failed','limited'].includes(n.getAttribute('data-performance-status'))))", "OS-delivered empty/malformed Markdown must terminate in content or actionable source recovery")
       if (outcome == "empty") waitForBodyText(scenario, "This document is empty.")

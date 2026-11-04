@@ -81,5 +81,7 @@ T001-T004 precede implementation. Native contracts/writer (T008-T009/T017) and r
 
 - [x] T031 Use the supported classic dedicated-worker construction for the governed Chromium 69 production IIFE bundle, retaining off-thread Markdown parsing, worker ownership/cancellation and modern development behavior; prove the exact old-browser failure and repaired semantic corpus per FR-001/002/016/017.
 
-- [x] T032 Replace unsupported browser-command typing in Android instrumentation with public native WebView InputConnection selection/commit and strict native-buffer/visible-editor readback; retain actual packaged qualification per FR-006/008/009/016.
+- [x] T032 Replace unsupported browser-command typing in Android instrumentation with public native WebView InputConnection selection/commit and strict native editing-representation and semantic visible-editor readback; retain actual packaged qualification per FR-006/008/009/016.
 - [x] T033 Retain bounded native warm-intent callback/queue/notification observations alongside failed identity assertions without private document facts or new IPC grants per FR-001/004/015/016.
+
+- [x] T034 Re-notify the existing delivery channel after the actual Activity resumes when native work remains queued; coalesce/cancel the owned frame callback and preserve immediate notification, queue bounds and permissions per FR-001/004/016/017.

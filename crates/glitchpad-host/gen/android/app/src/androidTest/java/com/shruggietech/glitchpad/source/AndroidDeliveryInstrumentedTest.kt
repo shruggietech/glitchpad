@@ -676,26 +676,14 @@ class AndroidDeliveryInstrumentedTest {
     } finally { down.recycle(); up.recycle() }
     instrumentation.waitForIdleSync()
     waitForCondition(scenario, "document.hasFocus() && document.activeElement===document.querySelector('.cm-content[contenteditable=true]')", "the actual editor must own browser focus after a native touch before editing")
-    val browserBefore = JSONObject(evaluate(scenario, """
-      (()=>{
-        const editor=document.querySelector('.cm-content[contenteditable=true]');
-        const context=editor.editContext;
-        const selection=window.getSelection();
-        return {
-          document_focus:document.hasFocus(),editor_focus:document.activeElement===editor,
-          insert_supported:document.queryCommandSupported('insertText'),insert_enabled:document.queryCommandEnabled('insertText'),
-          user_activation:navigator.userActivation?navigator.userActivation.isActive:null,
-          edit_context_attached:!!context,edit_context_length:context?context.text.length:null,
-          edit_context_selection_start:context?context.selectionStart:null,edit_context_selection_end:context?context.selectionEnd:null,
-          dom_selection_ranges:selection?selection.rangeCount:0,
-          dom_selection_in_editor:!!selection&&!!selection.anchorNode&&editor.contains(selection.anchorNode),
-          visible_text:Array.from(editor.querySelectorAll(':scope > .cm-line')).map(line=>line.textContent).join('\n')
-        };
-      })()
-    """.trimIndent()))
-    val beforeText = browserBefore.getString("visible_text")
-    browserBefore.remove("visible_text")
-    assertTrue("the controlled native input fixture must fit a bounded complete input buffer", beforeText.length <= 16_384 && text.length <= 16_384)
+    val browserBefore = browserEditorInputSnapshot(scenario)
+    val beforeInputText = browserBefore.getString("editing_text")
+    val beforeSemanticText = browserBefore.getString("semantic_text")
+    browserBefore.remove("editing_text")
+    browserBefore.remove("semantic_text")
+    if (browserBefore.getBoolean("edit_context_attached"))
+      assertEquals("the controlled EditContext must expose the complete semantic source", beforeSemanticText, beforeInputText)
+    assertTrue("the controlled native input fixture must fit a bounded complete input buffer", beforeInputText.length <= 16_384 && text.length <= 16_384)
     val connectionReference = AtomicReference<android.view.inputmethod.InputConnection?>()
     val handlerReference = AtomicReference<android.os.Handler?>()
     val inputInfo = JSONObject()
@@ -714,23 +702,63 @@ class AndroidDeliveryInstrumentedTest {
     System.out.flush()
     val connection = requireNotNull(connectionReference.get()) { "focused WebView must expose its public native InputConnection" }
     val handler = requireNotNull(handlerReference.get()) { "native InputConnection must expose its input dispatch handler" }
-    waitForNativeEditorState(connection, handler, beforeText)
+    waitForNativeEditorState(connection, handler, beforeInputText)
     assertTrue("native IME must finish any active composition", onEditorInputThread(connection, handler) { it.finishComposingText() })
-    assertTrue("native IME must select the complete controlled input buffer", onEditorInputThread(connection, handler) { it.setSelection(0, beforeText.length) })
-    val selectedState = waitForNativeEditorState(connection, handler, beforeText, 0, beforeText.length)
+    assertTrue("native IME must select the complete controlled input buffer", onEditorInputThread(connection, handler) { it.setSelection(0, beforeInputText.length) })
+    val selectedState = waitForNativeEditorState(connection, handler, beforeInputText, 0, beforeInputText.length)
     if (browserBefore.getBoolean("edit_context_attached")) {
-      waitForCondition(scenario, "(()=>{const editor=document.querySelector('.cm-content[contenteditable=true]');const context=editor&&editor.editContext;return !!context&&context.selectionStart===0&&context.selectionEnd===" + beforeText.length + ";})()", "native IME selection must reach the actual EditContext before replacement")
+      waitForCondition(scenario, "(()=>{const editor=document.querySelector('.cm-content[contenteditable=true]');const context=editor&&editor.editContext;return !!context&&context.selectionStart===0&&context.selectionEnd===" + beforeInputText.length + ";})()", "native IME selection must reach the actual EditContext before replacement")
     }
     assertTrue("native IME must accept the exact Unicode and multiline text", onEditorInputThread(connection, handler) { it.commitText(text, 1) })
-    val committedState = waitForNativeEditorState(connection, handler, text, text.length, text.length)
     val expected = JSONObject.quote(text)
     waitForCondition(scenario, "(()=>{const editor=document.querySelector('.cm-content[contenteditable=true]');return !!editor && Array.from(editor.querySelectorAll(':scope > .cm-line')).map(line=>line.textContent).join('\\n')===" + expected + ";})()", "the actual editor must display every natively committed character and line")
+    val browserAfter = browserEditorInputSnapshot(scenario)
+    val afterInputText = browserAfter.getString("editing_text")
+    assertEquals("the actual CodeMirror semantic source must preserve all requested text", text, browserAfter.getString("semantic_text"))
+    if (browserAfter.getBoolean("edit_context_attached"))
+      assertEquals("the actual EditContext must expose the complete committed semantic source", text, afterInputText)
+    browserAfter.remove("editing_text")
+    browserAfter.remove("semantic_text")
+    // The public editing buffer includes legacy rendered paragraph markers. The
+    // committed cursor still belongs after the exact supplied text, before any
+    // trailing contenteditable paragraph marker.
+    val committedState = waitForNativeEditorState(connection, handler, afterInputText, text.length, text.length)
     println("native_editor_input=" + JSONObject().put("phase", "native_commit_verified").put("api_level", Build.VERSION.SDK_INT)
       .put("input_path", "WebView.InputConnection.setSelection+commitText").put("selected_state", selectedState)
-      .put("committed_state", committedState).put("visible_exact_text", true).put("committed_utf8_bytes", text.toByteArray(Charsets.UTF_8).size))
+      .put("committed_state", committedState).put("browser_edit_after", browserAfter).put("visible_exact_text", true).put("committed_utf8_bytes", text.toByteArray(Charsets.UTF_8).size))
     System.out.flush()
     waitForBodyText(scenario, text.lineSequence().first())
   }
+
+  private fun browserEditorInputSnapshot(scenario: ActivityScenario<MainActivity>): JSONObject = JSONObject(evaluate(scenario, """
+    (()=>{
+      const editor=document.querySelector('.cm-content[contenteditable=true]');
+      const context=editor.editContext;
+      const selection=window.getSelection();
+      const lines=Array.from(editor.querySelectorAll(':scope > .cm-line'));
+      const semantic=lines.map(line=>line.textContent).join('\n');
+      const editing=context?context.text:editor.innerText;
+      const shortCodeUnits=value=>value.length<=4?value.split('').map(character=>character.charCodeAt(0)):[];
+      return {
+        document_focus:document.hasFocus(),editor_focus:document.activeElement===editor,
+        insert_supported:document.queryCommandSupported('insertText'),insert_enabled:document.queryCommandEnabled('insertText'),
+        user_activation:navigator.userActivation?navigator.userActivation.isActive:null,
+        edit_context_attached:!!context,editing_representation:context?'edit_context_text':'contenteditable_inner_text',
+        edit_context_length:context?context.text.length:null,
+        edit_context_selection_start:context?context.selectionStart:null,edit_context_selection_end:context?context.selectionEnd:null,
+        dom_selection_ranges:selection?selection.rangeCount:0,
+        dom_selection_in_editor:!!selection&&!!selection.anchorNode&&editor.contains(selection.anchorNode),
+        dom_selection_anchor_node:selection&&selection.anchorNode?selection.anchorNode.nodeName:null,
+        dom_selection_anchor_offset:selection?selection.anchorOffset:null,
+        dom_selection_focus_node:selection&&selection.focusNode?selection.focusNode.nodeName:null,
+        dom_selection_focus_offset:selection?selection.focusOffset:null,
+        semantic_length:semantic.length,editing_length:editing.length,editing_short_code_units:shortCodeUnits(editing),
+        inner_text_length:editor.innerText.length,line_count:lines.length,br_count:editor.querySelectorAll('br').length,
+        trailing_line_empty:lines.length>0&&lines[lines.length-1].textContent.length===0,
+        semantic_text:semantic,editing_text:editing
+      };
+    })()
+  """.trimIndent()))
 
   private fun <T> onEditorInputThread(
     connection: android.view.inputmethod.InputConnection,
@@ -767,6 +795,7 @@ class AndroidDeliveryInstrumentedTest {
         latest.put("start_offset", extracted.startOffset).put("text_length", actual?.length)
           .put("selection_start", extracted.selectionStart).put("selection_end", extracted.selectionEnd)
           .put("exact_text", actual == expected)
+          .put("short_code_units", JSONArray(if (actual != null && actual.length <= 4) actual.map { it.code } else emptyList<Int>()))
         if (extracted.startOffset == 0 && actual == expected &&
           (selectionStart == null || extracted.selectionStart == selectionStart) &&
           (selectionEnd == null || extracted.selectionEnd == selectionEnd)) return latest

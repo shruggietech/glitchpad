@@ -112,3 +112,7 @@ The API36 harness records valid native/window/document/editor focus and user act
 ## Warm-intent observation continuity
 
 The exact API36 stack locates the failure in the first warm delivery after cold semantic rendering, link-modal Back, focus and navigation checks passed. Native logs show the intent reaching the existing Activity, then no delivery drain. Generated SDK dispatch and project onNewIntent source contain no stale plugin-key lookup. Retain bounded callback/queue/notification facts plus UI state at this failure boundary before assigning a cause or changing App ordering. Keep the required warm route and original identity assertion.
+
+## Activity-resume delivery wake
+
+The C15 API24 snapshot proves one warm candidate queued with its native listener present and notification returned, while drain_count remains at the initial drain and pending_count is one. A later clean retry passes all warm corpus cases. This demonstrates a notification delivery gap; its exact SDK internal cause is unclaimed. Wry resumes its WebView during Activity onResume, while SDK plugin resume follows ProcessLifecycleOwner and can omit a brief warm Activity pause/resume. Observe the actual Activity lifecycle and post one coalesced, owned WebView frame callback after resume. Re-notify only when resumed with pending candidates/rejections; cancel on pause/destroy and retain the original immediate notification. Do not add polling or change source identity, grants, queue limits or acceptance waits.

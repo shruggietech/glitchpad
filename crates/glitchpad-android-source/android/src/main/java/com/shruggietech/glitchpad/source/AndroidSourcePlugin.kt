@@ -9,6 +9,9 @@ import android.os.Looper
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.OnBackPressedDispatcherOwner
 import androidx.core.content.FileProvider
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
 import androidx.webkit.WebViewCompat
 import java.io.File
 import android.content.Intent
@@ -51,6 +54,18 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
   private val shareJobs = ConcurrentHashMap<Invoke, DiagnosticShareJob>()
   private val sharePending = AtomicBoolean(false)
   private val mainHandler = Handler(Looper.getMainLooper())
+  private var deliveryWebView: WebView? = null
+  private var deliveryLifecycleObserver: DefaultLifecycleObserver? = null
+  private val deliveryWake = PendingDeliveryWake(
+    hasPending = {
+      val owner = activity as? LifecycleOwner
+      owner?.lifecycle?.currentState?.isAtLeast(Lifecycle.State.RESUMED) == true &&
+        (pending.isNotEmpty() || rejections.isNotEmpty())
+    },
+    post = { task -> deliveryWebView?.postOnAnimation(task) },
+    remove = { task -> deliveryWebView?.removeCallbacks(task) },
+    notifyReady = { notifyDeliveriesReady() },
+  )
 
   // Hosted instrumentation reads this private, bounded state by reflection only.
   private val deliveryObservation = if ((activity.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0) DeliveryObservation() else null
@@ -100,8 +115,39 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
     super.load(webView)
     deliveryObservation?.record(DeliveryStage.LOADED)
     installBackCallback()
+    installDeliveryWake(webView)
     if (initialIntentConsumed.compareAndSet(false, true) && enqueueInbound(activity.intent))
       notifyDeliveriesReady()
+  }
+
+  private fun installDeliveryWake(webView: WebView) {
+    activity.runOnUiThread {
+      deliveryWake.cancel()
+      deliveryWebView = webView
+      val owner = activity as? LifecycleOwner ?: return@runOnUiThread
+      if (deliveryLifecycleObserver == null) {
+        val observer = object : DefaultLifecycleObserver {
+          override fun onResume(owner: LifecycleOwner) {
+            // The next WebView frame runs after WryActivity activates the WebView.
+            deliveryWake.schedule()
+          }
+
+          override fun onPause(owner: LifecycleOwner) {
+            deliveryWake.cancel()
+          }
+
+          override fun onDestroy(owner: LifecycleOwner) {
+            deliveryWake.cancel()
+            deliveryWebView = null
+            owner.lifecycle.removeObserver(this)
+            deliveryLifecycleObserver = null
+          }
+        }
+        deliveryLifecycleObserver = observer
+        owner.lifecycle.addObserver(observer)
+      }
+      deliveryWake.schedule()
+    }
   }
 
   override fun onNewIntent(intent: Intent) {

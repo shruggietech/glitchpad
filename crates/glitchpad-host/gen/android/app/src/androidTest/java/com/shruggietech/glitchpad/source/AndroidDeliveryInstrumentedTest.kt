@@ -502,7 +502,7 @@ class AndroidDeliveryInstrumentedTest {
       tapNativeControlOnce(scenario, "Save As")
       waitForNativePickerWindow(scenario, "Save As", pickerPackage)
       assertTrue("one real native create chooser must own the cancelled save", monitor.hits == 1)
-      instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
+      pressExternalWindowBack("document picker", pickerPackage)
       waitForAppNativeWindow(scenario, "Save As", pickerPackage)
       waitForBodyText(scenario, "Save cancelled. Edits remain open.")
       assertTrue("native Back must not launch another create chooser", monitor.hits == 1)
@@ -652,8 +652,8 @@ class AndroidDeliveryInstrumentedTest {
     assertTrue("saved diagnostic JSON bytes must equal exact frozen preview", frozen.toByteArray(Charsets.UTF_8).contentEquals(readBytes(destination)))
     resolver.call(FixtureGrantProvider.COMMAND_URI, "clear_share_result", null, null)
     tapNativeControlOnce(scenario, "Share previewed bundle")
-    clickNativeText("Glitchpad diagnostic fixture", false)
-    instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
+    val sharePackage = clickNativeText("Glitchpad diagnostic fixture", false)
+    pressExternalWindowBack("system Share chooser", sharePackage)
     waitForAppNativeWindow(scenario, "Share previewed bundle")
     waitForBodyText(scenario, "Cancelled. The preview is retained.")
     assertEquals("Share cancellation must retain the exact preview", frozen, stringValue(evaluate(scenario, "document.querySelector('.diagnostic-preview').textContent")))
@@ -1280,7 +1280,47 @@ class AndroidDeliveryInstrumentedTest {
     throw AssertionError(reason)
   }
 
-  private fun clickNativeText(expected: String, click: Boolean = true) {
+  private fun pressExternalWindowBack(control: String, expectedPackage: String) {
+    fun windowState(): JSONObject {
+      val root = instrumentation.uiAutomation.rootInActiveWindow
+      val bounds = android.graphics.Rect()
+      root?.getBoundsInScreen(bounds)
+      return JSONObject().put("package", root?.packageName?.toString() ?: JSONObject.NULL)
+        .put("visible", root?.isVisibleToUser == true).put("width", bounds.width()).put("height", bounds.height())
+    }
+    val before = windowState()
+    var phase = "owner_check"
+    var downAccepted = false
+    var upAccepted = false
+    try {
+      assertTrue("external Back must name a different application owner", expectedPackage.isNotEmpty() && expectedPackage != TARGET_PACKAGE)
+      assertEquals("external Back must target the verified current native window", expectedPackage, before.optString("package"))
+      assertTrue("external Back must target a visible native window", before.getBoolean("visible") && before.getInt("width") > 0 && before.getInt("height") > 0)
+      val downTime = SystemClock.uptimeMillis()
+      val down = KeyEvent(downTime, downTime, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_BACK, 0, 0,
+        android.view.KeyCharacterMap.VIRTUAL_KEYBOARD, 0, KeyEvent.FLAG_FROM_SYSTEM, InputDevice.SOURCE_KEYBOARD)
+      phase = "down"
+      downAccepted = instrumentation.uiAutomation.injectInputEvent(down, true)
+      assertTrue("the external native window must accept the single Back DOWN", downAccepted)
+      val up = KeyEvent(downTime, SystemClock.uptimeMillis(), KeyEvent.ACTION_UP, KeyEvent.KEYCODE_BACK, 0, 0,
+        android.view.KeyCharacterMap.VIRTUAL_KEYBOARD, 0, KeyEvent.FLAG_FROM_SYSTEM, InputDevice.SOURCE_KEYBOARD)
+      phase = "up"
+      upAccepted = instrumentation.uiAutomation.injectInputEvent(up, true)
+      assertTrue("the external native window must accept the single Back UP", upAccepted)
+      println("external_native_back=" + JSONObject().put("control", control).put("expected_package", expectedPackage)
+        .put("phase", "event_pair_accepted").put("window_before", before).put("down_accepted", downAccepted).put("up_accepted", upAccepted))
+      System.out.flush()
+    } catch (failure: Throwable) {
+      val after = runCatching { windowState() }.getOrElse { JSONObject().put("capture_failed", true) }
+      println("external_native_back_failure=" + JSONObject().put("control", control).put("expected_package", expectedPackage)
+        .put("phase", phase).put("failure_type", failure.javaClass.simpleName).put("window_before", before).put("window_after", after)
+        .put("down_accepted", downAccepted).put("up_accepted", upAccepted))
+      System.out.flush()
+      throw failure
+    }
+  }
+
+  private fun clickNativeText(expected: String, click: Boolean = true): String {
     val deadline = SystemClock.elapsedRealtime() + 30_000L
     while (SystemClock.elapsedRealtime() < deadline) {
       fun visit(node: AccessibilityNodeInfo?): Boolean {
@@ -1293,7 +1333,8 @@ class AndroidDeliveryInstrumentedTest {
         for (index in 0 until node.childCount) if (visit(node.getChild(index))) return true
         return false
       }
-      if (visit(instrumentation.uiAutomation.rootInActiveWindow)) return
+      val root = instrumentation.uiAutomation.rootInActiveWindow
+      if (visit(root)) return requireNotNull(root?.packageName?.toString()) { "matched native chooser must expose its actual window owner" }
       SystemClock.sleep(100L)
     }
     throw AssertionError("native chooser must expose the controlled receiving app")

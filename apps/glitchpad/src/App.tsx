@@ -1293,12 +1293,14 @@ export function App({
           cancelable: true,
         }),
       );
-    else if (search)
-      void Promise.resolve(editorRef.current?.invoke('close_search')).catch(
-        () => recordFailure('action', 'execute', 'action_failed'),
-      );
-    else if (state.activeId) dispatch({ type: 'close', id: state.activeId });
-    else handled = false;
+    else if (!editorRef.current?.dismissModal?.()) {
+      if (search)
+        void Promise.resolve(editorRef.current?.invoke('close_search')).catch(
+          () => recordFailure('action', 'execute', 'action_failed'),
+        );
+      else if (state.activeId) dispatch({ type: 'close', id: state.activeId });
+      else handled = false;
+    }
     void selectedAndroidDeliveryGateway
       ?.completeBack?.(requestId, handled)
       .catch(() => undefined);

@@ -60,3 +60,8 @@ T001-T004 precede implementation. Native contracts/writer (T008-T009/T017) and r
 ## Phase 8: Convergence
 
 - [x] T023 Drain pending captured failure writes before taking the native diagnostic preview snapshot in domain/use-persistence.ts; retain delayed-success, frozen-preview and subsequent-event regressions per FR-013/FR-015 (partial).
+
+## Phase 9: Final external-review repairs
+
+- [x] T024 Preserve current-renderer text selection through Markdown Copy menu/keyboard execution with real clipboard result and foreign-selection/denial regressions in MarkdownSurface.tsx/tests per FR-010/FR-011/FR-012 (round-2 comment 4464666149).
+- [x] T025 Dismiss the active renderer's modal before Android Back attempts document close, using a narrow optional handle method and modal/focus/native-ack regressions in TextEditorSurface.tsx, MarkdownSurface.tsx, App.tsx/tests and governed Android APK/fixture suites per FR-005/FR-009 (round-2 comment 4464666156).

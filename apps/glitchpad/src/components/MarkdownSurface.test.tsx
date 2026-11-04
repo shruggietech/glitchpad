@@ -7,6 +7,7 @@ import {
   within,
 } from '@testing-library/react';
 import { EditorView } from '@codemirror/view';
+import { createRef, type Ref } from 'react';
 import axe from 'axe-core';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -24,6 +25,7 @@ import {
 import { markdownCorpus } from '../test/markdown-corpus';
 import { initialSessions } from '../test/fixtures';
 import { MarkdownSurface } from './MarkdownSurface';
+import type { TextEditorHandle } from './TextEditorSurface';
 
 const invokeMenu = (name: string | RegExp) => {
   fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
@@ -86,9 +88,11 @@ const deferredRenderer = () => {
 const renderDirectSurface = (
   session: ShellSession,
   rendererClient: MarkdownRendererClient,
+  handle?: Ref<TextEditorHandle>,
 ) =>
   render(
     <MarkdownSurface
+      ref={handle}
       session={session}
       rendererClient={rendererClient}
       onDocumentChange={vi.fn()}
@@ -98,6 +102,173 @@ const renderDirectSurface = (
   );
 
 describe('Markdown surface', () => {
+  it.each(['Control', 'Meta'])(
+    'copies only a rendered range through %s+C',
+    async (modifier) => {
+      const original = Object.getOwnPropertyDescriptor(navigator, 'clipboard');
+      const writeText = vi.fn().mockResolvedValue(undefined);
+      Object.defineProperty(navigator, 'clipboard', {
+        configurable: true,
+        value: { writeText },
+      });
+      const selection = window.getSelection()!;
+      try {
+        render(
+          <App
+            sessions={[
+              markdownSession(
+                '# Heading\n\nBefore **selected** after.\n\nTail.',
+              ),
+            ]}
+          />,
+        );
+        const strong = await screen.findByText('selected');
+        const paragraph = strong.closest('p')!;
+        const range = document.createRange();
+        range.setStart(paragraph.firstChild!, 3);
+        range.setEnd(strong.firstChild!, 4);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        expect(selection.toString()).toBe('ore sele');
+        fireEvent.keyDown(paragraph, {
+          key: 'c',
+          ctrlKey: modifier === 'Control',
+          metaKey: modifier === 'Meta',
+        });
+        await waitFor(() =>
+          expect(writeText).toHaveBeenCalledExactlyOnceWith('ore sele'),
+        );
+      } finally {
+        selection.removeAllRanges();
+        if (original) Object.defineProperty(navigator, 'clipboard', original);
+        else Reflect.deleteProperty(navigator, 'clipboard');
+      }
+    },
+  );
+
+  it.each(['foreign', 'cross-boundary', 'collapsed', 'inactive'])(
+    'uses whole rendered text for a %s selection',
+    async (kind) => {
+      const original = Object.getOwnPropertyDescriptor(navigator, 'clipboard');
+      const writeText = vi.fn().mockResolvedValue(undefined);
+      Object.defineProperty(navigator, 'clipboard', {
+        configurable: true,
+        value: { writeText },
+      });
+      const selection = window.getSelection()!;
+      const foreign = document.createElement('p');
+      foreign.textContent = 'Foreign selection';
+      const handle = createRef<TextEditorHandle>();
+      try {
+        renderDirectSurface(
+          {
+            ...markdownSession('# Heading\n\nWhole document.'),
+            lifecycle: kind === 'inactive' ? 'background' : 'active',
+          },
+          new MarkdownRendererClient({ execute: renderMarkdown }, 0),
+          handle,
+        );
+        const heading = await screen.findByRole('heading', { name: 'Heading' });
+        document.body.append(foreign);
+        const range = document.createRange();
+        if (kind === 'foreign') range.selectNodeContents(foreign);
+        else if (kind === 'cross-boundary') {
+          range.setStart(heading.firstChild!, 0);
+          range.setEnd(foreign.firstChild!, 7);
+        } else if (kind === 'inactive') {
+          range.setStart(heading.firstChild!, 0);
+          range.setEnd(heading.firstChild!, 4);
+        } else {
+          range.setStart(heading.firstChild!, 2);
+          range.collapse(true);
+        }
+        selection.removeAllRanges();
+        selection.addRange(range);
+        await expect(handle.current!.invoke('copy')).resolves.toBe(true);
+        expect(writeText).toHaveBeenCalledExactlyOnceWith(
+          'Heading\nWhole document.',
+        );
+      } finally {
+        foreign.remove();
+        selection.removeAllRanges();
+        if (original) Object.defineProperty(navigator, 'clipboard', original);
+        else Reflect.deleteProperty(navigator, 'clipboard');
+      }
+    },
+  );
+
+  it('awaits selected-text clipboard completion and propagates denial', async () => {
+    const original = Object.getOwnPropertyDescriptor(navigator, 'clipboard');
+    let complete!: () => void;
+    const writeText = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          complete = resolve;
+        }),
+    );
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    });
+    const selection = window.getSelection()!;
+    const handle = createRef<TextEditorHandle>();
+    try {
+      renderDirectSurface(
+        markdownSession('# Heading\n\nWhole document.'),
+        new MarkdownRendererClient({ execute: renderMarkdown }, 0),
+        handle,
+      );
+      const paragraph = await screen.findByText('Whole document.');
+      const range = document.createRange();
+      range.setStart(paragraph.firstChild!, 0);
+      range.setEnd(paragraph.firstChild!, 5);
+      selection.removeAllRanges();
+      selection.addRange(range);
+      const pending = handle.current!.invoke('copy');
+      let settled = false;
+      void Promise.resolve(pending).then(() => {
+        settled = true;
+      });
+      expect(writeText).toHaveBeenCalledExactlyOnceWith('Whole');
+      await Promise.resolve();
+      expect(settled).toBe(false);
+      complete();
+      await expect(pending).resolves.toBe(true);
+      writeText.mockImplementationOnce(() =>
+        Promise.reject(new Error('clipboard denied')),
+      );
+      await expect(handle.current!.invoke('copy')).rejects.toThrow(
+        'clipboard denied',
+      );
+    } finally {
+      complete?.();
+      selection.removeAllRanges();
+      if (original) Object.defineProperty(navigator, 'clipboard', original);
+      else Reflect.deleteProperty(navigator, 'clipboard');
+    }
+  });
+
+  it('dismisses its pending link modal synchronously and restores the trigger focus', async () => {
+    const handle = createRef<TextEditorHandle>();
+    renderDirectSurface(
+      markdownSession('[destination](https://example.com/path)'),
+      new MarkdownRendererClient({ execute: renderMarkdown }, 0),
+      handle,
+    );
+    const link = await screen.findByRole('button', { name: /destination/i });
+    expect(handle.current?.dismissModal?.()).toBe(false);
+    fireEvent.click(link);
+    expect(
+      screen.getByRole('dialog', { name: 'Open external destination?' }),
+    ).toBeInTheDocument();
+    act(() => {
+      expect(handle.current?.dismissModal?.()).toBe(true);
+    });
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    await waitFor(() => expect(link).toHaveFocus());
+    expect(handle.current?.dismissModal?.()).toBe(false);
+  });
+
   it('never exposes source content while a rendered preview is pending and makes failure recovery explicit', async () => {
     const { client, renders } = deferredRenderer();
     const session = markdownSession('# Heading\n\nSOURCE_ONLY_SENTINEL_6F2A');

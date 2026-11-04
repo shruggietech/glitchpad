@@ -51,7 +51,7 @@ public final class FixtureDocumentsProvider extends DocumentsProvider {
     writeFixture(directory, "resolver-cold.md", "# S031 cold delivery\n\nS031_COLD_MARKER_4F2A\n");
     writeFixture(directory, "resolver-warm.txt", "S031_WARM_MARKER_7C9D\n");
     writeFixture(directory, "recovery-readonly.md", "# Read-only source\n\nS046_ORIGINAL_UNCHANGED\n");
-    String recoveryCorpus = "# S046 Markdown corpus\n\nS046_CORPUS_MARKER\n\n- list item\n\n[local link](#s046-markdown-corpus)\n\n```text\ncode block\n```\n\n| Column | Value |\n| --- | --- |\n| row | Unicode \u03a9 \ud83e\uddea |\n";
+    String recoveryCorpus = "# S046 Markdown corpus\n\nS046_CORPUS_MARKER\n\n- list item\n\n[local link](#s046-markdown-corpus)\n\n[external destination](https://example.invalid/s046)\n\n```text\ncode block\n```\n\n| Column | Value |\n| --- | --- |\n| row | Unicode \u03a9 \ud83e\uddea |\n";
     writeFixture(directory, "recovery-corpus.md", recoveryCorpus);
     writeFixture(directory, "recovery-warm-corpus.md", recoveryCorpus);
     writeFixture(directory, "recovery-empty.md", "");

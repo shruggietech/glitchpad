@@ -122,6 +122,7 @@ class AndroidDeliveryInstrumentedTest {
     val component = requireNotNull(glitchpadComponent(launch)) { "installed Glitchpad package must resolve the governed cold Markdown route" }
     val scenario = ActivityScenario.launch<MainActivity>(launch.setComponent(component))
     verifyDeliveredMarkdownOutcome(scenario, "recovery-corpus.md", "positive")
+    verifyMarkdownLinkBack(scenario, "recovery-corpus.md")
     assertTrue("cold delivery must preserve original corpus bytes", coldBefore.contentEquals(readBytes(cold)))
     for (warmRoute in listOf("view", "send")) {
       for ((name, outcome) in listOf("recovery-warm-corpus.md" to "positive", "recovery-empty.md" to "empty", "recovery-malformed.md" to "malformed")) {
@@ -136,9 +137,27 @@ class AndroidDeliveryInstrumentedTest {
     }
     val expectedSource = InstrumentationRegistry.getArguments().getString("expectedSource")
     assertTrue("full expected source identity must be supplied", expectedSource != null && expectedSource.matches(Regex("[0-9a-f]{40}")))
-    println("markdown_delivery_evidence=" + JSONObject().put("cold_route", if (route == "view") "ACTION_VIEW" else "ACTION_SEND").put("cold_governed_corpus", "pass").put("warm_action_view", "positive_empty_malformed_pass").put("warm_action_send", "positive_empty_malformed_pass").put("source_bytes_unchanged", true).put("original_incident_input_replayed", false).put("source_commit", expectedSource).put("apk_sha256", apkSha256()).put("api_level", Build.VERSION.SDK_INT).toString())
+    println("markdown_delivery_evidence=" + JSONObject().put("cold_route", if (route == "view") "ACTION_VIEW" else "ACTION_SEND").put("cold_governed_corpus", "pass").put("external_link_back_modal", "pass").put("warm_action_view", "positive_empty_malformed_pass").put("warm_action_send", "positive_empty_malformed_pass").put("source_bytes_unchanged", true).put("original_incident_input_replayed", false).put("source_commit", expectedSource).put("apk_sha256", apkSha256()).put("api_level", Build.VERSION.SDK_INT).toString())
     System.out.flush()
     scenario.close()
+  }
+
+  private fun verifyMarkdownLinkBack(scenario: ActivityScenario<MainActivity>, name: String) {
+    val documentId = stringValue(evaluate(scenario, "document.querySelector('.document-surface').id"))
+    val linkSelector = ".document-surface .markdown-document button.markdown-link[title='https://example.invalid/s046']"
+    val selector = JSONObject.quote(linkSelector)
+    assertEquals("governed external link must open its confirmation", "true", evaluate(scenario, "(()=>{const link=document.querySelector(" + selector + ");if(!link)return false;link.click();return true;})()"))
+    waitForBodyText(scenario, "Open external destination?", "https://example.invalid/s046", "Cancel")
+    scenario.onActivity { activity -> requireNotNull(findWebView(activity.window.decorView)).requestFocus() }
+    instrumentation.waitForIdleSync()
+    instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
+    waitForCondition(scenario, "(()=>{const surface=document.querySelector('.document-surface');return !document.querySelector('.markdown-link-dialog') && !!surface && surface.id===" + JSONObject.quote(documentId) + " && document.activeElement===document.querySelector(" + selector + ");})()", "native Back must dismiss the link confirmation, retain its document, and restore trigger focus")
+    waitForDocumentIdentity(scenario, name)
+    waitForBodyText(scenario, "S046 Markdown corpus", "S046_CORPUS_MARKER")
+    clickControl(scenario, "Add document")
+    waitForBodyText(scenario, "New Markdown", "Open file", "Close Add document")
+    clickControl(scenario, "Close Add document")
+    waitForDocumentIdentity(scenario, name)
   }
 
   private fun markdownDeliveryIntent(uri: Uri, route: String): Intent = if (route == "view") viewIntent(uri, "text/markdown") else Intent(Intent.ACTION_SEND)

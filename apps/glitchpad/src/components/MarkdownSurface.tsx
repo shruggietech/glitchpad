@@ -430,6 +430,7 @@ export const MarkdownSurface = forwardRef<
       );
   const client = ownedClient.current;
   const editorRef = useRef<TextEditorHandle>(null);
+  const renderedContentRef = useRef<HTMLElement>(null);
   const linkTriggerRef = useRef<HTMLElement | null>(null);
   const projectedMode =
     session.markdown_document?.mode ?? initialMarkdownState(session).mode;
@@ -745,13 +746,42 @@ export const MarkdownSurface = forwardRef<
       }
       if (command === 'copy') {
         if (!navigator.clipboard) return false;
+        const selection = window.getSelection();
+        const content = renderedContentRef.current;
+        const selectedText =
+          session.lifecycle === 'active' &&
+          currentResult?.tree &&
+          content &&
+          selection &&
+          selection.rangeCount > 0 &&
+          Array.from({ length: selection.rangeCount }, (_, index) =>
+            selection.getRangeAt(index),
+          ).every(
+            (range) =>
+              content.contains(range.startContainer) &&
+              content.contains(range.endContainer),
+          )
+            ? selection.toString()
+            : '';
         return navigator.clipboard
           .writeText(
-            currentResult?.search_text.map(({ text }) => text).join('\n') ?? '',
+            selectedText ||
+              currentResult?.search_text.map(({ text }) => text).join('\n') ||
+              '',
           )
           .then(() => true);
       }
       return false;
+    },
+    dismissModal() {
+      if (
+        session.lifecycle !== 'active' ||
+        mode !== 'rendered' ||
+        !pendingLink?.normalized_target
+      )
+        return false;
+      closeLink();
+      return true;
     },
     selectRange(from, to) {
       setSourceSelection({
@@ -901,6 +931,7 @@ export const MarkdownSurface = forwardRef<
         </div>
       )}
       <article
+        ref={renderedContentRef}
         className="markdown-document"
         aria-busy={status === 'scheduled'}
         data-performance-ready={currentResult?.tree ? 'true' : 'pending'}

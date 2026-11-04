@@ -16,7 +16,7 @@ import type {
   AndroidDestinationReceipt,
   ShellSession,
 } from './domain/contracts';
-import { initialSessions } from './test/fixtures';
+import { initialSessions, makeSession } from './test/fixtures';
 import { RecoveryCandidateResolution } from './components/RecoveryResolution';
 import type { RecoveryGateway } from './domain/recovery-gateway';
 import type { MetadataGateway } from './domain/metadata-gateway';
@@ -511,6 +511,56 @@ describe('document foundation shell', () => {
     expect(
       screen.queryByText('Saved after native verification.'),
     ).not.toBeInTheDocument();
+  });
+
+  it('dismisses the active Markdown external-link modal before native Back can close its clean document', async () => {
+    let back: ((id: string) => void) | undefined;
+    const completeBack = vi.fn().mockResolvedValue(undefined);
+    const open = vi.fn().mockResolvedValue(undefined);
+    const session = makeSession(
+      'external-link',
+      'external.md',
+      'Markdown',
+      '[destination](https://example.com/path)',
+      { search: true },
+    );
+    render(
+      <App
+        sessions={[session]}
+        androidDeliveryGateway={authoringDelivery({
+          subscribeBack: (handler) => {
+            back = handler;
+            return Promise.resolve(() => undefined);
+          },
+          completeBack,
+        })}
+        externalLinkGateway={{ open }}
+        recoveryGateway={null}
+      />,
+    );
+    await waitFor(() => expect(back).toBeDefined());
+    const trigger = await screen.findByRole('button', { name: /destination/u });
+    fireEvent.click(trigger);
+    expect(
+      await screen.findByRole('dialog', { name: 'Open external destination?' }),
+    ).toBeInTheDocument();
+    act(() => back?.('modal-back'));
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+    expect(
+      screen.getByRole('region', { name: 'external.md' }),
+    ).toBeInTheDocument();
+    expect(open).not.toHaveBeenCalled();
+    expect(completeBack).toHaveBeenCalledWith('modal-back', true);
+    await waitFor(() => expect(trigger).toHaveFocus());
+    act(() => back?.('document-back'));
+    expect(
+      screen.queryByRole('region', { name: 'external.md' }),
+    ).not.toBeInTheDocument();
+    expect(completeBack).toHaveBeenCalledWith('document-back', true);
+    act(() => back?.('empty-back'));
+    expect(completeBack).toHaveBeenCalledWith('empty-back', false);
   });
 
   it('consumes measured IME Back before requesting dirty document close', async () => {

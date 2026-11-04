@@ -56,6 +56,7 @@ import {
 export interface TextEditorHandle {
   invoke(command: CommandId): boolean | Promise<boolean>;
   selectRange(from: number, to: number): boolean;
+  dismissModal?(): boolean;
 }
 
 interface TextEditorSurfaceProps {

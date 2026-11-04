@@ -26,7 +26,7 @@ Original reported Markdown bytes, incident APK hash and trace remain unavailable
 
 ## Review ledger
 
-External review rounds used: 1 of 2 (automatic PR-open review on f6b6078). Round 1 returned two P2 findings, direct desktop-copy Save As and auxiliary-input shortcut ownership; repairs and the final permitted round are pending. No merge, tag, release publication or deployment is authorized. Final source/check/artifact/thread and project-state reconciliation remains required before owner handoff.
+External review rounds used: 2 of 2. Round 1 automatically reviewed f6b6078 and returned two P2 findings; both are fixed and their threads are resolved. The final permitted code/security round was requested in PR comment 6624789102 on d9049beadea305971741a4423b1cf1880846d053. Round 2 code review completed with two P2 findings (selected rendered Copy and renderer-modal Back ownership), now under repair. No separate security receipt has been returned. No third external round is authorized. No merge, tag, release publication or deployment is authorized. Final source/check/artifact/thread and project-state reconciliation remains required before owner handoff.
 
 ### Pinned brand verification
 
@@ -79,3 +79,11 @@ Source delivery/read capture now covers Android and desktop external rejections,
 ### Convergence T023
 
 Diagnostic preview now drains pending captured failure writes before reading the native snapshot. The red-first delayed-success test proves the event appears in the frozen preview; later events leave that preview unchanged and appear in the next preview. The eighteen focused hook/capture/gateway/export/panel tests, frontend lint/type checks and owned-file formatting pass. Clear success/new-event/failure behavior is unchanged and verified.
+
+### Complete frontend candidate
+
+On pushed source d9049beadea305971741a4423b1cf1880846d053, the complete frontend gate passes lint, TypeScript, 397/397 tests and production build. Both convergence repairs are included in the pushed source. Superseded d714892 Android jobs were cancelled by the updated candidate; API24 had completed its eight baseline provider tests before cancellation, and no S046 journey result is claimed from that superseded attempt.
+
+### Final round repairs
+
+Markdown Copy honors exact nonempty selection only when all selected range endpoints belong to the active rendered article; absent, foreign, crossed-boundary or inactive selection retains the existing document fallback. Clipboard completion/denial stays awaited. Native Back delegates the active renderer modal to its existing Cancel/Escape/focus path before search/document close, preserving IME/shell priority and native completion acknowledgement. Renderer/editor48/48 and App63/63 tests, policy31/31, lint/type checks and Android Kotlin/Java instrumentation compilation pass. The governed cold view/send corpus now declares an external example.invalid link and includes actual KEYCODE_BACK/dialog/document/focus/navigation assertions; the external_link_back_modal marker is emitted only after assertions. Hosted execution of this new assertion remains pending.

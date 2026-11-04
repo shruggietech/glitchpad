@@ -28,3 +28,7 @@ The installed convergence pass checked 18 functional requirements, five success 
 ## 2026-11-04: Diagnostic snapshot ordering convergence
 
 A follow-up ordering regression reproduced F2, one HIGH partial FR-013/FR-015 gap: successful native failure append could complete after the preview snapshot, leaving that failure out of the frozen export. Appended T023 under Phase 8 and implemented an explicit drain of writes already pending at the request boundary before native snapshot. The delayed-success/frozen/subsequent-event regression and existing Clear cases pass. All eighteen requirements, five success criteria, ten acceptance scenarios, twelve plan decisions and eight constitution principles remain mapped; no additional unbuilt work is identified. Actual APK qualification and final handoff remain open tasks.
+
+## 2026-11-04: Final external-review repairs
+
+The last permitted external round returned two P2 findings. T024 repairs selected rendered-text Copy through the shared awaited provider with range ownership checks. T025 repairs renderer-modal Back ownership through a narrow optional synchronous handle and an actual governed-APK gesture regression. The added tests reproduce the former clipboard selection loss and clean-document removal before repair. Focused TypeScript/renderer/App/policy checks and instrumentation compilation pass; exact-candidate runtime qualification remains required before closure. No third external review will be requested.

@@ -6,6 +6,8 @@ import {
 } from './check-s046-surface-contrast.mjs';
 import {
   assertAuthoringMeasurement,
+  assertNativeAuthoringMeasurement,
+  assertNativeObservation,
   assertDiagnosticMeasurement,
 } from './check-android-authoring-layout.mjs';
 
@@ -69,6 +71,27 @@ test('requires document clearance for actual floating control height', () => {
   assert.throws(() => assertAuthoringMeasurement(actual), /reserve/u);
   actual.paddingBottom = 96;
   assert.doesNotThrow(() => assertAuthoringMeasurement(actual));
+});
+
+test('native Add audit rejects browser-visible but physically occluded targets and duplicated insets', () => {
+  const actual = measured();
+  actual.frameCount = 1;
+  actual.nativeApplied = true;
+  actual.nativeCurrent = true;
+  actual.nativeVisible = { left: 0, top: 48, right: 320, bottom: 640 };
+  actual.nativeRemaining = { right: 40, bottom: 0 };
+  actual.expectedRemaining = { right: 40, bottom: 0 };
+  actual.actions[0].label = 'Add document';
+  assert.throws(
+    () => assertNativeAuthoringMeasurement(actual),
+    /native visible frame/u,
+  );
+  actual.actions[0].left = 140;
+  actual.actions[0].right = 308;
+  assert.doesNotThrow(() => assertNativeAuthoringMeasurement(actual));
+  actual.nativeRemaining.right = 80;
+  assert.doesNotThrow(() => assertNativeAuthoringMeasurement(actual));
+  assert.throws(() => assertNativeObservation(actual), /twice/u);
 });
 
 const diagnosticMeasured = () => ({

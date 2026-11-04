@@ -56,24 +56,38 @@
       ]
     },
     {
-      "name": "tauri",
-      "registry_version": "2.11.6",
-      "crate_sha256": "6fa5bacdb9bbad5954af3d1bd6cf6ae9192cab1b2e270f4a07f904610b9e85f4",
+      "name": "tao",
+      "registry_version": "0.35.3",
+      "crate_sha256": "d1c93047acf68669466a34690ac58cca7010bd1b201e1ec86f1fd0a75d3dd4a9",
       "source": {
         "git": {
-          "sha1": "9452ddee5ebefd9b678a94ff003521379df6c9ae"
+          "sha1": "5a14e624c81b7a799728129417e9218be25f17d9",
+          "dirty": true
         },
-        "path_in_vcs": "crates/tauri"
+        "path_in_vcs": ""
       },
-      "license": "Apache-2.0 OR MIT",
+      "license": "Apache-2.0",
+      "upstream_archive_files": 119,
+      "upstream_archive_bytes": 308672,
+      "upstream_uncompressed_bytes": 1302732,
       "modified_files": [
         {
-          "path": "src/ipc/protocol.rs",
-          "sha256": "d903c4902fb112707abb1d8ec9d42bb5e9924b88921b4d64ae6ee48c52a55774"
+          "path": "src/platform_impl/android/mod.rs",
+          "sha256": "8b7f5bdb6bd87d4f42017b073bb17024da1c6f1ca7665251bfd85c6c607d43e3"
         }
       ],
-      "purpose": "S046 T052 Android debug create-error reply observation only; identical formatted script, acknowledged eval callback classified only as ACK, no transport repair",
-      "retirement": "Remove after the retained actual IPC completion gap is resolved and its required Android qualification is complete"
+      "added_files": [
+        {
+          "path": "src/platform_impl/android/user_event_queue.rs",
+          "sha256": "c5183ae0b9c8fdaf1615ae595d2100a558e4262dd67f21349276140a0873893c"
+        },
+        {
+          "path": "tests/android_user_event_queue.rs",
+          "sha256": "af0731a76d37f2a71b9833645753b456d5b48bb03461919a110087f4298476cc"
+        }
+      ],
+      "purpose": "S046 T056 Android poll/wake contract repair: poll_once, common user-event drain and truthful nonblocking queue admission; existing non-Android source and manifest bytes remain exact.",
+      "retirement": "Remove when an upstream replacement preserves the same dispatch/queue contracts and passes the existing strict Android cancellation qualification."
     }
   ],
   "modified_files": [
@@ -81,7 +95,8 @@
     "tauri-plugin-opener/src/reveal_item_in_dir.rs (Linux implementation and persistent-runtime regression)",
     "tauri-plugin-single-instance/src/platform_impl/linux.rs",
     "tauri-plugin-opener/permissions/{default,allow-default-urls}.toml (explicit relative schema targets; permission bodies unchanged)",
-    "tauri/src/ipc/protocol.rs (Android debug create-error reply observation only)"
+    "tao/src/platform_impl/android/mod.rs (Android poll/wake and queue admission only)",
+    "tao/src/platform_impl/android/user_event_queue.rs and tests/android_user_event_queue.rs (production channel helpers and workspace-integrated regressions)"
   ],
   "retirement": "Remove patches after maintained upstream releases provide compatible zbus 6 integration and full Linux lifecycle qualification passes",
   "follow_up_decisions": [
@@ -99,6 +114,25 @@
       "slice": "S046",
       "reason": "Observe actual default create_android_document error reply formatting, enqueue and WebView acknowledgement only under Android debug compilation; retain identical script and unchanged release/other-command paths",
       "files": ["tauri-2.11.6/src/ipc/protocol.rs"]
+    },
+    {
+      "date": "2026-11-04",
+      "slice": "S046",
+      "task": "T056",
+      "reason": "Repair exact locked Android poll/wake contract without timers, retries, dependency version changes or non-Android source edits; replace the temporary observation-only Tauri patch with ordinary registry Tauri.",
+      "files": [
+        "tao-0.35.3/src/platform_impl/android/mod.rs",
+        "tao-0.35.3/src/platform_impl/android/user_event_queue.rs",
+        "tao-0.35.3/tests/android_user_event_queue.rs"
+      ],
+      "retired_observation": {
+        "source_commit": "45b379dd36be8a580bfc2e81efdf834df217aea3",
+        "archive": "artifacts/s046-t052-tauri-observation-source.tar.gz",
+        "archive_sha256": "490e8365565a5f6feea056b0b6a4db00746cd3452d4f085a32cb26c155e06305",
+        "protocol_sha256": "d903c4902fb112707abb1d8ec9d42bb5e9924b88921b4d64ae6ee48c52a55774",
+        "diff_sha256": "78ead490ae0f9650a0f2394d21ad3f1892e99bb4d4a6fe1a0e0ac785cab0056a",
+        "registry_crate_sha256": "6fa5bacdb9bbad5954af3d1bd6cf6ae9192cab1b2e270f4a07f904610b9e85f4"
+      }
     }
   ]
 }

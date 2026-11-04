@@ -114,6 +114,27 @@ import {
   reportPackageWorkflowFailure,
 } from './domain/package-workflow-probe';
 
+const ownedAndroidSourceIds = (
+  sessions: readonly ShellSession[],
+): Set<string> => {
+  const current = new Set(
+    sessions
+      .filter(
+        (session) =>
+          session.source_id &&
+          (session.source.kind === 'document_uri' ||
+            session.id === `android-${session.source_id}`),
+      )
+      .flatMap((session) => [
+        session.source_id!,
+        ...(session.copy_source ? [session.copy_source.source_id] : []),
+      ]),
+  );
+  for (const session of sessions)
+    if (session.copy_source) current.add(session.copy_source.source_id);
+  return current;
+};
+
 interface AppProps {
   sessions?: ShellSession[];
   recoveryGateway?: RecoveryGateway | null;
@@ -408,9 +429,14 @@ export function App({
         dispatch({ type: 'open', session });
       } catch {
         recordFailure('source', 'read', 'source_read_failed');
-        void selectedAndroidDeliveryGateway
-          .close(source.source_id)
-          .catch(() => undefined);
+        if (
+          !ownedAndroidSourceIds(stateRef.current.sessions).has(
+            source.source_id,
+          )
+        )
+          void selectedAndroidDeliveryGateway
+            .close(source.source_id)
+            .catch(() => undefined);
         setDeliveryError(
           'The delivered Android file could not be decoded safely. Check that it is readable UTF-8 or UTF-16 text.',
         );
@@ -454,21 +480,7 @@ export function App({
   }, [applyAndroidDeliveries, selectedAndroidDeliveryGateway]);
   useEffect(() => {
     if (!selectedAndroidDeliveryGateway) return;
-    const current = new Set(
-      state.sessions
-        .filter(
-          (session) =>
-            session.source_id &&
-            (session.source.kind === 'document_uri' ||
-              session.id === `android-${session.source_id}`),
-        )
-        .flatMap((session) => [
-          session.source_id!,
-          ...(session.copy_source ? [session.copy_source.source_id] : []),
-        ]),
-    );
-    for (const session of state.sessions)
-      if (session.copy_source) current.add(session.copy_source.source_id);
+    const current = ownedAndroidSourceIds(state.sessions);
     for (const sourceId of openAndroidSourceIdsRef.current) {
       if (!current.has(sourceId))
         void selectedAndroidDeliveryGateway
@@ -1206,7 +1218,12 @@ export function App({
           session: await selectedAndroidDeliveryGateway.materialize(source),
         });
       } catch (error) {
-        await selectedAndroidDeliveryGateway.close(source.source_id);
+        if (
+          !ownedAndroidSourceIds(stateRef.current.sessions).has(
+            source.source_id,
+          )
+        )
+          await selectedAndroidDeliveryGateway.close(source.source_id);
         throw error;
       }
     } catch {
@@ -1573,6 +1590,12 @@ export function App({
             onChoose={() => void chooseSources()}
             canChoose={
               typeof selectedAndroidDeliveryGateway.choose === 'function'
+            }
+            viewport={
+              diagnosticExportGateway?.viewport ??
+              (nativeAndroidDeliveryAvailable()
+                ? nativeAndroidDiagnosticExportGateway.viewport
+                : undefined)
             }
             disabled={
               applicationPanel !== 'closed' ||

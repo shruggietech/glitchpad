@@ -67,6 +67,47 @@ export function assertAuthoringMeasurement(measurement) {
   );
 }
 
+export function assertNativeAuthoringMeasurement(measurement) {
+  assertAuthoringMeasurement(measurement);
+  assert.equal(
+    measurement.frameCount,
+    1,
+    'Native Add must retain one AppFrame',
+  );
+  assert.ok(
+    measurement.actions.some((action) => action.label === 'Add document'),
+    'The persistent Add trigger must be measured with every choice',
+  );
+  for (const action of measurement.actions) {
+    const visible = measurement.nativeVisible;
+    assert.ok(
+      action.left >= visible.left - tolerance &&
+        action.right <= visible.right + tolerance &&
+        action.top >= visible.top - tolerance &&
+        action.bottom <= visible.bottom + tolerance,
+      action.label + ' must fit the actual modeled native visible frame',
+    );
+  }
+}
+
+export function assertNativeObservation(measurement) {
+  assert.equal(
+    measurement.nativeCurrent,
+    true,
+    'Native Add observation must match the current layout dimensions',
+  );
+  assert.equal(
+    measurement.nativeApplied,
+    true,
+    'Native Add requires a current native viewport observation',
+  );
+  assert.deepEqual(
+    measurement.nativeRemaining,
+    measurement.expectedRemaining,
+    'Already consumed canonical insets must not be applied twice',
+  );
+}
+
 export function assertDiagnosticMeasurement(measurement) {
   assert.equal(
     measurement.inactiveAddInvisible,
@@ -524,6 +565,7 @@ export async function checkAndroidAuthoringLayout({
   const cases = [];
   const failures = [];
   const diagnosticCases = [];
+  const nativeAuthoringCases = [];
   const audit = (profile, textScale, stage, measurement) => {
     try {
       assertAuthoringMeasurement(measurement);
@@ -703,6 +745,188 @@ export async function checkAndroidAuthoringLayout({
           await page.close();
         }
       }
+    }
+    for (const profile of [
+      { name: 'native-portrait', width: 320, height: 640 },
+      { name: 'native-landscape', width: 640, height: 320 },
+      { name: 'native-short', width: 480, height: 240 },
+    ]) {
+      for (const textScale of [1, 2])
+        for (const consumed of [false, true]) {
+          const page = await browser.newPage();
+          try {
+            const errors = [];
+            page.on('pageerror', (error) => errors.push(error.message));
+            await page.setViewport({
+              width: profile.width,
+              height: profile.height,
+              deviceScaleFactor: 1,
+              isMobile: true,
+              hasTouch: true,
+            });
+            await page.setUserAgent(
+              'Mozilla/5.0 (Linux; Android 16) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Mobile Safari/537.36',
+            );
+            await page.evaluateOnNewDocument(installNativeSeams);
+            await page.goto(origin, { waitUntil: 'load' });
+            await page.waitForSelector('.add-document-trigger');
+            const fixture = await page.evaluate(
+              ({ profile, textScale, consumed }) => {
+                document.documentElement.style.fontSize = textScale * 100 + '%';
+                const portrait = profile.height > profile.width;
+                const native = portrait
+                  ? {
+                      left: 0,
+                      top: 48,
+                      right: profile.width,
+                      bottom: profile.height - 48,
+                    }
+                  : {
+                      left: 48,
+                      top: 24,
+                      right: profile.width - 48,
+                      bottom: profile.height,
+                    };
+                // Model the retained API36 native bars/cutout. The parent has already consumed canonical top/left, or every inset in the deduplication row.
+                const applied = consumed
+                  ? {
+                      left: native.left,
+                      top: native.top,
+                      right: profile.width - native.right,
+                      bottom: profile.height - native.bottom,
+                    }
+                  : {
+                      left: native.left,
+                      top: portrait ? native.top : 0,
+                      right: 0,
+                      bottom: 0,
+                    };
+                const css = document.createElement('style');
+                css.textContent =
+                  '[data-bb-app-frame]{padding-top:' +
+                  applied.top +
+                  'px!important;padding-right:' +
+                  applied.right +
+                  'px!important;padding-bottom:' +
+                  applied.bottom +
+                  'px!important;padding-left:' +
+                  applied.left +
+                  'px!important}#bb-overlay-root{top:' +
+                  applied.top +
+                  'px!important;right:' +
+                  applied.right +
+                  'px!important;bottom:' +
+                  applied.bottom +
+                  'px!important;left:' +
+                  applied.left +
+                  'px!important}';
+                document.head.append(css);
+                // Nonzero screen origin and width scale exercise the existing uniform native-coordinate mapping.
+                window.__diagnosticNativeViewport = {
+                  webview_screen: {
+                    left: 17,
+                    top: 29,
+                    right: 17 + profile.width * 2,
+                    bottom: 29 + profile.height * 2,
+                  },
+                  visible_screen: {
+                    left: 17 + native.left * 2,
+                    top: 29 + native.top * 2,
+                    right: 17 + native.right * 2,
+                    bottom: 29 + native.bottom * 2,
+                  },
+                  view_width: profile.width * 2,
+                  view_height: profile.height * 2,
+                  density: 3,
+                };
+                window.dispatchEvent(new Event('resize'));
+                return {
+                  nativeVisible: native,
+                  expectedRemaining: {
+                    right: profile.width - native.right - applied.right,
+                    bottom: profile.height - native.bottom - applied.bottom,
+                  },
+                };
+              },
+              { profile, textScale, consumed },
+            );
+            await settle(page);
+            const measure = async (open) => ({
+              ...(await measureActions(page, open)),
+              ...fixture,
+              ...(await page.$eval('[data-add-document]', (node) => ({
+                nativeApplied:
+                  node.getAttribute('data-native-viewport') === 'true',
+                nativeCurrent:
+                  Number(node.getAttribute('data-native-viewport-width')) ===
+                    window.innerWidth &&
+                  Number(node.getAttribute('data-native-viewport-height')) ===
+                    window.innerHeight,
+                nativeRemaining: {
+                  right: Number.parseFloat(
+                    node.style.getPropertyValue('--gl-add-native-inline-end'),
+                  ),
+                  bottom: Number.parseFloat(
+                    node.style.getPropertyValue('--gl-add-native-block-end'),
+                  ),
+                },
+              }))),
+            });
+            const closed = await measure(false);
+            const auditNative = (
+              stage,
+              measured,
+              assertion = assertNativeAuthoringMeasurement,
+            ) => {
+              try {
+                assertion(measured);
+              } catch (error) {
+                failures.push({
+                  profile: profile.name,
+                  text_scale: textScale,
+                  canonical_insets_consumed: consumed,
+                  stage,
+                  message: error.message,
+                  measurement: measured,
+                });
+              }
+            };
+            auditNative('native_closed', closed);
+            await page.click('.add-document-trigger');
+            await page.waitForSelector('.add-document-menu');
+            const opened = await measure(true);
+            auditNative('native_choices', opened);
+            auditNative(
+              'native_observation_closed',
+              closed,
+              assertNativeObservation,
+            );
+            auditNative(
+              'native_observation_choices',
+              opened,
+              assertNativeObservation,
+            );
+            await page.keyboard.press('Escape');
+            assert.equal(await page.$('.add-document-menu'), null);
+            assert.equal(
+              await page.$eval(
+                '.add-document-trigger',
+                (node) => node === document.activeElement,
+              ),
+              true,
+            );
+            assert.deepEqual(errors, []);
+            nativeAuthoringCases.push({
+              profile,
+              text_scale: textScale,
+              canonical_insets_consumed: consumed,
+              closed,
+              opened,
+            });
+          } finally {
+            await page.close();
+          }
+        }
     }
     for (const profile of [
       { width: 320, height: 640 },
@@ -908,6 +1132,7 @@ export async function checkAndroidAuthoringLayout({
       ],
       cases,
       diagnostic_cases: diagnosticCases,
+      native_authoring_cases: nativeAuthoringCases,
       surface_contrast_cases: surfaceContrast.cases,
     };
     if (receiptPath) {

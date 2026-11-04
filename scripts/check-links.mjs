@@ -14,10 +14,12 @@ const linkExcludedDirectories = new Set([
   'gen',
   'node_modules',
   'target',
-  // Preserve upstream prose verbatim; local vendor/README.md remains checked.
-  'tauri-plugin-opener-2.5.5',
-  'tauri-plugin-single-instance-2.4.5',
-  'tauri-2.11.6',
+]);
+// Exclude only owned upstream trees; local provenance and neighboring versions stay checked.
+const upstreamDocumentationPaths = new Set([
+  'vendor/tauri-plugin-opener-2.5.5',
+  'vendor/tauri-plugin-single-instance-2.4.5',
+  'vendor/tao-0.35.3',
 ]);
 const defaultCheckLinks = promisify(markdownLinkCheck);
 
@@ -49,6 +51,7 @@ export async function validateLinks({
     configuration ?? JSON.parse(await readFile(configurationPath, 'utf8'));
   const files = await collectMarkdownFiles(repositoryRoot, {
     excludedDirectories: linkExcludedDirectories,
+    excludedPaths: upstreamDocumentationPaths,
   });
   const failures = [];
   let linkCount = 0;

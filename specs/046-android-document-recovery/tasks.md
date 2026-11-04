@@ -131,3 +131,13 @@ T001-T004 precede implementation. Native contracts/writer (T008-T009/T017) and r
 ## Phase 15: Packaged theme readability
 
 - [x] T053 Pair S046 dirty-close and Diagnostics foreground/background/status/action colors through existing canonical consumer tokens in styles.css, preserve selected-theme dominance without changing generated brand/AppFrame or broader shell scope, retain the actual screenshot/red browser evidence and add composed-browser contrast regressions across OS and explicit/system theme combinations per FR-005/009/014/016/017 (partial, HIGH F6).
+
+## Phase 16: Provider fixture continuity and duplicate cleanup
+
+- [ ] T054 Preserve canonical fixture bytes and modification metadata across provider recreation when expected content is identical, update missing/changed fixtures deliberately, and add focused initialization plus actual recreation coverage in FixtureDocumentsProvider.java and affected instrumentation per FR-001/016/018 (partial verification, HIGH F7).
+- [x] T055 Retain sources already owned by an open session or copy reference when a strong duplicate fails materialization in App.tsx, preserve exactly-once cleanup for unowned failures, and add red-first ownership/error regressions per FR-001/008/009/016/017 (partial execution, HIGH F8).
+
+## Phase 17: Native dispatch and physical Add visibility
+
+- [ ] T056 Repair the locked Tao Android poll/wake contract and truthful queue admission with exactly-once/source/exit ordering regressions, preserve dependency versions/provenance/licenses and non-Android source, remove temporary diagnosis-only Tauri vendoring while retaining its evidence, and qualify the normal reply path on fresh APKs per FR-008/010/016/017/018 (partial execution, HIGH F9).
+- [ ] T057 Fit Add document to the actual native-visible parent using the existing viewport observer/intersection policy, preserve canonical inset ownership and document clearance, strengthen physical native trigger/choice assertions and retain old/modern browser default/scaled/rotated regressions per FR-003/005/016/017 (partial execution and verification, HIGH F10).

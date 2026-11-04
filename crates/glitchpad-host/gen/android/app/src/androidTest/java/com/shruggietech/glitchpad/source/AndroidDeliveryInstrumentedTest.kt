@@ -430,6 +430,7 @@ class AndroidDeliveryInstrumentedTest {
   }
 
   private fun assertAddDocumentReachability(scenario: ActivityScenario<MainActivity>, choiceSelector: String?) {
+    waitForCondition(scenario, "(()=>{const add=document.querySelector('[data-add-document]');return !!add&&add.getAttribute('data-native-viewport')==='true'&&Number(add.getAttribute('data-native-viewport-width'))===window.innerWidth&&Number(add.getAttribute('data-native-viewport-height'))===window.innerHeight;})()", "Add document requires a current native viewport observation before reachability qualification")
     val selector = JSONObject.quote(choiceSelector ?: ".add-document-trigger")
     val script = """
       (()=>{
@@ -454,9 +455,22 @@ class AndroidDeliveryInstrumentedTest {
     val viewport = measured.getJSONObject("viewport")
     for (kind in listOf("action", "trigger")) {
       val control = measured.getJSONObject(kind)
+      val left = control.getDouble("left") - viewport.getDouble("left")
+      val top = control.getDouble("top") - viewport.getDouble("top")
+      val right = control.getDouble("right") - viewport.getDouble("left")
+      val bottom = control.getDouble("bottom") - viewport.getDouble("top")
+      val target = JSONObject().put("found", true).put("left", left).put("top", top).put("right", right).put("bottom", bottom)
+        .put("x", (left + right) / 2).put("y", (top + bottom) / 2).put("viewport_width", viewport.getDouble("width"))
+      measured.put(kind + "_native", nativeControlGeometry(scenario, target))
+    }
+    println("add_document_geometry=" + measured.put("stage", if (choiceSelector == null) "closed" else "scrolled_choice").toString())
+    System.out.flush()
+    for (kind in listOf("action", "trigger")) {
+      val control = measured.getJSONObject(kind)
       val label = control.getString("label")
       assertTrue(label + " must retain a 48dp-equivalent target", control.getDouble("width") >= 48.0 && control.getDouble("height") >= 48.0)
       assertTrue(label + " must be fully inside the visible viewport after local menu scrolling", control.getDouble("left") >= viewport.getDouble("left") - 0.6 && control.getDouble("right") <= viewport.getDouble("left") + viewport.getDouble("width") + 0.6 && control.getDouble("top") >= viewport.getDouble("top") - 0.6 && control.getDouble("bottom") <= viewport.getDouble("top") + viewport.getDouble("height") + 0.6)
+      assertTrue(label + " must fit the actual native WebView/window intersection", measured.getJSONObject(kind + "_native").optBoolean("whole_control_visible"))
       assertTrue(label + " must retain a whole unclipped target", control.getDouble("visibleWidth") >= 48.0 && control.getDouble("visibleHeight") >= 48.0)
       assertTrue(label + " must receive input at its visible center", control.getBoolean("hit"))
       assertTrue(label + " must be enabled", !control.getBoolean("disabled"))
@@ -464,7 +478,6 @@ class AndroidDeliveryInstrumentedTest {
     val surface = measured.getJSONObject("document")
     assertTrue("real document surface must keep positive area", surface.getDouble("width") > 0 && surface.getDouble("height") > 0)
     if (choiceSelector == null) assertTrue("closed-state document clearance must reserve the real floating target", measured.getDouble("paddingBottom") + 0.6 >= surface.getDouble("bottom") - measured.getJSONObject("trigger").getDouble("top"))
-    println("add_document_geometry=" + measured.put("stage", if (choiceSelector == null) "closed" else "scrolled_choice").toString())
   }
 
   private fun verifyMarkdownFailures(scenario: ActivityScenario<MainActivity>, corpus: Uri) {

@@ -1295,6 +1295,192 @@ describe('document foundation shell', () => {
     );
   }
 
+  for (const entrypoint of ['delivery', 'picker'] as const) {
+    for (const ownership of ['tab', 'copy', 'unowned'] as const) {
+      it(
+        'retains current edits and respects ' +
+          ownership +
+          ' ownership after failed Android acquisition via ' +
+          entrypoint,
+        async () => {
+          const dirty: ShellSession = {
+            ...makeSession(
+              'dirty',
+              'Untitled.txt',
+              'Text',
+              'Exact dirty draft bytes\n',
+              { search: true, edit: true, save: true },
+              { dirty: true, writable: true },
+            ),
+            edit_origin: 'draft',
+          };
+          const incoming = destinationFor(dirty).source;
+          incoming.source_id = 'incoming-source';
+          incoming.descriptor.display_name = 'Original.txt';
+          const original: ShellSession = {
+            ...makeSession(
+              'android-incoming-source',
+              'Original.txt',
+              'Text',
+              'Exact original source bytes\n',
+              { search: true },
+            ),
+            source_id: incoming.source_id,
+            source: incoming.descriptor,
+            external_revision: incoming.external_revision,
+          };
+          const editable: ShellSession =
+            ownership === 'copy'
+              ? {
+                  ...dirty,
+                  edit_origin: 'copy',
+                  copy_source: {
+                    source_id: incoming.source_id,
+                    external_revision: incoming.external_revision,
+                  },
+                }
+              : dirty;
+          const close = vi.fn().mockResolvedValue(undefined);
+          const materialize = vi
+            .fn()
+            .mockRejectedValue(new Error('controlled materialization failure'));
+          const gateway = authoringDelivery({
+            close,
+            materialize,
+            choose: vi.fn().mockResolvedValue(incoming),
+            drain: vi
+              .fn()
+              .mockResolvedValueOnce({
+                sources: entrypoint === 'delivery' ? [incoming] : [],
+                rejections: [],
+              })
+              .mockResolvedValue({ sources: [], rejections: [] }),
+          });
+          render(
+            <App
+              sessions={ownership === 'tab' ? [editable, original] : [editable]}
+              androidDeliveryGateway={gateway}
+              recoveryGateway={null}
+            />,
+          );
+          if (entrypoint === 'picker') invokeMenu('Open…');
+          await screen.findByRole('alert');
+          expect(materialize).toHaveBeenCalledExactlyOnceWith(incoming);
+          const editor = screen.getByRole('textbox', {
+            name: 'Untitled.txt text editor',
+          });
+          expect(EditorView.findFromDOM(editor)!.state.doc.toString()).toBe(
+            'Exact dirty draft bytes\n',
+          );
+          expect(
+            document.querySelector('[data-draft-identity]'),
+          ).toHaveTextContent('Unsaved changes');
+          expect(original.content).toBe('Exact original source bytes\n');
+          if (ownership === 'unowned') {
+            await waitFor(() =>
+              expect(close).toHaveBeenCalledExactlyOnceWith(incoming.source_id),
+            );
+            return;
+          }
+          expect(close).not.toHaveBeenCalled();
+          if (ownership === 'tab')
+            fireEvent.click(screen.getByRole('tab', { name: 'Original.txt' }));
+          fireEvent.keyDown(getApplicationShell(), { key: 'w', ctrlKey: true });
+          if (ownership === 'copy')
+            fireEvent.click(
+              within(screen.getByRole('dialog')).getByRole('button', {
+                name: 'Discard',
+              }),
+            );
+          await waitFor(() =>
+            expect(close).toHaveBeenCalledExactlyOnceWith(incoming.source_id),
+          );
+          if (ownership === 'tab')
+            expect(
+              EditorView.findFromDOM(
+                screen.getByRole('textbox', {
+                  name: 'Untitled.txt text editor',
+                }),
+              )!.state.doc.toString(),
+            ).toBe('Exact dirty draft bytes\n');
+        },
+      );
+    }
+  }
+
+  it('uses live Android ownership acquired while an earlier materialization is pending', async () => {
+    const dirty = createDraftSession('text');
+    const incoming = destinationFor(dirty).source;
+    incoming.source_id = 'incoming-source';
+    incoming.descriptor.display_name = 'Original.txt';
+    const original: ShellSession = {
+      ...makeSession(
+        'android-incoming-source',
+        'Original.txt',
+        'Text',
+        'Exact original bytes\n',
+        { search: true },
+      ),
+      source_id: incoming.source_id,
+      source: incoming.descriptor,
+      external_revision: incoming.external_revision,
+    };
+    let rejectFirst: ((error: Error) => void) | undefined;
+    const materialize = vi
+      .fn<AndroidDeliveryGateway['materialize']>()
+      .mockImplementationOnce(
+        () =>
+          new Promise((_resolve, reject) => {
+            rejectFirst = reject;
+          }),
+      )
+      .mockResolvedValueOnce(original);
+    const close = vi.fn().mockResolvedValue(undefined);
+    const gateway = authoringDelivery({
+      close,
+      materialize,
+      choose: vi.fn().mockResolvedValue(incoming),
+      drain: vi
+        .fn()
+        .mockResolvedValueOnce({ sources: [incoming], rejections: [] })
+        .mockResolvedValue({ sources: [], rejections: [] }),
+    });
+    render(
+      <App
+        sessions={[dirty]}
+        androidDeliveryGateway={gateway}
+        recoveryGateway={null}
+      />,
+    );
+    const editor = screen.getByRole('textbox', {
+      name: 'Untitled.txt text editor',
+    });
+    act(() => {
+      EditorView.findFromDOM(editor)!.dispatch({
+        changes: { from: 0, insert: 'Live retained bytes\n' },
+      });
+    });
+    await waitFor(() => expect(materialize).toHaveBeenCalledOnce());
+    invokeMenu('Open…');
+    await screen.findByRole('tabpanel', { name: 'Original.txt' });
+    await act(async () => {
+      rejectFirst?.(new Error('earlier acquisition failed'));
+      await Promise.resolve();
+    });
+    await screen.findByRole('alert');
+    expect(close).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('tab', { name: /^Untitled\.txt/u }));
+    expect(
+      EditorView.findFromDOM(
+        screen.getByRole('textbox', { name: 'Untitled.txt text editor' }),
+      )!.state.doc.toString(),
+    ).toBe('Live retained bytes\n');
+    expect(document.querySelector('[data-draft-identity]')).toHaveTextContent(
+      'Unsaved changes',
+    );
+    expect(original.content).toBe('Exact original bytes\n');
+  });
+
   it('opens initial and warm Android deliveries and releases closed sources', async () => {
     const delivered = {
       ...initialSessions[2],

@@ -387,15 +387,17 @@ test('link validation keeps local provenance while excluding exact upstream vend
     'vendor/tauri-plugin-single-instance-2.4.5/CHANGELOG.md',
     '# Upstream changelog\n',
   );
+  await writeFixture(root, 'vendor/tao-0.35.3/README.md', '# Upstream Tao\n');
+  await writeFixture(root, 'vendor/tao-0.35.4/README.md', '# Other version\n');
   await writeFixture(
     root,
-    'vendor/tauri-2.11.6/README.md',
-    '# Upstream Tauri\n',
+    'docs/tao-0.35.3/README.md',
+    '# Owned same basename\n',
   );
   await writeFixture(
     root,
-    'vendor/tauri-2.11.7/README.md',
-    '# Other version\n',
+    'vendor/tauri-2.11.6/README.md',
+    '# Retired unowned tree\n',
   );
   const seen = [];
   const result = await validateLinks({
@@ -406,9 +408,14 @@ test('link validation keeps local provenance while excluding exact upstream vend
       return [];
     },
   });
-  assert.equal(result.fileCount, 2);
+  assert.equal(result.fileCount, 4);
   assert.deepEqual(
     seen.sort(),
-    ['# Local patch provenance\n', '# Other version\n'].sort(),
+    [
+      '# Local patch provenance\n',
+      '# Other version\n',
+      '# Owned same basename\n',
+      '# Retired unowned tree\n',
+    ].sort(),
   );
 });

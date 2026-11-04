@@ -13,7 +13,7 @@ import android.provider.DocumentsProvider;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -136,13 +136,8 @@ public final class FixtureDocumentsProvider extends DocumentsProvider {
     writeFixture(directory, "recovery-empty.md", "");
     writeFixture(directory, "recovery-malformed.md", "# Incomplete [link\n\n```unclosed\nS046_MALFORMED_MARKER\n");
     for (String name : new String[] {"original.png", "original.jpg", "original.webp", "original.bmp", "original.tiff", "original.gif", "animated.webp", "original.svg", "entries.ico", "hostile.svg"}) {
-      try (java.io.InputStream input = getContext().getAssets().open(name);
-          FileOutputStream output = new FileOutputStream(new File(directory, name))) {
-        byte[] buffer = new byte[4096];
-        int count;
-        while ((count = input.read(buffer)) != -1) {
-          output.write(buffer, 0, count);
-        }
+      try {
+        FixtureCanonicalFiles.initialize(new File(directory, name), () -> getContext().getAssets().open(name), false);
       } catch (IOException error) {
         throw new IllegalStateException("raster_fixture_copy_failed", error);
       }
@@ -260,9 +255,9 @@ public final class FixtureDocumentsProvider extends DocumentsProvider {
   }
 
   private static void writeFixture(File directory, String name, String content) {
-    try (FileOutputStream output = new FileOutputStream(new File(directory, name), false)) {
-      output.write(content.getBytes(StandardCharsets.UTF_8));
-      output.getFD().sync();
+    byte[] expected = content.getBytes(StandardCharsets.UTF_8);
+    try {
+      FixtureCanonicalFiles.initialize(new File(directory, name), () -> new ByteArrayInputStream(expected), true);
     } catch (IOException error) {
       throw new IllegalStateException("fixture_write_failed", error);
     }

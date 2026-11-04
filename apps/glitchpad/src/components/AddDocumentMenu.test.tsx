@@ -113,3 +113,84 @@ it('maps legacy overlay insets from canonical inputs and restores owned styles o
     vi.unstubAllGlobals();
   }
 });
+
+it('starts native observation after portal mount and ignores a pending receipt once Add is disabled', async () => {
+  vi.stubGlobal('CSS', { supports: () => true });
+  const width = Object.getOwnPropertyDescriptor(window, 'innerWidth');
+  const height = Object.getOwnPropertyDescriptor(window, 'innerHeight');
+  Object.defineProperty(window, 'innerWidth', {
+    configurable: true,
+    value: 640,
+  });
+  Object.defineProperty(window, 'innerHeight', {
+    configurable: true,
+    value: 320,
+  });
+  const frame = document.createElement('div');
+  frame.setAttribute('data-bb-app-frame', 'true');
+  const host = document.createElement('div');
+  host.id = 'bb-overlay-root';
+  vi.spyOn(host, 'getBoundingClientRect').mockReturnValue(
+    new DOMRect(48, 0, 592, 320),
+  );
+  frame.append(host);
+  document.body.append(frame);
+  const observed = {
+    webview_screen: { left: 0, top: 0, right: 640, bottom: 320 },
+    visible_screen: { left: 48, top: 24, right: 592, bottom: 320 },
+    view_width: 640,
+    view_height: 320,
+    density: 1,
+  };
+  let finish: (() => void) | undefined;
+  const read = vi
+    .fn()
+    .mockImplementationOnce(
+      () =>
+        new Promise<typeof observed>((resolve) => {
+          finish = () => resolve(observed);
+        }),
+    )
+    .mockResolvedValue(observed);
+  const props = {
+    open: false,
+    onOpenChange: vi.fn(),
+    onNew: vi.fn(),
+    onChoose: vi.fn(),
+    canChoose: true,
+    viewport: read,
+  };
+  const app = render(<AddDocumentMenu {...props} />);
+  try {
+    const trigger = await screen.findByRole('button', { name: 'Add document' });
+    const add = trigger.parentElement!;
+    await waitFor(() => expect(read).toHaveBeenCalledOnce());
+    app.rerender(<AddDocumentMenu {...props} disabled />);
+    await act(async () => {
+      finish?.();
+      await Promise.resolve();
+    });
+    expect(trigger).toBeDisabled();
+    expect(add).not.toHaveAttribute('data-native-viewport');
+    app.rerender(<AddDocumentMenu {...props} />);
+    await waitFor(() =>
+      expect(add).toHaveAttribute('data-native-viewport', 'true'),
+    );
+    expect(add).toHaveAttribute('data-native-viewport-width', '640');
+    expect(add).toHaveAttribute('data-native-viewport-height', '320');
+    expect(add.style.getPropertyValue('--gl-add-native-inline-end')).toBe(
+      '48px',
+    );
+    expect(add.style.getPropertyValue('--gl-add-native-inline-size')).toBe(
+      '544px',
+    );
+    app.unmount();
+    expect(add).not.toHaveAttribute('data-native-viewport');
+  } finally {
+    app.unmount();
+    frame.remove();
+    if (width) Object.defineProperty(window, 'innerWidth', width);
+    if (height) Object.defineProperty(window, 'innerHeight', height);
+    vi.unstubAllGlobals();
+  }
+});

@@ -1387,14 +1387,17 @@ version = "0.2.0"
 dependencies = [
  "atomic-write-file",
  "chrono",
+ "crossbeam-channel",
  "file-id",
  "glitchpad-android-source",
  "glitchpad-core",
+ "ndk",
  "notify",
  "serde",
  "serde_json",
  "sha2",
  "sysinfo",
+ "tao",
  "tauri",
  "tauri-build",
  "tauri-plugin-dialog",
@@ -3809,8 +3812,6 @@ dependencies = [
 [[package]]
 name = "tao"
 version = "0.35.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d1c93047acf68669466a34690ac58cca7010bd1b201e1ec86f1fd0a75d3dd4a9"
 dependencies = [
  "bitflags 2.13.2",
  "block2",
@@ -3866,6 +3867,8 @@ checksum = "61c41af27dd6d1e27b1b16b489db798443478cef1f06a660c96db617ba5de3b1"
 [[package]]
 name = "tauri"
 version = "2.11.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6fa5bacdb9bbad5954af3d1bd6cf6ae9192cab1b2e270f4a07f904610b9e85f4"
 dependencies = [
  "anyhow",
  "bytes",

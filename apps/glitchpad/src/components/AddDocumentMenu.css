@@ -13,6 +13,32 @@
   max-block-size: calc(100% - var(--bb-spacing-component));
   pointer-events: auto;
 }
+.add-document[data-native-viewport='true'] {
+  right: calc(
+    var(--bb-spacing-control-block) + var(--gl-add-native-inline-end)
+  );
+  bottom: calc(
+    var(--bb-spacing-control-block) + var(--gl-add-native-block-end)
+  );
+  inset-inline-end: calc(
+    var(--bb-spacing-control-block) + var(--gl-add-native-inline-end)
+  );
+  inset-block-end: calc(
+    var(--bb-spacing-control-block) + var(--gl-add-native-block-end)
+  );
+  max-width: calc(
+    var(--gl-add-native-inline-size) - var(--bb-spacing-component)
+  );
+  max-height: calc(
+    var(--gl-add-native-block-size) - var(--bb-spacing-component)
+  );
+  max-inline-size: calc(
+    var(--gl-add-native-inline-size) - var(--bb-spacing-component)
+  );
+  max-block-size: calc(
+    var(--gl-add-native-block-size) - var(--bb-spacing-component)
+  );
+}
 .add-document[data-disabled='true'] {
   visibility: hidden;
 }
@@ -26,6 +52,8 @@
   background: var(--gl-panel-raised);
 }
 .add-document button {
+  max-width: 100%;
+  max-inline-size: 100%;
   min-width: 48px;
   min-height: 48px;
   min-inline-size: 48px;
@@ -56,8 +84,9 @@
   pointer-events: auto;
 }
 .app-shell[data-android='true'] .document-surface {
-  padding-block-end: calc(
-    var(--gl-add-document-block-size, 48px) + var(--bb-spacing-component)
+  padding-block-end: var(
+    --gl-add-document-clearance,
+    calc(var(--gl-add-document-block-size, 48px) + var(--bb-spacing-component))
   );
 }
 

@@ -9,7 +9,7 @@ function compareNames(left, right) {
 
 export async function collectMarkdownFiles(
   repositoryRoot,
-  { excludedDirectories = new Set() } = {},
+  { excludedDirectories = new Set(), excludedPaths = new Set() } = {},
 ) {
   const files = [];
 
@@ -20,7 +20,11 @@ export async function collectMarkdownFiles(
     for (const entry of entries) {
       const path = join(directory, entry.name);
       if (entry.isDirectory()) {
-        if (!excludedDirectories.has(entry.name)) await visit(path);
+        if (
+          !excludedDirectories.has(entry.name) &&
+          !excludedPaths.has(repositoryPath(repositoryRoot, path))
+        )
+          await visit(path);
       } else if (
         entry.isFile() &&
         extname(entry.name).toLowerCase() === '.md'

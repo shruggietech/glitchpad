@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import type { DiagnosticExportGateway } from '../domain/persistence-gateway';
+import { useNativeViewport } from './use-native-viewport';
 import './AddDocumentMenu.css';
 
 interface Props {
@@ -9,6 +11,7 @@ interface Props {
   onChoose: () => void;
   canChoose: boolean;
   disabled?: boolean;
+  viewport?: DiagnosticExportGateway['viewport'];
 }
 export function AddDocumentMenu({
   open,
@@ -17,9 +20,16 @@ export function AddDocumentMenu({
   onChoose,
   canChoose,
   disabled = false,
+  viewport,
 }: Props) {
   const [host, setHost] = useState<HTMLElement | null>(null);
   const trigger = useRef<HTMLButtonElement>(null);
+  const container = useRef<HTMLDivElement>(null);
+  useNativeViewport(
+    container,
+    host && !disabled ? viewport : undefined,
+    '--gl-add-native',
+  );
   const menu = useRef<HTMLDivElement>(null);
   const wasOpen = useRef(false);
   useEffect(() => {
@@ -114,13 +124,31 @@ export function AddDocumentMenu({
     if (!host || !trigger.current) return;
     const frame = host.closest<HTMLElement>('[data-bb-app-frame]');
     if (!frame) return;
-    const previous = frame.style.getPropertyValue(
+    const properties = [
       '--gl-add-document-block-size',
+      '--gl-add-document-clearance',
+    ];
+    const previous = properties.map((property) =>
+      frame.style.getPropertyValue(property),
     );
     const measure = () => {
-      const height = trigger.current?.getBoundingClientRect().height ?? 0;
-      if (height > 0)
-        frame.style.setProperty('--gl-add-document-block-size', height + 'px');
+      const target = trigger.current?.getBoundingClientRect();
+      if (!target || target.height <= 0) return;
+      const surface = frame.querySelector<HTMLElement>('.document-surface');
+      const gap = container.current
+        ? Number.parseFloat(getComputedStyle(container.current).gap) || 0
+        : 0;
+      const clearance = surface
+        ? Math.max(
+            target.height,
+            surface.getBoundingClientRect().bottom - target.top + gap,
+          )
+        : target.height + gap * 2;
+      for (const [index, value] of [target.height, clearance].entries()) {
+        const next = value + 'px';
+        if (frame.style.getPropertyValue(properties[index]) !== next)
+          frame.style.setProperty(properties[index], next);
+      }
     };
     measure();
     const observer =
@@ -128,13 +156,21 @@ export function AddDocumentMenu({
         ? null
         : new ResizeObserver(measure);
     observer?.observe(trigger.current);
+    const positionObserver = new MutationObserver(measure);
+    if (container.current)
+      positionObserver.observe(container.current, {
+        attributes: true,
+        attributeFilter: ['style', 'data-native-viewport'],
+      });
     window.addEventListener('resize', measure);
     return () => {
       observer?.disconnect();
+      positionObserver.disconnect();
       window.removeEventListener('resize', measure);
-      if (previous)
-        frame.style.setProperty('--gl-add-document-block-size', previous);
-      else frame.style.removeProperty('--gl-add-document-block-size');
+      properties.forEach((property, index) => {
+        if (previous[index]) frame.style.setProperty(property, previous[index]);
+        else frame.style.removeProperty(property);
+      });
     };
   }, [host]);
   if (!host) return null;
@@ -152,7 +188,12 @@ export function AddDocumentMenu({
           aria-hidden="true"
         />
       )}
-      <div className="add-document" data-add-document data-disabled={disabled}>
+      <div
+        ref={container}
+        className="add-document"
+        data-add-document
+        data-disabled={disabled}
+      >
         {open && (
           <div
             className="add-document-menu"

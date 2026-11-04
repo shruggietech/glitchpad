@@ -91,3 +91,5 @@ T001-T004 precede implementation. Native contracts/writer (T008-T009/T017) and r
 - [x] T036 Align native dirty-close cancellation qualification with the existing cancelled transition by checking the dismissed dialog, retained editable/unsaved draft and exact semantic source before the subsequent verified Save/readback per FR-008/009/016.
 
 - [x] T037 Await the newly selected visible draft and completed Add-menu dismissal/focus restoration before native editor input, reuse the readiness contract across controlled New journeys, and retain bounded native/browser focus-failure facts in AndroidDeliveryInstrumentedTest.kt per FR-003/005/006/016.
+
+- [x] T038 Trigger the three unblocked native chooser/Share controls with one premeasured native pointer tap, await actual system-window and returned MainActivity readiness, and preserve strict pending-write/cancellation/receiver/byte assertions plus bounded handoff-failure facts in AndroidDeliveryInstrumentedTest.kt per FR-005/008/013/016.

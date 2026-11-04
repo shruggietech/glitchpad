@@ -483,10 +483,13 @@ class AndroidDeliveryInstrumentedTest {
     waitForBodyText(scenario, "Unsaved changes in Untitled.txt")
     val monitor = instrumentation.addMonitor(IntentFilter(Intent.ACTION_CREATE_DOCUMENT).apply { addCategory(Intent.CATEGORY_OPENABLE); addDataType("*/*") }, null, false)
     try {
-      clickControl(scenario, "Save As")
+      val pickerPackage = createDocumentPickerPackage()
+      tapUnblockedNativeControl(scenario, "Save As")
+      waitForNativePickerWindow(scenario, "Save As", pickerPackage)
       waitForCondition(scenario, "Array.from(document.querySelectorAll('.resolution-dialog button')).every(b=>b.disabled)", "pending native Save must disable Discard/Close decisions")
       assertEquals("true", evaluate(scenario, "(()=>{const discard=Array.from(document.querySelectorAll('.resolution-dialog button')).find(b=>b.textContent.trim()==='Discard');if(!discard||!discard.disabled)return false;discard.click();return !!document.querySelector('.cm-content');})()"))
       instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
+      waitForAppNativeWindow(scenario, "Save As", pickerPackage)
       waitForBodyText(scenario, "Save cancelled. Edits remain open.")
       assertTrue("one native create chooser must own the pending save", monitor.hits == 1)
     } finally { instrumentation.removeMonitor(monitor) }
@@ -538,18 +541,20 @@ class AndroidDeliveryInstrumentedTest {
     chooseNative(scenario, Intent.ACTION_CREATE_DOCUMENT, chosen(destination), { clickControl(scenario, "Save previewed bundle") }, "Diagnostic bundle saved and verified.")
     assertTrue("saved diagnostic JSON bytes must equal exact frozen preview", frozen.toByteArray(Charsets.UTF_8).contentEquals(readBytes(destination)))
     resolver.call(FixtureGrantProvider.COMMAND_URI, "clear_share_result", null, null)
-    clickControl(scenario, "Share previewed bundle")
+    tapUnblockedNativeControl(scenario, "Share previewed bundle")
     clickNativeText("Glitchpad diagnostic fixture", false)
     instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
+    waitForAppNativeWindow(scenario, "Share previewed bundle")
     waitForBodyText(scenario, "Cancelled. The preview is retained.")
     assertEquals("Share cancellation must retain the exact preview", frozen, stringValue(evaluate(scenario, "document.querySelector('.diagnostic-preview').textContent")))
-    clickControl(scenario, "Share previewed bundle")
+    tapUnblockedNativeControl(scenario, "Share previewed bundle")
     clickNativeText("Glitchpad diagnostic fixture")
     val deadline = SystemClock.elapsedRealtime() + 30_000L
     var received = resolver.call(FixtureGrantProvider.COMMAND_URI, "share_result", null, null)
     while (SystemClock.elapsedRealtime() < deadline && received?.getString("json") == null) { SystemClock.sleep(100L); received = resolver.call(FixtureGrantProvider.COMMAND_URI, "share_result", null, null) }
     assertEquals("actual receiving activity must read the frozen JSON", frozen, received?.getString("json"))
     assertTrue("receiver must have a temporary read grant", received?.getBoolean("read_granted") == true)
+    waitForAppNativeWindow(scenario, "Share previewed bundle")
     waitForBodyText(scenario, "Shared with the system. Recipient delivery is unconfirmed.")
     println("recovery_runtime_evidence=" + JSONObject().put("apk_sha256", apkSha256()).put("source_commit", expectedSource).put("package", TARGET_PACKAGE).put("product_version", packageInfo.versionName).put("evidence_class", "hosted_debug_instrumentation").put("signed_release_bytes_tested", false).put("recovery_probe_variant", "compiled_test_only").put("native_environment", native).put("font_scale", clientContext.resources.configuration.fontScale).toString())
     clickControl(scenario, "Close diagnostics")
@@ -631,6 +636,101 @@ class AndroidDeliveryInstrumentedTest {
     val selectorLiteral = JSONObject.quote(selector)
     waitForCondition(scenario, "Array.from(document.querySelectorAll(" + selectorLiteral + ")).some(b=>!b.disabled&&(b.getAttribute('aria-label')||(b.querySelector('span')?b.querySelector('span').textContent:b.textContent)).trim()===" + nameLiteral + ")", "named actual-app control must be enabled: " + name)
     assertEquals("actual-app control must be clicked once", "true", evaluate(scenario, "(()=>{const button=Array.from(document.querySelectorAll(" + selectorLiteral + ")).find(b=>!b.disabled&&(b.getAttribute('aria-label')||(b.querySelector('span')?b.querySelector('span').textContent:b.textContent)).trim()===" + nameLiteral + ");if(!button)return false;button.click();return true;})()"))
+  }
+
+  // A real external activity can outlive evaluateJavascript's result callback. Measure the
+  // public control first, then launch it with one native tap without a post-launch JS ack.
+  private fun tapUnblockedNativeControl(scenario: ActivityScenario<MainActivity>, name: String) {
+    val nameLiteral = JSONObject.quote(name)
+    waitForCondition(scenario, "Array.from(document.querySelectorAll('button')).some(b=>!b.disabled&&(b.getAttribute('aria-label')||(b.querySelector('span')?b.querySelector('span').textContent:b.textContent)).trim()===" + nameLiteral + ")", "native launch control must be enabled: " + name)
+    val target = JSONObject(evaluate(scenario, """
+      (()=>{
+        const button=Array.from(document.querySelectorAll('button')).find(b=>!b.disabled&&(b.getAttribute('aria-label')||(b.querySelector('span')?b.querySelector('span').textContent:b.textContent)).trim()===NAME);
+        if(!button)return {found:false};
+        button.scrollIntoView({block:'nearest',inline:'nearest'});
+        const rect=button.getBoundingClientRect();
+        const viewport=window.visualViewport;
+        const left=viewport?viewport.offsetLeft:0;
+        const top=viewport?viewport.offsetTop:0;
+        const width=viewport?viewport.width:window.innerWidth;
+        const height=viewport?viewport.height:window.innerHeight;
+        const clientX=(rect.left+rect.right)/2;
+        const clientY=(rect.top+rect.bottom)/2;
+        const hit=document.elementFromPoint(clientX,clientY);
+        return {found:true,x:clientX-left,y:clientY-top,viewport_width:width,width:rect.width,height:rect.height,
+          fully_visible:rect.left>=left-0.6&&rect.right<=left+width+0.6&&rect.top>=top-0.6&&rect.bottom<=top+height+0.6,
+          hit:hit===button||button.contains(hit),disabled:button.disabled};
+      })()
+    """.trimIndent().replace("NAME", nameLiteral)))
+    assertTrue("the native launch tap must hit a whole enabled visible control: " + name + " " + target,
+      target.getBoolean("found") && target.getDouble("width") > 0 && target.getDouble("height") > 0 &&
+        target.getBoolean("fully_visible") && target.getBoolean("hit") && !target.getBoolean("disabled"))
+    val point = FloatArray(2)
+    scenario.onActivity { activity ->
+      val view = requireNotNull(findWebView(activity.window.decorView))
+      val location = IntArray(2)
+      view.getLocationOnScreen(location)
+      val scale = view.width / target.getDouble("viewport_width")
+      point[0] = (location[0] + target.getDouble("x") * scale).toFloat()
+      point[1] = (location[1] + target.getDouble("y") * scale).toFloat()
+    }
+    val downTime = SystemClock.uptimeMillis()
+    val down = MotionEvent.obtain(downTime, downTime, MotionEvent.ACTION_DOWN, point[0], point[1], 0)
+    val up = MotionEvent.obtain(downTime, SystemClock.uptimeMillis(), MotionEvent.ACTION_UP, point[0], point[1], 0)
+    try {
+      down.source = InputDevice.SOURCE_TOUCHSCREEN
+      up.source = InputDevice.SOURCE_TOUCHSCREEN
+      instrumentation.sendPointerSync(down)
+      instrumentation.sendPointerSync(up)
+    } finally { down.recycle(); up.recycle() }
+  }
+
+  private fun createDocumentPickerPackage(): String {
+    val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("text/plain")
+    return requireNotNull(clientContext.packageManager.resolveActivity(intent, android.content.pm.PackageManager.MATCH_DEFAULT_ONLY)) {
+      "the real text document picker must resolve before its control is tapped"
+    }.activityInfo.packageName
+  }
+
+  private fun nativeHandoffState(scenario: ActivityScenario<MainActivity>, control: String, pickerPackage: String? = null): JSONObject {
+    val state = scenario.state
+    val root = instrumentation.uiAutomation.rootInActiveWindow
+    val bounds = android.graphics.Rect()
+    root?.getBoundsInScreen(bounds)
+    val observed = JSONObject().put("control", control).put("requested_picker_package", pickerPackage ?: JSONObject.NULL)
+      .put("scenario_state", state.name).put("active_root_package", root?.packageName?.toString() ?: JSONObject.NULL)
+      .put("active_root_visible", root?.isVisibleToUser == true).put("active_root_width", bounds.width()).put("active_root_height", bounds.height())
+    if (state == androidx.lifecycle.Lifecycle.State.RESUMED) scenario.onActivity { activity ->
+      val view = findWebView(activity.window.decorView)
+      observed.put("activity_window_focus", activity.hasWindowFocus()).put("webview_window_focus", view?.hasWindowFocus() == true)
+        .put("webview_shown", view?.isShown == true).put("webview_width", view?.width ?: 0).put("webview_height", view?.height ?: 0)
+    }
+    return observed
+  }
+
+  private fun waitForNativePickerWindow(scenario: ActivityScenario<MainActivity>, control: String, pickerPackage: String) {
+    val deadline = SystemClock.elapsedRealtime() + 30_000L
+    var observed = JSONObject()
+    while (SystemClock.elapsedRealtime() < deadline) {
+      observed = nativeHandoffState(scenario, control, pickerPackage)
+      if (observed.optString("active_root_package") == pickerPackage && observed.getBoolean("active_root_visible") &&
+        observed.getInt("active_root_width") > 0 && observed.getInt("active_root_height") > 0) return
+      SystemClock.sleep(100L)
+    }
+    throw AssertionError("the launched native picker must own a visible accessible window before pending DOM inspection: " + observed)
+  }
+
+  private fun waitForAppNativeWindow(scenario: ActivityScenario<MainActivity>, control: String, pickerPackage: String? = null) {
+    val deadline = SystemClock.elapsedRealtime() + 30_000L
+    var observed = JSONObject()
+    while (SystemClock.elapsedRealtime() < deadline) {
+      observed = nativeHandoffState(scenario, control, pickerPackage)
+      if (observed.getString("scenario_state") == androidx.lifecycle.Lifecycle.State.RESUMED.name &&
+        observed.optBoolean("activity_window_focus") && observed.optBoolean("webview_window_focus") && observed.optBoolean("webview_shown") &&
+        observed.optInt("webview_width") > 0 && observed.optInt("webview_height") > 0) return
+      SystemClock.sleep(100L)
+    }
+    throw AssertionError("the actual app must resume with a visible focused WebView window before returned-handoff DOM inspection: " + observed)
   }
 
   private fun createNewDraftForInput(scenario: ActivityScenario<MainActivity>, choice: String, expectedName: String) {

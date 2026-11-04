@@ -275,10 +275,7 @@ class AndroidDeliveryInstrumentedTest {
       listOf("New Markdown", "text/markdown", "Untitled.md", "# S046 draft\n\nS046_MARKDOWN_BYTES_Ω\n"),
       listOf("New text file", "text/plain", "Untitled.txt", "S046_TEXT_BYTES_Ω\nsecond line\n")
     )) {
-      clickControl(scenario, "Add document")
-      clickControl(scenario, choice)
-      waitForBodyText(scenario, name)
-      waitForCondition(scenario, "(()=>{const n=document.querySelector('[data-draft-identity]');if(!n)return false;const r=n.getBoundingClientRect();return r.width>0&&r.height>0&&n.textContent.includes('Unsaved changes');})()", "new draft must have visible identity and unsaved state")
+      createNewDraftForInput(scenario, choice, name)
       replaceEditorText(scenario, text)
       chooseNative(scenario, Intent.ACTION_CREATE_DOCUMENT, ActivityResult(Activity.RESULT_CANCELED, Intent()), { menuAction(scenario, "Save") }, "Cancelled. Your document and edits remain available.")
       waitForCondition(scenario, "!!document.querySelector('.cm-content[contenteditable=true]')", "cancelled draft must remain editable")
@@ -329,7 +326,7 @@ class AndroidDeliveryInstrumentedTest {
   fun rootFailureRetainsDraft() {
     val scenario = ActivityScenario.launch<MainActivity>(Intent(clientContext, MainActivity::class.java).setAction(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER))
     waitForBodyText(scenario, "Add document")
-    clickControl(scenario, "Add document"); clickControl(scenario, "New Markdown")
+    createNewDraftForInput(scenario, "New Markdown", "Untitled.md")
     replaceEditorText(scenario, "# S046 root recovery\n\nS046_ROOT_DRAFT_RETAINED_Ω\n")
     injectRecoveryFailure(scenario, "root")
     waitForBodyText(scenario, "Glitchpad could not continue", "application_render_failed", "Restart Glitchpad")
@@ -374,8 +371,7 @@ class AndroidDeliveryInstrumentedTest {
     val scenario = ActivityScenario.launch<MainActivity>(Intent(clientContext, MainActivity::class.java).setAction(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER))
     if (phase == "seed") {
       waitForBodyText(scenario, "Add document")
-      clickControl(scenario, "Add document")
-      clickControl(scenario, "New Markdown")
+      createNewDraftForInput(scenario, "New Markdown", "Untitled.md")
       replaceEditorText(scenario, text)
       // The existing bounded store snapshots after two seconds idle. Native
       // lifecycle flush is exercised again when the activity closes below.
@@ -477,7 +473,7 @@ class AndroidDeliveryInstrumentedTest {
   }
 
   private fun verifyDirtyCloseAndPendingRace(scenario: ActivityScenario<MainActivity>, destination: Uri) {
-    clickControl(scenario, "Add document"); clickControl(scenario, "New text file")
+    createNewDraftForInput(scenario, "New text file", "Untitled.txt")
     replaceEditorText(scenario, "S046_DIRTY_CLOSE_BYTES\n")
     assertEquals("true", evaluate(scenario, "(()=>{document.querySelector('.app-shell').dispatchEvent(new KeyboardEvent('keydown',{key:'w',ctrlKey:true,bubbles:true}));return true;})()"))
     waitForBodyText(scenario, "Unsaved changes in Untitled.txt", "No content has been discarded.")
@@ -637,6 +633,32 @@ class AndroidDeliveryInstrumentedTest {
     assertEquals("actual-app control must be clicked once", "true", evaluate(scenario, "(()=>{const button=Array.from(document.querySelectorAll(" + selectorLiteral + ")).find(b=>!b.disabled&&(b.getAttribute('aria-label')||(b.querySelector('span')?b.querySelector('span').textContent:b.textContent)).trim()===" + nameLiteral + ");if(!button)return false;button.click();return true;})()"))
   }
 
+  private fun createNewDraftForInput(scenario: ActivityScenario<MainActivity>, choice: String, expectedName: String) {
+    val previous = stringValue(evaluate(scenario, "(()=>{const surface=document.querySelector('.document-surface');return surface?surface.id:'';})()"))
+    clickControl(scenario, "Add document")
+    clickControl(scenario, choice)
+    val ready = """
+      (()=>{
+        const surface=document.querySelector('.document-surface');
+        const identity=document.querySelector('[data-draft-identity]');
+        const editor=document.querySelector('.cm-content[contenteditable=true]');
+        const trigger=document.querySelector('.add-document-trigger');
+        const rect=identity?identity.getBoundingClientRect():null;
+        return !!surface&&surface.id!==PREVIOUS&&!!identity&&rect.width>0&&rect.height>0&&
+          identity.textContent.includes(EXPECTED)&&identity.textContent.includes('Unsaved changes')&&
+          !!editor&&editor.getAttribute('aria-label')===EXPECTED+' text editor'&&
+          Array.from(editor.querySelectorAll(':scope > .cm-line')).map(line=>line.textContent).join('\n')===''&&
+          !document.querySelector('.add-document-menu')&&document.activeElement===trigger&&trigger.getAttribute('aria-expanded')==='false';
+      })()
+    """.trimIndent().replace("PREVIOUS", JSONObject.quote(previous)).replace("EXPECTED", JSONObject.quote(expectedName))
+    try {
+      waitForCondition(scenario, ready, "the newly selected draft must replace the previous surface and complete Add document focus restoration before native input")
+    } catch (failure: AssertionError) {
+      captureEditorFocusFailure(scenario, "new_draft_readiness", JSONObject().put("expected_name", expectedName).put("previous_surface_id", previous))
+      throw failure
+    }
+  }
+
   private fun keyboardSave(scenario: ActivityScenario<MainActivity>) {
     focusNativeWebView(scenario)
     assertEquals("actual editor must hold DOM focus before keyboard Save", "true", evaluate(scenario, "(()=>{const editor=document.querySelector('.cm-content[contenteditable=true]');if(!editor)return false;editor.focus();return document.activeElement===editor;})()"))
@@ -676,11 +698,19 @@ class AndroidDeliveryInstrumentedTest {
         const width=viewport?viewport.width:window.innerWidth;
         const height=viewport?viewport.height:window.innerHeight;
         const visible={left:Math.max(rect.left,left),right:Math.min(rect.right,left+width),top:Math.max(rect.top,top),bottom:Math.min(rect.bottom,top+height)};
-        return {x:visible.left-left+Math.min(16,(visible.right-visible.left)/2),y:visible.top-top+Math.min(16,(visible.bottom-visible.top)/2),viewport_width:width,visible_width:visible.right-visible.left,visible_height:visible.bottom-visible.top};
+        const clientX=visible.left+Math.min(16,(visible.right-visible.left)/2);
+        const clientY=visible.top+Math.min(16,(visible.bottom-visible.top)/2);
+        const hit=document.elementFromPoint(clientX,clientY);
+        return {x:clientX-left,y:clientY-top,client_x:clientX,client_y:clientY,viewport_width:width,visible_width:visible.right-visible.left,visible_height:visible.bottom-visible.top,
+          editor_rect:{left:rect.left,top:rect.top,right:rect.right,bottom:rect.bottom,width:rect.width,height:rect.height},
+          viewport:{left:left,top:top,width:width,height:height,scale:viewport?viewport.scale:1},
+          hit_is_editor:hit===editor||editor.contains(hit),hit_tag:hit?hit.nodeName:null,hit_class:hit?String(hit.className).slice(0,128):null,
+          surface_id:document.querySelector('.document-surface').id,editor_label:editor.getAttribute('aria-label')};
       })()
     """.trimIndent()))
     assertTrue("the native edit tap must target visible editor content: " + target, target.getDouble("visible_width") > 0 && target.getDouble("visible_height") > 0)
     val point = FloatArray(2)
+    val nativeMapping = JSONObject().put("focus_before", nativeFocus)
     scenario.onActivity { activity ->
       val view = requireNotNull(findWebView(activity.window.decorView))
       val location = IntArray(2)
@@ -688,6 +718,8 @@ class AndroidDeliveryInstrumentedTest {
       val scale = view.width / target.getDouble("viewport_width")
       point[0] = (location[0] + target.getDouble("x") * scale).toFloat()
       point[1] = (location[1] + target.getDouble("y") * scale).toFloat()
+      nativeMapping.put("view_left", location[0]).put("view_top", location[1]).put("view_width", view.width).put("view_height", view.height)
+        .put("css_to_native_scale", scale).put("screen_x", point[0]).put("screen_y", point[1]).put("density", view.resources.displayMetrics.density)
     }
     val downTime = SystemClock.uptimeMillis()
     val down = MotionEvent.obtain(downTime, downTime, MotionEvent.ACTION_DOWN, point[0], point[1], 0)
@@ -699,7 +731,12 @@ class AndroidDeliveryInstrumentedTest {
       instrumentation.sendPointerSync(up)
     } finally { down.recycle(); up.recycle() }
     instrumentation.waitForIdleSync()
-    waitForCondition(scenario, "document.hasFocus() && document.activeElement===document.querySelector('.cm-content[contenteditable=true]')", "the actual editor must own browser focus after a native touch before editing")
+    try {
+      waitForCondition(scenario, "document.hasFocus() && document.activeElement===document.querySelector('.cm-content[contenteditable=true]')", "the actual editor must own browser focus after a native touch before editing")
+    } catch (failure: AssertionError) {
+      captureEditorFocusFailure(scenario, "after_native_touch", target, nativeMapping)
+      throw failure
+    }
     val browserBefore = browserEditorInputSnapshot(scenario)
     val beforeInputText = browserBefore.getString("editing_text")
     val beforeSemanticText = browserBefore.getString("semantic_text")
@@ -760,32 +797,70 @@ class AndroidDeliveryInstrumentedTest {
   private fun browserEditorInputSnapshot(scenario: ActivityScenario<MainActivity>): JSONObject = JSONObject(evaluate(scenario, """
     (()=>{
       const editor=document.querySelector('.cm-content[contenteditable=true]');
-      const context=editor.editContext;
+      const context=editor&&editor.editContext;
       const selection=window.getSelection();
-      const lines=Array.from(editor.querySelectorAll(':scope > .cm-line'));
+      const active=document.activeElement;
+      const surface=document.querySelector('.document-surface');
+      const identity=document.querySelector('[data-draft-identity]');
+      const scroller=editor&&editor.closest('.cm-scroller');
+      const viewport=window.visualViewport;
+      const rect=node=>{if(!node)return null;const value=node.getBoundingClientRect();return {left:value.left,top:value.top,right:value.right,bottom:value.bottom,width:value.width,height:value.height};};
+      const element=node=>node?{tag:node.nodeName,id:node.id||null,class_name:String(node.className).slice(0,128),role:node.getAttribute('role'),label:node.getAttribute('aria-label'),contenteditable:node.getAttribute('contenteditable')}:null;
+      const lines=editor?Array.from(editor.querySelectorAll(':scope > .cm-line')):[];
       const semantic=lines.map(line=>line.textContent).join('\n');
-      const editing=context?context.text:editor.innerText;
+      const editing=context?context.text:editor?editor.innerText:'';
       const shortCodeUnits=value=>value.length<=4?value.split('').map(character=>character.charCodeAt(0)):[];
       return {
-        document_focus:document.hasFocus(),editor_focus:document.activeElement===editor,
+        document_focus:document.hasFocus(),editor_focus:!!editor&&document.activeElement===editor,editor_present:!!editor,
+        active_element:element(active),active_rect:rect(active),editor_element:element(editor),editor_rect:rect(editor),surface_id:surface?surface.id:null,
+        draft_identity:identity?identity.textContent.slice(0,256):null,
+        viewport:{left:viewport?viewport.offsetLeft:0,top:viewport?viewport.offsetTop:0,width:viewport?viewport.width:window.innerWidth,height:viewport?viewport.height:window.innerHeight,scale:viewport?viewport.scale:1},
+        inner_width:window.innerWidth,inner_height:window.innerHeight,device_pixel_ratio:window.devicePixelRatio,window_scroll_x:window.scrollX,window_scroll_y:window.scrollY,
+        scroller:scroller?{rect:rect(scroller),scroll_top:scroller.scrollTop,scroll_left:scroller.scrollLeft,scroll_height:scroller.scrollHeight,client_height:scroller.clientHeight}:null,
+        add_menu_present:!!document.querySelector('.add-document-menu'),scrim_present:!!document.querySelector('.add-document-scrim'),dialog_count:document.querySelectorAll('[role=dialog]').length,
         insert_supported:document.queryCommandSupported('insertText'),insert_enabled:document.queryCommandEnabled('insertText'),
         user_activation:navigator.userActivation?navigator.userActivation.isActive:null,
         edit_context_attached:!!context,editing_representation:context?'edit_context_text':'contenteditable_inner_text',
         edit_context_length:context?context.text.length:null,
         edit_context_selection_start:context?context.selectionStart:null,edit_context_selection_end:context?context.selectionEnd:null,
         dom_selection_ranges:selection?selection.rangeCount:0,
-        dom_selection_in_editor:!!selection&&!!selection.anchorNode&&editor.contains(selection.anchorNode),
+        dom_selection_in_editor:!!editor&&!!selection&&!!selection.anchorNode&&editor.contains(selection.anchorNode),
         dom_selection_anchor_node:selection&&selection.anchorNode?selection.anchorNode.nodeName:null,
         dom_selection_anchor_offset:selection?selection.anchorOffset:null,
         dom_selection_focus_node:selection&&selection.focusNode?selection.focusNode.nodeName:null,
         dom_selection_focus_offset:selection?selection.focusOffset:null,
         semantic_length:semantic.length,editing_length:editing.length,editing_short_code_units:shortCodeUnits(editing),
-        inner_text_length:editor.innerText.length,line_count:lines.length,br_count:editor.querySelectorAll('br').length,
+        inner_text_length:editor?editor.innerText.length:0,line_count:lines.length,br_count:editor?editor.querySelectorAll('br').length:0,
         trailing_line_empty:lines.length>0&&lines[lines.length-1].textContent.length===0,
         semantic_text:semantic,editing_text:editing
       };
     })()
   """.trimIndent()))
+
+  private fun captureEditorFocusFailure(
+    scenario: ActivityScenario<MainActivity>, stage: String, target: JSONObject, mapping: JSONObject = JSONObject()
+  ) {
+    val browser = runCatching {
+      browserEditorInputSnapshot(scenario).apply { remove("semantic_text"); remove("editing_text") }
+    }.getOrElse { JSONObject().put("capture_failed", true) }
+    val native = JSONObject().put("capture_completed", false)
+    runCatching { scenario.onActivity { activity ->
+      val view = findWebView(activity.window.decorView)
+      if (view != null) {
+        val location = IntArray(2); view.getLocationOnScreen(location)
+        native.put("capture_completed", true).put("activity_window_focus", activity.hasWindowFocus())
+          .put("webview_focus", view.hasFocus()).put("webview_window_focus", view.hasWindowFocus()).put("shown", view.isShown)
+          .put("view_left", location[0]).put("view_top", location[1]).put("view_width", view.width).put("view_height", view.height)
+      }
+    } }
+    val hit = if (target.has("client_x") && target.has("client_y")) runCatching {
+      JSONObject(evaluate(scenario, "(()=>{const node=document.elementFromPoint(" + target.getDouble("client_x") + "," + target.getDouble("client_y") + ");const editor=document.querySelector('.cm-content[contenteditable=true]');return {present:!!node,tag:node?node.nodeName:null,class_name:node?String(node.className).slice(0,128):null,label:node?node.getAttribute('aria-label'):null,in_editor:!!node&&!!editor&&(node===editor||editor.contains(node))};})()"))
+    }.getOrElse { JSONObject().put("capture_failed", true) } else JSONObject().put("target_available", false)
+    println("native_editor_focus_failure=" + JSONObject().put("stage", stage).put("api_level", Build.VERSION.SDK_INT)
+      .put("before_target", target).put("native_mapping", mapping).put("browser_after", browser)
+      .put("native_after", native).put("hit_at_original_client_point", hit))
+    System.out.flush()
+  }
 
   private fun <T> onEditorInputThread(
     connection: android.view.inputmethod.InputConnection,

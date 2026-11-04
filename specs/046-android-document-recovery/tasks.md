@@ -89,3 +89,5 @@ T001-T004 precede implementation. Native contracts/writer (T008-T009/T017) and r
 - [x] T035 Use semantic document selection bounds while verifying the complete native editing representation, align the deliberate write-refusal expectation with the existing Save-specific failure contract, and retain bounded chooser-failure observations in AndroidDeliveryInstrumentedTest.kt per FR-006/008/016.
 
 - [x] T036 Align native dirty-close cancellation qualification with the existing cancelled transition by checking the dismissed dialog, retained editable/unsaved draft and exact semantic source before the subsequent verified Save/readback per FR-008/009/016.
+
+- [x] T037 Await the newly selected visible draft and completed Add-menu dismissal/focus restoration before native editor input, reuse the readiness contract across controlled New journeys, and retain bounded native/browser focus-failure facts in AndroidDeliveryInstrumentedTest.kt per FR-003/005/006/016.

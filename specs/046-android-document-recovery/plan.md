@@ -124,3 +124,7 @@ The D724 API24 artifact verifies exact native editing text, then exposes a selec
 ## Dirty-close native cancellation qualification
 
 After a cancelled native Save from dirty Close, the existing reducer clears the pending transition and the shell returns to the still-dirty editable draft with its Save-cancelled outcome. Qualification must assert that actual state instead of waiting for the dismissed resolution dialog and clicking an absent Cancel action. Keep pending-choice disabling, rejected Discard, one native chooser, exact retained semantic source and subsequent verified-save readback. This is an instrumentation correction; no product transition changes.
+
+## New-draft native typing readiness
+
+The 5eb API24 campaign reaches dirty-close setup after exact draft/copy writes, then fails before its fourth native editor commit because browser focus is absent. Its earlier helper calls await a new draft identity, while dirty-close setup can still see the prior editor. A public composed Chromium69 probe reproduces the old-editor interval immediately after New selection, followed by a new editor and Add-menu trigger focus restoration. Observe the new current surface, visible expected unsaved draft, empty semantic source and completed menu dismissal/focus restoration before native touch. Reuse that readiness contract for controlled New selections that precede typing; preserve strict native focus, input and byte assertions. Retain bounded active-element/geometry facts on failure. The missing actual APK focused element remains unclaimed.

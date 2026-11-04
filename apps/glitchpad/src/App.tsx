@@ -373,6 +373,8 @@ export function App({
         )
         .map((session) => session.source_id as string),
     );
+    for (const session of state.sessions)
+      if (session.copy_source) current.add(session.copy_source.source_id);
     for (const sourceId of openDesktopSourceIdsRef.current) {
       if (!current.has(sourceId))
         void selectedDesktopDeliveryGateway.close(sourceId);
@@ -1181,6 +1183,17 @@ export function App({
 
   const handleShellKey = (event: React.KeyboardEvent<HTMLElement>) => {
     if (event.defaultPrevented) return;
+    const editableTarget =
+      event.target instanceof Element
+        ? event.target.closest(
+            'input, textarea, select, [contenteditable]:not([contenteditable="false"])',
+          )
+        : null;
+    if (
+      editableTarget &&
+      !editableTarget.matches('.document-surface .cm-content')
+    )
+      return;
     const key = event.key.toLowerCase();
     const modifier = event.ctrlKey || event.metaKey;
     if (modifier && event.key === 'Tab') {

@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import type { ShellSession } from './contracts';
 import { commandSetFor, executeCommand } from './commands';
+import { createDraftSession } from './drafts';
+import { createTextDocument } from './text-document';
 
 const session = (overrides: Partial<ShellSession> = {}): ShellSession => ({
   id: 'one',
@@ -75,6 +77,36 @@ describe('renderer-driven commands', () => {
     ]);
   });
 
+  it.each(['draft', 'copy'] as const)(
+    'exposes Save As for an editable %s without source write authority',
+    (origin) => {
+      const original = session();
+      original.source_id = 'read-only-native-source';
+      original.source.capabilities.write = false;
+      original.renderer.capabilities.edit = false;
+      original.renderer.capabilities.save = false;
+      original.text_document = createTextDocument({
+        rawText: original.content,
+        displayName: original.source.display_name,
+      });
+      expect(commandSetFor(original).map(({ id }) => id)).toContain(
+        'edit_copy',
+      );
+      const draft = createDraftSession(
+        'markdown',
+        origin === 'copy' ? original : undefined,
+      );
+      const saveAs = commandSetFor(draft).find(({ id }) => id === 'save_as');
+      expect(draft.source_id).toBeNull();
+      expect(draft.source.capabilities.write).toBe(false);
+      expect(saveAs).toMatchObject({ label: 'Save As…', enabled: true });
+      expect(executeCommand(saveAs!, draft)).toEqual({
+        ok: true,
+        message: 'Save As… is available',
+      });
+    },
+  );
+
   it('rejects stale targets and survives 100 rapid active-session changes', () => {
     let current = session();
     const command = commandSetFor(current)[0];
@@ -100,6 +132,8 @@ describe('renderer-driven commands', () => {
         viewport: { mode: 'fit', zoom: 1, pan_x: 0, pan_y: 0 },
       },
     });
-    expect(commandSetFor(mermaid).find(({ id }) => id === 'edit')?.label).toBe('Preview');
+    expect(commandSetFor(mermaid).find(({ id }) => id === 'edit')?.label).toBe(
+      'Preview',
+    );
   });
 });

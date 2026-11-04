@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import test from 'node:test';
 
-import { collectPerformance, collectWithHardFailureConfirmation, isAllowedRequest, measureNavigation, parseArguments } from './run-performance.mjs';
+import { activatePerformanceTab, collectPerformance, collectWithHardFailureConfirmation, isAllowedRequest, measureNavigation, parseArguments } from './run-performance.mjs';
 
 test('collector arguments are explicit and bounded', () => {
   assert.deepEqual(parseArguments(['--profile', 'hosted_windows_smoke_v1', '--build-id', 'abc', '--skip-build']), {
@@ -131,4 +131,35 @@ test('artifact collection measures an actual file and rejects absence', async ()
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
+});
+
+test('fixture activation waits for the asynchronously mounted target tab before clicking', async () => {
+  const selector = '[role="tab"][aria-label="performance-edit.mmd"]';
+  let mounted;
+  const calls = [];
+  const page = {
+    waitForSelector: (target, options) => {
+      calls.push(['wait', target, options]);
+      return new Promise((resolve) => { mounted = resolve; });
+    },
+    $eval: async (target, click) => {
+      calls.push(['click', target]);
+      click({ click: () => calls.push(['activated']) });
+    },
+  };
+  const activation = activatePerformanceTab(page, selector);
+  assert.deepEqual(calls, [['wait', selector, { timeout: 10_000 }]]);
+  mounted();
+  await activation;
+  assert.deepEqual(calls, [
+    ['wait', selector, { timeout: 10_000 }], ['click', selector], ['activated'],
+  ]);
+});
+
+test('fixture activation keeps a missing target terminal and never clicks another tab', async () => {
+  const page = {
+    waitForSelector: async () => { throw new Error('target_tab_timeout'); },
+    $eval: async () => { assert.fail('a missing target must not be clicked'); },
+  };
+  await assert.rejects(activatePerformanceTab(page, '.missing-tab'), /target_tab_timeout/u);
 });

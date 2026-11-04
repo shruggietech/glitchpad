@@ -285,6 +285,69 @@ describe('document foundation shell', () => {
     expect(close).toHaveBeenCalledExactlyOnceWith('saved-source');
   });
 
+  it('preserves native copy and undo shortcuts in the rendered Markdown search field', async () => {
+    const write = vi.fn().mockResolvedValue(undefined);
+    render(
+      <App
+        sessions={[initialSessions[3]]}
+        clipboardGateway={{ write }}
+        recoveryGateway={null}
+      />,
+    );
+    fireEvent.keyDown(getApplicationShell(), { key: 'f', ctrlKey: true });
+    const search = await screen.findByRole('textbox', {
+      name: 'Find rendered text',
+    });
+    fireEvent.change(search, { target: { value: 'Draft' } });
+    search.focus();
+    for (const key of ['c', 'z']) {
+      expect(fireEvent.keyDown(search, { key, ctrlKey: true })).toBe(true);
+      expect(fireEvent.keyDown(search, { key, metaKey: true })).toBe(true);
+    }
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(write).not.toHaveBeenCalled();
+    expect(search).toHaveValue('Draft');
+  });
+
+  it('keeps Preferences field shortcuts from copying or undoing the active document', async () => {
+    const write = vi.fn().mockResolvedValue(undefined);
+    render(
+      <App
+        sessions={[createDraftSession('text')]}
+        clipboardGateway={{ write }}
+        recoveryGateway={null}
+      />,
+    );
+    const editor = screen.getByRole('textbox', {
+      name: 'Untitled.txt text editor',
+    });
+    act(() => {
+      EditorView.findFromDOM(editor)!.dispatch({
+        changes: { from: 0, insert: 'Keep document edit' },
+      });
+    });
+    invokeMenu('Preferences');
+    const font = await screen.findByRole('textbox', {
+      name: 'Editor font family',
+    });
+    font.focus();
+    for (const key of ['c', 'z']) {
+      expect(fireEvent.keyDown(font, { key, ctrlKey: true })).toBe(true);
+      expect(fireEvent.keyDown(font, { key, metaKey: true })).toBe(true);
+    }
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(write).not.toHaveBeenCalled();
+    expect(editor).toHaveTextContent('Keep document edit');
+    fireEvent.click(screen.getByRole('button', { name: 'Close preferences' }));
+    editor.focus();
+    fireEvent.keyDown(editor, { key: 'z', ctrlKey: true });
+    expect(editor).not.toHaveTextContent('Keep document edit');
+  });
+
   it('binds a successful native destination without cleaning edits made after the requested revision', async () => {
     const draft = createDraftSession('text');
     let finish: ((receipt: AndroidDestinationReceipt) => void) | undefined;
@@ -772,6 +835,137 @@ describe('document foundation shell', () => {
     await waitFor(() => expect(drain).toHaveBeenCalledTimes(2), {
       timeout: 1_500,
     });
+  });
+
+  it('offers native desktop Save As for an editable copy and retains its edits after picker cancellation', async () => {
+    const original: ShellSession = {
+      ...initialSessions[2],
+      id: 'desktop-readonly-source',
+      source_id: 'readonly-source',
+      external_revision: revision,
+      source: {
+        ...initialSessions[2].source,
+        capabilities: {
+          ...initialSessions[2].source.capabilities,
+          write: false,
+        },
+      },
+    };
+    const saveAs = vi
+      .fn<DesktopDeliveryGateway['saveAs']>()
+      .mockResolvedValue(false);
+    const save = vi.fn();
+    const gateway: DesktopDeliveryGateway = {
+      choose: vi.fn().mockResolvedValue([]),
+      drain: vi.fn().mockResolvedValue([]),
+      materialize: vi.fn(),
+      subscribe: vi.fn().mockResolvedValue(() => undefined),
+      close: vi.fn().mockResolvedValue(undefined),
+      save,
+      saveAs,
+    };
+    render(
+      <App
+        sessions={[original]}
+        desktopDeliveryGateway={gateway}
+        recoveryGateway={null}
+      />,
+    );
+    invokeMenu('Edit a copy');
+    const editor = await screen.findByRole('textbox', {
+      name: 'Copy of notes.txt text editor',
+    });
+    act(() => {
+      const view = EditorView.findFromDOM(editor)!;
+      view.dispatch({
+        changes: { from: view.state.doc.length, insert: '\nLocal copy edit' },
+      });
+    });
+    invokeMenu('Save As…');
+    await waitFor(() => expect(saveAs).toHaveBeenCalledOnce());
+    expect(saveAs).toHaveBeenCalledWith(
+      expect.objectContaining({
+        source_id: null,
+        edit_origin: 'copy',
+        dirty: true,
+        content: original.content + '\nLocal copy edit',
+      }),
+    );
+    expect(saveAs.mock.calls[0][0].text_document?.raw_text).toBe(
+      original.content + '\nLocal copy edit',
+    );
+    expect(save).not.toHaveBeenCalled();
+    expect(
+      await screen.findByText(
+        'Cancelled. Your document and edits remain available.',
+      ),
+    ).toBeVisible();
+    expect(editor).toHaveTextContent('Local copy edit');
+    expect(screen.getByRole('tab', { name: 'notes.txt' })).toBeInTheDocument();
+    fireEvent.keyDown(getApplicationShell(), { key: 'w', ctrlKey: true });
+    expect(screen.getByRole('dialog')).toHaveTextContent('Unsaved changes');
+  });
+
+  it('retains the desktop source lease until the last editable copy closes', async () => {
+    const original: ShellSession = {
+      ...initialSessions[2],
+      id: 'desktop-original',
+      source_id: 'original',
+      external_revision: revision,
+      source: {
+        ...initialSessions[2].source,
+        capabilities: {
+          ...initialSessions[2].source.capabilities,
+          write: false,
+        },
+      },
+    };
+    const close = vi.fn().mockResolvedValue(undefined);
+    const saveAs = vi
+      .fn<DesktopDeliveryGateway['saveAs']>()
+      .mockResolvedValue(false);
+    const gateway: DesktopDeliveryGateway = {
+      choose: vi.fn().mockResolvedValue([]),
+      drain: vi.fn().mockResolvedValue([]),
+      materialize: vi.fn(),
+      subscribe: vi.fn().mockResolvedValue(() => undefined),
+      close,
+      saveAs,
+      save: vi.fn(),
+    };
+    render(
+      <App
+        sessions={[original]}
+        desktopDeliveryGateway={gateway}
+        recoveryGateway={null}
+      />,
+    );
+    invokeMenu('Edit a copy');
+    await screen.findByRole('textbox', {
+      name: 'Copy of notes.txt text editor',
+    });
+    fireEvent.click(screen.getByRole('tab', { name: 'notes.txt' }));
+    fireEvent.keyDown(getApplicationShell(), { key: 'w', ctrlKey: true });
+    expect(
+      screen.getByRole('textbox', { name: 'Copy of notes.txt text editor' }),
+    ).toBeInTheDocument();
+    expect(close).not.toHaveBeenCalled();
+    invokeMenu('Save As…');
+    await waitFor(() => expect(saveAs).toHaveBeenCalledOnce());
+    expect(saveAs.mock.calls[0][0].copy_source).toEqual({
+      source_id: 'original',
+      external_revision: revision,
+    });
+    expect(close).not.toHaveBeenCalled();
+    fireEvent.keyDown(getApplicationShell(), { key: 'w', ctrlKey: true });
+    fireEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'Discard',
+      }),
+    );
+    await waitFor(() =>
+      expect(close).toHaveBeenCalledExactlyOnceWith('original'),
+    );
   });
 
   it('opens native desktop deliveries through the compact application commands', async () => {

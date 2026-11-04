@@ -29,6 +29,11 @@ const variants = [
   ['application', 'com.shruggietech.glitchpad', 'crates/glitchpad-host/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk'],
   ['instrumentation', 'com.shruggietech.glitchpad.test', 'crates/glitchpad-host/gen/android/app/build/outputs/apk/androidTest/universal/debug/app-universal-debug-androidTest.apk'],
 ];
+// Connected Gradle tests remove their packages during cleanup. Install the built
+// candidate again for byte-verified capture and the governed UI journeys in CI.
+for (const [, , builtPath] of variants) {
+  execFileSync('adb', ['install', '-r', '-t', builtPath], { stdio: 'pipe', windowsHide: true });
+}
 const artifacts = [];
 for (const [kind, packageName, builtPath] of variants) {
   const paths = execFileSync('adb', ['shell', 'pm', 'path', packageName], { encoding: 'utf8', windowsHide: true }).trim().split(/\r?\n/).filter(Boolean);
@@ -43,7 +48,7 @@ for (const [kind, packageName, builtPath] of variants) {
 const product = JSON.parse(await readFile('apps/glitchpad/package.json', 'utf8'));
 const source = process.env.GITHUB_SHA || process.env.GLITCHPAD_BUILD_COMMIT || null;
 if (!source || !/^[0-9a-f]{40}$/u.test(source)) throw new Error('A full source commit is required for tested APK evidence');
-const receipt = { schema_version: 1, evidence_class: 'hosted_debug_instrumentation', signed_release_bytes_tested: false, recovery_probe_variant: process.env.GLITCHPAD_RECOVERY_PROBE_VARIANT || 'none', source_commit: source, product_version: product.version, api_level: Number(execFileSync('adb', ['shell', 'getprop', 'ro.build.version.sdk'], { encoding: 'utf8', windowsHide: true }).trim()), android_version: execFileSync('adb', ['shell', 'getprop', 'ro.build.version.release'], { encoding: 'utf8', windowsHide: true }).trim(), artifacts };
+const receipt = { schema_version: 1, evidence_class: 'hosted_debug_instrumentation', capture_boundary: 'post_connected_suite_reinstall', signed_release_bytes_tested: false, recovery_probe_variant: process.env.GLITCHPAD_RECOVERY_PROBE_VARIANT || 'none', source_commit: source, product_version: product.version, api_level: Number(execFileSync('adb', ['shell', 'getprop', 'ro.build.version.sdk'], { encoding: 'utf8', windowsHide: true }).trim()), android_version: execFileSync('adb', ['shell', 'getprop', 'ro.build.version.release'], { encoding: 'utf8', windowsHide: true }).trim(), artifacts };
 await writeFile(join(directory, 'tested-apk-receipt.json'), JSON.stringify(receipt, null, 2) + '\n', 'utf8');
 console.log('tested_apk_evidence=' + JSON.stringify(receipt));
 NODE

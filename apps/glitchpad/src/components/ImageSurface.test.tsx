@@ -25,6 +25,7 @@ const revokeUrl = vi.fn();
 
 describe('read-only raster viewport', () => {
   it('publishes one failed image state for a native render rejection without leaking exception text or restarting render', async () => {
+    vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue('SyntheticWebViewNoPlatform/1');
     const original = { ...imageSession(), lifecycle: 'active' as const };
     const ref = createRef<TextEditorHandle>();
     const renderImage = vi.fn(() => Promise.reject(new Error('private document bytes content://private/provider')));
@@ -51,7 +52,7 @@ describe('read-only raster viewport', () => {
       expect(failures).toHaveLength(1);
       const { occurred_unix_ms, platform, failure, ...fields } = failures[0];
       expect(Number.isSafeInteger(occurred_unix_ms)).toBe(true);
-      expect(['windows', 'macos', 'linux', 'android', 'browser']).toContain(platform);
+      expect(platform).toBe('unknown');
       expect(fields).toEqual({ level: 'error', event_id: 'task_failed', component: 'renderer', duration_ms: null, byte_count: null, error_code: 'image_render_failed' });
       expect(failure).toBeDefined();
       const { correlation_id, ...failureFields } = failure!;

@@ -270,6 +270,8 @@ export const createDesktopDeliveryGateway = (
     return call('save_desktop_source_as', {
       suggestedName: session.source.display_name,
       bytes: [...serialized.payload.bytes],
+      originalSourceId: session.copy_source?.source_id ?? null,
+      expectedOriginalRevision: session.copy_source?.external_revision ?? null,
     }) as Promise<boolean>;
   },
   async materialize(result) {

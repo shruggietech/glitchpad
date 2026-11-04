@@ -25,11 +25,16 @@ async function fixture() {
   await writeFile(join(directory, 'wrong.apk'), 'different installed bytes');
   await writeFile(join(directory, 'apps/glitchpad/package.json'), JSON.stringify({ version: '0.2.0' }));
   await executable(join(binary, 'sleep'), '#!/usr/bin/env bash\nexit 0\n');
-  await executable(join(gradle, 'gradlew'), '#!/usr/bin/env bash\nset -eu\ncount=0; if [[ -f "$RUNNER_TEMP/gradle-count" ]]; then count=$(cat "$RUNNER_TEMP/gradle-count"); fi\ncount=$((count+1)); echo "$count" > "$RUNNER_TEMP/gradle-count"\necho "gradle attempt $count"\nif [[ "' + '$' + '{MOCK_RETRY:-0}" = 1 && "$count" = 1 ]]; then exit 1; fi\nexit 0\n');
+  await executable(join(gradle, 'gradlew'), "#!/usr/bin/env bash\nset -eu\ncount=0; if [[ -f \"$RUNNER_TEMP/gradle-count\" ]]; then count=$(cat \"$RUNNER_TEMP/gradle-count\"); fi\ncount=$((count+1)); echo \"$count\" > \"$RUNNER_TEMP/gradle-count\"\necho \"gradle attempt $count\"\nif [[ \"${MOCK_RETRY:-0}\" = 1 && \"$count\" = 1 ]]; then exit 1; fi\nrm -f \"$RUNNER_TEMP/application-installed\" \"$RUNNER_TEMP/instrumentation-installed\"\necho gradle-cleanup >> \"$RUNNER_TEMP/adb-events.txt\"\nexit 0\n");
   await executable(join(binary, 'adb'), `#!/usr/bin/env bash
 set -eu
-if [[ "$1" = shell && "$2" = pm && "$3" = path ]]; then
-  if [[ "$4" = com.shruggietech.glitchpad ]]; then echo "package:$FIXTURE_APPLICATION"; else echo "package:$FIXTURE_INSTRUMENTATION"; fi
+printf '%s\n' "$*" >> "$RUNNER_TEMP/adb-events.txt"
+if [[ "$1" = install ]]; then
+  if [[ "\${MOCK_INSTALL_FAILURE:-0}" = 1 ]]; then exit 1; fi
+  built="\${@: -1}"
+  if [[ "$built" = *app-universal-debug.apk ]]; then touch "$RUNNER_TEMP/application-installed"; elif [[ "$built" = *app-universal-debug-androidTest.apk ]]; then touch "$RUNNER_TEMP/instrumentation-installed"; else exit 1; fi
+elif [[ "$1" = shell && "$2" = pm && "$3" = path ]]; then
+  if [[ "$4" = com.shruggietech.glitchpad ]]; then [[ -f "$RUNNER_TEMP/application-installed" ]]; echo "package:$FIXTURE_APPLICATION"; else [[ -f "$RUNNER_TEMP/instrumentation-installed" ]]; echo "package:$FIXTURE_INSTRUMENTATION"; fi
   if [[ "\${MOCK_SPLIT:-0}" = 1 ]]; then echo 'package:split.apk'; fi
 elif [[ "$1" = pull ]]; then
   original="$2"
@@ -57,6 +62,7 @@ function run(script, state, args = [], environment = {}) {
 for (const [name, environment, expected] of [
   ['retains exact installed application and test APKs with source identity', {}, 0],
   ['labels the compiled-test fault variant separately from ordinary APKs', { GLITCHPAD_RECOVERY_PROBE_VARIANT: 'compiled_test_only' }, 0],
+  ['rejects failed candidate installation before capture', { MOCK_INSTALL_FAILURE: '1' }, 1],
   ['rejects installed bytes differing from the built APK', { MOCK_MISMATCH: '1' }, 1],
   ['rejects split-package evidence in a universal APK campaign', { MOCK_SPLIT: '1' }, 1],
   ['rejects missing full source identity', { GITHUB_SHA: '', GLITCHPAD_BUILD_COMMIT: '' }, 1],
@@ -84,6 +90,23 @@ for (const [name, environment, expected] of [
     } finally { await state.dispose(); }
   });
 }
+
+test('installs both built APKs after Gradle cleanup before installed-byte capture', posix, async () => {
+  const state = await fixture();
+  try {
+    const result = run('run-android-connected-tests.sh', state);
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    const events = (await readFile(join(state.evidence, 'adb-events.txt'), 'utf8')).trim().split('\n');
+    const cleanup = events.indexOf('gradle-cleanup');
+    const application = events.findIndex(event => event.startsWith('install -r -t ') && event.endsWith('/app-universal-debug.apk'));
+    const instrumentation = events.findIndex(event => event.startsWith('install -r -t ') && event.endsWith('/app-universal-debug-androidTest.apk'));
+    const capture = events.findIndex(event => event.startsWith('shell pm path '));
+    assert.ok(cleanup >= 0 && application > cleanup && instrumentation > cleanup, events.join('\n'));
+    assert.ok(capture > application && capture > instrumentation, events.join('\n'));
+    const receipt = JSON.parse(await readFile(join(state.evidence, 'android-tested-candidate/tested-apk-receipt.json'), 'utf8'));
+    assert.equal(receipt.capture_boundary, 'post_connected_suite_reinstall');
+  } finally { await state.dispose(); }
+});
 
 test('connected retry retains both failed and successful attempt outputs', posix, async () => {
   const state = await fixture();

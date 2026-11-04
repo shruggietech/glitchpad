@@ -26,7 +26,7 @@ Original reported Markdown bytes, incident APK hash and trace remain unavailable
 
 ## Review ledger
 
-External review requests used: 0 of 2. No merge, tag, release publication or deployment is authorized. Final source/check/artifact/thread and project-state reconciliation remains required before owner handoff.
+External review rounds used: 1 of 2 (automatic PR-open review on f6b6078). Round 1 returned two P2 findings, direct desktop-copy Save As and auxiliary-input shortcut ownership; repairs and the final permitted round are pending. No merge, tag, release publication or deployment is authorized. Final source/check/artifact/thread and project-state reconciliation remains required before owner handoff.
 
 ### Pinned brand verification
 
@@ -49,3 +49,21 @@ Internal review repaired Save continuation after root-recovery unmount: a remove
 The encoding gate passes 2385 text files after the operator-only production-build output is placed under an existing excluded dist directory. Taplo's two remaining schema diagnostics were reproduced on tracked source alone and traced to bare relative schema references in two vendored opener permission files; prefixing the identical targets with ./ preserves permission/schema meaning while satisfying the pinned validator. Vendor modification provenance is retained. No schema validation is disabled.
 
 Transactional Clear now drains earlier failure writes, resets native storage, and removes only the captured fallback events after success; new events and failed-reset evidence remain. The final focused run passes 33/33 tests plus lint/format. Active-document corpus instrumentation compiles successfully (69 Gradle tasks). A prior aggregate observed the intentional Clear regression red before the repair; final aggregate is rerun after edits settle.
+
+## 2026-11-04: Initial published candidate
+
+PR #256 is open on f6b607883f9526c17e35c15f87636e548fbab43c. The settled-source cargo xtask check completed successfully, including Rust formatting/Clippy/tests, dependency/advisory gates, 375 frontend tests, production build, site/browser/package/configuration checks, ten authoring geometry profiles and documentation/version/encoding/public-surface checks. Hosted first observations found two test-harness assumptions: document tabs were clicked before asynchronous shell mount, and the image failure-event test guessed the host platform instead of using the explicit unknown contract. Both have focused repairs; exact-head hosted requalification remains required.
+
+Round-1 keyboard repair passes 48 App component regressions plus format/lint/type checks: Markdown search and Preferences retain Ctrl/Meta Copy/Undo, actual document editor Undo still works, and source-independent desktop Edit-copy exposes Save As with neutral cancellation and dirty-close recovery. Native original/alias preservation is verified separately before the final review.
+
+### Initial exact-head Windows package readback
+
+The push workflow41782975506 for f6b6078 completed the installed/portable lifecycles. Downloaded artifact13300012918 matches its GitHub archive digest efe6b88307b02284b4946a3f7100ebb7b84fca4eb23ba1b312977b5dfd291fd1. Independent readback verifies both distribution hashes/lengths, four portable inventory files, nested portable ZIP equality and the lifecycle receipt's manifest/source binding. The governed Markdown corpus, editing/reopen, document recovery, no-blank and original preservation markers pass; the original incident is explicitly unavailable_not_replayed. This initial candidate is retained diagnostically and does not replace later source requalification.
+
+### Round-1 original preservation and lease ownership
+
+The native protected desktop Save As path checks captured original revision and actual destination identity before staging/commit; original/hardlink/symlink aliases and stale/closed/partial authority refuse replacement. Ordinary unprotected Save As and picker cancellation retain their existing outcomes. Host source39/39 and core source10/10 tests plus exact workspace Clippy/format pass. App retains original authority while any copy reference remains and releases it exactly once after the final copy closes; the full App suite passes49/49.
+
+### Initial Android capture failure and correction
+
+API24 ran eight controlled-provider tests successfully, then capture failed because connectedAndroidTest had removed its packages. No S046 UI journey or APK capture is claimed from that failed attempt. The corrected runner explicitly installs both built APKs, pulls them from the device, verifies byte equality/digests, and records capture_boundary=post_connected_suite_reinstall. The following governed UI journeys reinstall/use those retained exact APKs. The install/capture/order/failure policy suite passes31/31 and shell syntax passes. The failed attempt/artifact13300344232 remains retained diagnostically.

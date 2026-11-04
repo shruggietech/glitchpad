@@ -106,7 +106,11 @@ export const commandSetFor = (
       'Save',
       'Ctrl+S',
     ],
-    [renderer.save && Boolean(session.source_id), 'save_as', 'Save As…'],
+    [
+      renderer.save && session.text_document?.mode === 'editable',
+      'save_as',
+      'Save As…',
+    ],
     [
       renderer.inspect_metadata && source.metadata,
       'metadata',

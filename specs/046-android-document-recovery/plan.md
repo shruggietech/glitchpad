@@ -64,3 +64,7 @@ Enable a narrowly compiled VITE_GLITCHPAD_RECOVERY_PROBES flag only for the host
 ## 2026-11-04: Stable Add document disclosure
 
 Keep the persistent Add document label stable across expanded/collapsed state. aria-expanded announces disclosure and the expanded menu retains a labeled Close action. This prevents a wrapped replacement label from growing the persistent control and changing document clearance at maximum text scale. Reserve actual measured control height through the existing AppFrame overlay contract.
+
+## 2026-11-04: Round 1 desktop-copy and keyboard decisions
+
+Expose Save As for editable desktop copies without requiring a destination source ID. Preserve the existing destination-export result contract; do not invent source authority or an unrelated desktop draft lifecycle. Carry an optional protected original source/revision from copy_source into the native desktop Save As boundary so selecting that original or an alias is rejected before replacement. Existing unprotected Save As behavior remains governed by its existing contract. Auxiliary editable controls retain their native editing shortcuts, while document CodeMirror content retains the shared document action route. These repairs implement FR-007/010/011/012 and the two external round-1 findings.

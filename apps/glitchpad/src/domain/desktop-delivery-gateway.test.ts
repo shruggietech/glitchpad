@@ -1,4 +1,6 @@
 import type { DesktopSourceSummary } from './contracts';
+import { createDraftSession } from './drafts';
+import { applyTextTransaction } from './text-document';
 import {
   consumeDesktopMarkdownFailureProbe,
   createDesktopDeliveryGateway,
@@ -336,8 +338,70 @@ test('Save As serializes exact text bytes and reports native cancellation', asyn
   expect(call).toHaveBeenCalledWith('save_desktop_source_as', {
     suggestedName: 'delivered.md',
     bytes: [...bytes],
+    originalSourceId: null,
+    expectedOriginalRevision: null,
   });
 });
+
+test.each([true, false])(
+  'source-independent copy Save As retains original guards and returns native outcome %s',
+  async (outcome) => {
+    const sourceGateway = createDesktopDeliveryGateway(
+      (command, args) => {
+        if (command === 'identify_image_source') return Promise.resolve(null);
+        if (command !== 'read_source_range')
+          throw new Error('unexpected command');
+        return Promise.resolve({
+          source_id: source.source_id,
+          offset: args?.offset,
+          bytes: [...bytes],
+          end_of_source: true,
+        });
+      },
+      () => Promise.resolve(() => undefined),
+    );
+    const original = await sourceGateway.materialize({
+      ...result,
+      source: {
+        ...source,
+        descriptor: {
+          ...source.descriptor,
+          capabilities: { ...source.descriptor.capabilities, write: false },
+        },
+      },
+    });
+    expect(original).not.toBeNull();
+    const originalSnapshot = structuredClone(original);
+    const copy = createDraftSession('markdown', original!);
+    const changed = applyTextTransaction(
+      copy.text_document!,
+      copy.revision,
+      copy.revision,
+      [{ from: 0, to: copy.content.length, insert: '# Copy 🧪\n' }],
+    );
+    if (!changed.ok) throw new Error('copy edit failed');
+    copy.text_document = changed.document;
+    copy.content = changed.document.normalized_text;
+    copy.revision = changed.revision;
+    const copySnapshot = structuredClone(copy);
+    const call = vi.fn().mockResolvedValue(outcome);
+    const gateway = createDesktopDeliveryGateway(call, () =>
+      Promise.resolve(() => undefined),
+    );
+
+    await expect(gateway.saveAs(copy)).resolves.toBe(outcome);
+    expect(call).toHaveBeenCalledExactlyOnceWith('save_desktop_source_as', {
+      suggestedName: 'Copy of delivered.md',
+      bytes: [...new TextEncoder().encode('# Copy 🧪\n')],
+      originalSourceId: source.source_id,
+      expectedOriginalRevision: source.external_revision,
+    });
+    expect(copy.source_id).toBeNull();
+    expect(copy.source.capabilities.write).toBe(false);
+    expect(copy).toEqual(copySnapshot);
+    expect(original).toEqual(originalSnapshot);
+  },
+);
 
 test('Save sends exact bytes and revision guards to the native source command', async () => {
   const sourceGateway = createDesktopDeliveryGateway(

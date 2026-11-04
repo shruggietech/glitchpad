@@ -103,3 +103,11 @@ T001-T004 precede implementation. Native contracts/writer (T008-T009/T017) and r
 - [x] T042 Align BrandBuilderAppFrameInstrumentedTest.kt keyboard qualification with the pinned single-owner inset contract using independent before/show/hide native/browser bounds and real IME facts, preserving actual keyboard input, focus, strict geometry, restoration and existing deadlines per FR-005/016/017.
 
 - [x] T043 Separate real system-picker cancellation from actual held native-write pending qualification in AndroidDeliveryInstrumentedTest.kt and the existing test-only FixtureDocumentsProvider.java/FixtureGrantProvider.java; preserve one chooser, strict disabled/rejected-Discard state, bounded entry, deliberate pre-open refusal, cleanup, dirty/original preservation and exact final UTF-8 readback per FR-008/009/016.
+
+- [x] T044 Require the requested marker and clean JUnit terminal success in scripts/run-android-instrumentation.sh, preserve adb/explicit failure outcomes, and add meaningful marker-only/crash/assertion/transport/missing-marker policy regressions per FR-016/018 and Constitution P6.
+
+- [x] T045 Strengthen AndroidDeliveryInstrumentedTest.kt single native activation with actual visible-window/IME occlusion and coherent coordinate readiness, one justified keyboard dismissal, one DOWN/UP attempt and bounded failure facts; use it at the held-write Save As boundary and retain actual provider-state/pending/refusal/byte assertions per FR-005/008/016.
+
+- [x] T046 Give dedicated Tauri UI instrumentation supported terminal ownership: stop owned scenarios at CREATED in AndroidDeliveryInstrumentedTest.kt, BrandBuilderAppFrameInstrumentedTest.kt and PerformanceInstrumentedTest.kt, set waitForActivitiesToComplete=false only for those invocations in the journey driver/CI, retain lifecycle/body/process assertions and add affected runner policy coverage per FR-009/016/018 and Constitution P6.
+
+- [x] T047 Dispatch S046 interactive Android Open/Save As/Create/Share host commands asynchronously with existing native work on spawn_blocking, retain owned state and all receipt/error/cancellation/authority checks, add meaningful gated-worker scheduling/error regressions and compile affected host/Android paths per FR-004/008/010/013/016/017.

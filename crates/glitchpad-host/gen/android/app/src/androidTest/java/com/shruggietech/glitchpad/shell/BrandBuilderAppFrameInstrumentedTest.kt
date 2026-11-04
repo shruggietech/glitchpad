@@ -17,6 +17,7 @@ import android.view.WindowInsets
 import android.view.WindowManager
 import android.view.inputmethod.InputMethodManager
 import android.webkit.WebView
+import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -26,6 +27,8 @@ import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
+import org.junit.After
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.concurrent.CountDownLatch
@@ -35,6 +38,26 @@ import kotlin.math.max
 
 @RunWith(AndroidJUnit4::class)
 class BrandBuilderAppFrameInstrumentedTest {
+    private var ownedScenario: ActivityScenario<MainActivity>? = null
+
+    @Before
+    fun requireRunnerOwnedCompletion() {
+        assertEquals(
+            "Dedicated Tauri UI instrumentation must own terminal completion",
+            "false",
+            InstrumentationRegistry.getArguments().getString("waitForActivitiesToComplete"),
+        )
+    }
+
+    @After
+    fun stopOwnedActivityBeforeRunnerCompletion() {
+        val scenario = ownedScenario ?: return
+        // Stop through AndroidX so onPause/onStop run before framework-owned process completion.
+        scenario.moveToState(Lifecycle.State.CREATED)
+        assertEquals("Tauri activity must be stopped before instrumentation completes", Lifecycle.State.CREATED, scenario.state)
+        ownedScenario = null
+    }
+
     private fun findWebView(view: View): WebView? {
         if (view is WebView) return view
         if (view !is ViewGroup) return null
@@ -501,7 +524,7 @@ class BrandBuilderAppFrameInstrumentedTest {
     fun appFrameOwnsActualAndroidWebViewGeometry() {
         assertCallbackDiagnosticsContainOnlyBoundedNativeState()
         assertTrue("reference API must be governed", Build.VERSION.SDK_INT == 24 || Build.VERSION.SDK_INT == 36)
-        val scenario = ActivityScenario.launch(MainActivity::class.java)
+        val scenario = ActivityScenario.launch(MainActivity::class.java).also { ownedScenario = it }
         scenario.onActivity { activity ->
             assertEquals(
                 "Android host must resize the WebView for IME geometry",

@@ -8,4 +8,6 @@ Use the image built from scripts/docker/validation.Dockerfile through scripts/in
 4. Build and retain the actual APK used by hosted API24/API36 provider/WebView journeys. Record SHA-256, source, package/version, Android/API/WebView and geometry/font scale. Independently read saved document/diagnostic bytes, exercise receiver-granted Share, cancellation/failure and process recreation. Extend Windows portable Markdown corpus regression.
 5. Push/open official PR, inspect final branch-head and affected native/package checks, resolve every finding within at most two review rounds, and reconcile issue acceptance/evidence without closing broader aggregate/release issues.
 
+Dedicated Tauri UI invocations use the journey driver or the scoped CI arguments, including waitForActivitiesToComplete=false. Their owned Activities stop at CREATED before the runner reports its result. Qualification requires the requested marker, positive JUnit completion, zero adb status and no explicit instrumentation failure; a marker emitted before process termination is diagnostic evidence only.
+
 Missing original incident bytes and unperformed physical/manual checks remain explicit. A passing source test or callback does not establish native write or exact release-byte qualification.

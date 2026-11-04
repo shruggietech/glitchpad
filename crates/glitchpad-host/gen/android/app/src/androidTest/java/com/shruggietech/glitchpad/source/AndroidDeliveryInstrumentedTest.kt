@@ -23,6 +23,7 @@ import java.security.MessageDigest
 import org.json.JSONArray
 import android.view.ViewGroup
 import android.webkit.WebView
+import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -33,6 +34,7 @@ import java.util.concurrent.atomic.AtomicReference
 import java.util.UUID
 import org.json.JSONObject
 import org.junit.After
+import org.junit.Before
 import org.junit.Assert.assertTrue
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -44,13 +46,28 @@ class AndroidDeliveryInstrumentedTest {
   private val clientContext = instrumentation.targetContext
   private val resolver = clientContext.contentResolver
   private val grantedUris = mutableSetOf<Uri>()
+  private var ownedScenario: ActivityScenario<MainActivity>? = null
+
+  @Before
+  fun requireRunnerOwnedCompletion() {
+    assertEquals("Dedicated Tauri UI instrumentation must own terminal completion", "false", InstrumentationRegistry.getArguments().getString("waitForActivitiesToComplete"))
+  }
 
   @After
-  fun revokeFixtureGrants() {
-    grantedUris.forEach { uri ->
-      instrumentation.context.revokeUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+  fun stopActivityAndRevokeFixtureGrants() {
+    try {
+      ownedScenario?.let { scenario ->
+        // Keep onPause/onStop real; let framework instrumentation own terminal process completion.
+        scenario.moveToState(Lifecycle.State.CREATED)
+        assertEquals("Tauri activity must be stopped before instrumentation completes", Lifecycle.State.CREATED, scenario.state)
+      }
+    } finally {
+      ownedScenario = null
+      grantedUris.forEach { uri ->
+        instrumentation.context.revokeUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+      }
+      grantedUris.clear()
     }
-    grantedUris.clear()
   }
 
   @Test
@@ -62,7 +79,7 @@ class AndroidDeliveryInstrumentedTest {
       "installed Glitchpad package did not resolve the cold fixture"
     }
 
-    val scenario = ActivityScenario.launch<MainActivity>(coldIntent.setComponent(component))
+    val scenario = ActivityScenario.launch<MainActivity>(coldIntent.setComponent(component)).also { ownedScenario = it }
     try {
       waitForBodyText(scenario, "resolver-cold.md", "S031_COLD_MARKER_4F2A")
     } catch (failure: AssertionError) {
@@ -119,9 +136,7 @@ class AndroidDeliveryInstrumentedTest {
     println("image_evidence=png:pass,jpeg:pass,webp:pass,bmp:pass,tiff:pass,source_unchanged:pass,api:${android.os.Build.VERSION.SDK_INT}")
     println("delivery_evidence=cold:pass,warm:pass,api:${android.os.Build.VERSION.SDK_INT}")
     System.out.flush()
-    // This test runs alone because MainActivity owns the Tauri process. Closing
-    // it after the flushed evidence marker lets the dedicated runner terminate.
-    scenario.close()
+
   }
 
   @Test
@@ -132,7 +147,7 @@ class AndroidDeliveryInstrumentedTest {
     val coldBefore = readBytes(cold)
     val launch = markdownDeliveryIntent(cold, route)
     val component = requireNotNull(glitchpadComponent(launch)) { "installed Glitchpad package must resolve the governed cold Markdown route" }
-    val scenario = ActivityScenario.launch<MainActivity>(launch.setComponent(component))
+    val scenario = ActivityScenario.launch<MainActivity>(launch.setComponent(component)).also { ownedScenario = it }
     verifyDeliveredMarkdownOutcome(scenario, "recovery-corpus.md", "positive")
     verifyMarkdownLinkBack(scenario, "recovery-corpus.md")
     assertTrue("cold delivery must preserve original corpus bytes", coldBefore.contentEquals(readBytes(cold)))
@@ -151,7 +166,7 @@ class AndroidDeliveryInstrumentedTest {
     assertTrue("full expected source identity must be supplied", expectedSource != null && expectedSource.matches(Regex("[0-9a-f]{40}")))
     println("markdown_delivery_evidence=" + JSONObject().put("cold_route", if (route == "view") "ACTION_VIEW" else "ACTION_SEND").put("cold_governed_corpus", "pass").put("external_link_back_modal", "pass").put("warm_action_view", "positive_empty_malformed_pass").put("warm_action_send", "positive_empty_malformed_pass").put("source_bytes_unchanged", true).put("original_incident_input_replayed", false).put("source_commit", expectedSource).put("apk_sha256", apkSha256()).put("api_level", Build.VERSION.SDK_INT).toString())
     System.out.flush()
-    scenario.close()
+
   }
 
   private fun verifyMarkdownLinkBack(scenario: ActivityScenario<MainActivity>, name: String) {
@@ -261,7 +276,7 @@ class AndroidDeliveryInstrumentedTest {
 
   @Test
   fun standaloneAuthoringAndDiagnosticJourneys() {
-    val scenario = ActivityScenario.launch<MainActivity>(Intent(clientContext, MainActivity::class.java).setAction(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER))
+    val scenario = ActivityScenario.launch<MainActivity>(Intent(clientContext, MainActivity::class.java).setAction(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)).also { ownedScenario = it }
     waitForBodyText(scenario, "Add document")
     verifyAddDocumentChoices(scenario)
     val root = grant(documentUri("fixture-root"))
@@ -319,12 +334,12 @@ class AndroidDeliveryInstrumentedTest {
     System.out.flush()
     saveScreenshot("s046-authoring.png")
     created.forEach { runCatching { DocumentsContract.deleteDocument(resolver, it) } }
-    scenario.close()
+
   }
 
   @Test
   fun rootFailureRetainsDraft() {
-    val scenario = ActivityScenario.launch<MainActivity>(Intent(clientContext, MainActivity::class.java).setAction(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER))
+    val scenario = ActivityScenario.launch<MainActivity>(Intent(clientContext, MainActivity::class.java).setAction(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)).also { ownedScenario = it }
     waitForBodyText(scenario, "Add document")
     createNewDraftForInput(scenario, "New Markdown", "Untitled.md")
     replaceEditorText(scenario, "# S046 root recovery\n\nS046_ROOT_DRAFT_RETAINED_Ω\n")
@@ -344,14 +359,14 @@ class AndroidDeliveryInstrumentedTest {
     saveScreenshot("s046-root-recovery.png")
     println("root_recovery_evidence=" + JSONObject().put("root_fallback", "pass").put("draft_retained", "pass").put("diagnostic_event_retained", "pass").put("source_commit", expectedSource).put("apk_sha256", apkSha256()).put("recovery_probe_variant", "compiled_test_only").put("api_level", Build.VERSION.SDK_INT).toString())
     System.out.flush()
-    scenario.close()
+
   }
 
   @Test
   fun addDocumentAtMaximumFontScale() {
     assertTrue("maximum-font row requires Android14+", Build.VERSION.SDK_INT >= 34)
     assertTrue("system font scale must actually be 200%", clientContext.resources.configuration.fontScale >= 1.99f)
-    val scenario = ActivityScenario.launch<MainActivity>(Intent(clientContext, MainActivity::class.java).setAction(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER))
+    val scenario = ActivityScenario.launch<MainActivity>(Intent(clientContext, MainActivity::class.java).setAction(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)).also { ownedScenario = it }
     waitForBodyText(scenario, "Add document")
     verifyAddDocumentChoices(scenario)
     scenario.onActivity { it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE }
@@ -361,20 +376,20 @@ class AndroidDeliveryInstrumentedTest {
     saveScreenshot("s046-font-scale.png")
     println("recovery_font_evidence=font_scale:2.0,portrait:pass,landscape:pass,all_choices_reachable:pass,targets_48dp:pass,api:" + Build.VERSION.SDK_INT)
     System.out.flush()
-    scenario.close()
+
   }
 
   @Test
   fun draftRecoveryAcrossProcessBoundary() {
     val phase = InstrumentationRegistry.getArguments().getString("recoveryPhase") ?: throw AssertionError("recovery phase required")
     val text = "# S046 retained draft\n\nS046_PROCESS_RECOVERY_Ω\n"
-    val scenario = ActivityScenario.launch<MainActivity>(Intent(clientContext, MainActivity::class.java).setAction(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER))
+    val scenario = ActivityScenario.launch<MainActivity>(Intent(clientContext, MainActivity::class.java).setAction(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)).also { ownedScenario = it }
     if (phase == "seed") {
       waitForBodyText(scenario, "Add document")
       createNewDraftForInput(scenario, "New Markdown", "Untitled.md")
       replaceEditorText(scenario, text)
       // The existing bounded store snapshots after two seconds idle. Native
-      // lifecycle flush is exercised again when the activity closes below.
+      // lifecycle flush is exercised again by the @After stopped transition.
       SystemClock.sleep(3000L)
       println("draft_recovery_seed=pass,api:" + Build.VERSION.SDK_INT)
     } else {
@@ -386,7 +401,7 @@ class AndroidDeliveryInstrumentedTest {
       println("draft_recovery_verify=pass,api:" + Build.VERSION.SDK_INT)
     }
     System.out.flush()
-    scenario.close()
+
   }
 
   private fun verifyAddDocumentChoices(scenario: ActivityScenario<MainActivity>) {
@@ -484,7 +499,7 @@ class AndroidDeliveryInstrumentedTest {
     val pickerPackage = createDocumentPickerPackage()
     val monitor = instrumentation.addMonitor(IntentFilter(Intent.ACTION_CREATE_DOCUMENT).apply { addCategory(Intent.CATEGORY_OPENABLE); addDataType("*/*") }, null, false)
     try {
-      tapUnblockedNativeControl(scenario, "Save As")
+      tapNativeControlOnce(scenario, "Save As")
       waitForNativePickerWindow(scenario, "Save As", pickerPackage)
       assertTrue("one real native create chooser must own the cancelled save", monitor.hits == 1)
       instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
@@ -517,7 +532,7 @@ class AndroidDeliveryInstrumentedTest {
       assertEquals("fixture control and document providers must actually share the barrier process", providerProcess, armed.getInt("control_process_id"))
       assertEquals("true", evaluate(scenario, "(()=>{document.querySelector('.app-shell').dispatchEvent(new KeyboardEvent('keydown',{key:'w',ctrlKey:true,bubbles:true}));return true;})()"))
       waitForBodyText(scenario, "Unsaved changes in Untitled.txt")
-      clickControl(scenario, "Save As")
+      tapNativeControlOnce(scenario, "Save As")
       waitForCondition(scenario, "Array.from(document.querySelectorAll('.resolution-dialog button')).every(b=>b.disabled)", "pending native Save must disable Discard/Close decisions", pendingObservations) {
         val held = heldFixtureWriteState("held_write_status", destination)
         val window = nativeHandoffState(scenario, "Save As")
@@ -533,6 +548,8 @@ class AndroidDeliveryInstrumentedTest {
       assertEquals("blocked Discard during real native I/O must retain every draft character", "S046_DIRTY_CLOSE_BYTES\n", browserEditorInputSnapshot(scenario).getString("semantic_text"))
     } catch (failure: Throwable) {
       originalFailure = failure
+      pendingObservations.put("held_provider_at_failure", runCatching { heldFixtureWriteState("held_write_status", destination) }
+        .getOrElse { JSONObject().put("capture_failed", true).put("failure_type", it.javaClass.simpleName) })
       runCatching { capturePendingResolutionFailure(scenario, pickerPackage, heldMonitor.hits, pendingObservations) }
         .onFailure { println("native_pending_resolution_capture_failed=" + it.javaClass.simpleName); System.out.flush() }
       throw failure
@@ -634,13 +651,13 @@ class AndroidDeliveryInstrumentedTest {
     chooseNative(scenario, Intent.ACTION_CREATE_DOCUMENT, chosen(destination), { clickControl(scenario, "Save previewed bundle") }, "Diagnostic bundle saved and verified.")
     assertTrue("saved diagnostic JSON bytes must equal exact frozen preview", frozen.toByteArray(Charsets.UTF_8).contentEquals(readBytes(destination)))
     resolver.call(FixtureGrantProvider.COMMAND_URI, "clear_share_result", null, null)
-    tapUnblockedNativeControl(scenario, "Share previewed bundle")
+    tapNativeControlOnce(scenario, "Share previewed bundle")
     clickNativeText("Glitchpad diagnostic fixture", false)
     instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
     waitForAppNativeWindow(scenario, "Share previewed bundle")
     waitForBodyText(scenario, "Cancelled. The preview is retained.")
     assertEquals("Share cancellation must retain the exact preview", frozen, stringValue(evaluate(scenario, "document.querySelector('.diagnostic-preview').textContent")))
-    tapUnblockedNativeControl(scenario, "Share previewed bundle")
+    tapNativeControlOnce(scenario, "Share previewed bundle")
     clickNativeText("Glitchpad diagnostic fixture")
     val deadline = SystemClock.elapsedRealtime() + 30_000L
     var received = resolver.call(FixtureGrantProvider.COMMAND_URI, "share_result", null, null)
@@ -731,12 +748,63 @@ class AndroidDeliveryInstrumentedTest {
     assertEquals("actual-app control must be clicked once", "true", evaluate(scenario, "(()=>{const button=Array.from(document.querySelectorAll(" + selectorLiteral + ")).find(b=>!b.disabled&&(b.getAttribute('aria-label')||(b.querySelector('span')?b.querySelector('span').textContent:b.textContent)).trim()===" + nameLiteral + ");if(!button)return false;button.click();return true;})()"))
   }
 
-  // A real external activity can outlive evaluateJavascript's result callback. Measure the
-  // public control first, then launch it with one native tap without a post-launch JS ack.
-  private fun tapUnblockedNativeControl(scenario: ActivityScenario<MainActivity>, name: String) {
-    val nameLiteral = JSONObject.quote(name)
-    waitForCondition(scenario, "Array.from(document.querySelectorAll('button')).some(b=>!b.disabled&&(b.getAttribute('aria-label')||(b.querySelector('span')?b.querySelector('span').textContent:b.textContent)).trim()===" + nameLiteral + ")", "native launch control must be enabled: " + name)
-    val target = JSONObject(evaluate(scenario, """
+  // Read native visible bounds and IME windows before mapping a CSS control to screen input.
+  private fun nativeControlGeometry(scenario: ActivityScenario<MainActivity>, target: JSONObject?): JSONObject {
+    val observed = JSONObject().put("scenario_state", scenario.state.name)
+    val imeWindows = instrumentation.uiAutomation.windows.filter { it.type == android.view.accessibility.AccessibilityWindowInfo.TYPE_INPUT_METHOD }.take(4)
+      .map { android.graphics.Rect().also { bounds -> it.getBoundsInScreen(bounds) } }
+    fun bounds(rect: android.graphics.Rect) = JSONObject().put("left", rect.left).put("top", rect.top).put("right", rect.right).put("bottom", rect.bottom)
+    scenario.onActivity { activity ->
+      val view = requireNotNull(findWebView(activity.window.decorView))
+      val location = IntArray(2)
+      view.getLocationOnScreen(location)
+      val local = android.graphics.Rect()
+      val locallyVisible = view.getLocalVisibleRect(local)
+      val localOnScreen = android.graphics.Rect(local).apply { offset(location[0] - view.scrollX, location[1] - view.scrollY) }
+      val window = android.graphics.Rect()
+      view.getWindowVisibleDisplayFrame(window)
+      val visible = android.graphics.Rect(location[0], location[1], location[0] + view.width, location[1] + view.height)
+      if (!locallyVisible || !visible.intersect(localOnScreen) || !visible.intersect(window)) visible.setEmpty()
+      val insets = androidx.core.view.ViewCompat.getRootWindowInsets(view)
+      val imeBottom = insets?.getInsets(androidx.core.view.WindowInsetsCompat.Type.ime())?.bottom ?: 0
+      val barsBottom = insets?.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars())?.bottom ?: 0
+      val input = activity.getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+      observed.put("activity_window_focus", activity.hasWindowFocus()).put("webview_window_focus", view.hasWindowFocus()).put("shown", view.isShown)
+        .put("view_left", location[0]).put("view_top", location[1]).put("view_width", view.width).put("view_height", view.height)
+        .put("view_scroll_x", view.scrollX).put("view_scroll_y", view.scrollY)
+        .put("local_visible_screen", bounds(localOnScreen)).put("window_visible_frame", bounds(window)).put("effective_visible_screen", bounds(visible))
+        .put("ime_reported_visible", insets?.isVisible(androidx.core.view.WindowInsetsCompat.Type.ime()) == true)
+        .put("ime_bottom", imeBottom).put("system_bars_bottom", barsBottom).put("input_method_active", input.isActive(view))
+        .put("ime_window_bounds", JSONArray(imeWindows.map { bounds(it) }))
+      if (target?.optBoolean("found") == true && target.optDouble("viewport_width") > 0) {
+        // CSS coordinates use one physical scale, including when only height is occluded.
+        val scale = view.width / target.getDouble("viewport_width")
+        val left = location[0] + target.getDouble("left") * scale
+        val top = location[1] + target.getDouble("top") * scale
+        val right = location[0] + target.getDouble("right") * scale
+        val bottom = location[1] + target.getDouble("bottom") * scale
+        val screenX = location[0] + target.getDouble("x") * scale
+        val screenY = location[1] + target.getDouble("y") * scale
+        val tolerance = 0.6 * scale
+        val imeWindowCovers = imeWindows.any { it.left < right - tolerance && it.right > left + tolerance && it.top < bottom - tolerance && it.bottom > top + tolerance }
+        val wholeVisible = !visible.isEmpty && !imeWindowCovers && left >= visible.left - tolerance && top >= visible.top - tolerance &&
+          right <= visible.right + tolerance && bottom <= visible.bottom + tolerance &&
+          screenX >= visible.left && screenX < visible.right && screenY >= visible.top && screenY < visible.bottom
+        val bottomOccluded = bottom > window.bottom + tolerance
+        val nonBarBottomGap = location[1] + view.height - window.bottom - barsBottom
+        val imeOccludes = imeWindowCovers || (bottomOccluded && (imeBottom > 0 || observed.getBoolean("ime_reported_visible") ||
+          (input.isActive(view) && nonBarBottomGap > tolerance)))
+        observed.put("css_to_native_scale", scale).put("screen_x", screenX).put("screen_y", screenY)
+          .put("control_left", left).put("control_top", top).put("control_right", right).put("control_bottom", bottom)
+          .put("whole_control_visible", wholeVisible).put("ime_occludes_control", imeOccludes)
+      }
+    }
+    return observed
+  }
+
+  private fun tapNativeControlOnce(scenario: ActivityScenario<MainActivity>, name: String) {
+    val deadline = SystemClock.elapsedRealtime() + 30_000L
+    val script = """
       (()=>{
         const button=Array.from(document.querySelectorAll('button')).find(b=>!b.disabled&&(b.getAttribute('aria-label')||(b.querySelector('span')?b.querySelector('span').textContent:b.textContent)).trim()===NAME);
         if(!button)return {found:false};
@@ -750,32 +818,71 @@ class AndroidDeliveryInstrumentedTest {
         const clientX=(rect.left+rect.right)/2;
         const clientY=(rect.top+rect.bottom)/2;
         const hit=document.elementFromPoint(clientX,clientY);
-        return {found:true,x:clientX-left,y:clientY-top,viewport_width:width,width:rect.width,height:rect.height,
+        return {found:true,x:clientX-left,y:clientY-top,left:rect.left-left,top:rect.top-top,right:rect.right-left,bottom:rect.bottom-top,
+          viewport_width:width,viewport_height:height,width:rect.width,height:rect.height,
           fully_visible:rect.left>=left-0.6&&rect.right<=left+width+0.6&&rect.top>=top-0.6&&rect.bottom<=top+height+0.6,
           hit:hit===button||button.contains(hit),disabled:button.disabled};
       })()
-    """.trimIndent().replace("NAME", nameLiteral)))
-    assertTrue("the native launch tap must hit a whole enabled visible control: " + name + " " + target,
-      target.getBoolean("found") && target.getDouble("width") > 0 && target.getDouble("height") > 0 &&
-        target.getBoolean("fully_visible") && target.getBoolean("hit") && !target.getBoolean("disabled"))
-    val point = FloatArray(2)
-    scenario.onActivity { activity ->
-      val view = requireNotNull(findWebView(activity.window.decorView))
-      val location = IntArray(2)
-      view.getLocationOnScreen(location)
-      val scale = view.width / target.getDouble("viewport_width")
-      point[0] = (location[0] + target.getDouble("x") * scale).toFloat()
-      point[1] = (location[1] + target.getDouble("y") * scale).toFloat()
-    }
-    val downTime = SystemClock.uptimeMillis()
-    val down = MotionEvent.obtain(downTime, downTime, MotionEvent.ACTION_DOWN, point[0], point[1], 0)
-    val up = MotionEvent.obtain(downTime, SystemClock.uptimeMillis(), MotionEvent.ACTION_UP, point[0], point[1], 0)
+    """.trimIndent().replace("NAME", JSONObject.quote(name))
+    var target = JSONObject()
+    var mapping = JSONObject()
+    var phase = "readiness"
+    var imeDismissRequested = false
+    var imeDismissAccepted: Boolean? = null
     try {
-      down.source = InputDevice.SOURCE_TOUCHSCREEN
-      up.source = InputDevice.SOURCE_TOUCHSCREEN
-      instrumentation.sendPointerSync(down)
-      instrumentation.sendPointerSync(up)
-    } finally { down.recycle(); up.recycle() }
+      val service = requireNotNull(instrumentation.uiAutomation.serviceInfo)
+      if (service.flags and android.accessibilityservice.AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS == 0) {
+        service.flags = service.flags or android.accessibilityservice.AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS
+        instrumentation.uiAutomation.serviceInfo = service
+      }
+      var ready = false
+      while (SystemClock.elapsedRealtime() < deadline) {
+        target = runCatching { JSONObject(evaluate(scenario, script)) }
+          .getOrElse { JSONObject().put("capture_failed", true).put("failure_type", it.javaClass.simpleName) }
+        mapping = nativeControlGeometry(scenario, target)
+        val foreground = mapping.getString("scenario_state") == androidx.lifecycle.Lifecycle.State.RESUMED.name &&
+          mapping.optBoolean("activity_window_focus") && mapping.optBoolean("webview_window_focus") && mapping.optBoolean("shown")
+        if (foreground && mapping.optBoolean("ime_occludes_control") && !imeDismissRequested) {
+          imeDismissRequested = true
+          phase = "ime_dismiss"
+          scenario.onActivity { activity ->
+            val view = requireNotNull(findWebView(activity.window.decorView))
+            val input = activity.getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+            imeDismissAccepted = input.hideSoftInputFromWindow(view.windowToken, 0)
+          }
+        } else if (foreground && target.optBoolean("found") && target.optDouble("width") > 0 && target.optDouble("height") > 0 &&
+          target.optBoolean("fully_visible") && target.optBoolean("hit") && !target.optBoolean("disabled") && mapping.optBoolean("whole_control_visible")) {
+          ready = true
+          break
+        }
+        phase = "readiness"
+        SystemClock.sleep(100L)
+      }
+      assertTrue("the native control must be enabled and whole inside the actual visible app window before a single tap", ready)
+      val downTime = SystemClock.uptimeMillis()
+      val down = MotionEvent.obtain(downTime, downTime, MotionEvent.ACTION_DOWN, mapping.getDouble("screen_x").toFloat(), mapping.getDouble("screen_y").toFloat(), 0)
+      val up = MotionEvent.obtain(downTime, SystemClock.uptimeMillis(), MotionEvent.ACTION_UP, mapping.getDouble("screen_x").toFloat(), mapping.getDouble("screen_y").toFloat(), 0)
+      try {
+        down.source = InputDevice.SOURCE_TOUCHSCREEN
+        up.source = InputDevice.SOURCE_TOUCHSCREEN
+        phase = "down"
+        instrumentation.sendPointerSync(down)
+        phase = "up"
+        instrumentation.sendPointerSync(up)
+      } finally { down.recycle(); up.recycle() }
+      println("native_control_activation=" + JSONObject().put("control", name).put("phase", "event_pair_dispatched")
+        .put("target", target).put("mapping", mapping).put("ime_dismiss_requested", imeDismissRequested)
+        .put("ime_dismiss_accepted", imeDismissAccepted ?: JSONObject.NULL))
+      System.out.flush()
+    } catch (failure: Throwable) {
+      val window = runCatching { nativeHandoffState(scenario, name) }.getOrElse { JSONObject().put("capture_failed", true) }
+      val after = runCatching { nativeControlGeometry(scenario, target) }.getOrElse { JSONObject().put("capture_failed", true) }
+      println("native_control_activation_failure=" + JSONObject().put("control", name).put("phase", phase).put("failure_type", failure.javaClass.simpleName)
+        .put("target", target).put("mapping", mapping).put("native_window", window).put("native_geometry_after", after).put("ime_dismiss_requested", imeDismissRequested)
+        .put("ime_dismiss_accepted", imeDismissAccepted ?: JSONObject.NULL))
+      System.out.flush()
+      throw failure
+    }
   }
 
   private fun createDocumentPickerPackage(): String {

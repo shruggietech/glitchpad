@@ -17,7 +17,7 @@ record_failure() {
 run_journey() {
   local stem="$1" marker="$2" method="$3" reset="$4"
   shift 4
-  if ANDROID_INSTRUMENTATION_RESET_APP_DATA="$reset" bash "$runner" "$RUNNER_TEMP/$stem.txt" "$marker" -e class "com.shruggietech.glitchpad.source.AndroidDeliveryInstrumentedTest#$method" "$@"; then
+  if ANDROID_INSTRUMENTATION_RESET_APP_DATA="$reset" bash "$runner" "$RUNNER_TEMP/$stem.txt" "$marker" -e waitForActivitiesToComplete false -e class "com.shruggietech.glitchpad.source.AndroidDeliveryInstrumentedTest#$method" "$@"; then
     return 0
   fi
   record_failure "$stem"

@@ -49,10 +49,20 @@ elif [[ "$1" = shell && "$2" = am && "$3" = instrument ]]; then
   count=$((count+1)); echo "$count" > "$RUNNER_TEMP/instrument-count"
   echo "instrumentation attempt $count"
   if [[ -n "\${MOCK_SCREENSHOT_STEM:-}" && "$count" = 1 ]]; then printf '%s' 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j4Y4AAAAASUVORK5CYII=' | base64 -d > "$RUNNER_TEMP/remote-\${MOCK_SCREENSHOT_STEM}.png"; fi
-  if [[ "\${MOCK_NEVER_PASSES:-0}" != 1 && ( "$count" = 2 || "\${MOCK_FIRST_PASS:-0}" = 1 ) ]]; then echo 'journey_marker=pass'; else echo 'INSTRUMENTATION_FAILED: synthetic failure'; fi
+  case "\${MOCK_INSTRUMENT_OUTCOME:-}" in
+    marker_only) echo 'journey_marker=pass' ;;
+    marker_crash|logcat_marker_crash|marker_crash_after_ok) [[ "$MOCK_INSTRUMENT_OUTCOME" != logcat_marker_crash ]] && echo 'journey_marker=pass'; [[ "$MOCK_INSTRUMENT_OUTCOME" = marker_crash_after_ok ]] && echo 'OK (1 test)'; echo 'INSTRUMENTATION_RESULT: shortMsg=Process crashed.'; echo 'INSTRUMENTATION_CODE: 0' ;;
+    marker_assertion|marker_assertion_after_ok) echo 'journey_marker=pass'; [[ "$MOCK_INSTRUMENT_OUTCOME" = marker_assertion_after_ok ]] && echo 'OK (1 test)'; echo 'java.lang.AssertionError: synthetic after-marker failure'; echo 'FAILURES!!!'; echo 'Tests run: 1, Failures: 1' ;;
+    marker_nonzero) echo 'journey_marker=pass'; echo 'OK (1 test)'; exit 7 ;;
+    clean_no_marker|logcat_marker_clean) echo 'OK (1 test)' ;;
+    clean_both) echo 'journey_marker=pass'; echo 'OK (1 test)' ;;
+    marker_zero_tests) echo 'journey_marker=pass'; echo 'OK (0 tests)' ;;
+    marker_bad_code) echo 'journey_marker=pass'; echo 'OK (1 test)'; echo 'INSTRUMENTATION_CODE: 0' ;;
+    *) if [[ "\${MOCK_NEVER_PASSES:-0}" != 1 && ( "$count" = 2 || "\${MOCK_FIRST_PASS:-0}" = 1 ) ]]; then echo 'journey_marker=pass'; echo 'OK (1 test)'; else echo 'INSTRUMENTATION_FAILED: synthetic failure'; fi ;;
+  esac
 elif [[ "$1" = shell && "$2" = run-as && "$4" = rm && "$5" = -f ]]; then
   rm -f "$RUNNER_TEMP/remote-\${6#files/}"
-elif [[ "$1" = logcat && "\${2:-}" != -c ]]; then echo 'synthetic bounded logcat'
+elif [[ "$1" = logcat && "\${2:-}" != -c ]]; then echo 'synthetic bounded logcat'; if [[ "\${MOCK_INSTRUMENT_OUTCOME:-}" = logcat_marker_* ]]; then echo 'journey_marker=pass'; fi
 elif [[ "$1" = exec-out && "$2" = run-as && "$4" = cat ]]; then
   if [[ "$5" = files/*.png ]]; then if [[ "\${MOCK_SCREENSHOT_MISSING_SUCCESS:-0}" = 1 ]]; then echo "cat: $5: No such file or directory"; exit 0; fi; cat "$RUNNER_TEMP/remote-\${5#files/}"; exit 0; fi
   if [[ "\${MOCK_RUN_AS_FAILURE:-0}" = 1 ]]; then echo "run-as: installed APK read refused" >&2; exit 1; fi
@@ -236,3 +246,26 @@ test('remote cat error with exit zero is retained as text and never as a PNG', p
     assert.match(await readFile(join(state.evidence, 'missing-screenshot-attempt-1-s046-authoring-capture-error.txt'), 'utf8'), /capture_status=0; png_signature_valid=false/);
   } finally { await state.dispose(); }
 });
+
+
+for (const [outcome, expected] of [['marker_only', 1], ['marker_crash', 1], ['marker_assertion', 1], ['marker_nonzero', 1], ['clean_no_marker', 1], ['clean_both', 0], ['logcat_marker_clean', 0], ['logcat_marker_crash', 1], ['marker_zero_tests', 1], ['marker_bad_code', 1], ['marker_crash_after_ok', 1], ['marker_assertion_after_ok', 1]]) {
+  test('instrumentation requires marker and clean JUnit completion for ' + outcome, posix, async () => {
+    const state = await fixture();
+    try {
+      const output = join(state.evidence, 'terminal-journey.txt');
+      const result = run('run-android-instrumentation.sh', state, [output, 'journey_marker=', '-e', 'class', 'Synthetic#terminal'], { MOCK_INSTRUMENT_OUTCOME: outcome });
+      assert.equal(result.status, expected, result.stdout + result.stderr);
+      const attempts = expected === 0 ? [1] : [1, 2];
+      assert.equal(await readFile(join(state.evidence, 'instrument-count'), 'utf8'), attempts.length + '\n');
+      for (const attempt of attempts) {
+        const text = await readFile(join(state.evidence, 'terminal-journey-attempt-' + attempt + '.txt'), 'utf8');
+        const diagnostic = await readFile(join(state.evidence, 'terminal-journey-attempt-' + attempt + '-status.txt'), 'utf8');
+        assert.match(diagnostic, new RegExp('adb_exit_status=' + (outcome === 'marker_nonzero' ? 7 : 0) + '(?:\\n|$)', 'u'));
+        await access(join(state.evidence, 'terminal-journey-attempt-' + attempt + '-logcat.txt'));
+        if (outcome.includes('crash')) assert.match(text, /shortMsg=Process crashed/u);
+        if (outcome.startsWith('marker_assertion')) assert.match(text, /FAILURES!!!/u);
+        if (outcome.endsWith('after_ok')) { assert.match(diagnostic, /junit_success=1/u); assert.match(diagnostic, /instrumentation_failure=1/u); }
+      }
+    } finally { await state.dispose(); }
+  });
+}

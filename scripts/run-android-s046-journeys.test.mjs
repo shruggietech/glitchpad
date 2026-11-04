@@ -142,6 +142,12 @@ test(
     const result = await campaign('24');
     assert.equal(result.status, 0, result.stdout + result.stderr);
     assert.equal(result.calls.length, 7);
+    assert.ok(
+      result.calls.every((line) =>
+        line.includes('-e waitForActivitiesToComplete false'),
+      ),
+      result.calls.join('\n'),
+    );
     assert.ok(!result.calls.some((line) => line.startsWith('adb:')));
     assert.match(result.stdout, /s046_campaign_failures=0/);
   },
@@ -153,12 +159,48 @@ test(
   async () => {
     const result = await campaign();
     assert.equal(result.status, 0, result.stdout + result.stderr);
+    assert.ok(
+      result.calls
+        .filter((line) => !line.startsWith('adb:'))
+        .every((line) => line.includes('-e waitForActivitiesToComplete false')),
+      result.calls.join('\n'),
+    );
     assert.equal(
       result.calls.filter((line) => !line.startsWith('adb:')).length,
       8,
     );
   },
 );
+
+test('only dedicated Tauri UI classes bypass runner ActivityFinisher', async () => {
+  const workflow = await readFile(
+    new URL('../.github/workflows/ci.yml', import.meta.url),
+    'utf8',
+  );
+  const invocations = workflow
+    .split('\n')
+    .filter((line) =>
+      line.includes('bash scripts/run-android-instrumentation.sh'),
+    );
+  let tauriInvocations = 0;
+  for (const invocation of invocations) {
+    const tauriClass =
+      /BrandBuilderAppFrameInstrumentedTest|PerformanceInstrumentedTest|AndroidDeliveryInstrumentedTest/u.test(
+        invocation,
+      );
+    if (tauriClass) {
+      tauriInvocations += 1;
+      assert.match(invocation, /-e waitForActivitiesToComplete false/u);
+    } else {
+      assert.doesNotMatch(invocation, /waitForActivitiesToComplete/u);
+    }
+  }
+  assert.equal(
+    tauriInvocations,
+    3,
+    'both AppFrame API paths and Performance must use runner-owned completion',
+  );
+});
 
 test(
   'invalid API or source identity fails before any instrumentation',

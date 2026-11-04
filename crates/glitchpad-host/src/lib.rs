@@ -16,6 +16,8 @@ pub mod recovery;
 #[cfg(not(mobile))]
 pub mod source;
 
+#[cfg(any(target_os = "android", test))]
+mod android_interactive;
 pub mod android_source;
 
 struct RecoveryHostState {
@@ -536,11 +538,15 @@ fn drain_android_deliveries(
 
 #[cfg(target_os = "android")]
 #[tauri::command]
-fn open_android_document(
-    host: tauri::State<'_, android_source::AndroidSourceHost>,
+async fn open_android_document(
+    app: tauri::AppHandle,
     media_type: Option<String>,
 ) -> Result<glitchpad_core::source::AndroidSourceSummary, glitchpad_core::contracts::CoreError> {
-    host.open_document(media_type.as_deref())
+    android_interactive::run(move || {
+        app.state::<android_source::AndroidSourceHost>()
+            .open_document(media_type.as_deref())
+    })
+    .await
 }
 
 #[cfg(target_os = "android")]
@@ -641,11 +647,15 @@ fn restore_android_sources(
 
 #[cfg(target_os = "android")]
 #[tauri::command]
-fn save_android_source_as(
-    host: tauri::State<'_, android_source::AndroidSourceHost>,
+async fn save_android_source_as(
+    app: tauri::AppHandle,
     request: glitchpad_core::source::AndroidSaveAsRequest,
 ) -> Result<glitchpad_core::source::AndroidSaveAsReceipt, glitchpad_core::contracts::CoreError> {
-    host.save_as(request)
+    android_interactive::run(move || {
+        app.state::<android_source::AndroidSourceHost>()
+            .save_as(request)
+    })
+    .await
 }
 
 #[cfg(target_os = "android")]
@@ -659,23 +669,31 @@ fn close_android_source(
 
 #[cfg(target_os = "android")]
 #[tauri::command]
-fn create_android_document(
-    host: tauri::State<'_, android_source::AndroidSourceHost>,
+async fn create_android_document(
+    app: tauri::AppHandle,
     request: glitchpad_core::source::AndroidCreateRequest,
 ) -> Result<glitchpad_core::source::AndroidCreateReceipt, glitchpad_core::contracts::CoreError> {
-    host.create_document(request)
+    android_interactive::run(move || {
+        app.state::<android_source::AndroidSourceHost>()
+            .create_document(request)
+    })
+    .await
 }
 
 #[cfg(target_os = "android")]
 #[tauri::command]
-fn share_diagnostics(
-    host: tauri::State<'_, android_source::AndroidSourceHost>,
+async fn share_diagnostics(
+    app: tauri::AppHandle,
     json: String,
 ) -> Result<
     glitchpad_android_source::models::DiagnosticShareResponse,
     glitchpad_core::contracts::CoreError,
 > {
-    host.share_diagnostics(&json)
+    android_interactive::run(move || {
+        app.state::<android_source::AndroidSourceHost>()
+            .share_diagnostics(&json)
+    })
+    .await
 }
 
 #[cfg(target_os = "android")]

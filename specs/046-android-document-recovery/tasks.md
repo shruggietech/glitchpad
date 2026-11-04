@@ -65,3 +65,7 @@ T001-T004 precede implementation. Native contracts/writer (T008-T009/T017) and r
 
 - [x] T024 Preserve current-renderer text selection through Markdown Copy menu/keyboard execution with real clipboard result and foreign-selection/denial regressions in MarkdownSurface.tsx/tests per FR-010/FR-011/FR-012 (round-2 comment 4464666149).
 - [x] T025 Dismiss the active renderer's modal before Android Back attempts document close, using a narrow optional handle method and modal/focus/native-ack regressions in TextEditorSurface.tsx, MarkdownSurface.tsx, App.tsx/tests and governed Android APK/fixture suites per FR-005/FR-009 (round-2 comment 4464666156).
+
+## Phase 10: Native build identity completeness
+
+- [x] T026 Expose the available ordinary CI source commit through native diagnostics after the explicit build override, preserve unavailable local identity, forward source metadata through the Linux package build container, and add native provenance regressions in host lib.rs/tests and linux-package workflow per FR-015.

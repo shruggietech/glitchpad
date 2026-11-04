@@ -76,3 +76,7 @@ Rendered Markdown Copy resolves a nonempty browser selection only when it belong
 ## 2026-11-04: API24 installed-file read fallback
 
 Keep installed-byte capture separate from Gradle's package cleanup and use only bytes read from the device. After reinstall and a failed adb pull, allow one bounded exec-out run-as read of the same Package Manager path, retaining both method diagnostics and an explicit unknown cause. Require exact built-byte equality before the source-bound receipt; no retry may substitute build output as observed installed bytes. The [API24 run-as implementation](https://android.googlesource.com/platform/system/core/+/refs/tags/android-7.0.0_r1/run-as/run-as.c) checks installed/debuggable package authority before executing under its application identity; actual access is still established by the read, not assumed from that contract.
+
+## 2026-11-04: Ordinary native build provenance
+
+Native diagnostic build identity prefers the explicit GLITCHPAD_BUILD_COMMIT override, then GitHub's compile-time GITHUB_SHA when provided by an ordinary native CI build, and otherwise remains unavailable. Forward that nonsecret source fact through the Linux package container at its build boundary. Do not spawn Git, infer a revision from runtime user data, or fabricate a local commit. This closes the normal-build identity gap independently of the instrumented debug job's explicit source injection.

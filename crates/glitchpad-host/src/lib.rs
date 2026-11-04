@@ -374,7 +374,9 @@ fn diagnostic_environment() -> glitchpad_core::persistence::DiagnosticEnvironmen
         architecture: std::env::consts::ARCH.into(),
         webview_version: None,
         core_version: glitchpad_core::VERSION.into(),
-        build_commit: option_env!("GLITCHPAD_BUILD_COMMIT").map(str::to_owned),
+        build_commit: option_env!("GLITCHPAD_BUILD_COMMIT")
+            .or(option_env!("GITHUB_SHA"))
+            .map(str::to_owned),
     }
 }
 
@@ -449,6 +451,24 @@ fn remove_recovery(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // The validation matrix supplies an independent expected value while Cargo
+    // compiles with absent, CI-only, and explicitly overridden source identities.
+    #[test]
+    fn diagnostic_environment_serializes_the_compiled_source_identity() {
+        let environment = diagnostic_environment();
+        let serialized =
+            serde_json::to_value(environment).expect("diagnostic environment serializes");
+        assert_eq!(serialized["product_version"], glitchpad_core::VERSION);
+        let expected = std::env::var("GLITCHPAD_TEST_EXPECT_BUILD_COMMIT")
+            .or_else(|_| std::env::var("GLITCHPAD_BUILD_COMMIT"))
+            .or_else(|_| std::env::var("GITHUB_SHA"))
+            .ok();
+        let expected_value = expected
+            .filter(|value| value != "<absent>")
+            .map_or(serde_json::Value::Null, serde_json::Value::String);
+        assert_eq!(serialized["build_commit"], expected_value);
+    }
 
     #[test]
     fn unavailable_recovery_storage_degrades_to_a_safe_command_error() {

@@ -9,6 +9,7 @@ import { test } from 'node:test';
 const repository = resolve(import.meta.dirname, '..');
 const posix = { skip: process.platform === 'win32' ? 'Android hosted execution uses POSIX runners; interactive Windows uses Linux containers.' : false };
 const source = 'a'.repeat(40);
+const screenshotPng = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j4Y4AAAAASUVORK5CYII=', 'base64');
 
 async function executable(path, content) { await writeFile(path, content, 'utf8'); await chmod(path, 0o755); }
 
@@ -47,13 +48,13 @@ elif [[ "$1" = shell && "$2" = am && "$3" = instrument ]]; then
   count=0; if [[ -f "$RUNNER_TEMP/instrument-count" ]]; then count=$(cat "$RUNNER_TEMP/instrument-count"); fi
   count=$((count+1)); echo "$count" > "$RUNNER_TEMP/instrument-count"
   echo "instrumentation attempt $count"
-  if [[ -n "\${MOCK_SCREENSHOT_STEM:-}" && "$count" = 1 ]]; then printf 'screenshot attempt %s\n' "$count" > "$RUNNER_TEMP/remote-\${MOCK_SCREENSHOT_STEM}.png"; fi
+  if [[ -n "\${MOCK_SCREENSHOT_STEM:-}" && "$count" = 1 ]]; then printf '%s' 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j4Y4AAAAASUVORK5CYII=' | base64 -d > "$RUNNER_TEMP/remote-\${MOCK_SCREENSHOT_STEM}.png"; fi
   if [[ "\${MOCK_NEVER_PASSES:-0}" != 1 && ( "$count" = 2 || "\${MOCK_FIRST_PASS:-0}" = 1 ) ]]; then echo 'journey_marker=pass'; else echo 'INSTRUMENTATION_FAILED: synthetic failure'; fi
 elif [[ "$1" = shell && "$2" = run-as && "$4" = rm && "$5" = -f ]]; then
   rm -f "$RUNNER_TEMP/remote-\${6#files/}"
 elif [[ "$1" = logcat && "\${2:-}" != -c ]]; then echo 'synthetic bounded logcat'
 elif [[ "$1" = exec-out && "$2" = run-as && "$4" = cat ]]; then
-  if [[ "$5" = files/*.png ]]; then cat "$RUNNER_TEMP/remote-\${5#files/}"; exit 0; fi
+  if [[ "$5" = files/*.png ]]; then if [[ "\${MOCK_SCREENSHOT_MISSING_SUCCESS:-0}" = 1 ]]; then echo "cat: $5: No such file or directory"; exit 0; fi; cat "$RUNNER_TEMP/remote-\${5#files/}"; exit 0; fi
   if [[ "\${MOCK_RUN_AS_FAILURE:-0}" = 1 ]]; then echo "run-as: installed APK read refused" >&2; exit 1; fi
   original="$5"
   if [[ "\${MOCK_RUN_AS_MISMATCH:-0}" = 1 ]]; then original="$FIXTURE_WRONG"; fi
@@ -213,7 +214,7 @@ for (const [method, screenshot] of [['standaloneAuthoringAndDiagnosticJourneys',
       const output = join(state.evidence, 'screenshot-journey.txt');
       const result = run('run-android-instrumentation.sh', state, [output, 'journey_marker=', '-e', 'class', 'Synthetic#' + method], { MOCK_SCREENSHOT_STEM: screenshot });
       assert.equal(result.status, 0, result.stdout + result.stderr);
-      assert.equal(await readFile(join(state.evidence, 'screenshot-journey-attempt-1-' + screenshot + '.png'), 'utf8'), 'screenshot attempt 1\n');
+      assert.deepEqual(await readFile(join(state.evidence, 'screenshot-journey-attempt-1-' + screenshot + '.png')), screenshotPng);
       await assert.rejects(access(join(state.evidence, 'screenshot-journey-attempt-2-' + screenshot + '.png')));
       await assert.rejects(access(join(state.evidence, 'remote-' + screenshot + '.png')));
       assert.match(await readFile(join(state.evidence, 'screenshot-journey-attempt-1.txt'), 'utf8'), /INSTRUMENTATION_FAILED/u);
@@ -223,3 +224,15 @@ for (const [method, screenshot] of [['standaloneAuthoringAndDiagnosticJourneys',
     } finally { await state.dispose(); }
   });
 }
+
+test('remote cat error with exit zero is retained as text and never as a PNG', posix, async () => {
+  const state = await fixture();
+  try {
+    const output = join(state.evidence, 'missing-screenshot.txt');
+    const result = run('run-android-instrumentation.sh', state, [output, 'journey_marker=', '-e', 'class', 'Synthetic#standaloneAuthoringAndDiagnosticJourneys'], { MOCK_FIRST_PASS: '1', MOCK_SCREENSHOT_MISSING_SUCCESS: '1' });
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    await assert.rejects(access(join(state.evidence, 'missing-screenshot-attempt-1-s046-authoring.png')));
+    assert.match(await readFile(join(state.evidence, 'missing-screenshot-attempt-1-s046-authoring-capture-output.txt'), 'utf8'), /cat:.*No such file/);
+    assert.match(await readFile(join(state.evidence, 'missing-screenshot-attempt-1-s046-authoring-capture-error.txt'), 'utf8'), /capture_status=0; png_signature_valid=false/);
+  } finally { await state.dispose(); }
+});

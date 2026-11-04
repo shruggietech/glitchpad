@@ -59,20 +59,26 @@ const source: AndroidSourceSummary = {
 
 describe('Android delivery gateway', () => {
   it('drains, materializes, observes, and closes Android sources', async () => {
-    const nativeCall = vi.fn((command: string): Promise<unknown> => {
-      if (command === 'identify_image_source') return Promise.resolve(null);
-      if (command === 'drain_android_deliveries')
-        return Promise.resolve({ sources: [source], rejections: [] });
-      if (command === 'read_android_range')
-        return Promise.resolve({
-          source_id: source.source_id,
-          offset: 0,
-          bytes,
-          end_of_source: true,
-        });
-      if (command === 'close_android_source') return Promise.resolve();
-      throw new Error(`Unexpected command: ${command}`);
-    });
+    const nativeCall = vi.fn(
+      (command: string, args?: Record<string, unknown>): Promise<unknown> => {
+        if (command === 'identify_image_source') return Promise.resolve(null);
+        if (command === 'drain_android_deliveries')
+          return Promise.resolve({ sources: [source], rejections: [] });
+        if (command === 'read_android_range') {
+          const offset = args?.offset as number;
+          const length = args?.length as number;
+          const chunk = bytes.slice(offset, offset + length);
+          return Promise.resolve({
+            source_id: source.source_id,
+            offset,
+            bytes: chunk,
+            end_of_source: chunk.length < length,
+          });
+        }
+        if (command === 'close_android_source') return Promise.resolve();
+        throw new Error(`Unexpected command: ${command}`);
+      },
+    );
     const unregister = vi.fn().mockResolvedValue(undefined);
     const listener: PluginListener = {
       plugin: 'android-source',
@@ -97,6 +103,8 @@ describe('Android delivery gateway', () => {
       content: '# Opened',
       source_id: 'android-source',
       renderer: { id: 'markdown' },
+      text_document: { mode: 'editable', source_bytes: bytes.length },
+      markdown_document: { mode: 'rendered', eligibility: 'full' },
     });
     expect(subscribe).toHaveBeenCalledOnce();
     expect(unregister).toHaveBeenCalledOnce();

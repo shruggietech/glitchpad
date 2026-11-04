@@ -80,3 +80,11 @@ Keep installed-byte capture separate from Gradle's package cleanup and use only 
 ## 2026-11-04: Ordinary native build provenance
 
 Native diagnostic build identity prefers the explicit GLITCHPAD_BUILD_COMMIT override, then GitHub's compile-time GITHUB_SHA when provided by an ordinary native CI build, and otherwise remains unavailable. Forward that nonsecret source fact through the Linux package container at its build boundary. Do not spawn Git, infer a revision from runtime user data, or fabricate a local commit. This closes the normal-build identity gap independently of the instrumented debug job's explicit source injection.
+
+## Packaged Android exact-length completion
+
+The hosted API24 snapshot observes a 300-byte governed Markdown document in LargeTextSurface with zero Markdown semantic elements. Native range reads report endOfSource only after a short read. Filling an exactly sized request therefore does not establish EOF; the frontend must verify completion with bounded lookahead rather than invent a large-source classification. Metadata underreporting, unknown size and configured byte limits remain covered. This observation explains the governed corpus routing failure, not the unavailable original incident.
+
+## Chrome 69 overlay positioning
+
+Actual API24 geometry exposes the Add document target outside the viewport. Logical inset declarations and max() cannot be the only positioning/target-size authorities for the supported Chromium 69 baseline. Add physical-offset and minimum-size fallbacks in consumer-owned CSS while retaining the pinned generated brand contract and strict geometry assertions.

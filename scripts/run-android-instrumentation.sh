@@ -41,7 +41,18 @@ for attempt in 1 2; do
   adb logcat -d -t 2000 > "$logcat_output" 2>&1 || true
   if [[ -n "$screenshot" ]]; then
     screenshot_output="${output%.txt}-attempt-${attempt}-${screenshot}.png"
-    if ! adb exec-out run-as com.shruggietech.glitchpad cat "files/${screenshot}.png" > "$screenshot_output" 2>/dev/null; then rm -f "$screenshot_output"; fi
+    capture_error="${screenshot_output%.png}-capture-error.txt"
+    capture_status=0
+    adb exec-out run-as com.shruggietech.glitchpad cat "files/${screenshot}.png" > "$screenshot_output" 2>"$capture_error" || capture_status=$?
+    signature=$(od -An -tx1 -N8 "$screenshot_output" | tr -d ' \n')
+    # Some older adb/run-as combinations return success with a remote cat error
+    # on stdout. Such text is diagnostic output, never screenshot evidence.
+    if (( capture_status != 0 )) || [[ "$signature" != 89504e470d0a1a0a ]]; then
+      mv "$screenshot_output" "${screenshot_output%.png}-capture-output.txt"
+      printf 'capture_status=%s; png_signature_valid=false\n' "$capture_status" >> "$capture_error"
+    elif [[ ! -s "$capture_error" ]]; then
+      rm -f "$capture_error"
+    fi
   fi
   if grep -Fq "$marker" "$output" || grep -Fq "$marker" "$logcat_output"; then
     exit 0

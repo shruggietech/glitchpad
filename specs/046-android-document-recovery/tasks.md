@@ -69,3 +69,8 @@ T001-T004 precede implementation. Native contracts/writer (T008-T009/T017) and r
 ## Phase 10: Native build identity completeness
 
 - [x] T026 Expose the available ordinary CI source commit through native diagnostics after the explicit build override, preserve unavailable local identity, forward source metadata through the Linux package build container, and add native provenance regressions in host lib.rs/tests and linux-package workflow per FR-015.
+
+## Phase 11: Packaged Android findings
+
+- [x] T027 Correct bounded Android text materialization for native exact-length reads that do not signal EOF; verify completion with bounded lookahead and preserve unknown/large-source limits in domain/android-source tests per FR-001/004/016.
+- [x] T028 Add consumer-owned Chrome 69 physical positioning and target-size fallbacks for the Add document overlay without modifying pinned generated brand assets; retain strict viewport/target/scroll assertions per FR-003/005/017.

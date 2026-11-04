@@ -1,6 +1,8 @@
 /* AppFrame owns system/IME inset geometry through its overlay root. Android requires 48dp targets. */
 .add-document {
   position: absolute;
+  right: var(--bb-spacing-control-block);
+  bottom: var(--bb-spacing-control-block);
   inset-inline-end: var(--bb-spacing-control-block);
   inset-block-end: var(--bb-spacing-control-block);
   display: flex;
@@ -21,6 +23,8 @@
   background: var(--gl-panel-raised);
 }
 .add-document button {
+  min-width: 48px;
+  min-height: 48px;
   min-inline-size: 48px;
   min-block-size: max(48px, var(--bb-interaction-target-minimum));
   padding: var(--bb-spacing-control-block) var(--bb-spacing-control-inline);
@@ -41,6 +45,10 @@
 }
 .add-document-scrim {
   position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   inset: 0;
   pointer-events: auto;
 }

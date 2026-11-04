@@ -20,7 +20,13 @@ import {
 } from './text-document';
 
 const SOURCE_CHUNK_BYTES = 1024 * 1024;
-const RESTORABLE_RENDERERS = new Set(['markdown', 'mermaid', 'source', 'text', 'image']);
+const RESTORABLE_RENDERERS = new Set([
+  'markdown',
+  'mermaid',
+  'source',
+  'text',
+  'image',
+]);
 
 interface RangeReadResult {
   source_id: string;
@@ -29,24 +35,29 @@ interface RangeReadResult {
   end_of_source: boolean;
 }
 
-export type NativeInvoke = (command: string, args?: Record<string, unknown>) => Promise<unknown>;
+export type NativeInvoke = (
+  command: string,
+  args?: Record<string, unknown>,
+) => Promise<unknown>;
 
 export interface AndroidRestorationGateway {
   restore(projections: readonly SessionProjection[]): Promise<ShellSession[]>;
 }
 
 export const nativeAndroidRestorationAvailable = (): boolean =>
-  typeof window !== 'undefined'
-  && '__TAURI_INTERNALS__' in window
-  && /android/iu.test(navigator.userAgent);
+  typeof window !== 'undefined' &&
+  '__TAURI_INTERNALS__' in window &&
+  /android/iu.test(navigator.userAgent);
 
 const readBoundedText = async (
   call: NativeInvoke,
   source: AndroidSourceSummary,
 ): Promise<{ text: string; sourceBytes: number; encoding: TextEncoding }> => {
   const declaredBytes = source.descriptor.byte_length;
-  if (declaredBytes !== null
-      && (!Number.isSafeInteger(declaredBytes) || declaredBytes < 0))
+  if (
+    declaredBytes !== null &&
+    (!Number.isSafeInteger(declaredBytes) || declaredBytes < 0)
+  )
     throw new RangeError('Restored source length is invalid');
   if (declaredBytes !== null && declaredBytes > LARGE_TEXT_MAX_BYTES)
     throw new RangeError('Restored source exceeds the supported viewing limit');
@@ -55,26 +66,26 @@ const readBoundedText = async (
 
   const chunks: Uint8Array[] = [];
   let offset = 0;
-  let endOfSource = declaredBytes === 0;
+  let endOfSource = false;
   while (!endOfSource && offset < EDITABLE_TEXT_MAX_BYTES) {
-    const declaredRemaining = declaredBytes === null
-      ? SOURCE_CHUNK_BYTES
-      : declaredBytes - offset;
+    // A full native range is not an EOF receipt, even at the declared size.
+    // Read bounded chunks until the provider actually reports a short read.
     const length = Math.min(
       SOURCE_CHUNK_BYTES,
-      declaredRemaining,
       EDITABLE_TEXT_MAX_BYTES - offset,
     );
     if (length <= 0) break;
-    const result = await call('read_android_range', {
+    const result = (await call('read_android_range', {
       sourceId: source.source_id,
       offset,
       length,
       operationBudget: length,
-    }) as RangeReadResult;
-    if (result.source_id !== source.source_id
-        || result.offset !== offset
-        || result.bytes.length > length)
+    })) as RangeReadResult;
+    if (
+      result.source_id !== source.source_id ||
+      result.offset !== offset ||
+      result.bytes.length > length
+    )
       throw new Error('Android restoration returned an invalid bounded range');
     const bytes = Uint8Array.from(result.bytes);
     chunks.push(bytes);
@@ -82,6 +93,25 @@ const readBoundedText = async (
     endOfSource = result.end_of_source;
     if (bytes.byteLength === 0 && !endOfSource)
       throw new Error('Android restoration read made no progress');
+  }
+  if (!endOfSource && offset === EDITABLE_TEXT_MAX_BYTES) {
+    // One byte distinguishes a source exactly at the editable limit from a
+    // larger source without retaining any content beyond that limit.
+    const terminal = (await call('read_android_range', {
+      sourceId: source.source_id,
+      offset,
+      length: 1,
+      operationBudget: 1,
+    })) as RangeReadResult;
+    if (
+      terminal.source_id !== source.source_id ||
+      terminal.offset !== offset ||
+      terminal.bytes.length > 1
+    )
+      throw new Error('Android restoration returned an invalid EOF probe');
+    if (terminal.bytes.length === 0 && !terminal.end_of_source)
+      throw new Error('Android restoration EOF probe made no progress');
+    endOfSource = terminal.bytes.length === 0 && terminal.end_of_source;
   }
   if (!endOfSource)
     return {
@@ -95,18 +125,20 @@ const readBoundedText = async (
     bytes.set(chunk, cursor);
     cursor += chunk.byteLength;
   }
-  const encoding: TextEncoding = bytes[0] === 0xff && bytes[1] === 0xfe
-    ? 'utf16_le_bom'
-    : bytes[0] === 0xfe && bytes[1] === 0xff
-      ? 'utf16_be_bom'
-      : bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf
-        ? 'utf8_bom'
-        : 'utf8';
-  const decoder = encoding === 'utf16_le_bom'
-    ? new TextDecoder('utf-16le', { fatal: true })
-    : encoding === 'utf16_be_bom'
-      ? new TextDecoder('utf-16be', { fatal: true })
-      : new TextDecoder('utf-8', { fatal: true });
+  const encoding: TextEncoding =
+    bytes[0] === 0xff && bytes[1] === 0xfe
+      ? 'utf16_le_bom'
+      : bytes[0] === 0xfe && bytes[1] === 0xff
+        ? 'utf16_be_bom'
+        : bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf
+          ? 'utf8_bom'
+          : 'utf8';
+  const decoder =
+    encoding === 'utf16_le_bom'
+      ? new TextDecoder('utf-16le', { fatal: true })
+      : encoding === 'utf16_be_bom'
+        ? new TextDecoder('utf-16be', { fatal: true })
+        : new TextDecoder('utf-8', { fatal: true });
   return { text: decoder.decode(bytes), sourceBytes: offset, encoding };
 };
 
@@ -126,9 +158,21 @@ export const materializeAndroidSource = async (
   rendererId: string,
   idPrefix: 'android' | 'restored',
 ): Promise<ShellSession> => {
-  const imageCodec = await identifyImageSource(call, source.source_id, source.external_revision);
-  if (imageCodec) return createImageSession(source.descriptor, source.source_id, source.external_revision, imageCodec, idPrefix);
-  if (rendererId === 'image') throw new Error('The restored source is no longer a supported image');
+  const imageCodec = await identifyImageSource(
+    call,
+    source.source_id,
+    source.external_revision,
+  );
+  if (imageCodec)
+    return createImageSession(
+      source.descriptor,
+      source.source_id,
+      source.external_revision,
+      imageCodec,
+      idPrefix,
+    );
+  if (rendererId === 'image')
+    throw new Error('The restored source is no longer a supported image');
   const { text, sourceBytes, encoding } = await readBoundedText(call, source);
   const renderer = rendererId.toLowerCase();
   const textDocument = createTextDocument({
@@ -139,19 +183,21 @@ export const materializeAndroidSource = async (
     language: detectLanguage(source.descriptor.display_name, text),
   });
   const eligibility = markdownEligibility(sourceBytes);
-  const editable = textDocument.mode === 'editable' && source.descriptor.capabilities.write;
+  const editable =
+    textDocument.mode === 'editable' && source.descriptor.capabilities.write;
   return {
     id: `${idPrefix}-${source.source_id}`,
     source: source.descriptor,
     renderer: {
       id: renderer,
-      label: renderer === 'markdown'
-        ? 'Markdown'
-        : renderer === 'mermaid'
-          ? 'Mermaid'
-          : renderer === 'source'
-            ? 'Source'
-            : 'Text',
+      label:
+        renderer === 'markdown'
+          ? 'Markdown'
+          : renderer === 'mermaid'
+            ? 'Mermaid'
+            : renderer === 'source'
+              ? 'Source'
+              : 'Text',
       capabilities: {
         ...noRendererCapabilities(),
         view: true,
@@ -172,26 +218,28 @@ export const materializeAndroidSource = async (
     content: text,
     source_id: source.source_id,
     text_document: textDocument,
-    markdown_document: renderer === 'markdown'
-      ? {
-          mode: eligibility === 'full' ? 'rendered' : 'source',
-          eligibility,
-          render_revision: null,
-          render_status: eligibility === 'full' ? 'idle' : 'limited',
-          printable: false,
-          outline_count: 0,
-          source_selection: null,
-        }
-      : null,
-    mermaid_document: renderer === 'mermaid'
-      ? {
-          mode: text.trim() ? 'rendered' : 'source',
-          render_revision: null,
-          render_status: 'idle',
-          preview_stale: false,
-          viewport: initialMermaidViewport(),
-        }
-      : null,
+    markdown_document:
+      renderer === 'markdown'
+        ? {
+            mode: eligibility === 'full' ? 'rendered' : 'source',
+            eligibility,
+            render_revision: null,
+            render_status: eligibility === 'full' ? 'idle' : 'limited',
+            printable: false,
+            outline_count: 0,
+            source_selection: null,
+          }
+        : null,
+    mermaid_document:
+      renderer === 'mermaid'
+        ? {
+            mode: text.trim() ? 'rendered' : 'source',
+            render_revision: null,
+            render_status: 'idle',
+            preview_stale: false,
+            viewport: initialMermaidViewport(),
+          }
+        : null,
   };
 };
 
@@ -204,25 +252,38 @@ export const createNativeAndroidRestorationGateway = (
         .filter((projection) => projection.source_reference)
         .map((projection) => [projection.source_reference!, projection]),
     );
-    const results = await call('restore_android_sources') as AndroidRestorationResult[];
-    const sessions = await Promise.all(results.map(async (result) => {
-      const source = result.status === 'restored' ? result.source : null;
-      if (!source?.descriptor.restoration_reference) return null;
-      const projection = byReference.get(source.descriptor.restoration_reference);
-      if (!projection || !RESTORABLE_RENDERERS.has(projection.renderer_id.toLowerCase())) return null;
-      try {
-        return await materializeAndroidSource(
-          call,
-          source,
-          projection.renderer_id,
-          'restored',
+    const results = (await call(
+      'restore_android_sources',
+    )) as AndroidRestorationResult[];
+    const sessions = await Promise.all(
+      results.map(async (result) => {
+        const source = result.status === 'restored' ? result.source : null;
+        if (!source?.descriptor.restoration_reference) return null;
+        const projection = byReference.get(
+          source.descriptor.restoration_reference,
         );
-      } catch {
-        return null;
-      }
-    }));
-    return sessions.filter((session): session is ShellSession => session !== null);
+        if (
+          !projection ||
+          !RESTORABLE_RENDERERS.has(projection.renderer_id.toLowerCase())
+        )
+          return null;
+        try {
+          return await materializeAndroidSource(
+            call,
+            source,
+            projection.renderer_id,
+            'restored',
+          );
+        } catch {
+          return null;
+        }
+      }),
+    );
+    return sessions.filter(
+      (session): session is ShellSession => session !== null,
+    );
   },
 });
 
-export const nativeAndroidRestorationGateway = createNativeAndroidRestorationGateway();
+export const nativeAndroidRestorationGateway =
+  createNativeAndroidRestorationGateway();

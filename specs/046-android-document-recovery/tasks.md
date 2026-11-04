@@ -93,3 +93,5 @@ T001-T004 precede implementation. Native contracts/writer (T008-T009/T017) and r
 - [x] T037 Await the newly selected visible draft and completed Add-menu dismissal/focus restoration before native editor input, reuse the readiness contract across controlled New journeys, and retain bounded native/browser focus-failure facts in AndroidDeliveryInstrumentedTest.kt per FR-003/005/006/016.
 
 - [x] T038 Trigger the three unblocked native chooser/Share controls with one premeasured native pointer tap, await actual system-window and returned MainActivity readiness, and preserve strict pending-write/cancellation/receiver/byte assertions plus bounded handoff-failure facts in AndroidDeliveryInstrumentedTest.kt per FR-005/008/013/016.
+
+- [x] T039 Freeze the native post-commit expected buffer only from one coherent current-editor observation with exact semantic source and matching public editing representation; retain existing deadlines and exact native cursor/text assertions, and add bounded phase/expected-selection/failure facts in AndroidDeliveryInstrumentedTest.kt per FR-006/008/016.

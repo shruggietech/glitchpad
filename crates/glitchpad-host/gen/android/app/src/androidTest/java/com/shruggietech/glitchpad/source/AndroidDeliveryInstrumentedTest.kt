@@ -866,17 +866,20 @@ class AndroidDeliveryInstrumentedTest {
     System.out.flush()
     val connection = requireNotNull(connectionReference.get()) { "focused WebView must expose its public native InputConnection" }
     val handler = requireNotNull(handlerReference.get()) { "native InputConnection must expose its input dispatch handler" }
-    waitForNativeEditorState(connection, handler, beforeInputText)
+    waitForNativeEditorState(connection, handler, beforeInputText, "before_native_selection")
     assertTrue("native IME must finish any active composition", onEditorInputThread(connection, handler) { it.finishComposingText() })
     assertTrue("native IME must select the complete semantic source, excluding rendered paragraph markers", onEditorInputThread(connection, handler) { it.setSelection(0, semanticSelectionEnd) })
-    val selectedState = waitForNativeEditorState(connection, handler, beforeInputText, 0, semanticSelectionEnd)
+    val selectedState = waitForNativeEditorState(connection, handler, beforeInputText, "selected_before_commit", 0, semanticSelectionEnd)
     if (browserBefore.getBoolean("edit_context_attached")) {
       waitForCondition(scenario, "(()=>{const editor=document.querySelector('.cm-content[contenteditable=true]');const context=editor&&editor.editContext;return !!context&&context.selectionStart===0&&context.selectionEnd===" + semanticSelectionEnd + ";})()", "native IME selection must reach the actual EditContext before replacement")
     }
     assertTrue("native IME must accept the exact Unicode and multiline text", onEditorInputThread(connection, handler) { it.commitText(text, 1) })
-    val expected = JSONObject.quote(text)
-    waitForCondition(scenario, "(()=>{const editor=document.querySelector('.cm-content[contenteditable=true]');return !!editor && Array.from(editor.querySelectorAll(':scope > .cm-line')).map(line=>line.textContent).join('\\n')===" + expected + ";})()", "the actual editor must display every natively committed character and line")
-    val browserAfter = browserEditorInputSnapshot(scenario)
+    val browserAfter = try {
+      waitForBrowserEditorCommit(scenario, text, target.getString("surface_id"), target.getString("editor_label"))
+    } catch (failure: AssertionError) {
+      captureEditorFocusFailure(scenario, "postcommit_browser_coherence", target, nativeMapping)
+      throw failure
+    }
     val afterInputText = browserAfter.getString("editing_text")
     assertEquals("the actual CodeMirror semantic source must preserve all requested text", text, browserAfter.getString("semantic_text"))
     if (browserAfter.getBoolean("edit_context_attached"))
@@ -886,12 +889,47 @@ class AndroidDeliveryInstrumentedTest {
     // The public editing buffer includes legacy rendered paragraph markers. The
     // committed cursor still belongs after the exact supplied text, before any
     // trailing contenteditable paragraph marker.
-    val committedState = waitForNativeEditorState(connection, handler, afterInputText, text.length, text.length)
+    println("native_editor_input=" + JSONObject().put("phase", "before_committed_wait").put("api_level", Build.VERSION.SDK_INT)
+      .put("expected_native_length", afterInputText.length).put("expected_selection_start", text.length).put("expected_selection_end", text.length)
+      .put("browser_edit_after", browserAfter))
+    System.out.flush()
+    val committedState = try {
+      waitForNativeEditorState(connection, handler, afterInputText, "committed", text.length, text.length)
+    } catch (failure: AssertionError) {
+      captureEditorFocusFailure(scenario, "native_committed_state", target, nativeMapping)
+      throw failure
+    }
     println("native_editor_input=" + JSONObject().put("phase", "native_commit_verified").put("api_level", Build.VERSION.SDK_INT)
       .put("input_path", "WebView.InputConnection.setSelection+commitText").put("selected_state", selectedState)
       .put("committed_state", committedState).put("browser_edit_after", browserAfter).put("visible_exact_text", true).put("committed_utf8_bytes", text.toByteArray(Charsets.UTF_8).size))
     System.out.flush()
     waitForBodyText(scenario, text.lineSequence().first())
+  }
+
+  private fun waitForBrowserEditorCommit(
+    scenario: ActivityScenario<MainActivity>, expected: String, surfaceId: String, editorLabel: String
+  ): JSONObject {
+    // Observe raw DOM and public editing text together before freezing the native
+    // expectation from one coherent, focused current-editor snapshot.
+    val deadline = SystemClock.elapsedRealtime() + 30_000L
+    var latest = JSONObject()
+    while (SystemClock.elapsedRealtime() < deadline) {
+      val observed = runCatching { browserEditorInputSnapshot(scenario) }.getOrElse { JSONObject().put("capture_failed", true) }
+      val semantic = observed.optString("semantic_text")
+      val editing = observed.optString("editing_text")
+      val context = observed.optBoolean("edit_context_attached")
+      if (observed.optBoolean("document_focus") && observed.optBoolean("editor_focus") &&
+        observed.optString("surface_id") == surfaceId && observed.optJSONObject("editor_element")?.optString("label") == editorLabel &&
+        semantic == expected && (if (context) editing == expected else editing.startsWith(expected))) return observed
+      observed.remove("semantic_text")
+      observed.remove("editing_text")
+      latest = observed
+      SystemClock.sleep(100L)
+    }
+    throw AssertionError("postcommit browser editing state must coherently expose the complete exact source before native readback: " +
+      JSONObject().put("phase", "postcommit_browser_coherence").put("expected_semantic_length", expected.length)
+        .put("expected_selection_start", expected.length).put("expected_selection_end", expected.length)
+        .put("expected_surface_id", surfaceId).put("expected_editor_label", editorLabel).put("browser_edit", latest))
   }
 
   private fun browserEditorInputSnapshot(scenario: ActivityScenario<MainActivity>): JSONObject = JSONObject(evaluate(scenario, """
@@ -931,6 +969,7 @@ class AndroidDeliveryInstrumentedTest {
         dom_selection_focus_offset:selection?selection.focusOffset:null,
         semantic_length:semantic.length,editing_length:editing.length,editing_short_code_units:shortCodeUnits(editing),
         inner_text_length:editor?editor.innerText.length:0,line_count:lines.length,br_count:editor?editor.querySelectorAll('br').length:0,
+        bounded_line_layout:lines.slice(0,8).map(line=>{const style=getComputedStyle(line);return {text_length:line.textContent.length,rect:rect(line),display:style.display,visibility:style.visibility,white_space:style.whiteSpace};}),
         trailing_line_empty:lines.length>0&&lines[lines.length-1].textContent.length===0,
         semantic_text:semantic,editing_text:editing
       };
@@ -982,6 +1021,7 @@ class AndroidDeliveryInstrumentedTest {
     connection: android.view.inputmethod.InputConnection,
     handler: android.os.Handler,
     expected: String,
+    phase: String,
     selectionStart: Int? = null,
     selectionEnd: Int? = null
   ): JSONObject {
@@ -991,7 +1031,8 @@ class AndroidDeliveryInstrumentedTest {
       val extracted = onEditorInputThread(connection, handler) {
         it.getExtractedText(android.view.inputmethod.ExtractedTextRequest().apply { hintMaxChars = 16_384; hintMaxLines = 1_024 }, 0)
       }
-      latest = JSONObject().put("available", extracted != null).put("expected_length", expected.length)
+      latest = JSONObject().put("phase", phase).put("available", extracted != null).put("expected_length", expected.length)
+        .put("expected_selection_start", selectionStart ?: JSONObject.NULL).put("expected_selection_end", selectionEnd ?: JSONObject.NULL)
       if (extracted != null) {
         val actual = extracted.text?.toString()
         latest.put("start_offset", extracted.startOffset).put("text_length", actual?.length)

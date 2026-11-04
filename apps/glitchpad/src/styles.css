@@ -1492,3 +1492,5 @@ button:focus-visible,
     background: #fff;
   }
 }
+
+.command-result { position:absolute; z-index:9; inset-block-start:var(--shell-row-height); inset-inline:var(--bb-spacing-control-block); padding:var(--bb-spacing-control-block); border:var(--bb-border-default) solid var(--gl-border); background:var(--gl-panel-raised); color:var(--gl-fg); overflow-wrap:anywhere; }

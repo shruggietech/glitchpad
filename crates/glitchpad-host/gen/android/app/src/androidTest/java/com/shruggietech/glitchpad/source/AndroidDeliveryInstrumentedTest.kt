@@ -10,6 +10,15 @@ import android.net.Uri
 import android.os.SystemClock
 import android.provider.DocumentsContract
 import android.view.View
+import android.view.KeyEvent
+import android.view.accessibility.AccessibilityNodeInfo
+import android.content.pm.ActivityInfo
+import android.graphics.Bitmap
+import android.os.Build
+import androidx.webkit.WebViewCompat
+import java.io.File
+import java.security.MessageDigest
+import org.json.JSONArray
 import android.view.ViewGroup
 import android.webkit.WebView
 import androidx.test.core.app.ActivityScenario
@@ -101,6 +110,460 @@ class AndroidDeliveryInstrumentedTest {
     // This test runs alone because MainActivity owns the Tauri process. Closing
     // it after the flushed evidence marker lets the dedicated runner terminate.
     scenario.close()
+  }
+
+  @Test
+  fun governedMarkdownDeliveryRoutes() {
+    val route = InstrumentationRegistry.getArguments().getString("deliveryAction") ?: throw AssertionError("cold delivery action required")
+    assertTrue("only the governed view/send routes may be selected", route == "view" || route == "send")
+    val cold = grant(documentUri("recovery-corpus.md"))
+    val coldBefore = readBytes(cold)
+    val launch = markdownDeliveryIntent(cold, route)
+    val component = requireNotNull(glitchpadComponent(launch)) { "installed Glitchpad package must resolve the governed cold Markdown route" }
+    val scenario = ActivityScenario.launch<MainActivity>(launch.setComponent(component))
+    verifyDeliveredMarkdownOutcome(scenario, "recovery-corpus.md", "positive")
+    assertTrue("cold delivery must preserve original corpus bytes", coldBefore.contentEquals(readBytes(cold)))
+    for (warmRoute in listOf("view", "send")) {
+      for ((name, outcome) in listOf("recovery-warm-corpus.md" to "positive", "recovery-empty.md" to "empty", "recovery-malformed.md" to "malformed")) {
+        val uri = grant(documentUri(name))
+        val before = readBytes(uri)
+        val intent = markdownDeliveryIntent(uri, warmRoute)
+        assertTrue("installed Glitchpad package must resolve each warm Markdown route", glitchpadComponent(intent) != null)
+        clientContext.startActivity(intent.setComponent(component).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        verifyDeliveredMarkdownOutcome(scenario, name, outcome)
+        assertTrue("warm delivery must preserve original " + outcome + " corpus bytes", before.contentEquals(readBytes(uri)))
+      }
+    }
+    val expectedSource = InstrumentationRegistry.getArguments().getString("expectedSource")
+    assertTrue("full expected source identity must be supplied", expectedSource != null && expectedSource.matches(Regex("[0-9a-f]{40}")))
+    println("markdown_delivery_evidence=" + JSONObject().put("cold_route", if (route == "view") "ACTION_VIEW" else "ACTION_SEND").put("cold_governed_corpus", "pass").put("warm_action_view", "positive_empty_malformed_pass").put("warm_action_send", "positive_empty_malformed_pass").put("source_bytes_unchanged", true).put("original_incident_input_replayed", false).put("source_commit", expectedSource).put("apk_sha256", apkSha256()).put("api_level", Build.VERSION.SDK_INT).toString())
+    System.out.flush()
+    scenario.close()
+  }
+
+  private fun markdownDeliveryIntent(uri: Uri, route: String): Intent = if (route == "view") viewIntent(uri, "text/markdown") else Intent(Intent.ACTION_SEND)
+    .addCategory(Intent.CATEGORY_DEFAULT)
+    .setType("text/markdown")
+    .putExtra(Intent.EXTRA_STREAM, uri)
+    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    .apply { clipData = android.content.ClipData.newRawUri("Governed Markdown fixture", uri) }
+
+  private fun verifyDeliveredMarkdownOutcome(scenario: ActivityScenario<MainActivity>, name: String, outcome: String) {
+    waitForDocumentIdentity(scenario, name)
+    waitForBodyText(scenario, name, "Add document")
+    if (outcome == "positive") {
+      waitForBodyText(scenario, "S046 Markdown corpus", "S046_CORPUS_MARKER", "list item", "code block", "Unicode Ω")
+      waitForCondition(scenario, "!!document.querySelector('.markdown-document h1') && !!document.querySelector('.markdown-document ul') && !!document.querySelector('.markdown-document code') && !!document.querySelector('.markdown-document table')", "governed OS-delivered Markdown must expose actual rendered heading/list/code/table content")
+    } else {
+      waitForCondition(scenario, "!!document.querySelector('.app-shell') && (!!document.querySelector('.cm-content') || Array.from(document.querySelectorAll('.markdown-document')).some(n=>['ready','empty','failed','limited'].includes(n.getAttribute('data-performance-status'))))", "OS-delivered empty/malformed Markdown must terminate in content or actionable source recovery")
+      if (outcome == "empty") waitForBodyText(scenario, "This document is empty.")
+      else {
+        val visibleSource = evaluate(scenario, "document.body.innerText.includes('S046_MALFORMED_MARKER')") == "true"
+        if (!visibleSource) clickControl(scenario, "View source")
+        waitForBodyText(scenario, "S046_MALFORMED_MARKER")
+      }
+    }
+    assertTrue("OS delivery must retain visible Add document recovery/navigation access", JSONObject(evaluate(scenario, "(()=>{const control=document.querySelector('.add-document-trigger');const rect=control.getBoundingClientRect();return {visible:rect.width>=48&&rect.height>=48&&!control.disabled};})()")).getBoolean("visible"))
+  }
+
+  @Test
+  fun standaloneAuthoringAndDiagnosticJourneys() {
+    val scenario = ActivityScenario.launch<MainActivity>(Intent(clientContext, MainActivity::class.java).setAction(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER))
+    waitForBodyText(scenario, "Add document")
+    verifyAddDocumentChoices(scenario)
+    val root = grant(documentUri("fixture-root"))
+    val created = mutableListOf<Uri>()
+    fun destination(type: String, stem: String): Uri {
+      val uri = grant(requireNotNull(DocumentsContract.createDocument(resolver, root, type, stem + "-" + UUID.randomUUID() + if (type == "application/json") ".json" else if (type == "text/markdown") ".md" else ".txt")))
+      created.add(uri)
+      return uri
+    }
+    for ((choice, type, name, text) in listOf(
+      listOf("New Markdown", "text/markdown", "Untitled.md", "# S046 draft\n\nS046_MARKDOWN_BYTES_Ω\n"),
+      listOf("New text file", "text/plain", "Untitled.txt", "S046_TEXT_BYTES_Ω\nsecond line\n")
+    )) {
+      clickControl(scenario, "Add document")
+      clickControl(scenario, choice)
+      waitForBodyText(scenario, name)
+      waitForCondition(scenario, "(()=>{const n=document.querySelector('[data-draft-identity]');if(!n)return false;const r=n.getBoundingClientRect();return r.width>0&&r.height>0&&n.textContent.includes('Unsaved changes');})()", "new draft must have visible identity and unsaved state")
+      replaceEditorText(scenario, text)
+      chooseNative(scenario, Intent.ACTION_CREATE_DOCUMENT, ActivityResult(Activity.RESULT_CANCELED, Intent()), { menuAction(scenario, "Save") }, "Cancelled. Your document and edits remain available.")
+      waitForCondition(scenario, "!!document.querySelector('.cm-content[contenteditable=true]')", "cancelled draft must remain editable")
+      val refused = destination(type, "s046-write-refused")
+      chooseNative(scenario, Intent.ACTION_CREATE_DOCUMENT, chosen(refused), { menuAction(scenario, "Save") }, "The action failed. Your document and edits remain available.")
+      assertEquals("failed native write must not change its empty destination", 0, readBytes(refused).size)
+      val saved = destination(type, "s046-draft")
+      chooseNative(scenario, Intent.ACTION_CREATE_DOCUMENT, chosen(saved), { if (choice == "New text file") keyboardSave(scenario) else menuAction(scenario, "Save") }, "Saved after native verification.")
+      assertTrue("saved draft must match exact expected UTF-8 bytes", text.toByteArray(Charsets.UTF_8).contentEquals(readBytes(saved)))
+      closeCurrentDocument(scenario)
+      openFromAddDocument(scenario, saved)
+      waitForBodyText(scenario, text.substringAfterLast("S046_", text).lineSequence().first().trim())
+    }
+    val corpus = grant(documentUri("recovery-corpus.md"))
+    openFromAddDocument(scenario, corpus)
+    waitForBodyText(scenario, "S046 Markdown corpus", "S046_CORPUS_MARKER", "list item", "code block", "Unicode")
+    waitForCondition(scenario, "!!document.querySelector('.markdown-document h1') && !!document.querySelector('.markdown-document table')", "native Open must produce actual Markdown heading and table")
+    verifyMarkdownFailures(scenario, corpus)
+    for (name in listOf("recovery-empty.md", "recovery-malformed.md")) {
+      openFromAddDocument(scenario, grant(documentUri(name)))
+      waitForBodyText(scenario, name, "Add document")
+      waitForCondition(scenario, "!!document.querySelector('.app-shell') && (!!document.querySelector('.cm-content') || Array.from(document.querySelectorAll('.markdown-document')).some(n=>['ready','empty','failed','limited'].includes(n.getAttribute('data-performance-status'))))", "empty/malformed Markdown must reach content or actionable terminal fallback")
+    }
+    val original = grant(documentUri("recovery-readonly.md"))
+    val before = readBytes(original)
+    openFromAddDocument(scenario, original)
+    waitForBodyText(scenario, "S046_ORIGINAL_UNCHANGED")
+    menuAction(scenario, "Edit a copy")
+    waitForBodyText(scenario, "Copy of recovery-readonly.md")
+    val copyText = "# S046 edited copy\n\nS046_COPY_BYTES\n"
+    replaceEditorText(scenario, copyText)
+    val copy = destination("text/markdown", "s046-copy")
+    chooseNative(scenario, Intent.ACTION_CREATE_DOCUMENT, chosen(copy), { menuAction(scenario, "Save") }, "Saved after native verification.")
+    assertTrue("read-only original must survive copy editing and save", before.contentEquals(readBytes(original)))
+    assertTrue("copy destination must contain the exact edited bytes", copyText.toByteArray(Charsets.UTF_8).contentEquals(readBytes(copy)))
+    verifyDirtyCloseAndPendingRace(scenario, destination("text/plain", "s046-dirty-close"))
+    verifySharedImageActions(scenario)
+    verifyDiagnosticTasks(scenario, destination("application/json", "s046-diagnostic"), destination("application/json", "s046-write-refused-diagnostic"))
+    println("recovery_evidence=launcher:pass,new_markdown:pass,new_text:pass,native_open:pass,exact_save_reopen:pass,keyboard_ctrl_s_receipt_reopen:pass,cancel:pass,failed_write:pass,readonly_copy:pass,dirty_close_pending:pass,diagnostic_save_share:pass,menu_local_zoom:pass,api:" + Build.VERSION.SDK_INT)
+    System.out.flush()
+    saveScreenshot("s046-authoring.png")
+    created.forEach { runCatching { DocumentsContract.deleteDocument(resolver, it) } }
+    scenario.close()
+  }
+
+  @Test
+  fun rootFailureRetainsDraft() {
+    val scenario = ActivityScenario.launch<MainActivity>(Intent(clientContext, MainActivity::class.java).setAction(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER))
+    waitForBodyText(scenario, "Add document")
+    clickControl(scenario, "Add document"); clickControl(scenario, "New Markdown")
+    replaceEditorText(scenario, "# S046 root recovery\n\nS046_ROOT_DRAFT_RETAINED_Ω\n")
+    injectRecoveryFailure(scenario, "root")
+    waitForBodyText(scenario, "Glitchpad could not continue", "application_render_failed", "Restart Glitchpad")
+    clickControl(scenario, "Restart Glitchpad")
+    waitForBodyText(scenario, "Recover Untitled.md?")
+    clickControl(scenario, "Recover")
+    waitForBodyText(scenario, "S046_ROOT_DRAFT_RETAINED_Ω", "Add document")
+    waitForCondition(scenario, "!!document.querySelector('.cm-content[contenteditable=true]')", "root restart must retain the editable source without fabricated provider authority")
+    menuAction(scenario, "Diagnostics")
+    waitForBodyText(scenario, "Redacted diagnostic preview ready")
+    val preview = stringValue(evaluate(scenario, "document.querySelector('.diagnostic-preview').textContent"))
+    assertTrue("root failure must survive restart in bounded diagnostic evidence", preview.contains("application_render_failed"))
+    val expectedSource = InstrumentationRegistry.getArguments().getString("expectedSource")
+    assertEquals(expectedSource, JSONObject(preview).getJSONObject("environment").getString("build_commit"))
+    saveScreenshot("s046-root-recovery.png")
+    println("root_recovery_evidence=" + JSONObject().put("root_fallback", "pass").put("draft_retained", "pass").put("diagnostic_event_retained", "pass").put("source_commit", expectedSource).put("apk_sha256", apkSha256()).put("recovery_probe_variant", "compiled_test_only").put("api_level", Build.VERSION.SDK_INT).toString())
+    System.out.flush()
+    scenario.close()
+  }
+
+  @Test
+  fun addDocumentAtMaximumFontScale() {
+    assertTrue("maximum-font row requires Android14+", Build.VERSION.SDK_INT >= 34)
+    assertTrue("system font scale must actually be 200%", clientContext.resources.configuration.fontScale >= 1.99f)
+    val scenario = ActivityScenario.launch<MainActivity>(Intent(clientContext, MainActivity::class.java).setAction(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER))
+    waitForBodyText(scenario, "Add document")
+    verifyAddDocumentChoices(scenario)
+    scenario.onActivity { it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE }
+    waitForCondition(scenario, "window.innerWidth>window.innerHeight", "actual landscape viewport must be observed")
+    waitForBodyText(scenario, "Add document")
+    verifyAddDocumentChoices(scenario)
+    saveScreenshot("s046-font-scale.png")
+    println("recovery_font_evidence=font_scale:2.0,portrait:pass,landscape:pass,all_choices_reachable:pass,targets_48dp:pass,api:" + Build.VERSION.SDK_INT)
+    System.out.flush()
+    scenario.close()
+  }
+
+  @Test
+  fun draftRecoveryAcrossProcessBoundary() {
+    val phase = InstrumentationRegistry.getArguments().getString("recoveryPhase") ?: throw AssertionError("recovery phase required")
+    val text = "# S046 retained draft\n\nS046_PROCESS_RECOVERY_Ω\n"
+    val scenario = ActivityScenario.launch<MainActivity>(Intent(clientContext, MainActivity::class.java).setAction(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER))
+    if (phase == "seed") {
+      waitForBodyText(scenario, "Add document")
+      clickControl(scenario, "Add document")
+      clickControl(scenario, "New Markdown")
+      replaceEditorText(scenario, text)
+      // The existing bounded store snapshots after two seconds idle. Native
+      // lifecycle flush is exercised again when the activity closes below.
+      SystemClock.sleep(3000L)
+      println("draft_recovery_seed=pass,api:" + Build.VERSION.SDK_INT)
+    } else {
+      assertEquals("verify", phase)
+      waitForBodyText(scenario, "Recover Untitled.md?")
+      clickControl(scenario, "Recover")
+      waitForBodyText(scenario, "S046_PROCESS_RECOVERY_Ω")
+      waitForCondition(scenario, "!!document.querySelector('.cm-content[contenteditable=true]')", "recovered Markdown draft must remain editable without provider authority")
+      println("draft_recovery_verify=pass,api:" + Build.VERSION.SDK_INT)
+    }
+    System.out.flush()
+    scenario.close()
+  }
+
+  private fun verifyAddDocumentChoices(scenario: ActivityScenario<MainActivity>) {
+    assertAddDocumentReachability(scenario, null)
+    clickControl(scenario, "Add document")
+    waitForBodyText(scenario, "New Markdown", "New text file", "Open file", "Close Add document")
+    val initial = JSONObject(evaluate(scenario, "(()=>{const menu=document.querySelector('[aria-label=\"Add document choices\"]');return {count:menu.querySelectorAll('button').length,expanded:document.querySelector('.add-document-trigger').getAttribute('aria-expanded')==='true'};})()"))
+    assertEquals("all four Add document menu items must be exposed", 4, initial.getInt("count"))
+    assertTrue("expanded state must be exposed", initial.getBoolean("expanded"))
+    // A bounded popup may scroll vertically on short or maximum-font viewports.
+    // Each real control must retain its whole target and receive input after
+    // local scrolling; the persistent trigger must remain reachable throughout.
+    for (index in 1..4) assertAddDocumentReachability(scenario, ".add-document-menu button:nth-of-type(" + index + ")")
+    clickControl(scenario, "Close Add document")
+    waitForCondition(scenario, "!document.querySelector('[aria-label=\"Add document choices\"]') && document.activeElement===document.querySelector('.add-document-trigger')", "Close must restore Add document focus")
+    assertAddDocumentReachability(scenario, null)
+    clickControl(scenario, "Add document")
+    instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
+    waitForCondition(scenario, "!document.querySelector('[aria-label=\"Add document choices\"]') && !!document.querySelector('.app-shell')", "Android Back must dismiss exactly the Add document layer")
+    clickControl(scenario, "Add document")
+    assertEquals("true", evaluate(scenario, "(()=>{const scrim=document.querySelector('.add-document-scrim');if(!scrim)return false;const event=document.createEvent('Event');event.initEvent('pointerdown',true,true);scrim.dispatchEvent(event);return true;})()"))
+    waitForCondition(scenario, "!document.querySelector('[aria-label=\"Add document choices\"]')", "outside tap must dismiss Add document")
+    assertAddDocumentReachability(scenario, null)
+  }
+
+  private fun assertAddDocumentReachability(scenario: ActivityScenario<MainActivity>, choiceSelector: String?) {
+    val selector = JSONObject.quote(choiceSelector ?: ".add-document-trigger")
+    val script = """
+      (()=>{
+        const element=document.querySelector(SELECTOR);
+        element.scrollIntoView({block:'nearest',inline:'nearest'});
+        const viewport=window.visualViewport;
+        const visible={left:viewport?viewport.offsetLeft:0,top:viewport?viewport.offsetTop:0,width:viewport?viewport.width:window.innerWidth,height:viewport?viewport.height:window.innerHeight};
+        const measure=(control)=>{
+          const rect=control.getBoundingClientRect();
+          const menu=control.closest('.add-document-menu');
+          const panel=menu?menu.getBoundingClientRect():null;
+          const clip={left:Math.max(rect.left,panel?panel.left:-Infinity,visible.left),right:Math.min(rect.right,panel?panel.right:Infinity,visible.left+visible.width),top:Math.max(rect.top,panel?panel.top:-Infinity,visible.top),bottom:Math.min(rect.bottom,panel?panel.bottom:Infinity,visible.top+visible.height)};
+          const hit=document.elementFromPoint((clip.left+clip.right)/2,(clip.top+clip.bottom)/2);
+          return {label:control.textContent.trim(),width:rect.width,height:rect.height,left:rect.left,right:rect.right,top:rect.top,bottom:rect.bottom,visibleWidth:clip.right-clip.left,visibleHeight:clip.bottom-clip.top,hit:hit===control||control.contains(hit),disabled:control.disabled};
+        };
+        const surface=document.querySelector('.document-surface');
+        const rect=surface.getBoundingClientRect();
+        return {viewport:visible,action:measure(element),trigger:measure(document.querySelector('.add-document-trigger')),document:{width:rect.width,height:rect.height,bottom:rect.bottom},paddingBottom:Number.parseFloat(getComputedStyle(surface).paddingBottom)};
+      })()
+    """.trimIndent().replace("SELECTOR", selector)
+    val measured = JSONObject(evaluate(scenario, script))
+    val viewport = measured.getJSONObject("viewport")
+    for (kind in listOf("action", "trigger")) {
+      val control = measured.getJSONObject(kind)
+      val label = control.getString("label")
+      assertTrue(label + " must retain a 48dp-equivalent target", control.getDouble("width") >= 48.0 && control.getDouble("height") >= 48.0)
+      assertTrue(label + " must be fully inside the visible viewport after local menu scrolling", control.getDouble("left") >= viewport.getDouble("left") - 0.6 && control.getDouble("right") <= viewport.getDouble("left") + viewport.getDouble("width") + 0.6 && control.getDouble("top") >= viewport.getDouble("top") - 0.6 && control.getDouble("bottom") <= viewport.getDouble("top") + viewport.getDouble("height") + 0.6)
+      assertTrue(label + " must retain a whole unclipped target", control.getDouble("visibleWidth") >= 48.0 && control.getDouble("visibleHeight") >= 48.0)
+      assertTrue(label + " must receive input at its visible center", control.getBoolean("hit"))
+      assertTrue(label + " must be enabled", !control.getBoolean("disabled"))
+    }
+    val surface = measured.getJSONObject("document")
+    assertTrue("real document surface must keep positive area", surface.getDouble("width") > 0 && surface.getDouble("height") > 0)
+    if (choiceSelector == null) assertTrue("closed-state document clearance must reserve the real floating target", measured.getDouble("paddingBottom") + 0.6 >= surface.getDouble("bottom") - measured.getJSONObject("trigger").getDouble("top"))
+    println("add_document_geometry=" + measured.put("stage", if (choiceSelector == null) "closed" else "scrolled_choice").toString())
+  }
+
+  private fun verifyMarkdownFailures(scenario: ActivityScenario<MainActivity>, corpus: Uri) {
+    for (stage in listOf("worker", "parser", "projection")) {
+      injectRecoveryFailure(scenario, stage)
+      waitForBodyText(scenario, "View source")
+      clickControl(scenario, "View source")
+      waitForCondition(scenario, "!!document.querySelector('.cm-content')", "injected " + stage + " failure must retain source access")
+      waitForBodyText(scenario, "S046_CORPUS_MARKER", "Retry preview")
+      clickControl(scenario, "Retry preview")
+      waitForCondition(scenario, "!!document.querySelector('.markdown-document h1') && !!document.querySelector('.markdown-document table')", "explicit retry must recover after one injected " + stage + " failure")
+      openFromAddDocument(scenario, grant(documentUri("resolver-warm")))
+      waitForBodyText(scenario, "S031_WARM_MARKER_7C9D", "Add document")
+      openFromAddDocument(scenario, corpus)
+      waitForCondition(scenario, "!!document.querySelector('.markdown-document h1')", "another document and return navigation must remain usable")
+    }
+  }
+
+  private fun injectRecoveryFailure(scenario: ActivityScenario<MainActivity>, stage: String) {
+    assertEquals("true", evaluate(scenario, "(()=>{window.dispatchEvent(new CustomEvent('glitchpad:test-recovery',{detail:{stage:" + JSONObject.quote(stage) + "}}));return true;})()"))
+  }
+
+  private fun verifyDirtyCloseAndPendingRace(scenario: ActivityScenario<MainActivity>, destination: Uri) {
+    clickControl(scenario, "Add document"); clickControl(scenario, "New text file")
+    replaceEditorText(scenario, "S046_DIRTY_CLOSE_BYTES\n")
+    assertEquals("true", evaluate(scenario, "(()=>{document.querySelector('.app-shell').dispatchEvent(new KeyboardEvent('keydown',{key:'w',ctrlKey:true,bubbles:true}));return true;})()"))
+    waitForBodyText(scenario, "Unsaved changes in Untitled.txt", "No content has been discarded.")
+    clickControl(scenario, "Cancel")
+    waitForCondition(scenario, "!document.querySelector('.resolution-dialog') && !!document.querySelector('.cm-content[contenteditable=true]')", "dirty close cancellation must retain the draft")
+    assertEquals("true", evaluate(scenario, "(()=>{document.querySelector('.app-shell').dispatchEvent(new KeyboardEvent('keydown',{key:'w',ctrlKey:true,bubbles:true}));return true;})()"))
+    waitForBodyText(scenario, "Unsaved changes in Untitled.txt")
+    val monitor = instrumentation.addMonitor(IntentFilter(Intent.ACTION_CREATE_DOCUMENT).apply { addCategory(Intent.CATEGORY_OPENABLE); addDataType("*/*") }, null, false)
+    try {
+      clickControl(scenario, "Save As")
+      waitForCondition(scenario, "Array.from(document.querySelectorAll('.resolution-dialog button')).every(b=>b.disabled)", "pending native Save must disable Discard/Close decisions")
+      assertEquals("true", evaluate(scenario, "(()=>{const discard=Array.from(document.querySelectorAll('.resolution-dialog button')).find(b=>b.textContent.trim()==='Discard');if(!discard||!discard.disabled)return false;discard.click();return !!document.querySelector('.cm-content');})()"))
+      instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
+      waitForBodyText(scenario, "Save cancelled. Edits remain open.")
+      assertTrue("one native create chooser must own the pending save", monitor.hits == 1)
+    } finally { instrumentation.removeMonitor(monitor) }
+    waitForBodyText(scenario, "Unsaved changes in Untitled.txt")
+    clickControl(scenario, "Cancel")
+    chooseNative(scenario, Intent.ACTION_CREATE_DOCUMENT, chosen(destination), { menuAction(scenario, "Save") }, "Saved after native verification.")
+    assertTrue("pending Discard attempt must not lose draft bytes", "S046_DIRTY_CLOSE_BYTES\n".toByteArray(Charsets.UTF_8).contentEquals(readBytes(destination)))
+  }
+
+  private fun verifySharedImageActions(scenario: ActivityScenario<MainActivity>) {
+    openFromAddDocument(scenario, grant(documentUri("original.png")))
+    waitForImagePixels(scenario, "original.png")
+    menuAction(scenario, "Zoom in")
+    waitForCondition(scenario, "document.querySelector('output[aria-label=\"Image zoom\"]').textContent==='125%'", "menu Zoom must change the actual image viewport")
+    clickControl(scenario, "Zoom in")
+    waitForCondition(scenario, "document.querySelector('output[aria-label=\"Image zoom\"]').textContent==='156%'", "local Zoom must continue the same viewport state")
+    menuAction(scenario, "Fit")
+    waitForCondition(scenario, "document.querySelector('output[aria-label=\"Image zoom\"]').textContent==='100%'", "menu Fit must reset the same viewport")
+  }
+
+  private fun verifyDiagnosticTasks(scenario: ActivityScenario<MainActivity>, destination: Uri, refused: Uri) {
+    menuAction(scenario, "Diagnostics")
+    waitForBodyText(scenario, "Redacted diagnostic preview ready", "Save previewed bundle", "Share previewed bundle")
+    val frozen = stringValue(evaluate(scenario, "document.querySelector('.diagnostic-preview').textContent"))
+    val bundle = JSONObject(frozen)
+    val environment = bundle.getJSONObject("environment")
+    val native = bundle.getJSONObject("native_environment")
+    val packageInfo = clientContext.packageManager.getPackageInfo(TARGET_PACKAGE, 0)
+    assertEquals("preview version must match installed APK", packageInfo.versionName, environment.getString("product_version"))
+    val expectedSource = InstrumentationRegistry.getArguments().getString("expectedSource")
+    assertTrue("full expected source identity must be supplied", expectedSource != null && expectedSource.matches(Regex("[0-9a-f]{40}")))
+    assertEquals("preview source must match built candidate", expectedSource, environment.getString("build_commit"))
+    assertEquals(Build.VERSION.SDK_INT, native.getInt("api_level"))
+    val webview = WebViewCompat.getCurrentWebViewPackage(clientContext)
+    if (webview == null) assertTrue("unavailable WebView identity must be explicit", native.isNull("webview_version"))
+    else { assertEquals(webview.packageName, native.getString("webview_package")); assertEquals(webview.versionName, native.getString("webview_version")) }
+    for (reason in listOf("markdown_worker_failed", "markdown_parse_failed", "markdown_projection_failed")) assertTrue("actual injected failure must be in the frozen bundle: " + reason, frozen.contains(reason))
+    assertTrue("default diagnostic preview must omit document bytes/names/provider URIs", !frozen.contains("S046_") && !frozen.contains("content://") && !frozen.contains("recovery-corpus.md"))
+    chooseNative(scenario, Intent.ACTION_CREATE_DOCUMENT, ActivityResult(Activity.RESULT_CANCELED, Intent()), { clickControl(scenario, "Save previewed bundle") }, "Cancelled. The preview is retained.")
+    chooseNative(scenario, Intent.ACTION_CREATE_DOCUMENT, chosen(refused), { clickControl(scenario, "Save previewed bundle") }, "Export failed. The exact preview is retained")
+    assertEquals("cancel/failure must preserve frozen preview", frozen, stringValue(evaluate(scenario, "document.querySelector('.diagnostic-preview').textContent")))
+    chooseNative(scenario, Intent.ACTION_CREATE_DOCUMENT, chosen(destination), { clickControl(scenario, "Save previewed bundle") }, "Diagnostic bundle saved and verified.")
+    assertTrue("saved diagnostic JSON bytes must equal exact frozen preview", frozen.toByteArray(Charsets.UTF_8).contentEquals(readBytes(destination)))
+    resolver.call(FixtureGrantProvider.COMMAND_URI, "clear_share_result", null, null)
+    clickControl(scenario, "Share previewed bundle")
+    clickNativeText("Glitchpad diagnostic fixture", false)
+    instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
+    waitForBodyText(scenario, "Cancelled. The preview is retained.")
+    assertEquals("Share cancellation must retain the exact preview", frozen, stringValue(evaluate(scenario, "document.querySelector('.diagnostic-preview').textContent")))
+    clickControl(scenario, "Share previewed bundle")
+    clickNativeText("Glitchpad diagnostic fixture")
+    val deadline = SystemClock.elapsedRealtime() + 30_000L
+    var received = resolver.call(FixtureGrantProvider.COMMAND_URI, "share_result", null, null)
+    while (SystemClock.elapsedRealtime() < deadline && received?.getString("json") == null) { SystemClock.sleep(100L); received = resolver.call(FixtureGrantProvider.COMMAND_URI, "share_result", null, null) }
+    assertEquals("actual receiving activity must read the frozen JSON", frozen, received?.getString("json"))
+    assertTrue("receiver must have a temporary read grant", received?.getBoolean("read_granted") == true)
+    waitForBodyText(scenario, "Shared with the system. Recipient delivery is unconfirmed.")
+    println("recovery_runtime_evidence=" + JSONObject().put("apk_sha256", apkSha256()).put("source_commit", expectedSource).put("package", TARGET_PACKAGE).put("product_version", packageInfo.versionName).put("evidence_class", "hosted_debug_instrumentation").put("signed_release_bytes_tested", false).put("recovery_probe_variant", "compiled_test_only").put("native_environment", native).put("font_scale", clientContext.resources.configuration.fontScale).toString())
+    clickControl(scenario, "Close diagnostics")
+  }
+
+  private fun chooseNative(scenario: ActivityScenario<MainActivity>, action: String, result: ActivityResult, trigger: () -> Unit, vararg expected: String) {
+    val filter = IntentFilter(action).apply { addCategory(Intent.CATEGORY_OPENABLE); addDataType("*/*") }
+    val monitor = instrumentation.addMonitor(filter, result, true)
+    try { trigger(); waitForBodyText(scenario, *expected); assertEquals("native chooser must be invoked exactly once", 1, monitor.hits) }
+    finally { instrumentation.removeMonitor(monitor) }
+  }
+
+  private fun openFromAddDocument(scenario: ActivityScenario<MainActivity>, uri: Uri) {
+    val expectedName = resolver.query(uri, arrayOf(DocumentsContract.Document.COLUMN_DISPLAY_NAME), null, null, null).use { cursor ->
+      assertTrue("controlled Open fixture must expose its display name", cursor != null && cursor.moveToFirst())
+      requireNotNull(cursor).getString(0)
+    }
+    val monitor = instrumentation.addMonitor(IntentFilter(Intent.ACTION_OPEN_DOCUMENT).apply { addCategory(Intent.CATEGORY_OPENABLE); addDataType("*/*") }, chosen(uri), true)
+    try {
+      clickControl(scenario, "Add document"); clickControl(scenario, "Open file")
+      waitForCondition(scenario, "!document.querySelector('[aria-label=\"Add document choices\"]')", "Open selection must dismiss Add document")
+      val deadline = SystemClock.elapsedRealtime() + 15_000L
+      while (monitor.hits == 0 && SystemClock.elapsedRealtime() < deadline) SystemClock.sleep(50L)
+      assertEquals("Open must invoke the native document picker once", 1, monitor.hits)
+      waitForDocumentIdentity(scenario, expectedName)
+    } finally { instrumentation.removeMonitor(monitor) }
+  }
+
+  private fun waitForDocumentIdentity(scenario: ActivityScenario<MainActivity>, expectedName: String) {
+    val expected = JSONObject.quote(expectedName)
+    val script = """
+      (()=>{
+        const surface=document.querySelector('.document-surface');
+        if(!surface)return false;
+        let name=surface.getAttribute('aria-label');
+        if(!name){
+          const labelledBy=surface.getAttribute('aria-labelledby');
+          const tab=labelledBy?document.getElementById(labelledBy):null;
+          const label=tab?tab.querySelector('.tab-name'):null;
+          name=label?label.textContent:null;
+        }
+        return name===EXPECTED;
+      })()
+    """.trimIndent().replace("EXPECTED", expected)
+    waitForCondition(scenario, script, "the active document surface must own the expected delivery identity")
+  }
+
+  private fun closeCurrentDocument(scenario: ActivityScenario<MainActivity>) {
+    val current = stringValue(evaluate(scenario, "document.querySelector('.document-surface').id"))
+    assertEquals("true", evaluate(scenario, "(()=>{document.querySelector('.app-shell').dispatchEvent(new KeyboardEvent('keydown',{key:'w',ctrlKey:true,bubbles:true}));return true;})()"))
+    waitForCondition(scenario, "!document.querySelector('.resolution-dialog') && document.querySelector('.document-surface').id!==" + JSONObject.quote(current), "saved document must close before native reopen")
+  }
+
+  private fun menuAction(scenario: ActivityScenario<MainActivity>, name: String) { clickControl(scenario, "Menu"); clickControl(scenario, name, "[role=menuitem]") }
+
+  private fun clickControl(scenario: ActivityScenario<MainActivity>, name: String, selector: String = "button") {
+    val nameLiteral = JSONObject.quote(name)
+    val selectorLiteral = JSONObject.quote(selector)
+    waitForCondition(scenario, "Array.from(document.querySelectorAll(" + selectorLiteral + ")).some(b=>!b.disabled&&(b.getAttribute('aria-label')||(b.querySelector('span')?b.querySelector('span').textContent:b.textContent)).trim()===" + nameLiteral + ")", "named actual-app control must be enabled: " + name)
+    assertEquals("actual-app control must be clicked once", "true", evaluate(scenario, "(()=>{const button=Array.from(document.querySelectorAll(" + selectorLiteral + ")).find(b=>!b.disabled&&(b.getAttribute('aria-label')||(b.querySelector('span')?b.querySelector('span').textContent:b.textContent)).trim()===" + nameLiteral + ");if(!button)return false;button.click();return true;})()"))
+  }
+
+  private fun keyboardSave(scenario: ActivityScenario<MainActivity>) {
+    scenario.onActivity { activity -> requireNotNull(findWebView(activity.window.decorView)).requestFocus() }
+    assertEquals("actual editor must hold DOM focus before keyboard Save", "true", evaluate(scenario, "(()=>{const editor=document.querySelector('.cm-content[contenteditable=true]');if(!editor)return false;editor.focus();return document.activeElement===editor;})()"))
+    instrumentation.waitForIdleSync()
+    val downTime = SystemClock.uptimeMillis()
+    instrumentation.sendKeySync(KeyEvent(downTime, downTime, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_S, 0, KeyEvent.META_CTRL_ON))
+    instrumentation.sendKeySync(KeyEvent(downTime, SystemClock.uptimeMillis(), KeyEvent.ACTION_UP, KeyEvent.KEYCODE_S, 0, KeyEvent.META_CTRL_ON))
+  }
+
+  private fun replaceEditorText(scenario: ActivityScenario<MainActivity>, text: String) {
+    waitForCondition(scenario, "!!document.querySelector('.cm-content[contenteditable=true]')", "draft must expose the actual editable surface")
+    assertEquals("browser editing must insert actual document content", "true", evaluate(scenario, "(()=>{const editor=document.querySelector('.cm-content[contenteditable=true]');editor.focus();document.execCommand('selectAll',false,null);return document.execCommand('insertText',false," + JSONObject.quote(text) + ");})()"))
+    waitForBodyText(scenario, text.lineSequence().first())
+  }
+
+  private fun waitForCondition(scenario: ActivityScenario<MainActivity>, script: String, reason: String) {
+    val deadline = SystemClock.elapsedRealtime() + 30_000L
+    while (SystemClock.elapsedRealtime() < deadline) { if (runCatching { evaluate(scenario, script) }.getOrDefault("false") == "true") return; SystemClock.sleep(100L) }
+    throw AssertionError(reason)
+  }
+
+  private fun clickNativeText(expected: String, click: Boolean = true) {
+    val deadline = SystemClock.elapsedRealtime() + 30_000L
+    while (SystemClock.elapsedRealtime() < deadline) {
+      fun visit(node: AccessibilityNodeInfo?): Boolean {
+        if (node == null) return false
+        if (node.text?.toString()?.contains(expected) == true || node.contentDescription?.toString()?.contains(expected) == true) {
+          if (!click) return true
+          var target: AccessibilityNodeInfo? = node
+          while (target != null) { if (target.isClickable && target.performAction(AccessibilityNodeInfo.ACTION_CLICK)) return true; target = target.parent }
+        }
+        for (index in 0 until node.childCount) if (visit(node.getChild(index))) return true
+        return false
+      }
+      if (visit(instrumentation.uiAutomation.rootInActiveWindow)) return
+      SystemClock.sleep(100L)
+    }
+    throw AssertionError("native chooser must expose the controlled receiving app")
+  }
+
+  private fun chosen(uri: Uri) = ActivityResult(Activity.RESULT_OK, Intent().setData(uri).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION))
+  private fun readBytes(uri: Uri) = resolver.openInputStream(uri)!!.use { it.readBytes() }
+  private fun stringValue(json: String) = JSONArray("[" + json + "]").getString(0)
+  private fun apkSha256(): String {
+    val digest = MessageDigest.getInstance("SHA-256")
+    File(clientContext.applicationInfo.sourceDir).inputStream().use { input -> val bytes = ByteArray(65536); var count = input.read(bytes); while (count != -1) { digest.update(bytes, 0, count); count = input.read(bytes) } }
+    return digest.digest().joinToString("") { "%02x".format(it.toInt() and 255) }
+  }
+  private fun saveScreenshot(name: String) {
+    val bitmap = instrumentation.uiAutomation.takeScreenshot() ?: return
+    try { clientContext.openFileOutput(name, 0).use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) } } finally { bitmap.recycle() }
   }
 
   private fun viewIntent(uri: Uri, mediaType: String): Intent =
@@ -197,7 +660,7 @@ class AndroidDeliveryInstrumentedTest {
         latch.countDown()
       }
     }
-    return if (latch.await(2, TimeUnit.SECONDS)) result.get() else null
+    return if (latch.await(2, TimeUnit.SECONDS)) runCatching { stringValue(result.get()) }.getOrNull() else null
   }
 
   private fun evaluate(scenario: ActivityScenario<MainActivity>, script: String): String {

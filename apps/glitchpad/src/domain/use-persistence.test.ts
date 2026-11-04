@@ -4,6 +4,7 @@ import { initialSessions } from '../test/fixtures';
 import { defaultPreferences, type SessionState } from './persistence';
 import type { PersistenceGateway } from './persistence-gateway';
 import { usePersistence } from './use-persistence';
+import { recordFailure } from './diagnostic-failures';
 
 const emptySession: SessionState = {
   schema_version: 1,
@@ -11,33 +12,150 @@ const emptySession: SessionState = {
   sessions: [],
 };
 
-const gateway = (overrides: Partial<PersistenceGateway> = {}): PersistenceGateway => ({
-  loadPreferences: vi.fn().mockResolvedValue({ status: 'loaded', value: defaultPreferences(), warning_code: null }),
+const gateway = (
+  overrides: Partial<PersistenceGateway> = {},
+): PersistenceGateway => ({
+  loadPreferences: vi
+    .fn()
+    .mockResolvedValue({
+      status: 'loaded',
+      value: defaultPreferences(),
+      warning_code: null,
+    }),
   persistPreferences: vi.fn().mockResolvedValue(undefined),
-  loadSession: vi.fn().mockResolvedValue({ status: 'defaulted', value: emptySession, warning_code: null }),
+  loadSession: vi
+    .fn()
+    .mockResolvedValue({
+      status: 'defaulted',
+      value: emptySession,
+      warning_code: null,
+    }),
   persistSession: vi.fn().mockResolvedValue(undefined),
   appendDiagnostic: vi.fn().mockResolvedValue(undefined),
-  previewDiagnostics: vi.fn().mockResolvedValue({ status: 'defaulted', value: { schema_version: 1, generated_unix_ms: 1, environment: { product_version: '0.0.0', specification_version: '0.0.0', platform: 'unknown', architecture: 'unknown', webview_version: null, core_version: '0.0.0', build_commit: null }, events: [] }, warning_code: null }),
+  previewDiagnostics: vi
+    .fn()
+    .mockResolvedValue({
+      status: 'defaulted',
+      value: {
+        schema_version: 1,
+        generated_unix_ms: 1,
+        environment: {
+          product_version: '0.0.0',
+          specification_version: '0.0.0',
+          platform: 'unknown',
+          architecture: 'unknown',
+          webview_version: null,
+          core_version: '0.0.0',
+          build_commit: null,
+        },
+        events: [],
+      },
+      warning_code: null,
+    }),
   reset: vi.fn().mockResolvedValue(false),
   ...overrides,
 });
 
 describe('usePersistence', () => {
+  it('clears captured fallback diagnostics after native reset while retaining newer failures', async () => {
+    recordFailure('markdown', 'projection', 'markdown_projection_failed');
+    let finishReset!: (value: boolean) => void;
+    const persistence = gateway({
+      reset: vi.fn(
+        () =>
+          new Promise<boolean>((resolve) => {
+            finishReset = resolve;
+          }),
+      ),
+    });
+    const { result } = renderHook(() =>
+      usePersistence([], null, 'closed', persistence),
+    );
+    await act(async () => {
+      await Promise.resolve();
+    });
+    const before = await result.current.previewDiagnostics();
+    expect(
+      before.events.some(
+        (event) => event.error_code === 'markdown_projection_failed',
+      ),
+    ).toBe(true);
+    let clearing: Promise<void> | undefined;
+    act(() => {
+      clearing = result.current.reset('diagnostics');
+    });
+    await waitFor(() =>
+      expect(persistence.reset).toHaveBeenCalledWith('diagnostics'),
+    );
+    recordFailure('source', 'delivery', 'source_delivery_failed');
+    await act(async () => {
+      finishReset(true);
+      await clearing;
+    });
+    const after = await result.current.previewDiagnostics();
+    expect(
+      after.events.some(
+        (event) => event.error_code === 'markdown_projection_failed',
+      ),
+    ).toBe(false);
+    expect(
+      after.events.some(
+        (event) => event.error_code === 'source_delivery_failed',
+      ),
+    ).toBe(true);
+  });
+
+  it('retains fallback diagnostic evidence after rejected native Clear', async () => {
+    recordFailure('image', 'render', 'image_render_failed');
+    const persistence = gateway({
+      reset: vi.fn().mockRejectedValue(new Error('clear refused')),
+    });
+    const { result } = renderHook(() =>
+      usePersistence([], null, 'closed', persistence),
+    );
+    await act(async () => {
+      await Promise.resolve();
+    });
+    const before = await result.current.previewDiagnostics();
+    await act(async () => {
+      await expect(result.current.reset('diagnostics')).rejects.toThrow(
+        'clear refused',
+      );
+    });
+    expect((await result.current.previewDiagnostics()).events).toEqual(
+      before.events,
+    );
+  });
   it('loads preferences and coalesces persistence away from startup', async () => {
     vi.useFakeTimers();
     try {
       const persistence = gateway({
         loadPreferences: vi.fn().mockResolvedValue({
-          status: 'loaded', value: { ...defaultPreferences(), theme: 'dark' }, warning_code: null,
+          status: 'loaded',
+          value: { ...defaultPreferences(), theme: 'dark' },
+          warning_code: null,
         }),
       });
-      const { result } = renderHook(() => usePersistence(initialSessions, 'welcome', 'closed', persistence));
-      await act(async () => { await Promise.resolve(); });
+      const { result } = renderHook(() =>
+        usePersistence(initialSessions, 'welcome', 'closed', persistence),
+      );
+      await act(async () => {
+        await Promise.resolve();
+      });
       expect(result.current.preferences.theme).toBe('dark');
       expect(result.current.restoredSession).toEqual(emptySession);
-      act(() => result.current.updatePreferences({ ...result.current.preferences, tab_width: 2 }));
-      await act(async () => { await vi.advanceTimersByTimeAsync(250); });
-      expect(persistence.persistPreferences).toHaveBeenCalledWith(expect.objectContaining({ tab_width: 2 }));
+      act(() =>
+        result.current.updatePreferences({
+          ...result.current.preferences,
+          tab_width: 2,
+        }),
+      );
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(250);
+      });
+      expect(persistence.persistPreferences).toHaveBeenCalledWith(
+        expect.objectContaining({ tab_width: 2 }),
+      );
     } finally {
       vi.useRealTimers();
     }
@@ -47,49 +165,76 @@ describe('usePersistence', () => {
     const restored: SessionState = {
       schema_version: 1,
       window: { active_session_index: 0, inspector: 'metadata' },
-      sessions: [{
-        session_key: 'session',
-        display_hint: 'notes.md',
-        renderer_id: 'markdown',
-        presentation_mode: 'rendered',
-        source_reference: '70cbf05c-53f5-4442-9ace-9d576529714c',
-        recovery_record_id: null,
-      }],
+      sessions: [
+        {
+          session_key: 'session',
+          display_hint: 'notes.md',
+          renderer_id: 'markdown',
+          presentation_mode: 'rendered',
+          source_reference: '70cbf05c-53f5-4442-9ace-9d576529714c',
+          recovery_record_id: null,
+        },
+      ],
     };
     const persistence = gateway({
-      loadSession: vi.fn().mockResolvedValue({ status: 'loaded', value: restored, warning_code: null }),
+      loadSession: vi
+        .fn()
+        .mockResolvedValue({
+          status: 'loaded',
+          value: restored,
+          warning_code: null,
+        }),
     });
-    const { result } = renderHook(() => usePersistence([], null, 'closed', persistence));
-    await waitFor(() => expect(result.current.restoredSession).toEqual(restored));
+    const { result } = renderHook(() =>
+      usePersistence([], null, 'closed', persistence),
+    );
+    await waitFor(() =>
+      expect(result.current.restoredSession).toEqual(restored),
+    );
   });
 
   it('records a session-load warning as a diagnostic failure', async () => {
     const persistence = gateway({
       loadSession: vi.fn().mockResolvedValue({
-        status: 'corrupt', value: emptySession, warning_code: 'session_corrupt',
+        status: 'corrupt',
+        value: emptySession,
+        warning_code: 'session_corrupt',
       }),
     });
     renderHook(() => usePersistence([], null, 'closed', persistence));
 
-    await waitFor(() => expect(persistence.appendDiagnostic).toHaveBeenCalledWith(
-      expect.objectContaining({
-        level: 'warning',
-        event_id: 'state_load_failed',
-        error_code: 'session_corrupt',
-      }),
-      expect.any(Number),
-    ));
+    await waitFor(() =>
+      expect(persistence.appendDiagnostic).toHaveBeenCalledWith(
+        expect.objectContaining({
+          level: 'warning',
+          event_id: 'state_load_failed',
+          error_code: 'session_corrupt',
+        }),
+        expect.any(Number),
+      ),
+    );
   });
 
   it('cancels a pending preference write before category reset', async () => {
     vi.useFakeTimers();
     try {
       const persistence = gateway();
-      const { result } = renderHook(() => usePersistence([], null, 'closed', persistence));
-      await act(async () => { await Promise.resolve(); });
-      act(() => result.current.updatePreferences({ ...result.current.preferences, theme: 'dark' }));
+      const { result } = renderHook(() =>
+        usePersistence([], null, 'closed', persistence),
+      );
+      await act(async () => {
+        await Promise.resolve();
+      });
+      act(() =>
+        result.current.updatePreferences({
+          ...result.current.preferences,
+          theme: 'dark',
+        }),
+      );
       await act(async () => result.current.reset('preferences'));
-      await act(async () => { await vi.advanceTimersByTimeAsync(250); });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(250);
+      });
       expect(persistence.reset).toHaveBeenCalledWith('preferences');
       expect(persistence.persistPreferences).not.toHaveBeenCalled();
       expect(result.current.preferences).toEqual(defaultPreferences());
@@ -103,12 +248,17 @@ describe('usePersistence', () => {
     try {
       const persistence = gateway();
       const { result, unmount } = renderHook(() =>
-        usePersistence([], null, 'closed', persistence));
-      await act(async () => { await Promise.resolve(); });
-      act(() => result.current.updatePreferences({
-        ...result.current.preferences,
-        theme: 'dark',
-      }));
+        usePersistence([], null, 'closed', persistence),
+      );
+      await act(async () => {
+        await Promise.resolve();
+      });
+      act(() =>
+        result.current.updatePreferences({
+          ...result.current.preferences,
+          theme: 'dark',
+        }),
+      );
       unmount();
       expect(persistence.persistPreferences).toHaveBeenCalledWith(
         expect.objectContaining({ theme: 'dark' }),
@@ -122,18 +272,24 @@ describe('usePersistence', () => {
     vi.useFakeTimers();
     try {
       const snapshots: SessionState[] = [];
-      const persistSession: PersistenceGateway['persistSession'] = (session) => {
+      const persistSession: PersistenceGateway['persistSession'] = (
+        session,
+      ) => {
         snapshots.push(session);
         return Promise.resolve();
       };
       const persistence = gateway({ persistSession });
-      const { unmount, rerender } = renderHook<unknown, {
-        inspector: SessionState['window']['inspector'];
-      }>(
-        ({ inspector }) => usePersistence([], null, inspector, persistence),
-        { initialProps: { inspector: 'closed' } },
-      );
-      await act(async () => { await Promise.resolve(); });
+      const { unmount, rerender } = renderHook<
+        unknown,
+        {
+          inspector: SessionState['window']['inspector'];
+        }
+      >(({ inspector }) => usePersistence([], null, inspector, persistence), {
+        initialProps: { inspector: 'closed' },
+      });
+      await act(async () => {
+        await Promise.resolve();
+      });
       rerender({ inspector: 'diagnostics' });
       unmount();
 
@@ -144,9 +300,15 @@ describe('usePersistence', () => {
   });
 
   it('falls back without blocking when storage is unavailable', async () => {
-    const persistence = gateway({ loadPreferences: vi.fn().mockRejectedValue(new Error('private path')) });
-    const { result } = renderHook(() => usePersistence([], null, 'closed', persistence));
-    await waitFor(() => expect(result.current.warning).toMatch(/unavailable/iu));
+    const persistence = gateway({
+      loadPreferences: vi.fn().mockRejectedValue(new Error('private path')),
+    });
+    const { result } = renderHook(() =>
+      usePersistence([], null, 'closed', persistence),
+    );
+    await waitFor(() =>
+      expect(result.current.warning).toMatch(/unavailable/iu),
+    );
     expect(result.current.preferences).toEqual(defaultPreferences());
     expect(result.current.warning).not.toContain('private path');
   });

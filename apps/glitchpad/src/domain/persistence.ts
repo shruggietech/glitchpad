@@ -1,3 +1,4 @@
+import { version as productVersion } from '../../package.json';
 import type { LanguageId, ShellSession } from './contracts';
 
 export const APPLICATION_STATE_SCHEMA_VERSION = 1 as const;
@@ -38,7 +39,14 @@ export interface SessionProjection {
   presentation_mode: string | null;
   source_reference: string | null;
   recovery_record_id: string | null;
-  image_presentation?: { mode: 'fit' | 'actual'; zoom_milli: number; pan_x: number; pan_y: number; background: 'checker' | 'light' | 'dark'; selection: number | null };
+  image_presentation?: {
+    mode: 'fit' | 'actual';
+    zoom_milli: number;
+    pan_x: number;
+    pan_y: number;
+    background: 'checker' | 'light' | 'dark';
+    selection: number | null;
+  };
 }
 
 export interface SessionState {
@@ -60,21 +68,70 @@ export type DiagnosticEventId =
   | 'state_write_failed'
   | 'state_reset'
   | 'source_restore_failed'
-  | 'diagnostic_exported';
+  | 'diagnostic_exported'
+  | 'task_failed';
 export type DiagnosticPlatform =
-  | 'windows'
-  | 'macos'
-  | 'linux'
-  | 'android'
-  | 'unknown';
+  'windows' | 'macos' | 'linux' | 'android' | 'unknown';
 export type DiagnosticComponent =
-  | 'application_state'
-  | 'recovery'
-  | 'source'
-  | 'renderer'
-  | 'shell';
+  'application_state' | 'recovery' | 'source' | 'renderer' | 'shell';
+
+export interface DiagnosticFailure {
+  component:
+    | 'bootstrap'
+    | 'application'
+    | 'document'
+    | 'markdown'
+    | 'image'
+    | 'source'
+    | 'action'
+    | 'export';
+  stage:
+    | 'bootstrap'
+    | 'delivery'
+    | 'read'
+    | 'session'
+    | 'render'
+    | 'worker'
+    | 'parse'
+    | 'sanitize'
+    | 'projection'
+    | 'execute'
+    | 'write'
+    | 'readback'
+    | 'share'
+    | 'recovery';
+  reason:
+    | 'root_missing'
+    | 'module_load_failed'
+    | 'application_mount_failed'
+    | 'application_render_failed'
+    | 'document_render_failed'
+    | 'markdown_worker_failed'
+    | 'markdown_render_timeout'
+    | 'markdown_projection_invalid'
+    | 'markdown_projection_failed'
+    | 'markdown_parse_failed'
+    | 'markdown_output_limited'
+    | 'markdown_policy_mismatch'
+    | 'source_delivery_failed'
+    | 'source_read_failed'
+    | 'image_render_failed'
+    | 'action_failed'
+    | 'action_unavailable'
+    | 'export_write_failed'
+    | 'export_readback_failed'
+    | 'share_failed'
+    | 'recovery_flush_failed'
+    | 'cancelled'
+    | 'permission_denied'
+    | 'stale_session'
+    | 'budget_exceeded'
+    | 'invalid_response';
+  correlation_id: string;
+}
 
 export interface DiagnosticEvent {
+  failure?: DiagnosticFailure;
   occurred_unix_ms: number;
   level: DiagnosticLevel;
   event_id: DiagnosticEventId;
@@ -99,6 +156,12 @@ export interface DiagnosticBundle {
   schema_version: typeof APPLICATION_STATE_SCHEMA_VERSION;
   generated_unix_ms: number;
   environment: DiagnosticEnvironment;
+  native_environment?: {
+    android_version: string;
+    api_level: number;
+    webview_version: string | null;
+    webview_package: string | null;
+  };
   events: DiagnosticEvent[];
 }
 
@@ -114,14 +177,26 @@ export const defaultPreferences = (): PreferenceState => ({
 });
 
 const languageIds = new Set<LanguageId>([
-  'plain_text', 'rust', 'typescript', 'javascript', 'python', 'json', 'toml',
-  'yaml', 'css', 'html',
+  'plain_text',
+  'rust',
+  'typescript',
+  'javascript',
+  'python',
+  'json',
+  'toml',
+  'yaml',
+  'css',
+  'html',
 ]);
 
 export const normalizeExtension = (value: string): string | null => {
-  const normalized = value.trim().replace(/^\.+/u, '').toLocaleLowerCase('en-US');
-  return normalized.length > 0 && [...normalized].length <= 32
-    && /^[\p{L}\p{N}_+-]+$/u.test(normalized)
+  const normalized = value
+    .trim()
+    .replace(/^\.+/u, '')
+    .toLocaleLowerCase('en-US');
+  return normalized.length > 0 &&
+    [...normalized].length <= 32 &&
+    /^[\p{L}\p{N}_+-]+$/u.test(normalized)
     ? normalized
     : null;
 };
@@ -130,34 +205,52 @@ export const normalizePreferences = (
   input: Partial<PreferenceState>,
 ): PreferenceState => {
   const defaults = defaultPreferences();
-  const family = typeof input.editor_font_family === 'string'
-    && [...input.editor_font_family].length > 0
-    && [...input.editor_font_family].length <= 128
-    && !/[\p{Cc}]/u.test(input.editor_font_family)
-    ? input.editor_font_family
-    : defaults.editor_font_family;
+  const family =
+    typeof input.editor_font_family === 'string' &&
+    [...input.editor_font_family].length > 0 &&
+    [...input.editor_font_family].length <= 128 &&
+    !/[\p{Cc}]/u.test(input.editor_font_family)
+      ? input.editor_font_family
+      : defaults.editor_font_family;
   const overrides: Record<string, LanguageId> = {};
-  if (input.language_overrides && typeof input.language_overrides === 'object') {
-    for (const [extension, language] of Object.entries(input.language_overrides)) {
+  if (
+    input.language_overrides &&
+    typeof input.language_overrides === 'object'
+  ) {
+    for (const [extension, language] of Object.entries(
+      input.language_overrides,
+    )) {
       const normalized = normalizeExtension(extension);
-      if (normalized && languageIds.has(language)) overrides[normalized] = language;
+      if (normalized && languageIds.has(language))
+        overrides[normalized] = language;
       if (Object.keys(overrides).length >= MAX_LANGUAGE_OVERRIDES) break;
     }
   }
   return {
     schema_version: APPLICATION_STATE_SCHEMA_VERSION,
-    theme: input.theme === 'light' || input.theme === 'dark' ? input.theme : 'system',
+    theme:
+      input.theme === 'light' || input.theme === 'dark'
+        ? input.theme
+        : 'system',
     editor_font_family: family,
-    editor_font_size: Number.isInteger(input.editor_font_size)
-      && input.editor_font_size! >= 8 && input.editor_font_size! <= 72
-      ? input.editor_font_size!
-      : defaults.editor_font_size,
-    line_wrap: typeof input.line_wrap === 'boolean' ? input.line_wrap : defaults.line_wrap,
-    tab_width: Number.isInteger(input.tab_width)
-      && input.tab_width! >= 1 && input.tab_width! <= 16
-      ? input.tab_width!
-      : defaults.tab_width,
-    markdown_default_mode: input.markdown_default_mode === 'source' ? 'source' : 'rendered',
+    editor_font_size:
+      Number.isInteger(input.editor_font_size) &&
+      input.editor_font_size! >= 8 &&
+      input.editor_font_size! <= 72
+        ? input.editor_font_size!
+        : defaults.editor_font_size,
+    line_wrap:
+      typeof input.line_wrap === 'boolean'
+        ? input.line_wrap
+        : defaults.line_wrap,
+    tab_width:
+      Number.isInteger(input.tab_width) &&
+      input.tab_width! >= 1 &&
+      input.tab_width! <= 16
+        ? input.tab_width!
+        : defaults.tab_width,
+    markdown_default_mode:
+      input.markdown_default_mode === 'source' ? 'source' : 'rendered',
     language_overrides: overrides,
   };
 };
@@ -171,15 +264,21 @@ export const projectSessionState = (
   inspector: WindowProjection['inspector'],
   recoveryRecordIds: ReadonlyMap<string, string> = new Map(),
 ): SessionState => {
-  const eligible = sessions.filter(
-    (session) => Boolean(
-      session.source.restoration_reference || recoveryRecordIds.get(session.id),
-    ),
-  ).slice(0, MAX_SESSION_PROJECTIONS);
+  const eligible = sessions
+    .filter((session) =>
+      Boolean(
+        session.source.restoration_reference ||
+        recoveryRecordIds.get(session.id),
+      ),
+    )
+    .slice(0, MAX_SESSION_PROJECTIONS);
   const activeIndex = eligible.findIndex(({ id }) => id === activeId);
   return {
     schema_version: APPLICATION_STATE_SCHEMA_VERSION,
-    window: { active_session_index: activeIndex >= 0 ? activeIndex : null, inspector },
+    window: {
+      active_session_index: activeIndex >= 0 ? activeIndex : null,
+      inspector,
+    },
     sessions: eligible.map((session) => ({
       session_key: session.id.slice(0, 128),
       display_hint: [...session.source.display_name].slice(0, 255).join(''),
@@ -187,21 +286,45 @@ export const projectSessionState = (
       presentation_mode: presentationMode(session)?.slice(0, 64) ?? null,
       source_reference: session.source.restoration_reference ?? null,
       recovery_record_id: recoveryRecordIds.get(session.id) ?? null,
-      ...(session.image_document ? { image_presentation: {
-        mode: session.image_document.viewport.mode,
-        zoom_milli: Math.round(Math.min(16, Math.max(0.1, session.image_document.viewport.zoom)) * 1000),
-        pan_x: Math.round(Math.min(200000000, Math.max(-200000000, session.image_document.viewport.pan_x))),
-        pan_y: Math.round(Math.min(200000000, Math.max(-200000000, session.image_document.viewport.pan_y))),
-        background: session.image_document.viewport.background,
-        selection: session.image_document.family_state?.family === 'animation' ? session.image_document.family_state.selected_frame : session.image_document.family_state?.family === 'ico' ? session.image_document.family_state.selected_entry : null,
-      } } : {}),
+      ...(session.image_document
+        ? {
+            image_presentation: {
+              mode: session.image_document.viewport.mode,
+              zoom_milli: Math.round(
+                Math.min(
+                  16,
+                  Math.max(0.1, session.image_document.viewport.zoom),
+                ) * 1000,
+              ),
+              pan_x: Math.round(
+                Math.min(
+                  200000000,
+                  Math.max(-200000000, session.image_document.viewport.pan_x),
+                ),
+              ),
+              pan_y: Math.round(
+                Math.min(
+                  200000000,
+                  Math.max(-200000000, session.image_document.viewport.pan_y),
+                ),
+              ),
+              background: session.image_document.viewport.background,
+              selection:
+                session.image_document.family_state?.family === 'animation'
+                  ? session.image_document.family_state.selected_frame
+                  : session.image_document.family_state?.family === 'ico'
+                    ? session.image_document.family_state.selected_entry
+                    : null,
+            },
+          }
+        : {}),
     })),
   };
 };
 
 export const diagnosticEnvironment = (): DiagnosticEnvironment => ({
-  product_version: '0.1.4',
-  specification_version: '0.1.4',
+  product_version: productVersion,
+  specification_version: productVersion,
   platform: /android/iu.test(navigator.userAgent)
     ? 'android'
     : /windows/iu.test(navigator.userAgent)
@@ -213,6 +336,6 @@ export const diagnosticEnvironment = (): DiagnosticEnvironment => ({
           : 'unknown',
   architecture: 'unknown',
   webview_version: null,
-  core_version: '0.1.4',
+  core_version: productVersion,
   build_commit: null,
 });

@@ -1,7 +1,20 @@
 import { forwardRef, useEffect, useState } from 'react';
+import {
+  reportRecoveryFailure,
+  type RecoveryFailureReporter,
+} from '../bootstrap-recovery';
 
-import type { LanguageDecision, MarkdownDocumentState, MermaidDocumentState, ShellSession, TextDocumentState } from '../domain/contracts';
-import type { MarkdownExternalLinkGateway, MarkdownLocalAssetGateway } from '../domain/markdown-gateway';
+import type {
+  LanguageDecision,
+  MarkdownDocumentState,
+  MermaidDocumentState,
+  ShellSession,
+  TextDocumentState,
+} from '../domain/contracts';
+import type {
+  MarkdownExternalLinkGateway,
+  MarkdownLocalAssetGateway,
+} from '../domain/markdown-gateway';
 import { MarkdownSurface } from './MarkdownSurface';
 import { TextEditorSurface, type TextEditorHandle } from './TextEditorSurface';
 import { LargeTextSurface } from './LargeTextSurface';
@@ -13,7 +26,9 @@ import { DocumentErrorBoundary } from './DocumentErrorBoundary';
 
 interface DocumentSurfaceProps {
   session: ShellSession | null;
+  onFailure?: RecoveryFailureReporter;
   markdownFailureProbe?: boolean;
+  recoveryProbeGeneration?: number;
   canOpen?: boolean;
   onOpen?: () => void;
   labelledByTab?: boolean;
@@ -23,35 +38,87 @@ interface DocumentSurfaceProps {
     document: TextDocumentState,
     revision: number,
   ) => void;
-  onLanguageChange: (id: string, expectedRevision: number, language: LanguageDecision) => void;
-  onMarkdownChange: (id: string, expectedRevision: number, markdown: MarkdownDocumentState) => void;
-  onMermaidChange?: (id: string, expectedRevision: number, mermaid: MermaidDocumentState) => void;
+  onLanguageChange: (
+    id: string,
+    expectedRevision: number,
+    language: LanguageDecision,
+  ) => void;
+  onMarkdownChange: (
+    id: string,
+    expectedRevision: number,
+    markdown: MarkdownDocumentState,
+  ) => void;
+  onMermaidChange?: (
+    id: string,
+    expectedRevision: number,
+    mermaid: MermaidDocumentState,
+  ) => void;
   externalLinkGateway?: MarkdownExternalLinkGateway;
   localAssetGateway?: MarkdownLocalAssetGateway;
   onOpenMetadata?: (opener: HTMLElement) => void;
   onMetadataContribution?: (contribution: MetadataContribution) => void;
-  onImageChange?: (id: string, expectedRevision: number, image: ImageDocumentState) => void;
+  onImageChange?: (
+    id: string,
+    expectedRevision: number,
+    image: ImageDocumentState,
+  ) => void;
 }
 
-export const DocumentSurface = forwardRef<TextEditorHandle, DocumentSurfaceProps>(function DocumentSurface(
-  { session, markdownFailureProbe = false, canOpen = false, onOpen, labelledByTab = false, onDocumentChange, onLanguageChange, onMarkdownChange, onMermaidChange, externalLinkGateway, localAssetGateway, onOpenMetadata, onMetadataContribution, onImageChange },
+export const DocumentSurface = forwardRef<
+  TextEditorHandle,
+  DocumentSurfaceProps
+>(function DocumentSurface(
+  {
+    session,
+    onFailure,
+    markdownFailureProbe = false,
+    recoveryProbeGeneration = 0,
+    canOpen = false,
+    onOpen,
+    labelledByTab = false,
+    onDocumentChange,
+    onLanguageChange,
+    onMarkdownChange,
+    onMermaidChange,
+    externalLinkGateway,
+    localAssetGateway,
+    onOpenMetadata,
+    onMetadataContribution,
+    onImageChange,
+  },
   ref,
 ) {
-  const [markdownRecoveries, setMarkdownRecoveries] = useState(() => new Map<string, {
-    documentKey: string;
-    attempt: number;
-    sourceMode: boolean;
-  }>());
-  const [lifecycleFailureDocument, setLifecycleFailureDocument] = useState<string | null>(null);
-  const sessionDocumentKey = session ? `${session.id}:${session.revision}` : null;
+  const [markdownRecoveries, setMarkdownRecoveries] = useState(
+    () =>
+      new Map<
+        string,
+        {
+          documentKey: string;
+          attempt: number;
+          sourceMode: boolean;
+        }
+      >(),
+  );
+  const [lifecycleFailureDocument, setLifecycleFailureDocument] = useState<
+    string | null
+  >(null);
+  const sessionDocumentKey = session
+    ? `${session.id}:${session.revision}`
+    : null;
   useEffect(() => {
     if (
-      markdownFailureProbe
-      && lifecycleFailureDocument === null
-      && sessionDocumentKey
-      && session?.renderer.id === 'markdown'
-    ) setLifecycleFailureDocument(sessionDocumentKey);
-  }, [lifecycleFailureDocument, markdownFailureProbe, session?.renderer.id, sessionDocumentKey]);
+      markdownFailureProbe &&
+      lifecycleFailureDocument === null &&
+      sessionDocumentKey &&
+      session?.renderer.id === 'markdown'
+    )
+      setLifecycleFailureDocument(sessionDocumentKey);
+  }, [
+    lifecycleFailureDocument,
+    markdownFailureProbe,
+    session?.renderer.id,
+    sessionDocumentKey,
+  ]);
 
   if (!session) {
     return (
@@ -61,7 +128,11 @@ export const DocumentSurface = forwardRef<TextEditorHandle, DocumentSurfaceProps
       >
         <div className="empty-state">
           <p>No document is open</p>
-          {canOpen && <button type="button" onClick={onOpen}>Open file…</button>}
+          {canOpen && (
+            <button type="button" onClick={onOpen}>
+              Open file…
+            </button>
+          )}
         </div>
       </section>
     );
@@ -69,18 +140,21 @@ export const DocumentSurface = forwardRef<TextEditorHandle, DocumentSurfaceProps
 
   const currentDocumentKey = sessionDocumentKey!;
   const markdownRecovery = markdownRecoveries.get(session.id);
-  const recoveryAttempt = markdownRecovery?.documentKey === currentDocumentKey
-    ? markdownRecovery.attempt
-    : 0;
-  const projectionSuppressed = markdownRecovery?.documentKey === currentDocumentKey
-    && markdownRecovery.sourceMode;
+  const recoveryAttempt =
+    markdownRecovery?.documentKey === currentDocumentKey
+      ? markdownRecovery.attempt
+      : 0;
+  const projectionSuppressed =
+    markdownRecovery?.documentKey === currentDocumentKey &&
+    markdownRecovery.sourceMode;
   const publishRecoveryMode = (mode: 'rendered' | 'source') => {
     onMarkdownChange(session.id, session.revision, {
       mode,
       eligibility: session.markdown_document?.eligibility ?? 'full',
-      render_revision: mode === 'source'
-        ? (session.markdown_document?.render_revision ?? null)
-        : null,
+      render_revision:
+        mode === 'source'
+          ? (session.markdown_document?.render_revision ?? null)
+          : null,
       render_status: mode === 'source' ? 'failed' : 'scheduled',
       printable: false,
       outline_count: 0,
@@ -90,7 +164,11 @@ export const DocumentSurface = forwardRef<TextEditorHandle, DocumentSurfaceProps
   const enterRecoverySource = (reset?: () => void) => {
     setMarkdownRecoveries((current) => {
       const next = new Map(current);
-      next.set(session.id, { documentKey: currentDocumentKey, attempt: recoveryAttempt, sourceMode: true });
+      next.set(session.id, {
+        documentKey: currentDocumentKey,
+        attempt: recoveryAttempt,
+        sourceMode: true,
+      });
       return next;
     });
     publishRecoveryMode('source');
@@ -99,32 +177,84 @@ export const DocumentSurface = forwardRef<TextEditorHandle, DocumentSurfaceProps
   const retryMarkdownPreview = (reset?: () => void) => {
     setMarkdownRecoveries((current) => {
       const next = new Map(current);
-      next.set(session.id, { documentKey: currentDocumentKey, attempt: recoveryAttempt + 1, sourceMode: false });
+      next.set(session.id, {
+        documentKey: currentDocumentKey,
+        attempt: recoveryAttempt + 1,
+        sourceMode: false,
+      });
       return next;
     });
     publishRecoveryMode('rendered');
     reset?.();
   };
 
-  const presentation = session.image_document ? <ImageSurface key={session.id} session={session} onImageChange={onImageChange} onOpenMetadata={onOpenMetadata} /> : session.text_document ? (
+  const presentation = session.image_document ? (
+    <ImageSurface
+      ref={ref}
+      key={session.id}
+      session={session}
+      onImageChange={onImageChange}
+      onOpenMetadata={onOpenMetadata}
+    />
+  ) : session.text_document ? (
     session.text_document.mode === 'refused' ? (
-      <p className="document-limit" role="alert">This text source exceeds the 256 MiB viewing limit. Use a streaming log viewer or command-line pager for this file.</p>
+      <p className="document-limit" role="alert">
+        This text source exceeds the 256 MiB viewing limit. Use a streaming log
+        viewer or command-line pager for this file.
+      </p>
     ) : session.text_document.mode === 'large_read_only' ? (
-      <LargeTextSurface session={session} />
+      <LargeTextSurface ref={ref} session={session} />
     ) : session.renderer.id === 'markdown' ? (
       <div className="markdown-recovery-layout">
         {projectionSuppressed && (
           <div className="markdown-recovery-banner" role="status">
-            <p>Rendered preview is paused after a contained failure. Source remains available.</p>
-            <button type="button" onClick={() => retryMarkdownPreview()}>Retry preview</button>
+            <p>
+              Rendered preview is paused after a contained failure. Source
+              remains available.
+            </p>
+            <button type="button" onClick={() => retryMarkdownPreview()}>
+              Retry preview
+            </button>
           </div>
         )}
-        <MarkdownSurface key={`${session.id}:${recoveryAttempt}`} ref={ref} session={session} projectionSuppressed={projectionSuppressed} recoveryAttempt={recoveryAttempt} lifecycleFailureProbe={lifecycleFailureDocument === currentDocumentKey} onEnterRecoverySource={() => enterRecoverySource()} onDocumentChange={onDocumentChange} onLanguageChange={onLanguageChange} onMarkdownChange={onMarkdownChange} externalLinkGateway={externalLinkGateway} localAssetGateway={localAssetGateway} onOpenMetadata={onOpenMetadata} onMetadataContribution={onMetadataContribution} />
+        <MarkdownSurface
+          onFailure={onFailure}
+          key={`${session.id}:${recoveryAttempt}:${recoveryProbeGeneration}`}
+          ref={ref}
+          session={session}
+          projectionSuppressed={projectionSuppressed}
+          recoveryAttempt={recoveryAttempt}
+          lifecycleFailureProbe={
+            lifecycleFailureDocument === currentDocumentKey
+          }
+          onEnterRecoverySource={() => enterRecoverySource()}
+          onDocumentChange={onDocumentChange}
+          onLanguageChange={onLanguageChange}
+          onMarkdownChange={onMarkdownChange}
+          externalLinkGateway={externalLinkGateway}
+          localAssetGateway={localAssetGateway}
+          onOpenMetadata={onOpenMetadata}
+          onMetadataContribution={onMetadataContribution}
+        />
       </div>
     ) : session.renderer.id === 'mermaid' ? (
-      <MermaidSurface key={session.id} ref={ref} session={session} onDocumentChange={onDocumentChange} onLanguageChange={onLanguageChange} onMermaidChange={onMermaidChange ?? (() => undefined)} onOpenMetadata={onOpenMetadata} onMetadataContribution={onMetadataContribution} />
+      <MermaidSurface
+        key={session.id}
+        ref={ref}
+        session={session}
+        onDocumentChange={onDocumentChange}
+        onLanguageChange={onLanguageChange}
+        onMermaidChange={onMermaidChange ?? (() => undefined)}
+        onOpenMetadata={onOpenMetadata}
+        onMetadataContribution={onMetadataContribution}
+      />
     ) : (
-      <TextEditorSurface ref={ref} session={session} onDocumentChange={onDocumentChange} onLanguageChange={onLanguageChange} />
+      <TextEditorSurface
+        ref={ref}
+        session={session}
+        onDocumentChange={onDocumentChange}
+        onLanguageChange={onLanguageChange}
+      />
     )
   ) : (
     <pre className="document-content">{session.content}</pre>
@@ -144,9 +274,20 @@ export const DocumentSurface = forwardRef<TextEditorHandle, DocumentSurfaceProps
     >
       <DocumentErrorBoundary
         resetKey={resetKey}
+        onError={() =>
+          reportRecoveryFailure(
+            onFailure,
+            'document',
+            'render',
+            'document_render_failed',
+          )
+        }
         fallback={({ reset }) => (
           <div className="document-render-failure">
-            <p role="alert">This document could not be displayed. The application remains available.</p>
+            <p role="alert">
+              This document could not be displayed. The application remains
+              available.
+            </p>
             {session.renderer.id === 'markdown' && session.text_document && (
               <button
                 type="button"
@@ -158,7 +299,9 @@ export const DocumentSurface = forwardRef<TextEditorHandle, DocumentSurfaceProps
               </button>
             )}
             {session.renderer.id === 'markdown' && session.text_document && (
-              <button type="button" onClick={() => retryMarkdownPreview(reset)}>Retry preview</button>
+              <button type="button" onClick={() => retryMarkdownPreview(reset)}>
+                Retry preview
+              </button>
             )}
           </div>
         )}

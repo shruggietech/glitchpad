@@ -265,6 +265,7 @@ pub enum DiagnosticEventId {
     StateReset,
     SourceRestoreFailed,
     DiagnosticExported,
+    TaskFailed,
 }
 
 #[derive(Clone, Copy, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
@@ -287,6 +288,93 @@ pub enum DiagnosticComponent {
     Shell,
 }
 
+/// Allowlisted task context. Document names, locations, contents and error strings
+/// cannot be represented in these fields.
+#[derive(Clone, Copy, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DiagnosticFailureComponent {
+    Bootstrap,
+    Application,
+    Document,
+    Markdown,
+    Image,
+    Source,
+    Action,
+    Export,
+}
+
+#[derive(Clone, Copy, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DiagnosticFailureStage {
+    Bootstrap,
+    Delivery,
+    Read,
+    Session,
+    Render,
+    Worker,
+    Parse,
+    Sanitize,
+    Projection,
+    Execute,
+    Write,
+    Readback,
+    Share,
+    Recovery,
+}
+
+#[derive(Clone, Copy, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DiagnosticFailureReason {
+    RootMissing,
+    ModuleLoadFailed,
+    ApplicationMountFailed,
+    ApplicationRenderFailed,
+    DocumentRenderFailed,
+    MarkdownWorkerFailed,
+    MarkdownRenderTimeout,
+    MarkdownProjectionInvalid,
+    MarkdownProjectionFailed,
+    MarkdownParseFailed,
+    MarkdownOutputLimited,
+    MarkdownPolicyMismatch,
+    SourceDeliveryFailed,
+    SourceReadFailed,
+    ImageRenderFailed,
+    ActionFailed,
+    ActionUnavailable,
+    ExportWriteFailed,
+    ExportReadbackFailed,
+    ShareFailed,
+    RecoveryFlushFailed,
+    Cancelled,
+    PermissionDenied,
+    StaleSession,
+    BudgetExceeded,
+    InvalidResponse,
+}
+
+#[derive(Clone, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct DiagnosticFailure {
+    pub component: DiagnosticFailureComponent,
+    pub stage: DiagnosticFailureStage,
+    pub reason: DiagnosticFailureReason,
+    /// Canonical lowercase UUID or a 128-bit lowercase hexadecimal random token.
+    pub correlation_id: String,
+}
+
+impl DiagnosticFailure {
+    #[must_use]
+    pub fn is_valid(&self) -> bool {
+        is_lowercase_uuid(&self.correlation_id)
+            || (self.correlation_id.len() == 32
+                && self
+                    .correlation_id
+                    .bytes()
+                    .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte)))
+    }
+}
+
 #[derive(Clone, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct DiagnosticEvent {
@@ -298,12 +386,17 @@ pub struct DiagnosticEvent {
     pub duration_ms: Option<u64>,
     pub byte_count: Option<u64>,
     pub error_code: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub failure: Option<DiagnosticFailure>,
 }
 
 impl DiagnosticEvent {
     #[must_use]
     pub fn is_valid(&self) -> bool {
-        self.duration_ms.is_none_or(|value| value <= 86_400_000)
+        self.failure
+            .as_ref()
+            .is_none_or(DiagnosticFailure::is_valid)
+            && self.duration_ms.is_none_or(|value| value <= 86_400_000)
             && self.byte_count.is_none_or(|value| value <= 1_u64 << 40)
             && self
                 .error_code
@@ -409,12 +502,40 @@ impl DiagnosticEnvironment {
     }
 }
 
+/// Native facts from the installed Android runtime, distinct from retained application state.
+#[derive(Clone, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct AndroidDiagnosticRuntime {
+    pub android_version: String,
+    pub api_level: u32,
+    pub webview_version: Option<String>,
+    pub webview_package: Option<String>,
+}
+
+impl AndroidDiagnosticRuntime {
+    #[must_use]
+    pub fn is_valid(&self) -> bool {
+        bounded_safe(&self.android_version, 64)
+            && (1..=1_000).contains(&self.api_level)
+            && self
+                .webview_version
+                .as_deref()
+                .is_none_or(|value| bounded_safe(value, 128))
+            && self
+                .webview_package
+                .as_deref()
+                .is_none_or(|value| bounded_token(value, 128))
+    }
+}
+
 #[derive(Clone, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct DiagnosticBundle {
     pub schema_version: u16,
     pub generated_unix_ms: u64,
     pub environment: DiagnosticEnvironment,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub native_environment: Option<AndroidDiagnosticRuntime>,
     pub events: Vec<DiagnosticEvent>,
 }
 
@@ -441,6 +562,41 @@ fn is_lowercase_uuid(value: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn diagnostic_runtime_enrichment_round_trips_without_changing_legacy_bundles() {
+        let legacy = serde_json::json!({
+            "schema_version": 1, "generated_unix_ms": 1,
+            "environment": {"product_version": "0.2.0", "specification_version": "0.2.0", "platform": "android",
+                "architecture": "aarch64", "webview_version": null, "core_version": "0.2.0", "build_commit": null},
+            "events": []
+        });
+        let mut bundle: DiagnosticBundle = serde_json::from_value(legacy.clone()).unwrap();
+        assert!(bundle.native_environment.is_none());
+        assert_eq!(serde_json::to_value(&bundle).unwrap(), legacy);
+        bundle.native_environment = Some(AndroidDiagnosticRuntime {
+            android_version: "16".into(),
+            api_level: 36,
+            webview_version: Some("142.0.7444.0".into()),
+            webview_package: Some("com.android.webview".into()),
+        });
+        assert!(bundle.native_environment.as_ref().unwrap().is_valid());
+        let enriched = serde_json::to_value(&bundle).unwrap();
+        assert_eq!(
+            serde_json::from_value::<DiagnosticBundle>(enriched).unwrap(),
+            bundle
+        );
+        let runtime = bundle.native_environment.as_mut().unwrap();
+        runtime.api_level = 0;
+        assert!(!runtime.is_valid());
+        runtime.api_level = 24;
+        runtime.webview_package = Some("content://private/name".into());
+        assert!(!runtime.is_valid());
+        let mut unknown = legacy;
+        unknown["native_environment"] = serde_json::json!({"android_version":"16", "api_level":36,
+            "webview_version":null,"webview_package":null,"document_content":"private"});
+        assert!(serde_json::from_value::<DiagnosticBundle>(unknown).is_err());
+    }
+
     #[test]
     fn image_presentation_is_bounded_and_carries_no_decoder_or_play_authority() {
         use super::ImagePresentation;
@@ -530,6 +686,7 @@ mod tests {
             duration_ms: None,
             byte_count: None,
             error_code: error_code.map(str::to_owned),
+            failure: None,
         };
         let retained = DiagnosticLedger {
             schema_version: 1,
@@ -555,6 +712,7 @@ mod tests {
             duration_ms: None,
             byte_count: None,
             error_code: None,
+            failure: None,
         };
         let mut events = (0..=MAX_DIAGNOSTIC_EVENTS)
             .map(|offset| event(now - u64::try_from(offset).expect("bounded offset")))
@@ -577,6 +735,61 @@ mod tests {
                 .events
                 .iter()
                 .all(|candidate| { candidate.occurred_unix_ms >= now - MAX_DIAGNOSTIC_AGE_MS })
+        );
+    }
+    #[test]
+    fn task_failure_context_is_allowlisted_and_compatible_with_legacy_ledgers() {
+        let legacy = serde_json::json!({"schema_version": 1, "events": [{
+            "occurred_unix_ms": 10, "level": "info", "event_id": "app_started", "platform": "android", "component": "shell",
+            "duration_ms": null, "byte_count": null, "error_code": null
+        }]});
+        let ledger: DiagnosticLedger =
+            serde_json::from_value(legacy.clone()).expect("legacy ledger remains readable");
+        assert_eq!(serde_json::to_value(&ledger).unwrap(), legacy);
+        assert!(ledger.events[0].failure.is_none());
+        let context = serde_json::json!({"component":"markdown", "stage":"worker", "reason":"markdown_worker_failed", "correlation_id":"37d21d4b-674d-41fa-b792-29b7c2012ed3"});
+        let failure: DiagnosticFailure = serde_json::from_value(context.clone()).unwrap();
+        assert!(failure.is_valid());
+        let mut event = ledger.events[0].clone();
+        event.event_id = DiagnosticEventId::TaskFailed;
+        event.failure = Some(failure);
+        assert!(event.is_valid());
+        for key in ["component", "stage", "reason"] {
+            let mut hostile = context.clone();
+            hostile[key] = serde_json::json!("private_document_name");
+            assert!(
+                serde_json::from_value::<DiagnosticFailure>(hostile).is_err(),
+                "reject arbitrary {key}"
+            );
+        }
+        let mut extra = context.clone();
+        extra["path"] = serde_json::json!("content://private/document");
+        assert!(serde_json::from_value::<DiagnosticFailure>(extra).is_err());
+        for hostile in [
+            "private_document_name",
+            r"C:\private\notes.md",
+            "content://provider/private",
+            "abcdef",
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        ] {
+            let mut context = event.failure.clone().unwrap();
+            context.correlation_id = hostile.into();
+            assert!(!context.is_valid());
+        }
+        let mut context = event.failure.clone().unwrap();
+        context.correlation_id = "0123456789abcdef0123456789abcdef".into();
+        assert!(context.is_valid());
+        event.failure.as_mut().unwrap().correlation_id = "content://private/document".into();
+        let retained = DiagnosticLedger {
+            schema_version: 1,
+            events: vec![event],
+        }
+        .retained(10);
+        assert!(retained.events.is_empty());
+        assert!(
+            !serde_json::to_string(&retained)
+                .unwrap()
+                .contains("private")
         );
     }
 }

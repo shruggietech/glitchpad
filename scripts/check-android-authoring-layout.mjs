@@ -1,0 +1,574 @@
+import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
+import { once } from 'node:events';
+import { createServer } from 'node:http';
+import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
+import { dirname, extname, join, resolve, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import puppeteer from 'puppeteer';
+
+const root = fileURLToPath(new URL('../', import.meta.url));
+const minimumTarget = 48;
+const tolerance = 0.6;
+
+export function assertAuthoringMeasurement(measurement) {
+  const {
+    viewport,
+    actions,
+    document: surface,
+    trigger,
+    paddingBottom,
+  } = measurement;
+  assert.ok(
+    actions.length > 0,
+    'the real application must expose Add document controls',
+  );
+  for (const action of actions) {
+    const label = action.label;
+    assert.ok(
+      action.width >= minimumTarget - tolerance &&
+        action.height >= minimumTarget - tolerance,
+      label +
+        ' must retain a 48 CSS-pixel target in the emulated Android viewport',
+    );
+    assert.ok(
+      action.left >= viewport.left - tolerance &&
+        action.right <= viewport.left + viewport.width + tolerance &&
+        action.top >= viewport.top - tolerance &&
+        action.bottom <= viewport.top + viewport.height + tolerance,
+      label +
+        ' must be fully inside the visible viewport after local menu scrolling',
+    );
+    assert.ok(
+      action.visibleWidth >= minimumTarget - tolerance &&
+        action.visibleHeight >= minimumTarget - tolerance,
+      label + ' must retain an unclipped reachable target',
+    );
+    assert.equal(
+      action.hit,
+      true,
+      label + ' must receive input at its visible center',
+    );
+  }
+  assert.ok(
+    surface.width > 0 && surface.height > 0,
+    'the actual document surface must remain mounted with area',
+  );
+  assert.ok(
+    paddingBottom + tolerance >= surface.bottom - trigger.top,
+    'document bottom padding must reserve the actual floating Add document target (padding=' +
+      paddingBottom +
+      ', required=' +
+      (surface.bottom - trigger.top) +
+      ', target=' +
+      trigger.height +
+      ')',
+  );
+}
+
+function installNativeSeams() {
+  let callbackId = 0;
+  const callbacks = new Map();
+  const records = new Map();
+  const preferences = {
+    schema_version: 1,
+    theme: 'system',
+    editor_font_family: 'ui-monospace',
+    editor_font_size: 14,
+    line_wrap: true,
+    tab_width: 4,
+    markdown_default_mode: 'rendered',
+    language_overrides: {},
+  };
+  const session = {
+    schema_version: 1,
+    window: { active_session_index: null, inspector: 'closed' },
+    sessions: [],
+  };
+  const calls = [];
+  Object.defineProperty(window, '__authoringNativeCalls', { value: calls });
+  window.__TAURI_INTERNALS__ = {
+    transformCallback(callback) {
+      const id = ++callbackId;
+      callbacks.set(id, callback);
+      return id;
+    },
+    unregisterCallback(id) {
+      callbacks.delete(id);
+    },
+    async invoke(command, args = {}) {
+      calls.push(command);
+      if (command === 'load_preferences')
+        return { status: 'defaulted', warning_code: null, value: preferences };
+      if (command === 'load_session_state')
+        return { status: 'defaulted', warning_code: null, value: session };
+      if (command === 'inventory_recovery') return [[], 0, 0];
+      if (command === 'drain_android_deliveries')
+        return { sources: [], rejections: [] };
+      if (command === 'restore_android_sources') return [];
+      if (command === 'persist_recovery') {
+        const record = args.record;
+        records.set(record.record_id, record);
+        return {
+          record_id: record.record_id,
+          display_hint: record.display_hint,
+          updated_unix_ms: record.updated_unix_ms,
+          expires_unix_ms: record.updated_unix_ms + 86_400_000,
+          committed_bytes: record.content.length,
+          status: 'available',
+        };
+      }
+      if (command === 'remove_recovery') return records.delete(args.recordId);
+      if (
+        command === 'open_android_document' ||
+        command === 'create_android_document'
+      )
+        throw {
+          category: 'unavailable',
+          summary: 'Synthetic native picker cancelled',
+          context: { reason: 'picker_cancelled' },
+        };
+      if (
+        command.startsWith('plugin:android-source|') ||
+        [
+          'append_diagnostic',
+          'persist_preferences',
+          'persist_session_state',
+          'close_android_source',
+          'complete_android_back',
+        ].includes(command)
+      )
+        return null;
+      throw {
+        category: 'unavailable',
+        summary: 'Unexpected native operation in composed browser layout check',
+        context: { reason: 'provider_unavailable' },
+      };
+    },
+  };
+}
+
+async function measureActions(page, open) {
+  const selectors = open
+    ? [
+        '.add-document-menu button:nth-of-type(1)',
+        '.add-document-menu button:nth-of-type(2)',
+        '.add-document-menu button:nth-of-type(3)',
+        '.add-document-menu button:nth-of-type(4)',
+        '.add-document-trigger',
+      ]
+    : ['.add-document-trigger'];
+  const actions = [];
+  for (const selector of selectors) {
+    await page.$eval(selector, (element) =>
+      element.scrollIntoView({ block: 'nearest', inline: 'nearest' }),
+    );
+    const action = await page.$eval(selector, (element) => {
+      const rect = element.getBoundingClientRect();
+      const panel = element
+        .closest('.add-document-menu')
+        ?.getBoundingClientRect();
+      const clip = {
+        left: Math.max(rect.left, panel?.left ?? -Infinity),
+        right: Math.min(rect.right, panel?.right ?? Infinity),
+        top: Math.max(rect.top, panel?.top ?? -Infinity),
+        bottom: Math.min(rect.bottom, panel?.bottom ?? Infinity),
+      };
+      const target = document.elementFromPoint(
+        (clip.left + clip.right) / 2,
+        (clip.top + clip.bottom) / 2,
+      );
+      return {
+        label: element.textContent.trim(),
+        left: rect.left,
+        right: rect.right,
+        top: rect.top,
+        bottom: rect.bottom,
+        width: rect.width,
+        height: rect.height,
+        visibleWidth: clip.right - clip.left,
+        visibleHeight: clip.bottom - clip.top,
+        hit: target === element || element.contains(target),
+        disabled: element.disabled,
+      };
+    });
+    assert.equal(
+      action.disabled,
+      false,
+      action.label + ' must be available in the native Android seam',
+    );
+    actions.push(action);
+  }
+  return page.evaluate((actions) => {
+    const rect = (element) => {
+      const value = element.getBoundingClientRect();
+      return {
+        left: value.left,
+        right: value.right,
+        top: value.top,
+        bottom: value.bottom,
+        width: value.width,
+        height: value.height,
+      };
+    };
+    const surface = document.querySelector('.document-surface');
+    return {
+      actions,
+      document: rect(surface),
+      trigger: rect(document.querySelector('.add-document-trigger')),
+      paddingBottom: Number.parseFloat(getComputedStyle(surface).paddingBottom),
+      viewport: {
+        left: visualViewport?.offsetLeft ?? 0,
+        top: visualViewport?.offsetTop ?? 0,
+        width: visualViewport?.width ?? innerWidth,
+        height: visualViewport?.height ?? innerHeight,
+      },
+      rootFontSize: Number.parseFloat(
+        getComputedStyle(document.documentElement).fontSize,
+      ),
+      imeInset: getComputedStyle(document.documentElement)
+        .getPropertyValue('--bb-ime-block-end')
+        .trim(),
+      frameCount: document.querySelectorAll('[data-bb-app-frame]').length,
+      shellCount: document.querySelectorAll('.app-shell[data-android="true"]')
+        .length,
+    };
+  }, actions);
+}
+
+async function clickChoice(page, label) {
+  await page.evaluate((label) => {
+    const button = [
+      ...document.querySelectorAll('.add-document-menu button'),
+    ].find((element) => element.textContent.trim() === label);
+    if (!button)
+      throw new Error('Actual Add document choice missing: ' + label);
+    button.click();
+  }, label);
+}
+
+async function settle(page) {
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+    await new Promise((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(resolve)),
+    );
+  });
+}
+
+export async function checkAndroidAuthoringLayout({
+  receiptPath = '',
+  sourceCommit = null,
+} = {}) {
+  if (sourceCommit !== null)
+    assert.match(
+      sourceCommit,
+      /^[a-f0-9]{40}$/u,
+      'source commit must be an exact SHA',
+    );
+  const appRoot = join(root, 'apps/glitchpad/dist');
+  const index = await readFile(join(appRoot, 'index.html'));
+  const assetHashes = [];
+  for (const name of (await readdir(join(appRoot, 'assets'))).sort()) {
+    if (/\.(?:js|css)$/u.test(name))
+      assetHashes.push({
+        name,
+        sha256: createHash('sha256')
+          .update(await readFile(join(appRoot, 'assets', name)))
+          .digest('hex'),
+      });
+  }
+  assert.ok(
+    assetHashes.some((asset) => asset.name.endsWith('.js')),
+    'build the production React application before geometry validation',
+  );
+  const mime = {
+    '.html': 'text/html',
+    '.js': 'text/javascript',
+    '.css': 'text/css',
+    '.woff2': 'font/woff2',
+    '.svg': 'image/svg+xml',
+  };
+  const server = createServer(async (request, response) => {
+    try {
+      const url = new URL(request.url, 'http://127.0.0.1');
+      const path = resolve(
+        appRoot,
+        '.' +
+          decodeURIComponent(
+            url.pathname === '/' ? '/index.html' : url.pathname,
+          ),
+      );
+      if (!path.startsWith(appRoot + sep)) {
+        response.writeHead(403);
+        response.end();
+        return;
+      }
+      const bytes = await readFile(path);
+      response.writeHead(200, {
+        'Content-Type': mime[extname(path)] ?? 'application/octet-stream',
+      });
+      response.end(bytes);
+    } catch {
+      response.writeHead(404);
+      response.end();
+    }
+  });
+  server.listen(0, '127.0.0.1');
+  await once(server, 'listening');
+  const origin = 'http://127.0.0.1:' + server.address().port;
+  let browser;
+  const cases = [];
+  const failures = [];
+  const audit = (profile, textScale, stage, measurement) => {
+    try {
+      assertAuthoringMeasurement(measurement);
+    } catch (error) {
+      failures.push({
+        profile,
+        text_scale: textScale,
+        stage,
+        message: error.message,
+        measurement,
+      });
+    }
+  };
+  try {
+    browser = await puppeteer.launch({
+      headless: 'shell',
+      args: ['--no-sandbox', '--disable-dev-shm-usage'],
+    });
+    for (const profile of [
+      { name: 'narrow', width: 320, height: 640 },
+      { name: 'portrait', width: 360, height: 720 },
+      { name: 'landscape', width: 640, height: 360 },
+      { name: 'short', width: 480, height: 240 },
+      {
+        name: 'ime-like-contraction',
+        width: 360,
+        height: 720,
+        contractedHeight: 480,
+      },
+    ]) {
+      for (const textScale of [1, 2]) {
+        const page = await browser.newPage();
+        try {
+          const errors = [];
+          page.on('pageerror', (error) => errors.push(error.message));
+          await page.setViewport({
+            width: profile.width,
+            height: profile.height,
+            deviceScaleFactor: 1,
+            isMobile: true,
+            hasTouch: true,
+          });
+          await page.setUserAgent(
+            'Mozilla/5.0 (Linux; Android 16) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Mobile Safari/537.36',
+          );
+          await page.evaluateOnNewDocument(installNativeSeams);
+          await page.setRequestInterception(true);
+          page.on('request', (request) => {
+            if (
+              request.url().startsWith(origin + '/') ||
+              /^(?:blob:|data:)/u.test(request.url())
+            )
+              void request.continue();
+            else void request.abort();
+          });
+          await page.goto(origin, { waitUntil: 'load' });
+          await page.waitForSelector(
+            '.app-shell[data-android="true"] .document-surface',
+          );
+          await page.waitForSelector('.add-document-trigger');
+          await page.evaluate((scale) => {
+            document.documentElement.style.fontSize = scale * 100 + '%';
+          }, textScale);
+          await settle(page);
+          const cold = await measureActions(page, false);
+          assert.equal(cold.frameCount, 1);
+          assert.equal(cold.shellCount, 1);
+          audit(profile.name, textScale, 'cold', cold);
+          await page.click('.add-document-trigger');
+          await page.waitForSelector('.add-document-menu');
+          const choices = await measureActions(page, true);
+          audit(profile.name, textScale, 'choices', choices);
+          await page.keyboard.press('Escape');
+          assert.equal(
+            await page.$('.add-document-menu'),
+            null,
+            'Escape must dismiss the actual menu',
+          );
+          assert.equal(
+            await page.$eval(
+              '.add-document-trigger',
+              (element) => element === document.activeElement,
+            ),
+            true,
+            'dismissal must restore Add focus',
+          );
+          await page.click('.add-document-trigger');
+          await clickChoice(page, 'Open file');
+          await page.waitForFunction(() =>
+            window.__authoringNativeCalls.includes('open_android_document'),
+          );
+          assert.equal(
+            await page.$('.add-document-menu'),
+            null,
+            'native Open choice must dismiss its menu',
+          );
+          await page.click('.add-document-trigger');
+          await clickChoice(page, 'New Markdown');
+          await page.waitForSelector('.cm-content[contenteditable="true"]');
+          await page.click('.cm-content');
+          await page.keyboard.type('# Layout fixture');
+          if (profile.contractedHeight) {
+            await page.setViewport({
+              width: profile.width,
+              height: profile.contractedHeight,
+              deviceScaleFactor: 1,
+              isMobile: true,
+              hasTouch: true,
+            });
+          }
+          await settle(page);
+          const loaded = await measureActions(page, false);
+          audit(profile.name, textScale, 'loaded', loaded);
+          await page.click('.add-document-trigger');
+          const loadedChoices = await measureActions(page, true);
+          audit(profile.name, textScale, 'loaded_choices', loadedChoices);
+          await clickChoice(page, 'New text file');
+          await page.waitForFunction(() =>
+            document.body.textContent.includes('Untitled.txt'),
+          );
+          assert.equal(
+            await page.$('.add-document-menu'),
+            null,
+            'New text must dismiss its menu',
+          );
+          assert.equal(
+            await page.$eval('.add-document-trigger', (element) =>
+              element.getAttribute('aria-expanded'),
+            ),
+            'false',
+          );
+          assert.deepEqual(
+            errors,
+            [],
+            'the production app must not throw during measured authoring tasks',
+          );
+          cases.push({
+            profile: profile.name,
+            text_scale: textScale,
+            requested_viewport: profile,
+            cold,
+            choices,
+            loaded,
+            loaded_choices: loadedChoices,
+          });
+        } catch (error) {
+          const observed = await page
+            .evaluate(() => ({
+              body: document.body.innerText.slice(0, 1500),
+              fontSize: getComputedStyle(document.documentElement).fontSize,
+              document: document
+                .querySelector('.document-surface')
+                ?.getBoundingClientRect()
+                .toJSON(),
+              trigger: document
+                .querySelector('.add-document-trigger')
+                ?.getBoundingClientRect()
+                .toJSON(),
+              paddingBottom: getComputedStyle(
+                document.querySelector('.document-surface'),
+              ).paddingBottom,
+              calls: window.__authoringNativeCalls?.slice(-30),
+            }))
+            .catch(() => null);
+          throw new Error(
+            'Composed authoring failed (' +
+              profile.name +
+              ', text scale ' +
+              textScale +
+              '): ' +
+              error.message +
+              '; observed ' +
+              JSON.stringify(observed),
+            { cause: error },
+          );
+        } finally {
+          await page.close();
+        }
+      }
+    }
+    const receipt = {
+      schema_version: 1,
+      status: failures.length ? 'failed' : 'passed',
+      failures,
+      evidence_class: 'headless_browser_composed_application',
+      source_commit: sourceCommit,
+      browser: await browser.version(),
+      index_sha256: createHash('sha256').update(index).digest('hex'),
+      assets: assetHashes,
+      native_operations:
+        'Tauri storage, picker cancellation, and listener seams only; no synthetic application markup',
+      limits: [
+        'Root font scaling and viewport contraction supplement Android qualification; they do not prove Android WebView textZoom, native IME, system insets, native Back, or APK behavior.',
+      ],
+      cases,
+    };
+    if (receiptPath) {
+      await mkdir(dirname(receiptPath), { recursive: true });
+      await writeFile(
+        receiptPath,
+        JSON.stringify(receipt, null, 2) + '\n',
+        'utf8',
+      );
+    }
+    if (failures.length)
+      throw new AggregateError(
+        failures.map(
+          (failure) =>
+            new Error(
+              failure.profile +
+                ' font=' +
+                failure.text_scale +
+                ' ' +
+                failure.stage +
+                ': ' +
+                failure.message,
+            ),
+        ),
+        'Composed application geometry failed ' +
+          failures.length +
+          ' required audit rows',
+      );
+    return receipt;
+  } finally {
+    await browser?.close();
+    server.closeAllConnections();
+    await new Promise((resolve) => server.close(resolve));
+  }
+}
+
+if (
+  process.argv[1] &&
+  resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+) {
+  const argument = (name) => {
+    const index = process.argv.indexOf(name);
+    return index < 0 ? '' : (process.argv[index + 1] ?? '');
+  };
+  const receipt = await checkAndroidAuthoringLayout({
+    receiptPath: argument('--receipt'),
+    sourceCommit:
+      argument('--source-commit') ||
+      process.env.GLITCHPAD_BUILD_COMMIT ||
+      process.env.GITHUB_SHA ||
+      null,
+  });
+  console.log(
+    'Verified actual production React Add document geometry and authoring actions across ' +
+      receipt.cases.length +
+      ' browser profiles. Android APK/WebView qualification remains separate.',
+  );
+}

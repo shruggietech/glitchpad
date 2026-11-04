@@ -2,6 +2,7 @@ import { invoke } from '@tauri-apps/api/core';
 import contract from '../../../../packaging/desktop/document-workflow-probe.json';
 import {
   createDesktopDeliveryGateway,
+  createDesktopSaveOperationId,
   type DesktopDeliveryResult,
 } from './desktop-delivery-gateway';
 import { createNativeMetadataGateway } from './metadata-gateway';
@@ -145,10 +146,23 @@ export async function runPackageWorkflowProbe(): Promise<boolean> {
         projected.content === contract.saved_text,
     );
     await mark('recovery');
-    const saved = await gateway.save(dirty);
+    const operationId = createDesktopSaveOperationId();
+    state = tabReducer(state, {
+      type: 'destination_save_started',
+      id: dirty.id,
+      revision: dirty.revision,
+      operationId,
+    });
+    const saving = state.sessions[0];
+    requireProof(
+      saving.destination_save_revision === dirty.revision &&
+        saving.destination_save_operation_id === operationId,
+    );
+    const saved = await gateway.save(saving);
     const count = new TextEncoder().encode(contract.saved_text).length;
     requireProof(
-      saved.source_id === sourceId &&
+      saved.operation_id === operationId &&
+        saved.source_id === sourceId &&
         saved.accepted_session_revision === dirty.revision &&
         saved.byte_count === count &&
         same(saved.previous_external_revision, original.external_revision) &&
@@ -159,9 +173,15 @@ export async function runPackageWorkflowProbe(): Promise<boolean> {
       id: dirty.id,
       receipt: saved,
     });
+    state = tabReducer(state, {
+      type: 'destination_save_finished',
+      id: dirty.id,
+    });
     const clean: ShellSession = state.sessions[0];
     requireProof(
       !clean.dirty &&
+        clean.destination_save_revision === null &&
+        clean.destination_save_operation_id === null &&
         clean.saved_revision === dirty.revision &&
         same(clean.external_revision, saved.new_external_revision),
     );

@@ -1,4 +1,4 @@
-"$schema" = "schemas/schema.json"
+"$schema" = "./schemas/schema.json"
 
 [[permission]]
 identifier = "allow-default-urls"

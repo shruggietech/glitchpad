@@ -22,6 +22,14 @@
         {
           "path": "src/reveal_item_in_dir.rs",
           "sha256": "de6b382594b07975634b5cb3fac079420749eb4f7bda922c2ed2995cade13a7f"
+        },
+        {
+          "path": "permissions/default.toml",
+          "sha256": "be51e660b67485882ccc78126de75c5b86e140bcb41994edf52db4811ae2d446"
+        },
+        {
+          "path": "permissions/allow-default-urls.toml",
+          "sha256": "fe7807563ebb5feb81663a3c540ed027b30dd271bb4d335894f2928342beb49b"
         }
       ]
     },
@@ -51,7 +59,19 @@
   "modified_files": [
     "Cargo.toml (Linux zbus dependency only)",
     "tauri-plugin-opener/src/reveal_item_in_dir.rs (Linux implementation and persistent-runtime regression)",
-    "tauri-plugin-single-instance/src/platform_impl/linux.rs"
+    "tauri-plugin-single-instance/src/platform_impl/linux.rs",
+    "tauri-plugin-opener/permissions/{default,allow-default-urls}.toml (explicit relative schema targets; permission bodies unchanged)"
   ],
-  "retirement": "Remove patches after maintained upstream releases provide compatible zbus 6 integration and full Linux lifecycle qualification passes"
+  "retirement": "Remove patches after maintained upstream releases provide compatible zbus 6 integration and full Linux lifecycle qualification passes",
+  "follow_up_decisions": [
+    {
+      "date": "2026-11-04",
+      "slice": "S046",
+      "reason": "Use explicit ./ relative schema paths for the pinned TOML validator without disabling source schema validation or changing permission definitions",
+      "files": [
+        "permissions/default.toml",
+        "permissions/allow-default-urls.toml"
+      ]
+    }
+  ]
 }

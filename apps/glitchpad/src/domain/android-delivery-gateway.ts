@@ -1,3 +1,5 @@
+import { pickerCancelled } from './android-authoring-gateway';
+
 import {
   addPluginListener,
   invoke,
@@ -16,6 +18,9 @@ import {
 } from './android-restoration-gateway';
 
 export interface AndroidDeliveryGateway {
+  choose?(): Promise<AndroidSourceSummary | null>;
+  subscribeBack?(handler: (requestId: string) => void): Promise<() => void>;
+  completeBack?(requestId: string, handled: boolean): Promise<void>;
   close(sourceId: string): Promise<void>;
   drain(): Promise<AndroidDeliveryDrain>;
   materialize(source: AndroidSourceSummary): Promise<ShellSession>;
@@ -39,6 +44,29 @@ export const createNativeAndroidDeliveryGateway = (
     handler,
   ) => addPluginListener('android-source', 'deliveriesReady', handler),
 ): AndroidDeliveryGateway => ({
+  async choose() {
+    try {
+      return (await call('open_android_document', {
+        mediaType: null,
+      })) as AndroidSourceSummary;
+    } catch (error) {
+      if (pickerCancelled(error)) return null;
+      throw error;
+    }
+  },
+  async subscribeBack(handler) {
+    const listener = await addPluginListener<{ requestId: string }>(
+      'android-source',
+      'androidBackRequested',
+      (value) => handler(value.requestId),
+    );
+    return () => {
+      void listener.unregister();
+    };
+  },
+  async completeBack(requestId, handled) {
+    await call('complete_android_back', { requestId, handled });
+  },
   async close(sourceId) {
     await call('close_android_source', { sourceId });
   },

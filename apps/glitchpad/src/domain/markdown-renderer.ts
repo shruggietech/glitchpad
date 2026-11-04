@@ -1,3 +1,4 @@
+import { consumeRecoveryProbe } from './recovery-probes';
 import {
   MARKDOWN_PREVIEW_DEBOUNCE_MS,
   MARKDOWN_RENDER_TIMEOUT_MS,
@@ -18,9 +19,11 @@ export interface MarkdownExecutor {
 
 export const directMarkdownExecutor: MarkdownExecutor = {
   async execute(request, signal) {
-    if (signal.aborted) throw new DOMException('Operation cancelled', 'AbortError');
+    if (signal.aborted)
+      throw new DOMException('Operation cancelled', 'AbortError');
     const result = await renderMarkdown(request);
-    if (signal.aborted) throw new DOMException('Operation cancelled', 'AbortError');
+    if (signal.aborted)
+      throw new DOMException('Operation cancelled', 'AbortError');
     return result;
   },
 };
@@ -33,12 +36,19 @@ export class WorkerMarkdownExecutor implements MarkdownExecutor {
     signal: AbortSignal,
   ): Promise<MarkdownRenderResult> {
     return new Promise((resolve, reject) => {
-      const worker = new Worker(new URL('./markdown-worker.ts', import.meta.url), {
-        type: 'module',
-        name: `markdown-${request.session_id}`,
-      });
-      const releaseWorker = this.resources?.acquire('worker') ?? (() => undefined);
+      const worker = new Worker(
+        new URL('./markdown-worker.ts', import.meta.url),
+        {
+          type: 'module',
+          name: `markdown-${request.session_id}`,
+        },
+      );
+      const releaseWorker =
+        this.resources?.acquire('worker') ?? (() => undefined);
+      let finished = false;
       const finish = () => {
+        if (finished) return;
+        finished = true;
         signal.removeEventListener('abort', cancel);
         worker.terminate();
         releaseWorker();
@@ -56,7 +66,16 @@ export class WorkerMarkdownExecutor implements MarkdownExecutor {
         finish();
         reject(new Error('Markdown worker failed'));
       };
-      worker.postMessage(request);
+      worker.onmessageerror = () => {
+        finish();
+        reject(new Error('Markdown worker message failed'));
+      };
+      try {
+        worker.postMessage(request);
+      } catch {
+        finish();
+        reject(new Error('Markdown worker request failed'));
+      }
     });
   }
 }
@@ -70,6 +89,7 @@ interface ActiveRender {
   generation: number;
   abort: AbortController;
   timer: ReturnType<typeof setTimeout> | null;
+  deadline: ReturnType<typeof setTimeout> | null;
   resolve: (result: MarkdownRenderResult | null) => void;
   releaseResources: () => void;
 }
@@ -86,7 +106,9 @@ export class MarkdownRendererClient {
     private readonly debounceMs = MARKDOWN_PREVIEW_DEBOUNCE_MS,
     private readonly timeoutMs = MARKDOWN_RENDER_TIMEOUT_MS,
     private readonly resources?: ResourceOwner,
-    private readonly onMeasurement?: (measurement: RendererPerformanceMeasurement) => void,
+    private readonly onMeasurement?: (
+      measurement: RendererPerformanceMeasurement,
+    ) => void,
   ) {
     this.executor = executor ?? defaultExecutor(resources);
   }
@@ -118,51 +140,58 @@ export class MarkdownRendererClient {
         generation,
         abort,
         timer: null,
+        deadline: null,
         resolve,
         releaseResources,
       };
+      const settle = (result: MarkdownRenderResult) => {
+        if (!this.isCurrentGeneration(active)) return;
+        if (active.deadline !== null) clearTimeout(active.deadline);
+        this.active = null;
+        releaseResources();
+        this.publishMeasurement(result);
+        resolve(result);
+      };
       active.timer = setTimeout(() => {
         active.timer = null;
-        let timedOut = false;
-        const timeout = setTimeout(() => {
-          timedOut = true;
+        active.deadline = setTimeout(() => {
+          // Settle independently of executor cancellation. A wedged executor must
+          // not leave the document pending forever or commit a late result.
+          settle(this.timeoutResult(request));
           abort.abort();
         }, this.timeoutMs);
         releases.push(this.resources?.acquire('timer') ?? (() => undefined));
-        void this.executor
-          .execute(request, abort.signal)
+        void Promise.resolve()
+          .then(() => {
+            if (consumeRecoveryProbe('worker'))
+              throw new Error('injected_worker_failure');
+            if (consumeRecoveryProbe('parser'))
+              request.failure_probe = 'parser';
+            return this.executor.execute(request, abort.signal);
+          })
           .then((result) => {
-            clearTimeout(timeout);
             if (!this.isCurrentGeneration(active)) return;
-            this.active = null;
-            releaseResources();
-            if (timedOut) {
-              resolve(this.timeoutResult(request));
-              return;
-            }
-            const matches =
-              result.request_id === request.request_id &&
-              result.session_id === request.session_id &&
-              result.source_revision === request.source_revision &&
-              result.sanitizer_version === request.sanitizer_version;
-            const current = matches ? result : null;
-            if (current) this.publishMeasurement(current);
-            resolve(current);
+            const matches = this.validResult(result, request);
+            settle(
+              matches
+                ? result
+                : this.failureResult(
+                    request,
+                    'markdown_projection_invalid',
+                    'Markdown preview returned an invalid projection. Source remains available.',
+                    0,
+                  ),
+            );
           })
           .catch(() => {
-            clearTimeout(timeout);
-            if (!this.isCurrentGeneration(active)) return;
-            this.active = null;
-            releaseResources();
-            const failure = this.failureResult(
+            settle(
+              this.failureResult(
                 request,
-                timedOut
-                  ? 'Markdown preview timed out safely. Source remains available.'
-                  : 'Markdown preview failed safely. Source remains available.',
-                timedOut ? this.timeoutMs : 0,
-              );
-            this.publishMeasurement(failure);
-            resolve(failure);
+                'markdown_worker_failed',
+                'Markdown preview worker failed. Source remains available.',
+                0,
+              ),
+            );
           });
       }, this.debounceMs);
       this.active = active;
@@ -172,9 +201,10 @@ export class MarkdownRendererClient {
   cancel(): void {
     const active = this.active;
     if (!active) return;
-    if (active.timer) clearTimeout(active.timer);
-    active.abort.abort();
+    if (active.timer !== null) clearTimeout(active.timer);
+    if (active.deadline !== null) clearTimeout(active.deadline);
     this.active = null;
+    active.abort.abort();
     active.releaseResources();
     active.resolve(null);
   }
@@ -191,22 +221,18 @@ export class MarkdownRendererClient {
     this.resources?.dispose();
   }
 
-  private isCurrent(active: ActiveRender): boolean {
+  private isCurrentGeneration(active: ActiveRender): boolean {
     return (
       !this.disposed &&
       this.active === active &&
-      this.generation === active.generation &&
-      !active.abort.signal.aborted
+      this.generation === active.generation
     );
-  }
-
-  private isCurrentGeneration(active: ActiveRender): boolean {
-    return !this.disposed && this.active === active && this.generation === active.generation;
   }
 
   private timeoutResult(request: MarkdownRenderRequest): MarkdownRenderResult {
     return this.failureResult(
       request,
+      'markdown_render_timeout',
       'Markdown preview timed out safely. Source remains available.',
       this.timeoutMs,
     );
@@ -214,6 +240,7 @@ export class MarkdownRendererClient {
 
   private failureResult(
     request: MarkdownRenderRequest,
+    code: MarkdownRenderResult['diagnostics'][number]['code'],
     message: string,
     durationMs: number,
   ): MarkdownRenderResult {
@@ -225,7 +252,7 @@ export class MarkdownRendererClient {
       tree: null,
       outline: [],
       search_text: [],
-      diagnostics: [{ code: 'markdown_parse_failed', message }],
+      diagnostics: [{ code, message }],
       measurements: {
         source_bytes: new TextEncoder().encode(request.source_text).byteLength,
         parse_duration_ms: durationMs,
@@ -237,14 +264,45 @@ export class MarkdownRendererClient {
     };
   }
 
+  private validResult(
+    result: MarkdownRenderResult,
+    request: MarkdownRenderRequest,
+  ): boolean {
+    return Boolean(
+      result &&
+      result.request_id === request.request_id &&
+      result.session_id === request.session_id &&
+      result.source_revision === request.source_revision &&
+      result.sanitizer_version === request.sanitizer_version &&
+      ['ready', 'empty', 'limited', 'cancelled', 'failed'].includes(
+        result.status,
+      ) &&
+      Array.isArray(result.outline) &&
+      Array.isArray(result.search_text) &&
+      Array.isArray(result.diagnostics) &&
+      result.measurements &&
+      Object.values(result.measurements).every(
+        (value) =>
+          typeof value === 'number' && Number.isFinite(value) && value >= 0,
+      ) &&
+      (result.tree === null ||
+        (result.tree.type === 'root' && Array.isArray(result.tree.children))) &&
+      (!['ready', 'empty'].includes(result.status) || result.tree !== null),
+    );
+  }
+
   private publishMeasurement(result: MarkdownRenderResult): void {
-    this.onMeasurement?.({
-      renderer: 'markdown',
-      owner_id: result.session_id,
-      source_revision: result.source_revision,
-      source_bytes: result.measurements.source_bytes,
-      duration_ms: result.measurements.parse_duration_ms,
-      status: result.status,
-    });
+    try {
+      this.onMeasurement?.({
+        renderer: 'markdown',
+        owner_id: result.session_id,
+        source_revision: result.source_revision,
+        source_bytes: result.measurements.source_bytes,
+        duration_ms: result.measurements.parse_duration_ms,
+        status: result.status,
+      });
+    } catch {
+      /* Observability must not interrupt the terminal render result. */
+    }
   }
 }

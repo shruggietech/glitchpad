@@ -477,6 +477,20 @@ public static class GlitchpadNativeInput
 '@
 $isolatedState = Join-Path ([IO.Path]::GetTempPath()) ("glitchpad-s027-{0}" -f [Guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $isolatedState -Force | Out-Null
+# Extend the licensed governed corpus with an original Unicode recovery case.
+# The owner-reported input bytes remain unavailable; this is a synthetic regression.
+$markdownGovernedFixturePath = Join-Path $isolatedState 's046-governed.md'
+$governedMarkdownSource = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../fixtures/markdown/sources/kitchen-sink.md'))
+$governedMarkdown = [IO.File]::ReadAllText($governedMarkdownSource, [Text.Encoding]::UTF8) + @'
+
+# S046 Governed Markdown A4D9
+
+Unicode café 漢字 🦄
+
+[S046_GOVERNED_RAW_SENTINEL]: https://example.invalid/s046
+'@
+[IO.File]::WriteAllText($markdownGovernedFixturePath, $governedMarkdown, [Text.UTF8Encoding]::new($false))
+$governedMarkdownDigest = (Get-FileHash -LiteralPath $markdownGovernedFixturePath -Algorithm SHA256).Hash
 $isolatedEnvironment = @{ APPDATA = $isolatedState; LOCALAPPDATA = $isolatedState }
 $scenarioClock = [Diagnostics.Stopwatch]::StartNew()
 $script:readinessStage = 'launch'
@@ -511,6 +525,14 @@ try {
     $deadline = [DateTimeOffset]::UtcNow.AddSeconds(10)
     do { Start-Sleep -Milliseconds 250 } while ((Get-TabCount $process) -ne 0 -and [DateTimeOffset]::UtcNow -lt $deadline)
     if ((Get-TabCount $process) -ne 0) { throw 'Closing from two documents back to one did not hide the tab strip.' }
+    Wait-ElementText $process ("{0} text editor" -f [IO.Path]::GetFileName($textFixturePath)) 'S027 TXT CONTENT 7E5A'
+    Send-MarkdownDelivery $markdownGovernedFixturePath $process 'S046 Governed Markdown A4D9' 'S046_GOVERNED_RAW_SENTINEL'
+    Wait-NamedElement $process 'Glitchpad Markdown Fixture' | Out-Null
+    Wait-WindowText $process 'Unicode café 漢字 🦄'
+    Wait-WindowText $process 'Tables'
+    Wait-WindowText $process 'Original fixture footnote.'
+    if ((Get-FileHash -LiteralPath $markdownGovernedFixturePath -Algorithm SHA256).Hash -ne $governedMarkdownDigest) { throw 'Governed Markdown delivery modified its source bytes.' }
+    Close-Document $process $markdownGovernedFixturePath
     Wait-ElementText $process ("{0} text editor" -f [IO.Path]::GetFileName($textFixturePath)) 'S027 TXT CONTENT 7E5A'
     $scenarioSucceeded = $true
 }
@@ -649,6 +671,8 @@ foreach ($fixture in $fixtureDigests.GetEnumerator()) {
     fixture_absence = 'pass'
     text_delivery = 'pass'
     markdown_delivery = 'pass'
+    markdown_governed_corpus = 'pass'
+    reported_markdown_input = 'unavailable_not_replayed'
     markdown_minimal = 'pass'
     markdown_edit_save_preview = 'pass'
     document_scoped_recovery = 'pass'

@@ -23,9 +23,9 @@ use glitchpad_android_source::AndroidSource;
 
 #[cfg(target_os = "android")]
 use glitchpad_core::source::{
-    AndroidRestorationResult, AndroidRestorationStatus, AndroidSaveAsReceipt, AndroidSaveAsRequest,
-    DurabilityGuarantee, MAX_SAVE_BYTES, MAX_SOURCE_CHUNK_BYTES, RevalidationResult,
-    RevalidationStatus,
+    AndroidCreateReceipt, AndroidCreateRequest, AndroidRestorationResult, AndroidRestorationStatus,
+    AndroidSaveAsReceipt, AndroidSaveAsRequest, DurabilityGuarantee, MAX_SAVE_BYTES,
+    MAX_SOURCE_CHUNK_BYTES, RevalidationResult, RevalidationStatus,
 };
 
 #[cfg(any(target_os = "android", test))]
@@ -202,7 +202,7 @@ impl AndroidSourceHost {
             #[cfg(target_os = "android")]
             self.plugin
                 .discard(&_existing.bridge_token)
-                .map_err(plugin_error)?;
+                .map_err(|error| plugin_error(&error))?;
             return Ok(candidate);
         }
         registry.sources.insert(
@@ -297,7 +297,7 @@ impl AndroidSourceHost {
         let batch = self
             .plugin
             .drain_deliveries(maximum)
-            .map_err(plugin_error)?;
+            .map_err(|error| plugin_error(&error))?;
         self.accept_drain(&batch)
     }
 
@@ -309,7 +309,7 @@ impl AndroidSourceHost {
         let delivery = self
             .plugin
             .open_document(media_type)
-            .map_err(plugin_error)?;
+            .map_err(|error| plugin_error(&error))?;
         self.accept_delivery(&delivery)
     }
 
@@ -470,7 +470,7 @@ impl AndroidSourceHost {
                 // The bridge closes its stream as soon as its budget is used.
                 // Reserve one EOF byte, which is never accepted into source data.
                 .open_stream(&source.bridge_token, 0, maximum.saturating_add(u64::from(!probe)))
-                .map_err(plugin_error)?;
+                .map_err(|error| plugin_error(&error))?;
             let result = (|| {
                 let bytes = read_bounded_image_stream(
                     maximum,
@@ -480,7 +480,7 @@ impl AndroidSourceHost {
                     |length| {
                         self.plugin
                             .read_stream(&opened.stream_token, length)
-                            .map_err(plugin_error)
+                            .map_err(|error| plugin_error(&error))
                     },
                 )?;
                 if !self.image_revision_matches(source_id, expected)? {
@@ -907,7 +907,7 @@ impl AndroidSourceHost {
                 ) {
                     self.invalidate_source_streams(source_id);
                 }
-                return Err(plugin_error(error));
+                return Err(plugin_error(&error));
             }
         };
         let mut refreshed = summary_from_delivery(&observed)?;
@@ -936,7 +936,7 @@ impl AndroidSourceHost {
                 ) {
                     self.invalidate_source_streams(source_id);
                 }
-                return Err(plugin_error(error));
+                return Err(plugin_error(&error));
             }
         };
         let current = summary_from_delivery(&observed)?.external_revision;
@@ -1013,7 +1013,7 @@ impl AndroidSourceHost {
         let opened = self
             .plugin
             .open_stream(&source.bridge_token, offset, total_budget)
-            .map_err(plugin_error)?;
+            .map_err(|error| plugin_error(&error))?;
         let lease = StreamLease {
             stream_id: StreamId(Uuid::new_v4().to_string()),
             source_id: source_id.clone(),
@@ -1067,7 +1067,7 @@ impl AndroidSourceHost {
         let response = self
             .plugin
             .read_stream(&stream.bridge_token, length)
-            .map_err(plugin_error)?;
+            .map_err(|error| plugin_error(&error))?;
         if response.bytes.len() as u64 > length {
             return Err(safe_error(
                 CoreErrorCategory::InternalInvariant,
@@ -1135,7 +1135,7 @@ impl AndroidSourceHost {
         let response = self
             .plugin
             .read_range(&record.bridge_token, offset, length)
-            .map_err(plugin_error)?;
+            .map_err(|error| plugin_error(&error))?;
         if response.bytes.len() as u64 > length {
             return Err(safe_error(
                 CoreErrorCategory::InternalInvariant,
@@ -1197,7 +1197,10 @@ impl AndroidSourceHost {
 
     #[cfg(target_os = "android")]
     pub fn restore(&self) -> Result<Vec<AndroidRestorationResult>, CoreError> {
-        let batch = self.plugin.restore().map_err(plugin_error)?;
+        let batch = self
+            .plugin
+            .restore()
+            .map_err(|error| plugin_error(&error))?;
         let restored_batch = DeliveryBatch {
             deliveries: batch.deliveries,
             rejections: Vec::new(),
@@ -1251,7 +1254,7 @@ impl AndroidSourceHost {
         let observed = self
             .plugin
             .revalidate(&record.bridge_token)
-            .map_err(plugin_error)?;
+            .map_err(|error| plugin_error(&error))?;
         let current = summary_from_delivery(&observed)?.external_revision;
         if current != request.expected_external_revision {
             return Err(safe_error(
@@ -1266,8 +1269,9 @@ impl AndroidSourceHost {
                 request.media_type.as_deref(),
                 &request.suggested_name,
                 &request.bytes,
+                Some(&record.bridge_token),
             )
-            .map_err(plugin_error)?;
+            .map_err(|error| plugin_error(&error))?;
         if response.byte_count != request.bytes.len() as u64 {
             return Err(safe_error(
                 CoreErrorCategory::PartialWritePrevented,
@@ -1283,6 +1287,74 @@ impl AndroidSourceHost {
             byte_count: response.byte_count,
             durability: DurabilityGuarantee::RecoverableNonAtomic,
         })
+    }
+
+    /// Creates a verified provider destination without claiming prior source authority.
+    #[cfg(target_os = "android")]
+    pub fn create_document(
+        &self,
+        request: AndroidCreateRequest,
+    ) -> Result<AndroidCreateReceipt, CoreError> {
+        if !request.is_valid() {
+            return Err(safe_error(
+                CoreErrorCategory::InvalidInput,
+                "The destination request exceeds its bounded contract",
+                true,
+            ));
+        }
+        let response = self
+            .plugin
+            .save_as(
+                request.media_type.as_deref(),
+                &request.suggested_name,
+                &request.bytes,
+                None,
+            )
+            .map_err(|error| plugin_error(&error))?;
+        if response.byte_count != request.bytes.len() as u64 {
+            return Err(safe_error(
+                CoreErrorCategory::PartialWritePrevented,
+                "Android provider did not verify all destination bytes",
+                true,
+            ));
+        }
+        Ok(AndroidCreateReceipt {
+            source: self.accept_delivery(&response.delivery)?,
+            byte_count: response.byte_count,
+            saved_revision: request.session_revision,
+        })
+    }
+
+    #[cfg(target_os = "android")]
+    pub fn share_diagnostics(
+        &self,
+        json: &str,
+    ) -> Result<glitchpad_android_source::models::DiagnosticShareResponse, CoreError> {
+        validate_diagnostic_share(json)?;
+        self.plugin
+            .share_diagnostics(json)
+            .map_err(|error| plugin_error(&error))
+    }
+
+    #[cfg(target_os = "android")]
+    pub fn diagnostic_environment(&self) -> Result<serde_json::Value, CoreError> {
+        let environment = self
+            .plugin
+            .diagnostic_environment()
+            .map_err(|error| plugin_error(&error))?;
+        Ok(serde_json::json!({
+            "android_version": environment.android_version,
+            "api_level": environment.api_level,
+            "webview_version": environment.webview_version,
+            "webview_package": environment.webview_package,
+        }))
+    }
+
+    #[cfg(target_os = "android")]
+    pub fn complete_back(&self, request_id: &str, handled: bool) -> Result<(), CoreError> {
+        self.plugin
+            .complete_back(request_id, handled)
+            .map_err(|error| plugin_error(&error))
     }
 
     #[cfg(target_os = "android")]
@@ -1321,7 +1393,7 @@ impl AndroidSourceHost {
                 source_sha256: &hash,
                 bytes: png,
             })
-            .map_err(plugin_error)?;
+            .map_err(|error| plugin_error(&error))?;
         if response.exported && response.byte_count != png.len() as u64 {
             return Err(safe_error(
                 CoreErrorCategory::PartialWritePrevented,
@@ -1342,7 +1414,7 @@ impl AndroidSourceHost {
         let record = self.source_record(source_id)?;
         self.plugin
             .close(&record.bridge_token)
-            .map_err(plugin_error)?;
+            .map_err(|error| plugin_error(&error))?;
         let mut registry = self.lock_registry()?;
         registry.sources.remove(source_id);
         registry
@@ -1523,22 +1595,86 @@ fn safe_error(category: CoreErrorCategory, summary: &'static str, retryable: boo
     CoreError::new(category, summary, retryable, true)
 }
 
-#[cfg(target_os = "android")]
-fn plugin_error(error: String) -> CoreError {
-    let category = if error.contains("permission_revoked") {
-        CoreErrorCategory::PermissionRevoked
-    } else if error.contains("budget_exceeded") {
-        CoreErrorCategory::BudgetExceeded
-    } else if error.contains("picker_cancelled") {
-        CoreErrorCategory::Unavailable
-    } else if error.contains("source_not_found") {
-        CoreErrorCategory::NotFound
-    } else if error.contains("write_verification_failed") {
-        CoreErrorCategory::PartialWritePrevented
-    } else {
-        CoreErrorCategory::Unavailable
+#[cfg(any(target_os = "android", test))]
+fn validate_diagnostic_share(json: &str) -> Result<(), CoreError> {
+    if json.len() > glitchpad_core::persistence::MAX_DIAGNOSTIC_BYTES {
+        return Err(safe_error(
+            CoreErrorCategory::BudgetExceeded,
+            "Diagnostic export exceeds its byte limit",
+            true,
+        ));
+    }
+    let bundle = serde_json::from_str::<glitchpad_core::persistence::DiagnosticBundle>(json)
+        .map_err(|_| {
+            safe_error(
+                CoreErrorCategory::InvalidInput,
+                "Diagnostic export must be a redacted bundle",
+                true,
+            )
+        })?;
+    if bundle.schema_version != glitchpad_core::persistence::APPLICATION_STATE_SCHEMA_VERSION
+        || !bundle.environment.is_valid()
+        || !bundle
+            .native_environment
+            .as_ref()
+            .is_none_or(glitchpad_core::persistence::AndroidDiagnosticRuntime::is_valid)
+        || bundle.events.len() > glitchpad_core::persistence::MAX_DIAGNOSTIC_EVENTS
+        || !bundle
+            .events
+            .iter()
+            .all(glitchpad_core::persistence::DiagnosticEvent::is_valid)
+    {
+        return Err(safe_error(
+            CoreErrorCategory::InvalidInput,
+            "Diagnostic export exceeds its bounded contract",
+            true,
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(any(target_os = "android", test))]
+fn plugin_error(error: &str) -> CoreError {
+    let reason = [
+        "picker_cancelled",
+        "permission_revoked",
+        "budget_exceeded",
+        "source_not_found",
+        "write_verification_failed",
+        "original_destination_denied",
+        "destination_conflict",
+        "independent_destination_required",
+        "invalid_destination_name",
+        "invalid_media_type",
+        "share_capacity_exceeded",
+        "share_unavailable",
+        "operation_pending",
+        "picker_failed",
+    ]
+    .into_iter()
+    .find(|code| error.contains(code))
+    .unwrap_or("provider_unavailable");
+    let category = match reason {
+        "permission_revoked" => CoreErrorCategory::PermissionRevoked,
+        "budget_exceeded" | "share_capacity_exceeded" => CoreErrorCategory::BudgetExceeded,
+        "source_not_found" => CoreErrorCategory::NotFound,
+        "write_verification_failed" => CoreErrorCategory::PartialWritePrevented,
+        "original_destination_denied"
+        | "destination_conflict"
+        | "independent_destination_required" => CoreErrorCategory::Conflict,
+        "invalid_destination_name" | "invalid_media_type" => CoreErrorCategory::InvalidInput,
+        _ => CoreErrorCategory::Unavailable,
     };
-    safe_error(category, "Android provider operation failed safely", true)
+    safe_error(
+        category,
+        if reason == "picker_cancelled" {
+            "Android document selection was cancelled"
+        } else {
+            "Android provider operation did not complete"
+        },
+        reason != "picker_cancelled",
+    )
+    .with_context("reason", reason)
 }
 
 #[cfg(target_os = "android")]
@@ -1555,6 +1691,52 @@ fn revalidation_failure_status(error: &str) -> RevalidationStatus {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn android_errors_preserve_neutral_cancellation_and_only_allowlisted_reasons() {
+        let cancelled = plugin_error("picker_cancelled");
+        assert_eq!(
+            cancelled.context.get("reason").map(String::as_str),
+            Some("picker_cancelled")
+        );
+        assert!(!cancelled.retryable);
+        let refusal = plugin_error("destination_conflict content://private/name");
+        assert_eq!(refusal.category, CoreErrorCategory::Conflict);
+        assert_eq!(
+            refusal.context.get("reason").map(String::as_str),
+            Some("destination_conflict")
+        );
+        assert!(!serde_json::to_string(&refusal).unwrap().contains("private"));
+        let unknown = plugin_error("secret exception content://private/name");
+        assert_eq!(
+            unknown.context.get("reason").map(String::as_str),
+            Some("provider_unavailable")
+        );
+    }
+
+    #[test]
+    fn diagnostic_share_rejects_extra_content_unknown_schema_and_oversized_payloads() {
+        let valid = serde_json::json!({
+            "schema_version": 1, "generated_unix_ms": 1,
+            "environment": { "product_version": "0.2.0", "specification_version": "0.2.0", "platform": "android",
+                "architecture": "aarch64", "webview_version": null, "core_version": "0.2.0", "build_commit": null },
+            "events": []
+        });
+        assert!(validate_diagnostic_share(&valid.to_string()).is_ok());
+        let mut extra = valid.clone();
+        extra["document_content"] = serde_json::json!("private text");
+        let error = validate_diagnostic_share(&extra.to_string()).unwrap_err();
+        assert_eq!(error.category, CoreErrorCategory::InvalidInput);
+        assert!(!serde_json::to_string(&error).unwrap().contains("private"));
+        let mut unsupported = valid;
+        unsupported["schema_version"] = serde_json::json!(99);
+        assert!(validate_diagnostic_share(&unsupported.to_string()).is_err());
+        let oversized = " ".repeat(glitchpad_core::persistence::MAX_DIAGNOSTIC_BYTES + 1);
+        assert_eq!(
+            validate_diagnostic_share(&oversized).unwrap_err().category,
+            CoreErrorCategory::BudgetExceeded
+        );
+    }
 
     fn delivery(token: &str, strength: &str) -> BridgeDelivery {
         BridgeDelivery {

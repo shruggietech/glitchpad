@@ -16,7 +16,7 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
     let builder = Builder::new("android-source");
     #[cfg(target_os = "android")]
     let builder = builder.setup(|app, api| {
-        app.manage(mobile::init(app, api)?);
+        app.manage(mobile::init(app, &api)?);
         Ok(())
     });
     builder.build()

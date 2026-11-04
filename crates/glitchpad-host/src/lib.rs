@@ -1,6 +1,8 @@
 //! Tauri host boundary for desktop and Android builds.
 
-use tauri::{Emitter, Manager};
+#[cfg(not(mobile))]
+use tauri::Emitter;
+use tauri::Manager;
 
 pub mod app_state;
 #[cfg(not(mobile))]
@@ -187,6 +189,10 @@ pub fn run() {
         revalidate_android_source,
         restore_android_sources,
         save_android_source_as,
+        create_android_document,
+        share_diagnostics,
+        android_diagnostic_environment,
+        complete_android_back,
         close_android_source,
     ]);
 
@@ -592,4 +598,43 @@ fn close_android_source(
     source_id: glitchpad_core::source::SourceId,
 ) -> Result<(), glitchpad_core::contracts::CoreError> {
     host.close(&source_id)
+}
+
+#[cfg(target_os = "android")]
+#[tauri::command]
+fn create_android_document(
+    host: tauri::State<'_, android_source::AndroidSourceHost>,
+    request: glitchpad_core::source::AndroidCreateRequest,
+) -> Result<glitchpad_core::source::AndroidCreateReceipt, glitchpad_core::contracts::CoreError> {
+    host.create_document(request)
+}
+
+#[cfg(target_os = "android")]
+#[tauri::command]
+fn share_diagnostics(
+    host: tauri::State<'_, android_source::AndroidSourceHost>,
+    json: String,
+) -> Result<
+    glitchpad_android_source::models::DiagnosticShareResponse,
+    glitchpad_core::contracts::CoreError,
+> {
+    host.share_diagnostics(&json)
+}
+
+#[cfg(target_os = "android")]
+#[tauri::command]
+fn android_diagnostic_environment(
+    host: tauri::State<'_, android_source::AndroidSourceHost>,
+) -> Result<serde_json::Value, glitchpad_core::contracts::CoreError> {
+    host.diagnostic_environment()
+}
+
+#[cfg(target_os = "android")]
+#[tauri::command]
+fn complete_android_back(
+    host: tauri::State<'_, android_source::AndroidSourceHost>,
+    request_id: String,
+    handled: bool,
+) -> Result<(), glitchpad_core::contracts::CoreError> {
+    host.complete_back(&request_id, handled)
 }

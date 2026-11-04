@@ -1,0 +1,67 @@
+/* AppFrame owns system/IME inset geometry through its overlay root. Android requires 48dp targets. */
+.add-document {
+  position: absolute;
+  inset-inline-end: var(--bb-spacing-control-block);
+  inset-block-end: var(--bb-spacing-control-block);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--bb-spacing-control-block);
+  max-inline-size: calc(100% - var(--bb-spacing-component));
+  max-block-size: calc(100% - var(--bb-spacing-component));
+  pointer-events: auto;
+}
+.add-document-menu {
+  display: grid;
+  flex: 1 1 auto;
+  min-block-size: 0;
+  max-inline-size: 100%;
+  overflow: auto;
+  border: var(--bb-border-default) solid var(--gl-border);
+  background: var(--gl-panel-raised);
+}
+.add-document button {
+  min-inline-size: 48px;
+  min-block-size: max(48px, var(--bb-interaction-target-minimum));
+  padding: var(--bb-spacing-control-block) var(--bb-spacing-control-inline);
+  border: var(--bb-border-default) solid var(--gl-border);
+  background: var(--gl-panel-raised);
+  color: var(--gl-fg);
+  text-align: start;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.add-document button:hover,
+.add-document button:focus-visible {
+  background: var(--gl-hover);
+}
+.add-document-trigger {
+  flex: 0 0 auto;
+  font-weight: var(--bb-typography-label-weight);
+}
+.add-document-scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+}
+.app-shell[data-android='true'] .document-surface {
+  padding-block-end: calc(
+    var(--gl-add-document-block-size, 48px) + var(--bb-spacing-component)
+  );
+}
+
+.app-shell[data-has-draft-identity='true'] {
+  grid-template-rows: auto auto minmax(0, 1fr);
+}
+.app-shell[data-has-draft-identity='true'] .document-surface {
+  grid-row: 3;
+}
+.draft-identity {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--bb-spacing-control-block);
+  padding-inline: var(--bb-spacing-control-block);
+  border-bottom: var(--bb-border-default) solid var(--gl-border);
+  color: var(--gl-fg);
+}

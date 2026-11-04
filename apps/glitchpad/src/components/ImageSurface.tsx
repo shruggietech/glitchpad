@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import type { TextEditorHandle } from './TextEditorSurface';
 import type { ShellSession } from '../domain/contracts';
 import { initialImageViewport, type ImageDocumentState, type ImageViewport, type ImageFamilyState } from '../domain/image-contract';
 import { nativeImageGateway, type ImageGateway } from '../domain/image-gateway';
@@ -13,7 +14,7 @@ interface Props {
 
 const clamp = (value: number, low: number, high: number) => Math.min(high, Math.max(low, value));
 
-export function ImageSurface({ session, gateway = nativeImageGateway, onImageChange, onOpenMetadata }: Props) {
+export const ImageSurface = forwardRef<TextEditorHandle, Props>(function ImageSurface({ session, gateway = nativeImageGateway, onImageChange, onOpenMetadata }, handleRef) {
   const pane = useRef<HTMLDivElement>(null);
   const callbacks = useRef({ onImageChange, onOpenMetadata });
   callbacks.current = { onImageChange, onOpenMetadata };
@@ -97,7 +98,10 @@ export function ImageSurface({ session, gateway = nativeImageGateway, onImageCha
         if (abort.signal.aborted) return;
         const busy = error && typeof error === 'object' && 'context' in error && (error as { context?: { image_failure?: string } }).context?.image_failure === 'busy';
         if (busy) { setStatus('Waiting for another image decode to finish…'); retryTimer = setTimeout(() => { if (!abort.signal.aborted) void run(); }, 250); }
-        else setStatus('This image could not be previewed safely. You can retry or inspect file information.');
+        else {
+          setStatus('This image could not be previewed safely. You can retry or inspect file information.');
+          callbacks.current.onImageChange?.(session.id, session.revision, { ...imageState.current, status: 'failed' });
+        }
       }
     };
     void run();
@@ -153,6 +157,17 @@ export function ImageSurface({ session, gateway = nativeImageGateway, onImageCha
     callbacks.current.onImageChange?.(session.id, session.revision, { ...imageState.current, viewport: bounded });
   };
   const zoom = (factor: number) => apply({ ...viewport, zoom: clamp(viewport.zoom * factor, 0.1, 16) });
+  const fit = () => apply({ ...viewport, mode: 'fit', zoom: 1, pan_x: 0, pan_y: 0 });
+  useImperativeHandle(handleRef, () => ({
+    invoke(command) {
+      if (!url || !descriptor || session.lifecycle !== 'active') return false;
+      if (command === 'zoom_in') { zoom(1.25); return true; }
+      if (command === 'zoom_out') { zoom(1 / 1.25); return true; }
+      if (command === 'fit') { fit(); return true; }
+      return false;
+    },
+    selectRange() { return false; },
+  }));
   const pointerGesture = () => {
     const values = [...points.current.values()];
     if (values.length === 0) return null;
@@ -162,7 +177,7 @@ export function ImageSurface({ session, gateway = nativeImageGateway, onImageCha
 
   return <div className="image-layout">
     <div className="image-actions" role="toolbar" aria-label="Image controls">
-      <button type="button" disabled={!url} onClick={() => apply({ ...viewport, mode: 'fit', zoom: 1, pan_x: 0, pan_y: 0 })}>Fit</button>
+      <button type="button" disabled={!url} onClick={fit}>Fit</button>
       <button type="button" disabled={!url} onClick={() => apply({ ...viewport, mode: 'actual', zoom: 1, pan_x: 0, pan_y: 0 })}>Actual size</button>
       <button type="button" disabled={!url} aria-label="Zoom out" onClick={() => zoom(1 / 1.25)}>−</button>
       <output aria-label="Image zoom">{Math.round(viewport.zoom * 100)}%</output>
@@ -196,7 +211,7 @@ export function ImageSurface({ session, gateway = nativeImageGateway, onImageCha
         if (!url) return;
         if (e.key === '+' || e.key === '=') zoom(1.25);
         else if (e.key === '-') zoom(1 / 1.25);
-        else if (e.key === '0') apply(initialImageViewport());
+        else if (e.key === '0') fit();
         else if (e.key.startsWith('Arrow')) apply({ ...viewport, pan_x: viewport.pan_x + (e.key === 'ArrowLeft' ? 40 : e.key === 'ArrowRight' ? -40 : 0), pan_y: viewport.pan_y + (e.key === 'ArrowUp' ? 40 : e.key === 'ArrowDown' ? -40 : 0) });
         else return;
         e.preventDefault();
@@ -220,4 +235,4 @@ export function ImageSurface({ session, gateway = nativeImageGateway, onImageCha
     </div>
     {descriptor?.limitations.some(l => l !== 'unreleased_image_capability') && <p className="image-limitation" title={descriptor.limitations.filter(l => l !== 'unreleased_image_capability').join('; ').replaceAll('_', ' ')}>{descriptor.limitations.filter(l => l !== 'unreleased_image_capability').join('; ').replaceAll('_', ' ')}.</p>}
   </div>;
-}
+});

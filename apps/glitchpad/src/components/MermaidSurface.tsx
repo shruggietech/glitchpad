@@ -207,11 +207,18 @@ export const MermaidSurface = forwardRef<TextEditorHandle, MermaidSurfaceProps>(
         return true;
       }
       if (command === 'zoom_in') {
-        viewportRef.current?.zoomIn();
+        if (!viewportRef.current) return false;
+        viewportRef.current.zoomIn();
         return true;
       }
       if (command === 'zoom_out') {
-        viewportRef.current?.zoomOut();
+        if (!viewportRef.current) return false;
+        viewportRef.current.zoomOut();
+        return true;
+      }
+      if (command === 'fit') {
+        if (!viewportRef.current) return false;
+        viewportRef.current.fit();
         return true;
       }
       if (command === 'metadata') {
@@ -219,12 +226,12 @@ export const MermaidSurface = forwardRef<TextEditorHandle, MermaidSurfaceProps>(
       }
       if (command === 'go_to_line') {
         changeMode('source');
-        return true;
+        return new Promise<boolean>((resolve) => requestAnimationFrame(() => resolve(editorRef.current?.invoke('go_to_line') ?? false)));
       }
       if (mode === 'source') return editorRef.current?.invoke(command) ?? false;
       if (command === 'copy') {
-        void navigator.clipboard?.writeText(visibleResult?.search_text.join('\n') ?? textDocument.normalized_text);
-        return true;
+        if (!navigator.clipboard?.writeText) return false;
+        return navigator.clipboard.writeText(visibleResult?.search_text.join('\n') ?? textDocument.normalized_text).then(() => true);
       }
       return false;
     },

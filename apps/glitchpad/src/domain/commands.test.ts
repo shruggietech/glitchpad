@@ -69,6 +69,7 @@ describe('renderer-driven commands', () => {
       'outdent',
       'zoom_out',
       'zoom_in',
+      'fit',
       'save',
       'metadata',
     ]);

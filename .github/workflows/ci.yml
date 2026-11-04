@@ -248,7 +248,7 @@ jobs:
       - name: Build validation APK
         run: |
           export NDK_HOME="${ANDROID_SDK_ROOT}/ndk/28.2.13676358"
-          pnpm tauri android build --debug --apk --target aarch64 --ci --config '{"version":"0.0.1"}'
+          pnpm tauri android build --debug --apk --target aarch64 --ci
 
       - name: Upload validation APK
         uses: actions/upload-artifact@v7
@@ -259,6 +259,8 @@ jobs:
           retention-days: 7
 
   android-instrumentation:
+    env:
+      GLITCHPAD_BUILD_COMMIT: ${{ github.sha }}
     name: Android provider lifecycle (API ${{ matrix.api-level }})
     # Android emulator installation repeatedly stalls without hardware acceleration
     # on Linux-hosted runners. The Intel macOS image provides accelerated x86_64
@@ -312,13 +314,17 @@ jobs:
           shared-key: android-x86_64-api-${{ matrix.api-level }}
 
       - name: Build emulator APK and provider unit tests
+        env:
+          VITE_GLITCHPAD_RECOVERY_PROBES: '1'
         run: |
           export NDK_HOME="${ANDROID_SDK_ROOT}/ndk/28.2.13676358"
-          pnpm tauri android build --debug --apk --target x86_64 --ci --config '{"version":"0.0.1"}'
+          pnpm tauri android build --debug --apk --target x86_64 --ci
           ./crates/glitchpad-host/gen/android/gradlew --project-dir crates/glitchpad-host/gen/android :glitchpad-android-source:testDebugUnitTest --no-daemon
           ./crates/glitchpad-host/gen/android/gradlew --project-dir crates/glitchpad-host/gen/android :app:assembleUniversalDebugAndroidTest -PabiList=x86_64 -ParchList=x86_64 -PtargetList=x86_64 -x :app:rustBuildUniversalDebug -x :app:rustBuildX86_64Debug --no-daemon
 
       - name: Run provider, resolver, delivery, and restoration evidence
+        env:
+          GLITCHPAD_RECOVERY_PROBE_VARIANT: compiled_test_only
         uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2
         with:
           api-level: ${{ matrix.api-level }}
@@ -344,8 +350,8 @@ jobs:
             # close any dialog already present before testing the foreground WebView.
             if [ "${{ matrix.api-level }}" = "36" ]; then adb shell settings put global hide_error_dialogs 1 && adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS; fi
             bash scripts/run-android-connected-tests.sh
-            adb install -r crates/glitchpad-host/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk
-            adb install -r crates/glitchpad-host/gen/android/app/build/outputs/apk/androidTest/universal/debug/app-universal-debug-androidTest.apk
+            adb install -r "$RUNNER_TEMP/android-tested-candidate/application.apk"
+            adb install -r "$RUNNER_TEMP/android-tested-candidate/instrumentation.apk"
             adb shell settings put secure show_ime_with_hard_keyboard 1
             if [ "${{ matrix.api-level }}" = "36" ]; then adb shell cmd overlay list | grep -F 'com.android.internal.display.cutout.emulation.corner' && adb shell cmd overlay enable --user 0 com.android.internal.display.cutout.emulation.corner && adb shell cmd overlay list | grep -F '[x] com.android.internal.display.cutout.emulation.corner'; fi
             # Exercise API 36 AppFrame on a fresh emulator, before long provider suites.
@@ -353,7 +359,13 @@ jobs:
             if [ "${{ matrix.api-level }}" = "36" ]; then ime_id='com.shruggietech.glitchpad.test/com.shruggietech.glitchpad.shell.FixtureInputMethodService'; for attempt in $(seq 1 30); do if adb shell ime list -s -a | grep -Fq "$ime_id"; then break; fi; sleep 1; done; adb shell ime list -s -a | grep -Fq "$ime_id" && adb shell ime enable "$ime_id" && adb shell ime set "$ime_id" && adb shell settings get secure default_input_method | grep -Fqx "$ime_id"; fi
             if [ "${{ matrix.api-level }}" = "36" ]; then ANDROID_INSTRUMENTATION_PRESERVE_TEST_INPUT_METHOD=true bash scripts/run-android-instrumentation.sh "$RUNNER_TEMP/appframe-evidence.txt" 'appframe_evidence=' -e class com.shruggietech.glitchpad.shell.BrandBuilderAppFrameInstrumentedTest; fi
             if [ "${{ matrix.api-level }}" = "36" ]; then adb shell ime reset; fi
-            ANDROID_INSTRUMENTATION_RESET_APP_DATA=true bash scripts/run-android-instrumentation.sh "$RUNNER_TEMP/delivery-evidence.txt" 'delivery_evidence=' -e class com.shruggietech.glitchpad.source.AndroidDeliveryInstrumentedTest
+            ANDROID_INSTRUMENTATION_RESET_APP_DATA=true bash scripts/run-android-instrumentation.sh "$RUNNER_TEMP/delivery-evidence.txt" 'delivery_evidence=' -e class com.shruggietech.glitchpad.source.AndroidDeliveryInstrumentedTest#resolvedIntentDisplaysColdAndWarmProviderDocuments
+            for delivery_action in view send; do ANDROID_INSTRUMENTATION_RESET_APP_DATA=true bash scripts/run-android-instrumentation.sh "$RUNNER_TEMP/markdown-delivery-${delivery_action}-evidence.txt" 'markdown_delivery_evidence=' -e class com.shruggietech.glitchpad.source.AndroidDeliveryInstrumentedTest#governedMarkdownDeliveryRoutes -e deliveryAction "$delivery_action" -e expectedSource "${{ github.sha }}"; done
+            ANDROID_INSTRUMENTATION_RESET_APP_DATA=true bash scripts/run-android-instrumentation.sh "$RUNNER_TEMP/recovery-evidence.txt" 'recovery_evidence=' -e class com.shruggietech.glitchpad.source.AndroidDeliveryInstrumentedTest#standaloneAuthoringAndDiagnosticJourneys -e expectedSource "${{ github.sha }}"
+            ANDROID_INSTRUMENTATION_RESET_APP_DATA=true bash scripts/run-android-instrumentation.sh "$RUNNER_TEMP/root-recovery-evidence.txt" 'root_recovery_evidence=' -e class com.shruggietech.glitchpad.source.AndroidDeliveryInstrumentedTest#rootFailureRetainsDraft -e expectedSource "${{ github.sha }}"
+            if [ "${{ matrix.api-level }}" = "36" ]; then adb shell settings put system font_scale 2.0; result=0; ANDROID_INSTRUMENTATION_RESET_APP_DATA=true bash scripts/run-android-instrumentation.sh "$RUNNER_TEMP/recovery-font-evidence.txt" 'recovery_font_evidence=' -e class com.shruggietech.glitchpad.source.AndroidDeliveryInstrumentedTest#addDocumentAtMaximumFontScale || result=$?; adb shell settings put system font_scale 1.0; test "$result" = "0"; fi
+            ANDROID_INSTRUMENTATION_RESET_APP_DATA=true bash scripts/run-android-instrumentation.sh "$RUNNER_TEMP/draft-recovery-seed.txt" 'draft_recovery_seed=pass' -e class com.shruggietech.glitchpad.source.AndroidDeliveryInstrumentedTest#draftRecoveryAcrossProcessBoundary -e recoveryPhase seed
+            bash scripts/run-android-instrumentation.sh "$RUNNER_TEMP/draft-recovery-verify.txt" 'draft_recovery_verify=pass' -e class com.shruggietech.glitchpad.source.AndroidDeliveryInstrumentedTest#draftRecoveryAcrossProcessBoundary -e recoveryPhase verify
             bash scripts/run-android-instrumentation.sh "$RUNNER_TEMP/restoration-seed.txt" 'OK (1 test)' -e class com.shruggietech.glitchpad.source.RestorationInstrumentedTest#privateRestorationRecordSurvivesProcessBoundary -e restorationPhase seed
             bash scripts/run-android-instrumentation.sh "$RUNNER_TEMP/restoration-verify.txt" 'OK (1 test)' -e class com.shruggietech.glitchpad.source.RestorationInstrumentedTest#privateRestorationRecordSurvivesProcessBoundary -e restorationPhase verify
             bash scripts/run-android-instrumentation.sh "$RUNNER_TEMP/performance-evidence.txt" 'performance_evidence=' -e class com.shruggietech.glitchpad.performance.PerformanceInstrumentedTest
@@ -370,6 +382,8 @@ jobs:
             crates/glitchpad-host/gen/android/app/build/reports/androidTests/**
             crates/glitchpad-host/gen/android/app/build/outputs/androidTest-results/**
             ${{ runner.temp }}/*.txt
+            ${{ runner.temp }}/*.png
+            ${{ runner.temp }}/android-tested-candidate/**
           if-no-files-found: warn
           retention-days: 7
 

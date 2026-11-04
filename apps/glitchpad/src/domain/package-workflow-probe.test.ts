@@ -142,7 +142,10 @@ const bridge = (failAt = '', disabled = false, invalidResponse = '') => {
           modified_unix_nanos: '2',
         };
         return {
-          operation_id: args!.request.operation_id,
+          operation_id:
+            invalidResponse === 'save_operation'
+              ? 'foreign-operation'
+              : args!.request.operation_id,
           source_id: source.source_id,
           accepted_session_revision: args!.request.expected_session_revision,
           previous_external_revision: previous,
@@ -262,6 +265,7 @@ for (const command of [
 }
 
 for (const response of [
+  'save_operation',
   'revalidation_changed',
   'revalidation_revision',
   'reread',

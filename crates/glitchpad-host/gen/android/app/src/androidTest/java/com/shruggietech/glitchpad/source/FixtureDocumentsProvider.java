@@ -50,6 +50,12 @@ public final class FixtureDocumentsProvider extends DocumentsProvider {
     writeFixture(directory, "diagram.mmd", "flowchart LR\nSource --> Session\n");
     writeFixture(directory, "resolver-cold.md", "# S031 cold delivery\n\nS031_COLD_MARKER_4F2A\n");
     writeFixture(directory, "resolver-warm.txt", "S031_WARM_MARKER_7C9D\n");
+    writeFixture(directory, "recovery-readonly.md", "# Read-only source\n\nS046_ORIGINAL_UNCHANGED\n");
+    String recoveryCorpus = "# S046 Markdown corpus\n\nS046_CORPUS_MARKER\n\n- list item\n\n[local link](#s046-markdown-corpus)\n\n```text\ncode block\n```\n\n| Column | Value |\n| --- | --- |\n| row | Unicode \u03a9 \ud83e\uddea |\n";
+    writeFixture(directory, "recovery-corpus.md", recoveryCorpus);
+    writeFixture(directory, "recovery-warm-corpus.md", recoveryCorpus);
+    writeFixture(directory, "recovery-empty.md", "");
+    writeFixture(directory, "recovery-malformed.md", "# Incomplete [link\n\n```unclosed\nS046_MALFORMED_MARKER\n");
     for (String name : new String[] {"original.png", "original.jpg", "original.webp", "original.bmp", "original.tiff", "original.gif", "animated.webp", "original.svg", "entries.ico", "hostile.svg"}) {
       try (java.io.InputStream input = getContext().getAssets().open(name);
           FileOutputStream output = new FileOutputStream(new File(directory, name))) {
@@ -125,6 +131,9 @@ public final class FixtureDocumentsProvider extends DocumentsProvider {
       signal.throwIfCanceled();
     }
     File file = documentFile(documentId);
+    if (mode.contains("w") && ("recovery-readonly.md".equals(documentId) || documentId.startsWith("s046-write-refused-"))) {
+      throw new FileNotFoundException("fixture_write_refused");
+    }
     if ("pipe.txt".equals(documentId) && !mode.contains("w")) {
       return openPipe(file);
     }
@@ -138,7 +147,7 @@ public final class FixtureDocumentsProvider extends DocumentsProvider {
   @Override
   public String createDocument(String parentDocumentId, String mimeType, String displayName)
       throws FileNotFoundException {
-    if (!ROOT_ID.equals(parentDocumentId) || !("text/plain".equals(mimeType) || "image/png".equals(mimeType))) {
+    if (!ROOT_ID.equals(parentDocumentId) || !("text/plain".equals(mimeType) || "text/markdown".equals(mimeType) || "application/json".equals(mimeType) || "image/png".equals(mimeType))) {
       throw new FileNotFoundException(parentDocumentId);
     }
     String safeName = safeName(displayName);
@@ -228,7 +237,7 @@ public final class FixtureDocumentsProvider extends DocumentsProvider {
     row.add(Document.COLUMN_MIME_TYPE, mimeType(documentId));
     row.add(
         Document.COLUMN_FLAGS,
-        Document.FLAG_SUPPORTS_WRITE
+        ("recovery-readonly.md".equals(documentId) ? 0 : Document.FLAG_SUPPORTS_WRITE)
             | Document.FLAG_SUPPORTS_RENAME
             | Document.FLAG_SUPPORTS_DELETE);
     if (!"unknown-size.txt".equals(file.getName())
@@ -254,6 +263,8 @@ public final class FixtureDocumentsProvider extends DocumentsProvider {
       if (name.endsWith(".tiff")) return "image/tiff";
       return "image/" + name.substring("original.".length());
     }
+    if (name.endsWith(".json")) return "application/json";
+    if (name.endsWith(".md")) return "text/markdown";
     if ("resolver-cold".equals(name)) {
       return "text/markdown";
     }

@@ -230,3 +230,10 @@ RUN apt-get update \
     && python3 -m venv /opt/brand-venv \
     && /opt/brand-venv/bin/pip install --disable-pip-version-check --no-cache-dir coloraide==8.12.1 pillow==12.3.0 fonttools==4.65.0 brotli==1.2.0 pikepdf==10.13.0.post1 svgelements==1.9.6
 ENV PATH="/opt/brand-venv/bin:${PATH}"
+
+# Match the pinned kit producer's Node/resvg rasterizer and inspect bundled PDFs.
+RUN apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends poppler-utils \
+    && rm -rf /var/lib/apt/lists/* \
+    && npm install --prefix /opt/brand-node --no-audit --no-fund @resvg/resvg-js@2.6.2
+ENV NODE_PATH="/opt/brand-node/node_modules"

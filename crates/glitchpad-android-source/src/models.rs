@@ -94,6 +94,7 @@ pub struct PickerRequest<'a> {
     pub media_type: Option<&'a str>,
     pub suggested_name: Option<&'a str>,
     pub bytes: Option<&'a [u8]>,
+    pub protected_bridge_token: Option<&'a str>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -123,4 +124,31 @@ pub struct ImageExportCancelRequest<'a> {
 pub struct ImageExportResponse {
     pub exported: bool,
     pub byte_count: u64,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DiagnosticShareRequest<'a> {
+    pub json: &'a str,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct DiagnosticShareResponse {
+    pub status: String,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AndroidDiagnosticEnvironment {
+    pub android_version: String,
+    pub api_level: u32,
+    pub webview_version: Option<String>,
+    pub webview_package: Option<String>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AndroidBackResponse<'a> {
+    pub request_id: &'a str,
+    pub handled: bool,
 }

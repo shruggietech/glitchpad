@@ -51,10 +51,7 @@ export interface SourceDescriptor {
 }
 
 export type SourceWriteState =
-  | 'writable'
-  | 'read_only'
-  | 'save_as_only'
-  | 'unavailable';
+  'writable' | 'read_only' | 'save_as_only' | 'unavailable';
 
 export interface SourceMetadataSnapshot {
   source_id: SourceId;
@@ -70,12 +67,7 @@ export interface SourceMetadataSnapshot {
 }
 
 export type IntegrityState =
-  | 'pending'
-  | 'ready'
-  | 'stale'
-  | 'limited'
-  | 'cancelled'
-  | 'failed';
+  'pending' | 'ready' | 'stale' | 'limited' | 'cancelled' | 'failed';
 
 export interface IntegrityStartRequest {
   request_id: string;
@@ -292,10 +284,7 @@ export interface TextDocumentState {
 
 export type MarkdownViewMode = 'rendered' | 'source';
 export type MarkdownEligibility =
-  | 'full'
-  | 'source_only'
-  | 'large_read_only'
-  | 'refused';
+  'full' | 'source_only' | 'large_read_only' | 'refused';
 export type MarkdownProjectionStatus =
   | 'idle'
   | 'scheduled'
@@ -320,7 +309,11 @@ export interface MarkdownDocumentState {
 export interface MermaidDocumentState {
   mode: 'rendered' | 'source';
   render_revision: number | null;
-  render_status: import('./mermaid-contract').MermaidRenderStatus | 'idle' | 'scheduled' | 'stale';
+  render_status:
+    | import('./mermaid-contract').MermaidRenderStatus
+    | 'idle'
+    | 'scheduled'
+    | 'stale';
   preview_stale: boolean;
   viewport: import('./mermaid-contract').MermaidViewportState;
 }
@@ -356,7 +349,17 @@ export interface RecoveryInventoryEntry {
   status: RecoveryInventoryStatus;
 }
 
+export interface AndroidDestinationReceipt {
+  source: AndroidSourceSummary;
+  byte_count: number;
+  saved_revision: number;
+}
+
 export interface ShellSession {
+  edit_origin?: 'draft' | 'copy';
+  copy_source?: { source_id: SourceId; external_revision: ExternalRevision };
+  destination_save_revision?: number | null;
+  destination_save_operation_id?: string | null;
   id: string;
   source: SourceDescriptor;
   renderer: RendererDescriptor;
@@ -414,3 +417,19 @@ export const noRendererCapabilities = (): RendererCapabilities => ({
   save: false,
   inspect_metadata: false,
 });
+
+export const externalRevisionMatches = (
+  left: ExternalRevision | null | undefined,
+  right: ExternalRevision | null | undefined,
+): boolean =>
+  Boolean(
+    left &&
+    right &&
+    left.byte_length === right.byte_length &&
+    left.modified_unix_nanos === right.modified_unix_nanos &&
+    left.change_token === right.change_token &&
+    left.identity.authority === right.identity.authority &&
+    left.identity.scope === right.identity.scope &&
+    left.identity.token === right.identity.token &&
+    left.identity.strength === right.identity.strength,
+  );

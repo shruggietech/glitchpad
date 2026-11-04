@@ -1,5 +1,7 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
+import { createRef } from 'react';
+import type { TextEditorHandle } from './TextEditorSurface';
 
 import {
   noRendererCapabilities,
@@ -54,6 +56,42 @@ const session: ShellSession = {
 };
 
 describe('LargeTextSurface', () => {
+  it('drops old content when a replacement document has no source authority', async () => {
+    const { rerender } = render(<LargeTextSurface session={session} gateway={new MemoryLargeTextGateway('large-source', bytes)} />);
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(/read-only/i));
+    expect(screen.getByText(/first line/)).toBeInTheDocument();
+    rerender(<LargeTextSurface session={{ ...session, id: 'unavailable', source_id: null }} />);
+    expect(screen.getByRole('status')).toHaveTextContent('Large text source authority is unavailable');
+    expect(screen.queryByText(/first line/)).not.toBeInTheDocument();
+  });
+  it('preserves the current window when a shared navigation read fails', async () => {
+    const ref = createRef<TextEditorHandle>();
+    const source = new MemoryLargeTextGateway('large-source', bytes);
+    let denied = false;
+    const gateway = { read: vi.fn((sourceId: string, offset: number, length: number) => denied ? Promise.reject(new Error('read denied')) : source.read(sourceId, offset, length)) };
+    render(<LargeTextSurface ref={ref} session={session} gateway={gateway} />);
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(/read-only/i));
+    denied = true;
+    await act(async () => { await expect(ref.current!.invoke('next_page')).rejects.toThrow('read denied'); });
+    expect(screen.getByRole('status')).toHaveTextContent('Large text window could not be decoded safely');
+    expect(screen.getByText(/first line/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Previous window' })).toBeDisabled();
+  });
+  it('executes shared window navigation and exposes read/clipboard failures', async () => {
+    const ref = createRef<TextEditorHandle>();
+    render(<LargeTextSurface ref={ref} session={session} gateway={new MemoryLargeTextGateway('large-source', bytes)} />);
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(/read-only/i));
+    expect(ref.current).not.toBeNull();
+    await act(async () => { expect(await ref.current!.invoke('next_page')).toBe(true); });
+    expect(screen.getByRole('status')).toHaveTextContent(/end of source/i);
+    await act(async () => { expect(await ref.current!.invoke('next_page')).toBe(false); });
+    await act(async () => { expect(await ref.current!.invoke('previous_page')).toBe(true); });
+    expect(screen.getByText(/first line/)).toBeInTheDocument();
+    const original = Object.getOwnPropertyDescriptor(navigator, 'clipboard');
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: vi.fn(() => Promise.reject(new Error('clipboard denied'))) } });
+    try { await act(async () => { await expect(ref.current!.invoke('copy')).rejects.toThrow('clipboard denied'); }); }
+    finally { if (original) Object.defineProperty(navigator, 'clipboard', original); else Reflect.deleteProperty(navigator, 'clipboard'); }
+  });
   it('loads bounded source-backed content and offers read-only search and navigation', async () => {
     const gateway = new MemoryLargeTextGateway('large-source', bytes);
     render(<LargeTextSurface session={session} gateway={gateway} />);

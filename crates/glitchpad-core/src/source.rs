@@ -484,6 +484,47 @@ pub struct AndroidRestorationResult {
     pub display_name: Option<String>,
 }
 
+/// Bounded destination creation with no existing provider or fabricated source authority.
+#[derive(Clone, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct AndroidCreateRequest {
+    pub bytes: Vec<u8>,
+    pub suggested_name: String,
+    pub media_type: Option<String>,
+    pub session_revision: u64,
+}
+
+impl AndroidCreateRequest {
+    #[must_use]
+    pub fn is_valid(&self) -> bool {
+        self.bytes.len() as u64 <= MAX_SAVE_BYTES
+            && (1..=256).contains(&self.suggested_name.chars().count())
+            && !self
+                .suggested_name
+                .chars()
+                .any(|c| c.is_control() || matches!(c, '/' | '\\'))
+            && self.session_revision <= 9_007_199_254_740_991
+            && self.media_type.as_deref().is_none_or(|mime| {
+                mime.len() <= 128
+                    && mime.split_once('/').is_some_and(|(kind, subtype)| {
+                        !kind.is_empty()
+                            && !subtype.is_empty()
+                            && kind.bytes().chain(subtype.bytes()).all(|b| {
+                                b.is_ascii_alphanumeric() || matches!(b, b'.' | b'+' | b'-')
+                            })
+                    })
+            })
+    }
+}
+
+/// Readback-verified destination bound to precisely the submitted session revision.
+#[derive(Clone, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
+pub struct AndroidCreateReceipt {
+    pub source: AndroidSourceSummary,
+    pub byte_count: u64,
+    pub saved_revision: u64,
+}
+
 /// Complete bounded payload staged before launching Android Save As.
 #[derive(Clone, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
 pub struct AndroidSaveAsRequest {
@@ -508,6 +549,33 @@ pub struct AndroidSaveAsReceipt {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn independent_android_creation_has_no_source_authority_and_validates_before_picker() {
+        let request = AndroidCreateRequest {
+            bytes: b"# draft\n".to_vec(),
+            suggested_name: "untitled.md".into(),
+            media_type: Some("text/markdown".into()),
+            session_revision: 3,
+        };
+        assert!(request.is_valid());
+        let json = serde_json::to_value(&request).expect("serialize create request");
+        assert!(json.get("source_id").is_none());
+        assert!(json.get("expected_external_revision").is_none());
+        let mut invalid = request.clone();
+        invalid.suggested_name = "../private".into();
+        assert!(!invalid.is_valid());
+        invalid = request.clone();
+        invalid.media_type = Some("text/plain\nprivate".into());
+        assert!(!invalid.is_valid());
+        invalid = request.clone();
+        invalid.bytes =
+            vec![0; usize::try_from(MAX_SAVE_BYTES + 1).expect("bounded test allocation")];
+        assert!(!invalid.is_valid());
+        let mut forged = json;
+        forged["source_id"] = serde_json::json!("invented");
+        assert!(serde_json::from_value::<AndroidCreateRequest>(forged).is_err());
+    }
 
     #[test]
     fn restoration_reference_is_stable_path_free_and_requires_strong_identity() {

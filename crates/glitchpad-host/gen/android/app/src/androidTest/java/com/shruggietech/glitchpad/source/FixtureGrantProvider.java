@@ -26,6 +26,17 @@ public final class FixtureGrantProvider extends ContentProvider {
 
   @Override
   public Bundle call(String method, String argument, Bundle extras) {
+    if ("share_result".equals(method)) {
+      Bundle result = new Bundle();
+      result.putString("json", getContext().getSharedPreferences("s046-share", 0).getString("json", null));
+      result.putBoolean("read_granted", getContext().getSharedPreferences("s046-share", 0).getBoolean("read_granted", false));
+      result.putString("error", getContext().getSharedPreferences("s046-share", 0).getString("error", null));
+      return result;
+    }
+    if ("clear_share_result".equals(method)) {
+      getContext().getSharedPreferences("s046-share", 0).edit().clear().commit();
+      return new Bundle();
+    }
     if (!METHOD_GRANT.equals(method) || argument == null) {
       throw new IllegalArgumentException("unsupported fixture grant request");
     }

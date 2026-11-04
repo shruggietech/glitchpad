@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { mkdtemp, mkdir, readFile, writeFile, chmod, rm, access } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, writeFile, chmod, rm, access, readdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -47,9 +47,13 @@ elif [[ "$1" = shell && "$2" = am && "$3" = instrument ]]; then
   count=0; if [[ -f "$RUNNER_TEMP/instrument-count" ]]; then count=$(cat "$RUNNER_TEMP/instrument-count"); fi
   count=$((count+1)); echo "$count" > "$RUNNER_TEMP/instrument-count"
   echo "instrumentation attempt $count"
-  if [[ "\${MOCK_NEVER_PASSES:-0}" != 1 && "$count" = 2 ]]; then echo 'journey_marker=pass'; else echo 'INSTRUMENTATION_FAILED: synthetic failure'; fi
+  if [[ -n "\${MOCK_SCREENSHOT_STEM:-}" && "$count" = 1 ]]; then printf 'screenshot attempt %s\n' "$count" > "$RUNNER_TEMP/remote-\${MOCK_SCREENSHOT_STEM}.png"; fi
+  if [[ "\${MOCK_NEVER_PASSES:-0}" != 1 && ( "$count" = 2 || "\${MOCK_FIRST_PASS:-0}" = 1 ) ]]; then echo 'journey_marker=pass'; else echo 'INSTRUMENTATION_FAILED: synthetic failure'; fi
+elif [[ "$1" = shell && "$2" = run-as && "$4" = rm && "$5" = -f ]]; then
+  rm -f "$RUNNER_TEMP/remote-\${6#files/}"
 elif [[ "$1" = logcat && "\${2:-}" != -c ]]; then echo 'synthetic bounded logcat'
 elif [[ "$1" = exec-out && "$2" = run-as && "$4" = cat ]]; then
+  if [[ "$5" = files/*.png ]]; then cat "$RUNNER_TEMP/remote-\${5#files/}"; exit 0; fi
   if [[ "\${MOCK_RUN_AS_FAILURE:-0}" = 1 ]]; then echo "run-as: installed APK read refused" >&2; exit 1; fi
   original="$5"
   if [[ "\${MOCK_RUN_AS_MISMATCH:-0}" = 1 ]]; then original="$FIXTURE_WRONG"; fi
@@ -181,6 +185,41 @@ for (const neverPasses of [false, true]) {
       assert.match(await readFile(join(state.evidence, 'journey-attempt-2.txt'), 'utf8'), neverPasses ? /INSTRUMENTATION_FAILED/u : /journey_marker=pass/u);
       assert.match(await readFile(output, 'utf8'), /instrumentation attempt 2/u);
       await assert.rejects(access(join(state.evidence, 'journey-attempt-1-s046-authoring.png')));
+    } finally { await state.dispose(); }
+  });
+}
+
+
+test('an empty evidence directory reaches instrumentation without a screenshot target', posix, async () => {
+  const state = await fixture();
+  try {
+    assert.deepEqual(await readdir(state.evidence), []);
+    const output = join(state.evidence, 'empty-journey.txt');
+    const result = run('run-android-instrumentation.sh', state, [output, 'journey_marker=', '-e', 'class', 'Synthetic#resolvedIntentDeliveryRoutes'], { MOCK_FIRST_PASS: '1' });
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    assert.match(await readFile(output, 'utf8'), /journey_marker=pass/u);
+    assert.equal(await readFile(join(state.evidence, 'instrument-count'), 'utf8'), '1\n');
+    const events = await readFile(join(state.evidence, 'adb-events.txt'), 'utf8');
+    assert.match(events, /shell am instrument -w -e class Synthetic#resolvedIntentDeliveryRoutes/u);
+    assert.doesNotMatch(events, /files\/s046-.*\.png/u);
+  } finally { await state.dispose(); }
+});
+
+for (const [method, screenshot] of [['standaloneAuthoringAndDiagnosticJourneys', 's046-authoring'], ['addDocumentAtMaximumFontScale', 's046-font-scale'], ['rootFailureRetainsDraft', 's046-root-recovery']]) {
+  test('clears stale ' + screenshot + ' and retains only each attempt screenshot', posix, async () => {
+    const state = await fixture();
+    try {
+      await writeFile(join(state.evidence, 'remote-' + screenshot + '.png'), 'stale screenshot');
+      const output = join(state.evidence, 'screenshot-journey.txt');
+      const result = run('run-android-instrumentation.sh', state, [output, 'journey_marker=', '-e', 'class', 'Synthetic#' + method], { MOCK_SCREENSHOT_STEM: screenshot });
+      assert.equal(result.status, 0, result.stdout + result.stderr);
+      assert.equal(await readFile(join(state.evidence, 'screenshot-journey-attempt-1-' + screenshot + '.png'), 'utf8'), 'screenshot attempt 1\n');
+      await assert.rejects(access(join(state.evidence, 'screenshot-journey-attempt-2-' + screenshot + '.png')));
+      await assert.rejects(access(join(state.evidence, 'remote-' + screenshot + '.png')));
+      assert.match(await readFile(join(state.evidence, 'screenshot-journey-attempt-1.txt'), 'utf8'), /INSTRUMENTATION_FAILED/u);
+      assert.match(await readFile(join(state.evidence, 'screenshot-journey-attempt-2.txt'), 'utf8'), /journey_marker=pass/u);
+      const events = (await readFile(join(state.evidence, 'adb-events.txt'), 'utf8')).trim().split('\n');
+      assert.equal(events.filter(event => event === 'shell run-as com.shruggietech.glitchpad rm -f files/' + screenshot + '.png').length, 2);
     } finally { await state.dispose(); }
   });
 }

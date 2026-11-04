@@ -16,11 +16,11 @@ if [[ "${ANDROID_INSTRUMENTATION_RESET_APP_DATA:-false}" == "true" ]]; then
   adb shell pm clear com.shruggietech.glitchpad.test || exit 1
 fi
 
-screenshots=()
+screenshot=""
 case "$*" in
-  *#standaloneAuthoringAndDiagnosticJourneys*) screenshots=(s046-authoring) ;;
-  *#addDocumentAtMaximumFontScale*) screenshots=(s046-font-scale) ;;
-  *#rootFailureRetainsDraft*) screenshots=(s046-root-recovery) ;;
+  *#standaloneAuthoringAndDiagnosticJourneys*) screenshot="s046-authoring" ;;
+  *#addDocumentAtMaximumFontScale*) screenshot="s046-font-scale" ;;
+  *#rootFailureRetainsDraft*) screenshot="s046-root-recovery" ;;
 esac
 
 for attempt in 1 2; do
@@ -28,7 +28,9 @@ for attempt in 1 2; do
   if [[ "${ANDROID_INSTRUMENTATION_PRESERVE_TEST_INPUT_METHOD:-false}" != "true" ]]; then
     adb shell am force-stop com.shruggietech.glitchpad.test || true
   fi
-  for screenshot in "${screenshots[@]}"; do adb shell run-as com.shruggietech.glitchpad rm -f "files/${screenshot}.png" >/dev/null 2>&1 || true; done
+  if [[ -n "$screenshot" ]]; then
+    adb shell run-as com.shruggietech.glitchpad rm -f "files/${screenshot}.png" >/dev/null 2>&1 || true
+  fi
   adb logcat -c || true
   attempt_output="${output%.txt}-attempt-${attempt}.txt"
   adb shell am instrument -w "$@" com.shruggietech.glitchpad.test/androidx.test.runner.AndroidJUnitRunner > "$attempt_output" 2>&1 || true
@@ -36,10 +38,10 @@ for attempt in 1 2; do
   cat "$attempt_output"
   logcat_output="${output%.txt}-attempt-${attempt}-logcat.txt"
   adb logcat -d -t 2000 > "$logcat_output" 2>&1 || true
-  for screenshot in "${screenshots[@]}"; do
+  if [[ -n "$screenshot" ]]; then
     screenshot_output="${output%.txt}-attempt-${attempt}-${screenshot}.png"
     if ! adb exec-out run-as com.shruggietech.glitchpad cat "files/${screenshot}.png" > "$screenshot_output" 2>/dev/null; then rm -f "$screenshot_output"; fi
-  done
+  fi
   if grep -Fq "$marker" "$output" || grep -Fq "$marker" "$logcat_output"; then
     exit 0
   fi

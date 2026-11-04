@@ -323,10 +323,7 @@ test('Android delivery instrumentation gets a bounded clean-state retry without 
     runner,
     /ANDROID_INSTRUMENTATION_RESET_APP_DATA:-false.*pm clear com\.shruggietech\.glitchpad/su,
   );
-  assert.match(
-    workflow,
-    /ANDROID_INSTRUMENTATION_RESET_APP_DATA=true bash scripts\/run-android-instrumentation\.sh[^\n]+delivery_evidence=/u,
-  );
+  assert.match(workflow, /bash scripts\/run-android-s046-journeys\.sh/u);
   assert.doesNotMatch(
     workflow,
     /ANDROID_INSTRUMENTATION_RESET_APP_DATA=true[^\n]+RestorationInstrumentedTest/u,

@@ -52,19 +52,66 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
   private val sharePending = AtomicBoolean(false)
   private val mainHandler = Handler(Looper.getMainLooper())
 
+  // Hosted instrumentation reads this private, bounded state by reflection only.
+  private val deliveryObservation = if ((activity.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0) DeliveryObservation() else null
+
+  private enum class DeliveryStage {
+    CREATED, LOADED, NEW_INTENT_RECEIVED, INBOUND_IGNORED, CANDIDATE_QUEUED,
+    CANDIDATE_REJECTED, QUEUE_FULL, NOTIFICATION_CALLED, NOTIFICATION_RETURNED,
+    DRAIN_REQUESTED, DRAIN_COMPLETED
+  }
+
+  private class DeliveryObservation {
+    private var loadCount = 0
+    private var newIntentCount = 0
+    private var notificationCount = 0
+    private var drainCount = 0
+    private var lastStage = DeliveryStage.CREATED
+    private var lastInboundStage = DeliveryStage.CREATED
+    private var lastHandled = false
+    private var listenerAtNotification = false
+
+    @Synchronized
+    fun record(stage: DeliveryStage, handled: Boolean? = null, listener: Boolean? = null) {
+      when (stage) {
+        DeliveryStage.LOADED -> loadCount = minOf(loadCount + 1, 65_535)
+        DeliveryStage.NEW_INTENT_RECEIVED -> newIntentCount = minOf(newIntentCount + 1, 65_535)
+        DeliveryStage.NOTIFICATION_CALLED -> notificationCount = minOf(notificationCount + 1, 65_535)
+        DeliveryStage.DRAIN_REQUESTED -> drainCount = minOf(drainCount + 1, 65_535)
+        else -> Unit
+      }
+      lastStage = stage
+      if (handled != null) { lastInboundStage = stage; lastHandled = handled }
+      if (listener != null) listenerAtNotification = listener
+    }
+
+    @Synchronized
+    fun snapshot(): JSObject = JSObject().put("enabled", true).put("load_count", loadCount)
+      .put("new_intent_count", newIntentCount).put("notification_count", notificationCount).put("drain_count", drainCount)
+      .put("last_stage", lastStage.name).put("last_inbound_stage", lastInboundStage.name)
+      .put("last_inbound_handled", lastHandled).put("listener_at_notification", listenerAtNotification)
+  }
+
+  private fun deliveryRouteSnapshot(): JSObject = (deliveryObservation?.snapshot() ?: JSObject().put("enabled", false))
+    .put("pending_count", pending.size).put("rejection_count", rejections.size)
+    .put("delivery_listener_present", hasListener("deliveriesReady"))
+
   override fun load(webView: WebView) {
     super.load(webView)
+    deliveryObservation?.record(DeliveryStage.LOADED)
     installBackCallback()
     if (initialIntentConsumed.compareAndSet(false, true) && enqueueInbound(activity.intent))
       notifyDeliveriesReady()
   }
 
   override fun onNewIntent(intent: Intent) {
+    deliveryObservation?.record(DeliveryStage.NEW_INTENT_RECEIVED)
     if (enqueueInbound(intent)) notifyDeliveriesReady()
   }
 
   @Command
   fun drainDeliveries(invoke: Invoke) {
+    deliveryObservation?.record(DeliveryStage.DRAIN_REQUESTED)
     val maximum = invoke.parseArgs(DrainArgs::class.java).maximum.coerceIn(1, MAX_QUEUE_DRAIN)
     ioExecutor.execute {
       val deliveries = JSArray()
@@ -77,6 +124,7 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
         val rejection = rejections.poll() ?: return@repeat
         rejected.put(JSObject().put("code", rejection).put("retryable", rejection == "provider_unavailable"))
       }
+      deliveryObservation?.record(DeliveryStage.DRAIN_COMPLETED)
       invoke.resolve(JSObject().put("deliveries", deliveries).put("rejections", rejected))
     }
   }
@@ -524,12 +572,22 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
   }
 
   private fun enqueueInbound(intent: Intent?): Boolean {
-    if (intent?.action != Intent.ACTION_VIEW && intent?.action != Intent.ACTION_SEND) return false
+    if (intent?.action != Intent.ACTION_VIEW && intent?.action != Intent.ACTION_SEND) {
+      deliveryObservation?.record(DeliveryStage.INBOUND_IGNORED, handled = false)
+      return false
+    }
     DeliveryPolicy.inbound(intent)
       .onSuccess { candidate ->
-        if (!pending.offer(candidate)) enqueueRejection("delivery_queue_full")
+        if (pending.offer(candidate)) deliveryObservation?.record(DeliveryStage.CANDIDATE_QUEUED, handled = true)
+        else {
+          deliveryObservation?.record(DeliveryStage.QUEUE_FULL, handled = true)
+          enqueueRejection("delivery_queue_full")
+        }
       }
-      .onFailure { enqueueRejection(code(it)) }
+      .onFailure {
+        deliveryObservation?.record(DeliveryStage.CANDIDATE_REJECTED, handled = true)
+        enqueueRejection(code(it))
+      }
     return true
   }
 
@@ -540,7 +598,9 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
   }
 
   private fun notifyDeliveriesReady() {
+    deliveryObservation?.record(DeliveryStage.NOTIFICATION_CALLED, listener = hasListener("deliveriesReady"))
     trigger("deliveriesReady", JSObject())
+    deliveryObservation?.record(DeliveryStage.NOTIFICATION_RETURNED)
   }
 
   private fun acquire(candidate: DeliveryCandidate): Result<JSObject> = runCatching {

@@ -7,8 +7,13 @@ import {
 } from './markdown-contract';
 import {
   MarkdownRendererClient,
+  WorkerMarkdownExecutor,
   type MarkdownExecutor,
 } from './markdown-renderer';
+import { ResourceOwner } from './resource-ledger';
+
+const { workerFactory } = vi.hoisted(() => ({ workerFactory: vi.fn() }));
+vi.mock('./markdown-worker?worker', () => ({ default: workerFactory }));
 
 const resultFor = (request: MarkdownRenderRequest): MarkdownRenderResult => ({
   ...request,
@@ -24,6 +29,76 @@ const resultFor = (request: MarkdownRenderRequest): MarkdownRenderResult => ({
     heading_count: 0,
     search_entry_count: 0,
   },
+});
+
+describe('Vite worker factory lifecycle', () => {
+  const request: MarkdownRenderRequest = {
+    request_id: 'factory',
+    session_id: 'factory',
+    source_revision: 1,
+    source_text: '# Heading',
+    sanitizer_version: MARKDOWN_SANITIZER_VERSION,
+  };
+  const createWorker = () => {
+    const worker = {
+      postMessage: vi.fn(),
+      terminate: vi.fn(),
+      onmessage: null as
+        ((event: MessageEvent<MarkdownRenderResult>) => void) | null,
+      onerror: null as (() => void) | null,
+      onmessageerror: null as (() => void) | null,
+    };
+    workerFactory.mockReset();
+    workerFactory.mockImplementation(function () {
+      return worker;
+    });
+    return worker;
+  };
+  it('uses the Vite worker factory and releases worker resources after a valid reply', async () => {
+    const worker = createWorker();
+    const owner = new ResourceOwner('worker-factory');
+    const signal = new AbortController();
+    const pending = new WorkerMarkdownExecutor(owner).execute(
+      request,
+      signal.signal,
+    );
+    worker.onmessage?.({
+      data: resultFor(request),
+    } as MessageEvent<MarkdownRenderResult>);
+    await expect(pending).resolves.toEqual(resultFor(request));
+    expect(workerFactory).toHaveBeenCalledExactlyOnceWith({
+      name: 'markdown-factory',
+    });
+    expect(worker.postMessage).toHaveBeenCalledExactlyOnceWith(request);
+    expect(worker.terminate).toHaveBeenCalledOnce();
+    expect(owner.snapshot()?.counts.worker).toBe(0);
+    signal.abort();
+    expect(worker.terminate).toHaveBeenCalledOnce();
+  });
+  it.each(['abort', 'error', 'messageerror'])(
+    'releases off-thread worker resources after %s',
+    async (reason) => {
+      const worker = createWorker();
+      const owner = new ResourceOwner('worker-error');
+      const signal = new AbortController();
+      const pending = new WorkerMarkdownExecutor(owner).execute(
+        request,
+        signal.signal,
+      );
+      if (reason === 'abort') signal.abort();
+      else if (reason === 'error') worker.onerror?.();
+      else worker.onmessageerror?.();
+      await expect(pending).rejects.toThrow(
+        reason === 'abort'
+          ? 'Operation cancelled'
+          : reason === 'error'
+            ? 'Markdown worker failed'
+            : 'Markdown worker message failed',
+      );
+      expect(worker.terminate).toHaveBeenCalledOnce();
+      expect(owner.snapshot()?.counts.worker).toBe(0);
+    },
+  );
 });
 
 describe('Markdown renderer scheduling', () => {

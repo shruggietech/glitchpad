@@ -100,3 +100,15 @@ The Windows host test binary exits before the test harness starts with STATUS_EN
 ## Package failure observation
 
 A current Windows lifecycle timeout lacks the precise named-wait call site, and Linux bundling exposes only a linuxdeploy failure. Retain bounded content-free call-site context and enable the existing Tauri build verbosity for the next candidate. Keep package assertions, budgets and toolchain policy unchanged; do not infer a product cause from either opaque failure.
+
+## Governed Chromium 69 dedicated worker
+
+The verified HeadlessChrome/69.0.3497.0 constructor rejects the current module-worker request before loading its bundled script. The same IIFE worker constructed as classic returns the expected rendered heading and marker without diagnostics. Align the production constructor with its IIFE format and retain the supported development-worker path, off-thread parsing, cancellation and resource ownership. Do not substitute synchronous parsing or infer a parser/polyfill cause. Retain the exact browser/version, constructor result and semantic corpus evidence, then qualify the packaged Android routes again.
+
+## Native IME input qualification
+
+The API36 harness records valid native/window/document/editor focus and user activation, but browser selectAll/insertText remain disabled. Current CodeMirror source supports EditContext on this Android/WebView generation. A controlled built-app reproduction observes active EditContext and the same disabled commands, while native browser input preserves exact multiline Unicode. Use WebView onCreateInputConnection and InputConnection selection/commit on its handler, then require exact native extracted text and visible CodeMirror text. This exercises native editing without assigning application state or DOM text. The actual updated APK result remains a separate requirement.
+
+## Warm-intent observation continuity
+
+The exact API36 stack locates the failure in the first warm delivery after cold semantic rendering, link-modal Back, focus and navigation checks passed. Native logs show the intent reaching the existing Activity, then no delivery drain. Generated SDK dispatch and project onNewIntent source contain no stale plugin-key lookup. Retain bounded callback/queue/notification facts plus UI state at this failure boundary before assigning a cause or changing App ordering. Keep the required warm route and original identity assertion.

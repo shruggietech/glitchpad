@@ -206,7 +206,7 @@ test('an empty evidence directory reaches instrumentation without a screenshot t
   } finally { await state.dispose(); }
 });
 
-for (const [method, screenshot] of [['standaloneAuthoringAndDiagnosticJourneys', 's046-authoring'], ['addDocumentAtMaximumFontScale', 's046-font-scale'], ['rootFailureRetainsDraft', 's046-root-recovery'], ['governedMarkdownDeliveryRoutes', 's046-markdown-delivery-failure']]) {
+for (const [method, screenshot] of [['standaloneAuthoringAndDiagnosticJourneys', 's046-authoring'], ['addDocumentAtMaximumFontScale', 's046-font-scale'], ['rootFailureRetainsDraft', 's046-root-recovery'], ['governedMarkdownDeliveryRoutes', 's046-markdown-delivery-failure'], ['resolvedIntentDisplaysColdAndWarmProviderDocuments', 's046-markdown-delivery-failure']]) {
   test('clears stale ' + screenshot + ' and retains only each attempt screenshot', posix, async () => {
     const state = await fixture();
     try {

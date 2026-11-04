@@ -9,18 +9,21 @@ export default defineConfig({
     // dependency syntax executable on the oldest supported Android WebView.
     target: 'chrome69',
   },
-  worker: {
-    plugins: () => [{
-      name: 'worker-safe-character-reference-decoder',
-      enforce: 'pre',
-      resolveId(source) {
-        // The browser export creates a DOM element at module load, which is not
-        // available inside the Markdown worker. The default export is table-based.
-        return source === 'decode-named-character-reference'
-          ? fileURLToPath(import.meta.resolve('decode-named-character-reference'))
-          : null;
+  resolve: {
+    // The browser export creates a DOM element at module load. Use the
+    // table-based decoder in both development and bundled worker realms.
+    alias: [
+      {
+        find: /^decode-named-character-reference$/,
+        replacement: fileURLToPath(
+          import.meta.resolve('decode-named-character-reference'),
+        ),
       },
-    }],
+    ],
+  },
+  worker: {
+    // Vite supplies module workers in dev and classic bundled workers in production.
+    format: 'iife',
   },
   clearScreen: false,
   server: {

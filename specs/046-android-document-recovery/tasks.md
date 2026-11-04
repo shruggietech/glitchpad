@@ -78,3 +78,8 @@ T001-T004 precede implementation. Native contracts/writer (T008-T009/T017) and r
 - [x] T029 Align the Android event plugin runtime/frontend registration namespace with its generated ACL manifest; verify native listener registration and Add-layer Back acknowledgement without broadening permissions per FR-004/005/015/016.
 
 - [x] T030 Remove GUI runtime construction from the cross-platform listener ACL regression while retaining one production plugin-name contract, generated ACL resolution, both valid/stale listener checks and the exact private grant count per FR-017/018.
+
+- [x] T031 Use the supported classic dedicated-worker construction for the governed Chromium 69 production IIFE bundle, retaining off-thread Markdown parsing, worker ownership/cancellation and modern development behavior; prove the exact old-browser failure and repaired semantic corpus per FR-001/002/016/017.
+
+- [x] T032 Replace unsupported browser-command typing in Android instrumentation with public native WebView InputConnection selection/commit and strict native-buffer/visible-editor readback; retain actual packaged qualification per FR-006/008/009/016.
+- [x] T033 Retain bounded native warm-intent callback/queue/notification observations alongside failed identity assertions without private document facts or new IPC grants per FR-001/004/015/016.

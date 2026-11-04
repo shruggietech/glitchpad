@@ -1,3 +1,4 @@
+import MarkdownWorker from './markdown-worker?worker';
 import { consumeRecoveryProbe } from './recovery-probes';
 import {
   MARKDOWN_PREVIEW_DEBOUNCE_MS,
@@ -36,13 +37,9 @@ export class WorkerMarkdownExecutor implements MarkdownExecutor {
     signal: AbortSignal,
   ): Promise<MarkdownRenderResult> {
     return new Promise((resolve, reject) => {
-      const worker = new Worker(
-        new URL('./markdown-worker.ts', import.meta.url),
-        {
-          type: 'module',
-          name: `markdown-${request.session_id}`,
-        },
-      );
+      const worker = new MarkdownWorker({
+        name: `markdown-${request.session_id}`,
+      });
       const releaseWorker =
         this.resources?.acquire('worker') ?? (() => undefined);
       let finished = false;

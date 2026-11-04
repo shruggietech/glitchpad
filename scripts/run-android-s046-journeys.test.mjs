@@ -76,18 +76,18 @@ async function campaign(api = '36', failures = '', expectedSource = source) {
 }
 
 test(
-  'independent cold delivery and authoring failures remain failures while later root/font/process observations finish',
+  'baseline and cold delivery/authoring failures remain failures while later root/font/process observations finish',
   posix,
   async () => {
     const result = await campaign(
       '36',
-      'markdown-delivery-view-evidence,recovery-evidence',
+      'delivery-evidence,markdown-delivery-view-evidence,recovery-evidence',
     );
     assert.equal(result.status, 1, result.stdout + result.stderr);
-    assert.match(result.stdout, /s046_campaign_failures=2/);
+    assert.match(result.stdout, /s046_campaign_failures=3/);
     assert.equal(
       result.calls.filter((line) => !line.startsWith('adb:')).length,
-      7,
+      8,
     );
     assert.ok(
       result.calls.some((line) =>
@@ -141,21 +141,21 @@ test(
   async () => {
     const result = await campaign('24');
     assert.equal(result.status, 0, result.stdout + result.stderr);
-    assert.equal(result.calls.length, 6);
+    assert.equal(result.calls.length, 7);
     assert.ok(!result.calls.some((line) => line.startsWith('adb:')));
     assert.match(result.stdout, /s046_campaign_failures=0/);
   },
 );
 
 test(
-  'API36 succeeds only after all seven journeys succeed',
+  'API36 succeeds only after all eight journeys succeed',
   posix,
   async () => {
     const result = await campaign();
     assert.equal(result.status, 0, result.stdout + result.stderr);
     assert.equal(
       result.calls.filter((line) => !line.startsWith('adb:')).length,
-      7,
+      8,
     );
   },
 );

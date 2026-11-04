@@ -63,11 +63,21 @@ class AndroidDeliveryInstrumentedTest {
     }
 
     val scenario = ActivityScenario.launch<MainActivity>(coldIntent.setComponent(component))
-    waitForBodyText(scenario, "resolver-cold.md", "S031_COLD_MARKER_4F2A")
+    try {
+      waitForBodyText(scenario, "resolver-cold.md", "S031_COLD_MARKER_4F2A")
+    } catch (failure: AssertionError) {
+      captureMarkdownDeliveryFailure(scenario, "resolver-cold.md")
+      throw failure
+    }
     val warmIntent = viewIntent(warm, "text/plain")
     assertTrue("installed Glitchpad package did not resolve the warm fixture", glitchpadComponent(warmIntent) != null)
     clientContext.startActivity(warmIntent.setComponent(component).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-    waitForBodyText(scenario, "resolver-warm.txt", "S031_WARM_MARKER_7C9D")
+    try {
+      waitForBodyText(scenario, "resolver-warm.txt", "S031_WARM_MARKER_7C9D")
+    } catch (failure: AssertionError) {
+      captureMarkdownDeliveryFailure(scenario, "resolver-warm.txt")
+      throw failure
+    }
     for (extension in listOf("png", "jpg", "webp", "bmp", "tiff")) {
       val uri = grant(documentUri("original.$extension"))
       val before = resolver.openInputStream(uri)!!.use { it.readBytes() }
@@ -197,8 +207,26 @@ class AndroidDeliveryInstrumentedTest {
     }.getOrElse { JSONObject().put("capture_error", it.javaClass.simpleName).toString() }
     val screenshotName = "s046-markdown-delivery-failure.png"
     val screenshotSaved = runCatching { saveScreenshot(screenshotName); File(clientContext.filesDir, screenshotName).isFile }.getOrDefault(false)
-    println("markdown_delivery_failure=" + JSONObject().put("fixture", name).put("route", InstrumentationRegistry.getArguments().getString("deliveryAction")).put("api_level", Build.VERSION.SDK_INT).put("screenshot_saved", screenshotSaved).put("state_json", snapshot.take(24576)).toString())
+    println("markdown_delivery_failure=" + JSONObject().put("native_route", nativeDeliveryRouteSnapshot(scenario)).put("fixture", name).put("route", InstrumentationRegistry.getArguments().getString("deliveryAction")).put("api_level", Build.VERSION.SDK_INT).put("screenshot_saved", screenshotSaved).put("state_json", snapshot.take(24576)).toString())
     System.out.flush()
+  }
+
+  private fun nativeDeliveryRouteSnapshot(scenario: ActivityScenario<MainActivity>): JSONObject {
+    var result = JSONObject().put("reflection_completed", false)
+    runCatching {
+      scenario.onActivity {
+        val field = app.tauri.plugin.PluginManager::class.java.getDeclaredField("plugins").apply { isAccessible = true }
+        val handles = (field.get(app.tauri.plugin.PluginManager) as Map<*, *>).values.filterIsInstance<app.tauri.plugin.PluginHandle>()
+        val matches = handles.filter { it.instance.javaClass.name == AndroidSourcePlugin::class.java.name }
+        result = JSONObject().put("reflection_completed", false).put("plugin_handle_count", handles.size).put("source_instance_count", matches.size)
+        val plugin = matches.singleOrNull()?.instance
+        if (plugin != null) {
+          val method = plugin.javaClass.getDeclaredMethod("deliveryRouteSnapshot").apply { isAccessible = true }
+          result.put("route", JSONObject(requireNotNull(method.invoke(plugin)).toString())).put("reflection_completed", true)
+        }
+      }
+    }
+    return result
   }
 
   private fun markdownDeliveryIntent(uri: Uri, route: String): Intent = if (route == "view") viewIntent(uri, "text/markdown") else Intent(Intent.ACTION_SEND)
@@ -562,7 +590,12 @@ class AndroidDeliveryInstrumentedTest {
         return name===EXPECTED;
       })()
     """.trimIndent().replace("EXPECTED", expected)
-    waitForCondition(scenario, script, "the active document surface must own the expected delivery identity")
+    try {
+      waitForCondition(scenario, script, "the active document surface must own the expected delivery identity")
+    } catch (failure: AssertionError) {
+      captureMarkdownDeliveryFailure(scenario, expectedName)
+      throw failure
+    }
   }
 
   private fun closeCurrentDocument(scenario: ActivityScenario<MainActivity>) {
@@ -643,13 +676,104 @@ class AndroidDeliveryInstrumentedTest {
     } finally { down.recycle(); up.recycle() }
     instrumentation.waitForIdleSync()
     waitForCondition(scenario, "document.hasFocus() && document.activeElement===document.querySelector('.cm-content[contenteditable=true]')", "the actual editor must own browser focus after a native touch before editing")
-    val edit = JSONObject(evaluate(scenario, "(()=>{const editor=document.querySelector('.cm-content[contenteditable=true]');const before={document_focus:document.hasFocus(),editor_focus:document.activeElement===editor,insert_supported:document.queryCommandSupported('insertText'),insert_enabled:document.queryCommandEnabled('insertText'),user_activation:navigator.userActivation?navigator.userActivation.isActive:null};const selected=document.execCommand('selectAll',false,null);const inserted=document.execCommand('insertText',false," + JSONObject.quote(text) + ");return {before,selected,inserted,editor_focus:document.activeElement===editor};})()"))
-    println("native_editor_input=" + JSONObject().put("api_level", Build.VERSION.SDK_INT).put("native_focus", nativeFocus).put("browser_edit", edit).toString())
+    val browserBefore = JSONObject(evaluate(scenario, """
+      (()=>{
+        const editor=document.querySelector('.cm-content[contenteditable=true]');
+        const context=editor.editContext;
+        const selection=window.getSelection();
+        return {
+          document_focus:document.hasFocus(),editor_focus:document.activeElement===editor,
+          insert_supported:document.queryCommandSupported('insertText'),insert_enabled:document.queryCommandEnabled('insertText'),
+          user_activation:navigator.userActivation?navigator.userActivation.isActive:null,
+          edit_context_attached:!!context,edit_context_length:context?context.text.length:null,
+          edit_context_selection_start:context?context.selectionStart:null,edit_context_selection_end:context?context.selectionEnd:null,
+          dom_selection_ranges:selection?selection.rangeCount:0,
+          dom_selection_in_editor:!!selection&&!!selection.anchorNode&&editor.contains(selection.anchorNode),
+          visible_text:Array.from(editor.querySelectorAll(':scope > .cm-line')).map(line=>line.textContent).join('\n')
+        };
+      })()
+    """.trimIndent()))
+    val beforeText = browserBefore.getString("visible_text")
+    browserBefore.remove("visible_text")
+    assertTrue("the controlled native input fixture must fit a bounded complete input buffer", beforeText.length <= 16_384 && text.length <= 16_384)
+    val connectionReference = AtomicReference<android.view.inputmethod.InputConnection?>()
+    val handlerReference = AtomicReference<android.os.Handler?>()
+    val inputInfo = JSONObject()
+    scenario.onActivity { activity ->
+      val view = requireNotNull(findWebView(activity.window.decorView))
+      val info = android.view.inputmethod.EditorInfo()
+      val connection = view.onCreateInputConnection(info)
+      connectionReference.set(connection)
+      handlerReference.set(connection?.handler ?: view.handler)
+      inputInfo.put("connection_created", connection != null).put("input_type", info.inputType).put("ime_options", info.imeOptions)
+        .put("initial_selection_start", info.initialSelStart).put("initial_selection_end", info.initialSelEnd)
+        .put("connection_class", connection?.javaClass?.simpleName)
+    }
+    println("native_editor_input=" + JSONObject().put("phase", "before_native_commit").put("api_level", Build.VERSION.SDK_INT)
+      .put("native_focus", nativeFocus).put("browser_edit", browserBefore).put("input_connection", inputInfo))
     System.out.flush()
-    assertTrue("browser editing must insert actual document content: " + edit, edit.getBoolean("inserted"))
+    val connection = requireNotNull(connectionReference.get()) { "focused WebView must expose its public native InputConnection" }
+    val handler = requireNotNull(handlerReference.get()) { "native InputConnection must expose its input dispatch handler" }
+    waitForNativeEditorState(connection, handler, beforeText)
+    assertTrue("native IME must finish any active composition", onEditorInputThread(connection, handler) { it.finishComposingText() })
+    assertTrue("native IME must select the complete controlled input buffer", onEditorInputThread(connection, handler) { it.setSelection(0, beforeText.length) })
+    val selectedState = waitForNativeEditorState(connection, handler, beforeText, 0, beforeText.length)
+    if (browserBefore.getBoolean("edit_context_attached")) {
+      waitForCondition(scenario, "(()=>{const editor=document.querySelector('.cm-content[contenteditable=true]');const context=editor&&editor.editContext;return !!context&&context.selectionStart===0&&context.selectionEnd===" + beforeText.length + ";})()", "native IME selection must reach the actual EditContext before replacement")
+    }
+    assertTrue("native IME must accept the exact Unicode and multiline text", onEditorInputThread(connection, handler) { it.commitText(text, 1) })
+    val committedState = waitForNativeEditorState(connection, handler, text, text.length, text.length)
     val expected = JSONObject.quote(text)
-    waitForCondition(scenario, "(()=>{const editor=document.querySelector('.cm-content[contenteditable=true]');return !!editor && Array.from(editor.querySelectorAll(':scope > .cm-line')).map(line=>line.textContent).join('\\n')===" + expected + ";})()", "the actual editor must display every inserted character and line")
+    waitForCondition(scenario, "(()=>{const editor=document.querySelector('.cm-content[contenteditable=true]');return !!editor && Array.from(editor.querySelectorAll(':scope > .cm-line')).map(line=>line.textContent).join('\\n')===" + expected + ";})()", "the actual editor must display every natively committed character and line")
+    println("native_editor_input=" + JSONObject().put("phase", "native_commit_verified").put("api_level", Build.VERSION.SDK_INT)
+      .put("input_path", "WebView.InputConnection.setSelection+commitText").put("selected_state", selectedState)
+      .put("committed_state", committedState).put("visible_exact_text", true).put("committed_utf8_bytes", text.toByteArray(Charsets.UTF_8).size))
+    System.out.flush()
     waitForBodyText(scenario, text.lineSequence().first())
+  }
+
+  private fun <T> onEditorInputThread(
+    connection: android.view.inputmethod.InputConnection,
+    handler: android.os.Handler,
+    action: (android.view.inputmethod.InputConnection) -> T
+  ): T {
+    val result = AtomicReference<T>()
+    val failure = AtomicReference<Throwable?>()
+    val done = CountDownLatch(1)
+    assertTrue("native input action must be posted to the connection handler", handler.post {
+      try { result.set(action(connection)) } catch (error: Throwable) { failure.set(error) } finally { done.countDown() }
+    })
+    assertTrue("native input action must finish without blocking the app UI", done.await(10, TimeUnit.SECONDS))
+    failure.get()?.let { throw AssertionError("native InputConnection action failed", it) }
+    return result.get()
+  }
+
+  private fun waitForNativeEditorState(
+    connection: android.view.inputmethod.InputConnection,
+    handler: android.os.Handler,
+    expected: String,
+    selectionStart: Int? = null,
+    selectionEnd: Int? = null
+  ): JSONObject {
+    val deadline = SystemClock.elapsedRealtime() + 10_000L
+    var latest = JSONObject()
+    while (SystemClock.elapsedRealtime() < deadline) {
+      val extracted = onEditorInputThread(connection, handler) {
+        it.getExtractedText(android.view.inputmethod.ExtractedTextRequest().apply { hintMaxChars = 16_384; hintMaxLines = 1_024 }, 0)
+      }
+      latest = JSONObject().put("available", extracted != null).put("expected_length", expected.length)
+      if (extracted != null) {
+        val actual = extracted.text?.toString()
+        latest.put("start_offset", extracted.startOffset).put("text_length", actual?.length)
+          .put("selection_start", extracted.selectionStart).put("selection_end", extracted.selectionEnd)
+          .put("exact_text", actual == expected)
+        if (extracted.startOffset == 0 && actual == expected &&
+          (selectionStart == null || extracted.selectionStart == selectionStart) &&
+          (selectionEnd == null || extracted.selectionEnd == selectionEnd)) return latest
+      }
+      SystemClock.sleep(50L)
+    }
+    throw AssertionError("native IME must expose the complete exact editor buffer and selection: " + latest)
   }
 
   private fun waitForCondition(scenario: ActivityScenario<MainActivity>, script: String, reason: String) {

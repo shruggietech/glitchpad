@@ -22,6 +22,7 @@ case "$*" in
   *#addDocumentAtMaximumFontScale*) screenshot="s046-font-scale" ;;
   *#rootFailureRetainsDraft*) screenshot="s046-root-recovery" ;;
   *#governedMarkdownDeliveryRoutes*) screenshot="s046-markdown-delivery-failure" ;;
+  *#resolvedIntentDisplaysColdAndWarmProviderDocuments*) screenshot="s046-markdown-delivery-failure" ;;
 esac
 
 for attempt in 1 2; do

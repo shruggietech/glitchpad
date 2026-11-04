@@ -23,6 +23,9 @@ run_journey() {
   record_failure "$stem"
   return 1
 }
+# Baseline delivery is an independent required observation, not a prerequisite
+# for New/Open, recovery, or font-scale journeys.
+run_journey delivery-evidence 'delivery_evidence=' resolvedIntentDisplaysColdAndWarmProviderDocuments true || true
 for delivery_action in view send; do
   run_journey "markdown-delivery-$delivery_action-evidence" 'markdown_delivery_evidence=' governedMarkdownDeliveryRoutes true -e deliveryAction "$delivery_action" -e expectedSource "$source_commit" || true
 done

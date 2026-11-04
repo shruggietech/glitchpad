@@ -123,3 +123,11 @@ T001-T004 precede implementation. Native contracts/writer (T008-T009/T017) and r
 ## Phase 13: Convergence
 
 - [x] T051 Capture bounded native picker/result/Rust completion stages and failure-only dirty-close status/dialog/pending/identity observations before instrumentation cleanup, retain strict cancellation/source/byte/deadline assertions and qualify the actual failing boundary before a product repair per FR-001/008/015/016/018 (partial verification, HIGH F4).
+
+## Phase 14: Packaged cancellation completion
+
+- [ ] T052 Trace and repair the observed cancelled-save completion loss after the async native host has returned an error while the current draft and dirty-close dialog remain pending; retain a meaningful Activity-return/response regression, existing source/receipt/error/gesture/deadline contracts and fresh actual APK confirmation per FR-008/009/010/016/018 (partial execution, HIGH F5).
+
+## Phase 15: Packaged theme readability
+
+- [x] T053 Pair S046 dirty-close and Diagnostics foreground/background/status/action colors through existing canonical consumer tokens in styles.css, preserve selected-theme dominance without changing generated brand/AppFrame or broader shell scope, retain the actual screenshot/red browser evidence and add composed-browser contrast regressions across OS and explicit/system theme combinations per FR-005/009/014/016/017 (partial, HIGH F6).

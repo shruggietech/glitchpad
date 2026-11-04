@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  auditSurfaceColors,
+  assertSurfaceContrast,
+} from './check-s046-surface-contrast.mjs';
+import {
   assertAuthoringMeasurement,
   assertDiagnosticMeasurement,
 } from './check-android-authoring-layout.mjs';
@@ -146,4 +150,97 @@ test('diagnostic audit preserves actual input hits, immutable preview and single
     mutate(measured);
     assert.throws(() => assertDiagnosticMeasurement(measured));
   }
+});
+
+function surfaceMeasurement() {
+  return {
+    os: 'light',
+    preference: 'light',
+    observedTheme: 'light',
+    observedOsLight: true,
+    previewUnchanged: true,
+    errors: [],
+    samples: [
+      'decision',
+      'decision_pending',
+      'diagnostics',
+      'diagnostics_pending',
+    ].flatMap((stage) => {
+      const kinds = stage.startsWith('decision')
+        ? ['heading', 'body', 'status']
+        : ['heading', 'body', 'status', 'json'];
+      return [
+        ...kinds,
+        ...Array(stage.startsWith('decision') ? 3 : 4).fill('action'),
+      ].map((kind) => ({
+        stage,
+        kind,
+        foreground: 'rgb(10, 10, 10)',
+        background: 'rgb(248, 248, 246)',
+        behind: 'rgb(248, 248, 246)',
+        opacity: 1,
+        expectedForeground: '#0A0A0A',
+        disabled: kind === 'action' && stage.endsWith('_pending'),
+      }));
+    }),
+  };
+}
+
+test('the contrast gate rejects the observed white JSON and white action text on light backgrounds', () => {
+  const measured = surfaceMeasurement();
+  const json = measured.samples.find((sample) => sample.kind === 'json');
+  Object.assign(json, {
+    foreground: 'rgb(255, 255, 255)',
+    expectedForeground: '#FFFFFF',
+    background: 'rgb(255, 255, 255)',
+  });
+  measured.samples = auditSurfaceColors(measured.samples);
+  assert.equal(
+    measured.samples.find((sample) => sample.kind === 'json').contrast,
+    1,
+  );
+  assert.throws(() => assertSurfaceContrast(measured), /json contrast=1/u);
+  const actions = surfaceMeasurement();
+  const action = actions.samples.find((sample) => sample.kind === 'action');
+  Object.assign(action, {
+    foreground: 'rgb(255, 255, 255)',
+    expectedForeground: '#FFFFFF',
+    background: 'rgb(229, 231, 234)',
+  });
+  actions.samples = auditSurfaceColors(actions.samples);
+  assert.throws(() => assertSurfaceContrast(actions), /action contrast=/u);
+});
+
+test('the contrast gate requires the persisted explicit preference and its canonical foreground', () => {
+  const measured = surfaceMeasurement();
+  measured.samples = auditSurfaceColors(measured.samples);
+  assert.doesNotThrow(() => assertSurfaceContrast(measured));
+  measured.observedTheme = 'system';
+  assert.throws(() => assertSurfaceContrast(measured), /persisted app theme/u);
+  const inheritedWhite = surfaceMeasurement();
+  inheritedWhite.samples[0].foreground = 'rgb(255, 255, 255)';
+  inheritedWhite.samples[0].background = 'rgb(11, 12, 13)';
+  inheritedWhite.samples = auditSurfaceColors(inheritedWhite.samples);
+  assert.throws(
+    () => assertSurfaceContrast(inheritedWhite),
+    /app preference through inherited AppFrame color/u,
+  );
+});
+
+test('the contrast gate retains disabled measurements while requiring every enabled action and text kind', () => {
+  const measured = surfaceMeasurement();
+  for (const sample of measured.samples)
+    if (sample.disabled) sample.opacity = 0.2;
+  measured.samples = auditSurfaceColors(measured.samples);
+  assert.ok(
+    measured.samples.some((sample) => sample.disabled && sample.contrast < 4.5),
+  );
+  assert.doesNotThrow(() => assertSurfaceContrast(measured));
+  measured.samples = measured.samples.filter(
+    (sample) => !(sample.stage === 'diagnostics' && sample.kind === 'status'),
+  );
+  assert.throws(
+    () => assertSurfaceContrast(measured),
+    /measure actual status/u,
+  );
 });

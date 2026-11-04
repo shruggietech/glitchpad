@@ -387,6 +387,16 @@ test('link validation keeps local provenance while excluding exact upstream vend
     'vendor/tauri-plugin-single-instance-2.4.5/CHANGELOG.md',
     '# Upstream changelog\n',
   );
+  await writeFixture(
+    root,
+    'vendor/tauri-2.11.6/README.md',
+    '# Upstream Tauri\n',
+  );
+  await writeFixture(
+    root,
+    'vendor/tauri-2.11.7/README.md',
+    '# Other version\n',
+  );
   const seen = [];
   const result = await validateLinks({
     repositoryRoot: root,
@@ -396,6 +406,9 @@ test('link validation keeps local provenance while excluding exact upstream vend
       return [];
     },
   });
-  assert.equal(result.fileCount, 1);
-  assert.deepEqual(seen, ['# Local patch provenance\n']);
+  assert.equal(result.fileCount, 2);
+  assert.deepEqual(
+    seen.sort(),
+    ['# Local patch provenance\n', '# Other version\n'].sort(),
+  );
 });

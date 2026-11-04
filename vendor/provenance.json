@@ -54,13 +54,34 @@
           "sha256": "ee166e8defc9fedf5b1d6c7852129f4d472e9dab01a452da4d9d7c40df834e28"
         }
       ]
+    },
+    {
+      "name": "tauri",
+      "registry_version": "2.11.6",
+      "crate_sha256": "6fa5bacdb9bbad5954af3d1bd6cf6ae9192cab1b2e270f4a07f904610b9e85f4",
+      "source": {
+        "git": {
+          "sha1": "9452ddee5ebefd9b678a94ff003521379df6c9ae"
+        },
+        "path_in_vcs": "crates/tauri"
+      },
+      "license": "Apache-2.0 OR MIT",
+      "modified_files": [
+        {
+          "path": "src/ipc/protocol.rs",
+          "sha256": "d903c4902fb112707abb1d8ec9d42bb5e9924b88921b4d64ae6ee48c52a55774"
+        }
+      ],
+      "purpose": "S046 T052 Android debug create-error reply observation only; identical formatted script, acknowledged eval callback classified only as ACK, no transport repair",
+      "retirement": "Remove after the retained actual IPC completion gap is resolved and its required Android qualification is complete"
     }
   ],
   "modified_files": [
     "Cargo.toml (Linux zbus dependency only)",
     "tauri-plugin-opener/src/reveal_item_in_dir.rs (Linux implementation and persistent-runtime regression)",
     "tauri-plugin-single-instance/src/platform_impl/linux.rs",
-    "tauri-plugin-opener/permissions/{default,allow-default-urls}.toml (explicit relative schema targets; permission bodies unchanged)"
+    "tauri-plugin-opener/permissions/{default,allow-default-urls}.toml (explicit relative schema targets; permission bodies unchanged)",
+    "tauri/src/ipc/protocol.rs (Android debug create-error reply observation only)"
   ],
   "retirement": "Remove patches after maintained upstream releases provide compatible zbus 6 integration and full Linux lifecycle qualification passes",
   "follow_up_decisions": [
@@ -72,6 +93,12 @@
         "permissions/default.toml",
         "permissions/allow-default-urls.toml"
       ]
+    },
+    {
+      "date": "2026-11-04",
+      "slice": "S046",
+      "reason": "Observe actual default create_android_document error reply formatting, enqueue and WebView acknowledgement only under Android debug compilation; retain identical script and unchanged release/other-command paths",
+      "files": ["tauri-2.11.6/src/ipc/protocol.rs"]
     }
   ]
 }

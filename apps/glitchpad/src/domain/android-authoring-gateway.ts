@@ -6,6 +6,10 @@ import type {
 } from './contracts';
 import type { NativeInvoke } from './android-restoration-gateway';
 import { serializeTextDocument } from './text-document';
+import {
+  markSaveObservation,
+  observeCreateInvoke,
+} from './save-observation-probes';
 
 export const pickerCancelled = (error: unknown): boolean => {
   if (!error || typeof error !== 'object') return error === 'picker_cancelled';
@@ -129,14 +133,17 @@ export const createAndroidAuthoringGateway = (
           saved_revision: session.revision,
         };
       }
-      const receipt = (await call('create_android_document', {
-        request: {
-          bytes,
-          suggested_name,
-          media_type,
-          session_revision: session.revision,
-        },
-      })) as AndroidDestinationReceipt;
+      const receipt = (await observeCreateInvoke(session, () =>
+        call('create_android_document', {
+          request: {
+            bytes,
+            suggested_name,
+            media_type,
+            session_revision: session.revision,
+          },
+        }),
+      )) as AndroidDestinationReceipt;
+      markSaveObservation(session, 'create_invoke_resolved');
       if (
         receipt.saved_revision !== session.revision ||
         receipt.byte_count !== bytes.length ||
@@ -145,7 +152,11 @@ export const createAndroidAuthoringGateway = (
         throw new Error('invalid_receipt');
       return receipt;
     } catch (error) {
-      if (pickerCancelled(error)) return null;
+      markSaveObservation(session, 'create_gateway_catch');
+      if (pickerCancelled(error)) {
+        markSaveObservation(session, 'picker_cancelled_classified');
+        return null;
+      }
       throw error;
     }
   },

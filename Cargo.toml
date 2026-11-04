@@ -50,5 +50,6 @@ module_name_repetitions = "allow"
 must_use_candidate = "allow"
 
 [patch.crates-io]
+tauri = { path = "vendor/tauri-2.11.6" }
 tauri-plugin-opener = { path = "vendor/tauri-plugin-opener-2.5.5" }
 tauri-plugin-single-instance = { path = "vendor/tauri-plugin-single-instance-2.4.5" }

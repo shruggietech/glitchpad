@@ -6,6 +6,7 @@ import {
   saveFailureMessage,
 } from './domain/android-authoring-gateway';
 import { recordFailure } from './domain/diagnostic-failures';
+import { markSaveObservation } from './domain/save-observation-probes';
 import {
   useCallback,
   useEffect,
@@ -872,9 +873,11 @@ export function App({
       dispatch({ type: 'save_completed', id: session.id, receipt });
       return { status: 'performed' };
     } catch (error) {
+      markSaveObservation(session, 'save_session_catch');
       recordFailure('action', 'write', 'action_failed');
       return { status: 'failed', reason: saveFailureReason(error) };
     } finally {
+      markSaveObservation(session, 'save_session_finally');
       pendingActions.current.delete(session.id);
       if (mountedRef.current)
         dispatch({ type: 'destination_save_finished', id: session.id });

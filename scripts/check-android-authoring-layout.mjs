@@ -6,6 +6,7 @@ import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import { dirname, extname, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import puppeteer from 'puppeteer';
+import { checkS046SurfaceContrast } from './check-s046-surface-contrast.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const minimumTarget = 48;
@@ -133,13 +134,13 @@ export function assertDiagnosticMeasurement(measurement) {
   );
 }
 
-function installNativeSeams() {
+function installNativeSeams(theme = 'system') {
   let callbackId = 0;
   const callbacks = new Map();
   const records = new Map();
   const preferences = {
     schema_version: 1,
-    theme: 'system',
+    theme,
     editor_font_family: 'ui-monospace',
     editor_font_size: 14,
     line_wrap: true,
@@ -884,6 +885,12 @@ export async function checkAndroidAuthoringLayout({
           }
         }
     }
+    const surfaceContrast = await checkS046SurfaceContrast({
+      browser,
+      origin,
+      installNativeSeams,
+    });
+    failures.push(...surfaceContrast.failures);
     const receipt = {
       schema_version: 1,
       status: failures.length ? 'failed' : 'passed',
@@ -901,6 +908,7 @@ export async function checkAndroidAuthoringLayout({
       ],
       cases,
       diagnostic_cases: diagnosticCases,
+      surface_contrast_cases: surfaceContrast.cases,
     };
     if (receiptPath) {
       await mkdir(dirname(receiptPath), { recursive: true });

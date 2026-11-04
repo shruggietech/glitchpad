@@ -628,7 +628,31 @@ class AndroidDeliveryInstrumentedTest {
       const activeTab=document.querySelector('[role=tab][aria-selected=true]');
       const revision=surface?Number(surface.getAttribute('data-performance-revision')):NaN;
       const add=document.querySelector('[data-add-document]');
+      let saveObservation={available:false};
+      try {
+        const probe=window.__GLITCHPAD_SAVE_OBSERVATION__;
+        if(probe&&typeof probe==='object'){
+          const flag=key=>probe[key]===true?true:probe[key]===false?false:null;
+          saveObservation={
+            available:true,
+            generation:Number.isSafeInteger(probe.generation)&&probe.generation>=0?probe.generation:null,
+            create_invoke_started:flag('create_invoke_started'),
+            create_invoke_resolved:flag('create_invoke_resolved'),
+            create_gateway_catch:flag('create_gateway_catch'),
+            picker_cancelled_classified:flag('picker_cancelled_classified'),
+            save_session_catch:flag('save_session_catch'),
+            save_session_finally:flag('save_session_finally'),
+            sdk_registry_available:flag('sdk_registry_available'),
+            sdk_pair_available:flag('sdk_pair_available'),
+            sdk_same_registry:flag('sdk_same_registry'),
+            success_entry_still_registered:flag('success_entry_still_registered'),
+            error_entry_still_registered:flag('error_entry_still_registered'),
+            sdk_callback_entry_observed:false
+          };
+        }
+      } catch { saveObservation={available:false,capture_failed:true}; }
       return {
+        save_observation:saveObservation,
         app_shell_present:!!document.querySelector('.app-shell'),
         application_recovery_present:!!document.querySelector('.application-recovery'),
         bootstrap_recovery_present:!!Array.from(document.querySelectorAll('.application-recovery h1')).find(node=>node.textContent==='Glitchpad could not start'),

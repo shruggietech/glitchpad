@@ -8,7 +8,8 @@ function New-PortableStartupDiagnostic {
         [Parameter(Mandatory)][bool] $Succeeded,
         [Parameter(Mandatory)][long] $ElapsedMilliseconds,
         [ValidateSet('none', 'named_element', 'named_button')][string] $WaitKind = 'none',
-        [ValidateRange(0, 100000)][int] $WaitCallerLine = 0
+        [ValidateRange(0, 100000)][int] $WaitCallerLine = 0,
+        [System.Collections.IDictionary] $DocumentAction = $null
     )
     $record = [ordered]@{
         schema_version = 1
@@ -31,6 +32,15 @@ function New-PortableStartupDiagnostic {
             function = if ($WaitKind -eq 'named_button') { 'Wait-NamedButton' } else { 'Wait-NamedElement' }
             caller_line = $WaitCallerLine
         }
+    }
+    if (-not $Succeeded -and $null -ne $DocumentAction) {
+        $phase = [string]$DocumentAction['phase']
+        if ($phase -notin @('menu_wait', 'action_wait', 'action_ready', 'click_dispatched', 'save_wait')) { throw 'Document action observation phase is invalid.' }
+        $action = [ordered]@{ phase = $phase }
+        foreach ($field in @('menu_available', 'candidate_available', 'menu_owned', 'enabled', 'visible', 'scroll_requested', 'click_dispatched', 'feedback_saved', 'feedback_pending', 'feedback_cancelled', 'feedback_unavailable', 'feedback_default_failure')) {
+            $action[$field] = if ($null -eq $DocumentAction[$field]) { $null } else { [bool]$DocumentAction[$field] }
+        }
+        $record['document_action'] = $action
     }
     return $record
 }

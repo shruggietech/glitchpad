@@ -91,7 +91,9 @@ const showBootstrapFailure = (
   });
   surface.append(title, explanation, code, restart, status);
   appendRecoveryHelp(surface);
-  root.replaceChildren(surface);
+  // Bootstrap recovery must work before application code or DOM shims load.
+  while (root.firstChild) root.removeChild(root.firstChild);
+  root.appendChild(surface);
   restart.focus();
 };
 

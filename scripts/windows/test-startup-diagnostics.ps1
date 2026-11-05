@@ -41,3 +41,17 @@ if ($json -match 'private-title|private-arguments|document.pdf|/private|\\') { t
 $receipt = New-PortableStartupDiagnostic -Observation $observation -Scenario clean -Stage named_button_ready -SourceCommit ('a' * 40) -ManifestDigest ('b' * 64) -Succeeded $true -ElapsedMilliseconds 1 -WaitKind named_button -WaitCallerLine 405
 if ($receipt.Contains('readiness_wait')) { throw 'Successful button readiness must omit failure-only caller diagnostics.' }
 Write-Output 'Failure-only button readiness caller-site tests passed.'
+
+$action = @{ phase = 'save_wait'; menu_available = $false; candidate_available = $true; menu_owned = $true; enabled = $true; visible = $true; scroll_requested = $true; click_dispatched = $true; feedback_pending = $false; control_name = 'private-control'; document_text = 'private-document'; path = '/private/file.md' }
+$receipt = New-PortableStartupDiagnostic -Observation $observation -Scenario editable -Stage named_button_ready -SourceCommit ('a' * 40) -ManifestDigest ('b' * 64) -Succeeded $false -ElapsedMilliseconds 10000 -DocumentAction $action
+if ($receipt.document_action.phase -cne 'save_wait' -or -not $receipt.document_action.menu_owned -or -not $receipt.document_action.click_dispatched -or $receipt.document_action.menu_available -or $receipt.document_action.feedback_pending) { throw 'Document action boolean/phase classification is incorrect.' }
+if ($null -ne $receipt.document_action.feedback_saved) { throw 'Unobserved action outcome must remain unknown.' }
+$json = $receipt | ConvertTo-Json -Depth 4 -Compress
+if ($json -match 'private-control|private-document|/private|file.md|control_name|document_text') { throw 'Document action observation exposed non-allowlisted input.' }
+$receipt = New-PortableStartupDiagnostic -Observation $observation -Scenario editable -Stage named_button_ready -SourceCommit ('a' * 40) -ManifestDigest ('b' * 64) -Succeeded $true -ElapsedMilliseconds 1 -DocumentAction $action
+if ($receipt.Contains('document_action')) { throw 'Successful scenario must omit failure-only action diagnostics.' }
+$action.phase = 'private-phase'
+$refused = $false
+try { New-PortableStartupDiagnostic -Observation $observation -Scenario editable -Stage named_button_ready -SourceCommit ('a' * 40) -ManifestDigest ('b' * 64) -Succeeded $false -ElapsedMilliseconds 1 -DocumentAction $action | Out-Null } catch { $refused = $true }
+if (-not $refused) { throw 'Arbitrary document action phase was admitted.' }
+Write-Output 'Failure-only document action allowlist tests passed.'

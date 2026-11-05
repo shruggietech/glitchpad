@@ -19,6 +19,7 @@ Set-StrictMode -Version Latest
 $startupDiagnostics = [Collections.Generic.List[object]]::new()
 $script:readinessWaitKind = 'none'
 $script:readinessWaitCallerLine = 0
+$script:documentActionObservation = $null
 
 $root = (Resolve-Path -LiteralPath $PortableRoot).Path
 $manifestPath = (Resolve-Path -LiteralPath $Manifest).Path
@@ -80,7 +81,7 @@ function Save-StartupDiagnostic([Diagnostics.Process] $Process, [string] $Scenar
         }
         $observation.process_state_available = $true
     } catch { }
-    $record = New-PortableStartupDiagnostic -Observation $observation -Scenario $Scenario -Stage $script:readinessStage -SourceCommit $manifestSourceCommit -ManifestDigest $manifestDigest -Succeeded $Succeeded -ElapsedMilliseconds $Clock.ElapsedMilliseconds -WaitKind $script:readinessWaitKind -WaitCallerLine $script:readinessWaitCallerLine
+    $record = New-PortableStartupDiagnostic -Observation $observation -Scenario $Scenario -Stage $script:readinessStage -SourceCommit $manifestSourceCommit -ManifestDigest $manifestDigest -Succeeded $Succeeded -ElapsedMilliseconds $Clock.ElapsedMilliseconds -WaitKind $script:readinessWaitKind -WaitCallerLine $script:readinessWaitCallerLine -DocumentAction $(if ($Scenario -eq 'editable') { $script:documentActionObservation } else { $null })
     $startupDiagnostics.Add($record)
     [IO.File]::WriteAllText([IO.Path]::GetFullPath("$Receipt.startup.json"), (ConvertTo-Json -InputObject @($startupDiagnostics.ToArray()) -Depth 5) + [Environment]::NewLine, [Text.UTF8Encoding]::new($false))
 }
@@ -272,34 +273,66 @@ function Wait-NamedButton([Diagnostics.Process] $Process, [string] $Name, [int] 
     throw "Portable UI did not expose button '$Name'."
 }
 
+function Find-DocumentToolsMenu([System.Windows.Automation.AutomationElement] $Window) {
+    $condition = New-Object System.Windows.Automation.AndCondition(
+        (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::NameProperty, 'Document tools')),
+        (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Menu))
+    )
+    return $Window.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $condition)
+}
+
 function Wait-ActionableNamedElement([Diagnostics.Process] $Process, [string] $Name, [string] $Shortcut = '', [int] $Seconds = 10) {
+    $script:documentActionObservation['phase'] = 'action_wait'
     $deadline = [DateTimeOffset]::UtcNow.AddSeconds($Seconds)
     do {
         $window = Get-WindowRoot $Process
-        if ($window) {
+        $menu = if ($window) { Find-DocumentToolsMenu $window } else { $null }
+        $script:documentActionObservation['menu_available'] = $null -ne $menu
+        if ($menu -and -not $menu.Current.IsOffscreen -and $menu.Current.IsEnabled) {
             $candidates = [Collections.Generic.List[System.Windows.Automation.AutomationElement]]::new()
-            $exact = Find-NamedElement $window $Name
+            $exact = Find-NamedElement $menu $Name
             if ($exact) { $candidates.Add($exact) }
             if ($Shortcut) {
                 $shortcutName = '^{0}\s*{1}$' -f [Regex]::Escape($Name), [Regex]::Escape($Shortcut)
-                foreach ($candidate in $window.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)) {
-                    try {
-                        if ($candidate.Current.Name -match $shortcutName) { $candidates.Add($candidate) }
-                    }
+                foreach ($candidate in $menu.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)) {
+                    try { if ($candidate.Current.Name -match $shortcutName) { $candidates.Add($candidate) } }
                     catch { continue }
                 }
             }
+            $script:documentActionObservation['candidate_available'] = $candidates.Count -gt 0
             foreach ($candidate in $candidates) {
-                $element = $candidate
-                while ($element) {
-                    try {
-                        $bounds = $element.Current.BoundingRectangle
+                try {
+                    $owner = $candidate
+                    while ($owner -and -not [System.Windows.Automation.AutomationElement]::Compare($owner, $menu)) {
+                        $owner = [System.Windows.Automation.TreeWalker]::ControlViewWalker.GetParent($owner)
+                    }
+                    $script:documentActionObservation['menu_owned'] = $null -ne $owner
+                    if (-not $owner) { continue }
+                    $element = $candidate
+                    while ($element -and -not [System.Windows.Automation.AutomationElement]::Compare($element, $menu)) {
                         $patternObject = $null
-                        if (-not $element.Current.IsOffscreen -and $bounds.Width -gt 0 -and $bounds.Height -gt 0 -and $element.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern, [ref]$patternObject)) { return $element }
+                        if ($element.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern, [ref]$patternObject)) {
+                            $script:documentActionObservation['enabled'] = $element.Current.IsEnabled
+                            if (-not $element.Current.IsEnabled) { break }
+                            $scrollItem = $null
+                            if ($element.TryGetCurrentPattern([System.Windows.Automation.ScrollItemPattern]::Pattern, [ref]$scrollItem)) {
+                                $script:documentActionObservation['scroll_requested'] = $true
+                                ([System.Windows.Automation.ScrollItemPattern]$scrollItem).ScrollIntoView()
+                            }
+                            $bounds = $element.Current.BoundingRectangle
+                            $windowBounds = $window.Current.BoundingRectangle
+                            $visible = -not $element.Current.IsOffscreen -and $bounds.Width -gt 0 -and $bounds.Height -gt 0 -and $bounds.Left -ge $windowBounds.Left -and $bounds.Top -ge $windowBounds.Top -and $bounds.Right -le $windowBounds.Right -and $bounds.Bottom -le $windowBounds.Bottom
+                            $script:documentActionObservation['visible'] = $visible
+                            if ($visible) {
+                                $script:documentActionObservation['phase'] = 'action_ready'
+                                return $element
+                            }
+                            break
+                        }
                         $element = [System.Windows.Automation.TreeWalker]::ControlViewWalker.GetParent($element)
                     }
-                    catch { break }
                 }
+                catch { continue }
             }
         }
         Start-Sleep -Milliseconds 50
@@ -351,9 +384,12 @@ function Invoke-NamedButton([Diagnostics.Process] $Process, [string] $Name) {
 }
 
 function Invoke-DocumentCommand([Diagnostics.Process] $Process, [string] $Name, [string] $Shortcut = '') {
+    $script:documentActionObservation = @{ phase = 'menu_wait'; menu_available = $false; candidate_available = $false; menu_owned = $false; enabled = $null; visible = $null; scroll_requested = $false; click_dispatched = $false }
     Invoke-NamedButton $Process 'Document tools'
     $item = Wait-ActionableNamedElement $Process $Name $Shortcut
     Click-AutomationElement $Process $item $Name
+    $script:documentActionObservation['click_dispatched'] = $true
+    $script:documentActionObservation['phase'] = 'click_dispatched'
 }
 
 function Exercise-MarkdownEditSavePreview([Diagnostics.Process] $Process, [string] $Path) {
@@ -368,7 +404,23 @@ function Exercise-MarkdownEditSavePreview([Diagnostics.Process] $Process, [strin
     [System.Windows.Forms.SendKeys]::SendWait($savedText)
     Wait-WindowText $Process $savedText
     Invoke-DocumentCommand $Process 'Save' 'Ctrl+S'
-    Wait-FileText $Path $savedText
+    $script:documentActionObservation['phase'] = 'save_wait'
+    try { Wait-FileText $Path $savedText }
+    catch {
+        $saveFailure = $_
+        try {
+            $window = Get-WindowRoot $Process
+            if ($window) {
+                $script:documentActionObservation['menu_available'] = $null -ne (Find-DocumentToolsMenu $window)
+                $script:documentActionObservation['feedback_saved'] = Test-WindowContainsText $window 'Saved after native verification.'
+                $script:documentActionObservation['feedback_pending'] = Test-WindowContainsText $window 'Saving. Waiting for a verified native write receipt.'
+                $script:documentActionObservation['feedback_cancelled'] = Test-WindowContainsText $window 'Cancelled. Your document and edits remain available.'
+                $script:documentActionObservation['feedback_unavailable'] = Test-WindowContainsText $window 'This action is unavailable for the current document.'
+                $script:documentActionObservation['feedback_default_failure'] = Test-WindowContainsText $window 'Save did not complete. Try again or choose another destination. Your edits remain open.'
+            }
+        } catch { }
+        throw $saveFailure
+    }
     Invoke-DocumentCommand $Process 'Read'
     Wait-SafeMarkdownOutcome $Process $savedText 'S038_EDIT_RAW_SENTINEL'
     if ([IO.File]::ReadAllText($Path, [Text.Encoding]::UTF8) -ne $savedText) {

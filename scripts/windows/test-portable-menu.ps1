@@ -8,9 +8,14 @@ Add-Type -TypeDefinition @'
 namespace PortableMenuTest {
  public class ScrollState { public double HorizontalScrollPercent; public double VerticalScrollPercent; }
  public class ScrollPattern { public static object Pattern = new object(); public ScrollState Current = new ScrollState(); }
- public class AutomationElement { public static object FocusedElement; public static object ControlTypeProperty = new object(); }
+ public class AutomationElement { public static object FocusedElement; public static object ControlTypeProperty = new object(); public static object NameProperty = new object(); public static System.Func<object, object, bool> Same; public static bool Compare(object a, object b) { return Same(a,b); } }
  public class PropertyCondition { public PropertyCondition(object property, object value) {} }
- public class ControlType { public static object ScrollBar = new object(); }
+ public class ControlType { public static object ScrollBar = new object(); public static object Menu = new object(); }
+ public class AndCondition { public AndCondition(object a, object b) {} }
+ public class Condition { public static object TrueCondition = new object(); }
+ public class InvokePattern { public static object Pattern = new object(); }
+ public class ScrollItemPattern { public static object Pattern = new object(); public System.Action Scroll; public void ScrollIntoView() { Scroll(); } }
+ public class TreeWalker { public static TreeWalker ControlViewWalker = new TreeWalker(); public System.Func<object,object> Parent; public object GetParent(object element) { return Parent(element); } }
  public class TreeScope { public static object Descendants = new object(); }
  public class NativeInput { public static bool SetForegroundWindow(System.IntPtr value) { return true; } }
  public class SendKeys { public static bool Escaped; public static void SendWait(string value) { if(value != "{ESC}") throw new System.Exception("Unexpected key"); Escaped = true; } }
@@ -32,6 +37,7 @@ function Element($name, $bounds) {
 function Reset-Case {
     $script:open = $false
     $script:route = ''
+    $script:clickCount = 0
     $script:trigger = Element 'Menu' (Rect 0 0 48 48)
     $script:afterTrigger = $script:trigger
     $script:document = Element 'document.md' (Rect 0 48 800 552)
@@ -84,7 +90,7 @@ function Wait-ActionableNamedElement($Process, $Name, $Shortcut) {
     if ($script:route -ne 'Document tools') { throw 'Document action used the application destinations menu.' }
     return Element $Name (Rect 220 180 100 48)
 }
-function Click-AutomationElement($Process, $Element, $Name) { $script:open = $false; $script:clicked = $Name }
+function Click-AutomationElement($Process, $Element, $Name) { $script:open = $false; $script:clicked = $Name; $script:clickCount++ }
 function Must-Fail($configure, $expectedMessage) {
     Reset-Case; & $configure
     $failed = $false
@@ -107,6 +113,79 @@ Must-Fail { $script:close.Current.IsOffscreen = $true } 'Application menu close 
 foreach ($name in @('Edit', 'Save', 'Read')) {
     Reset-Case
     Invoke-DocumentCommand $script:testProcess $name
-    if ($script:clicked -cne $name -or $script:open) { throw 'Document command did not complete.' }
+    if ($script:clicked -cne $name -or $script:open -or $script:clickCount -ne 1) { throw 'Document command did not complete.' }
 }
 Write-Output 'Portable modal coordinator and document route fixtures passed (simulated UIA boundary).'
+
+# Active-menu resolution must never accept the duplicate background primary Save.
+foreach ($name in @('Find-DocumentToolsMenu', 'Wait-ActionableNamedElement')) {
+    $function = $ast.Find({ param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq $name }, $true)
+    if (-not $function) { continue }
+    $source = $function.Extent.Text.Replace('System.Windows.Automation.', 'PortableMenuTest.').Replace('List[PortableMenuTest.AutomationElement]', 'List[object]').Replace('[PortableMenuTest.AutomationElement] $Window', '[object] $Window')
+    Invoke-Expression $source
+}
+[PortableMenuTest.AutomationElement]::Same = [Func[object,object,bool]] { param($a,$b) [object]::ReferenceEquals($a,$b) }
+[PortableMenuTest.TreeWalker]::ControlViewWalker.Parent = [Func[object,object]] { param($element) $element.Parent }
+function Action-Element($name, $bounds, $parent) {
+    $element = Element $name $bounds
+    $element | Add-Member NoteProperty Parent $parent
+    $element | Add-Member NoteProperty HasInvoke $true
+    $element | Add-Member NoteProperty ScrollItem $null
+    $element | Add-Member ScriptMethod TryGetCurrentPattern {
+        param($pattern,[ref]$result)
+        if ([object]::ReferenceEquals($pattern,[PortableMenuTest.InvokePattern]::Pattern)) { $result.Value=$null; return $this.HasInvoke }
+        if ([object]::ReferenceEquals($pattern,[PortableMenuTest.ScrollItemPattern]::Pattern) -and $null -ne $this.ScrollItem) { $result.Value=$this.ScrollItem; return $true }
+        return $false
+    } -Force
+    return $element
+}
+function Reset-ActionCase {
+    Reset-Case
+    $script:menuReads=0
+    $script:menuAfter=1
+    $script:menuPresent=$true
+    $script:documentActionObservation=@{}
+    $script:background=Action-Element 'Save' (Rect 48 0 48 48) $script:window
+    $script:ownedMenu=Element 'Document tools' (Rect 200 100 400 480)
+    $script:action=Action-Element 'Save' (Rect 220 180 100 48) $script:ownedMenu
+    $script:ownedMenu | Add-Member ScriptMethod FindAll { param($scope,$condition) return @($script:action) } -Force
+    $script:window | Add-Member ScriptMethod FindFirst { param($scope,$condition) $script:menuReads++; if ($script:menuPresent -and $script:menuReads -ge $script:menuAfter) { return $script:ownedMenu }; return $null }
+    $script:window | Add-Member ScriptMethod FindAll { param($scope,$condition) return @($script:background,$script:action) } -Force
+}
+function Find-NamedElement($Window,$Name) {
+    if ([object]::ReferenceEquals($Window,$script:ownedMenu)) { return $script:action }
+    if ([object]::ReferenceEquals($Window,$script:window)) { return $script:background }
+    return $null
+}
+function Reject-Action($configure) {
+    Reset-ActionCase; & $configure
+    $rejected=$false
+    try { Wait-ActionableNamedElement $script:testProcess 'Save' -Seconds 0 | Out-Null } catch {
+        if ($_.Exception.Message -cne "Portable UI did not expose actionable element 'Save'.") { throw }
+        $rejected=$true
+    }
+    if (-not $rejected) { throw 'Unavailable or unowned document action was accepted.' }
+}
+Reset-ActionCase
+$script:menuAfter=2
+$resolved=Wait-ActionableNamedElement $script:testProcess 'Save'
+if (-not [object]::ReferenceEquals($resolved,$script:action) -or $script:menuReads -lt 2) { throw 'Background primary Save satisfied the document-menu action.' }
+Reject-Action { $script:menuPresent=$false }
+Reject-Action { $script:action.Current.IsEnabled=$false }
+Reject-Action { $script:action.Current.IsOffscreen=$true }
+Reject-Action { $script:action.Parent=$script:window }
+Reject-Action { $script:action.Current.BoundingRectangle=Rect 790 180 100 48 }
+Reject-Action { $script:ownedMenu.Current.IsEnabled=$false }
+Reject-Action { $script:ownedMenu.Current.IsOffscreen=$true }
+Reset-ActionCase
+$script:action.Current.IsOffscreen=$true
+$script:scrollItem=[PortableMenuTest.ScrollItemPattern]::new()
+$script:scrollItem.Scroll=[Action] { $script:action.Current.IsOffscreen=$false }
+$script:action.ScrollItem=$script:scrollItem
+$resolved=Wait-ActionableNamedElement $script:testProcess 'Save'
+if (-not [object]::ReferenceEquals($resolved,$script:action) -or -not $script:documentActionObservation.scroll_requested) { throw 'Owned offscreen menu action was not brought into view through UIA.' }
+Write-Output 'Portable document action scope fixtures passed (simulated UIA boundary).'
+
+Reset-ActionCase
+Invoke-DocumentCommand $script:testProcess 'Save' 'Ctrl+S'
+if ($script:clicked -cne 'Save' -or $script:clickCount -ne 1 -or -not $script:documentActionObservation.click_dispatched -or -not $script:documentActionObservation.menu_owned) { throw 'Scoped document command must dispatch exactly one owned click.' }

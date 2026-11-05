@@ -356,6 +356,11 @@ class AndroidDeliveryInstrumentedTest {
   @Test
   fun rootFailureRetainsDraft() {
     val scenario = ActivityScenario.launch<MainActivity>(Intent(clientContext, MainActivity::class.java).setAction(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)).also { ownedScenario = it }
+    verifyRootFailureRetainsDraft(scenario)
+  }
+
+  private fun verifyRootFailureRetainsDraft(scenario: ActivityScenario<MainActivity>) {
+    assertTrue("root recovery must reuse the active owned activity scenario", ownedScenario === scenario)
     waitForBodyText(scenario, "Add document")
     createNewDraftForInput(scenario, "New Markdown", "Untitled.md")
     replaceEditorText(scenario, "# S046 root recovery\n\nS046_ROOT_DRAFT_RETAINED_Ω\n")
@@ -2149,7 +2154,7 @@ class AndroidDeliveryInstrumentedTest {
 
   @Test fun s047FaultJourney() {
     assertEquals("fault_probe", expectedBuildVariant())
-    var scenario = launchS047()
+    val scenario = launchS047()
     var originalUrl: String? = null
     scenario.onActivity { activity ->
       val view = requireNotNull(findWebView(activity.window.decorView))
@@ -2160,8 +2165,7 @@ class AndroidDeliveryInstrumentedTest {
     assertEquals("true", evaluate(scenario, "!new URL(location.href).searchParams.has('glitchpad_probe')"))
     clickControl(scenario, "Restart Glitchpad")
     waitForBodyText(scenario, "Add document")
-    rootFailureRetainsDraft()
-    scenario = requireNotNull(ownedScenario)
+    verifyRootFailureRetainsDraft(scenario)
     clickControl(scenario, "Close Diagnostics")
     verifyS047RecoveryDecisions(scenario)
     val corpus = grant(documentUri("recovery-corpus.md"))

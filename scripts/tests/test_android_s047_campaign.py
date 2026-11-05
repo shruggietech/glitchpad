@@ -54,4 +54,21 @@ echo "$*" >> "$VALIDATION"
         self.assertEqual(result.returncode,1);self.assertIn('overlay enable --exclusive --category com.android.internal.systemui.navbar.gestural',native)
         self.assertIn('overlay enable --exclusive --category com.android.internal.systemui.navbar.threebutton',native)
         self.assertIn('#s047AboutJourney',calls)
+    def test_fault_journey_reuses_its_activity_for_root_recovery(self):
+        # ActivityScenario.launch clears/replaces the existing task. Calling an @Test
+        # from this composed journey must not destroy its live Tauri activity.
+        delivery=(CAMPAIGN.parents[1]/'crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt').read_text(encoding='utf-8')
+        fault=delivery.split('  @Test fun s047FaultJourney() {',1)[1].split('  private val moreViewportActions',1)[0]
+        self.assertNotIn('rootFailureRetainsDraft()',fault,'composed fault journey must not call the standalone launching test')
+        self.assertIn('verifyRootFailureRetainsDraft(scenario)',fault)
+        self.assertEqual(fault.count('launchS047()'),1)
+        self.assertNotIn('ActivityScenario.launch',fault)
+        standalone=delivery.split('  fun rootFailureRetainsDraft() {',1)[1].split('  private fun verifyRootFailureRetainsDraft(',1)[0]
+        self.assertEqual(standalone.count('ActivityScenario.launch<MainActivity>'),1)
+        self.assertIn('verifyRootFailureRetainsDraft(scenario)',standalone)
+        helper=delivery.split('  private fun verifyRootFailureRetainsDraft(',1)[1].split('\n  @Test',1)[0]
+        self.assertNotIn('ActivityScenario.launch',helper)
+        self.assertIn('ownedScenario === scenario',helper)
+        for assertion in ('injectRecoveryFailure(scenario, "root")','"Recover Untitled.md?"','"S046_ROOT_DRAFT_RETAINED_Ω"','"application_render_failed"','JSONObject(preview).getJSONObject("environment").getString("build_commit")'):
+            self.assertIn(assertion,helper)
 if __name__=='__main__':unittest.main()

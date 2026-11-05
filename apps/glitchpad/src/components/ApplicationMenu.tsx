@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
-
+import { useRef, useState, type KeyboardEvent } from 'react';
 import type { CommandDescriptor } from '../domain/commands';
-
+import type { DiagnosticExportGateway } from '../domain/persistence-gateway';
+import { TaskSurface } from './TaskSurface';
 interface ApplicationMenuProps {
   active?: boolean;
   commands: CommandDescriptor[];
@@ -10,52 +10,106 @@ interface ApplicationMenuProps {
   onInvoke: (command: CommandDescriptor, opener: HTMLButtonElement) => void;
   onPreferences: (opener: HTMLButtonElement) => void;
   onDiagnostics: (opener: HTMLButtonElement) => void;
+  onHelp?: (opener: HTMLButtonElement) => void;
+  onAbout?: (opener: HTMLButtonElement) => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  toolsOpen?: boolean;
+  onToolsOpenChange?: (open: boolean) => void;
+  viewport?: DiagnosticExportGateway['viewport'];
+  condensed?: boolean;
 }
-
-export function ApplicationMenu({ active = true, commands, canOpen, onOpen, onInvoke, onPreferences, onDiagnostics }: ApplicationMenuProps) {
-  const [open, setOpen] = useState(false);
-  const shellRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (open) menuRef.current?.querySelector<HTMLButtonElement>('[role="menuitem"]:not(:disabled)')?.focus();
-  }, [open]);
-
-  useEffect(() => {
-    if (!active) setOpen(false);
-  }, [active]);
-
-  useEffect(() => {
-    if (!open) return;
-    const dismiss = (event: PointerEvent) => {
-      if (!shellRef.current?.contains(event.target as Node)) {
-        setOpen(false);
-        requestAnimationFrame(() => triggerRef.current?.focus());
-      }
-    };
-    document.addEventListener('pointerdown', dismiss);
-    return () => document.removeEventListener('pointerdown', dismiss);
-  }, [open]);
-
+export function ApplicationMenu({
+  active = true,
+  commands,
+  canOpen,
+  onOpen,
+  onInvoke,
+  onPreferences,
+  onDiagnostics,
+  onHelp,
+  onAbout,
+  open: controlled,
+  onOpenChange,
+  toolsOpen: controlledTools,
+  onToolsOpenChange,
+  viewport,
+  condensed = false,
+}: ApplicationMenuProps) {
+  const [local, setLocal] = useState(false),
+    [localTools, setLocalTools] = useState(false);
+  const open = controlled ?? local,
+    toolsOpen = controlledTools ?? localTools;
+  const trigger = useRef<HTMLButtonElement>(null),
+    tools = useRef<HTMLButtonElement>(null);
+  const setOpen = (value: boolean) => {
+    setLocal(value);
+    onOpenChange?.(value);
+  };
+  const setTools = (value: boolean) => {
+    setLocalTools(value);
+    onToolsOpenChange?.(value);
+  };
   const invoke = (action: (opener: HTMLButtonElement) => void) => {
     setOpen(false);
-    if (triggerRef.current) action(triggerRef.current);
+    if (trigger.current) action(trigger.current);
   };
-
+  const keys = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+    const items = [
+      ...event.currentTarget.querySelectorAll<HTMLButtonElement>(
+        'button:not(:disabled)',
+      ),
+    ];
+    const index = items.indexOf(document.activeElement as HTMLButtonElement);
+    const next =
+      event.key === 'Home'
+        ? 0
+        : event.key === 'End'
+          ? items.length - 1
+          : (index + (event.key === 'ArrowUp' ? -1 : 1) + items.length) %
+            items.length;
+    event.preventDefault();
+    items[next]?.focus();
+  };
+  const primary =
+    commands.find((c) => c.role === 'primary') ??
+    commands.find((c) => c.id === 'search');
+  const toolButtons = (
+    <>
+      {primary && !condensed && (
+        <button
+          type="button"
+          className="document-primary-action"
+          disabled={!active || !primary.enabled}
+          title={primary.reason}
+          onClick={(event) => onInvoke(primary, event.currentTarget)}
+        >
+          {primary.label}
+        </button>
+      )}
+      <button
+        ref={tools}
+        className="document-tools-trigger"
+        type="button"
+        aria-label="Document tools"
+        aria-haspopup="menu"
+        aria-expanded={toolsOpen}
+        disabled={!active || !commands.length}
+        onClick={() => setTools(!toolsOpen)}
+      >
+        Tools
+      </button>
+    </>
+  );
   return (
     <div
       className="application-menu-shell application-toolbar"
-      ref={shellRef}
       data-menu-active={active ? 'true' : 'false'}
       data-menu-open={open ? 'true' : 'false'}
-      onBlur={(event) => {
-        if (!open || shellRef.current?.contains(event.relatedTarget)) return;
-        setOpen(false);
-        requestAnimationFrame(() => triggerRef.current?.focus());
-      }}
     >
       <button
+        ref={trigger}
         className="application-menu-trigger"
         type="button"
         aria-label="Menu"
@@ -64,30 +118,85 @@ export function ApplicationMenu({ active = true, commands, canOpen, onOpen, onIn
         aria-hidden={!active}
         disabled={!active}
         tabIndex={active ? 0 : -1}
-        ref={triggerRef}
-        onClick={() => setOpen((current) => !current)}
+        onClick={() => setOpen(!open)}
       >
-        <span className="application-menu-glyph" aria-hidden="true">☰</span>
+        <span className="application-menu-glyph" aria-hidden="true">
+          ☰
+        </span>
       </button>
-      {open && (
+      {toolButtons}
+      <TaskSurface
+        open={open && active}
+        onOpenChange={setOpen}
+        title="Application menu"
+        opener={trigger.current}
+        viewport={viewport}
+      >
         <div
           className="application-menu"
           role="menu"
           aria-label="Glitchpad menu"
-          ref={menuRef}
-          onKeyDown={(event) => {
-            if (event.key !== 'Escape') return;
-            event.preventDefault();
-            setOpen(false);
-            triggerRef.current?.focus();
-          }}
+          onKeyDown={keys}
         >
-          {canOpen && (
-            <button type="button" role="menuitem" onClick={() => invoke(() => onOpen())}>
-              Open…
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => invoke(onPreferences)}
+          >
+            Preferences
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => invoke(onDiagnostics)}
+          >
+            Diagnostics
+          </button>
+          {onHelp && (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => invoke(onHelp)}
+            >
+              Help and support
             </button>
           )}
-          {commands.length > 0 && <div className="application-menu-separator" role="separator" />}
+          {onAbout && (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => invoke(onAbout)}
+            >
+              About Glitchpad
+            </button>
+          )}
+        </div>
+      </TaskSurface>
+      <TaskSurface
+        open={toolsOpen && active}
+        onOpenChange={setTools}
+        title="Document tools"
+        opener={tools.current}
+        viewport={viewport}
+      >
+        <div
+          className="application-menu document-tools-menu"
+          role="menu"
+          aria-label="Document tools"
+          onKeyDown={keys}
+        >
+          {canOpen && (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setTools(false);
+                onOpen();
+              }}
+            >
+              Open file
+            </button>
+          )}
           {commands.map((command) => (
             <button
               type="button"
@@ -95,18 +204,23 @@ export function ApplicationMenu({ active = true, commands, canOpen, onOpen, onIn
               key={command.id}
               disabled={!command.enabled}
               title={command.reason}
-              aria-keyshortcuts={command.shortcut?.replaceAll('Ctrl','Control')}
-              onClick={() => invoke((opener) => onInvoke(command, opener))}
+              aria-keyshortcuts={command.shortcut?.replaceAll(
+                'Ctrl',
+                'Control',
+              )}
+              onClick={() => {
+                setTools(false);
+                if (tools.current) onInvoke(command, tools.current);
+              }}
             >
               <span>{command.label}</span>
-              {command.shortcut && <kbd aria-hidden="true">{command.shortcut}</kbd>}
+              {command.shortcut && (
+                <kbd aria-hidden="true">{command.shortcut}</kbd>
+              )}
             </button>
           ))}
-          <div className="application-menu-separator" role="separator" />
-          <button type="button" role="menuitem" onClick={() => invoke(onPreferences)}>Preferences</button>
-          <button type="button" role="menuitem" onClick={() => invoke(onDiagnostics)}>Diagnostics</button>
         </div>
-      )}
+      </TaskSurface>
     </div>
   );
 }

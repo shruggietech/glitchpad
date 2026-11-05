@@ -1,6 +1,7 @@
 use glitchpad_core::image_family::{decode_family, image_signature};
 use glitchpad_core::images::{ImageContainer, ImageFailure, ImageFamilyState, ImageLimits};
 use sha2::{Digest, Sha256};
+use std::fmt::Write as _;
 use std::sync::atomic::AtomicBool;
 
 fn decode(
@@ -427,4 +428,182 @@ fn gif_frame_inventory_limit_is_enforced_before_codec_surface_construction() {
         }
     }
     assert_eq!(decode(&bytes, 0).unwrap_err(), ImageFailure::Oversized);
+}
+
+#[test]
+fn practical_svg_exports_render_expected_pixels_without_changing_sources() {
+    for name in [
+        "svg-presentation.svg",
+        "svg-namespaced.svg",
+        "svg-reuse.svg",
+    ] {
+        let bytes = std::fs::read(format!("../../fixtures/images/{name}")).unwrap();
+        let before = Sha256::digest(&bytes);
+        assert_eq!(image_signature(&bytes), Some(ImageContainer::Svg), "{name}");
+        let decoded = decode(&bytes, 0).unwrap_or_else(|e| panic!("{name}: {e:?}"));
+        let pixels = image::load_from_memory(&decoded.preview.png_bytes)
+            .unwrap()
+            .into_rgba8();
+        assert_eq!(pixels.dimensions(), (4, 3), "{name}");
+        assert!(pixels.pixels().all(|p| p.0 == [18, 52, 86, 255]), "{name}");
+        assert_eq!(
+            Sha256::digest(std::fs::read(format!("../../fixtures/images/{name}")).unwrap()),
+            before
+        );
+    }
+}
+
+#[test]
+fn svg_refusals_are_stable_and_distinguish_references_profile_and_syntax() {
+    for (body, expected) in [
+        ("<script/>", "svg_unsupported"),
+        ("<filter/>", "svg_unsupported"),
+        ("<rect onclick='run()'/>", "svg_unsupported"),
+        (
+            "<image href='data:image/png;base64,AA=='/>",
+            "svg_external_reference",
+        ),
+        (
+            "<use href='https://invalid.example/a#x'/>",
+            "svg_external_reference",
+        ),
+        (
+            "<rect style='fill:url(https://invalid.example/paint)'/>",
+            "svg_external_reference",
+        ),
+        (
+            "<style>@import url(https://invalid.example/style);</style>",
+            "svg_external_reference",
+        ),
+        ("<use href='#absent'/>", "svg_missing_reference"),
+        (
+            "<g id='a'><use href='#b'/></g><g id='b'><use href='#a'/></g>",
+            "svg_cyclic_reference",
+        ),
+        ("<rect></path>", "malformed"),
+    ] {
+        let svg =
+            format!("<svg xmlns='http://www.w3.org/2000/svg' width='4' height='3'>{body}</svg>");
+        assert_eq!(
+            serde_json::to_value(decode(svg.as_bytes(), 0).unwrap_err()).unwrap(),
+            expected,
+            "{body}"
+        );
+    }
+}
+
+#[test]
+fn svg_local_reference_precedence_and_expanded_budget_match_the_renderer() {
+    let valid = br##"<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="4" height="3"><defs><rect id="r" width="4" height="3" fill="#123456"/><rect id="r" width="4" height="3" fill="red"/></defs><use href="#r" xlink:href="https://invalid.example/ignored"/></svg>"##;
+    let result = decode(valid, 0).unwrap();
+    assert!(
+        pixels(&result)
+            .chunks_exact(4)
+            .all(|p| p == [18, 52, 86, 255])
+    );
+    let mut definitions = String::from("<g id='n0'><rect width='1' height='1'/></g>");
+    for i in 1..17 {
+        write!(
+            definitions,
+            "<g id='n{i}'><use href='#n{}'/><use href='#n{}'/></g>",
+            i - 1,
+            i - 1
+        )
+        .unwrap();
+    }
+    let bomb = format!(
+        "<svg xmlns='http://www.w3.org/2000/svg' width='1' height='1'><defs>{definitions}</defs><use href='#n16'/></svg>"
+    );
+    assert_eq!(
+        decode(bomb.as_bytes(), 0).unwrap_err(),
+        ImageFailure::Oversized
+    );
+}
+
+#[test]
+fn local_presentation_paint_and_clip_references_render_and_cycles_refuse() {
+    let svg = br##"<s:svg xmlns:s="http://www.w3.org/2000/svg" xmlns:rdf="urn:fixture-metadata" width="4" height="3"><s:metadata><rdf:description>literal @ and backslash \ are metadata</rdf:description></s:metadata><s:style>/* @import is only a comment */ .ink {fill:url('#paint');font-family:'local@name';}</s:style><s:defs><s:linearGradient id="paint"><s:stop stop-color="#123456"/><s:stop offset="1" stop-color="#123456"/></s:linearGradient><s:clipPath id="clip"><s:rect width="2" height="3"/></s:clipPath></s:defs><s:rect width="4" height="3" class="ink" clip-path="url(#clip)"/></s:svg>"##;
+    let image = image::load_from_memory(&decode(svg, 0).unwrap().preview.png_bytes)
+        .unwrap()
+        .into_rgba8();
+    assert_eq!(image.get_pixel(0, 0).0, [18, 52, 86, 255]);
+    assert_eq!(image.get_pixel(3, 0).0, [0, 0, 0, 0]);
+    let cyclic=br#"<svg xmlns="http://www.w3.org/2000/svg" width="4" height="3"><defs><clipPath id="c"><rect width="4" height="3" clip-path="url(#c)"/></clipPath></defs><rect width="4" height="3" clip-path="url(#c)"/></svg>"#;
+    assert_eq!(
+        decode(cyclic, 0).unwrap_err(),
+        ImageFailure::SvgCyclicReference
+    );
+    for (name, reason) in [
+        ("svg-external.svg", ImageFailure::SvgExternalReference),
+        ("svg-cycle.svg", ImageFailure::SvgCyclicReference),
+        ("svg-missing.svg", ImageFailure::SvgMissingReference),
+        ("svg-malformed.svg", ImageFailure::Malformed),
+        ("svg-unsupported.svg", ImageFailure::SvgUnsupported),
+        ("svg-resource.svg", ImageFailure::Oversized),
+    ] {
+        assert_eq!(
+            decode(
+                &std::fs::read(format!("../../fixtures/images/{name}")).unwrap(),
+                0
+            )
+            .unwrap_err(),
+            reason,
+            "{name}"
+        );
+    }
+}
+
+#[test]
+fn font_and_entity_declarations_report_the_actual_refusal_group() {
+    for (style, reason) in [
+        (
+            "@font-face { font-family: Fixture; src: local('Geist'); }",
+            ImageFailure::SvgUnsupported,
+        ),
+        (
+            "@font-face { font-family: Fixture; src: url('https://invalid.example/font'); }",
+            ImageFailure::SvgExternalReference,
+        ),
+    ] {
+        let svg = format!(
+            "<svg xmlns='http://www.w3.org/2000/svg' width='4' height='3'><style>{style}</style><rect width='4' height='3'/></svg>"
+        );
+        assert_eq!(decode(svg.as_bytes(), 0).unwrap_err(), reason);
+    }
+    let internal=br#"<!DOCTYPE svg [<!ENTITY x "local">]><svg xmlns="http://www.w3.org/2000/svg" width="4" height="3"><text>&x;</text></svg>"#;
+    assert_eq!(
+        decode(internal, 0).unwrap_err(),
+        ImageFailure::SvgExternalReference
+    );
+}
+
+#[test]
+fn css_selector_traversal_is_bounded_before_pinned_recursive_matching() {
+    for components in [128, 129] {
+        let selector = format!("{}#target", "g + ".repeat(components - 1));
+        let svg = format!(
+            "<svg xmlns='http://www.w3.org/2000/svg' width='1' height='1'><style>{selector} {{fill:#123456}}</style>{}<g id='target'><rect width='1' height='1'/></g></svg>",
+            "<g/>".repeat(components - 1)
+        );
+        if components == 128 {
+            assert_eq!(
+                pixels(&decode(svg.as_bytes(), 0).unwrap()),
+                [18, 52, 86, 255]
+            );
+        } else {
+            assert_eq!(
+                decode(svg.as_bytes(), 0).unwrap_err(),
+                ImageFailure::Oversized
+            );
+        }
+    }
+    let value = "+ > , ".repeat(160);
+    let svg = format!(
+        "<svg xmlns='http://www.w3.org/2000/svg' width='1' height='1'><style>/* {} */ rect[data-note='{value}'] {{fill:#123456}}</style><rect data-note='{value}' width='1' height='1'/></svg>",
+        "g + ".repeat(160)
+    );
+    assert_eq!(
+        pixels(&decode(svg.as_bytes(), 0).unwrap()),
+        [18, 52, 86, 255]
+    );
 }

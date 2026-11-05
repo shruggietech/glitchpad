@@ -19,6 +19,8 @@ image = { version = "0.25.10", default-features = false, features = ["png", "jpe
 gif = { version = "=0.14.2", default-features = false, features = ["std", "raii_no_panic"] }
 image-webp = { version = "=0.2.4", default-features = false }
 resvg = { version = "=0.48.1", default-features = false, features = ["text"] }
+simplecss = "=0.2.2"
+svgtypes = "=0.16.1"
 roxmltree = { version = "=0.21.2", default-features = false, features = ["std"] }
 kamadak-exif = "0.6.1"
 quick-xml = { version = "0.42.0", default-features = false }

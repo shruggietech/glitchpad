@@ -38,6 +38,19 @@ public final class FixtureGrantProvider extends ContentProvider {
       getContext().getSharedPreferences("s046-share", 0).edit().clear().commit();
       return new Bundle();
     }
+    if (("arm_read_failure".equals(method) || "clear_read_failure".equals(method)) && argument != null) {
+      Uri uri = Uri.parse(argument);
+      if (!DOCUMENT_AUTHORITY.equals(uri.getAuthority())) throw new SecurityException("fixture_read_authority");
+      String id = DocumentsContract.getDocumentId(uri);
+      return "arm_read_failure".equals(method) ? FixtureDocumentsProvider.configureReadFailure(id, extras == null ? 0 : extras.getInt("successful_reads", 0)) : FixtureDocumentsProvider.clearReadFailure(id);
+    }
+    if (("arm_held_read".equals(method) || "held_read_status".equals(method) || "release_held_read".equals(method)) && argument != null) {
+      Uri uri = Uri.parse(argument);
+      if (!DOCUMENT_AUTHORITY.equals(uri.getAuthority())) throw new SecurityException("fixture_read_authority");
+      String id = DocumentsContract.getDocumentId(uri);
+      Bundle result = "arm_held_read".equals(method) ? FixtureDocumentsProvider.armHeldRead(id) : "release_held_read".equals(method) ? FixtureDocumentsProvider.releaseHeldRead(id) : FixtureDocumentsProvider.heldReadStatus(id);
+      result.putInt("control_process_id", android.os.Process.myPid()); return result;
+    }
     boolean heldWriteCommand = "arm_held_write".equals(method) || "held_write_status".equals(method) || "release_held_write".equals(method);
     if ((!METHOD_GRANT.equals(method) && !heldWriteCommand) || argument == null) {
       throw new IllegalArgumentException("unsupported fixture grant request");

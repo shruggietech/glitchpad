@@ -1,6 +1,8 @@
 import type { ShellSession } from './contracts';
 
 export type CommandId =
+  | 'document_details'
+  | 'large_text_tools'
   | 'copy'
   | 'search'
   | 'find_next'
@@ -25,6 +27,12 @@ export type CommandId =
   | 'previous_page'
   | 'next_page';
 
+export interface EditorCommandState {
+  undo: boolean;
+  redo: boolean;
+  wrapped: boolean;
+}
+
 export interface CommandDescriptor {
   id: CommandId;
   label: string;
@@ -44,6 +52,7 @@ export type CommandResult =
 
 export const commandSetFor = (
   session: ShellSession | null,
+  editorState?: EditorCommandState,
 ): CommandDescriptor[] => {
   if (!session) return [];
   const renderer = session.renderer.capabilities;
@@ -63,7 +72,21 @@ export const commandSetFor = (
       (documentMode === 'rendered' ||
         session.mermaid_document.render_revision !== null)),
   );
+  const hasTextEditor = Boolean(
+    session.text_document &&
+    session.text_document.mode !== 'large_read_only' &&
+    session.text_document.mode !== 'refused' &&
+    (session.renderer.id === 'text' || documentMode === 'source'),
+  );
   const definitions: Array<[boolean, CommandId, string, string?]> = [
+    [hasTextEditor, 'document_details', 'Document details'],
+    [
+      Boolean(
+        session.text_document?.mode === 'large_read_only' && session.source_id,
+      ),
+      'large_text_tools',
+      'Large text tools',
+    ],
     [renderer.copy, 'copy', 'Copy', 'Ctrl+C'],
     [renderer.search, 'search', 'Search', 'Ctrl+F'],
     [renderer.search, 'find_next', 'Find next', 'F3'],
@@ -78,7 +101,11 @@ export const commandSetFor = (
         session.text_document && session.text_document.mode === 'editable',
       ),
       'toggle_wrap',
-      'Toggle wrap',
+      editorState?.wrapped === false
+        ? 'Wrap lines'
+        : editorState?.wrapped === true
+          ? 'Unwrap lines'
+          : 'Toggle wrap',
     ],
     [renderer.zoom, 'zoom_out', 'Zoom out', 'Ctrl+-'],
     [renderer.zoom, 'zoom_in', 'Zoom in', 'Ctrl++'],
@@ -92,9 +119,9 @@ export const commandSetFor = (
       canToggleSource,
       'edit',
       documentMode === 'source'
-        ? 'Preview'
+        ? 'Read'
         : canEditSource
-          ? 'Edit source'
+          ? 'Edit'
           : 'View source',
     ],
     [
@@ -126,8 +153,8 @@ export const commandSetFor = (
       'Outline',
     ],
     [Boolean(session.markdown_document?.printable), 'print', 'Print', 'Ctrl+P'],
-    [renderer.navigate, 'previous_page', 'Previous page', 'PageUp'],
-    [renderer.navigate, 'next_page', 'Next page', 'PageDown'],
+    // No current page renderer supplies source-bound page navigation.
+    // Large-text sections retain their own meaningful navigation controls.
   ];
 
   return definitions
@@ -138,7 +165,9 @@ export const commandSetFor = (
       shortcut,
       enabled:
         session.lifecycle === 'active' &&
-        session.destination_save_revision == null,
+        session.destination_save_revision == null &&
+        (id !== 'undo' || editorState?.undo !== false) &&
+        (id !== 'redo' || editorState?.redo !== false),
       role: id === 'save' ? 'primary' : 'secondary',
       group:
         id === 'zoom_in' || id === 'zoom_out' || id === 'fit'

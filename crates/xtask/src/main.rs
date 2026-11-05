@@ -209,6 +209,24 @@ fn docs(repository: &Path) -> Result<(), String> {
     run(repository, "pnpm", ["run", "check:public-release"])?;
     run(repository, "pnpm", ["run", "check:site"])?;
     run(repository, "pnpm", ["run", "check:validation"])?;
+    // These runners execute POSIX shell behavior, covered on Linux/macOS hosts.
+    #[cfg(unix)]
+    for pattern in ["test_android*runner.py", "test_android_s047_campaign.py"] {
+        run(
+            repository,
+            "python3",
+            [
+                "-m",
+                "unittest",
+                "discover",
+                "-s",
+                "scripts/tests",
+                "-p",
+                pattern,
+            ],
+        )?;
+    }
+
     run(repository, "pnpm", ["run", "check:mermaid-runtime"])?;
     run(repository, "pnpm", ["run", "check:metadata"])?;
     run(repository, "pnpm", ["run", "check:images"])?;
@@ -220,6 +238,7 @@ fn docs(repository: &Path) -> Result<(), String> {
         "pnpm",
         ["run", "check:android-authoring-layout"],
     )?;
+    run(repository, "pnpm", ["run", "check:app-layout"])?;
     run(repository, "pnpm", ["run", "check:android-package"])?;
     run(repository, "pnpm", ["run", "check:linux-package"])?;
     run(repository, "pnpm", ["run", "check:macos-package"])?;

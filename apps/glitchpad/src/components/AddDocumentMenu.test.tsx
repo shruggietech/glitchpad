@@ -1,3 +1,4 @@
+import { AppFrameHostBridge } from './AppFrameHostBridge';
 import {
   act,
   fireEvent,
@@ -78,13 +79,16 @@ it('maps legacy overlay insets from canonical inputs and restores owned styles o
       });
     });
   const app = render(
-    <AddDocumentMenu
-      open={false}
-      onOpenChange={vi.fn()}
-      onNew={vi.fn()}
-      onChoose={vi.fn()}
-      canChoose
-    />,
+    <>
+      <AppFrameHostBridge />
+      <AddDocumentMenu
+        open={false}
+        onOpenChange={vi.fn()}
+        onNew={vi.fn()}
+        onChoose={vi.fn()}
+        canChoose
+      />
+    </>,
   );
   try {
     await screen.findByRole('button', { name: 'Add document' });

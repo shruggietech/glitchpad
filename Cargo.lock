@@ -1378,6 +1378,8 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2",
+ "simplecss",
+ "svgtypes",
  "sysinfo",
 ]
 

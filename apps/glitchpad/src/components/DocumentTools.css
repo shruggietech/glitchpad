@@ -1,0 +1,401 @@
+.document-tools {
+  min-width: 0;
+  min-inline-size: 0;
+}
+.document-tools button,
+.document-tools select,
+.document-tools input:not([type='checkbox']),
+.markdown-search button,
+.markdown-search label,
+.markdown-outline button,
+.mermaid-search button,
+.mermaid-search label {
+  box-sizing: border-box;
+  min-block-size: max(48px, var(--bb-interaction-target-minimum));
+  max-width: 100%;
+  max-inline-size: 100%;
+}
+.document-tools button,
+.markdown-search button,
+.markdown-outline button,
+.mermaid-search button {
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  overflow-wrap: anywhere;
+}
+.document-tools input:not([type='checkbox']),
+.document-tools select {
+  min-width: 0;
+  min-inline-size: 0;
+  width: 100%;
+  inline-size: 100%;
+}
+.document-tools label {
+  min-width: 0;
+  min-inline-size: 0;
+}
+.document-tools input[type='checkbox'] {
+  flex: 0 0 auto;
+}
+.document-tools .preference-fields label {
+  display: flex;
+  align-items: center;
+  gap: var(--bb-spacing-control-block);
+  min-block-size: 48px;
+}
+.document-tools fieldset {
+  min-width: 0;
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.document-tools .preference-fields {
+  display: grid;
+  gap: var(--bb-spacing-control-block);
+}
+.document-tools .preference-fields p {
+  margin: 0;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  overflow-wrap: anywhere;
+}
+.document-tools .preference-preview {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  overflow-wrap: anywhere;
+}
+.document-tools .metadata-feedback {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  overflow-wrap: anywhere;
+}
+.document-tools .metadata-copy-confirmation {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--bb-spacing-control-block);
+}
+.document-tools .metadata-copy-confirmation > span {
+  flex-basis: 100%;
+}
+.document-tools .large-text-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--bb-spacing-control-block);
+  overflow: auto;
+  max-block-size: 45%;
+}
+.document-tools .large-text-controls label {
+  display: grid;
+  flex: 1 1 10em;
+}
+.document-tools .large-text-controls > span {
+  flex-basis: 100%;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  overflow-wrap: anywhere;
+}
+
+.editor-search-status {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  overflow-wrap: anywhere;
+  margin: 0;
+}
+
+.markdown-search,
+.mermaid-search {
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--bb-spacing-control-block);
+  max-block-size: 45%;
+  overflow: auto;
+}
+.markdown-search label,
+.mermaid-search label {
+  display: grid;
+  flex: 1 1 12em;
+  min-width: 0;
+  min-inline-size: 0;
+}
+.markdown-search input,
+.mermaid-search input {
+  min-width: 0;
+  min-inline-size: 0;
+  max-width: 100%;
+  max-inline-size: 100%;
+}
+.markdown-outline {
+  max-block-size: 45%;
+  overflow: auto;
+}
+.markdown-outline button {
+  text-align: start;
+}
+
+.text-editor-shell {
+  display: flex;
+  flex-direction: column;
+}
+.text-editor-shell > .text-editor {
+  flex: 1 1 0;
+  min-block-size: 0;
+}
+
+.markdown-surface[hidden],
+.mermaid-source-layout[hidden] {
+  display: none;
+}
+
+/* Physical fallbacks retain the same bounded composition on API24 WebView. */
+.large-text.document-tools {
+  display: flex;
+  flex-direction: column;
+}
+
+.large-text.document-tools .large-text-content {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+.markdown-surface,
+.mermaid-surface {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.markdown-surface > .markdown-document,
+.markdown-surface > .markdown-source-editor,
+.mermaid-surface > .diagram-viewer,
+.mermaid-surface > .mermaid-source-layout {
+  flex: 1 1 0;
+  min-height: 0;
+}
+.markdown-search,
+.mermaid-search {
+  flex: 0 1 auto;
+  max-height: 45%;
+  overflow: auto;
+}
+.markdown-surface[hidden],
+.mermaid-source-layout[hidden] {
+  display: none;
+}
+
+.document-tools button,
+.document-tools input:not([type='checkbox']),
+.document-tools select,
+.markdown-surface .markdown-search button,
+.markdown-surface .markdown-search input,
+.mermaid-surface .mermaid-search button,
+.mermaid-surface .mermaid-search input,
+.markdown-surface .embedded-mermaid button,
+.markdown-surface .markdown-link {
+  min-height: 48px;
+  min-height: max(48px, var(--bb-interaction-target-minimum));
+  min-width: 48px;
+}
+.document-tools button,
+.document-tools input,
+.document-tools select,
+.markdown-surface .markdown-search,
+.markdown-surface .markdown-search button,
+.markdown-surface .markdown-search input,
+.mermaid-surface .mermaid-search,
+.mermaid-surface .mermaid-search button,
+.mermaid-surface .mermaid-search input {
+  color: var(--gl-fg);
+  background: var(--gl-panel-raised);
+  border-color: var(--gl-border);
+}
+.document-tools .metadata-fact dt {
+  color: var(--gl-fg);
+}
+.document-tools .metadata-provenance,
+.document-tools .metadata-copy-confirmation {
+  color: var(--gl-fg);
+  border-color: var(--gl-border);
+}
+.document-tools .metadata-fact dd {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: var(--bb-spacing-control-block);
+}
+.document-tools .metadata-fact .metadata-value {
+  flex: 1 1 100%;
+}
+.document-tools .metadata-fact button {
+  flex: 0 1 auto;
+  min-width: 48px;
+  max-width: 100%;
+}
+@media (max-width: 767px) {
+  .document-tools .metadata-fact {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.document-tools .preference-fields label {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+.document-tools .preference-fields label.preference-checkbox {
+  display: flex;
+  align-items: center;
+}
+.markdown-surface .markdown-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: baseline;
+}
+
+/* Mode-specific product composition outranks the former one-class grid layouts. */
+.markdown-surface.markdown-rendered-mode,
+.markdown-surface.markdown-source-mode,
+.mermaid-surface.mermaid-rendered-mode,
+.mermaid-surface.mermaid-source-mode {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.editor-details-task .editor-status {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--bb-spacing-control-block);
+  white-space: normal;
+  color: var(--gl-fg);
+}
+.editor-details-task .editor-status label {
+  display: grid;
+  gap: var(--bb-spacing-control-block);
+}
+.editor-details-task .editor-status select {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 48px;
+  min-height: max(48px, var(--bb-interaction-target-minimum));
+  color: var(--gl-fg);
+  background: var(--gl-panel-raised);
+  border-color: var(--gl-border);
+}
+.large-text-task.document-tools .large-text-controls {
+  max-height: none;
+  max-block-size: none;
+  overflow: visible;
+}
+.large-text.document-tools > button,
+.large-text-task.document-tools .large-text-controls button {
+  min-height: 48px;
+  min-height: max(48px, var(--bb-interaction-target-minimum));
+  min-width: 48px;
+  color: var(--gl-fg);
+  background: var(--gl-panel-raised);
+  border-color: var(--gl-border);
+}
+
+.text-editor-shell.document-tools-editor {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.editor-search-task .cm-panels {
+  max-height: none;
+  max-block-size: none;
+  overflow: visible;
+  color: var(--gl-fg);
+  background: var(--gl-panel);
+}
+.editor-search-task .cm-panel.cm-search {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--bb-spacing-control-block);
+  padding: 0;
+}
+.editor-search-task .cm-search input[name='search'],
+.editor-search-task .cm-search input[name='replace'] {
+  flex: 1 1 100%;
+}
+.editor-search-task .cm-search label {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  min-height: max(48px, var(--bb-interaction-target-minimum));
+  gap: var(--bb-spacing-control-block);
+}
+.editor-search-task .cm-search br {
+  display: none;
+}
+.editor-search-task .cm-search button[name='close'] {
+  position: static;
+}
+.editor-search-task .cm-search button {
+  min-width: 48px;
+  white-space: normal;
+}
+.editor-search-task .cm-search button,
+.editor-search-task .cm-search input {
+  min-height: 48px;
+  min-height: max(48px, var(--bb-interaction-target-minimum));
+  color: var(--gl-fg);
+  background: var(--gl-panel-raised);
+  border-color: var(--gl-border);
+}
+
+.markdown-search-task .markdown-search,
+.mermaid-search-task .mermaid-search {
+  display: flex;
+  flex-wrap: wrap;
+  max-height: none;
+  max-block-size: none;
+  overflow: visible;
+}
+.markdown-search-task .markdown-search label,
+.mermaid-search-task .mermaid-search label {
+  flex-basis: 100%;
+}
+
+/* Portaled tools retain semantic paint above legacy renderer-local colors. */
+.task-surface.document-tools button,
+.task-surface.document-tools input,
+.task-surface.document-tools select,
+.task-surface.document-tools .markdown-search,
+.task-surface.document-tools .mermaid-search {
+  color: var(--gl-fg);
+  background: var(--gl-panel-raised);
+  border-color: var(--gl-border);
+}
+.task-surface.document-tools .markdown-outline {
+  max-height: none;
+  max-block-size: none;
+  overflow: visible;
+}
+
+.task-surface.document-tools label {
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  overflow-wrap: anywhere;
+}
+
+.markdown-link-task .markdown-link-destination,
+.document-tools .metadata-value {
+  max-width: 100%;
+  min-width: 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  overflow-wrap: anywhere;
+}
+
+.markdown-fragment-feedback {
+  display: block;
+}

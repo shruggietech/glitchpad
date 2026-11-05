@@ -1,58 +1,511 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { createServer } from 'node:http';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import puppeteer from 'puppeteer';
+import { build } from '../apps/glitchpad/node_modules/vite/dist/node/index.js';
 
+if (process.platform === 'win32')
+  throw new Error(
+    'Use scripts/invoke-docker-hidden.ps1 for image layout qualification',
+  );
 const root = fileURLToPath(new URL('../', import.meta.url));
-const manifest = JSON.parse(await readFile(join(root, 'fixtures/images/manifest.json'), 'utf8'));
+const scratch = join(root, 'artifacts/image-layout');
+await mkdir(scratch, { recursive: true });
+const manifest = JSON.parse(
+  await readFile(join(root, 'fixtures/images/manifest.json'), 'utf8'),
+);
 assert.equal(manifest.license, 'Apache-2.0');
-assert.equal(manifest.files.length, 18);
+assert.equal(manifest.files.length, 29);
 for (const file of manifest.files) {
-  assert.match(file.name, /^(?:original\.(?:png|jpg|webp|bmp|tiff|gif|svg)|orientation-[1-8]\.jpg|animated\.webp|entries\.ico|hostile\.svg)$/u);
+  assert.match(
+    file.name,
+    /^(?:original\.(?:png|jpg|webp|bmp|tiff|gif|svg)|orientation-[1-8]\.jpg|animated\.webp|entries\.ico|hostile\.svg|svg-(?:presentation|namespaced|reuse|external|cycle|malformed|unsupported|missing|resource|viewport|read-denied)\.svg)$/u,
+  );
   const bytes = await readFile(join(root, 'fixtures/images', file.name));
   assert.equal(bytes.length, file.bytes);
   assert.equal(createHash('sha256').update(bytes).digest('hex'), file.sha256);
 }
-const png = [...await readFile(join(root, 'fixtures/images/original.png'))];
-const css = await readFile(join(root, 'apps/glitchpad/src/components/ImageSurface.css'), 'utf8');
-const browser = await puppeteer.launch({ headless: 'shell', args: ['--no-sandbox', '--disable-dev-shm-usage'] });
-let cases = 0;
-try {
-  const page = await browser.newPage();
-  await page.setRequestInterception(true);
-  page.on('request', request => {
-    if (request.url().startsWith('blob:') || request.url().startsWith('data:')) void request.continue();
-    else void request.abort();
-  });
-  for (const viewport of [{ width: 320, height: 240 }, { width: 360, height: 640 }, { width: 480, height: 360 }, { width: 1280, height: 720 }]) {
-    for (const touch of [false, true]) {
-      for (const family of ['raster', 'svg', 'animation', 'ico']) {
-      const controls = family === 'animation' ? '<span class="image-family-actions"><button>Play</button><button>Previous frame</button><button>Next frame</button><label>Frame <input type="number" value="1" min="1" max="4"></label><output>of 4; 40 ms; 2 loops</output></span>' : family === 'ico' ? '<span class="image-family-actions"><label>Entry <select><option>1: 4 × 3, png, 32 bit</option><option>2: 4 × 3, dib, 24 bit</option></select></label><button>Export selected entry as PNG</button></span>' : '';
-      const limitation = family === 'svg' || family === 'animation' ? '<p class="image-limitation">Bounded native preview policy; file information contains details.</p>' : '';
-      await page.setViewport({ ...viewport, hasTouch: touch, isMobile: touch });
-      await page.setContent(`<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{height:100%;margin:0}*{box-sizing:border-box}button,select,input{font:inherit;padding:4px}.document-surface{height:calc(100% - 32px)}${css}</style></head><body><header style="height:32px">File menu</header><main class="document-surface"><div class="image-layout"><div class="image-actions"><button>Fit</button><button>Actual size</button><button aria-label="Zoom out">−</button><output>100%</output><button aria-label="Zoom in">+</button><button>Reset view</button><label>Image background<select><option>Checkerboard</option></select></label><button>File information</button>${controls}</div><div class="image-pane image-background-checker"><img class="image-preview" alt="Original fixture" style="width:4px;height:3px;transform:translate(-50%,-50%)"></div>${limitation}</div></main></body></html>`);
-      await page.evaluate(bytes => {
-        document.querySelector('img').src = URL.createObjectURL(new Blob([Uint8Array.from(bytes)], { type: 'image/png' }));
-      }, png);
-      await page.waitForFunction(() => document.querySelector('img').complete && document.querySelector('img').naturalWidth === 4);
-      const dimensions = await page.evaluate(() => {
-        const actions = document.querySelector('.image-actions').getBoundingClientRect();
-        const pane = document.querySelector('.image-pane').getBoundingClientRect();
-        const button = document.querySelector('button').getBoundingClientRect();
-        return { pane: pane.height, actions: actions.height, layout: document.querySelector('.image-layout').getBoundingClientRect().height, width: document.documentElement.scrollWidth, viewport: innerWidth, target: button.height };
-      });
-      assert.ok(dimensions.pane / dimensions.layout >= 0.70, `${family} image must own the document viewport`);
-      assert.equal(dimensions.width, dimensions.viewport, 'toolbar must not cause page overflow');
-      if (touch) assert.ok(dimensions.target >= 44, 'touch actions require reachable targets');
-      await page.keyboard.press('Tab');
-      await page.keyboard.press('Tab');
-      for (let n = 0; n < 8; n++) await page.keyboard.press('Tab');
-      await page.evaluate(() => URL.revokeObjectURL(document.querySelector('img').src));
-      cases++;
-      }
-    }
+const source = await readFile(
+  join(root, 'scripts/fixtures/image-layout.tsx'),
+  'utf8',
+);
+await writeFile(
+  join(scratch, 'entry.tsx'),
+  source.replaceAll("'../../", "'" + root.replaceAll('\\', '/')),
+);
+await writeFile(
+  join(scratch, 'index.html'),
+  '<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body><div id="root"></div><script type="module" src="./entry.tsx"></script></body></html>',
+);
+await build({
+  configFile: join(root, 'apps/glitchpad/vite.config.ts'),
+  root: scratch,
+  logLevel: 'warn',
+  build: {
+    outDir: join(scratch, 'built'),
+    emptyOutDir: true,
+    rollupOptions: { input: join(scratch, 'index.html') },
+  },
+  resolve: { dedupe: ['react', 'react-dom'] },
+});
+const built = join(scratch, 'built');
+const server = createServer(async (req, res) => {
+  try {
+    const pathname = new URL(req.url, 'http://localhost').pathname;
+    const target = resolve(
+      built,
+      '.' + (pathname === '/' ? '/index.html' : pathname),
+    );
+    if (!target.startsWith(built + '/')) throw new Error('outside root');
+    const bytes = await readFile(target);
+    res.setHeader(
+      'Content-Type',
+      { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css' }[
+        extname(target)
+      ] ?? 'application/octet-stream',
+    );
+    res.end(bytes);
+  } catch {
+    res.statusCode = 404;
+    res.end('missing');
   }
-} finally { await browser.close(); }
-console.log(`Verified ${manifest.files.length} original image digests and ${cases} compact viewport cases.`);
+});
+await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+const browser = await puppeteer.launch({
+  headless: 'shell',
+  args: ['--no-sandbox', '--disable-dev-shm-usage'],
+});
+const results = [];
+let page;
+try {
+  page = await browser.newPage();
+  const failures = [];
+  page.on('pageerror', (e) => failures.push(e.message));
+  const click = async (name) => {
+    const selector = await page.evaluate((name) => {
+      const scope =
+        document.querySelector('.task-surface[data-state="open"]') || document;
+      const button = [...scope.querySelectorAll('button')].find((e) => {
+        const r = e.getBoundingClientRect();
+        return (
+          (e.getAttribute('aria-label') || e.textContent.trim()) === name &&
+          r.width > 0 &&
+          r.height > 0 &&
+          getComputedStyle(e).visibility !== 'hidden' &&
+          !e.closest('[aria-hidden="true"],[inert],[hidden]')
+        );
+      });
+      if (!button) throw new Error('Missing ' + name);
+      button.dataset.layoutTarget = 'true';
+      button.scrollIntoView({ block: 'center' });
+      return '[data-layout-target="true"]';
+    }, name);
+    await page.click(selector);
+    await page.evaluate(() =>
+      document
+        .querySelector('[data-layout-target]')
+        ?.removeAttribute('data-layout-target'),
+    );
+  };
+  const viewportAction = async (family, name) => {
+    const primaryVisible = await page.evaluate(
+      (name) =>
+        [
+          ...document.querySelectorAll(
+            '.diagram-controls button,.image-actions button',
+          ),
+        ].some((e) => {
+          const r = e.getBoundingClientRect();
+          return (
+            (e.getAttribute('aria-label') || e.textContent.trim()) === name &&
+            r.width > 0 &&
+            r.height > 0 &&
+            getComputedStyle(e).visibility !== 'hidden'
+          );
+        }),
+      name,
+    );
+    if (primaryVisible) {
+      await click(name);
+      return 'primary';
+    }
+    await click(
+      family === 'diagram' ? 'More diagram tools' : 'More image tools',
+    );
+    await page.waitForSelector('.task-surface[data-state="open"]');
+    await click(name);
+    await click(
+      family === 'diagram' ? 'Close Diagram tools' : 'Close Image tools',
+    );
+    await page.waitForFunction(
+      () => !document.querySelector('[role="dialog"]'),
+    );
+    return 'more';
+  };
+  const measure = () =>
+    page.evaluate(() => {
+      const image = document.querySelector('.diagram-image,.image-preview');
+      const pane = document.querySelector('.diagram-canvas,.image-pane');
+      const r = image.getBoundingClientRect();
+      const p = pane.getBoundingClientRect();
+      return {
+        width: r.width,
+        height: r.height,
+        pane: { width: p.width, height: p.height },
+        scale: Number(pane.dataset.viewportScale),
+        mode: pane.dataset.viewportMode,
+        panX: Number(pane.dataset.viewportPanX),
+        panY: Number(pane.dataset.viewportPanY),
+      };
+    });
+  for (const frame of [
+    { width: 320, height: 240 },
+    { width: 360, height: 640 },
+    { width: 640, height: 360 },
+    { width: 1280, height: 720 },
+  ])
+    for (const touch of [false, true])
+      for (const font of [1, 2])
+        for (const family of ['diagram', 'raster', 'svg', 'animation', 'ico']) {
+          console.log(
+            JSON.stringify({
+              case: results.length + 1,
+              frame,
+              touch,
+              font,
+              family,
+            }),
+          );
+          await page.setViewport({
+            ...frame,
+            hasTouch: touch,
+            isMobile: touch,
+          });
+          await page.goto(
+            'http://127.0.0.1:' + server.address().port + '/?family=' + family,
+          );
+          await page.evaluate(
+            (font) =>
+              (document.documentElement.style.fontSize = font * 100 + '%'),
+            font,
+          );
+          await page.waitForSelector('[data-preview-ready="true"]');
+          await page.waitForFunction(() => {
+            const img = document.querySelector('.diagram-image,.image-preview'),
+              pane = document.querySelector('.diagram-canvas,.image-pane');
+            const r = img.getBoundingClientRect(),
+              p = pane.getBoundingClientRect();
+            const scale = Math.min(
+              1,
+              p.width / img.naturalWidth,
+              p.height / img.naturalHeight,
+            );
+            return (
+              img.complete &&
+              Math.abs(r.width - img.naturalWidth * scale) < 1 &&
+              Math.abs(r.height - img.naturalHeight * scale) < 1
+            );
+          });
+          const fit = await measure();
+          assert.ok(
+            fit.width <= fit.pane.width + 1 &&
+              fit.height <= fit.pane.height + 1,
+            'Fit stays within actual canvas',
+          );
+          const geometry = await page.evaluate(() => {
+            const root = document
+              .querySelector('.document-surface')
+              .getBoundingClientRect();
+            const pane = document
+              .querySelector('.diagram-canvas,.image-pane')
+              .getBoundingClientRect();
+            const controls = [
+              ...document.querySelectorAll(
+                '.diagram-controls button,.image-actions button',
+              ),
+            ].map((e) => {
+              const r = e.getBoundingClientRect();
+              return {
+                name: e.getAttribute('aria-label') || e.textContent.trim(),
+                exposed:
+                  r.width > 0 &&
+                  r.height > 0 &&
+                  getComputedStyle(e).visibility !== 'hidden',
+                w: r.width,
+                h: r.height,
+                left: r.left,
+                right: r.right,
+              };
+            });
+            return {
+              ratio: pane.height / root.height,
+              controls,
+              width: document.documentElement.scrollWidth,
+            };
+          });
+          assert.ok(
+            geometry.ratio >= 0.7,
+            'viewport must own at least70% of document area ' +
+              JSON.stringify(geometry),
+          );
+          assert.ok(
+            geometry.width <= frame.width,
+            'no horizontal page overflow',
+          );
+          const exposedControls = geometry.controls.filter((r) => r.exposed);
+          assert.ok(exposedControls.length > 0, 'primary More remains exposed');
+          for (const r of geometry.controls.filter((r) => !r.exposed))
+            assert.ok(
+              ['Fit', 'Zoom out', 'Zoom in'].includes(r.name),
+              'only controls verified in More may be deferred ' +
+                JSON.stringify(r),
+            );
+          for (const r of exposedControls) {
+            assert.ok(
+              r.w >= 48 && r.h >= 48,
+              'primary target48px ' + JSON.stringify(r),
+            );
+            assert.ok(
+              r.left >= 0 && r.right <= frame.width + 1,
+              'primary target within frame',
+            );
+          }
+          const zoomRoute = await viewportAction(family, 'Zoom in');
+          const zoom = await measure();
+          assert.ok(
+            Math.abs(zoom.width / fit.width - 1.25) < 0.01,
+            'first Fit zoom must be multiplicative',
+          );
+          const fitRoute = await viewportAction(family, 'Fit');
+          const pane = family === 'diagram' ? '.diagram-canvas' : '.image-pane';
+          await page.focus(pane);
+          await page.keyboard.press('ArrowRight');
+          const pan = await measure();
+          assert.ok(
+            Math.abs(pan.width - fit.width) < 1,
+            'Fit pan preserves effective scale ' + JSON.stringify({ fit, pan }),
+          );
+          await page.keyboard.press('+');
+          const keyed = await measure();
+          assert.ok(
+            Math.abs(keyed.width / fit.width - 1.25) < 0.01,
+            'keyboard zoom targets same viewport',
+          );
+          await page.keyboard.press('0');
+          await click(
+            family === 'diagram' ? 'More diagram tools' : 'More image tools',
+          );
+          await page.waitForSelector('[role="dialog"]');
+          const targets = await page.$$eval(
+            '[role="dialog"] button,[role="dialog"] input,[role="dialog"] select',
+            (elements) =>
+              elements.map((e, index) => {
+                e.dataset.layoutIndex = String(index);
+                return index;
+              }),
+          );
+          for (const index of targets) {
+            await page.$eval('[data-layout-index="' + index + '"]', (e) =>
+              e.scrollIntoView({ block: 'center' }),
+            );
+            const fact = await page.$eval(
+              '[data-layout-index="' + index + '"]',
+              (e) => {
+                const r = e.getBoundingClientRect(),
+                  hit = document.elementFromPoint(
+                    (r.left + r.right) / 2,
+                    (r.top + r.bottom) / 2,
+                  );
+                return {
+                  w: r.width,
+                  h: r.height,
+                  left: r.left,
+                  right: r.right,
+                  top: r.top,
+                  bottom: r.bottom,
+                  hit: e === hit || e.contains(hit),
+                };
+              },
+            );
+            assert.ok(fact.w >= 48 && fact.h >= 48, 'disclosed target48px');
+            assert.ok(
+              fact.left >= 0 &&
+                fact.right <= frame.width + 1 &&
+                fact.top >= 0 &&
+                fact.bottom <= frame.height + 1 &&
+                fact.hit,
+              'disclosed control is visible and hit-testable after scroll',
+            );
+          }
+          await click('Fit');
+          const disclosedFit = await measure();
+          assert.equal(
+            disclosedFit.mode,
+            'fit',
+            'More Fit targets current viewport',
+          );
+          assert.ok(
+            Math.abs(disclosedFit.width - fit.width) < 1,
+            'More Fit restores measured scale',
+          );
+          await click('Zoom in');
+          const disclosedZoom = await measure();
+          assert.ok(
+            Math.abs(disclosedZoom.width / disclosedFit.width - 1.25) < 0.01,
+            'More Zoom in multiplies the same viewport scale',
+          );
+          await click('Zoom out');
+          const disclosedZoomOut = await measure();
+          assert.ok(
+            Math.abs(disclosedZoomOut.width - disclosedFit.width) < 1,
+            'More Zoom out reverses the same viewport Zoom in',
+          );
+          await click('Fit');
+          assert.equal(
+            (await measure()).mode,
+            'fit',
+            'More Fit restores fit mode after zoom',
+          );
+          await click('Actual size');
+          const actual = await measure();
+          assert.equal(actual.scale, 1, 'actual size is intrinsic scale1');
+          if (family !== 'diagram') {
+            await page.select('[aria-label="Image background"]', 'dark');
+            if (family === 'ico') {
+              await page.select('[aria-label="Icon entry"]', '1');
+              await page.waitForFunction(
+                () =>
+                  document.querySelector('.image-pane').dataset
+                    .imageSelection === '1' &&
+                  document.querySelector('.image-pane').dataset.previewReady ===
+                    'true',
+              );
+            }
+            if (family === 'animation') {
+              await page.click('[aria-label="Animation frame"]');
+              await page.keyboard.down('Control');
+              await page.keyboard.press('KeyA');
+              await page.keyboard.up('Control');
+              await page.keyboard.type('2');
+              await page.keyboard.press('Tab');
+              await page.waitForFunction(
+                () =>
+                  document.querySelector('.image-pane').dataset
+                    .imageSelection === '1' &&
+                  document.querySelector('.image-pane').dataset.previewReady ===
+                    'true',
+              );
+            }
+          }
+          await click('Reset view');
+          const reset = await measure();
+          assert.equal(reset.mode, 'fit');
+          assert.ok(
+            Math.abs(reset.width - fit.width) < 1,
+            'Reset restores measured Fit ' + JSON.stringify({ fit, reset }),
+          );
+          if (family !== 'diagram')
+            assert.equal(
+              await page.$eval(
+                '.image-pane',
+                (e) => e.dataset.viewportBackground,
+              ),
+              'dark',
+              'Reset retains background',
+            );
+          if (family === 'ico' || family === 'animation')
+            assert.equal(
+              await page.$eval('.image-pane', (e) => e.dataset.imageSelection),
+              '1',
+              'Reset retains selection',
+            );
+          await click(
+            family === 'diagram' ? 'Close Diagram tools' : 'Close Image tools',
+          );
+          await page.waitForFunction(
+            () => !document.querySelector('[role="dialog"]'),
+          );
+          await page.waitForFunction(
+            (name) =>
+              document.activeElement?.getAttribute('aria-label') === name,
+            {},
+            family === 'diagram' ? 'More diagram tools' : 'More image tools',
+          );
+          assert.equal(
+            await page.evaluate(() =>
+              document.activeElement?.getAttribute('aria-label'),
+            ),
+            family === 'diagram' ? 'More diagram tools' : 'More image tools',
+            'dismissal restores invoking focus',
+          );
+          assert.deepEqual(
+            failures,
+            [],
+            'composed component has no page errors',
+          );
+          results.push({
+            frame,
+            touch,
+            font,
+            family,
+            fit,
+            zoom,
+            zoomRoute,
+            fitRoute,
+            geometry,
+            disclosedFit,
+            disclosedZoom,
+            disclosedZoomOut,
+            pan,
+            actual,
+            reset,
+          });
+        }
+  await writeFile(
+    join(scratch, 'result.json'),
+    JSON.stringify(
+      {
+        browser: await browser.version(),
+        cases: results.length,
+        results,
+        evidence:
+          'Actual React ImageSurface/DiagramViewport and generated AppFrame, production-target bundle with deterministic synthetic gateway; not native decode/export qualification',
+      },
+      null,
+      2,
+    ) + '\n',
+  );
+  console.log(
+    'Verified ' +
+      manifest.files.length +
+      ' fixture digests and ' +
+      results.length +
+      ' actual React/AppFrame image/diagram cases.',
+  );
+} catch (error) {
+  if (page) {
+    await page.screenshot({ path: join(scratch, 'failed.png') });
+    await writeFile(
+      join(scratch, 'failed.json'),
+      JSON.stringify(
+        await page.evaluate(() => ({
+          text: document.body.innerText.slice(0, 4096),
+          frame: document.querySelector('[aria-label="Animation frame"]')
+            ?.value,
+          pane: document
+            .querySelector('.image-pane,.diagram-canvas')
+            ?.outerHTML.slice(0, 2048),
+        })),
+        null,
+        2,
+      ),
+    );
+  }
+  throw error;
+} finally {
+  await browser.close();
+  await new Promise((resolve) => server.close(resolve));
+}

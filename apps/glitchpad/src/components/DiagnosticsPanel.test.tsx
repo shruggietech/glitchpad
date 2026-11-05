@@ -130,3 +130,52 @@ it('keeps the frozen export payload identical while live native viewport observa
     'viewport',
   );
 });
+
+it.each(['save', 'share'] as const)(
+  'retains the exact frozen preview after a failed %s gateway write',
+  async (kind) => {
+    let fail: ((error: Error) => void) | undefined;
+    const write = vi.fn(
+      (value: DiagnosticBundle) =>
+        new Promise<never>((_resolve, reject) => {
+          expect(value).toEqual(bundle);
+          fail = reject;
+        }),
+    );
+    const exporter = { export: write, share: write };
+    render(
+      <DiagnosticsPanel
+        load={() => Promise.resolve(bundle)}
+        exporter={exporter}
+        onReset={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+    const preview = await screen.findByText(/"generated_unix_ms": 42/u);
+    const exact = preview.textContent;
+    fireEvent.click(
+      screen.getByRole('button', {
+        name:
+          kind === 'save' ? 'Save previewed bundle' : 'Share previewed bundle',
+      }),
+    );
+    await waitFor(() => expect(write).toHaveBeenCalledOnce());
+    expect(Object.isFrozen(write.mock.calls[0][0])).toBe(true);
+    fail?.(new Error('private gateway details'));
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Export failed. The exact preview is retained; choose a destination and try again.',
+      ),
+    );
+    expect(preview.textContent).toBe(exact);
+    expect(
+      screen.queryByText('private gateway details'),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Save previewed bundle' }),
+    ).toBeEnabled();
+    expect(
+      screen.getByRole('button', { name: 'Share previewed bundle' }),
+    ).toBeEnabled();
+  },
+);

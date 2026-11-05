@@ -1,13 +1,35 @@
-import { forwardRef, useCallback, useEffect, useId, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useId,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
-import { clampMermaidPan, clampMermaidZoom, initialMermaidViewport, type MermaidViewportState } from '../domain/mermaid-contract';
-import { rendererResourceLedger, type ResourceOwner } from '../domain/resource-ledger';
+import {
+  clampMermaidPan,
+  clampMermaidZoom,
+  mermaidEffectiveScale,
+  mermaidFitScale,
+  initialMermaidViewport,
+  type MermaidViewportState,
+} from '../domain/mermaid-contract';
+import { TaskSurface } from './TaskSurface';
+import './DiagramViewport.css';
+import {
+  rendererResourceLedger,
+  type ResourceOwner,
+} from '../domain/resource-ledger';
 
 export interface DiagramViewportHandle {
-  zoomIn(): void;
-  zoomOut(): void;
-  fit(): void;
-  actual(): void;
+  zoomIn(): boolean;
+  zoomOut(): boolean;
+  fit(): boolean;
+  actual(): boolean;
+  dismissModal(): boolean;
 }
 
 interface DiagramViewportProps {
@@ -18,30 +40,66 @@ interface DiagramViewportProps {
   onChange?: (state: MermaidViewportState) => void;
 }
 
-export const DiagramViewport = forwardRef<DiagramViewportHandle, DiagramViewportProps>(function DiagramViewport(
-  { svg, label, description, initialState = initialMermaidViewport(), onChange },
+export const DiagramViewport = forwardRef<
+  DiagramViewportHandle,
+  DiagramViewportProps
+>(function DiagramViewport(
+  {
+    svg,
+    label,
+    description,
+    initialState = initialMermaidViewport(),
+    onChange,
+  },
   ref,
 ) {
   const [state, setState] = useState(initialState);
   const [objectUrl, setObjectUrl] = useState('');
-  const [extents, setExtents] = useState({ content_width: 0, content_height: 0, viewport_width: 0, viewport_height: 0 });
-  const drag = useRef<{ x: number; y: number } | null>(null);
+  const [ready, setReady] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(false);
+  const toolsOpener = useRef<HTMLElement | null>(null);
+  const [extents, setExtents] = useState({
+    content_width: 0,
+    content_height: 0,
+    viewport_width: 0,
+    viewport_height: 0,
+  });
+  const drag = useRef<{ id: number; x: number; y: number } | null>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const descriptionId = useId();
   const resourceOwner = useRef<ResourceOwner | null>(null);
   const lifecycleGeneration = useRef(0);
-  if (!resourceOwner.current) resourceOwner.current = rendererResourceLedger.register(`viewport:${descriptionId}`);
+  if (!resourceOwner.current)
+    resourceOwner.current = rendererResourceLedger.register(
+      `viewport:${descriptionId}`,
+    );
   const source = useMemo(() => svg, [svg]);
 
   useEffect(() => {
+    setReady(false);
+    setFailed(false);
+    drag.current = null;
     if (typeof URL.createObjectURL !== 'function') {
-      setObjectUrl(`data:image/svg+xml;charset=utf-8,${encodeURIComponent(source)}`);
+      setObjectUrl(
+        `data:image/svg+xml;charset=utf-8,${encodeURIComponent(source)}`,
+      );
       return;
     }
-    const url = URL.createObjectURL(new Blob([source], { type: 'image/svg+xml' }));
-    const releaseUrl = resourceOwner.current?.acquire('object_url', new TextEncoder().encode(source).byteLength) ?? (() => undefined);
-    const releaseSurface = resourceOwner.current?.acquire('surface', new TextEncoder().encode(source).byteLength) ?? (() => undefined);
+    const url = URL.createObjectURL(
+      new Blob([source], { type: 'image/svg+xml' }),
+    );
+    const releaseUrl =
+      resourceOwner.current?.acquire(
+        'object_url',
+        new TextEncoder().encode(source).byteLength,
+      ) ?? (() => undefined);
+    const releaseSurface =
+      resourceOwner.current?.acquire(
+        'surface',
+        new TextEncoder().encode(source).byteLength,
+      ) ?? (() => undefined);
     setObjectUrl(url);
     return () => {
       URL.revokeObjectURL(url);
@@ -54,6 +112,7 @@ export const DiagramViewport = forwardRef<DiagramViewportHandle, DiagramViewport
     const image = imageRef.current;
     const canvas = canvasRef.current;
     if (!image || !canvas) return;
+    setReady(image.naturalWidth > 0 && image.naturalHeight > 0);
     setExtents({
       content_width: image.naturalWidth || image.clientWidth,
       content_height: image.naturalHeight || image.clientHeight,
@@ -67,7 +126,8 @@ export const DiagramViewport = forwardRef<DiagramViewportHandle, DiagramViewport
     const canvas = canvasRef.current;
     if (!canvas || typeof ResizeObserver === 'undefined') return;
     const observer = new ResizeObserver(measureExtents);
-    const releaseObserver = resourceOwner.current?.acquire('observer') ?? (() => undefined);
+    const releaseObserver =
+      resourceOwner.current?.acquire('observer') ?? (() => undefined);
     observer.observe(canvas);
     return () => {
       observer.disconnect();
@@ -75,64 +135,204 @@ export const DiagramViewport = forwardRef<DiagramViewportHandle, DiagramViewport
     };
   }, [measureExtents, objectUrl]);
 
-  useEffect(
-    () => {
-      const generation = ++lifecycleGeneration.current;
-      return () => queueMicrotask(() => {
+  useEffect(() => {
+    const generation = ++lifecycleGeneration.current;
+    return () =>
+      queueMicrotask(() => {
         if (lifecycleGeneration.current === generation) {
           resourceOwner.current?.dispose();
           resourceOwner.current = null;
         }
       });
-    },
-    [],
-  );
+  }, []);
 
   const publish = (next: MermaidViewportState) => {
     setState(next);
     onChange?.(next);
   };
-  const zoom = (factor: number) => {
-    const nextZoom = clampMermaidZoom(state.zoom * factor);
-    publish({
-      ...state,
-      mode: 'custom',
-      zoom: nextZoom,
-      pan_x: clampMermaidPan(state.pan_x, extents.content_width * nextZoom, extents.viewport_width),
-      pan_y: clampMermaidPan(state.pan_y, extents.content_height * nextZoom, extents.viewport_height),
-    });
+  const scale = mermaidEffectiveScale(state, extents);
+  const usable =
+    ready &&
+    !failed &&
+    extents.viewport_width > 0 &&
+    extents.viewport_height > 0;
+  const bounded = (next: MermaidViewportState) => {
+    const rendered = mermaidEffectiveScale(next, extents);
+    return {
+      ...next,
+      pan_x: clampMermaidPan(
+        next.pan_x,
+        extents.content_width * rendered,
+        extents.viewport_width,
+      ),
+      pan_y: clampMermaidPan(
+        next.pan_y,
+        extents.content_height * rendered,
+        extents.viewport_height,
+      ),
+    };
   };
-  const fit = () => publish(initialMermaidViewport());
-  const actual = () => publish({ mode: 'actual', zoom: 1, pan_x: 0, pan_y: 0 });
-  const pan = (x: number, y: number) => publish({
-    ...state,
-    mode: 'custom',
-    pan_x: clampMermaidPan(state.pan_x + x, extents.content_width * state.zoom, extents.viewport_width),
-    pan_y: clampMermaidPan(state.pan_y + y, extents.content_height * state.zoom, extents.viewport_height),
-  });
-
-  useImperativeHandle(ref, () => ({ zoomIn: () => zoom(1.25), zoomOut: () => zoom(0.8), fit, actual }));
+  const zoom = (factor: number) => {
+    if (!usable) return false;
+    publish(
+      bounded({
+        ...state,
+        mode: 'custom',
+        zoom: clampMermaidZoom(
+          scale * factor,
+          Math.min(0.1, mermaidFitScale(extents) / 10),
+        ),
+      }),
+    );
+    return true;
+  };
+  const fit = () => {
+    if (!usable) return false;
+    publish(initialMermaidViewport());
+    return true;
+  };
+  const actual = () => {
+    if (!usable) return false;
+    publish({ mode: 'actual', zoom: 1, pan_x: 0, pan_y: 0 });
+    return true;
+  };
+  const pan = (x: number, y: number) => {
+    if (!usable) return false;
+    publish(
+      bounded({
+        ...state,
+        mode: 'custom',
+        zoom: scale,
+        pan_x: state.pan_x + x,
+        pan_y: state.pan_y + y,
+      }),
+    );
+    return true;
+  };
+  const dismissModal = () => {
+    if (!toolsOpen) return false;
+    setToolsOpen(false);
+    return true;
+  };
+  useImperativeHandle(ref, () => ({
+    zoomIn: () => zoom(1.25),
+    zoomOut: () => zoom(0.8),
+    fit,
+    actual,
+    dismissModal,
+  }));
 
   return (
     <div className="diagram-viewer">
       <div className="diagram-controls" aria-label="Diagram navigation">
-        <button type="button" onClick={fit}>Fit</button>
-        <button type="button" onClick={actual}>Actual size</button>
-        <button type="button" onClick={() => zoom(0.8)} aria-label="Zoom out">−</button>
-        <output aria-live="polite">{Math.round(state.zoom * 100)}%</output>
-        <button type="button" onClick={() => zoom(1.25)} aria-label="Zoom in">+</button>
-        <button type="button" onClick={() => pan(-80, 0)} aria-label="Pan left">←</button>
-        <button type="button" onClick={() => pan(80, 0)} aria-label="Pan right">→</button>
-        <button type="button" onClick={() => pan(0, -80)} aria-label="Pan up">↑</button>
-        <button type="button" onClick={() => pan(0, 80)} aria-label="Pan down">↓</button>
+        <button type="button" disabled={!usable} onClick={fit}>
+          Fit
+        </button>
+        <button
+          type="button"
+          disabled={!usable}
+          onClick={() => zoom(0.8)}
+          aria-label="Zoom out"
+        >
+          −
+        </button>
+        <output aria-label="Diagram zoom">
+          {Number((scale * 100).toFixed(1))}%
+        </output>
+        <button
+          type="button"
+          disabled={!usable}
+          onClick={() => zoom(1.25)}
+          aria-label="Zoom in"
+        >
+          +
+        </button>
+        <button
+          type="button"
+          aria-label="More diagram tools"
+          title="More diagram tools"
+          onClick={(e) => {
+            toolsOpener.current = e.currentTarget;
+            setToolsOpen(true);
+          }}
+        >
+          ⋯
+        </button>
       </div>
+      <TaskSurface
+        open={toolsOpen}
+        onOpenChange={setToolsOpen}
+        title="Diagram tools"
+        opener={toolsOpener.current}
+        className="diagram-tools"
+      >
+        <button type="button" disabled={!usable} onClick={fit}>
+          Fit
+        </button>
+        <button type="button" disabled={!usable} onClick={() => zoom(0.8)}>
+          Zoom out
+        </button>
+        <button type="button" disabled={!usable} onClick={() => zoom(1.25)}>
+          Zoom in
+        </button>
+        <button type="button" disabled={!usable} onClick={actual}>
+          Actual size
+        </button>
+        <button type="button" disabled={!usable} onClick={fit}>
+          Reset view
+        </button>
+        <div role="group" aria-label="Pan diagram">
+          <button
+            type="button"
+            disabled={!usable}
+            onClick={() => pan(-80, 0)}
+            aria-label="Pan left"
+          >
+            ←
+          </button>
+          <button
+            type="button"
+            disabled={!usable}
+            onClick={() => pan(80, 0)}
+            aria-label="Pan right"
+          >
+            →
+          </button>
+          <button
+            type="button"
+            disabled={!usable}
+            onClick={() => pan(0, -80)}
+            aria-label="Pan up"
+          >
+            ↑
+          </button>
+          <button
+            type="button"
+            disabled={!usable}
+            onClick={() => pan(0, 80)}
+            aria-label="Pan down"
+          >
+            ↓
+          </button>
+        </div>
+        <p>
+          Arrow keys or drag pan this diagram. Plus and minus zoom. Zero fits.
+          Tab leaves the diagram.
+        </p>
+      </TaskSurface>
       <div
         ref={canvasRef}
         className="diagram-canvas"
+        data-viewport-mode={state.mode}
+        data-viewport-scale={scale}
+        data-viewport-pan-x={bounded(state).pan_x}
+        data-viewport-pan-y={bounded(state).pan_y}
+        data-preview-ready={usable}
         tabIndex={0}
         role="group"
         aria-label={`${label} navigation area`}
         onKeyDown={(event) => {
+          if (!usable) return;
           const movement = event.shiftKey ? 160 : 48;
           if (event.key === 'ArrowLeft') pan(-movement, 0);
           else if (event.key === 'ArrowRight') pan(movement, 0);
@@ -145,20 +345,32 @@ export const DiagramViewport = forwardRef<DiagramViewportHandle, DiagramViewport
           event.preventDefault();
         }}
         onPointerDown={(event) => {
-          drag.current = { x: event.clientX, y: event.clientY };
+          if (!usable || drag.current) return;
+          drag.current = {
+            id: event.pointerId,
+            x: event.clientX,
+            y: event.clientY,
+          };
           event.currentTarget.setPointerCapture?.(event.pointerId);
         }}
         onPointerMove={(event) => {
           const previous = drag.current;
-          if (!previous) return;
+          if (!previous || previous.id !== event.pointerId) return;
           pan(event.clientX - previous.x, event.clientY - previous.y);
-          drag.current = { x: event.clientX, y: event.clientY };
+          drag.current = {
+            id: event.pointerId,
+            x: event.clientX,
+            y: event.clientY,
+          };
         }}
         onPointerUp={(event) => {
+          if (drag.current?.id !== event.pointerId) return;
           drag.current = null;
           event.currentTarget.releasePointerCapture?.(event.pointerId);
         }}
-        onPointerCancel={() => { drag.current = null; }}
+        onPointerCancel={(event) => {
+          if (drag.current?.id === event.pointerId) drag.current = null;
+        }}
       >
         {objectUrl && (
           <img
@@ -169,10 +381,29 @@ export const DiagramViewport = forwardRef<DiagramViewportHandle, DiagramViewport
             aria-describedby={description ? descriptionId : undefined}
             draggable={false}
             onLoad={measureExtents}
-            style={{ transform: `translate(${state.pan_x}px, ${state.pan_y}px) scale(${state.zoom})` }}
+            onError={() => {
+              setFailed(true);
+              setReady(false);
+              drag.current = null;
+            }}
+            style={{
+              width: extents.content_width * scale || undefined,
+              height: extents.content_height * scale || undefined,
+              transform: `translate(calc(-50% + ${bounded(state).pan_x}px), calc(-50% + ${bounded(state).pan_y}px))`,
+            }}
           />
         )}
-        {description && <span className="visually-hidden" id={descriptionId}>{description}</span>}
+        {failed && (
+          <p role="status">
+            The diagram preview could not be displayed. View the source or retry
+            the diagram preview.
+          </p>
+        )}
+        {description && (
+          <span className="visually-hidden" id={descriptionId}>
+            {description}
+          </span>
+        )}
       </div>
     </div>
   );

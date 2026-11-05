@@ -55,3 +55,6 @@ brand/INTEGRATION.md text eol=lf
 Cargo.lock linguist-generated=false
 pnpm-lock.yaml linguist-generated=false
 crates/glitchpad-host/gen/android/** linguist-generated=true
+
+# Unified patch context preserves upstream blank-line whitespace.
+patches/*.patch -whitespace

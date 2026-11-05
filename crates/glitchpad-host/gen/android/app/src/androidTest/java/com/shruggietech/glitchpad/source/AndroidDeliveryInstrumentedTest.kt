@@ -101,7 +101,7 @@ class AndroidDeliveryInstrumentedTest {
       // Exercise the granted provider path; AndroidResolverInstrumentedTest
       // separately checks every activated exact image MIME type.
       clientContext.startActivity(viewIntent(uri, "image/*").setComponent(component).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-      waitForBodyText(scenario, "original.$extension", "Actual size", "Background")
+      waitForBodyText(scenario, "original.$extension")
       waitForImagePixels(scenario, "original.$extension")
       val after = resolver.openInputStream(uri)!!.use { it.readBytes() }
       assertTrue("raster preview changed original provider bytes", before.contentEquals(after))
@@ -112,21 +112,25 @@ class AndroidDeliveryInstrumentedTest {
       clientContext.startActivity(viewIntent(uri, "image/*").setComponent(component).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
       waitForImagePixels(scenario, name)
       if (name.endsWith("gif") || name == "animated.webp") {
+        clickControl(scenario, "More image tools")
         waitForBodyText(scenario, "Play", "Next frame")
         evaluate(scenario, "(()=>{window.__s040PreviousPreview=document.querySelector('.image-preview').src;const next=Array.from(document.querySelectorAll('button')).find(b=>b.textContent==='Next frame');next.click();return true;})()")
         waitForImagePixels(scenario, name, true)
         waitForBodyText(scenario, "of " + if (name.endsWith("gif")) "4" else "2")
       }
       if (name.endsWith("ico")) {
+        clickControl(scenario, "More image tools")
         waitForBodyText(scenario, "Export selected entry as PNG")
         val inventory = JSONObject(evaluate(scenario, "(()=>{const entries=document.querySelector('select[aria-label=\"Icon entry\"]');const options=Array.from(entries.options).map(option=>option.textContent);return {count:options.length,dib:options.some(text=>text.includes('dib')),duplicate:options.some(text=>text.includes('duplicate'))};})()"))
         assertEquals("every bounded ICO directory row must be exposed", 4, inventory.getInt("count"))
         assertTrue("DIB entry facts must be available in native entry selection", inventory.getBoolean("dib"))
         assertTrue("duplicate entry facts must be available in native entry selection", inventory.getBoolean("duplicate"))
-        evaluate(scenario, "(()=>{window.__s040PreviousPreview=document.querySelector('.image-preview').src;const entries=document.querySelector('select[aria-label=\"Icon entry\"]');entries.value='1';entries.dispatchEvent(new Event('change',{bubbles:true}));return true;})()")
+        evaluate(scenario, "window.__s040PreviousPreview=document.querySelector('.image-preview').src;true")
+        chooseTaskOption(scenario,"Icon entry",1,"1")
         waitForImagePixels(scenario, name, true)
         verifySelectedIconExport(scenario, uri, before)
       }
+      if (name.endsWith("gif") || name == "animated.webp" || name.endsWith("ico")) clickControl(scenario, "Close Image tools")
       assertTrue("image-family preview changed original provider bytes", before.contentEquals(resolver.openInputStream(uri)!!.use { it.readBytes() }))
     }
     val hostile = grant(documentUri("hostile.svg"))
@@ -300,16 +304,20 @@ class AndroidDeliveryInstrumentedTest {
       assertEquals("write refusal must retain every edited source character", text, browserEditorInputSnapshot(scenario).getString("semantic_text"))
       val saved = destination(type, "s046-draft")
       chooseNative(scenario, Intent.ACTION_CREATE_DOCUMENT, chosen(saved), { if (choice == "New text file") keyboardSave(scenario) else menuAction(scenario, "Save") }, "Saved after native verification.")
+      waitForCondition(scenario, "(()=>{const n=document.querySelector('[data-draft-identity]');return !!n&&n.textContent.includes('Saved')&&!n.textContent.includes('Unsaved changes');})()", "dirty state must clear after actual native save receipt")
       assertTrue("saved draft must match exact expected UTF-8 bytes", text.toByteArray(Charsets.UTF_8).contentEquals(readBytes(saved)))
+      recordJourneyReadback(4, "utf8", text.toByteArray(Charsets.UTF_8), readBytes(saved))
       closeCurrentDocument(scenario)
       openFromAddDocument(scenario, saved)
       waitForBodyText(scenario, text.substringAfterLast("S046_", text).lineSequence().first().trim())
     }
+    if (isS047Evidence() && expectedBuildVariant() == "ordinary") assertEquals("ordinary APK must not install the fault save getter", "true", evaluate(scenario, "!Object.getOwnPropertyDescriptor(window,'__GLITCHPAD_SAVE_OBSERVATION__')"))
+    if (isS047Evidence()) emitS047Journey(scenario, 4, listOf("new_markdown", "new_text", "exact_utf8", "reopen", "cancel", "failed_write", "dirty_receipt"))
     val corpus = grant(documentUri("recovery-corpus.md"))
     openFromAddDocument(scenario, corpus)
     waitForBodyText(scenario, "S046 Markdown corpus", "S046_CORPUS_MARKER", "list item", "code block", "Unicode")
     waitForCondition(scenario, "!!document.querySelector('.markdown-document h1') && !!document.querySelector('.markdown-document table')", "native Open must produce actual Markdown heading and table")
-    verifyMarkdownFailures(scenario, corpus)
+    if (expectedBuildVariant() == "fault_probe") verifyMarkdownFailures(scenario, corpus)
     for (name in listOf("recovery-empty.md", "recovery-malformed.md")) {
       openFromAddDocument(scenario, grant(documentUri(name)))
       waitForBodyText(scenario, name, "Add document")
@@ -319,6 +327,11 @@ class AndroidDeliveryInstrumentedTest {
     val before = readBytes(original)
     openFromAddDocument(scenario, original)
     waitForBodyText(scenario, "S046_ORIGINAL_UNCHANGED")
+    if (isS047Evidence()) {
+      clickControl(scenario, "Document tools")
+      assertEquals("true", evaluate(scenario, "(()=>{const items=Array.from(document.querySelectorAll('[aria-label=\"Document tools\"] [role=menuitem]'));return items.filter(n=>((n.querySelector('span')&&n.querySelector('span').textContent)||n.textContent).trim()==='Save').every(n=>n.disabled);})()"))
+      clickControl(scenario, "Close Document tools")
+    }
     menuAction(scenario, "Edit a copy")
     waitForBodyText(scenario, "Copy of recovery-readonly.md")
     val copyText = "# S046 edited copy\n\nS046_COPY_BYTES\n"
@@ -327,9 +340,12 @@ class AndroidDeliveryInstrumentedTest {
     chooseNative(scenario, Intent.ACTION_CREATE_DOCUMENT, chosen(copy), { menuAction(scenario, "Save") }, "Saved after native verification.")
     assertTrue("read-only original must survive copy editing and save", before.contentEquals(readBytes(original)))
     assertTrue("copy destination must contain the exact edited bytes", copyText.toByteArray(Charsets.UTF_8).contentEquals(readBytes(copy)))
+    recordJourneyReadback(5, "utf8", copyText.toByteArray(Charsets.UTF_8), readBytes(copy))
+    if (isS047Evidence()) emitS047Journey(scenario, 5, listOf("edit_copy", "original_unchanged", "in_place_unavailable"))
     verifyDirtyCloseAndPendingRace(scenario, destination("text/plain", "s046-dirty-close"))
     verifySharedImageActions(scenario)
     verifyDiagnosticTasks(scenario, destination("application/json", "s046-diagnostic"), destination("application/json", "s046-write-refused-diagnostic"))
+    if (isS047Evidence()) emitS047Journey(scenario, 7, listOf("frozen_redacted", "save_readback", "cancel", "failed_write", "share_cancel", "share_receiver", "runtime_facts", "diagnostic_clear"))
     println("recovery_evidence=launcher:pass,new_markdown:pass,new_text:pass,native_open:pass,exact_save_reopen:pass,keyboard_ctrl_s_receipt_reopen:pass,cancel:pass,failed_write:pass,readonly_copy:pass,dirty_close_pending:pass,diagnostic_save_share:pass,menu_local_zoom:pass,api:" + Build.VERSION.SDK_INT)
     System.out.flush()
     saveScreenshot("s046-authoring.png")
@@ -357,7 +373,7 @@ class AndroidDeliveryInstrumentedTest {
     val expectedSource = InstrumentationRegistry.getArguments().getString("expectedSource")
     assertEquals(expectedSource, JSONObject(preview).getJSONObject("environment").getString("build_commit"))
     saveScreenshot("s046-root-recovery.png")
-    println("root_recovery_evidence=" + JSONObject().put("root_fallback", "pass").put("draft_retained", "pass").put("diagnostic_event_retained", "pass").put("source_commit", expectedSource).put("apk_sha256", apkSha256()).put("recovery_probe_variant", "compiled_test_only").put("api_level", Build.VERSION.SDK_INT).toString())
+    println("root_recovery_evidence=" + JSONObject().put("root_fallback", "pass").put("draft_retained", "pass").put("diagnostic_event_retained", "pass").put("source_commit", expectedSource).put("apk_sha256", apkSha256()).put("recovery_probe_variant", if (expectedBuildVariant() == "fault_probe") "compiled_test_only" else "none").put("api_level", Build.VERSION.SDK_INT).toString())
     System.out.flush()
 
   }
@@ -444,11 +460,23 @@ class AndroidDeliveryInstrumentedTest {
           const panel=menu?menu.getBoundingClientRect():null;
           const clip={left:Math.max(rect.left,panel?panel.left:-Infinity,visible.left),right:Math.min(rect.right,panel?panel.right:Infinity,visible.left+visible.width),top:Math.max(rect.top,panel?panel.top:-Infinity,visible.top),bottom:Math.min(rect.bottom,panel?panel.bottom:Infinity,visible.top+visible.height)};
           const hit=document.elementFromPoint((clip.left+clip.right)/2,(clip.top+clip.bottom)/2);
-          return {label:control.textContent.trim(),width:rect.width,height:rect.height,left:rect.left,right:rect.right,top:rect.top,bottom:rect.bottom,visibleWidth:clip.right-clip.left,visibleHeight:clip.bottom-clip.top,hit:hit===control||control.contains(hit),disabled:control.disabled};
+          return {label:control.textContent.trim(),width:rect.width,height:rect.height,left:rect.left,right:rect.right,top:rect.top,bottom:rect.bottom,visibleWidth:clip.right-clip.left,visibleHeight:clip.bottom-clip.top,hit:hit===control||control.contains(hit),disabled:control.disabled,backgroundInert:!!control.closest('[inert],[aria-hidden=true]'),inlineTrigger:control.classList.contains('add-document-inline-trigger')};
         };
         const surface=document.querySelector('.document-surface');
         const rect=surface.getBoundingClientRect();
-        return {viewport:visible,action:measure(element),trigger:measure(document.querySelector('.add-document-trigger')),document:{width:rect.width,height:rect.height,bottom:rect.bottom},paddingBottom:Number.parseFloat(getComputedStyle(surface).paddingBottom)};
+        const rendered=node=>{
+          if(!node||node.closest('[hidden],.markdown-print-document,.visually-hidden'))return false;
+          for(let ancestor=node;ancestor;ancestor=ancestor.parentElement){const style=getComputedStyle(ancestor);if(style.display==='none'||style.visibility==='hidden')return false;}
+          const box=node.getBoundingClientRect();return box.width>0&&box.height>0;
+        };
+        const currentSelector=surface.querySelector('.markdown-surface')
+          ?(surface.querySelector('.markdown-source-mode:not([hidden])')?'.markdown-source-mode .cm-scroller':'.markdown-rendered-mode .markdown-document:not(.markdown-print-document)')
+          :surface.querySelector('.mermaid-surface')
+            ?(surface.querySelector('.mermaid-source-mode')?'.mermaid-source-mode .cm-scroller':'.mermaid-rendered-mode .diagram-canvas')
+            :surface.querySelector('.image-pane')?'.image-pane':surface.querySelector('.large-text')?'.large-text-content':surface.querySelector('.cm-content')?'.cm-scroller':null;
+        const current=currentSelector?Array.from(surface.querySelectorAll(currentSelector)).find(rendered):null;
+        const currentRect=current?current.getBoundingClientRect():null;
+        return {viewport:visible,action:measure(element),trigger:measure(document.querySelector('.add-document-trigger')),document:{width:rect.width,height:rect.height,top:rect.top,bottom:rect.bottom},currentViewport:currentSelector?{selector:currentSelector,visible:!!currentRect,width:currentRect?currentRect.width:0,height:currentRect?currentRect.height:0,clientHeight:current?current.clientHeight:0,ratio:currentRect?currentRect.height/rect.height:0}:null,paddingBottom:Number.parseFloat(getComputedStyle(surface).paddingBottom)};
       })()
     """.trimIndent().replace("SELECTOR", selector)
     val measured = JSONObject(evaluate(scenario, script))
@@ -472,12 +500,29 @@ class AndroidDeliveryInstrumentedTest {
       assertTrue(label + " must be fully inside the visible viewport after local menu scrolling", control.getDouble("left") >= viewport.getDouble("left") - 0.6 && control.getDouble("right") <= viewport.getDouble("left") + viewport.getDouble("width") + 0.6 && control.getDouble("top") >= viewport.getDouble("top") - 0.6 && control.getDouble("bottom") <= viewport.getDouble("top") + viewport.getDouble("height") + 0.6)
       assertTrue(label + " must fit the actual native WebView/window intersection", measured.getJSONObject(kind + "_native").optBoolean("whole_control_visible"))
       assertTrue(label + " must retain a whole unclipped target", control.getDouble("visibleWidth") >= 48.0 && control.getDouble("visibleHeight") >= 48.0)
-      assertTrue(label + " must receive input at its visible center", control.getBoolean("hit"))
-      assertTrue(label + " must be enabled", !control.getBoolean("disabled"))
+      val backgroundTrigger=choiceSelector!=null&&kind=="trigger"&&control.getBoolean("backgroundInert")
+      if(choiceSelector!=null&&kind=="trigger"&&control.getBoolean("inlineTrigger"))assertTrue("open compact Add trigger must be an inert background control",backgroundTrigger)
+      if(!backgroundTrigger){
+        assertTrue(label + " must remain outside inert background content",!control.getBoolean("backgroundInert"))
+        assertTrue(label + " must receive input at its visible center", control.getBoolean("hit"))
+        assertTrue(label + " must be enabled", !control.getBoolean("disabled"))
+      }
     }
     val surface = measured.getJSONObject("document")
     assertTrue("real document surface must keep positive area", surface.getDouble("width") > 0 && surface.getDouble("height") > 0)
-    if (choiceSelector == null) assertTrue("closed-state document clearance must reserve the real floating target", measured.getDouble("paddingBottom") + 0.6 >= surface.getDouble("bottom") - measured.getJSONObject("trigger").getDouble("top"))
+    if (choiceSelector == null) {
+      val trigger=measured.getJSONObject("trigger")
+      if(trigger.getDouble("bottom")<=surface.getDouble("top")+0.6) measured.put("trigger_placement","chrome_above_document")
+      else {
+        measured.put("trigger_placement","floating")
+        assertTrue("closed-state document clearance must reserve an overlapping floating target", measured.getDouble("paddingBottom") + 0.6 >= surface.getDouble("bottom") - trigger.getDouble("top"))
+      }
+      if(!measured.isNull("currentViewport")){
+        val current=measured.getJSONObject("currentViewport")
+        assertTrue("the actual current reading/editing viewport must be visible and retain positive client area",current.getBoolean("visible")&&current.getDouble("width")>0&&current.getDouble("height")>0&&current.getInt("clientHeight")>0)
+        assertTrue("current viewport must own at least70% of the actual document area",current.getDouble("ratio")>=0.7)
+      }
+    }
   }
 
   private fun verifyMarkdownFailures(scenario: ActivityScenario<MainActivity>, corpus: Uri) {
@@ -503,7 +548,7 @@ class AndroidDeliveryInstrumentedTest {
   private fun verifyDirtyCloseAndPendingRace(scenario: ActivityScenario<MainActivity>, destination: Uri) {
     createNewDraftForInput(scenario, "New text file", "Untitled.txt")
     replaceEditorText(scenario, "S046_DIRTY_CLOSE_BYTES\n")
-    assertEquals("true", evaluate(scenario, "(()=>{document.querySelector('.app-shell').dispatchEvent(new KeyboardEvent('keydown',{key:'w',ctrlKey:true,bubbles:true}));return true;})()"))
+    taskKey(KeyEvent.KEYCODE_W, KeyEvent.META_CTRL_ON)
     waitForBodyText(scenario, "Unsaved changes in Untitled.txt", "No content has been discarded.")
     clickControl(scenario, "Cancel")
     waitForCondition(scenario, "!document.querySelector('.resolution-dialog') && !!document.querySelector('.cm-content[contenteditable=true]')", "dirty close cancellation must retain the draft")
@@ -783,13 +828,14 @@ class AndroidDeliveryInstrumentedTest {
     val webview = WebViewCompat.getCurrentWebViewPackage(clientContext)
     if (webview == null) assertTrue("unavailable WebView identity must be explicit", native.isNull("webview_version"))
     else { assertEquals(webview.packageName, native.getString("webview_package")); assertEquals(webview.versionName, native.getString("webview_version")) }
-    for (reason in listOf("markdown_worker_failed", "markdown_parse_failed", "markdown_projection_failed")) assertTrue("actual injected failure must be in the frozen bundle: " + reason, frozen.contains(reason))
-    assertTrue("default diagnostic preview must omit document bytes/names/provider URIs", !frozen.contains("S046_") && !frozen.contains("content://") && !frozen.contains("recovery-corpus.md"))
+    if (expectedBuildVariant() == "fault_probe") for (reason in listOf("markdown_worker_failed", "markdown_parse_failed", "markdown_projection_failed")) assertTrue("actual injected failure must be in the frozen bundle: " + reason, frozen.contains(reason))
+    assertTrue("default diagnostic preview must omit document bytes/names/provider URIs", !frozen.contains("S046_") && !frozen.contains("S047_") && !frozen.contains("s047-controls") && !frozen.contains("content://") && !frozen.contains("recovery-corpus.md"))
     chooseNative(scenario, Intent.ACTION_CREATE_DOCUMENT, ActivityResult(Activity.RESULT_CANCELED, Intent()), { clickControl(scenario, "Save previewed bundle") }, "Cancelled. The preview is retained.")
     chooseNative(scenario, Intent.ACTION_CREATE_DOCUMENT, chosen(refused), { clickControl(scenario, "Save previewed bundle") }, "Export failed. The exact preview is retained")
     assertEquals("cancel/failure must preserve frozen preview", frozen, stringValue(evaluate(scenario, "document.querySelector('.diagnostic-preview').textContent")))
     chooseNative(scenario, Intent.ACTION_CREATE_DOCUMENT, chosen(destination), { clickControl(scenario, "Save previewed bundle") }, "Diagnostic bundle saved and verified.")
     assertTrue("saved diagnostic JSON bytes must equal exact frozen preview", frozen.toByteArray(Charsets.UTF_8).contentEquals(readBytes(destination)))
+    recordJourneyReadback(7, "json_save", frozen.toByteArray(Charsets.UTF_8), readBytes(destination))
     resolver.call(FixtureGrantProvider.COMMAND_URI, "clear_share_result", null, null)
     tapNativeControlOnce(scenario, "Share previewed bundle")
     val sharePackage = clickNativeText("Glitchpad diagnostic fixture", false)
@@ -803,10 +849,23 @@ class AndroidDeliveryInstrumentedTest {
     while (SystemClock.elapsedRealtime() < deadline && received?.getString("json") == null) { SystemClock.sleep(100L); received = resolver.call(FixtureGrantProvider.COMMAND_URI, "share_result", null, null) }
     assertEquals("actual receiving activity must read the frozen JSON", frozen, received?.getString("json"))
     assertTrue("receiver must have a temporary read grant", received?.getBoolean("read_granted") == true)
+    recordJourneyReadback(7, "json_receiver", frozen.toByteArray(Charsets.UTF_8), requireNotNull(received?.getString("json")).toByteArray(Charsets.UTF_8))
     waitForAppNativeWindow(scenario, "Share previewed bundle")
     waitForBodyText(scenario, "Shared with the system. Recipient delivery is unconfirmed.")
-    println("recovery_runtime_evidence=" + JSONObject().put("apk_sha256", apkSha256()).put("source_commit", expectedSource).put("package", TARGET_PACKAGE).put("product_version", packageInfo.versionName).put("evidence_class", "hosted_debug_instrumentation").put("signed_release_bytes_tested", false).put("recovery_probe_variant", "compiled_test_only").put("native_environment", native).put("font_scale", clientContext.resources.configuration.fontScale).toString())
-    clickControl(scenario, "Close diagnostics")
+    println("recovery_runtime_evidence=" + JSONObject().put("apk_sha256", apkSha256()).put("source_commit", expectedSource).put("package", TARGET_PACKAGE).put("product_version", packageInfo.versionName).put("evidence_class", "hosted_debug_instrumentation").put("signed_release_bytes_tested", false).put("recovery_probe_variant", if (expectedBuildVariant() == "fault_probe") "compiled_test_only" else "none").put("native_environment", native).put("font_scale", clientContext.resources.configuration.fontScale).toString())
+
+    if (isS047Evidence()) {
+      val surface = stringValue(evaluate(scenario,"document.querySelector('.document-surface').id"))
+      clickControl(scenario,"Clear diagnostics")
+      waitForBodyText(scenario,"Stored diagnostics cleared")
+      assertEquals(0,JSONObject(stringValue(evaluate(scenario,"document.querySelector('.diagnostic-preview').textContent"))).getJSONArray("events").length())
+      clickControl(scenario,"Close Diagnostics")
+      menuAction(scenario,"Diagnostics")
+      waitForBodyText(scenario,"Redacted diagnostic preview ready")
+      assertEquals("cleared native event store must remain empty after panel recreation",0,JSONObject(stringValue(evaluate(scenario,"document.querySelector('.diagnostic-preview').textContent"))).getJSONArray("events").length())
+      assertEquals("clearing diagnostics must preserve current document",surface,stringValue(evaluate(scenario,"document.querySelector('.document-surface').id")))
+    }
+    clickControl(scenario, "Close Diagnostics")
   }
 
   private fun chooseNative(scenario: ActivityScenario<MainActivity>, action: String, result: ActivityResult, trigger: () -> Unit, vararg expected: String) {
@@ -878,7 +937,10 @@ class AndroidDeliveryInstrumentedTest {
     waitForCondition(scenario, "!document.querySelector('.resolution-dialog') && document.querySelector('.document-surface').id!==" + JSONObject.quote(current), "saved document must close before native reopen")
   }
 
-  private fun menuAction(scenario: ActivityScenario<MainActivity>, name: String) { clickControl(scenario, "Menu"); clickControl(scenario, name, "[role=menuitem]") }
+  private fun menuAction(scenario: ActivityScenario<MainActivity>, name: String) {
+    clickControl(scenario, if (name in listOf("Preferences", "Diagnostics", "Help and support", "About Glitchpad")) "Menu" else "Document tools")
+    clickControl(scenario, name, "[role=menuitem]")
+  }
 
   private fun clickControl(scenario: ActivityScenario<MainActivity>, name: String, selector: String = "button") {
     val nameLiteral = JSONObject.quote(name)
@@ -893,6 +955,1358 @@ class AndroidDeliveryInstrumentedTest {
     if (service.flags and android.accessibilityservice.AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS == 0) {
       service.flags = service.flags or android.accessibilityservice.AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS
       instrumentation.uiAutomation.serviceInfo = service
+    }
+  }
+
+
+
+
+
+
+  private fun setTaskInput(scenario: ActivityScenario<MainActivity>, label: String, text: String, deadlineOverride: Long? = null) {
+    val deadline = deadlineOverride ?: (SystemClock.elapsedRealtime() + 30_000L)
+    tapNativeControlOnce(scenario, label, "input,textarea", deadlineOverride = deadline)
+    val before = stringValue(evaluate(scenario, "document.activeElement.value"))
+    val connection = AtomicReference<android.view.inputmethod.InputConnection?>(); val handler = AtomicReference<android.os.Handler?>()
+    scenario.onActivity { activity -> val view = requireNotNull(findWebView(activity.window.decorView)); val info = android.view.inputmethod.EditorInfo(); val current = view.onCreateInputConnection(info); connection.set(current); handler.set(current?.handler ?: view.handler) }
+    val current = requireNotNull(connection.get()); val dispatch = requireNotNull(handler.get())
+    waitForNativeEditorState(current, dispatch, before, "task_input_before", deadlineOverride = deadline)
+    assertTrue(onEditorInputThread(current, dispatch) { it.finishComposingText() })
+    assertTrue(onEditorInputThread(current, dispatch) { it.setSelection(0, before.length) })
+    waitForNativeEditorState(current, dispatch, before, "task_input_selected", 0, before.length, deadlineOverride = deadline)
+    assertTrue(onEditorInputThread(current, dispatch) { it.commitText(text, 1) })
+    waitForCondition(scenario, "document.activeElement&&document.activeElement.value===" + JSONObject.quote(text), "native public input must update only the focused real task field", deadlineOverride = deadline)
+    waitForNativeEditorState(current, dispatch, text, "task_input_committed", text.length, text.length, deadlineOverride = deadline)
+  }
+  private fun chooseTaskOption(scenario: ActivityScenario<MainActivity>, label: String, index: Int, expected: String) {
+    tapNativeControlOnce(scenario, label, "select")
+    instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_MOVE_HOME)
+    repeat(index) { instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_DOWN) }
+    instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_ENTER)
+    waitForCondition(scenario, "Array.from(document.querySelectorAll('select')).some(n=>(n.getAttribute('aria-label')===" + JSONObject.quote(label) + "||(n.labels&&Array.from(n.labels).some(l=>l.textContent.trim().startsWith(" + JSONObject.quote(label) + "))))&&n.value===" + JSONObject.quote(expected) + ")", "actual native option selection must update the intended setting")
+  }
+  private fun clipboardText(): String? = (clientContext.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager).primaryClip?.let { if (it.itemCount > 0) it.getItemAt(0).coerceToText(clientContext).toString() else null }
+
+  private fun taskKey(code: Int, meta: Int = 0) {
+    val now = SystemClock.uptimeMillis()
+    instrumentation.sendKeySync(KeyEvent(now, now, KeyEvent.ACTION_DOWN, code, 0, meta))
+    instrumentation.sendKeySync(KeyEvent(now, SystemClock.uptimeMillis(), KeyEvent.ACTION_UP, code, 0, meta))
+  }
+  private fun focusTaskEditor(scenario: ActivityScenario<MainActivity>) {
+    evaluate(scenario, "document.querySelector('.cm-content').focus();true")
+    waitForCondition(scenario, "document.activeElement===document.querySelector('.cm-content')", "real editor keyboard input must have its actual focus")
+  }
+  private fun verifyS047EditorAliases(scenario: ActivityScenario<MainActivity>, original: String) {
+    val ctrl = KeyEvent.META_CTRL_ON
+    val shift = KeyEvent.META_SHIFT_ON
+    focusTaskEditor(scenario); taskKey(KeyEvent.KEYCODE_A, ctrl); taskKey(KeyEvent.KEYCODE_C, ctrl)
+    waitForCondition(scenario, "Number(document.querySelector('.cm-editor').getAttribute('data-editor-selection-to'))===" + original.length, "native Select all must select the entire actual source")
+    val clipboardDeadline = SystemClock.elapsedRealtime() + 30_000L
+    while (clipboardText() != original && SystemClock.elapsedRealtime() < clipboardDeadline) SystemClock.sleep(100L)
+    assertEquals("Copy keyboard alias must write actual selected source", original, clipboardText())
+    instrumentation.runOnMainSync { (clientContext.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager).setPrimaryClip(android.content.ClipData.newPlainText("controlled fixture","S047_CLIPBOARD_BEFORE_COPY")) }
+    menuAction(scenario,"Copy")
+    val menuClipboardDeadline=SystemClock.elapsedRealtime()+30_000L
+    while(clipboardText()!=original&&SystemClock.elapsedRealtime()<menuClipboardDeadline)SystemClock.sleep(100L)
+    assertEquals("Copy menu must share the exact selected source",original,clipboardText())
+    menuAction(scenario, "Indent")
+    val indented = browserEditorInputSnapshot(scenario).getString("semantic_text")
+    assertTrue("Indent must insert actual leading whitespace on each selected line", indented != original && indented.lines().zip(original.lines()).all { (a,b) -> a.trimStart(' ', '\t') == b && a.length > b.length })
+    menuAction(scenario, "Outdent")
+    assertEquals(original, browserEditorInputSnapshot(scenario).getString("semantic_text"))
+    focusTaskEditor(scenario); taskKey(KeyEvent.KEYCODE_A, ctrl); taskKey(KeyEvent.KEYCODE_TAB)
+    assertEquals(indented, browserEditorInputSnapshot(scenario).getString("semantic_text"))
+    taskKey(KeyEvent.KEYCODE_TAB, shift)
+    assertEquals(original, browserEditorInputSnapshot(scenario).getString("semantic_text"))
+    taskKey(KeyEvent.KEYCODE_Z, ctrl)
+    assertEquals(indented, browserEditorInputSnapshot(scenario).getString("semantic_text"))
+    taskKey(KeyEvent.KEYCODE_Z, ctrl or shift)
+    assertEquals(original, browserEditorInputSnapshot(scenario).getString("semantic_text"))
+    val beforeWrap = stringValue(evaluate(scenario, "document.querySelector('.cm-editor').getAttribute('data-editor-wrap')"))
+    menuAction(scenario, if (beforeWrap == "true") "Unwrap lines" else "Wrap lines")
+    waitForCondition(scenario, "document.querySelector('.cm-editor').getAttribute('data-editor-wrap')!==" + JSONObject.quote(beforeWrap), "document wrap must change actual editor configuration")
+    menuAction(scenario, if (beforeWrap == "true") "Wrap lines" else "Unwrap lines")
+    assertEquals(beforeWrap, stringValue(evaluate(scenario, "document.querySelector('.cm-editor').getAttribute('data-editor-wrap')")))
+    focusTaskEditor(scenario); taskKey(KeyEvent.KEYCODE_F, ctrl)
+    waitForCondition(scenario, "!!document.querySelector('.cm-search input[aria-label=Find]')", "Ctrl+F must open actual Find")
+    setTaskInput(scenario, "Find", "cat")
+    clickControl(scenario,"Close search")
+    focusTaskEditor(scenario)
+    taskKey(KeyEvent.KEYCODE_F3)
+    val next = stringValue(evaluate(scenario, "document.querySelector('.cm-editor').getAttribute('data-editor-selection-from')"))
+    taskKey(KeyEvent.KEYCODE_F3, shift)
+    waitForCondition(scenario, "document.querySelector('.cm-editor').getAttribute('data-editor-selection-from')!==" + JSONObject.quote(next), "Shift+F3 must select the previous actual occurrence")
+    menuAction(scenario, "Find next"); menuAction(scenario, "Find previous")
+    focusTaskEditor(scenario); taskKey(KeyEvent.KEYCODE_G, ctrl)
+    waitForCondition(scenario, "!!document.querySelector('input[aria-label=\"Line number\"]')", "Ctrl+G must open the real validated line task")
+    clickControl(scenario, "Cancel")
+    menuAction(scenario,"Document details")
+    waitForCondition(scenario, "!!document.querySelector('[role=dialog] [aria-label=\"Language mode\"]')", "Document details must disclose current source facts")
+    for ((index, language) in listOf("automatic", "plain_text", "rust", "typescript", "javascript", "python", "json", "toml", "yaml", "css", "html").withIndex()) {
+      chooseTaskOption(scenario, "Language mode", index, language)
+      assertEquals("language override must preserve exact source", original, browserEditorInputSnapshot(scenario).getString("semantic_text"))
+    }
+    chooseTaskOption(scenario, "Language mode", 0, "automatic")
+    observeVisibleTaskControls(scenario, "document_details")
+    clickControl(scenario, "Close Document details")
+    waitForCondition(scenario,"!document.querySelector('[role=dialog] [aria-label=\"Language mode\"]')","closing Document details must synchronize its disclosure")
+    assertEquals(original, browserEditorInputSnapshot(scenario).getString("semantic_text"))
+  }
+
+  private fun verifyS047EditorAndPreferences(scenario: ActivityScenario<MainActivity>) {
+    createNewDraftForInput(scenario, "New text file", "Untitled.txt")
+    val original = "cat Cat scatter cat\nsecond"
+    replaceEditorText(scenario, original)
+    menuAction(scenario, "Search")
+    setTaskInput(scenario, "Find", "cat")
+    waitForCondition(scenario, "document.querySelector('[aria-label=\"Find results\"]').textContent.includes('4')", "actual search must count four case-insensitive matches")
+    clickControl(scenario, "Next"); clickControl(scenario, "Previous"); clickControl(scenario, "Select all matches")
+    waitForCondition(scenario, "Number(document.querySelector('.cm-editor').getAttribute('data-editor-selection-count'))>1", "Select all matches must create actual multiple editor selections")
+    assertEquals(original, browserEditorInputSnapshot(scenario).getString("semantic_text"))
+    setTaskInput(scenario, "Find", "S047_NO_MATCH")
+    waitForBodyText(scenario, "No matches")
+    setTaskInput(scenario, "Find", "cat")
+    tapNativeControlOnce(scenario, "Match case", "input[type=checkbox]")
+    waitForCondition(scenario, "document.querySelector('[aria-label=\"Find results\"]').textContent.includes('3')", "case-sensitive search must change the actual match set")
+    tapNativeControlOnce(scenario, "Whole word", "input[type=checkbox]")
+    waitForCondition(scenario, "document.querySelector('[aria-label=\"Find results\"]').textContent.includes('2')", "whole-word search must exclude scatter")
+    tapNativeControlOnce(scenario, "Regular expression", "input[type=checkbox]")
+    setTaskInput(scenario, "Find", "[")
+    waitForBodyText(scenario, "Invalid regular expression")
+    assertEquals(original, browserEditorInputSnapshot(scenario).getString("semantic_text"))
+    setTaskInput(scenario, "Find", "cat")
+    tapNativeControlOnce(scenario, "Regular expression", "input[type=checkbox]")
+    setTaskInput(scenario, "Replace", "dog")
+    clickControl(scenario, "Next")
+    val selection = JSONObject(evaluate(scenario, "(()=>{const n=document.querySelector('.cm-editor');return {from:Number(n.getAttribute('data-editor-selection-from')),to:Number(n.getAttribute('data-editor-selection-to'))};})()"))
+    assertEquals("cat", original.substring(selection.getInt("from"), selection.getInt("to")))
+    clickControl(scenario, "Replace next")
+    val once = original.substring(0, selection.getInt("from")) + "dog" + original.substring(selection.getInt("to"))
+    waitForCondition(scenario, "Array.from(document.querySelectorAll('.cm-line')).map(n=>n.textContent).join('\\n')===" + JSONObject.quote(once), "Replace next must change exactly the selected source range once")
+    clickControl(scenario,"Close search")
+    menuAction(scenario, "Undo")
+    assertEquals(original, browserEditorInputSnapshot(scenario).getString("semantic_text"))
+    menuAction(scenario,"Search")
+    clickControl(scenario, "Replace all")
+    val replaced = "dog Cat scatter dog\nsecond"
+    waitForCondition(scenario, "Array.from(document.querySelectorAll('.cm-line')).map(n=>n.textContent).join('\\n')===" + JSONObject.quote(replaced), "Replace all must change exactly whole-word case-sensitive source")
+    clickControl(scenario, "Close search")
+    menuAction(scenario, "Undo")
+    assertEquals(original, browserEditorInputSnapshot(scenario).getString("semantic_text"))
+    menuAction(scenario, "Redo")
+    assertEquals(replaced, browserEditorInputSnapshot(scenario).getString("semantic_text"))
+    replaceEditorText(scenario, original)
+    clickControl(scenario, "Document tools")
+    assertEquals("true", evaluate(scenario, "Array.from(document.querySelectorAll('[role=menuitem]')).filter(b=>b.querySelector('span')&&b.querySelector('span').textContent==='Redo').every(b=>b.disabled)"))
+    clickControl(scenario, "Close Document tools")
+    menuAction(scenario, "Go to line")
+    setTaskInput(scenario, "Line number", "999")
+    clickControl(scenario, "Go")
+    waitForCondition(scenario, "document.querySelector('input[aria-label=\"Line number\"]').getAttribute('aria-invalid')==='true'", "out-of-range line must remain visibly invalid")
+    setTaskInput(scenario, "Line number", "2")
+    clickControl(scenario, "Go")
+    waitForCondition(scenario, "!document.querySelector('input[aria-label=\"Line number\"]')", "valid line navigation must close its task")
+    assertEquals(original, browserEditorInputSnapshot(scenario).getString("semantic_text"))
+    assertEquals((original.indexOf('\n') + 1).toString(), stringValue(evaluate(scenario, "document.querySelector('.cm-editor').getAttribute('data-editor-selection-from')")))
+    verifyS047EditorAliases(scenario, original)
+    val documentWrapBeforePreferences=stringValue(evaluate(scenario,"document.querySelector('.cm-editor').getAttribute('data-editor-wrap')"))
+    menuAction(scenario, "Preferences")
+    val wrapDefault = evaluate(scenario, "Array.from(document.querySelectorAll('input[type=checkbox]')).find(n=>n.parentElement.textContent.includes('Wrap long lines')).checked")
+    tapNativeControlOnce(scenario, "Wrap long lines", "input[type=checkbox]")
+    waitForCondition(scenario, "Array.from(document.querySelectorAll('input[type=checkbox]')).find(n=>n.parentElement.textContent.includes('Wrap long lines')).checked!==" + wrapDefault, "default wrap must actually persist its changed checkbox state")
+    tapNativeControlOnce(scenario, "Wrap long lines", "input[type=checkbox]")
+    for ((index, theme) in listOf("system", "light", "dark").withIndex()) chooseTaskOption(scenario, "Theme", index, theme)
+    for ((index, mode) in listOf("rendered", "source").withIndex()) chooseTaskOption(scenario, "Default Markdown view", index, mode)
+    setTaskInput(scenario, "Editor font size", "")
+    instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_ENTER)
+    waitForBodyText(scenario, "Enter a whole number from 8 to 72.")
+    setTaskInput(scenario, "Editor font size", "8"); instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_ENTER)
+    setTaskInput(scenario, "Editor font size", "72"); instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_ENTER)
+    setTaskInput(scenario, "Tab width", "0"); instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_ENTER)
+    waitForBodyText(scenario, "Enter a whole number from 1 to 16.")
+    setTaskInput(scenario, "Tab width", "1"); instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_ENTER)
+    setTaskInput(scenario, "Tab width", "16"); instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_ENTER)
+    setTaskInput(scenario, "Editor font family", "S047 Unavailable Font, monospace"); instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_ENTER)
+    observeVisibleTaskControls(scenario, "preferences")
+    clickControl(scenario, "Reset preferences"); clickControl(scenario, "Cancel reset")
+    assertEquals("true", evaluate(scenario, "Array.from(document.querySelectorAll('input')).some(n=>n.labels&&Array.from(n.labels).some(l=>l.textContent.trim().startsWith('Editor font family'))&&n.value==='S047 Unavailable Font, monospace')"))
+    clickControl(scenario, "Reset preferences"); clickControl(scenario, "Reset settings")
+    waitForBodyText(scenario, "Preferences reset. Your files are unchanged.")
+    clickControl(scenario, "Close Preferences")
+    assertEquals("preference actions must not change current file", original, browserEditorInputSnapshot(scenario).getString("semantic_text"))
+    assertEquals("explicit document wrap must survive unrelated/default preference changes",documentWrapBeforePreferences,stringValue(evaluate(scenario,"document.querySelector('.cm-editor').getAttribute('data-editor-wrap')")))
+  }
+  private fun sourceEditorText(scenario: ActivityScenario<MainActivity>): String = stringValue(evaluate(scenario, "Array.from(document.querySelectorAll('.cm-content > .cm-line')).map(n=>n.textContent).join('\\n')"))
+  private fun verifyS047MarkdownAndMetadata(scenario: ActivityScenario<MainActivity>) {
+    createNewDraftForInput(scenario, "New Markdown", "Untitled.md")
+    val draft = "# S047 mode draft\n\nEditable source retained.\n"
+    replaceEditorText(scenario, draft)
+    val sourceStateBefore=stringValue(evaluate(scenario,"(()=>{const n=document.querySelector('.cm-editor');return JSON.stringify({from:n.getAttribute('data-editor-selection-from'),to:n.getAttribute('data-editor-selection-to'),undo:n.getAttribute('data-editor-undo-depth'),redo:n.getAttribute('data-editor-redo-depth')});})()"))
+    menuAction(scenario, "Read")
+    waitForCondition(scenario, "!!document.querySelector('.markdown-document h1')", "Read must render the actual editable Markdown")
+    menuAction(scenario, "Edit")
+    waitForCondition(scenario, "!!document.querySelector('.cm-content[contenteditable=true]')", "Edit must restore the actual editable source")
+    assertEquals(draft, browserEditorInputSnapshot(scenario).getString("semantic_text"))
+    assertEquals("Markdown Read/Edit must retain actual selection and history",sourceStateBefore,stringValue(evaluate(scenario,"(()=>{const n=document.querySelector('.cm-editor');return JSON.stringify({from:n.getAttribute('data-editor-selection-from'),to:n.getAttribute('data-editor-selection-to'),undo:n.getAttribute('data-editor-undo-depth'),redo:n.getAttribute('data-editor-redo-depth')});})()")))
+    val original = grant(documentUri("s047-controls.md")); val bytes = readBytes(original)
+    openFromAddDocument(scenario, original)
+    waitForCondition(scenario, "(()=>{const image=document.querySelector('.markdown-rendered-mode .embedded-mermaid .diagram-canvas[data-preview-ready=true] img');return !!document.querySelector('.markdown-rendered-mode .markdown-document h2')&&!!image&&image.complete&&image.naturalWidth>0&&image.naturalHeight>0;})()", "Markdown and embedded Mermaid must actually render")
+    assertEquals("true",evaluate(scenario,"!!document.querySelector('.markdown-link-blocked[title=\"Local destination unavailable\"]')&&!Array.from(document.querySelectorAll('.markdown-document button')).some(n=>n.textContent.trim()==='sibling')"))
+    clickControl(scenario,"Document tools")
+    assertEquals("true",evaluate(scenario,"Array.from(document.querySelectorAll('[aria-label=\"Document tools\"] [role=menuitem]')).filter(n=>((n.querySelector('span')&&n.querySelector('span').textContent)||n.textContent).trim()==='Print').every(n=>n.disabled)"))
+    clickControl(scenario,"Close Document tools")
+    menuAction(scenario, "View source")
+    waitForCondition(scenario, "!!document.querySelector('.cm-content[contenteditable=false]')", "read-only Markdown source must retain authority")
+    menuAction(scenario, "Search")
+    assertEquals("true", evaluate(scenario, "!Array.from(document.querySelectorAll('.cm-search input')).some(n=>n.getAttribute('aria-label')==='Replace')"))
+    clickControl(scenario, "Close search")
+    menuAction(scenario, "Read")
+    menuAction(scenario, "Outline")
+    clickControl(scenario, "Second heading")
+    waitForCondition(scenario, "document.activeElement===Array.from(document.querySelectorAll('.markdown-document h2')).find(n=>n.textContent.trim()==='Second heading')", "outline must move real focus to its target")
+    menuAction(scenario, "Search")
+    setTaskInput(scenario, "Find rendered text", "cats")
+    waitForCondition(scenario, "document.querySelector('[aria-label=\"Rendered search results\"]').textContent==='1 of 1'", "rendered search must announce actual matches")
+    clickControl(scenario, "Next"); clickControl(scenario, "Previous"); clickControl(scenario, "Close search")
+
+    tapNativeControlOnce(scenario, "local", ".markdown-document [role=link]")
+    waitForCondition(scenario, "document.activeElement===Array.from(document.querySelectorAll('.markdown-document h2')).find(n=>n.textContent.trim()==='Second heading')", "fragment must focus the actual rendered heading")
+    tapNativeControlOnce(scenario, "Footnote reference", ".markdown-document [data-footnote-ref]")
+    waitForCondition(scenario, "(()=>{const ref=document.querySelector('.markdown-document [data-footnote-ref]');return !!ref&&Array.from(document.querySelectorAll('.markdown-document [id]')).some(n=>n.id===ref.getAttribute('title').slice(1)&&document.activeElement===n);})()", "footnote must focus its actual public destination")
+    val backrefName = stringValue(evaluate(scenario, "document.querySelector('.markdown-document [data-footnote-backref]').getAttribute('aria-label')"))
+    tapNativeControlOnce(scenario, backrefName, ".markdown-document [data-footnote-backref]")
+    waitForCondition(scenario, "document.activeElement===document.querySelector('.markdown-document [data-footnote-ref]')", "footnote backlink must return to the originating reference")
+    for (target in listOf("https://example.invalid/s047", "mailto:s047@example.invalid")) {
+      val selector = ".markdown-document button[title=" + JSONObject.quote(target) + "]"
+      val name = stringValue(evaluate(scenario, "document.querySelector(" + JSONObject.quote(selector) + ").textContent.trim()"))
+      tapNativeControlOnce(scenario, name, selector)
+      waitForBodyText(scenario, "Open external destination?", target)
+      clickControl(scenario, "Cancel")
+      waitForCondition(scenario, "document.activeElement===document.querySelector(" + JSONObject.quote(selector) + ")", "external destination Cancel must restore its exact opener")
+      tapNativeControlOnce(scenario, name, selector)
+      instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
+      waitForCondition(scenario, "!document.querySelector('[role=dialog]')", "one native Back must cancel one external confirmation")
+    }
+
+    val seenDestination = AtomicReference<Intent?>()
+    val destinationMonitor = object : android.app.Instrumentation.ActivityMonitor() {
+      override fun onStartActivity(intent: Intent): ActivityResult? {
+        if (intent.action != Intent.ACTION_VIEW) return null
+        seenDestination.set(Intent(intent)); return ActivityResult(Activity.RESULT_CANCELED, Intent())
+      }
+    }
+    instrumentation.addMonitor(destinationMonitor)
+    try {
+      val target = "https://example.invalid/s047"
+      val selector = ".markdown-document button[title=" + JSONObject.quote(target) + "]"
+      val label = stringValue(evaluate(scenario, "document.querySelector(" + JSONObject.quote(selector) + ").textContent.trim()"))
+      tapNativeControlOnce(scenario,label,selector)
+      clickControl(scenario,"Open destination")
+      val deadline=SystemClock.elapsedRealtime()+30_000L
+      while(seenDestination.get()==null&&SystemClock.elapsedRealtime()<deadline)SystemClock.sleep(100L)
+      val request=requireNotNull(seenDestination.get()) { "confirmed destination must reach actual native dispatch" }
+      assertEquals(target,request.dataString)
+      assertTrue(!request.hasExtra(Intent.EXTRA_TEXT)&&!request.hasExtra(Intent.EXTRA_STREAM)&&request.clipData==null)
+      waitForCondition(scenario,"!document.querySelector('[role=dialog]')","native external handoff must finish its confirmation")
+    } finally { instrumentation.removeMonitor(destinationMonitor) }
+    assertEquals("true",evaluate(scenario,"(()=>{const n=Array.from(document.querySelectorAll('.markdown-document input[type=checkbox]'));return n.length===2&&n.every(c=>c.disabled&&c.readOnly)&&n.some(c=>c.checked)&&n.some(c=>!c.checked);})()"))
+    observeVisibleTaskControls(scenario,"markdown")
+    verifyS047DiagramRoutes(scenario, ".embedded-mermaid .diagram-canvas", false)
+    clickControl(scenario, "View source", ".embedded-mermaid button")
+    waitForCondition(scenario, "!!document.querySelector('.cm-editor')", "embedded source action must open actual source")
+    assertEquals(String(bytes, Charsets.UTF_8), sourceEditorText(scenario))
+    val embeddedRange = JSONObject(evaluate(scenario, "(()=>{const n=document.querySelector('.cm-editor');return {from:Number(n.getAttribute('data-editor-selection-from')),to:Number(n.getAttribute('data-editor-selection-to'))};})()"))
+    assertEquals("\u0060\u0060\u0060mermaid\nflowchart TB\nCats --> Dogs\n\u0060\u0060\u0060", String(bytes, Charsets.UTF_8).substring(embeddedRange.getInt("from"), embeddedRange.getInt("to")).trimEnd())
+    menuAction(scenario, "Read")
+    menuAction(scenario, "File information")
+    tapNativeControlOnce(scenario, "Copy File name")
+    waitForBodyText(scenario, "File name copied")
+    assertEquals("s047-controls.md", clipboardText())
+    tapNativeControlOnce(scenario, "Disclose External revision")
+    clickControl(scenario, "Cancel")
+    waitForCondition(scenario, "document.activeElement&&document.activeElement.getAttribute('aria-label')==='Disclose External revision'", "cancellation must restore the sensitive disclosure focus")
+    tapNativeControlOnce(scenario, "Disclose External revision")
+    val expected = stringValue(evaluate(scenario, "document.querySelector('.metadata-copy-confirmation').closest('.metadata-fact').querySelector('.metadata-value').textContent"))
+    tapNativeControlOnce(scenario, "Copy External revision")
+    waitForBodyText(scenario, "External revision copied")
+    assertEquals(expected, clipboardText())
+    tapNativeControlOnce(scenario, "Copy available information")
+    waitForBodyText(scenario, "Available information copied")
+    val bulk = requireNotNull(clipboardText())
+    assertTrue("bulk copy must include public controlled identity", bulk.contains("File name: s047-controls.md"))
+    assertTrue("bulk copy must exclude sensitive original identity", !bulk.contains("External revision:"))
+    tapNativeControlOnce(scenario, "Expand information")
+    waitForCondition(scenario, "document.querySelector('[data-phone-expanded=true]')!==null", "Expand must change actual metadata disclosure")
+    tapNativeControlOnce(scenario, "Collapse information")
+    tapNativeControlOnce(scenario, "Calculate SHA-256")
+    val expectedSha = sha256(bytes)
+    waitForCondition(scenario, "Array.from(document.querySelectorAll('.metadata-fact')).some(n=>n.querySelector('dt').textContent==='SHA-256'&&n.querySelector('.metadata-value').textContent===" + JSONObject.quote(expectedSha) + ")", "native SHA-256 must equal independently read source bytes")
+    tapNativeControlOnce(scenario, "Copy SHA-256")
+    waitForBodyText(scenario, "SHA-256 copied")
+    assertEquals(expectedSha, clipboardText())
+    observeVisibleTaskControls(scenario, "metadata")
+    clickControl(scenario, "Close File information")
+    assertTrue("document tool actions must preserve original source bytes", bytes.contentEquals(readBytes(original)))
+    openFromAddDocument(scenario, grant(documentUri("s047-controls.mmd")))
+    waitForCondition(scenario, "(()=>{const image=document.querySelector('.mermaid-rendered-mode .diagram-canvas[data-preview-ready=true] img');return !!image&&image.complete&&image.naturalWidth>0&&image.naturalHeight>0;})()", "standalone Mermaid must render")
+    menuAction(scenario, "Search")
+    setTaskInput(scenario, "Find diagram text", "Cats")
+    waitForCondition(scenario, "document.querySelector('[aria-label=\"Diagram search results\"]').textContent.includes('1')&&!!document.querySelector('mark')", "Mermaid search must mark the real matching label")
+    clickControl(scenario, "Next match"); clickControl(scenario, "Previous match"); clickControl(scenario, "Close search")
+    waitForCondition(scenario, "document.activeElement===document.querySelector('.diagram-canvas')", "closing diagram search must restore its navigation focus")
+    verifyS047DiagramRoutes(scenario, ".mermaid-surface .diagram-canvas", true)
+    val mermaidSource = String(readBytes(documentUri("s047-controls.mmd")), Charsets.UTF_8)
+    menuAction(scenario, "View source")
+    waitForCondition(scenario, "!!document.querySelector('.cm-content[contenteditable=false]')", "read-only Mermaid source must remain read-only")
+    assertEquals(mermaidSource, sourceEditorText(scenario))
+    menuAction(scenario, "Read")
+    observeVisibleTaskControls(scenario, "mermaid")
+
+    menuAction(scenario,"Edit a copy")
+    waitForCondition(scenario,"!!document.querySelector('.cm-content[contenteditable=true]')","Mermaid Edit a copy must create an editable independent source")
+    val mermaidEdit="flowchart TB\nCats --> Dogs\nDogs --> Birds\n"
+    replaceEditorText(scenario,mermaidEdit)
+    val mermaidHistory=stringValue(evaluate(scenario,"(()=>{const n=document.querySelector('.cm-editor');return JSON.stringify({from:n.getAttribute('data-editor-selection-from'),to:n.getAttribute('data-editor-selection-to'),undo:n.getAttribute('data-editor-undo-depth'),redo:n.getAttribute('data-editor-redo-depth')});})()"))
+    menuAction(scenario,"Read")
+    waitForCondition(scenario,"!!document.querySelector('.mermaid-surface [data-preview-ready=true]')","edited Mermaid must render a real current preview")
+    menuAction(scenario,"Edit")
+    waitForCondition(scenario,"!!document.querySelector('.cm-content[contenteditable=true]')","Mermaid Edit must restore the editable source")
+    assertEquals(mermaidEdit,browserEditorInputSnapshot(scenario).getString("semantic_text"))
+    assertEquals("Mermaid Read/Edit must retain actual selection and history",mermaidHistory,stringValue(evaluate(scenario,"(()=>{const n=document.querySelector('.cm-editor');return JSON.stringify({from:n.getAttribute('data-editor-selection-from'),to:n.getAttribute('data-editor-selection-to'),undo:n.getAttribute('data-editor-undo-depth'),redo:n.getAttribute('data-editor-redo-depth')});})()")))
+    assertEquals("Mermaid copy editing must preserve original",mermaidSource,String(readBytes(documentUri("s047-controls.mmd")),Charsets.UTF_8))
+    for(name in listOf("s047-invalid.mmd","s047-invalid-diagram.md")){
+      val uri=grant(documentUri(name));val source=String(readBytes(uri),Charsets.UTF_8)
+      openFromAddDocument(scenario,uri)
+      waitForBodyText(scenario,"The Mermaid source is malformed. Source remains available.")
+      clickControl(scenario,"View source",if(name.endsWith(".mmd"))".mermaid-fallback button" else ".embedded-mermaid button")
+      waitForCondition(scenario,"!!document.querySelector('.cm-content[contenteditable=false]')","genuine malformed diagram fallback must expose exact read-only source")
+      assertEquals(source,sourceEditorText(scenario))
+    }
+  }
+
+  private fun digestSource(uri: Uri): String {
+    val digest = MessageDigest.getInstance("SHA-256")
+    resolver.openInputStream(uri)!!.use { input -> val buffer = ByteArray(65536); var count = input.read(buffer); while (count != -1) { digest.update(buffer, 0, count); count = input.read(buffer) } }
+    return digest.digest().joinToString("") { "%02x".format(it.toInt() and 255) }
+  }
+  private fun heldReadState(method: String, uri: Uri): JSONObject {
+    val bundle = requireNotNull(resolver.call(FixtureGrantProvider.COMMAND_URI, method, uri.toString(), null))
+    return JSONObject().also { value ->
+      for (key in listOf("provider_process_id", "control_process_id", "entered_process_id", "entered_count")) value.put(key, bundle.getInt(key))
+      for (key in listOf("entered_on_main_thread", "released", "finished", "timed_out")) value.put(key, bundle.getBoolean(key))
+    }
+  }
+  private fun verifyHeldLargeReadCancellation(scenario: ActivityScenario<MainActivity>, uri: Uri, action: String) {
+    val beforeText = stringValue(evaluate(scenario, "document.querySelector('.large-text pre').textContent"))
+    val beforeDigest = digestSource(uri)
+    val observations = JSONObject().put("operation", action)
+    val deadline = SystemClock.elapsedRealtime() + 30_000L
+    val armed = heldReadState("arm_held_read", uri)
+    val pid = armed.getInt("provider_process_id")
+    assertTrue(pid > 0); assertEquals(pid, armed.getInt("control_process_id"))
+    var released = false
+    var originalFailure: Throwable? = null
+    try {
+      tapNativeControlOnce(scenario, action, deadlineOverride = deadline)
+      waitForCondition(scenario, "!!Array.from(document.querySelectorAll('.large-text-controls button')).find(b=>b.textContent.trim()==='Cancel text operation'&&!b.disabled)&&document.querySelector('.large-text-controls').getAttribute('aria-busy')==='true'", "actual native read must be held while a genuine cancellable foreground task is visible", observations, deadlineOverride = deadline) {
+        val state = heldReadState("held_read_status", uri)
+        observations.put("held", state).put("scenario_state", scenario.state.name)
+        state.getInt("entered_count") > 0 && state.getInt("entered_process_id") == pid && state.getInt("control_process_id") == pid && !state.getBoolean("entered_on_main_thread") && !state.getBoolean("released") && scenario.state == Lifecycle.State.RESUMED
+      }
+      assertEquals("pending native read must retain the current section", beforeText, stringValue(evaluate(scenario, "document.querySelector('.large-text pre').textContent")))
+      observeVisibleTaskControls(scenario, "large_pending_" + action, deadlineOverride = deadline)
+      tapNativeControlOnce(scenario, "Cancel text operation", deadlineOverride = deadline)
+      waitForCondition(scenario, "document.querySelector('#large-text-status').textContent==='Text operation cancelled. The current section remains open.'&&document.querySelector('.large-text-controls').getAttribute('aria-busy')==='false'", "Cancel must finish visibly before the held read is released", observations, deadlineOverride = deadline)
+      assertEquals("Cancel must preserve exact displayed source and position", beforeText, stringValue(evaluate(scenario, "document.querySelector('.large-text pre').textContent")))
+      observations.put("cancelled_before_release", true)
+      heldReadState("release_held_read", uri); released = true
+      waitForCondition(scenario, "document.querySelector('#large-text-status').textContent==='Text operation cancelled. The current section remains open.'", "late native completion must not replace cancelled task state", observations, deadlineOverride = deadline) { heldReadState("held_read_status", uri).getBoolean("finished") }
+      assertEquals(beforeText, stringValue(evaluate(scenario, "document.querySelector('.large-text pre').textContent")))
+      assertTrue("the complete held-read task must fit the original action budget", SystemClock.elapsedRealtime() < deadline)
+    } catch (failure: Throwable) {
+      originalFailure = failure
+      observations.put("held_after", runCatching { heldReadState("held_read_status", uri) }.getOrNull() ?: JSONObject.NULL)
+        .put("root_package", instrumentation.uiAutomation.rootInActiveWindow?.packageName?.toString() ?: JSONObject.NULL)
+        .put("failure_type", failure.javaClass.simpleName)
+      runCatching { saveScreenshot("s047-row-8.png") }
+      println("s047_pending_read_failure=" + observations); System.out.flush(); throw failure
+    } finally {
+      if (!released) {
+        val cleanup = runCatching { heldReadState("release_held_read", uri) }
+        if (cleanup.isFailure && originalFailure == null) throw AssertionError("held native read release failed", cleanup.exceptionOrNull())
+      }
+    }
+    val afterDigest = digestSource(uri)
+    assertEquals("source bytes must survive cancelled native reads", beforeDigest, afterDigest)
+    observations.put("held_after", heldReadState("held_read_status", uri)).put("source_before", beforeDigest).put("source_after", afterDigest).put("position_unchanged", true)
+    taskControlMeasurements.put(JSONObject().put("pending_read", observations))
+  }
+
+  private fun verifyS047LargeText(scenario: ActivityScenario<MainActivity>) {
+    openFromAddDocument(scenario, grant(documentUri("s047-large.txt")))
+    waitForBodyText(scenario, "S047_LARGE_FIRST")
+    menuAction(scenario,"Large text tools")
+    waitForBodyText(scenario,"Next section")
+    val first = stringValue(evaluate(scenario, "document.querySelector('.large-text pre').textContent"))
+    assertEquals("true", evaluate(scenario, "Array.from(document.querySelectorAll('button')).find(b=>b.textContent.trim()==='Previous section').disabled"))
+    clickControl(scenario, "Next section")
+    waitForCondition(scenario, "!document.querySelector('.large-text pre').textContent.startsWith('S047_LARGE_FIRST')", "Next section must move to independently loaded source bytes")
+    clickControl(scenario, "Previous section")
+    waitForCondition(scenario, "document.querySelector('.large-text pre').textContent.startsWith('S047_LARGE_FIRST')", "Previous section must restore source position")
+    assertEquals(first, stringValue(evaluate(scenario, "document.querySelector('.large-text pre').textContent")))
+    setTaskInput(scenario, "Line", "0"); clickControl(scenario, "Go to line")
+    waitForCondition(scenario, "document.querySelector('.large-text-controls input[aria-invalid=true]')!==null", "zero line must remain invalid")
+    setTaskInput(scenario, "Line", "2"); clickControl(scenario, "Go to line")
+    waitForBodyText(scenario, "Line 2 is at the start of the visible section.")
+    val visible = stringValue(evaluate(scenario, "document.querySelector('.large-text pre').textContent"))
+    tapNativeControlOnce(scenario, "Copy visible section")
+    waitForBodyText(scenario, "Visible section copied")
+    assertEquals("clipboard must equal the actual visible bounded section", visible, clipboardText())
+    observeVisibleTaskControls(scenario, "large_text")
+
+    val beforeOutside=stringValue(evaluate(scenario,"document.querySelector('.large-text pre').textContent"))
+    setTaskInput(scenario,"Line","999999999");clickControl(scenario,"Go to line")
+    waitForBodyText(scenario,"Line is outside the source")
+    assertEquals("outside-source navigation must retain current section",beforeOutside,stringValue(evaluate(scenario,"document.querySelector('.large-text pre').textContent")))
+    setTaskInput(scenario,"Find","S047_LARGE_FIRST");clickControl(scenario,"Find next")
+    waitForCondition(scenario,"document.querySelector('#large-text-status').textContent.startsWith('Match 1 of 1')","actual large-source search must find the unique controlled prefix")
+    setTaskInput(scenario,"Find","S047_ABSENT_LARGE_QUERY");clickControl(scenario,"Find next")
+    waitForBodyText(scenario,"No match")
+    setTaskInput(scenario, "Find", "S047_LARGE_BODY")
+    verifyHeldLargeReadCancellation(scenario, grant(documentUri("s047-large.txt")), "Find next")
+    setTaskInput(scenario, "Line", "1500000")
+    verifyHeldLargeReadCancellation(scenario, grant(documentUri("s047-large.txt")), "Go to line")
+    clickControl(scenario,"Close Large text tools")
+  }
+
+  private fun observeVisibleTaskControls(scenario: ActivityScenario<MainActivity>, profile: String, deadlineOverride: Long? = null): JSONObject {
+    if (deadlineOverride != null) assertTrue(SystemClock.elapsedRealtime() < deadlineOverride)
+    val count = evaluate(scenario, "Array.from(document.querySelectorAll('button,input,select,textarea,summary,[role=button],[role=menuitem],[role=link]')).filter(n=>!n.closest('[aria-hidden=true],[inert]')&&!n.matches('.markdown-document input[type=checkbox][disabled]')&&n.getBoundingClientRect().width>0&&n.getBoundingClientRect().height>0).length").toInt()
+    assertTrue("the composed task must expose bounded real controls", count in 1..200)
+    val controls = JSONArray()
+    for (index in 0 until count) {
+      if (deadlineOverride != null) assertTrue("native control observation must retain the original action deadline", SystemClock.elapsedRealtime() < deadlineOverride)
+      val measurement = JSONObject(evaluate(scenario, """
+        (()=>{
+          const nodes=Array.from(document.querySelectorAll('button,input,select,textarea,summary,[role=button],[role=menuitem],[role=link]')).filter(n=>!n.closest('[aria-hidden=true],[inert]')&&!n.matches('.markdown-document input[type=checkbox][disabled]')&&n.getBoundingClientRect().width>0&&n.getBoundingClientRect().height>0);
+          const n=nodes[INDEX];if(!n)return {found:false};
+          const touch=(n.type==='checkbox'||n.type==='radio')?(n.closest('label')||n):n;
+          touch.scrollIntoView({block:'center',inline:'nearest'});
+          const r=touch.getBoundingClientRect(),hit=document.elementFromPoint((r.left+r.right)/2,(r.top+r.bottom)/2),s=getComputedStyle(n);
+          let bg=n;while(bg&&getComputedStyle(bg).backgroundColor==='rgba(0, 0, 0, 0)')bg=bg.parentElement;
+          const name=n.getAttribute('aria-label')||(n.labels&&n.labels.length?Array.from(n.labels).map(l=>l.textContent).join(' '):n.textContent)||n.getAttribute('title')||'';
+          const rgb=v=>{const m=v.match(/^rgba?\(([^)]+)\)$/);if(!m)return null;const c=m[1].split(',').map(Number);return [c[0],c[1],c[2],c.length>3?c[3]:1];};
+          const over=(a,b)=>a.slice(0,3).map((v,i)=>v*a[3]+b[i]*(1-a[3])).concat(1);
+          const layers=[];for(let e=n;e;e=e.parentElement){const c=rgb(getComputedStyle(e).backgroundColor);if(c)layers.push(c);}
+          let back=[255,255,255,1];for(let i=layers.length-1;i>=0;i--)back=over(layers[i],back);
+          const lum=c=>c.slice(0,3).map(v=>v/255).map(v=>v<=.04045?v/12.92:Math.pow((v+.055)/1.055,2.4)).reduce((v,c,i)=>v+c*[.2126,.7152,.0722][i],0);
+          const fg=rgb(s.color);const painted=fg?over(fg,back):null;
+          const contrast=painted?(Math.max(lum(painted),lum(back))+.05)/(Math.min(lum(painted),lum(back))+.05):null;
+          return {found:true,disabled:!!n.disabled,checked:n.checked===true,expanded:n.getAttribute('aria-expanded'),pressed:n.getAttribute('aria-pressed'),label:name.trim().slice(0,120),tag:n.tagName,role:n.getAttribute('role'),left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height,x:(r.left+r.right)/2,y:(r.top+r.bottom)/2,viewport_width:innerWidth,hit:hit===touch||touch.contains(hit),contrast:contrast,text_size:parseFloat(s.fontSize),font_weight:s.fontWeight};
+        })()
+      """.trimIndent().replace("INDEX", index.toString())))
+      assertTrue("each live control must remain measurable: " + profile, measurement.getBoolean("found"))
+      assertTrue("each action needs a meaningful accessible name", measurement.getString("label").isNotBlank())
+      assertTrue("every action target must retain 48 CSS-pixel dimensions", measurement.getDouble("width") >= 47.5 && measurement.getDouble("height") >= 47.5)
+      assertTrue("the actual visible control must receive the center hit", measurement.getBoolean("hit"))
+      val native = nativeControlGeometry(scenario, measurement)
+      assertTrue("the whole action must fit the actual native visible intersection", native.getBoolean("whole_control_visible"))
+      assertTrue("targets must also meet actual physical 48dp-equivalent bounds", native.getDouble("control_right") - native.getDouble("control_left") >= 47.5 * native.getDouble("density") && native.getDouble("control_bottom") - native.getDouble("control_top") >= 47.5 * native.getDouble("density"))
+      val largeText = measurement.getDouble("text_size") >= 24 || (measurement.getDouble("text_size") >= 18.66 && (measurement.optString("font_weight").toIntOrNull() ?: 400) >= 700)
+      if (!measurement.getBoolean("disabled")) assertTrue("computed actual WebView text contrast must meet its normal/large threshold", !measurement.isNull("contrast") && measurement.getDouble("contrast") >= if (largeText) 2.99 else 4.49)
+      controls.put(measurement.put("native", native))
+    }
+    val css = JSONObject(evaluate(scenario, "({width:innerWidth,height:innerHeight})"))
+    val result = JSONObject().put("profile", profile).put("controls", controls).put("css", css).put("font_scale", clientContext.resources.configuration.fontScale).put("ime_visible",visibleNativeImeBounds().isNotEmpty())
+    taskControlMeasurements.put(result)
+    for (index in 0 until controls.length()) println("s047_control_geometry=" + JSONObject().put("profile", profile).put("font_scale", clientContext.resources.configuration.fontScale).put("control", controls.getJSONObject(index)))
+    System.out.flush()
+    return JSONObject().put("profile", profile).put("control_count", count).put("css", css).put("font_scale", clientContext.resources.configuration.fontScale)
+  }
+  private fun shellOutput(command: String): String = instrumentation.uiAutomation.executeShellCommand(command).use { descriptor -> android.os.ParcelFileDescriptor.AutoCloseInputStream(descriptor).bufferedReader().use { it.readText() } }
+  private fun awaitFontScale(value: Float) {
+    val deadline = SystemClock.elapsedRealtime() + 30_000L
+    while (SystemClock.elapsedRealtime() < deadline && kotlin.math.abs(clientContext.resources.configuration.fontScale - value) > 0.01f) SystemClock.sleep(100L)
+    assertEquals("actual Android font configuration must change", value.toDouble(), clientContext.resources.configuration.fontScale.toDouble(), 0.01)
+  }
+
+  private fun verifyS047TaskGeometry(scenario: ActivityScenario<MainActivity>, profile: String, ime: Boolean) {
+    fun hideIme(deadline:Long) {
+      if(visibleNativeImeBounds().isEmpty())return
+      scenario.onActivity { activity->
+        val view=requireNotNull(findWebView(activity.window.decorView))
+        (activity.getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager).hideSoftInputFromWindow(view.windowToken,0)
+      }
+      while(visibleNativeImeBounds().isNotEmpty()&&SystemClock.elapsedRealtime()<deadline)SystemClock.sleep(100L)
+      assertTrue("one public keyboard-hide request must establish the actual non-IME profile",visibleNativeImeBounds().isEmpty())
+    }
+    fun observe(task: String, inputLabel: String? = null, value: String = "cats") {
+      val deadline=SystemClock.elapsedRealtime()+30_000L
+      if (ime && inputLabel != null) {
+        setTaskInput(scenario,inputLabel,value,deadlineOverride=deadline)
+        while(visibleNativeImeBounds().isEmpty()&&SystemClock.elapsedRealtime()<deadline)SystemClock.sleep(100L)
+        assertTrue("editable task profile requires the actual native IME",visibleNativeImeBounds().isNotEmpty())
+      } else hideIme(deadline)
+      waitForCondition(scenario,"!!document.querySelector('[role=dialog]')","managed task must settle inside its actual native visible frame",deadlineOverride=deadline) {
+        val rect=JSONObject(evaluate(scenario,"(()=>{const n=document.querySelector('[role=dialog]');if(!n)return {found:false};const r=n.getBoundingClientRect();return {found:true,left:r.left,top:r.top,right:r.right,bottom:r.bottom,x:(r.left+r.right)/2,y:(r.top+r.bottom)/2,viewport_width:innerWidth};})()"))
+        rect.getBoolean("found")&&nativeControlGeometry(scenario,rect).getBoolean("whole_control_visible")
+      }
+      observeVisibleTaskControls(scenario,profile+":"+task,deadlineOverride=deadline)
+      taskControlMeasurements.getJSONObject(taskControlMeasurements.length()-1).put("ime_applicable",inputLabel!=null)
+    }
+    createNewDraftForInput(scenario,"New text file","Untitled.txt")
+    menuAction(scenario,"Search")
+    observe("editor_search","Find")
+    clickControl(scenario,"Close search")
+    menuAction(scenario,"Document details")
+    observe("document_details")
+    clickControl(scenario,"Close Document details")
+    openFromAddDocument(scenario,grant(documentUri("s047-controls.md")))
+    if(evaluate(scenario,"!!document.querySelector('.document-surface .markdown-source-mode:not([hidden])')")=="true")menuAction(scenario,"Read")
+    waitForCondition(scenario,"!!document.querySelector('.document-surface .markdown-rendered-mode:not([hidden]) .markdown-document h2')","profile must use actual rendered Markdown")
+    menuAction(scenario,"Search")
+    observe("markdown_search","Find rendered text")
+    clickControl(scenario,"Close search")
+    menuAction(scenario,"Outline")
+    observe("outline")
+    clickControl(scenario,"Close Document outline")
+    menuAction(scenario,"File information")
+    observe("metadata")
+    clickControl(scenario,"Close File information")
+    openFromAddDocument(scenario,grant(documentUri("s047-controls.mmd")))
+    if(evaluate(scenario,"!!document.querySelector('.document-surface .mermaid-source-mode')")=="true")menuAction(scenario,"Read")
+    waitForCondition(scenario,"!!document.querySelector('.document-surface .mermaid-rendered-mode [data-preview-ready=true]')","profile must use an actual ready Mermaid viewport")
+    menuAction(scenario,"Search")
+    observe("mermaid_search","Find diagram text","Cats")
+    clickControl(scenario,"Close search")
+    clickControl(scenario,"More diagram tools")
+    observe("diagram_tools")
+    clickControl(scenario,"Close Diagram tools")
+    openFromAddDocument(scenario,grant(documentUri("original.gif")))
+    waitForImagePixels(scenario,"original.gif")
+    clickControl(scenario,"More image tools")
+    observe("image_tools","Animation frame","2")
+    clickControl(scenario,"Close Image tools")
+    openFromAddDocument(scenario,grant(documentUri("entries.ico")))
+    waitForImagePixels(scenario,"entries.ico")
+    clickControl(scenario,"More image tools")
+    observe("icon_tools")
+    clickControl(scenario,"Close Image tools")
+    openFromAddDocument(scenario,grant(documentUri("s047-large.txt")))
+    waitForCondition(scenario,"!!document.querySelector('.large-text pre')","profile must retain actual bounded large text")
+    menuAction(scenario,"Large text tools")
+    observe("large_tools","Find","S047_LARGE_FIRST")
+    clickControl(scenario,"Close Large text tools")
+    menuAction(scenario,"Preferences")
+    val family=stringValue(evaluate(scenario,"Array.from(document.querySelectorAll('input')).find(n=>n.labels&&Array.from(n.labels).some(l=>l.textContent.trim().startsWith('Editor font family'))).value"))
+    observe("preferences","Editor font family",family)
+    clickControl(scenario,"Close Preferences")
+    hideIme(SystemClock.elapsedRealtime()+30_000L)
+  }
+
+  @Test fun s047LayoutJourney() {
+    val scenario = launchS047()
+    enableNativeWindowObservation()
+    val observations = JSONObject()
+    val originalFont=clientContext.resources.configuration.fontScale
+    verifyS047EditorAndPreferences(scenario)
+    verifyS047MarkdownAndMetadata(scenario)
+    verifyS047LargeText(scenario)
+    try {
+      for (font in if (Build.VERSION.SDK_INT >= 34) listOf(1f, 2f) else listOf(1f, 1.3f)) {
+        shellOutput("settings put system font_scale " + font)
+        awaitFontScale(font)
+        scenario.onActivity { it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT }
+        waitForCondition(scenario, "innerHeight>innerWidth", "actual portrait must be observed")
+        observations.put("portrait-" + font, observeVisibleTaskControls(scenario, "portrait"))
+        verifyS047TaskGeometry(scenario,"portrait-"+font,false)
+        verifyAddDocumentChoices(scenario)
+        for ((destination, close) in listOf("Preferences" to "Close Preferences", "Diagnostics" to "Close Diagnostics", "About Glitchpad" to "Close About Glitchpad")) {
+          menuAction(scenario, destination)
+          observeVisibleTaskControls(scenario, destination)
+          clickControl(scenario, close)
+        }
+        createNewDraftForInput(scenario, "New text file", "Untitled.txt")
+        replaceEditorText(scenario, "S047_GEOMETRY_TEXT\n")
+        val imeDeadline = SystemClock.elapsedRealtime() + 30_000L
+        while (visibleNativeImeBounds().isEmpty() && SystemClock.elapsedRealtime() < imeDeadline) SystemClock.sleep(100L)
+        assertTrue("IME geometry requires the actual native keyboard window", visibleNativeImeBounds().isNotEmpty())
+        observations.put("ime-" + font, observeVisibleTaskControls(scenario, "ime"))
+        verifyS047TaskGeometry(scenario,"ime-"+font,true)
+        dismissObservedAppIme(scenario)
+        scenario.onActivity { it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE }
+        waitForCondition(scenario, "innerWidth>innerHeight", "actual landscape must be observed")
+        observations.put("landscape-" + font, observeVisibleTaskControls(scenario, "landscape"))
+        verifyS047TaskGeometry(scenario,"landscape-"+font,false)
+        scenario.onActivity { it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED }
+        val density = clientContext.resources.displayMetrics.density
+        shellOutput("wm size " + (480 * density).toInt() + "x" + (240 * density).toInt())
+        waitForCondition(scenario, "innerHeight<=260&&innerWidth>innerHeight", "actual short window must be independently observed")
+        observations.put("short-" + font, observeVisibleTaskControls(scenario, "short"))
+        verifyS047TaskGeometry(scenario,"short-"+font,false)
+        shellOutput("wm size reset")
+        waitForCondition(scenario, "innerHeight>innerWidth", "native window must restore before later observations")
+      }
+      focusNativeWebView(scenario)
+      instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_TAB)
+      waitForCondition(scenario, "(()=>{const n=document.activeElement;if(!n||n===document.body)return false;const r=n.getBoundingClientRect(),s=getComputedStyle(n);return r.width>0&&r.height>0&&(parseFloat(s.outlineWidth)>0||s.boxShadow!=='none');})()", "real keyboard focus must be visible")
+      val variants = mutableListOf("portrait", "landscape", "short", "ime", "default_font", "font_max", "targets", "semantics", "focus", "keyboard", "contrast", "editor_search_history", "markdown_mermaid", "large_text", "large_pending_cancel", "metadata_copy", "preferences_validation", "editor_aliases", "details_language", "metadata_sha", "preferences_wrap", "diagram_controls", "external_intent")
+      if (Build.VERSION.SDK_INT >= 34) variants.add("font_200")
+      val details = JSONObject().put("profiles", observations).put("control_measurements", taskControlMeasurements)
+      emitS047Journey(scenario, 8, variants, details)
+    } finally { checkedShell("settings put system font_scale "+originalFont); checkedShell("wm size reset"); scenario.onActivity { it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT };awaitFontScale(originalFont) }
+  }
+
+  private fun imageViewState(scenario: ActivityScenario<MainActivity>): JSONObject = JSONObject(evaluate(scenario, "(()=>{const n=document.querySelector('.image-pane');return {ready:n&&n.getAttribute('data-preview-ready')==='true',mode:n&&n.getAttribute('data-viewport-mode'),scale:n?Number(n.getAttribute('data-viewport-scale')):0,x:n?Number(n.getAttribute('data-viewport-pan-x')):0,y:n?Number(n.getAttribute('data-viewport-pan-y')):0,background:n&&n.getAttribute('data-viewport-background'),selection:n&&n.getAttribute('data-image-selection')};})()"))
+  private fun nativeImageGesture(scenario: ActivityScenario<MainActivity>, pinch: Boolean, selector: String = ".image-pane") {
+    val target = JSONObject(evaluate(scenario, "(()=>{const n=document.querySelector(" + JSONObject.quote(selector) + ");n.scrollIntoView({block:'center'});const r=n.getBoundingClientRect();return {found:true,left:r.left,top:r.top,right:r.right,bottom:r.bottom,x:(r.left+r.right)/2,y:(r.top+r.bottom)/2,viewport_width:innerWidth};})()"))
+    val geometry = nativeControlGeometry(scenario, target)
+    assertTrue("image gesture must start wholly inside the actual visible native pane", geometry.getBoolean("whole_control_visible"))
+    val x = geometry.getDouble("screen_x").toFloat(); val y = geometry.getDouble("screen_y").toFloat(); val scale = geometry.getDouble("css_to_native_scale").toFloat()
+    val downTime = SystemClock.uptimeMillis()
+    fun inject(action: Int, count: Int, spread: Float, dx: Float) {
+      val props = Array(count) { index -> MotionEvent.PointerProperties().apply { id = index; toolType = MotionEvent.TOOL_TYPE_FINGER } }
+      val coordinates = Array(count) { index -> MotionEvent.PointerCoords().apply { this.x = x + dx + if (count == 2) (if (index == 0) -spread else spread) else 0f; this.y = y; pressure = 1f; size = 1f } }
+      val event = MotionEvent.obtain(downTime, SystemClock.uptimeMillis(), action, count, props, coordinates, 0, 0, 1f, 1f, 0, 0, InputDevice.SOURCE_TOUCHSCREEN, 0)
+      try { assertTrue("actual native image pointer input must be accepted", instrumentation.uiAutomation.injectInputEvent(event, true)) } finally { event.recycle() }
+    }
+    if (pinch) {
+      inject(MotionEvent.ACTION_DOWN, 1, 0f, -20f * scale)
+      inject(MotionEvent.ACTION_POINTER_DOWN or (1 shl MotionEvent.ACTION_POINTER_INDEX_SHIFT), 2, 20f * scale, 0f)
+      inject(MotionEvent.ACTION_MOVE, 2, 35f * scale, 0f)
+      inject(MotionEvent.ACTION_POINTER_UP or (1 shl MotionEvent.ACTION_POINTER_INDEX_SHIFT), 2, 35f * scale, 0f)
+      inject(MotionEvent.ACTION_UP, 1, 0f, -35f * scale)
+    } else {
+      inject(MotionEvent.ACTION_DOWN, 1, 0f, 0f)
+      inject(MotionEvent.ACTION_MOVE, 1, 0f, -32f * scale)
+      inject(MotionEvent.ACTION_UP, 1, 0f, -32f * scale)
+    }
+  }
+
+
+
+  private fun viewportStateScript(selector:String,image:Boolean):String {
+    return """
+      (()=>{
+        const surface=document.querySelector('.document-surface'),pane=surface&&surface.querySelector(SELECTOR),image=pane&&pane.querySelector('img');
+        if(!surface||!pane||!image)return {ready:false};
+        const rect=pane.getBoundingClientRect(),style=getComputedStyle(pane);
+        const ready=!pane.closest('[hidden],.markdown-print-document')&&style.display!=='none'&&style.visibility!=='hidden'&&rect.width>0&&rect.height>0&&pane.getAttribute('data-preview-ready')==='true'&&image.complete&&image.naturalWidth>0&&image.naturalHeight>0;
+        return {ready:ready,document:surface.id,source:image.src,scale:Number(pane.getAttribute('data-viewport-scale')),mode:pane.getAttribute('data-viewport-mode'),x:Number(pane.getAttribute('data-viewport-pan-x')),y:Number(pane.getAttribute('data-viewport-pan-y')),background:pane.getAttribute('data-viewport-background'),selection:pane.getAttribute('data-image-selection'),fit:Math.min(1,(IMAGE?rect.width:pane.clientWidth)/image.naturalWidth,(IMAGE?rect.height:pane.clientHeight)/image.naturalHeight)};
+      })()
+    """.trimIndent().replace("SELECTOR",JSONObject.quote(selector)).replace("IMAGE",image.toString())
+  }
+
+  private fun verifyS047MoreViewportActions(scenario:ActivityScenario<MainActivity>,selector:String,kind:String) {
+    val image=kind=="image"
+    val scope=if(image)".task-surface.image-tools[role=dialog][data-state=open] button" else ".task-surface.diagram-tools[role=dialog][data-state=open] button"
+    val deadline=SystemClock.elapsedRealtime()+30_000L
+    val script=viewportStateScript(selector,image)
+    waitForCondition(scenario,"("+script+").ready","More actions must own a real ready current viewport",deadlineOverride=deadline)
+    fun snapshot():JSONObject=JSONObject(evaluate(scenario,script))
+    val before=snapshot()
+    fun assertScope(current:JSONObject) {
+      assertTrue("More actions must retain the actual current pane",current.getBoolean("ready"))
+      assertEquals("More actions must retain the selected document",before.getString("document"),current.getString("document"))
+      assertEquals("More actions must retain the same decoded source",before.getString("source"),current.getString("source"))
+      if(image){assertEquals("More actions must preserve selected frame/entry",before.get("selection"),current.get("selection"));assertEquals("More actions must preserve background",before.get("background"),current.get("background"))}
+    }
+    clickControl(scenario,"Fit",scope)
+    waitForCondition(scenario,"(()=>{const current="+script+";return current.ready&&current.mode==='fit'&&Math.abs(current.scale-current.fit)<0.0001;})()","More Fit must resolve the live intrinsic/pane effective scale",deadlineOverride=deadline)
+    val fit=snapshot();assertScope(fit)
+    assertEquals("More Fit must clear pan without resetting source scope",0.0,fit.getDouble("x"),0.0001);assertEquals(0.0,fit.getDouble("y"),0.0001)
+    clickControl(scenario,"Zoom in",scope)
+    waitForCondition(scenario,"Math.abs(("+script+").scale-"+(fit.getDouble("scale")*1.25)+")<0.0001","More Zoom in must multiply the same effective scale",deadlineOverride=deadline)
+    val zoomIn=snapshot();assertScope(zoomIn)
+    clickControl(scenario,"Zoom out",scope)
+    waitForCondition(scenario,"Math.abs(("+script+").scale-"+(zoomIn.getDouble("scale")*0.8)+")<0.0001","More Zoom out must invert the same effective scale",deadlineOverride=deadline)
+    val zoomOut=snapshot();assertScope(zoomOut)
+    val record=JSONObject().put("kind",kind).put("expected_fit",fit.getDouble("fit")).put("fit",fit.getDouble("scale")).put("zoom_in",zoomIn.getDouble("scale")).put("zoom_out",zoomOut.getDouble("scale")).put("same_document",true).put("same_source",true).put("scope_preserved",true)
+    moreViewportActions.put(record)
+    println("s047_more_viewport_actions="+record);System.out.flush()
+  }
+
+
+  private fun prepareViewportToolbar(scenario:ActivityScenario<MainActivity>,selector:String,deadline:Long) {
+    if(visibleNativeImeBounds().isNotEmpty()){
+      scenario.onActivity { activity->val view=requireNotNull(findWebView(activity.window.decorView));(activity.getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager).hideSoftInputFromWindow(view.windowToken,0) }
+      while(visibleNativeImeBounds().isNotEmpty()&&SystemClock.elapsedRealtime()<deadline)SystemClock.sleep(100L)
+      assertTrue("local viewport aliases require the actual restored non-IME context",visibleNativeImeBounds().isEmpty())
+    }
+    waitForCondition(scenario,"(()=>{const n=document.querySelector("+JSONObject.quote(selector)+");if(!n||n.disabled||n.closest('[hidden],[inert],[aria-hidden=true]'))return false;const r=n.getBoundingClientRect(),s=getComputedStyle(n);return r.width>0&&r.height>0&&s.visibility!=='hidden'&&s.display!=='none';})()","local viewport route must actually be exposed before native input",deadlineOverride=deadline)
+  }
+
+  private fun verifyS047DiagramRoutes(scenario: ActivityScenario<MainActivity>, selector: String, standalone: Boolean) {
+    fun state(): JSONObject = JSONObject(evaluate(scenario, "(()=>{const n=document.querySelector(" + JSONObject.quote(selector) + ");return {scale:Number(n.getAttribute('data-viewport-scale')),x:Number(n.getAttribute('data-viewport-pan-x')),y:Number(n.getAttribute('data-viewport-pan-y')),mode:n.getAttribute('data-viewport-mode')};})()"))
+    val aliasDeadline=SystemClock.elapsedRealtime()+30_000L
+    val localControls=if(standalone)".diagram-controls button" else ".embedded-mermaid .diagram-controls button"
+    prepareViewportToolbar(scenario,localControls+"[aria-label=\"Zoom out\"]",aliasDeadline)
+    val restored=viewportStateScript(selector,false)
+    waitForCondition(scenario,"(()=>{const current="+restored+";return current.ready&&(current.mode!=='fit'||Math.abs(current.scale-current.fit)<0.0001);})()","diagram aliases require coherent visible pane dimensions",deadlineOverride=aliasDeadline)
+    val fit=state().getDouble("scale")
+    tapNativeControlOnce(scenario,"Zoom in",localControls,deadlineOverride=aliasDeadline)
+    waitForCondition(scenario,"Math.abs(Number(document.querySelector("+JSONObject.quote(selector)+").getAttribute('data-viewport-scale'))-"+(fit*1.25)+")<0.0001","local diagram Zoom must change the actual viewport",deadlineOverride=aliasDeadline)
+    assertEquals(fit * 1.25, state().getDouble("scale"), 0.0001)
+    tapNativeControlOnce(scenario,"Zoom out",localControls,deadlineOverride=aliasDeadline)
+    waitForCondition(scenario,"Math.abs(Number(document.querySelector("+JSONObject.quote(selector)+").getAttribute('data-viewport-scale'))-"+fit+")<0.0001","local diagram Zoom out must invert the same effective scale",deadlineOverride=aliasDeadline)
+    tapNativeControlOnce(scenario,"Zoom in",localControls,deadlineOverride=aliasDeadline)
+    waitForCondition(scenario,"Math.abs(Number(document.querySelector("+JSONObject.quote(selector)+").getAttribute('data-viewport-scale'))-"+(fit*1.25)+")<0.0001","local diagram Zoom in must restore the same factor",deadlineOverride=aliasDeadline)
+    if (standalone) {
+      menuAction(scenario,"Zoom in")
+      waitForCondition(scenario,"Math.abs(Number(document.querySelector("+JSONObject.quote(selector)+").getAttribute('data-viewport-scale'))-"+(fit*1.25*1.25)+")<0.0001","global diagram menu Zoom in must multiply the same pane",deadlineOverride=aliasDeadline)
+      menuAction(scenario,"Zoom out")
+      waitForCondition(scenario,"Math.abs(Number(document.querySelector("+JSONObject.quote(selector)+").getAttribute('data-viewport-scale'))-"+(fit*1.25)+")<0.0001","global diagram menu Zoom out must invert the same pane scale",deadlineOverride=aliasDeadline)
+      menuAction(scenario,"Zoom in")
+      waitForCondition(scenario,"Math.abs(Number(document.querySelector("+JSONObject.quote(selector)+").getAttribute('data-viewport-scale'))-"+(fit*1.25*1.25)+")<0.0001","global menu scale must settle before keyboard routes",deadlineOverride=aliasDeadline)
+    }
+    val beforeKeyboard = state().getDouble("scale")
+    evaluate(scenario, "document.querySelector(" + JSONObject.quote(selector) + ").focus();true")
+    instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_EQUALS)
+    waitForCondition(scenario,"Math.abs(Number(document.querySelector("+JSONObject.quote(selector)+").getAttribute('data-viewport-scale'))-"+(beforeKeyboard*1.25)+")<0.0001","real diagram keyboard Zoom must multiply the same viewport",deadlineOverride=aliasDeadline)
+    val beforeControlKeys=state().getDouble("scale")
+    if(standalone){
+      evaluate(scenario,"document.querySelector('button[aria-label=\"Document tools\"]').focus();true")
+      waitForCondition(scenario,"document.activeElement===document.querySelector('button[aria-label=\"Document tools\"]')","global diagram keys must actually target header chrome",deadlineOverride=aliasDeadline)
+    }
+    taskKey(KeyEvent.KEYCODE_MINUS,KeyEvent.META_CTRL_ON)
+    waitForCondition(scenario,"Math.abs(Number(document.querySelector("+JSONObject.quote(selector)+").getAttribute('data-viewport-scale'))-"+(beforeControlKeys*0.8)+")<0.0001",if(standalone)"header-focused CtrlMinus must use the global diagram provider" else "canvas CtrlMinus must invert embedded diagram scale",deadlineOverride=aliasDeadline)
+    taskKey(KeyEvent.KEYCODE_EQUALS,KeyEvent.META_CTRL_ON)
+    waitForCondition(scenario,"Math.abs(Number(document.querySelector("+JSONObject.quote(selector)+").getAttribute('data-viewport-scale'))-"+beforeControlKeys+")<0.0001","CtrlPlus must restore the exact effective scale",deadlineOverride=aliasDeadline)
+    evaluate(scenario,"document.querySelector("+JSONObject.quote(selector)+").focus();true")
+    for (step in 1..8) instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_EQUALS)
+    val beforeArrow = state().getDouble("x")
+    instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_LEFT)
+    assertTrue("real diagram Arrow key must pan its overflowing content", state().getDouble("x") < beforeArrow)
+    val beforeDrag = state()
+    nativeImageGesture(scenario, false, selector)
+    waitForCondition(scenario, "Number(document.querySelector(" + JSONObject.quote(selector) + ").getAttribute('data-viewport-pan-x'))!==" + beforeDrag.getDouble("x"), "real diagram drag must pan an overflowing viewport")
+    assertEquals(beforeDrag.getDouble("scale"), state().getDouble("scale"), 0.0001)
+    clickControl(scenario, "More diagram tools", if (standalone) ".diagram-controls button" else ".embedded-mermaid .diagram-controls button")
+    for ((label, axis, sign) in listOf(Triple("Pan left", "x", -1), Triple("Pan right", "x", 1), Triple("Pan up", "y", -1), Triple("Pan down", "y", 1))) {
+      val before = state().getDouble(axis)
+      clickControl(scenario, label)
+      val after = state().getDouble(axis)
+      assertTrue("directional Pan must move the requested axis", (after - before) * sign > 0)
+    }
+    verifyS047MoreViewportActions(scenario,selector,if(standalone)"diagram_standalone" else "diagram_embedded")
+    clickControl(scenario, "Actual size", ".task-surface.diagram-tools[role=dialog][data-state=open] button")
+    assertEquals(1.0, state().getDouble("scale"), 0.0001)
+    clickControl(scenario, "Reset view")
+    assertEquals("fit", state().getString("mode"))
+    observeVisibleTaskControls(scenario, if (standalone) "diagram_tools" else "embedded_diagram_tools")
+    clickControl(scenario, "Close Diagram tools")
+    clickControl(scenario, "Fit", if (standalone) ".diagram-controls button" else ".embedded-mermaid .diagram-controls button")
+    assertEquals("fit", state().getString("mode"))
+  }
+
+  private fun verifyS047SecondaryImageTasks(scenario: ActivityScenario<MainActivity>): JSONObject {
+    openFromAddDocument(scenario, grant(documentUri("original.gif")))
+    waitForImagePixels(scenario, "original.gif")
+    clickControl(scenario, "More image tools")
+    for ((index, background) in listOf("checker", "light", "dark").withIndex()) {
+      chooseTaskOption(scenario, "Image background", index, background)
+      assertEquals(background, imageViewState(scenario).getString("background"))
+    }
+    val selected = imageViewState(scenario).getString("selection")
+    for (invalid in listOf("", "999", "2.5")) {
+      setTaskInput(scenario, "Animation frame", invalid)
+      instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_ENTER)
+      waitForCondition(scenario, "document.querySelector('input[aria-label=\"Animation frame\"]').getAttribute('aria-invalid')==='true'", "invalid frame draft must stay invalid without a native decode")
+      assertEquals(selected, imageViewState(scenario).getString("selection"))
+    }
+    setTaskInput(scenario, "Animation frame", "3")
+    instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_ENTER)
+    waitForCondition(scenario, "document.querySelector('.image-pane').getAttribute('data-image-selection')==='2'", "valid frame must select actual frame3")
+    clickControl(scenario, "Previous frame")
+    waitForCondition(scenario, "document.querySelector('.image-pane').getAttribute('data-image-selection')==='1'", "Previous frame must decode the prior actual frame")
+    clickControl(scenario, "Next frame")
+    waitForCondition(scenario, "document.querySelector('.image-pane').getAttribute('data-image-selection')==='2'", "Next frame must decode the next actual frame")
+    val playback = JSONObject(evaluate(scenario, "(()=>{const b=Array.from(document.querySelectorAll('button')).find(n=>n.textContent.trim()==='Play');return {disabled:b.disabled,reduced:matchMedia('(prefers-reduced-motion: reduce)').matches};})()"))
+    val animation=JSONObject().put("reduced_motion",playback.getBoolean("reduced")).put("play_enabled",!playback.getBoolean("disabled")).put("advanced",false).put("paused",false)
+    if (playback.getBoolean("disabled")) {
+      assertTrue("disabled Play must be explained by actual reduced-motion state", playback.getBoolean("reduced"))
+      waitForBodyText(scenario, "Playback is paused by your reduced-motion preference")
+      animation.put("branch","reduced_motion_disabled").put("policy_explanation",true).put("unexecuted_actions",JSONArray(listOf("Play","Pause")))
+    } else {
+      clickControl(scenario, "Play")
+      waitForCondition(scenario, "document.querySelector('.image-pane').getAttribute('data-image-selection')!=='2'", "real animation must advance a native-rendered frame")
+      clickControl(scenario, "Pause")
+      waitForBodyText(scenario, "Play")
+      animation.put("branch","played_and_paused").put("advanced",true).put("paused",true).put("unexecuted_actions",JSONArray())
+    }
+    setTaskInput(scenario, "Animation frame", "3"); instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_ENTER)
+    waitForCondition(scenario, "document.querySelector('.image-pane').getAttribute('data-image-selection')==='2'", "selected frame must settle before Reset")
+    verifyS047MoreViewportActions(scenario,".image-pane","image")
+    clickControl(scenario, "Actual size"); clickControl(scenario, "Reset view")
+    assertEquals("2", imageViewState(scenario).getString("selection")); assertEquals("dark", imageViewState(scenario).getString("background"))
+    observeVisibleTaskControls(scenario, "animation_tools")
+    clickControl(scenario, "Close Image tools")
+    openFromAddDocument(scenario, grant(documentUri("entries.ico")))
+    waitForImagePixels(scenario, "entries.ico")
+    clickControl(scenario, "More image tools")
+    chooseTaskOption(scenario, "Icon entry", 1, "1")
+    waitForCondition(scenario, "document.querySelector('.image-pane').getAttribute('data-image-selection')==='1'", "native icon option must select the intended entry")
+    chooseTaskOption(scenario, "Image background", 1, "light")
+    clickControl(scenario, "Actual size"); clickControl(scenario, "Reset view")
+    assertEquals("1", imageViewState(scenario).getString("selection")); assertEquals("light", imageViewState(scenario).getString("background"))
+    observeVisibleTaskControls(scenario, "icon_tools")
+    clickControl(scenario, "Close Image tools")
+    return animation
+  }
+
+
+  private fun verifyS047EmbeddedMetadata(scenario: ActivityScenario<MainActivity>) {
+    val uri=grant(documentUri("orientation-6.jpg"));val before=readBytes(uri)
+    openFromAddDocument(scenario,uri)
+    waitForCondition(scenario,"!!document.querySelector('.image-pane[data-preview-ready=true]')","metadata fixture must actually decode")
+    clickControl(scenario,"More image tools");clickControl(scenario,"File information")
+    waitForCondition(scenario,"document.querySelectorAll('[aria-label=\"Embedded image observations\"] details').length>0","actual Exif observations must have inspectable disclosures")
+    val count=evaluate(scenario,"document.querySelectorAll('[aria-label=\"Embedded image observations\"] details').length").toInt()
+    for(index in 1..count){
+      val selector="[aria-label=\"Embedded image observations\"] details:nth-of-type("+index+") summary"
+      val label=stringValue(evaluate(scenario,"document.querySelector("+JSONObject.quote(selector)+").textContent.trim()"))
+      tapNativeControlOnce(scenario,label,selector)
+      waitForCondition(scenario,"document.querySelector("+JSONObject.quote(selector)+").parentElement.open","metadata observation disclosure must open its actual observation")
+      tapNativeControlOnce(scenario,label,selector)
+      waitForCondition(scenario,"!document.querySelector("+JSONObject.quote(selector)+").parentElement.open","metadata observation disclosure must close")
+    }
+    observeVisibleTaskControls(scenario,"embedded_metadata")
+    clickControl(scenario,"Close File information")
+    assertTrue("embedded metadata operations must preserve exact original bytes",before.contentEquals(readBytes(uri)))
+  }
+
+  @Test fun s047ImageJourney() {
+    resolvedIntentDisplaysColdAndWarmProviderDocuments()
+    val scenario = requireNotNull(ownedScenario)
+    assertS047Role(scenario)
+    for (name in listOf("svg-presentation.svg", "svg-namespaced.svg", "svg-reuse.svg")) {
+      val uri = grant(documentUri(name)); val before = readBytes(uri)
+      openFromAddDocument(scenario, uri); waitForImagePixels(scenario, name)
+      assertTrue("accepted SVG must preserve original provider bytes", before.contentEquals(readBytes(uri)))
+    }
+    for ((name, code) in listOf("svg-unsupported.svg" to "svg_unsupported", "svg-malformed.svg" to "malformed", "svg-external.svg" to "svg_external_reference", "svg-cycle.svg" to "svg_cyclic_reference", "svg-missing.svg" to "svg_missing_reference", "svg-resource.svg" to "oversized")) {
+      val uri = grant(documentUri(name)); val before = readBytes(uri)
+      openFromAddDocument(scenario, uri)
+      waitForCondition(scenario, "!!document.querySelector('[data-preview-failure=" + code + "]')", "SVG must expose its exact finite failure category")
+      assertEquals("true", evaluate(scenario, "!Array.from(document.querySelectorAll('button')).some(b=>b.textContent.trim()==='Retry preview')"))
+      assertEquals("true", evaluate(scenario, "Array.from(document.querySelectorAll('button')).some(b=>b.textContent.trim()==='File information')"))
+      assertTrue("refused SVG must preserve source bytes", before.contentEquals(readBytes(uri)))
+    }
+    val denied = grant(documentUri("svg-read-denied.svg"))
+    resolver.call(FixtureGrantProvider.COMMAND_URI, "arm_read_failure", denied.toString(), android.os.Bundle().apply { putInt("successful_reads", 1) })
+    try {
+      openFromAddDocument(scenario, denied)
+      waitForCondition(scenario, "!!document.querySelector('[data-preview-failure=source_read]')", "native provider denial after identification must remain distinct from transport or malformed content")
+    } finally { resolver.call(FixtureGrantProvider.COMMAND_URI, "clear_read_failure", denied.toString(), null) }
+    clickControl(scenario, "Retry preview")
+    waitForCondition(scenario, "!!document.querySelector('[data-preview-ready=true]')", "read refusal retry must actually render after access recovers")
+    val animation=verifyS047SecondaryImageTasks(scenario)
+    verifyS047EmbeddedMetadata(scenario)
+    openFromAddDocument(scenario, grant(documentUri("svg-viewport.svg")))
+    waitForCondition(scenario, "!!document.querySelector('[data-preview-ready=true]')", "large inert SVG must produce a usable viewport")
+    val imageAliasDeadline=SystemClock.elapsedRealtime()+30_000L
+    prepareViewportToolbar(scenario,".image-actions button[aria-label=\"Zoom out\"]",imageAliasDeadline)
+    val restoredImage=viewportStateScript(".image-pane",true)
+    waitForCondition(scenario,"(()=>{const current="+restoredImage+";return current.ready&&(current.mode!=='fit'||Math.abs(current.scale-current.fit)<0.0001);})()","image aliases require coherent visible pane dimensions",deadlineOverride=imageAliasDeadline)
+    val fit = imageViewState(scenario).getDouble("scale")
+    tapNativeControlOnce(scenario,"Zoom in",".image-actions button",deadlineOverride=imageAliasDeadline)
+    waitForCondition(scenario,"Math.abs(Number(document.querySelector('.image-pane').getAttribute('data-viewport-scale'))-"+(fit*1.25)+")<0.0001","local image Zoom must multiply the actual viewport",deadlineOverride=imageAliasDeadline)
+    val local = imageViewState(scenario).getDouble("scale")
+    assertEquals(fit * 1.25, local, 0.0001)
+    menuAction(scenario, "Zoom in")
+    waitForCondition(scenario,"Math.abs(Number(document.querySelector('.image-pane').getAttribute('data-viewport-scale'))-"+(local*1.25)+")<0.0001","menu image Zoom must multiply the same viewport",deadlineOverride=imageAliasDeadline)
+    assertEquals(local * 1.25, imageViewState(scenario).getDouble("scale"), 0.0001)
+    evaluate(scenario, "document.querySelector('.image-pane').focus();true")
+    instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_EQUALS)
+    waitForCondition(scenario,"Math.abs(Number(document.querySelector('.image-pane').getAttribute('data-viewport-scale'))-"+(local*1.25*1.25)+")<0.0001","canvas keyboard Zoom must multiply the same viewport",deadlineOverride=imageAliasDeadline)
+    val beforeKeyboardOut=imageViewState(scenario).getDouble("scale")
+    evaluate(scenario,"document.querySelector('button[aria-label=\"Document tools\"]').focus();true")
+    waitForCondition(scenario,"document.activeElement===document.querySelector('button[aria-label=\"Document tools\"]')","global image keys must actually target header chrome",deadlineOverride=imageAliasDeadline)
+    taskKey(KeyEvent.KEYCODE_MINUS,KeyEvent.META_CTRL_ON)
+    waitForCondition(scenario,"Math.abs(Number(document.querySelector('.image-pane').getAttribute('data-viewport-scale'))-"+(beforeKeyboardOut*0.8)+")<0.0001","header-focused CtrlMinus must use the global image provider",deadlineOverride=imageAliasDeadline)
+    taskKey(KeyEvent.KEYCODE_EQUALS,KeyEvent.META_CTRL_ON)
+    waitForCondition(scenario,"Math.abs(Number(document.querySelector('.image-pane').getAttribute('data-viewport-scale'))-"+beforeKeyboardOut+")<0.0001","global image CtrlPlus must restore the exact factor",deadlineOverride=imageAliasDeadline)
+    evaluate(scenario,"document.querySelector('.image-pane').focus();true")
+    val beforeArrow=imageViewState(scenario).getDouble("x")
+    taskKey(KeyEvent.KEYCODE_DPAD_LEFT)
+    assertTrue("native Arrow must pan overflowing image",imageViewState(scenario).getDouble("x")<beforeArrow)
+    tapNativeControlOnce(scenario,"Zoom out",".image-actions button",deadlineOverride=imageAliasDeadline)
+    waitForCondition(scenario,"Math.abs(Number(document.querySelector('.image-pane').getAttribute('data-viewport-scale'))-"+(beforeKeyboardOut*0.8)+")<0.0001","local image Zoom out must invert the actual scale",deadlineOverride=imageAliasDeadline)
+    menuAction(scenario,"Zoom out")
+    waitForCondition(scenario,"Math.abs(Number(document.querySelector('.image-pane').getAttribute('data-viewport-scale'))-"+(beforeKeyboardOut*0.8*0.8)+")<0.0001","menu image Zoom out must invert the actual scale",deadlineOverride=imageAliasDeadline)
+    menuAction(scenario,"Zoom in");menuAction(scenario,"Zoom in")
+    val beforeDrag = imageViewState(scenario)
+    nativeImageGesture(scenario, false)
+    waitForCondition(scenario, "Number(document.querySelector('.image-pane').getAttribute('data-viewport-pan-x'))!==" + beforeDrag.getDouble("x"), "native drag must pan without changing effective scale")
+    assertEquals(beforeDrag.getDouble("scale"), imageViewState(scenario).getDouble("scale"), 0.0001)
+    val beforePinch = imageViewState(scenario).getDouble("scale")
+    nativeImageGesture(scenario, true)
+    waitForCondition(scenario, "Number(document.querySelector('.image-pane').getAttribute('data-viewport-scale'))>" + beforePinch, "actual native pinch must zoom the intended image")
+    clickControl(scenario, "More image tools")
+    clickControl(scenario, "Actual size")
+    assertEquals(1.0, imageViewState(scenario).getDouble("scale"), 0.0001)
+    val background = imageViewState(scenario).getString("background"); val selection = imageViewState(scenario).getString("selection")
+    clickControl(scenario, "Reset view")
+    assertEquals("fit", imageViewState(scenario).getString("mode"))
+    assertEquals(background, imageViewState(scenario).getString("background")); assertEquals(selection, imageViewState(scenario).getString("selection"))
+    clickControl(scenario, "Close Image tools")
+    clickControl(scenario,"Fit")
+    assertEquals("fit",imageViewState(scenario).getString("mode"))
+    menuAction(scenario,"Fit")
+    assertEquals("fit",imageViewState(scenario).getString("mode"))
+    emitS047Journey(scenario, 6, listOf("svg_supported", "svg_unsupported", "svg_malformed", "svg_external", "svg_cycle", "svg_missing", "svg_resource", "source_read", "local_zoom_fit", "menu_zoom_fit", "keyboard_zoom_fit", "gesture_pan", "reset_state", "animation", "icon_selection", "png_export", "frame_buttons", "background_all", "embedded_metadata"),JSONObject().put("animation",animation))
+  }
+
+
+  private fun verifyS047ShellAliases(scenario: ActivityScenario<MainActivity>) {
+    fun discardControlledEmptyDraft() {
+      waitForCondition(scenario,"!!document.querySelector('.resolution-dialog')&&!!document.querySelector('.cm-content[contenteditable=true]')","closing a new empty draft must still require its explicit dirty decision")
+      assertEquals("only the controlled empty draft may be discarded in this geometry/alias helper","",sourceEditorText(scenario))
+      clickControl(scenario,"Discard")
+      waitForCondition(scenario,"!document.querySelector('.resolution-dialog')","explicit Discard must complete the controlled empty draft close")
+    }
+    val skip = "Array.from(document.querySelectorAll('a[href]')).find(n=>n.textContent.trim().startsWith('Skip'))"
+    evaluate(scenario, "(" + skip + ").focus();true")
+    taskKey(KeyEvent.KEYCODE_ENTER)
+    waitForCondition(scenario, "(()=>{const a=" + skip + ";return !!a&&document.activeElement===document.getElementById(a.getAttribute('href').slice(1));})()", "Skip must focus its actual main-content destination")
+    clickControl(scenario, "Menu")
+    taskKey(KeyEvent.KEYCODE_ESCAPE)
+    waitForCondition(scenario, "!document.querySelector('[role=dialog]')&&(document.activeElement.getAttribute('aria-label')==='Menu'||document.activeElement.textContent.trim()==='Menu')", "Escape must close the application menu and restore its opener")
+    clickControl(scenario, "Menu")
+    val dialog = JSONObject(evaluate(scenario, "(()=>{const n=document.querySelector('[role=dialog]'),r=n.getBoundingClientRect();return {left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:innerWidth,height:innerHeight};})()"))
+    val outside = mutableListOf<JSONObject>()
+    for (x in listOf(2.0, dialog.getDouble("width") / 2, dialog.getDouble("width") - 2)) for (y in listOf(2.0, dialog.getDouble("top") - 2, dialog.getDouble("bottom") + 2, dialog.getDouble("height") - 2)) {
+      if (x > 0 && y > 0 && x < dialog.getDouble("width") && y < dialog.getDouble("height") && !(x >= dialog.getDouble("left") && x <= dialog.getDouble("right") && y >= dialog.getDouble("top") && y <= dialog.getDouble("bottom"))) outside.add(JSONObject().put("found",true).put("left",x-0.5).put("right",x+0.5).put("top",y-0.5).put("bottom",y+0.5).put("x",x).put("y",y).put("viewport_width",dialog.getDouble("width")))
+    }
+    val geometry = outside.map { nativeControlGeometry(scenario,it) }.firstOrNull { it.getBoolean("whole_control_visible") } ?: throw AssertionError("actual application menu must expose a native-visible outside dismissal area")
+    val down = SystemClock.uptimeMillis()
+    for (action in listOf(MotionEvent.ACTION_DOWN, MotionEvent.ACTION_UP)) {
+      val event = MotionEvent.obtain(down,SystemClock.uptimeMillis(),action,geometry.getDouble("screen_x").toFloat(),geometry.getDouble("screen_y").toFloat(),0).apply { source=InputDevice.SOURCE_TOUCHSCREEN }
+      try { instrumentation.sendPointerSync(event) } finally { event.recycle() }
+    }
+    waitForCondition(scenario, "!document.querySelector('[role=dialog]')", "one actual outside tap must close the application menu")
+    for (i in 1..6) createNewDraftForInput(scenario,"New text file","Untitled.txt")
+    val countBefore = stringValue(evaluate(scenario,"document.querySelector('.document-count-trigger').textContent.trim()"))
+    clickControl(scenario,countBefore)
+    val closeName = stringValue(evaluate(scenario,"document.querySelector('.document-switcher > div:last-child button[aria-label]').getAttribute('aria-label')"))
+    clickControl(scenario,closeName,".document-switcher > div:last-child button")
+    discardControlledEmptyDraft()
+    waitForCondition(scenario,"!document.querySelector('[role=dialog]')&&document.querySelector('.document-count-trigger').textContent.trim()!=="+JSONObject.quote(countBefore),"closing an overflow document must remove exactly that clean draft")
+    val density = clientContext.resources.displayMetrics.density
+    try {
+      scenario.onActivity { it.requestedOrientation=ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED }
+      shellOutput("wm size "+(1024*density).toInt()+"x"+(640*density).toInt())
+      waitForCondition(scenario,"document.querySelector('.tab-button')&&document.querySelector('.tab-button').getBoundingClientRect().width>0","wide actual window must expose the inline document tabs")
+      fun selected():String=stringValue(evaluate(scenario,"document.querySelector('.tab-button[aria-selected=true]').id"))
+      fun count():Int=evaluate(scenario,"document.querySelectorAll('.tab-button').length+(document.querySelector('.overflow-trigger')?parseInt(document.querySelector('.overflow-trigger').textContent.slice(1),10):0)").toInt()
+      evaluate(scenario,"document.querySelector('.tab-button[aria-selected=true]').focus();true")
+      taskKey(KeyEvent.KEYCODE_MOVE_HOME)
+      waitForCondition(scenario,"document.querySelector('.tab-button[aria-selected=true]')===document.querySelector('.tab-list').firstElementChild","Home must select the actual first document")
+      val first=selected()
+      taskKey(KeyEvent.KEYCODE_MOVE_END)
+      waitForCondition(scenario,"document.querySelector('.tab-button[aria-selected=true]')===document.querySelector('.tab-list').lastElementChild","End must select the actual last document")
+      val last=selected();assertTrue(first!=last)
+      taskKey(KeyEvent.KEYCODE_TAB,KeyEvent.META_CTRL_ON)
+      waitForCondition(scenario,"document.querySelector('.tab-button[aria-selected=true]').id==="+JSONObject.quote(first),"Ctrl+Tab must wrap to the first document")
+      taskKey(KeyEvent.KEYCODE_TAB,KeyEvent.META_CTRL_ON or KeyEvent.META_SHIFT_ON)
+      waitForCondition(scenario,"document.querySelector('.tab-button[aria-selected=true]').id==="+JSONObject.quote(last),"Ctrl+Shift+Tab must wrap to the last document")
+      taskKey(KeyEvent.KEYCODE_DPAD_LEFT);assertTrue(selected()!=last)
+      taskKey(KeyEvent.KEYCODE_DPAD_RIGHT);assertEquals(last,selected())
+      val previous=stringValue(evaluate(scenario,"document.querySelector('.tab-button[aria-selected=true]').previousElementSibling.id"))
+      taskKey(KeyEvent.KEYCODE_DPAD_LEFT,KeyEvent.META_ALT_ON or KeyEvent.META_SHIFT_ON)
+      waitForCondition(scenario,"document.querySelector('.tab-button[aria-selected=true]').nextElementSibling.id==="+JSONObject.quote(previous),"Alt+Shift+Left must reorder the actual selected document once")
+      taskKey(KeyEvent.KEYCODE_DPAD_RIGHT,KeyEvent.META_ALT_ON or KeyEvent.META_SHIFT_ON)
+      assertEquals(last,selected())
+      val triggerName=stringValue(evaluate(scenario,"document.querySelector('.overflow-trigger').getAttribute('aria-label')"))
+      clickControl(scenario,triggerName)
+      val surface=stringValue(evaluate(scenario,"document.querySelector('.document-surface').id"))
+      val overflowName=stringValue(evaluate(scenario,"document.querySelector('.overflow-item button:not([aria-label])').textContent.trim()"))
+      clickControl(scenario,overflowName,".overflow-item button:not([aria-label])")
+      waitForCondition(scenario,"document.querySelector('.document-surface').id!=="+JSONObject.quote(surface),"activating an overflow entry must activate its actual document")
+      val closeOverflowTrigger=stringValue(evaluate(scenario,"document.querySelector('.overflow-trigger').getAttribute('aria-label')"))
+      clickControl(scenario,closeOverflowTrigger)
+      val overflowBefore=count()
+      val closeOverflow=stringValue(evaluate(scenario,"document.querySelector('.overflow-item button[aria-label]').getAttribute('aria-label')"))
+      clickControl(scenario,closeOverflow,".overflow-item button[aria-label]")
+      discardControlledEmptyDraft()
+      assertEquals("actual overflow Close must remove one clean document",overflowBefore-1,count())
+      openFromAddDocument(scenario,grant(documentUri("recovery-corpus.md")))
+      val before=count();val inlineClose=stringValue(evaluate(scenario,"document.querySelector('.tab-close-slot.active button').getAttribute('aria-label')"))
+      clickControl(scenario,inlineClose,".tab-close-slot.active button");assertEquals(before-1,count())
+      evaluate(scenario,"document.querySelector('.tab-button[aria-selected=true]').focus();true")
+      taskKey(KeyEvent.KEYCODE_W,KeyEvent.META_CTRL_ON)
+      discardControlledEmptyDraft()
+      assertEquals(before-2,count())
+    } finally {
+      shellOutput("wm size reset")
+      scenario.onActivity { it.requestedOrientation=ActivityInfo.SCREEN_ORIENTATION_PORTRAIT }
+      waitForCondition(scenario,"innerHeight>innerWidth","document keyboard aliases must restore the actual phone window")
+    }
+  }
+
+  @Test fun s047ColdAddJourney() {
+    val scenario = launchS047()
+    verifyAddDocumentChoices(scenario)
+    createNewDraftForInput(scenario, "New Markdown", "Untitled.md")
+    createNewDraftForInput(scenario, "New text file", "Untitled.txt")
+    val switcher = stringValue(evaluate(scenario, "document.querySelector('.document-count-trigger').textContent.trim()"))
+    clickControl(scenario, switcher)
+    clickControl(scenario, "Untitled.md", ".document-switcher button")
+    waitForDocumentIdentity(scenario, "Untitled.md")
+    val monitor = instrumentation.addMonitor(IntentFilter(Intent.ACTION_OPEN_DOCUMENT).apply { addCategory(Intent.CATEGORY_OPENABLE); addDataType("*/*") }, ActivityResult(Activity.RESULT_CANCELED, Intent()), true)
+    try { clickControl(scenario, "Add document"); clickControl(scenario, "Open file"); waitForBodyText(scenario, "Cancelled"); assertEquals(1, monitor.hits) } finally { instrumentation.removeMonitor(monitor) }
+    verifyS047ShellAliases(scenario)
+    emitS047Journey(scenario, 1, listOf("choices", "close", "outside", "button_back", "shell_keyboard", "tab_activation_close_reorder"))
+  }
+
+  @Test fun s047MarkdownJourney() {
+    governedMarkdownDeliveryRoutes()
+    val scenario = requireNotNull(ownedScenario)
+    assertS047Role(scenario)
+    openFromAddDocument(scenario, grant(documentUri("recovery-corpus.md")))
+    waitForCondition(scenario, "!!document.querySelector('.markdown-document h1')&&!!document.querySelector('.markdown-document table')&&!!document.querySelector('.markdown-document ul')&&!!document.querySelector('.markdown-document code')", "native Open must render the real corpus structure")
+    waitForBodyText(scenario, "list item", "code block", "Unicode", "Ω", "🧪")
+    emitS047Journey(scenario, 2, listOf("cold_view", "warm_view", "warm_send", "in_app", "corpus", "empty", "malformed"))
+  }
+
+  private fun verifyS047ProviderDenial(scenario: ActivityScenario<MainActivity>) {
+    createNewDraftForInput(scenario, "New text file", "Untitled.txt")
+    val text = "S047_PROVIDER_FAILURE_RETAINED\n"
+    replaceEditorText(scenario, text)
+    val uri = grant(documentUri("svg-presentation.svg"))
+    val before = readBytes(uri)
+    resolver.call(FixtureGrantProvider.COMMAND_URI, "arm_read_failure", uri.toString(), android.os.Bundle().apply { putInt("successful_reads", 0) })
+    try {
+      chooseNative(scenario, Intent.ACTION_OPEN_DOCUMENT, chosen(uri), { clickControl(scenario, "Add document"); clickControl(scenario, "Open file") }, "This file could not be opened. Check access or choose it again.")
+      assertEquals("native read failure must retain the existing editable draft", text, browserEditorInputSnapshot(scenario).getString("semantic_text"))
+    } finally { resolver.call(FixtureGrantProvider.COMMAND_URI, "clear_read_failure", uri.toString(), null) }
+    assertTrue("native read failure must not modify source", before.contentEquals(readBytes(uri)))
+  }
+  @Test fun s047SourceFailureJourney() {
+    val scenario = launchS047()
+    verifyS047ProviderDenial(scenario)
+    emitS047Journey(scenario, 3, listOf("provider_denial"))
+  }
+
+
+  private fun dismissObservedAppIme(scenario: ActivityScenario<MainActivity>, deadlineOverride: Long? = null): Boolean {
+    enableNativeWindowObservation()
+    if (visibleNativeImeBounds().isEmpty()) return false
+    assertEquals(TARGET_PACKAGE, instrumentation.uiAutomation.rootInActiveWindow?.packageName?.toString())
+    val deadline = deadlineOverride ?: (SystemClock.elapsedRealtime() + 30_000L)
+    instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
+    while (SystemClock.elapsedRealtime() < deadline && visibleNativeImeBounds().isNotEmpty()) SystemClock.sleep(100L)
+    assertTrue("one Back must dismiss the actually observed app IME before another layer", visibleNativeImeBounds().isEmpty())
+    assertTrue("IME Back must retain actual app window", nativeHandoffState(scenario, "IME Back").getString("scenario_state") == Lifecycle.State.RESUMED.name)
+    return true
+  }
+
+  @Test fun s047BackJourney() {
+    val scenario = launchS047()
+    createNewDraftForInput(scenario, "New text file", "Untitled.txt")
+    val text = "S047_BACK_DRAFT_RETAINED\n"
+    replaceEditorText(scenario, text)
+    focusNativeWebView(scenario)
+    assertTrue("native editing must expose a real IME layer", dismissObservedAppIme(scenario))
+    waitForCondition(scenario, "!!document.querySelector('.cm-content[contenteditable=true]')", "IME Back must retain editor")
+    clickControl(scenario, "Menu")
+    waitForCondition(scenario, "!!document.querySelector('[role=dialog][data-task-modal=true]')", "phone application menu must be modal")
+    val background = JSONObject(evaluate(scenario, "(()=>{const add=document.querySelector('.add-document-trigger');return {disabled:add.disabled,hidden:!!add.closest('[aria-hidden=true],[inert]'),modal:!!document.querySelector('[role=dialog][data-task-modal=true]')};})()"))
+    assertTrue("the modal must block background Add", background.getBoolean("disabled") || background.getBoolean("hidden"))
+    instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
+    waitForCondition(scenario, "!document.querySelector('[role=dialog]')", "one button Back must dismiss one phone layer")
+    assertEquals(text, browserEditorInputSnapshot(scenario).getString("semantic_text"))
+    scenario.onActivity { it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE }
+    waitForCondition(scenario, "innerWidth>innerHeight", "actual landscape must be observed")
+    assertEquals(text, browserEditorInputSnapshot(scenario).getString("semantic_text"))
+    scenario.onActivity { it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT }
+    waitForCondition(scenario, "innerHeight>innerWidth", "actual portrait must be restored")
+    val root = grant(documentUri("fixture-root"))
+    val destination = grant(requireNotNull(DocumentsContract.createDocument(resolver, root, "text/plain", "s047-back-" + UUID.randomUUID() + ".txt")))
+    verifyDirtyCloseAndPendingRace(scenario, destination)
+    val variants = mutableListOf("button_back", "modal_background", "rotation_resume", "picker_cancel", "dirty_close")
+    val details = JSONObject()
+    if (Build.VERSION.SDK_INT >= 34) {
+      dismissObservedAppIme(scenario)
+      clickControl(scenario, "Menu")
+      waitForCondition(scenario, "!!document.querySelector('[role=dialog]')", "a real modal must own predictive Back")
+      val before = stringValue(evaluate(scenario, "JSON.stringify({surface:document.querySelector('.document-surface').id,revision:document.querySelector('.document-surface').getAttribute('data-performance-revision'),identity:document.querySelector('[data-draft-identity]')?document.querySelector('[data-draft-identity]').textContent:null})"))
+      details.put("predictive_cancel", nativeGestureBack(scenario, true).put("state_unchanged", true))
+      val after = stringValue(evaluate(scenario, "JSON.stringify({surface:document.querySelector('.document-surface').id,revision:document.querySelector('.document-surface').getAttribute('data-performance-revision'),identity:document.querySelector('[data-draft-identity]')?document.querySelector('[data-draft-identity]').textContent:null})"))
+      assertEquals("predictive cancellation must retain document/draft/layer", before, after)
+      assertEquals("true", evaluate(scenario, "!!document.querySelector('[role=dialog]')"))
+      details.put("predictive_commit", nativeGestureBack(scenario, false))
+      waitForCondition(scenario, "!document.querySelector('[role=dialog]')", "one committed gesture must dismiss only the menu")
+      variants.addAll(listOf("predictive_cancel", "predictive_commit"))
+    }
+    emitS047Journey(scenario, 9, variants, details)
+  }
+
+
+  private fun checkedShell(command: String): String {
+    val script = "(" + command + ")\ncode=\$?\nprintf '\\nS047_SHELL_EXIT=%s\\n' \"\$code\"\n"
+    val output = shellOutput("sh -c '" + script.replace("'", "'\\''") + "'")
+    val code = Regex("(?m)^S047_SHELL_EXIT=([0-9]+)\\s*$").findAll(output).lastOrNull()
+    assertTrue("hosted setup must expose a real shell exit status", code != null)
+    assertEquals("hosted shell operation must succeed", 0, code!!.groupValues[1].toInt())
+    return output.substringBeforeLast("\nS047_SHELL_EXIT=").trim()
+  }
+  private fun verifyOfflineNotices(scenario: ActivityScenario<MainActivity>): JSONObject {
+    val original = listOf("airplane_mode_on", "wifi_on", "mobile_data").associateWith { checkedShell("settings get global " + it) }
+    assertTrue("network settings must have recognized reversible states", original.values.all { it == "0" || it == "1" })
+    val deadline = SystemClock.elapsedRealtime() + 30_000L
+    var originalFailure: Throwable? = null
+    fun airplane(value: String) {
+      if (Build.VERSION.SDK_INT >= 30) checkedShell("cmd connectivity airplane-mode " + if (value == "1") "enable" else "disable")
+      else { checkedShell("settings put global airplane_mode_on " + value); checkedShell("am broadcast -a android.intent.action.AIRPLANE_MODE --ez state " + if (value == "1") "true" else "false") }
+    }
+    try {
+      airplane("1"); checkedShell("svc wifi disable"); checkedShell("svc data disable")
+      assertEquals("1", checkedShell("settings get global airplane_mode_on"))
+      assertEquals("0", checkedShell("settings get global wifi_on")); assertEquals("0", checkedShell("settings get global mobile_data"))
+      var offline = false
+      while (SystemClock.elapsedRealtime() < deadline) {
+        val dump = checkedShell("dumpsys -t 2 connectivity")
+        if (Regex("(?m)^\\s*Active default network:\\s*none\\s*$").containsMatchIn(dump)) { offline = true; break }
+        SystemClock.sleep(100L)
+      }
+      assertTrue("only recognized actual default-network-none state establishes offline", offline)
+      clickControl(scenario, "Offline licenses and notices")
+      waitForCondition(scenario, "(()=>{const n=document.querySelector('.application-notices');return !!n&&n.textContent.length>10000&&n.textContent.includes('Apache')&&n.textContent.includes('MIT');})()", "complete native notices must work with no actual default network", deadlineOverride = deadline)
+      assertTrue("offline notices must complete within the original action budget", SystemClock.elapsedRealtime() < deadline)
+      return JSONObject().put("default_network_none", true).put("shell_exit_status", 0).put("native_local_notices", true)
+    } catch (failure: Throwable) { originalFailure = failure; throw failure }
+    finally {
+      val restored = runCatching {
+        airplane(requireNotNull(original["airplane_mode_on"]))
+        checkedShell("svc wifi " + if (original["wifi_on"] == "1") "enable" else "disable")
+        checkedShell("svc data " + if (original["mobile_data"] == "1") "enable" else "disable")
+        for ((key, value) in original) assertEquals("hosted network setup must restore original setting", value, checkedShell("settings get global " + key))
+      }
+      if (restored.isFailure) { println("s047_network_restore_failed=true"); System.out.flush(); if (originalFailure == null) throw AssertionError("hosted network restoration failed", restored.exceptionOrNull()) }
+    }
+  }
+
+  @Test fun s047AboutJourney() {
+    val scenario = launchS047()
+    verifyS047ProviderDenial(scenario)
+    menuAction(scenario, "About Glitchpad")
+    val source = requireNotNull(InstrumentationRegistry.getArguments().getString("expectedSource"))
+    val info = clientContext.packageManager.getPackageInfo(TARGET_PACKAGE, 0)
+    waitForBodyText(scenario, requireNotNull(info.versionName), TARGET_PACKAGE, source, "ShruggieTech")
+    val displayed = JSONObject(evaluate(scenario, "(()=>{const d=document.querySelector('[data-application-info]');const r={};Array.from(d.querySelectorAll('dt')).forEach(n=>r[n.textContent]=n.nextElementSibling.textContent);return r;})()"))
+    val code = if (Build.VERSION.SDK_INT >= 28) info.longVersionCode else { @Suppress("DEPRECATION") info.versionCode.toLong() }
+    assertEquals(code.toString(), displayed.getString("Version code"))
+    assertEquals(if ((clientContext.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0) "debug" else "release", displayed.getString("Channel"))
+    assertEquals("android", displayed.getString("Platform"))
+    assertEquals(source, displayed.getString("Build"))
+    val destinations = listOf("Official documentation" to "https://glitchpad.com/docs", "GitHub repository" to "https://github.com/ShruggieTech/glitchpad", "Report an issue" to "https://github.com/ShruggieTech/glitchpad/issues/new/choose", "ShruggieTech" to "https://shruggie.tech/")
+    for ((label, target) in destinations) {
+      val seen = AtomicReference<Intent?>()
+      val dispatches=java.util.concurrent.atomic.AtomicInteger(0)
+      val monitor = object : android.app.Instrumentation.ActivityMonitor() {
+        override fun onStartActivity(intent: Intent): ActivityResult? {
+          if (intent.action != Intent.ACTION_VIEW) return null
+          dispatches.incrementAndGet();seen.set(Intent(intent)); return ActivityResult(Activity.RESULT_CANCELED, Intent())
+        }
+      }
+      instrumentation.addMonitor(monitor)
+      try {
+        clickControl(scenario, label)
+        val deadline = SystemClock.elapsedRealtime() + 30_000L
+        while (seen.get() == null && SystemClock.elapsedRealtime() < deadline) SystemClock.sleep(100L)
+        val request = requireNotNull(seen.get()) { "explicit destination must reach native activity dispatch" }
+        assertEquals("one explicit destination action must dispatch exactly one native intent",1,dispatches.get())
+        assertEquals(target, request.dataString)
+        assertTrue("support must not attach document or diagnostic content", !request.hasExtra(Intent.EXTRA_STREAM) && !request.hasExtra(Intent.EXTRA_TEXT) && request.clipData == null)
+      } finally { instrumentation.removeMonitor(monitor) }
+    }
+    val offline = verifyOfflineNotices(scenario)
+    clickControl(scenario,"Close About Glitchpad")
+    menuAction(scenario,"Help and support")
+    waitForBodyText(scenario,"Help and support","Official documentation","Report an issue")
+    emitS047Journey(scenario, 10, listOf("installed_facts", "explicit_destinations", "offline_notices", "after_failure"), JSONObject().put("offline_notices", offline))
+  }
+
+
+  private fun verifyS047RecoveryDecisions(scenario: ActivityScenario<MainActivity>) {
+    val source=browserEditorInputSnapshot(scenario).getString("semantic_text")
+    assertTrue(source.contains("S046_ROOT_DRAFT_RETAINED"))
+    injectRecoveryFailure(scenario,"root")
+    waitForBodyText(scenario,"Glitchpad could not continue","Restart Glitchpad")
+    clickControl(scenario,"Restart Glitchpad")
+    waitForBodyText(scenario,"Recover Untitled.md?")
+    clickControl(scenario,"Not now")
+    waitForCondition(scenario,"!document.querySelector('.resolution-dialog')","Not now must dismiss the current recovery decision")
+    scenario.onActivity { activity->requireNotNull(findWebView(activity.window.decorView)).reload() }
+    waitForBodyText(scenario,"Recover Untitled.md?")
+    clickControl(scenario,"Decline recovery")
+    waitForCondition(scenario,"!document.querySelector('.resolution-dialog')","Decline must await removal of the controlled recovery candidate")
+    scenario.onActivity { activity->requireNotNull(findWebView(activity.window.decorView)).reload() }
+    waitForBodyText(scenario,"Add document")
+    waitForCondition(scenario,"!!document.querySelector('.app-shell')&&!document.querySelector('.resolution-dialog')","explicitly declined recovery must not reappear on actual reload")
+  }
+
+  @Test fun s047FaultJourney() {
+    assertEquals("fault_probe", expectedBuildVariant())
+    var scenario = launchS047()
+    var originalUrl: String? = null
+    scenario.onActivity { activity ->
+      val view = requireNotNull(findWebView(activity.window.decorView))
+      val uri = Uri.parse(requireNotNull(view.url)); originalUrl = uri.buildUpon().appendQueryParameter("glitchpad_probe", "module-load").build().toString()
+      view.loadUrl(requireNotNull(originalUrl))
+    }
+    waitForBodyText(scenario, "Glitchpad could not start", "module_load_failed", "Restart Glitchpad")
+    assertEquals("true", evaluate(scenario, "!new URL(location.href).searchParams.has('glitchpad_probe')"))
+    clickControl(scenario, "Restart Glitchpad")
+    waitForBodyText(scenario, "Add document")
+    rootFailureRetainsDraft()
+    scenario = requireNotNull(ownedScenario)
+    clickControl(scenario, "Close Diagnostics")
+    verifyS047RecoveryDecisions(scenario)
+    val corpus = grant(documentUri("recovery-corpus.md"))
+    openFromAddDocument(scenario, corpus)
+    verifyMarkdownFailures(scenario, corpus)
+    injectRecoveryFailure(scenario, "host")
+    openFromAddDocument(scenario, grant(documentUri("svg-presentation.svg")))
+    waitForCondition(scenario, "!!document.querySelector('[data-preview-failure=host_transport]')", "actual absent native command rejection must reach host fallback")
+    clickControl(scenario, "Retry preview")
+    waitForCondition(scenario, "!!document.querySelector('[data-preview-ready=true]')", "one-shot host failure must recover through actual native renderer")
+    emitS047Journey(scenario, 3, listOf("worker", "parser", "projection", "root", "bootstrap_import", "host_transport", "source_retained", "draft_recovered", "recovery_decisions"))
+    val root = grant(documentUri("fixture-root"))
+    val saved = grant(requireNotNull(DocumentsContract.createDocument(resolver, root, "application/json", "s047-fault-diagnostic-" + UUID.randomUUID() + ".json")))
+    val refused = grant(requireNotNull(DocumentsContract.createDocument(resolver, root, "application/json", "s046-write-refused-fault-" + UUID.randomUUID() + ".json")))
+    verifyDiagnosticTasks(scenario, saved, refused)
+    emitS047Journey(scenario, 7, listOf("injected_failure_record", "frozen_redacted", "runtime_facts", "diagnostic_clear"))
+  }
+
+  private val moreViewportActions=JSONArray()
+  private val journeyReadbacks = mutableMapOf<Int, JSONArray>()
+  private val taskControlMeasurements = JSONArray()
+  private fun isS047Evidence(): Boolean = InstrumentationRegistry.getArguments().getString("s047") == "true"
+  private fun expectedBuildVariant(): String = InstrumentationRegistry.getArguments().getString("expectedRole") ?: "fault_probe"
+  private fun sha256(bytes: ByteArray): String = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it.toInt() and 255) }
+  private fun recordJourneyReadback(journey: Int, kind: String, expected: ByteArray, actual: ByteArray) {
+    assertTrue("destination/receiver must match independently expected bytes", expected.contentEquals(actual))
+    journeyReadbacks.getOrPut(journey) { JSONArray() }.put(JSONObject().put("kind", kind).put("expected_sha256", sha256(expected)).put("actual_sha256", sha256(actual)).put("verified", true))
+  }
+  private fun launchS047(): ActivityScenario<MainActivity> = ActivityScenario.launch<MainActivity>(Intent(clientContext, MainActivity::class.java).setAction(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)).also { ownedScenario = it; waitForBodyText(it, "Add document"); assertS047Role(it) }
+  private fun assertS047Role(scenario: ActivityScenario<MainActivity>) {
+    val role = expectedBuildVariant()
+    assertTrue("only qualified compile roles are accepted", role == "ordinary" || role == "fault_probe")
+    waitForCondition(scenario, "document.querySelector('.app-shell')&&document.querySelector('.app-shell').getAttribute('data-build-variant')===" + JSONObject.quote(role), "actual compiled frontend role must match requested package role")
+  }
+  private fun actualNavigationMode(): String {
+    if (Build.VERSION.SDK_INT < 29) return "three_button"
+    val id = clientContext.resources.getIdentifier("config_navBarInteractionMode", "integer", "android")
+    assertTrue("actual system navigation mode must be observable", id != 0)
+    return when (clientContext.resources.getInteger(id)) { 2 -> "gestural"; 0 -> "three_button"; else -> throw AssertionError("unsupported actual navigation mode") }
+  }
+  private fun candidateIdentity(scenario: ActivityScenario<MainActivity>): JSONObject {
+    val source = requireNotNull(InstrumentationRegistry.getArguments().getString("expectedSource"))
+    waitForCondition(scenario, "(()=>{const n=document.querySelector('.app-shell');return !!n&&n.getAttribute('data-native-source-commit')===" + JSONObject.quote(source) + "&&n.getAttribute('data-frontend-source-commit')===" + JSONObject.quote(source) + ";})()", "independent native/frontend compiled source facts must agree with actual selected checkout")
+    val facts = JSONObject(evaluate(scenario, "(()=>{const n=document.querySelector('.app-shell');return {role:n.getAttribute('data-build-variant'),native:n.getAttribute('data-native-source-commit'),frontend:n.getAttribute('data-frontend-source-commit')};})()"))
+    assertEquals(expectedBuildVariant(), facts.getString("role"))
+    val app = clientContext.packageManager.getPackageInfo(TARGET_PACKAGE, 0)
+    val test = instrumentation.context.packageManager.getApplicationInfo(instrumentation.context.packageName, 0)
+    val webview = requireNotNull(WebViewCompat.getCurrentWebViewPackage(clientContext)) { "actual WebView package/version is required" }
+    return JSONObject().put("source_commit", source).put("native_source_commit", facts.getString("native")).put("frontend_source_commit", facts.getString("frontend"))
+      .put("application_sha256", apkSha256()).put("instrumentation_sha256", sha256(File(test.sourceDir).readBytes()))
+      .put("package_identifier", TARGET_PACKAGE).put("instrumentation_package", instrumentation.context.packageName)
+      .put("version", app.versionName).put("version_code", if (Build.VERSION.SDK_INT >= 28) app.longVersionCode else { @Suppress("DEPRECATION") app.versionCode.toLong() }).put("channel", if ((clientContext.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0) "debug" else "release")
+      .put("build_variant", facts.getString("role")).put("api_level", Build.VERSION.SDK_INT).put("android_version", Build.VERSION.RELEASE)
+      .put("webview_package", webview.packageName).put("webview_version", webview.versionName)
+  }
+  private fun emitS047Journey(scenario: ActivityScenario<MainActivity>, journey: Int, variants: List<String>, details: JSONObject = JSONObject()) {
+    assertS047Role(scenario)
+    val identity = candidateIdentity(scenario)
+    enableNativeWindowObservation()
+    val native = nativeControlGeometry(scenario, null)
+    val css = JSONObject(evaluate(scenario, "({width:innerWidth,height:innerHeight})"))
+    val profile = JSONObject().put("css_width", css.getInt("width")).put("css_height", css.getInt("height"))
+      .put("native_visible", native.getJSONObject("effective_visible_screen")).put("font_scale", clientContext.resources.configuration.fontScale).put("navigation_mode", actualNavigationMode())
+    assertTrue("each journey must capture its actual screenshot", saveScreenshot("s047-row-" + journey + ".png"))
+    val items = JSONArray(variants.map { JSONObject().put("id", it).put("status", "pass").put("observed", true).put("details", details.optJSONObject(it) ?: JSONObject()) })
+    if(journey==6||journey==8)details.put("more_viewport_actions",moreViewportActions)
+    val receipt = JSONObject().put("journey", journey).put("status", "pass").put("identity", identity).put("profile", profile).put("variants", items).put("readbacks", journeyReadbacks[journey] ?: JSONArray()).put("observations", details).toString().toByteArray(Charsets.UTF_8)
+    val name = "s047-row-" + journey + ".json"
+    clientContext.openFileOutput(name, 0).use { it.write(receipt) }
+    println("s047_journey_evidence=" + JSONObject().put("journey", journey).put("file", name).put("sha256", sha256(receipt)))
+    System.out.flush()
+  }
+  private fun nativeBackObservation(scenario: ActivityScenario<MainActivity>): JSONObject {
+    var result: JSONObject? = null
+    scenario.onActivity {
+      val field = app.tauri.plugin.PluginManager::class.java.getDeclaredField("plugins").apply { isAccessible = true }
+      val plugins = (field.get(app.tauri.plugin.PluginManager) as Map<*, *>).values.filterIsInstance<app.tauri.plugin.PluginHandle>().map { it.instance }.filterIsInstance<AndroidSourcePlugin>()
+      assertEquals("one actual source plugin must own Back", 1, plugins.size)
+      val method = AndroidSourcePlugin::class.java.getDeclaredMethod("backRouteSnapshot").apply { isAccessible = true }
+      result = JSONObject(requireNotNull(method.invoke(plugins.single())).toString())
+    }
+    return requireNotNull(result)
+  }
+  private fun deltaBack(before: JSONObject, after: JSONObject): JSONObject = JSONObject().also { result ->
+    for (name in listOf("started", "progressed", "cancelled", "committed", "requested", "completed", "delegated")) result.put(name, after.getInt(name) - before.getInt(name))
+  }
+  private fun nativeGestureBack(scenario: ActivityScenario<MainActivity>, cancel: Boolean): JSONObject {
+    assertTrue("actual predictive gestures require API34+", Build.VERSION.SDK_INT >= 34)
+    assertEquals("gestural", actualNavigationMode())
+    val deadline = SystemClock.elapsedRealtime() + 30_000L
+    enableNativeWindowObservation()
+    assertTrue("predictive app callback test must begin without an IME owner", visibleNativeImeBounds().isEmpty())
+    val before = nativeBackObservation(scenario)
+    assertTrue(before.getBoolean("enabled") && !before.getBoolean("pending"))
+    var startX = 0f; var y = 0f; var endX = 0f
+    scenario.onActivity { activity ->
+      val view = requireNotNull(findWebView(activity.window.decorView))
+      val insets = requireNotNull(androidx.core.view.ViewCompat.getRootWindowInsets(view)).getInsets(androidx.core.view.WindowInsetsCompat.Type.systemGestures())
+      val bounds = android.graphics.Rect(); view.getWindowVisibleDisplayFrame(bounds)
+      assertTrue("the real system gesture edge must exist", insets.left > 0)
+      startX = maxOf(1, insets.left / 2).toFloat(); y = bounds.exactCenterY(); endX = bounds.left + bounds.width() * 0.6f
+      assertTrue("the actual app window must own the gesture", activity.hasWindowFocus() && view.hasWindowFocus() && bounds.width() > 0)
+    }
+    val downTime = SystemClock.uptimeMillis()
+    var terminalRequested = false
+    fun input(action: Int, x: Float) {
+      assertTrue("one gesture must remain inside the original action deadline", SystemClock.elapsedRealtime() < deadline)
+      val owner = instrumentation.uiAutomation.rootInActiveWindow
+      assertEquals("gesture input must retain the actual app owner", TARGET_PACKAGE, owner?.packageName?.toString())
+      if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) terminalRequested = true
+      val event = MotionEvent.obtain(downTime, SystemClock.uptimeMillis(), action, x, y, 0).apply { source = InputDevice.SOURCE_TOUCHSCREEN }
+      try { assertTrue("the actual system must accept each single gesture event", instrumentation.uiAutomation.injectInputEvent(event, true)) } finally { event.recycle() }
+    }
+    try {
+    input(MotionEvent.ACTION_DOWN, startX)
+    input(MotionEvent.ACTION_MOVE, startX + (endX - startX) * 0.35f)
+    input(MotionEvent.ACTION_MOVE, endX)
+    var progressed = false
+    while (SystemClock.elapsedRealtime() < deadline) {
+      val state = nativeBackObservation(scenario)
+      if (state.getInt("started") > before.getInt("started") && state.getInt("progressed") > before.getInt("progressed")) { progressed = true; break }
+      SystemClock.sleep(100L)
+    }
+    if (!progressed) { input(MotionEvent.ACTION_CANCEL, endX); throw AssertionError("real system gesture never produced start/progress callbacks") }
+    if (cancel) input(MotionEvent.ACTION_MOVE, startX)
+    input(MotionEvent.ACTION_UP, if (cancel) startX else endX)
+    var after = nativeBackObservation(scenario)
+    while (SystemClock.elapsedRealtime() < deadline) {
+      after = nativeBackObservation(scenario)
+      if (cancel && after.getInt("cancelled") > before.getInt("cancelled")) break
+      if (!cancel && after.getInt("completed") > before.getInt("completed")) break
+      SystemClock.sleep(100L)
+    }
+    val delta = deltaBack(before, after)
+    assertEquals(1, delta.getInt("started")); assertTrue(delta.getInt("progressed") > 0)
+    assertEquals(if (cancel) 1 else 0, delta.getInt("cancelled"))
+    for (key in listOf("committed", "requested", "completed")) assertEquals("one commit must traverse one existing callback/request/reply", if (cancel) 0 else 1, delta.getInt(key))
+    assertEquals("a handled modal must not delegate another Back", 0, delta.getInt("delegated"))
+    println("s047_predictive_back=" + JSONObject().put("cancel", cancel).put("delta", delta)); System.out.flush()
+    return delta
+    } finally {
+      if (!terminalRequested && instrumentation.uiAutomation.rootInActiveWindow?.packageName?.toString() == TARGET_PACKAGE) {
+        val event = MotionEvent.obtain(downTime, SystemClock.uptimeMillis(), MotionEvent.ACTION_CANCEL, startX, y, 0).apply { source = InputDevice.SOURCE_TOUCHSCREEN }
+        try { runCatching { instrumentation.uiAutomation.injectInputEvent(event, true) } } finally { event.recycle() }
+      }
     }
   }
 
@@ -924,7 +2338,7 @@ class AndroidDeliveryInstrumentedTest {
       val barsBottom = insets?.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars())?.bottom ?: 0
       val input = activity.getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
       observed.put("activity_window_focus", activity.hasWindowFocus()).put("webview_window_focus", view.hasWindowFocus()).put("shown", view.isShown)
-        .put("view_left", location[0]).put("view_top", location[1]).put("view_width", view.width).put("view_height", view.height)
+        .put("view_left", location[0]).put("view_top", location[1]).put("view_width", view.width).put("view_height", view.height).put("density", view.resources.displayMetrics.density)
         .put("view_scroll_x", view.scrollX).put("view_scroll_y", view.scrollY)
         .put("local_visible_screen", nativeRectBounds(localOnScreen)).put("window_visible_frame", nativeRectBounds(window)).put("effective_visible_screen", nativeRectBounds(visible))
         .put("ime_reported_visible", insets?.isVisible(androidx.core.view.WindowInsetsCompat.Type.ime()) == true)
@@ -956,11 +2370,11 @@ class AndroidDeliveryInstrumentedTest {
     return observed
   }
 
-  private fun tapNativeControlOnce(scenario: ActivityScenario<MainActivity>, name: String) {
-    val deadline = SystemClock.elapsedRealtime() + 30_000L
+  private fun tapNativeControlOnce(scenario: ActivityScenario<MainActivity>, name: String, selector: String = "button", deadlineOverride: Long? = null) {
+    val deadline = deadlineOverride ?: (SystemClock.elapsedRealtime() + 30_000L)
     val script = """
       (()=>{
-        const button=Array.from(document.querySelectorAll('button')).find(b=>!b.disabled&&(b.getAttribute('aria-label')||(b.querySelector('span')?b.querySelector('span').textContent:b.textContent)).trim()===NAME);
+        const button=Array.from(document.querySelectorAll(SELECTOR)).find(b=>!b.disabled&&b.getBoundingClientRect().width>0&&!b.closest('[aria-hidden=true],[inert]')&&(()=>{const label=(b.getAttribute('aria-label')||(b.labels&&b.labels.length?Array.from(b.labels).map(n=>n.textContent).join(' '):(b.querySelector('span')?b.querySelector('span').textContent:b.textContent))).trim();return SELECTOR==='button'?label===NAME:label.startsWith(NAME);})());
         if(!button)return {found:false};
         button.scrollIntoView({block:'nearest',inline:'nearest'});
         const rect=button.getBoundingClientRect();
@@ -977,7 +2391,7 @@ class AndroidDeliveryInstrumentedTest {
           fully_visible:rect.left>=left-0.6&&rect.right<=left+width+0.6&&rect.top>=top-0.6&&rect.bottom<=top+height+0.6,
           hit:hit===button||button.contains(hit),disabled:button.disabled};
       })()
-    """.trimIndent().replace("NAME", JSONObject.quote(name))
+    """.trimIndent().replace("NAME", JSONObject.quote(name)).replace("SELECTOR", JSONObject.quote(selector))
     var target = JSONObject()
     var mapping = JSONObject()
     var phase = "readiness"
@@ -1009,6 +2423,7 @@ class AndroidDeliveryInstrumentedTest {
         SystemClock.sleep(100L)
       }
       assertTrue("the native control must be enabled and whole inside the actual visible app window before a single tap", ready)
+      if (deadlineOverride != null) assertTrue("native control activation must retain the original action deadline", SystemClock.elapsedRealtime() < deadlineOverride)
       val downTime = SystemClock.uptimeMillis()
       val down = MotionEvent.obtain(downTime, downTime, MotionEvent.ACTION_DOWN, mapping.getDouble("screen_x").toFloat(), mapping.getDouble("screen_y").toFloat(), 0)
       val up = MotionEvent.obtain(downTime, SystemClock.uptimeMillis(), MotionEvent.ACTION_UP, mapping.getDouble("screen_x").toFloat(), mapping.getDouble("screen_y").toFloat(), 0)
@@ -1378,9 +2793,9 @@ class AndroidDeliveryInstrumentedTest {
     expected: String,
     phase: String,
     selectionStart: Int? = null,
-    selectionEnd: Int? = null
+    selectionEnd: Int? = null, deadlineOverride: Long? = null
   ): JSONObject {
-    val deadline = SystemClock.elapsedRealtime() + 10_000L
+    val deadline = minOf(SystemClock.elapsedRealtime() + 10_000L, deadlineOverride ?: Long.MAX_VALUE)
     var latest = JSONObject()
     while (SystemClock.elapsedRealtime() < deadline) {
       val extracted = onEditorInputThread(connection, handler) {
@@ -1405,9 +2820,9 @@ class AndroidDeliveryInstrumentedTest {
 
   private fun waitForCondition(
     scenario: ActivityScenario<MainActivity>, script: String, reason: String, observations: JSONObject? = null,
-    prerequisite: (() -> Boolean)? = null
+    deadlineOverride: Long? = null, prerequisite: (() -> Boolean)? = null
   ) {
-    val deadline = SystemClock.elapsedRealtime() + 30_000L
+    val deadline = deadlineOverride ?: (SystemClock.elapsedRealtime() + 30_000L)
     while (SystemClock.elapsedRealtime() < deadline) {
       if (prerequisite != null) {
         val ready = runCatching { prerequisite() }
@@ -1429,7 +2844,7 @@ class AndroidDeliveryInstrumentedTest {
             .put("last_callback_timeout", failure?.message == "WebView image control did not complete")
         }
       }
-      if (result.getOrDefault("false") == "true") return
+      if (result.getOrDefault("false") == "true" && (deadlineOverride == null || SystemClock.elapsedRealtime() < deadline)) return
       SystemClock.sleep(100L)
     }
     throw AssertionError(reason)
@@ -1652,6 +3067,10 @@ class AndroidDeliveryInstrumentedTest {
       assertEquals(4, bitmap.width)
       assertEquals(3, bitmap.height)
       for (y in 0 until 3) for (x in 0 until 4) assertEquals("selected DIB pixels must match independent PNG fixture", expected.getPixel(x,y), bitmap.getPixel(x,y))
+      val actualPixels = java.nio.ByteBuffer.allocate(4 * 3 * 4)
+      val expectedPixels = java.nio.ByteBuffer.allocate(4 * 3 * 4)
+      for (y in 0 until 3) for (x in 0 until 4) { actualPixels.putInt(bitmap.getPixel(x,y)); expectedPixels.putInt(expected.getPixel(x,y)) }
+      recordJourneyReadback(6, "png_pixels", expectedPixels.array(), actualPixels.array())
       bitmap.recycle(); expected.recycle()
       exportChoice(scenario, chosen(misreported), "Export could not complete safely.")
       assertTrue("misreported-size destination must survive without truncation", concurrent.contentEquals(resolver.openInputStream(misreported)!!.use { it.readBytes() }))
@@ -1728,7 +3147,7 @@ class AndroidDeliveryInstrumentedTest {
       val latch = CountDownLatch(1)
       view.get()?.let { webView ->
         instrumentation.runOnMainSync {
-          webView.evaluateJavascript("(()=>{const image=document.querySelector('.image-preview');const background=document.querySelector('select[aria-label=\"Image background\"]');const status=document.querySelector('.image-status');const matches=!!image && image.alt===$expectedLiteral;const blob=!!image && image.src.startsWith('blob:');const changed=!$changed || (!!image && image.src!==window.__s040PreviousPreview);return {pass:changed && !!background && matches && image.complete && image.naturalWidth===4 && image.naturalHeight===3 && blob,matches:matches,complete:!!image && image.complete,width:image ? image.naturalWidth : 0,height:image ? image.naturalHeight : 0,blob:blob,background:!!background,status:status ? status.textContent.slice(0,256) : ''};})()") {
+          webView.evaluateJavascript("(()=>{const image=document.querySelector('.image-preview');const background=document.querySelector('select[aria-label=\"Image background\"]');const status=document.querySelector('.image-status');const matches=!!image && image.alt===$expectedLiteral;const blob=!!image && image.src.startsWith('blob:');const changed=!$changed || (!!image && image.src!==window.__s040PreviousPreview);return {pass:changed && matches && image.complete && image.naturalWidth===4 && image.naturalHeight===3 && blob,matches:matches,complete:!!image && image.complete,width:image ? image.naturalWidth : 0,height:image ? image.naturalHeight : 0,blob:blob,background:!!background,status:status ? status.textContent.slice(0,256) : ''};})()") {
             result.set(it ?: "")
             latch.countDown()
           }

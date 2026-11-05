@@ -179,3 +179,13 @@ pub struct AndroidBackResponse<'a> {
     pub request_id: &'a str,
     pub handled: bool,
 }
+
+/// Installed package facts read from Android's package manager.
+#[derive(Clone, Debug, Deserialize)]
+pub struct InstalledApplicationInfo {
+    pub package_identifier: String,
+    pub version: String,
+    pub version_code: u64,
+    pub channel: String,
+    pub platform: String,
+}

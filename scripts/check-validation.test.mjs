@@ -173,6 +173,57 @@ test('Mermaid launcher failure names the first pending source', async (t) => {
   );
 });
 
+test('Documentation discovery excludes private session inputs while rejecting broken source links', async (t) => {
+  const root = await temporaryRepository(t);
+  await writeFixture(root, 'README.md', '# Source documentation\n');
+  await writeFixture(
+    root,
+    '.codex-tmp/s047/private.md',
+    '[Private](https://private.invalid/input)\n\n```mermaid\nnot-a-diagram\n```\n',
+  );
+  const observed = [];
+  const checkLinks = async (markdown) => {
+    observed.push(markdown);
+    return markdown.includes('invalid')
+      ? [
+          {
+            link: 'https://source.invalid/broken',
+            status: 'dead',
+            statusCode: 404,
+          },
+        ]
+      : [];
+  };
+  assert.deepEqual(
+    await validateLinks({
+      repositoryRoot: root,
+      configuration: {},
+      checkLinks,
+    }),
+    { fileCount: 1, linkCount: 0 },
+  );
+  assert.equal(observed.length, 1);
+  assert.ok(observed.every((markdown) => !markdown.includes('Private')));
+  assert.deepEqual(
+    await validateMermaid({
+      repositoryRoot: root,
+      launchBrowser: async () => {
+        throw new Error('private_diagram_must_not_launch_browser');
+      },
+    }),
+    { diagramCount: 0, fileCount: 1 },
+  );
+  await writeFixture(
+    root,
+    'docs/broken.md',
+    '[Source](https://source.invalid/broken)\n',
+  );
+  await assert.rejects(
+    validateLinks({ repositoryRoot: root, configuration: {}, checkLinks }),
+    /docs\/broken\.md: dead link/,
+  );
+});
+
 test('Link validation accepts alive results and preserves path context', async (t) => {
   const root = await temporaryRepository(t);
   await writeFixture(
@@ -323,7 +374,66 @@ test('Android delivery instrumentation gets a bounded clean-state retry without 
     runner,
     /ANDROID_INSTRUMENTATION_RESET_APP_DATA:-false.*pm clear com\.shruggietech\.glitchpad/su,
   );
-  assert.match(workflow, /bash scripts\/run-android-s046-journeys\.sh/u);
+  assert.match(workflow, /bash scripts\/run-android-s047-journeys\.sh/u);
+  const campaign = await readFile(
+    join(repositoryRoot, 'scripts', 'run-android-s047-journeys.sh'),
+    'utf8',
+  );
+  const native = await readFile(
+    join(
+      repositoryRoot,
+      'crates',
+      'glitchpad-host',
+      'gen',
+      'android',
+      'app',
+      'src',
+      'androidTest',
+      'java',
+      'com',
+      'shruggietech',
+      'glitchpad',
+      'source',
+      'AndroidDeliveryInstrumentedTest.kt',
+    ),
+    'utf8',
+  );
+  assert.match(
+    campaign,
+    /run_task authoring standaloneAuthoringAndDiagnosticJourneys/u,
+  );
+  assert.match(
+    campaign,
+    /if ANDROID_INSTRUMENTATION_RESET_APP_DATA=true[^\n]+draftRecoveryAcrossProcessBoundary[^\n]+seed; then[\s\S]+ANDROID_INSTRUMENTATION_RESET_APP_DATA=false[^\n]+draftRecoveryAcrossProcessBoundary[^\n]+verify/u,
+  );
+  assert.match(
+    native,
+    /fun s047MarkdownJourney\(\)[\s\S]+governedMarkdownDeliveryRoutes\(\)/u,
+  );
+  assert.match(
+    native,
+    /fun s047ImageJourney\(\)[\s\S]+resolvedIntentDisplaysColdAndWarmProviderDocuments\(\)/u,
+  );
+  assert.match(
+    native,
+    /fun s047FaultJourney\(\)[\s\S]+rootFailureRetainsDraft\(\)[\s\S]+verifyMarkdownFailures\(scenario, corpus\)/u,
+  );
+  assert.match(
+    native,
+    /val deadline = deadlineOverride \?: \(SystemClock\.elapsedRealtime\(\) \+ 30_000L\)/u,
+  );
+  assert.match(
+    runner,
+    /adb_exit_status == 0 && marker_present == 1 && junit_success == 1 && instrumentation_failure == 0/u,
+  );
+  assert.match(
+    runner,
+    /INSTRUMENTATION_\(FAILED\|ABORTED\)[\s\S]+INSTRUMENTATION_CODE:/u,
+  );
+  assert.match(
+    runner,
+    /attempt_output="\$\{output%\.txt\}-attempt-\$\{attempt\}\.txt"/u,
+  );
   assert.doesNotMatch(
     workflow,
     /ANDROID_INSTRUMENTATION_RESET_APP_DATA=true[^\n]+RestorationInstrumentedTest/u,

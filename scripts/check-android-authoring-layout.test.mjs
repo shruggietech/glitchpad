@@ -100,7 +100,7 @@ const diagnosticMeasured = () => ({
   frameCount: 1,
   visible: { left: 0, top: 48, right: 320, bottom: 592 },
   actions: [
-    'Close diagnostics',
+    'Close Diagnostics',
     'Save previewed bundle',
     'Share previewed bundle',
     'Clear diagnostics',
@@ -109,9 +109,9 @@ const diagnosticMeasured = () => ({
     left: 16,
     top: 100,
     right: 216,
-    bottom: 144,
+    bottom: 148,
     width: 200,
-    height: 44,
+    height: 48,
     hit: true,
   })),
   preview: [
@@ -266,4 +266,39 @@ test('the contrast gate retains disabled measurements while requiring every enab
     () => assertSurfaceContrast(measured),
     /measure actual status/u,
   );
+});
+
+test('diagnostic audit rejects a44px control under the48dp S047 contract', () => {
+  const measured = diagnosticMeasured();
+  measured.actions[1].height = 44;
+  assert.throws(() => assertDiagnosticMeasurement(measured), /48dp/);
+});
+
+test('accepts a measured chrome trigger without reserving bottom dock space', () => {
+  const value = measured();
+  Object.assign(value.trigger, { top: 0, bottom: 48 });
+  value.document.top = 49;
+  value.document.height = 591;
+  value.paddingBottom = 0;
+  assert.doesNotThrow(() => assertAuthoringMeasurement(value));
+  value.trigger.bottom = 80;
+  assert.throws(() => assertAuthoringMeasurement(value), /reserve/);
+});
+
+test('requires an open compact trigger to be inert while every menu choice remains hit-testable', () => {
+  const value = measured();
+  value.addOpen = true;
+  const background = {
+    ...value.actions[0],
+    label: 'Add document',
+    hit: false,
+    backgroundInert: true,
+  };
+  value.actions.push(background);
+  assert.doesNotThrow(() => assertAuthoringMeasurement(value));
+  value.addOpen = false;
+  assert.throws(() => assertAuthoringMeasurement(value), /inert/);
+  value.addOpen = true;
+  value.actions[0].backgroundInert = true;
+  assert.throws(() => assertAuthoringMeasurement(value), /Add document/);
 });

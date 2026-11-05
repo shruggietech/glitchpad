@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "slice": "S047",
+  "package": "mermaid",
+  "version": "12.0.0",
+  "registry_integrity": "sha512-/wQXC9iBxoGV8p3erbvaXs9h77VyLDBH6GdayVjj3hEcSQhFU4N1WUhUppotCEqlIxI2pRMwjwBSwTB1MfZBgQ==",
+  "upstream_license": "MIT",
+  "upstream_license_file_sha256": "ec9fb67dcb25eccc416ed56e1aab819222c805a2a4bfe4cb19e7556bf2ffde80",
+  "patch_path": "patches/mermaid@12.0.0.patch",
+  "patch_sha256": "d1a3f126a9aa1fae2924142aaea71323c88ccb445960d16ed8a9a4a5f0446e6a",
+  "pnpm_patch_hash": "d1a3f126a9aa1fae2924142aaea71323c88ccb445960d16ed8a9a4a5f0446e6a",
+  "change": "Use a private disabled stylesheet in an unattached HTML document when the browser cannot construct CSSStyleSheet. Preserve native CSSOM parsing, serialization, theme CSS fallback, global constructors and active-document styles.",
+  "files": [
+    {
+      "path": "dist/mermaid.core.mjs",
+      "original_sha256": "07703cb6ec75ac4a0d8b7224676a5a695977981cad8a1c9a82d785377c6ebe64",
+      "modified_sha256": "68965dde7e56bf1be81ada182ff4438d62bea994463554114892327a52625bce"
+    },
+    {
+      "path": "dist/chunks/mermaid.core/chunk-O7XYJQB3.mjs",
+      "original_sha256": "47024e162ce56e54ebe58aba84e81d19ead8bcc973405ed13e08855a88ac6c64",
+      "modified_sha256": "2cd20be2dd6ba8d6a86765e67edcdc046aeff4d3aa3e077c6f9f6462be92d3b9"
+    },
+    {
+      "path": "dist/chunks/mermaid.core/c4Diagram-YGBWAQC7.mjs",
+      "original_sha256": "74e67fcb5695642b0779bd7c9e9610f1b31b3cd64b456014eea915b70f2b6834",
+      "modified_sha256": "b6ab437632d5114888b3604a1ad2709c099a81d876f3d2a54db0b2240b8b7c18"
+    }
+  ]
+}

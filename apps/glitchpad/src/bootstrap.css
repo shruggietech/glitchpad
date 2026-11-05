@@ -29,3 +29,25 @@
   outline: var(--bb-focus-width) solid var(--bb-focus-ring);
   outline-offset: var(--bb-focus-offset);
 }
+
+.recovery-help {
+  margin-top: 1rem;
+}
+.recovery-help button {
+  min-height: 48px;
+  min-width: 48px;
+  margin: 0.25rem;
+  white-space: normal;
+}
+.recovery-help pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 50vh;
+  overflow: auto;
+}
+.recovery-help dd {
+  overflow-wrap: anywhere;
+}
+.recovery-help [hidden] {
+  display: none;
+}

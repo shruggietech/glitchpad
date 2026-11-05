@@ -106,8 +106,37 @@ export const initialMermaidViewport = (): MermaidViewportState => ({
   pan_y: 0,
 });
 
-export const clampMermaidZoom = (zoom: number): number =>
-  Math.min(MERMAID_MAX_ZOOM, Math.max(MERMAID_MIN_ZOOM, zoom));
+export const clampMermaidZoom = (
+  zoom: number,
+  minimum = MERMAID_MIN_ZOOM,
+): number => Math.min(MERMAID_MAX_ZOOM, Math.max(minimum, zoom));
+
+export interface MermaidViewportExtents {
+  content_width: number;
+  content_height: number;
+  viewport_width: number;
+  viewport_height: number;
+}
+export const mermaidFitScale = (e: MermaidViewportExtents): number =>
+  e.content_width > 0 &&
+  e.content_height > 0 &&
+  e.viewport_width > 0 &&
+  e.viewport_height > 0
+    ? Math.min(
+        1,
+        e.viewport_width / e.content_width,
+        e.viewport_height / e.content_height,
+      )
+    : 1;
+export const mermaidEffectiveScale = (
+  state: MermaidViewportState,
+  e: MermaidViewportExtents,
+): number =>
+  state.mode === 'fit'
+    ? mermaidFitScale(e)
+    : state.mode === 'actual'
+      ? 1
+      : state.zoom;
 
 export const clampMermaidPan = (
   offset: number,
@@ -118,12 +147,24 @@ export const clampMermaidPan = (
   return Math.min(maximum, Math.max(-maximum, offset));
 };
 
-const mermaidEdgeTokens = ['-.->', '<==', '<--', '-->', '---', '==>', '~~>', '--x', '--o'] as const;
+const mermaidEdgeTokens = [
+  '-.->',
+  '<==',
+  '<--',
+  '-->',
+  '---',
+  '==>',
+  '~~>',
+  '--x',
+  '--o',
+] as const;
 
 export const countMermaidEdges = (source: string): number => {
   let count = 0;
   for (let index = 0; index < source.length;) {
-    const token = mermaidEdgeTokens.find((candidate) => source.startsWith(candidate, index));
+    const token = mermaidEdgeTokens.find((candidate) =>
+      source.startsWith(candidate, index),
+    );
     if (!token) {
       index += 1;
       continue;
@@ -141,7 +182,10 @@ export const detectMermaidType = (source: string): string | null => {
     .map((line) => line.trim())
     .find((line) => line && !line.startsWith('%%'));
   if (!body) return null;
-  const match = /^(?:graph|flowchart|sequenceDiagram|classDiagram|stateDiagram(?:-v2)?|erDiagram|journey|gantt|pie|quadrantChart|requirementDiagram|gitGraph|mindmap|timeline|zenuml|sankey-beta|xychart-beta|block-beta|packet-beta|kanban|architecture-beta|radar-beta|treemap-beta)\b/iu.exec(body);
+  const match =
+    /^(?:graph|flowchart|sequenceDiagram|classDiagram|stateDiagram(?:-v2)?|erDiagram|journey|gantt|pie|quadrantChart|requirementDiagram|gitGraph|mindmap|timeline|zenuml|sankey-beta|xychart-beta|block-beta|packet-beta|kanban|architecture-beta|radar-beta|treemap-beta)\b/iu.exec(
+      body,
+    );
   return match?.[0] ?? null;
 };
 

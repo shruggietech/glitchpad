@@ -5,6 +5,7 @@ use tauri::Emitter;
 use tauri::Manager;
 
 pub mod app_state;
+pub mod application_info;
 #[cfg(not(mobile))]
 pub mod desktop_delivery;
 pub mod external_link;
@@ -122,6 +123,8 @@ pub fn run() {
     let builder = builder.plugin(glitchpad_android_source::init());
     #[cfg(not(mobile))]
     let builder = builder.invoke_handler(tauri::generate_handler![
+        application_info,
+        application_notices,
         images::identify_image_source,
         images::render_image_source,
         images::cancel_image_render,
@@ -163,6 +166,8 @@ pub fn run() {
     ]);
     #[cfg(target_os = "android")]
     let builder = builder.invoke_handler(tauri::generate_handler![
+        application_info,
+        application_notices,
         images::identify_image_source,
         images::render_image_source,
         images::cancel_image_render,
@@ -743,4 +748,52 @@ fn complete_android_back(
     handled: bool,
 ) -> Result<(), glitchpad_core::contracts::CoreError> {
     host.complete_back(&request_id, handled)
+}
+
+#[tauri::command]
+async fn application_info(
+    app: tauri::AppHandle,
+) -> Result<application_info::InstalledApplicationInfo, glitchpad_core::contracts::CoreError> {
+    #[cfg(target_os = "android")]
+    {
+        use glitchpad_android_source::AndroidSourceExt;
+        android_interactive::run(move || {
+            let value = app.android_source().application_info().map_err(|_| {
+                glitchpad_core::contracts::CoreError::new(
+                    glitchpad_core::contracts::CoreErrorCategory::Unavailable,
+                    "Installed application information is unavailable",
+                    true,
+                    true,
+                )
+            })?;
+            Ok(application_info::InstalledApplicationInfo {
+                package_identifier: value.package_identifier,
+                version: value.version,
+                version_code: Some(value.version_code),
+                channel: value.channel,
+                platform: value.platform,
+                build_commit: application_info::compiled_source(),
+            })
+        })
+        .await
+    }
+    #[cfg(not(target_os = "android"))]
+    Ok(application_info::InstalledApplicationInfo {
+        package_identifier: app.config().identifier.clone(),
+        version: app.package_info().version.to_string(),
+        version_code: None,
+        channel: if cfg!(debug_assertions) {
+            "debug"
+        } else {
+            "release"
+        }
+        .into(),
+        platform: std::env::consts::OS.into(),
+        build_commit: application_info::compiled_source(),
+    })
+}
+
+#[tauri::command]
+fn application_notices() -> String {
+    application_info::offline_notices()
 }

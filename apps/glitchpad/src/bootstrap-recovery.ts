@@ -1,3 +1,4 @@
+import { appendRecoveryHelp } from './recovery-help';
 export type RecoveryFailureComponent =
   'bootstrap' | 'application' | 'document' | 'markdown';
 export type RecoveryFailureReporter = (
@@ -89,6 +90,7 @@ const showBootstrapFailure = (
     });
   });
   surface.append(title, explanation, code, restart, status);
+  appendRecoveryHelp(surface);
   root.replaceChildren(surface);
   restart.focus();
 };

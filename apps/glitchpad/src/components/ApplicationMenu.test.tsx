@@ -1,10 +1,14 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import axe from 'axe-core';
-import { describe, expect, it, vi } from 'vitest';
-
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CommandDescriptor } from '../domain/commands';
 import { ApplicationMenu } from './ApplicationMenu';
-
 const command: CommandDescriptor = {
   id: 'search',
   label: 'Search',
@@ -13,72 +17,103 @@ const command: CommandDescriptor = {
   targetSessionId: 'notes',
   targetRevision: 1,
 };
-
+beforeEach(() => {
+  const host = document.createElement('div');
+  host.id = 'bb-overlay-root';
+  document.body.append(host);
+});
+afterEach(() => document.getElementById('bb-overlay-root')?.remove());
+const props = () => ({
+  commands: [command],
+  canOpen: true,
+  onOpen: vi.fn(),
+  onInvoke: vi.fn(),
+  onPreferences: vi.fn(),
+  onDiagnostics: vi.fn(),
+  onHelp: vi.fn(),
+  onAbout: vi.fn(),
+});
 describe('ApplicationMenu', () => {
-  it('keeps commands hidden until requested and routes the chosen action', () => {
-    const onInvoke = vi.fn();
-    render(<ApplicationMenu commands={[command]} canOpen onOpen={vi.fn()} onInvoke={onInvoke} onPreferences={vi.fn()} onDiagnostics={vi.fn()} />);
-
-    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+  it('separates application destinations from current document tools', async () => {
+    const p = props();
+    render(<ApplicationMenu {...p} />);
     fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
-    const menu = screen.getByRole('menu', { name: 'Glitchpad menu' });
-    fireEvent.click(within(menu).getByRole('menuitem', { name: /^Search/u }));
-
-    expect(onInvoke).toHaveBeenCalledWith(command, expect.any(HTMLButtonElement));
-    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+    const menu = await screen.findByRole('menu', { name: 'Glitchpad menu' });
+    expect(
+      within(menu).queryByRole('menuitem', { name: /Search/ }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(
+      within(menu).getByRole('menuitem', { name: 'About Glitchpad' }),
+    );
+    expect(p.onAbout).toHaveBeenCalledWith(expect.any(HTMLButtonElement));
+    fireEvent.click(screen.getByRole('button', { name: 'Document tools' }));
+    fireEvent.click(
+      within(
+        await screen.findByRole('menu', { name: 'Document tools' }),
+      ).getByRole('menuitem', { name: /Search/ }),
+    );
+    expect(p.onInvoke).toHaveBeenCalledWith(
+      command,
+      expect.any(HTMLButtonElement),
+    );
   });
-
-  it('dismisses with Escape and restores focus to the trigger', () => {
-    render(<ApplicationMenu commands={[command]} canOpen={false} onOpen={vi.fn()} onInvoke={vi.fn()} onPreferences={vi.fn()} onDiagnostics={vi.fn()} />);
+  it('dismisses Escape and restores its actual invoking control', async () => {
+    render(<ApplicationMenu {...props()} />);
     const trigger = screen.getByRole('button', { name: 'Menu' });
     fireEvent.click(trigger);
-    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' });
-    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
-    expect(trigger).toHaveFocus();
+    fireEvent.keyDown(await screen.findByRole('menu'), { key: 'Escape' });
+    await waitFor(() =>
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument(),
+    );
+    await waitFor(() => expect(trigger).toHaveFocus());
   });
-
-  it('focuses the first enabled item when earlier commands are disabled', () => {
-    const disabled = { ...command, id: 'save' as const, label: 'Save', enabled: false };
-    render(<ApplicationMenu commands={[disabled, command]} canOpen={false} onOpen={vi.fn()} onInvoke={vi.fn()} onPreferences={vi.fn()} onDiagnostics={vi.fn()} />);
-
-    fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
-
-    expect(screen.getByRole('menuitem', { name: /^Search/u })).toHaveFocus();
+  it('focuses the first enabled document item and supports menu keyboard traversal', async () => {
+    render(
+      <ApplicationMenu
+        {...props()}
+        canOpen={false}
+        commands={[
+          { ...command, id: 'save', label: 'Save', enabled: false },
+          command,
+        ]}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Document tools' }));
+    const search = await screen.findByRole('menuitem', { name: /Search/ });
+    expect(search).toHaveFocus();
+    fireEvent.keyDown(search, { key: 'Home' });
+    expect(search).toHaveFocus();
   });
-
-  it('keeps an inactive trigger connected without exposing it to interaction', () => {
-    const { rerender } = render(<ApplicationMenu active commands={[command]} canOpen onOpen={vi.fn()} onInvoke={vi.fn()} onPreferences={vi.fn()} onDiagnostics={vi.fn()} />);
-    const trigger = screen.getByRole('button', { name: 'Menu' });
-
-    rerender(<ApplicationMenu active={false} commands={[command]} canOpen onOpen={vi.fn()} onInvoke={vi.fn()} onPreferences={vi.fn()} onDiagnostics={vi.fn()} />);
-
-    expect(trigger).toBeInTheDocument();
+  it('keeps an inactive trigger connected without exposing interaction', () => {
+    render(<ApplicationMenu {...props()} active={false} />);
+    const trigger = document.querySelector('.application-menu-trigger');
     expect(trigger).toBeDisabled();
     expect(trigger).toHaveAttribute('aria-hidden', 'true');
   });
-
-  it('keeps a fixed trigger wrapper while the popup is disclosed', async () => {
-    const { container } = render(<ApplicationMenu commands={[command]} canOpen onOpen={vi.fn()} onInvoke={vi.fn()} onPreferences={vi.fn()} onDiagnostics={vi.fn()} />);
-    const trigger = screen.getByRole('button', { name: 'Menu' });
+  it('uses the AppFrame portal instead of clipping its menu inside the chrome', async () => {
+    const { container } = render(<ApplicationMenu {...props()} />);
     const shell = container.querySelector('.application-menu-shell');
-    expect(shell).toHaveAttribute('data-menu-open', 'false');
-    expect(trigger.parentElement).toBe(shell);
-
-    fireEvent.click(trigger);
-    expect(shell).toHaveAttribute('data-menu-open', 'true');
-    expect(screen.getByRole('menu').parentElement).toBe(shell);
-    expect(trigger.parentElement).toBe(shell);
-
-    fireEvent.pointerDown(document.body);
-    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
-    expect(shell).toHaveAttribute('data-menu-open', 'false');
-    await waitFor(() => expect(trigger).toHaveFocus());
-  });
-
-  it('has no serious accessibility violations while disclosed', async () => {
-    const { container } = render(<ApplicationMenu commands={[command]} canOpen onOpen={vi.fn()} onInvoke={vi.fn()} onPreferences={vi.fn()} onDiagnostics={vi.fn()} />);
     fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
-    const results = await axe.run(container);
-    expect(results.violations.filter(({ impact }) => impact === 'critical' || impact === 'serious')).toEqual([]);
+    const menu = await screen.findByRole('menu');
+    expect(shell).toHaveAttribute('data-menu-open', 'true');
+    expect(document.getElementById('bb-overlay-root')).toContainElement(menu);
+    expect(shell).not.toContainElement(menu);
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Close Application menu' }),
+    );
+    await waitFor(() =>
+      expect(shell).toHaveAttribute('data-menu-open', 'false'),
+    );
+  });
+  it('has no serious accessibility violations while disclosed', async () => {
+    render(<ApplicationMenu {...props()} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
+    await screen.findByRole('menu');
+    const results = await axe.run(document.getElementById('bb-overlay-root')!);
+    expect(
+      results.violations.filter(
+        (v) => v.impact === 'critical' || v.impact === 'serious',
+      ),
+    ).toEqual([]);
   });
 });

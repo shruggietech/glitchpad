@@ -25,6 +25,17 @@ case "$*" in
   *#resolvedIntentDisplaysColdAndWarmProviderDocuments*) screenshot="s046-markdown-delivery-failure" ;;
 esac
 
+capture_png() {
+  local remote="$1" screenshot_output="$2"
+  local capture_error="${screenshot_output%.png}-capture-error.txt" capture_status=0 signature
+  adb exec-out run-as com.shruggietech.glitchpad cat "files/$remote.png" > "$screenshot_output" 2>"$capture_error" || capture_status=$?
+  signature=$(od -An -tx1 -N8 "$screenshot_output" | tr -d ' \n')
+  if (( capture_status != 0 )) || [[ "$signature" != 89504e470d0a1a0a ]]; then
+    mv "$screenshot_output" "${screenshot_output%.png}-capture-output.txt"
+    printf 'capture_status=%s; png_signature_valid=false\n' "$capture_status" >> "$capture_error"
+  elif [[ ! -s "$capture_error" ]]; then rm -f "$capture_error"; fi
+}
+
 for attempt in 1 2; do
   adb shell am force-stop com.shruggietech.glitchpad || true
   if [[ "${ANDROID_INSTRUMENTATION_PRESERVE_TEST_INPUT_METHOD:-false}" != "true" ]]; then
@@ -33,6 +44,7 @@ for attempt in 1 2; do
   if [[ -n "$screenshot" ]]; then
     adb shell run-as com.shruggietech.glitchpad rm -f "files/${screenshot}.png" >/dev/null 2>&1 || true
   fi
+  if [[ " $* " == *" -e s047 true "* ]]; then for row in {1..10}; do adb shell run-as com.shruggietech.glitchpad rm -f "files/s047-row-$row.png" "files/s047-row-$row.json" >/dev/null 2>&1 || true; done; fi
   adb logcat -c || true
   attempt_output="${output%.txt}-attempt-${attempt}.txt"
   adb_exit_status=0
@@ -41,20 +53,12 @@ for attempt in 1 2; do
   cat "$attempt_output"
   logcat_output="${output%.txt}-attempt-${attempt}-logcat.txt"
   adb logcat -d -t 2000 > "$logcat_output" 2>&1 || true
-  if [[ -n "$screenshot" ]]; then
-    screenshot_output="${output%.txt}-attempt-${attempt}-${screenshot}.png"
-    capture_error="${screenshot_output%.png}-capture-error.txt"
-    capture_status=0
-    adb exec-out run-as com.shruggietech.glitchpad cat "files/${screenshot}.png" > "$screenshot_output" 2>"$capture_error" || capture_status=$?
-    signature=$(od -An -tx1 -N8 "$screenshot_output" | tr -d ' \n')
-    # Some older adb/run-as combinations return success with a remote cat error
-    # on stdout. Such text is diagnostic output, never screenshot evidence.
-    if (( capture_status != 0 )) || [[ "$signature" != 89504e470d0a1a0a ]]; then
-      mv "$screenshot_output" "${screenshot_output%.png}-capture-output.txt"
-      printf 'capture_status=%s; png_signature_valid=false\n' "$capture_status" >> "$capture_error"
-    elif [[ ! -s "$capture_error" ]]; then
-      rm -f "$capture_error"
-    fi
+  if [[ -n "$screenshot" ]]; then capture_png "$screenshot" "${output%.txt}-attempt-${attempt}-$screenshot.png"; fi
+  if [[ " $* " == *" -e s047 true "* ]]; then
+    for row in {1..10}; do
+      capture_png "s047-row-$row" "${output%.txt}-attempt-${attempt}-s047-row-$row.png"
+      adb exec-out run-as com.shruggietech.glitchpad cat "files/s047-row-$row.json" > "${output%.txt}-attempt-${attempt}-s047-row-$row.json" 2> "${output%.txt}-attempt-${attempt}-s047-row-$row-json-capture-error.txt" || true
+    done
   fi
   # A functional marker before teardown cannot replace a clean runner result.
   marker_present=0

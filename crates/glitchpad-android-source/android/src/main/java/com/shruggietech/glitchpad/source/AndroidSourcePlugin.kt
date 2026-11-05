@@ -6,6 +6,7 @@ import android.content.ClipData
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import androidx.activity.BackEventCompat
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.OnBackPressedDispatcherOwner
 import androidx.core.content.FileProvider
@@ -51,6 +52,7 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
   private val initialIntentConsumed = AtomicBoolean(false)
   private var backCallback: OnBackPressedCallback? = null
   private var pendingBack: String? = null
+  private val backObservation = IntArray(7)
   private val shareJobs = ConcurrentHashMap<Invoke, DiagnosticShareJob>()
   private val sharePending = AtomicBoolean(false)
   private val mainHandler = Handler(Looper.getMainLooper())
@@ -495,14 +497,29 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
     return DocumentDestination(uri.authority, runCatching { DocumentsContract.getDocumentId(uri) }.getOrNull())
   }
 
+  private fun observeBack(index: Int) {
+    if (backObservation[index] < Int.MAX_VALUE) backObservation[index]++
+  }
+
+  private fun backRouteSnapshot(): JSObject = JSObject()
+    .put("started", backObservation[0]).put("progressed", backObservation[1]).put("cancelled", backObservation[2])
+    .put("committed", backObservation[3]).put("requested", backObservation[4])
+    .put("completed", backObservation[5]).put("delegated", backObservation[6])
+    .put("pending", pendingBack != null).put("enabled", backCallback?.isEnabled == true)
+
   private fun installBackCallback() {
     if (backCallback != null) return
     val owner = activity as? OnBackPressedDispatcherOwner ?: return
     val callback = object : OnBackPressedCallback(true) {
+      override fun handleOnBackStarted(backEvent: BackEventCompat) { observeBack(0) }
+      override fun handleOnBackProgressed(backEvent: BackEventCompat) { observeBack(1) }
+      override fun handleOnBackCancelled() { observeBack(2) }
       override fun handleOnBackPressed() {
+        observeBack(3)
         if (pendingBack != null) return
         val request = UUID.randomUUID().toString()
         pendingBack = request
+        observeBack(4)
         trigger("androidBackRequested", JSObject().put("requestId", request))
         mainHandler.postDelayed({ if (pendingBack == request) pendingBack = null }, 5_000)
       }
@@ -516,8 +533,10 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
     val args = invoke.parseArgs(AndroidBackArgs::class.java)
     activity.runOnUiThread {
       if (args.requestId == pendingBack) {
+        observeBack(5)
         pendingBack = null
         if (!args.handled) {
+          observeBack(6)
           val owner = activity as? OnBackPressedDispatcherOwner
           backCallback?.isEnabled = false
           try { owner?.onBackPressedDispatcher?.onBackPressed() }
@@ -525,6 +544,21 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
         }
       }
       invoke.resolve()
+    }
+  }
+
+  @Command
+  fun applicationInfo(invoke: Invoke) {
+    activity.runOnUiThread {
+      val info = activity.packageManager.getPackageInfo(activity.packageName, 0)
+      val versionCode = if (Build.VERSION.SDK_INT >= 28) info.longVersionCode else {
+        @Suppress("DEPRECATION")
+        info.versionCode.toLong()
+      }
+      invoke.resolve(JSObject().put("package_identifier", activity.packageName)
+        .put("version", info.versionName ?: "unavailable").put("version_code", versionCode)
+        .put("channel", if ((activity.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0) "debug" else "release")
+        .put("platform", "android"))
     }
   }
 

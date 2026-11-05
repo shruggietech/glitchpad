@@ -1,6 +1,20 @@
+import { AppFrameHostBridge } from './components/AppFrameHostBridge';
+import { useNativeViewport } from './components/use-native-viewport';
 import { createDesktopSaveOperationId } from './domain/desktop-delivery-gateway';
 import { externalRevisionMatches } from './domain/contracts';
-import { installRecoveryProbeListener } from './domain/recovery-probes';
+import {
+  installRecoveryProbeListener,
+  RECOVERY_BUILD_VARIANT,
+  FRONTEND_BUILD_COMMIT,
+} from './domain/recovery-probes';
+import { TaskSurface, dismissTopTaskSurface } from './components/TaskSurface';
+import { AboutPanel } from './components/AboutPanel';
+import { useCompactLayout } from './components/use-compact-layout';
+import {
+  nativeApplicationInfoGateway,
+  type ApplicationInfoGateway,
+  type ApplicationInfo,
+} from './domain/application-info';
 import {
   saveFailureReason,
   saveFailureMessage,
@@ -30,7 +44,10 @@ import { DocumentSurface } from './components/DocumentSurface';
 import { MetadataInspector } from './components/MetadataInspector';
 import { PreferencesPanel } from './components/PreferencesPanel';
 import { DiagnosticsPanel } from './components/DiagnosticsPanel';
-import type { TextEditorHandle } from './components/TextEditorSurface';
+import type {
+  TextEditorHandle,
+  EditorCommandState,
+} from './components/TextEditorSurface';
 import {
   RecoveryCandidateResolution,
   RecoveryResolution,
@@ -149,6 +166,7 @@ interface AppProps {
   androidRestorationGateway?: AndroidRestorationGateway | null;
   desktopDeliveryGateway?: DesktopDeliveryGateway | null;
   layoutResizeCanBeIme?: boolean;
+  applicationInfoGateway?: ApplicationInfoGateway;
 }
 
 export function App({
@@ -166,9 +184,47 @@ export function App({
   desktopDeliveryGateway,
   // MainActivity already resizes the WebView for the IME; reserve only visual obstruction.
   layoutResizeCanBeIme = false,
+  applicationInfoGateway = nativeApplicationInfoGateway,
 }: AppProps) {
+  const shellRef = useRef<HTMLDivElement>(null);
   const [state, dispatch] = useReducer(tabReducer, sessions, createTabState);
-  const [commandStatus, setCommandStatus] = useState('');
+  const [commandFeedback, setCommandFeedback] = useState<{
+    text: string;
+    contextual: boolean;
+  }>({ text: '', contextual: false });
+  const commandStatus = commandFeedback.text;
+  const commandStatusVisible =
+    Boolean(commandStatus) && !commandFeedback.contextual;
+  const setCommandStatus = useCallback(
+    (text: string) => setCommandFeedback({ text, contextual: false }),
+    [],
+  );
+  const { compact, short } = useCompactLayout();
+  const [addTriggerHost, setAddTriggerHost] = useState<HTMLElement | null>(
+    null,
+  );
+  const [applicationBusy, setApplicationBusy] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(false);
+  const [documentsOpen, setDocumentsOpen] = useState(false);
+  const documentsOpener = useRef<HTMLButtonElement>(null);
+  const [installedInfo, setInstalledInfo] = useState<ApplicationInfo | null>(
+    null,
+  );
+  const [editorCommandState, setEditorCommandState] =
+    useState<EditorCommandState>({ undo: false, redo: false, wrapped: true });
+  useEffect(() => {
+    let active = true;
+    void applicationInfoGateway
+      .info()
+      .then((info) => {
+        if (active) setInstalledInfo(info);
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [applicationInfoGateway]);
   const [addDocumentOpen, setAddDocumentOpen] = useState(false);
   const [recoveryProbeGeneration, setRecoveryProbeGeneration] = useState(0);
   useEffect(
@@ -191,8 +247,9 @@ export function App({
   const [deliveryError, setDeliveryError] = useState('');
   const [markdownFailureProbe, setMarkdownFailureProbe] = useState(false);
   const [inspectorOpen, setInspectorOpen] = useState(false);
+  const [inspectorExpanded, setInspectorExpanded] = useState(false);
   const [applicationPanel, setApplicationPanel] = useState<
-    'closed' | 'preferences' | 'diagnostics'
+    'closed' | 'preferences' | 'diagnostics' | 'help' | 'about'
   >('closed');
   const [metadataReadySessionId, setMetadataReadySessionId] = useState<
     string | null
@@ -202,6 +259,7 @@ export function App({
   const applicationOpenerRef = useRef<HTMLButtonElement | null>(null);
   const integrityAbortRef = useRef<AbortController | null>(null);
   const integrityRequestIdRef = useRef<string | null>(null);
+  const integrityPendingRef = useRef<MetadataContribution | null>(null);
   const inspectorProjectionAppliedRef = useRef<SessionState | null>(null);
   const activeProjectionAppliedRef = useRef<SessionState | null>(null);
   const presentationProjectionAppliedRef = useRef(new Map<string, string>());
@@ -246,7 +304,9 @@ export function App({
       ? inspectorOpen
         ? 'metadata'
         : 'closed'
-      : applicationPanel,
+      : applicationPanel === 'about' || applicationPanel === 'help'
+        ? 'closed'
+        : applicationPanel,
     selectedPersistenceGateway,
     recovery.recordIds,
   );
@@ -268,6 +328,16 @@ export function App({
         ? nativeDesktopDeliveryGateway
         : null
       : desktopDeliveryGateway;
+  useNativeViewport(
+    shellRef,
+    selectedAndroidDeliveryGateway
+      ? (diagnosticExportGateway?.viewport ??
+          (nativeAndroidDeliveryAvailable()
+            ? nativeAndroidDiagnosticExportGateway.viewport
+            : undefined))
+      : undefined,
+    '--gl-shell-native',
+  );
   const openDesktopSourceIdsRef = useRef(new Set<string>());
   const openAndroidSourceIdsRef = useRef(new Set<string>());
   const pendingDesktopDeliveryProbesRef = useRef(new Map<string, number[]>());
@@ -522,6 +592,7 @@ export function App({
     };
   }, [persistence.restoredSession, selectedAndroidRestorationGateway]);
   useEffect(() => {
+    if (!persistence.ready) return;
     const restored = persistence.restoredSession;
     const projectionFor = (
       session: ShellSession,
@@ -610,7 +681,9 @@ export function App({
             : persistence.preferences.markdown_default_mode
           : null);
       if (desiredMode !== 'rendered' && desiredMode !== 'source') continue;
-      const signature = `${projection?.session_key ?? 'default'}:${desiredMode}`;
+      const signature = projection
+        ? `${projection.session_key}:${desiredMode}`
+        : 'default';
       if (
         presentationProjectionAppliedRef.current.get(session.id) === signature
       )
@@ -638,6 +711,7 @@ export function App({
         });
     }
   }, [
+    persistence.ready,
     persistence.preferences.markdown_default_mode,
     persistence.restoredSession,
     recovery.recordIds,
@@ -683,12 +757,13 @@ export function App({
     activeSession?.revision,
     activeSession?.image_document?.status,
   ]);
-  const commands = commandSetFor(activeSession).filter(
+  const commands = commandSetFor(activeSession, editorCommandState).filter(
     ({ id }) =>
-      id !== 'save' ||
-      (activeSession &&
-        (Boolean(selectedAndroidDeliveryGateway) ||
-          canSaveInPlace(activeSession))),
+      (id !== 'print' || !selectedAndroidDeliveryGateway) &&
+      (id !== 'save' ||
+        (activeSession &&
+          (Boolean(selectedAndroidDeliveryGateway) ||
+            canSaveInPlace(activeSession)))),
   );
   const resolutionSession = state.pendingTransition
     ? (state.sessions.find(
@@ -697,6 +772,7 @@ export function App({
     : null;
 
   useEffect(() => setCommandStatus(''), [state.activeId]);
+  useEffect(() => setInspectorExpanded(false), [state.activeId]);
 
   useEffect(() => {
     if (
@@ -771,14 +847,19 @@ export function App({
   );
 
   const openMetadata = (opener: HTMLElement) => {
+    setInspectorExpanded(false);
     windowProjectionChangedRef.current = true;
     void editorRef.current?.invoke('close_search');
     metadataOpenerRef.current = opener;
     setApplicationPanel('closed');
+    setMenuOpen(false);
+    setToolsOpen(false);
+    setDocumentsOpen(false);
     setInspectorOpen(true);
   };
 
   const closeMetadata = () => {
+    setInspectorExpanded(false);
     integrityAbortRef.current?.abort();
     if (integrityRequestIdRef.current && selectedMetadataGateway)
       void selectedMetadataGateway
@@ -786,6 +867,16 @@ export function App({
         .catch(() => undefined);
     integrityAbortRef.current = null;
     integrityRequestIdRef.current = null;
+    const pending = integrityPendingRef.current;
+    integrityPendingRef.current = null;
+    if (pending)
+      publishMetadata({
+        ...pending,
+        facts: [
+          { key: 'derived.sha256', availability: 'not_provided' },
+          { key: 'derived.sha256_progress', availability: 'not_provided' },
+        ],
+      });
     setInspectorOpen(false);
     const opener = metadataOpenerRef.current;
     requestAnimationFrame(() => {
@@ -799,13 +890,16 @@ export function App({
   };
 
   const openApplicationPanel = (
-    panel: 'preferences' | 'diagnostics',
+    panel: 'preferences' | 'diagnostics' | 'help' | 'about',
     opener: HTMLButtonElement,
   ) => {
     windowProjectionChangedRef.current = true;
     void editorRef.current?.invoke('close_search');
     applicationOpenerRef.current = opener;
     setInspectorOpen(false);
+    setMenuOpen(false);
+    setToolsOpen(false);
+    setDocumentsOpen(false);
     setApplicationPanel(panel);
   };
 
@@ -931,7 +1025,7 @@ export function App({
         openMetadata(opener);
         return true;
       }
-      return (await editorRef.current?.invoke(command.id)) ?? false;
+      return (await editorRef.current?.invoke(command.id, opener)) ?? false;
     });
     if (!mountedRef.current) return;
     if (result.status === 'failed' || result.status === 'unavailable')
@@ -950,6 +1044,30 @@ export function App({
       latest.revision !== target.revision
     ) {
       setCommandStatus('Saved earlier revision. Newer edits remain unsaved.');
+      return;
+    }
+    if (
+      result.status === 'performed' &&
+      [
+        'search',
+        'find_next',
+        'find_previous',
+        'close_search',
+        'go_to_line',
+        'zoom_in',
+        'zoom_out',
+        'fit',
+        'toggle_source',
+        'outline',
+        'metadata',
+        'document_details',
+        'large_text_tools',
+      ].includes(command.id)
+    ) {
+      setCommandFeedback({
+        text: 'Completed ' + command.label + '.',
+        contextual: true,
+      });
       return;
     }
     setCommandStatus(
@@ -1010,6 +1128,7 @@ export function App({
       expected_external_revision: inspectedRevision,
       producer: 'integrity' as const,
     };
+    integrityPendingRef.current = { ...base, facts: [] };
     publishMetadata({
       ...base,
       facts: [
@@ -1028,7 +1147,9 @@ export function App({
       inspectedRevision,
       requestId,
       abort.signal,
-      (progress) =>
+      (progress) => {
+        if (abort.signal.aborted || integrityRequestIdRef.current !== requestId)
+          return;
         publishMetadata({
           ...base,
           facts: [
@@ -1043,11 +1164,14 @@ export function App({
               unit: 'bytes',
             },
           ],
-        }),
+        });
+      },
     )
       .then((progress) => {
-        if (abort.signal.aborted) return;
+        if (abort.signal.aborted || integrityRequestIdRef.current !== requestId)
+          return;
         integrityRequestIdRef.current = null;
+        integrityPendingRef.current = null;
         publishMetadata({
           ...base,
           facts:
@@ -1085,9 +1209,12 @@ export function App({
         });
       })
       .catch((error: unknown) => {
+        if (abort.signal.aborted || integrityRequestIdRef.current !== requestId)
+          return;
         if (error instanceof DOMException && error.name === 'AbortError')
           return;
         integrityRequestIdRef.current = null;
+        integrityPendingRef.current = null;
         publishMetadata({
           ...base,
           facts: [
@@ -1260,6 +1387,9 @@ export function App({
     }
     if (modifier && key === 'w' && state.activeId) {
       event.preventDefault();
+      setMenuOpen(false);
+      setToolsOpen(false);
+      setDocumentsOpen(false);
       dispatch({ type: 'close', id: state.activeId });
       return;
     }
@@ -1303,9 +1433,6 @@ export function App({
           '--bb-ime-block-end',
         ),
       ) || 0;
-    const menu = document.querySelector<HTMLElement>(
-      '.application-menu[role="menu"]',
-    );
     const search = document.querySelector<HTMLElement>(
       '.cm-search,[role="search"]',
     );
@@ -1314,18 +1441,15 @@ export function App({
     else if (addDocumentOpen) setAddDocumentOpen(false);
     else if (recoveryCandidate) resolveRecoveryCandidate('cancel');
     else if (state.pendingTransition) resolveDestructiveTransition('cancel');
-    else if (applicationPanel !== 'closed') {
+    else if (dismissTopTaskSurface()) {
+      /* One controlled top task layer. */
+    } else if (applicationPanel !== 'closed') {
       if (!document.querySelector('.application-sheet[aria-busy="true"]'))
         closeApplicationPanel();
     } else if (inspectorOpen) closeMetadata();
-    else if (menu)
-      menu.dispatchEvent(
-        new KeyboardEvent('keydown', {
-          key: 'Escape',
-          bubbles: true,
-          cancelable: true,
-        }),
-      );
+    else if (menuOpen) setMenuOpen(false);
+    else if (toolsOpen) setToolsOpen(false);
+    else if (documentsOpen) setDocumentsOpen(false);
     else if (!editorRef.current?.dismissModal?.()) {
       if (search)
         void Promise.resolve(editorRef.current?.invoke('close_search')).catch(
@@ -1355,15 +1479,49 @@ export function App({
     };
   }, [selectedAndroidDeliveryGateway]);
 
+  const draftStatus =
+    activeSession?.destination_save_revision != null
+      ? 'Saving…'
+      : activeSession?.dirty
+        ? 'Unsaved changes'
+        : 'Saved';
+  const draftSymbol =
+    activeSession?.destination_save_revision != null
+      ? '…'
+      : activeSession?.dirty
+        ? '•'
+        : '✓';
   return (
     <>
       <AppFrameEnvironmentBridge layoutResizeCanBeIme={layoutResizeCanBeIme} />
+      <AppFrameHostBridge />
       <AppFrame host="tauri" layout="full-bleed">
         <div
+          ref={shellRef}
           className="app-shell"
           data-android={Boolean(selectedAndroidDeliveryGateway)}
-          data-has-draft-identity={Boolean(activeSession?.edit_origin)}
-          inert={addDocumentOpen}
+          data-compact={compact}
+          data-short={short}
+          aria-hidden={addDocumentOpen ? true : undefined}
+          data-command-result-visible={commandStatusVisible}
+          data-build-variant={RECOVERY_BUILD_VARIANT}
+          data-frontend-source-commit={FRONTEND_BUILD_COMMIT ?? 'unavailable'}
+          data-native-source-commit={
+            installedInfo?.build_commit ?? 'unavailable'
+          }
+          data-has-draft-identity={
+            Boolean(activeSession?.edit_origin) && !compact
+          }
+          inert={
+            addDocumentOpen ||
+            menuOpen ||
+            toolsOpen ||
+            documentsOpen ||
+            applicationPanel !== 'closed' ||
+            (inspectorOpen && compact) ||
+            Boolean(state.pendingTransition) ||
+            Boolean(recoveryCandidate)
+          }
           data-has-tabs={state.sessions.length > 1 ? 'true' : 'false'}
           data-performance-ready="true"
           onKeyDown={handleShellKey}
@@ -1373,8 +1531,22 @@ export function App({
             data-has-tabs={state.sessions.length > 1 ? 'true' : 'false'}
           >
             <ApplicationMenu
-              active={applicationPanel === 'closed' && !inspectorOpen}
+              active={
+                applicationPanel === 'closed' &&
+                !inspectorOpen &&
+                !addDocumentOpen &&
+                !state.pendingTransition &&
+                !recoveryCandidate
+              }
+              condensed={compact}
               commands={commands}
+              open={menuOpen}
+              onOpenChange={setMenuOpen}
+              toolsOpen={toolsOpen}
+              onToolsOpenChange={setToolsOpen}
+              onHelp={(opener) => openApplicationPanel('help', opener)}
+              onAbout={(opener) => openApplicationPanel('about', opener)}
+              viewport={diagnosticExportGateway?.viewport}
               canOpen={Boolean(
                 selectedDesktopDeliveryGateway ||
                 (selectedAndroidDeliveryGateway &&
@@ -1389,9 +1561,53 @@ export function App({
                 openApplicationPanel('diagnostics', opener)
               }
             />
-            <TabStrip state={state} dispatch={dispatch} />
+            <div
+              className="active-document-identity"
+              data-testid="active-document-identity"
+              data-draft-identity={
+                compact && activeSession?.edit_origin ? true : undefined
+              }
+              title={activeSession?.source.display_name ?? 'Glitchpad'}
+            >
+              <span>{activeSession?.source.display_name ?? 'Glitchpad'}</span>
+              {compact && activeSession?.edit_origin && (
+                <span
+                  className="draft-status-inline"
+                  role="status"
+                  title={draftStatus}
+                >
+                  <span aria-hidden="true">{draftSymbol}</span>
+                  <span className="visually-hidden">{draftStatus}</span>
+                </span>
+              )}
+              {activeSession?.dirty &&
+                !(compact && activeSession.edit_origin) && (
+                  <span aria-label="Unsaved changes"> •</span>
+                )}
+            </div>
+            {compact && state.sessions.length > 1 && (
+              <button
+                type="button"
+                className="document-count-trigger"
+                ref={documentsOpener}
+                aria-haspopup="dialog"
+                aria-label={state.sessions.length + ' documents'}
+                title={state.sessions.length + ' open documents'}
+                aria-expanded={documentsOpen}
+                onClick={() => setDocumentsOpen(true)}
+              >
+                {state.sessions.length}
+                <span className="visually-hidden"> documents</span>
+              </button>
+            )}
+            {!compact && state.sessions.length > 1 && (
+              <TabStrip state={state} dispatch={dispatch} />
+            )}
+            {compact && selectedAndroidDeliveryGateway && (
+              <span className="shell-add-control" ref={setAddTriggerHost} />
+            )}
           </div>
-          {activeSession?.edit_origin && (
+          {!compact && activeSession?.edit_origin && (
             <div className="draft-identity" data-draft-identity role="status">
               <span>{activeSession.source.display_name}</span>
               <span>
@@ -1455,6 +1671,7 @@ export function App({
               canOpen={Boolean(selectedDesktopDeliveryGateway)}
               onOpen={chooseDesktopSources}
               labelledByTab={state.sessions.length > 1}
+              onCommandStateChange={setEditorCommandState}
               onDocumentChange={(id, expectedRevision, document, revision) =>
                 dispatch({
                   type: 'update_text',
@@ -1519,43 +1736,155 @@ export function App({
             />
           </PreferenceContext.Provider>
           {inspectorOpen && activeSession && (
-            <MetadataInspector
-              key={activeSession.id}
-              session={activeSession}
-              snapshot={projectSessionMetadata(activeSession)}
-              onClose={closeMetadata}
-              onRequestChecksum={
-                activeSession.source_id &&
-                activeSession.metadata?.external_revision &&
-                metadataReadySessionId === activeSession.id &&
-                selectedMetadataGateway
-                  ? requestChecksum
-                  : undefined
+            <TaskSurface
+              open
+              className={
+                inspectorExpanded ? 'file-info-task expanded' : 'file-info-task'
               }
-              clipboardGateway={clipboardGateway}
-            />
+              title="File information"
+              onOpenChange={(open) => {
+                if (!open) closeMetadata();
+              }}
+              opener={metadataOpenerRef.current}
+              modal={compact}
+              viewport={diagnosticExportGateway?.viewport}
+            >
+              <MetadataInspector
+                embedded
+                onExpandedChange={setInspectorExpanded}
+                key={activeSession.id}
+                session={activeSession}
+                snapshot={projectSessionMetadata(activeSession)}
+                onClose={closeMetadata}
+                onRequestChecksum={
+                  activeSession.source_id &&
+                  activeSession.metadata?.external_revision &&
+                  metadataReadySessionId === activeSession.id &&
+                  selectedMetadataGateway
+                    ? requestChecksum
+                    : undefined
+                }
+                clipboardGateway={clipboardGateway}
+              />
+            </TaskSurface>
           )}
           {applicationPanel === 'preferences' && (
-            <PreferencesPanel
-              value={persistence.preferences}
-              onChange={persistence.updatePreferences}
-              onReset={() => void persistence.reset('preferences')}
-              onClose={closeApplicationPanel}
-            />
+            <TaskSurface
+              open
+              canClose={!applicationBusy}
+              title="Preferences"
+              opener={applicationOpenerRef.current}
+              onOpenChange={(open) => {
+                if (
+                  !open &&
+                  !document.querySelector(
+                    '.application-sheet[aria-busy="true"]',
+                  )
+                )
+                  closeApplicationPanel();
+              }}
+              viewport={diagnosticExportGateway?.viewport}
+            >
+              <PreferencesPanel
+                embedded
+                onBusyChange={setApplicationBusy}
+                value={persistence.preferences}
+                onChange={persistence.updatePreferences}
+                onReset={() => persistence.reset('preferences')}
+                onClose={closeApplicationPanel}
+              />
+            </TaskSurface>
           )}
           {applicationPanel === 'diagnostics' && (
-            <DiagnosticsPanel
-              load={persistence.previewDiagnostics}
-              exporter={
-                diagnosticExportGateway ??
-                (selectedAndroidDeliveryGateway
-                  ? nativeAndroidDiagnosticExportGateway
-                  : browserDiagnosticExportGateway)
-              }
-              onReset={() => persistence.reset('diagnostics')}
-              onClose={closeApplicationPanel}
-            />
+            <TaskSurface
+              open
+              canClose={!applicationBusy}
+              title="Diagnostics"
+              opener={applicationOpenerRef.current}
+              onOpenChange={(open) => {
+                if (
+                  !open &&
+                  !document.querySelector(
+                    '.application-sheet[aria-busy="true"]',
+                  )
+                )
+                  closeApplicationPanel();
+              }}
+              viewport={diagnosticExportGateway?.viewport}
+            >
+              <DiagnosticsPanel
+                embedded
+                onBusyChange={setApplicationBusy}
+                load={persistence.previewDiagnostics}
+                exporter={
+                  diagnosticExportGateway ??
+                  (selectedAndroidDeliveryGateway
+                    ? nativeAndroidDiagnosticExportGateway
+                    : browserDiagnosticExportGateway)
+                }
+                onReset={() => persistence.reset('diagnostics')}
+                onClose={closeApplicationPanel}
+              />
+            </TaskSurface>
           )}
+          {(applicationPanel === 'about' || applicationPanel === 'help') && (
+            <TaskSurface
+              open
+              title={
+                applicationPanel === 'about'
+                  ? 'About Glitchpad'
+                  : 'Help and support'
+              }
+              opener={applicationOpenerRef.current}
+              onOpenChange={(open) => {
+                if (!open) closeApplicationPanel();
+              }}
+              viewport={diagnosticExportGateway?.viewport}
+            >
+              <AboutPanel
+                gateway={applicationInfoGateway}
+                external={externalLinkGateway}
+                help={applicationPanel === 'help'}
+              />
+            </TaskSurface>
+          )}
+          <TaskSurface
+            open={documentsOpen}
+            title="Open documents"
+            opener={documentsOpener.current}
+            onOpenChange={setDocumentsOpen}
+            viewport={diagnosticExportGateway?.viewport}
+          >
+            <div className="document-switcher">
+              {state.sessions.map((session) => (
+                <div key={session.id}>
+                  <button
+                    type="button"
+                    aria-current={
+                      session.id === state.activeId ? 'true' : undefined
+                    }
+                    onClick={() => {
+                      dispatch({ type: 'activate', id: session.id });
+                      setDocumentsOpen(false);
+                    }}
+                  >
+                    {session.source.display_name}
+                    {session.dirty ? ' (unsaved)' : ''}
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={'Close ' + session.source.display_name}
+                    onClick={() => {
+                      dispatch({ type: 'close', id: session.id });
+                      setDocumentsOpen(false);
+                    }}
+                  >
+                    Close
+                  </button>
+                </div>
+              ))}
+            </div>
+          </TaskSurface>
           {!recoveryCandidate &&
             state.pendingTransition &&
             resolutionSession && (
@@ -1572,9 +1901,11 @@ export function App({
             />
           )}
           <p
-            className={commandStatus ? 'command-result' : 'visually-hidden'}
+            className={
+              commandStatusVisible ? 'command-result' : 'visually-hidden'
+            }
             role="status"
-            aria-live="polite"
+            aria-live={commandFeedback.contextual ? 'off' : 'polite'}
             aria-atomic="true"
           >
             {commandStatus || state.announcement}
@@ -1582,6 +1913,7 @@ export function App({
         </div>
         {selectedAndroidDeliveryGateway && (
           <AddDocumentMenu
+            triggerHost={compact ? addTriggerHost : null}
             open={addDocumentOpen}
             onOpenChange={setAddDocumentOpen}
             onNew={(kind) =>
@@ -1599,6 +1931,9 @@ export function App({
             }
             disabled={
               applicationPanel !== 'closed' ||
+              menuOpen ||
+              toolsOpen ||
+              documentsOpen ||
               inspectorOpen ||
               Boolean(state.pendingTransition) ||
               Boolean(recoveryCandidate)

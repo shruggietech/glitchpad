@@ -1,3 +1,4 @@
+import { AppFrame } from '../../../../brand/web/react/server';
 import {
   act,
   fireEvent,
@@ -28,7 +29,7 @@ import { MarkdownSurface } from './MarkdownSurface';
 import type { TextEditorHandle } from './TextEditorSurface';
 
 const invokeMenu = (name: string | RegExp) => {
-  fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Document tools' }));
   const matcher = typeof name === 'string' ? new RegExp(`^${name}`, 'u') : name;
   fireEvent.click(
     within(screen.getByRole('menu')).getByRole('menuitem', { name: matcher }),
@@ -91,14 +92,16 @@ const renderDirectSurface = (
   handle?: Ref<TextEditorHandle>,
 ) =>
   render(
-    <MarkdownSurface
-      ref={handle}
-      session={session}
-      rendererClient={rendererClient}
-      onDocumentChange={vi.fn()}
-      onLanguageChange={vi.fn()}
-      onMarkdownChange={vi.fn()}
-    />,
+    <AppFrame>
+      <MarkdownSurface
+        ref={handle}
+        session={session}
+        rendererClient={rendererClient}
+        onDocumentChange={vi.fn()}
+        onLanguageChange={vi.fn()}
+        onMarkdownChange={vi.fn()}
+      />
+    </AppFrame>,
   );
 
 describe('Markdown surface', () => {
@@ -184,10 +187,15 @@ describe('Markdown surface', () => {
         }
         selection.removeAllRanges();
         selection.addRange(range);
-        await expect(handle.current!.invoke('copy')).resolves.toBe(true);
-        expect(writeText).toHaveBeenCalledExactlyOnceWith(
-          'Heading\nWhole document.',
-        );
+        if (kind === 'inactive') {
+          expect(handle.current!.invoke('copy')).toBe(false);
+          expect(writeText).not.toHaveBeenCalled();
+        } else {
+          await expect(handle.current!.invoke('copy')).resolves.toBe(true);
+          expect(writeText).toHaveBeenCalledExactlyOnceWith(
+            'Heading\nWhole document.',
+          );
+        }
       } finally {
         foreign.remove();
         selection.removeAllRanges();
@@ -585,6 +593,7 @@ describe('Markdown surface', () => {
       { target: { value: 'AlphaNode' } },
     );
     expect(screen.getByText('1 of 1')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Close search' }));
     const sourceButtons = screen.getAllByRole('button', {
       name: 'View source',
     });
@@ -610,14 +619,23 @@ describe('Markdown surface', () => {
         screen.getByRole('navigation', { name: 'Document outline' }),
       ).getByRole('button', { name: 'Heading' }),
     ).toBeInTheDocument();
+    fireEvent.click(
+      within(
+        screen.getByRole('navigation', { name: 'Document outline' }),
+      ).getByRole('button', { name: 'Heading' }),
+    );
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Heading' })).toHaveFocus(),
+    );
     invokeMenu('Search');
     fireEvent.change(
       screen.getByRole('textbox', { name: 'Find rendered text' }),
       { target: { value: 'phrase' } },
     );
     expect(screen.getByText('1 of 1')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Close search' }));
 
-    invokeMenu('Edit source');
+    invokeMenu('Edit');
     const textbox = screen.getByRole('textbox', {
       name: 'test.md text editor',
     });
@@ -707,7 +725,7 @@ describe('Markdown surface', () => {
     expect(
       await screen.findByRole('img', { name: 'local' }),
     ).toBeInTheDocument();
-    invokeMenu('Edit source');
+    invokeMenu('Edit');
     const textbox = screen.getByRole('textbox', {
       name: 'test.md text editor',
     });
@@ -721,7 +739,7 @@ describe('Markdown surface', () => {
         },
       }),
     );
-    invokeMenu('Preview');
+    invokeMenu('Read');
     await waitFor(() =>
       expect(screen.getByRole('note')).toHaveTextContent(
         'Image unavailable: remote',
@@ -758,7 +776,8 @@ describe('Markdown surface', () => {
       { target: { value: 'needle' } },
     );
     await screen.findByText('1 of 1');
-    invokeMenu('Edit source');
+    fireEvent.click(screen.getByRole('button', { name: 'Close search' }));
+    invokeMenu('Edit');
     const textbox = screen.getByRole('textbox', {
       name: 'test.md text editor',
     });
@@ -782,6 +801,10 @@ describe('Markdown surface', () => {
     render(<App sessions={[first, second]} />);
     fireEvent.click(await screen.findByRole('button', { name: /first/i }));
     expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('tab', { name: /second\.md/i }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     fireEvent.click(screen.getByRole('tab', { name: /second\.md/i }));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(
@@ -983,4 +1006,314 @@ describe('Markdown surface', () => {
       ),
     ).toEqual([]);
   });
+});
+
+describe('Markdown task continuity', () => {
+  it('keeps the same source editor, selection and undo history across Read and Edit', async () => {
+    const ref = createRef<TextEditorHandle>();
+    const session = {
+      ...markdownSession('# Title\n\nBody'),
+      edit_origin: 'copy' as const,
+    };
+    const client = new MarkdownRendererClient({ execute: renderMarkdown }, 0);
+    render(
+      <AppFrame>
+        <MarkdownSurface
+          ref={ref}
+          session={session}
+          rendererClient={client}
+          onDocumentChange={vi.fn()}
+          onLanguageChange={vi.fn()}
+          onMarkdownChange={vi.fn()}
+        />
+      </AppFrame>,
+    );
+    await screen.findByRole('heading', { name: 'Title' });
+    act(() => {
+      void ref.current!.invoke('edit');
+    });
+    const editor = screen.getByRole('textbox', { name: 'test.md text editor' });
+    const view = EditorView.findFromDOM(editor)!;
+    act(() => {
+      ref.current!.selectRange(0, 3);
+    });
+    act(() =>
+      view.dispatch({
+        changes: { from: 0, insert: 'edit' },
+        selection: { anchor: 4 },
+      }),
+    );
+    act(() => {
+      void ref.current!.invoke('edit');
+    });
+    expect(
+      screen.queryByRole('textbox', { name: 'test.md text editor' }),
+    ).not.toBeInTheDocument();
+    act(() => {
+      void ref.current!.invoke('edit');
+    });
+    expect(screen.getByRole('textbox', { name: 'test.md text editor' })).toBe(
+      editor,
+    );
+    await act(async () => {
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => resolve()),
+      );
+    });
+    expect(view.state.selection.main.head).toBe(4);
+    act(() => {
+      expect(ref.current!.invoke('undo')).toBe(true);
+    });
+    expect(view.state.doc.toString()).toBe('# Title\n\nBody');
+  });
+  it('returns rendered Find focus to the document without discarding the query', async () => {
+    const ref = createRef<TextEditorHandle>();
+    const client = new MarkdownRendererClient({ execute: renderMarkdown }, 0);
+    const { container } = render(
+      <AppFrame>
+        <MarkdownSurface
+          ref={ref}
+          session={markdownSession('# Title\n\nBody body')}
+          rendererClient={client}
+          onDocumentChange={vi.fn()}
+          onLanguageChange={vi.fn()}
+          onMarkdownChange={vi.fn()}
+        />
+      </AppFrame>,
+    );
+    await screen.findByRole('heading', { name: 'Title' });
+    act(() => {
+      void ref.current!.invoke('search');
+    });
+    expect(
+      screen.getByRole('dialog', { name: 'Find in Markdown' }),
+    ).toHaveAttribute('aria-modal', 'true');
+    fireEvent.change(
+      screen.getByRole('textbox', { name: 'Find rendered text' }),
+      { target: { value: 'body' } },
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Close search' }));
+    await waitFor(() =>
+      expect(
+        container.querySelector(
+          '.markdown-document:not(.markdown-print-document)',
+        ),
+      ).toHaveFocus(),
+    );
+    act(() => {
+      void ref.current!.invoke('search');
+    });
+    expect(
+      screen.getByRole('textbox', { name: 'Find rendered text' }),
+    ).toHaveValue('body');
+  });
+});
+
+describe('fragment task focus', () => {
+  it('focuses the correct visible heading and footnote destinations across mode changes', async () => {
+    const ref = createRef<TextEditorHandle>();
+    const session = {
+      ...markdownSession(
+        '# Heading\n\n[fragment](#heading) Note[^one].\n\n[^one]: Detail.',
+      ),
+      edit_origin: 'copy' as const,
+    };
+    const client = new MarkdownRendererClient({ execute: renderMarkdown }, 0);
+    const { container } = render(
+      <AppFrame>
+        <MarkdownSurface
+          ref={ref}
+          session={session}
+          rendererClient={client}
+          onDocumentChange={vi.fn()}
+          onLanguageChange={vi.fn()}
+          onMarkdownChange={vi.fn()}
+        />
+      </AppFrame>,
+    );
+    await screen.findByText('Detail.');
+    const reference = container.querySelector<HTMLElement>(
+      '[data-footnote-ref]',
+    )!;
+    const destination = document.getElementById(
+      reference.getAttribute('title')!.slice(1),
+    )!;
+    Object.defineProperty(destination, 'scrollIntoView', {
+      configurable: true,
+      value: vi.fn(),
+    });
+    Object.defineProperty(reference, 'scrollIntoView', {
+      configurable: true,
+      value: vi.fn(),
+    });
+    fireEvent.click(reference);
+    expect(destination).toHaveFocus();
+    fireEvent.click(
+      container.querySelector<HTMLElement>('[data-footnote-backref]')!,
+    );
+    expect(reference).toHaveFocus();
+    act(() => {
+      void ref.current!.invoke('edit');
+    });
+    act(() => {
+      void ref.current!.invoke('edit');
+    });
+    fireEvent.click(screen.getByRole('link', { name: 'fragment' }));
+    expect(screen.getByRole('heading', { name: 'Heading' })).toHaveFocus();
+    expect(container.querySelectorAll('[id="heading"]')).toHaveLength(1);
+  });
+});
+
+describe('scoped rendered navigation', () => {
+  it('scrolls only the current article and focuses a fragment without scrolling outer chrome', async () => {
+    const client = new MarkdownRendererClient({ execute: renderMarkdown }, 0);
+    const { container } = renderDirectSurface(
+      markdownSession('# Heading\n\n[fragment](#heading)'),
+      client,
+    );
+    const heading = await screen.findByRole('heading', { name: 'Heading' });
+    const article = container.querySelector<HTMLElement>('.markdown-document')!;
+    vi.spyOn(article, 'getBoundingClientRect').mockReturnValue(
+      new DOMRect(0, 100, 300, 200),
+    );
+    vi.spyOn(heading, 'getBoundingClientRect').mockReturnValue(
+      new DOMRect(0, 250, 300, 24),
+    );
+    article.scrollTop = 10;
+    const focus = vi.spyOn(heading, 'focus');
+    fireEvent.click(screen.getByRole('link', { name: 'fragment' }));
+    expect(article.scrollTop).toBe(160);
+    expect(focus).toHaveBeenCalledWith({ preventScroll: true });
+    expect(heading).toHaveFocus();
+  });
+});
+
+describe('unavailable fragment feedback', () => {
+  it('announces an unknown fragment without moving focus or changing source', async () => {
+    const session = markdownSession(
+      '# Current section\n\n[missing section](#absent-private-target)',
+    );
+    const changed = vi.fn();
+    const handle = createRef<TextEditorHandle>();
+    const { container } = render(
+      <MarkdownSurface
+        ref={handle}
+        session={session}
+        onDocumentChange={changed}
+        onLanguageChange={vi.fn()}
+        onMarkdownChange={vi.fn()}
+      />,
+    );
+    const trigger = await screen.findByRole('link', {
+      name: 'missing section',
+    });
+    trigger.focus();
+    fireEvent.click(trigger);
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'The linked section is not available in this document.',
+    );
+    expect(screen.getByRole('alert')).not.toHaveTextContent(
+      'absent-private-target',
+    );
+    expect(trigger).toHaveFocus();
+    expect(
+      screen.getByRole('heading', { name: 'Current section' }),
+    ).toBeInTheDocument();
+    expect(changed).not.toHaveBeenCalled();
+    act(() => {
+      void handle.current!.invoke('edit');
+    });
+    expect(container.querySelector('.markdown-print-document')).not.toBeNull();
+    expect(
+      container.querySelector('.markdown-print-document [role=alert]'),
+    ).toBeNull();
+  });
+});
+
+it('announces a rendered query with no matches and disables navigation without changing source', async () => {
+  const changed = vi.fn();
+  const ref = createRef<TextEditorHandle>();
+  render(
+    <AppFrame>
+      <MarkdownSurface
+        ref={ref}
+        session={markdownSession('# Present heading')}
+        onDocumentChange={changed}
+        onLanguageChange={vi.fn()}
+        onMarkdownChange={vi.fn()}
+      />
+    </AppFrame>,
+  );
+  await screen.findByRole('heading', { name: 'Present heading' });
+  act(() => {
+    void ref.current!.invoke('search');
+  });
+  fireEvent.change(
+    screen.getByRole('textbox', { name: 'Find rendered text' }),
+    { target: { value: 'absent-query' } },
+  );
+  expect(
+    screen.getByRole('status', { name: 'Rendered search results' }),
+  ).toHaveTextContent('No matches');
+  expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Previous' })).toBeDisabled();
+  expect(changed).not.toHaveBeenCalled();
+});
+
+it('moves and wraps exact rendered matches through Next, Previous and current provider routes', async () => {
+  const handle = createRef<TextEditorHandle>();
+  const { container } = renderDirectSurface(
+    markdownSession('# Current document\n\nmatch one.\n\nmatch two.'),
+    new MarkdownRendererClient({ execute: renderMarkdown }, 0),
+    handle,
+  );
+  await screen.findByRole('heading', { name: 'Current document' });
+  act(() => {
+    expect(handle.current!.invoke('search')).toBe(true);
+  });
+  fireEvent.change(
+    screen.getByRole('textbox', { name: 'Find rendered text' }),
+    { target: { value: 'match' } },
+  );
+  const activeText = () =>
+    container.querySelector('.markdown-document .markdown-search-match')
+      ?.textContent;
+  await waitFor(() => expect(activeText()).toBe('match one.'));
+  for (const [button, count, expected] of [
+    ['Next', '2 of 2', 'match two.'],
+    ['Next', '1 of 2', 'match one.'],
+    ['Previous', '2 of 2', 'match two.'],
+    ['Previous', '1 of 2', 'match one.'],
+  ] as const) {
+    fireEvent.click(screen.getByRole('button', { name: button }));
+    await waitFor(() =>
+      expect(
+        screen.getByRole('status', { name: 'Rendered search results' }),
+      ).toHaveTextContent(count),
+    );
+    expect(activeText()).toBe(expected);
+  }
+  act(() => {
+    expect(handle.current!.invoke('close_search')).toBe(true);
+  });
+  await waitFor(() =>
+    expect(container.querySelector('.markdown-document')).toHaveFocus(),
+  );
+  act(() => {
+    expect(handle.current!.invoke('find_next')).toBe(true);
+  });
+  await waitFor(() => expect(activeText()).toBe('match two.'));
+  act(() => {
+    expect(handle.current!.invoke('find_previous')).toBe(true);
+  });
+  await waitFor(() => expect(activeText()).toBe('match one.'));
+  act(() => {
+    expect(handle.current!.invoke('search')).toBe(true);
+  });
+  expect(
+    screen.getByRole('textbox', { name: 'Find rendered text' }),
+  ).toHaveValue('match');
+  expect(
+    screen.getByRole('status', { name: 'Rendered search results' }),
+  ).toHaveTextContent('1 of 2');
 });

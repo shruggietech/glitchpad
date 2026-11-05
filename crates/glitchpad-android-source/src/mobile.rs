@@ -251,6 +251,17 @@ impl<R: Runtime> AndroidSource<R> {
             .map_err(|error| error.to_string())
     }
 
+    /// Reads installed package identity without accepting caller-supplied facts.
+    ///
+    /// # Errors
+    ///
+    /// Returns a bridge failure when the package manager query is unavailable.
+    pub fn application_info(&self) -> Result<crate::models::InstalledApplicationInfo, String> {
+        self.0
+            .run_mobile_plugin("applicationInfo", ())
+            .map_err(|error| error.to_string())
+    }
+
     /// Completes one committed native Back request.
     ///
     /// # Errors

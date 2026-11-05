@@ -57,3 +57,7 @@ Thumbs.db
 
 # Android source-plugin build output
 crates/glitchpad-android-source/android/build/
+
+# Python validation helpers
+__pycache__/
+*.py[cod]

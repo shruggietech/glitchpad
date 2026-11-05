@@ -66,6 +66,33 @@ fn families(root: &Path) {
     fs::write(root.join("animated.webp"), webp).unwrap();
     fs::write(root.join("original.svg"), br##"<svg xmlns="http://www.w3.org/2000/svg" width="4" height="3"><rect width="2" height="3" fill="#ff0000"/><rect x="2" width="2" height="3" fill="#0000ff" opacity="0.5"/><text x="0" y="1" font-family="Geist" font-size="1">G</text></svg>"##).unwrap();
     fs::write(root.join("hostile.svg"), br#"<svg xmlns="http://www.w3.org/2000/svg" width="4" height="3"><script>throw new Error('unsafe')</script><image href="https://invalid.example/pixel"/></svg>"#).unwrap();
+    fs::write(root.join("svg-presentation.svg"), br#"<svg xmlns="http://www.w3.org/2000/svg" width="4" height="3"><style>.ink { fill: #123456; } #panel { opacity: 1; }</style><rect id="panel" class="ink" width="4" height="3" style="stroke:none"/></svg>"#).unwrap();
+    fs::write(root.join("svg-namespaced.svg"), br#"<s:svg xmlns:s="http://www.w3.org/2000/svg" width="4" height="3"><s:g style="fill:#123456"><s:rect width="4" height="3"/></s:g></s:svg>"#).unwrap();
+    fs::write(root.join("svg-reuse.svg"), br##"<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="4" height="3"><defs><rect id="panel" width="4" height="3" fill="#123456"/></defs><use xlink:href="#panel"/></svg>"##).unwrap();
+    fs::write(root.join("svg-external.svg"), br#"<svg xmlns="http://www.w3.org/2000/svg" width="4" height="3"><use href="https://invalid.example/object#shape"/></svg>"#).unwrap();
+    fs::write(root.join("svg-cycle.svg"), br##"<svg xmlns="http://www.w3.org/2000/svg" width="4" height="3"><defs><g id="a"><use href="#b"/></g><g id="b"><use href="#a"/></g></defs><use href="#a"/></svg>"##).unwrap();
+    fs::write(
+        root.join("svg-malformed.svg"),
+        br#"<svg xmlns="http://www.w3.org/2000/svg" width="4" height="3"><rect></svg>"#,
+    )
+    .unwrap();
+    fs::write(
+        root.join("svg-unsupported.svg"),
+        br#"<svg xmlns="http://www.w3.org/2000/svg" width="4" height="3"><filter/></svg>"#,
+    )
+    .unwrap();
+    fs::write(root.join("svg-missing.svg"), br##"<svg xmlns="http://www.w3.org/2000/svg" width="4" height="3"><use href="#absent"/></svg>"##).unwrap();
+    fs::write(
+        root.join("svg-resource.svg"),
+        format!(
+            r#"<svg xmlns="http://www.w3.org/2000/svg" width="4" height="3">{}{}</svg>"#,
+            "<g>".repeat(129),
+            "</g>".repeat(129)
+        ),
+    )
+    .unwrap();
+    fs::write(root.join("svg-viewport.svg"), br##"<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1200"><rect width="1600" height="1200" fill="#123456"/></svg>"##).unwrap();
+    fs::write(root.join("svg-read-denied.svg"), br#"<svg xmlns="http://www.w3.org/2000/svg" width="4" height="3"><style>.ink { fill: #123456; } #panel { opacity: 1; }</style><rect id="panel" class="ink" width="4" height="3" style="stroke:none"/></svg>"#).unwrap();
     let png = fs::read(root.join("original.png")).unwrap();
     let mut dib = fs::read(root.join("original.bmp")).unwrap()[14..].to_vec();
     dib[8..12].copy_from_slice(&6_u32.to_le_bytes());
@@ -131,7 +158,7 @@ fn main() {
     paths.sort();
     let files = paths.iter().map(|path| {
         let bytes = fs::read(path).unwrap();
-        serde_json::json!({ "name": path.file_name().unwrap().to_str().unwrap(), "sha256": format!("{:x}", Sha256::digest(&bytes)), "bytes": bytes.len(), "width": 4, "height": 3 })
+        serde_json::json!({ "name": path.file_name().unwrap().to_str().unwrap(), "sha256": format!("{:x}", Sha256::digest(&bytes)), "bytes": bytes.len(), "width": if path.file_name().unwrap() == "svg-viewport.svg" {1600} else {4}, "height": if path.file_name().unwrap() == "svg-viewport.svg" {1200} else {3} })
     }).collect::<Vec<_>>();
     let manifest = serde_json::json!({ "license": "Apache-2.0", "author": "Glitchpad contributors", "generator": "cargo run -p glitchpad-core --example generate_image_fixtures", "files": files });
     fs::write(

@@ -112,6 +112,11 @@ const startServer = async () => {
 
 const closeServer = (server) => new Promise((resolvePromise) => server.close(resolvePromise));
 
+export const activatePerformanceTab = async (page, selector) => {
+  await page.waitForSelector(selector, { timeout: 10_000 });
+  await page.$eval(selector, (tab) => tab.click());
+};
+
 export const measureNavigation = async (browser, origin, selector, prepare = null, samples = 5) => {
   const values = [];
   for (let index = 0; index < samples; index += 1) {
@@ -216,8 +221,7 @@ const interactionDefinitions = {
   },
   mermaid_current_preview: {
     setup: async (page) => {
-      await page
-        .$eval('[role="tab"][aria-label="performance-edit.mmd"]', (tab) => tab.click())
+      await activatePerformanceTab(page, '[role="tab"][aria-label="performance-edit.mmd"]')
         .catch((error) => {
           throw new Error('performance_mermaid_tab_missing', { cause: error });
         });
@@ -374,11 +378,11 @@ export const collectPerformance = async (options) => {
     const definitions = [
       ['cold_shell_desktop', '.app-shell[data-performance-ready="true"]', null],
       ['text_first_content', '[data-performance-renderer="text"] .text-editor[data-performance-ready="true"]', null],
-      ['markdown_first_content', '.markdown-document[data-performance-ready="true"]', (page) => page.$eval('[role="tab"][aria-label*="performance.md"]', (tab) => tab.click())],
+      ['markdown_first_content', '.markdown-document[data-performance-ready="true"]', (page) => activatePerformanceTab(page, '[role="tab"][aria-label*="performance.md"]')],
       [
         'mermaid_first_content_desktop',
         '.mermaid-surface[data-performance-ready="true"]',
-        (page) => page.$eval('[role="tab"][aria-label*="performance.mmd"]', (tab) => tab.click()),
+        (page) => activatePerformanceTab(page, '[role="tab"][aria-label*="performance.mmd"]'),
       ],
     ];
     const evidence = [];

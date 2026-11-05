@@ -86,6 +86,7 @@ export const projectRecoveredSession = ({
   snapshot_session_revision,
   text_profile,
 }: RecoveryPayload): ShellSession => {
+  const markdown = /\.(md|markdown)$/iu.test(inventory.display_hint);
   const document = createTextDocument({
     rawText: content,
     displayName: inventory.display_hint,
@@ -110,8 +111,8 @@ export const projectRecoveredSession = ({
       capabilities: { ...noSourceCapabilities(), read: true },
     },
     renderer: {
-      id: 'recovered-text',
-      label: 'Recovered text',
+      id: markdown ? 'markdown' : 'recovered-text',
+      label: markdown ? 'Recovered Markdown' : 'Recovered text',
       capabilities: {
         ...noRendererCapabilities(),
         view: true,
@@ -130,5 +131,17 @@ export const projectRecoveredSession = ({
     recovery_warning_code: null,
     content: document.normalized_text,
     text_document: document,
+    edit_origin: 'copy',
+    markdown_document: markdown
+      ? {
+          mode: 'source',
+          eligibility: 'full',
+          render_revision: null,
+          render_status: 'idle',
+          printable: false,
+          outline_count: 0,
+          source_selection: null,
+        }
+      : null,
   };
 };

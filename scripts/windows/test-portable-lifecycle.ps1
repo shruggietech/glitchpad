@@ -17,6 +17,8 @@ $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 . "$PSScriptRoot/startup-diagnostics.ps1"
 $startupDiagnostics = [Collections.Generic.List[object]]::new()
+$script:readinessWaitKind = 'none'
+$script:readinessWaitCallerLine = 0
 
 $root = (Resolve-Path -LiteralPath $PortableRoot).Path
 $manifestPath = (Resolve-Path -LiteralPath $Manifest).Path
@@ -78,7 +80,7 @@ function Save-StartupDiagnostic([Diagnostics.Process] $Process, [string] $Scenar
         }
         $observation.process_state_available = $true
     } catch { }
-    $record = New-PortableStartupDiagnostic -Observation $observation -Scenario $Scenario -Stage $script:readinessStage -SourceCommit $manifestSourceCommit -ManifestDigest $manifestDigest -Succeeded $Succeeded -ElapsedMilliseconds $Clock.ElapsedMilliseconds
+    $record = New-PortableStartupDiagnostic -Observation $observation -Scenario $Scenario -Stage $script:readinessStage -SourceCommit $manifestSourceCommit -ManifestDigest $manifestDigest -Succeeded $Succeeded -ElapsedMilliseconds $Clock.ElapsedMilliseconds -WaitKind $script:readinessWaitKind -WaitCallerLine $script:readinessWaitCallerLine
     $startupDiagnostics.Add($record)
     [IO.File]::WriteAllText([IO.Path]::GetFullPath("$Receipt.startup.json"), (ConvertTo-Json -InputObject @($startupDiagnostics.ToArray()) -Depth 5) + [Environment]::NewLine, [Text.UTF8Encoding]::new($false))
 }
@@ -122,6 +124,8 @@ function Find-LargestNamedElement([System.Windows.Automation.AutomationElement] 
 }
 
 function Wait-NamedElement([Diagnostics.Process] $Process, [string] $Name, [int] $Seconds = 20) {
+    $script:readinessWaitKind = 'named_element'
+    $script:readinessWaitCallerLine = $MyInvocation.ScriptLineNumber
     $script:readinessStage = 'named_element_wait'
     $deadline = [DateTimeOffset]::UtcNow.AddSeconds($Seconds)
     do {
@@ -129,7 +133,12 @@ function Wait-NamedElement([Diagnostics.Process] $Process, [string] $Name, [int]
         $window = Get-WindowRoot $Process
         if ($window) {
             $element = Find-NamedElement $window $Name
-            if ($element) { $script:readinessStage = 'named_element_ready'; return $element }
+            if ($element) {
+                $script:readinessStage = 'named_element_ready'
+                $script:readinessWaitKind = 'none'
+                $script:readinessWaitCallerLine = 0
+                return $element
+            }
         }
     } while ([DateTimeOffset]::UtcNow -lt $deadline)
     throw 'portable_named_element_timeout'
@@ -477,6 +486,20 @@ public static class GlitchpadNativeInput
 '@
 $isolatedState = Join-Path ([IO.Path]::GetTempPath()) ("glitchpad-s027-{0}" -f [Guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $isolatedState -Force | Out-Null
+# Extend the licensed governed corpus with an original Unicode recovery case.
+# The owner-reported input bytes remain unavailable; this is a synthetic regression.
+$markdownGovernedFixturePath = Join-Path $isolatedState 's046-governed.md'
+$governedMarkdownSource = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../fixtures/markdown/sources/kitchen-sink.md'))
+$governedMarkdown = [IO.File]::ReadAllText($governedMarkdownSource, [Text.Encoding]::UTF8) + @'
+
+# S046 Governed Markdown A4D9
+
+Unicode café 漢字 🦄
+
+[S046_GOVERNED_RAW_SENTINEL]: https://example.invalid/s046
+'@
+[IO.File]::WriteAllText($markdownGovernedFixturePath, $governedMarkdown, [Text.UTF8Encoding]::new($false))
+$governedMarkdownDigest = (Get-FileHash -LiteralPath $markdownGovernedFixturePath -Algorithm SHA256).Hash
 $isolatedEnvironment = @{ APPDATA = $isolatedState; LOCALAPPDATA = $isolatedState }
 $scenarioClock = [Diagnostics.Stopwatch]::StartNew()
 $script:readinessStage = 'launch'
@@ -511,6 +534,14 @@ try {
     $deadline = [DateTimeOffset]::UtcNow.AddSeconds(10)
     do { Start-Sleep -Milliseconds 250 } while ((Get-TabCount $process) -ne 0 -and [DateTimeOffset]::UtcNow -lt $deadline)
     if ((Get-TabCount $process) -ne 0) { throw 'Closing from two documents back to one did not hide the tab strip.' }
+    Wait-ElementText $process ("{0} text editor" -f [IO.Path]::GetFileName($textFixturePath)) 'S027 TXT CONTENT 7E5A'
+    Send-MarkdownDelivery $markdownGovernedFixturePath $process 'S046 Governed Markdown A4D9' 'S046_GOVERNED_RAW_SENTINEL'
+    Wait-NamedElement $process 'Glitchpad Markdown Fixture' | Out-Null
+    Wait-WindowText $process 'Unicode café 漢字 🦄'
+    Wait-WindowText $process 'Tables'
+    Wait-WindowText $process 'Original fixture footnote.'
+    if ((Get-FileHash -LiteralPath $markdownGovernedFixturePath -Algorithm SHA256).Hash -ne $governedMarkdownDigest) { throw 'Governed Markdown delivery modified its source bytes.' }
+    Close-Document $process $markdownGovernedFixturePath
     Wait-ElementText $process ("{0} text editor" -f [IO.Path]::GetFileName($textFixturePath)) 'S027 TXT CONTENT 7E5A'
     $scenarioSucceeded = $true
 }
@@ -649,6 +680,8 @@ foreach ($fixture in $fixtureDigests.GetEnumerator()) {
     fixture_absence = 'pass'
     text_delivery = 'pass'
     markdown_delivery = 'pass'
+    markdown_governed_corpus = 'pass'
+    reported_markdown_input = 'unavailable_not_replayed'
     markdown_minimal = 'pass'
     markdown_edit_save_preview = 'pass'
     document_scoped_recovery = 'pass'

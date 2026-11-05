@@ -10,7 +10,13 @@ import {
 } from '@testing-library/react';
 
 import { App } from './App';
-import { initialSessions } from './test/fixtures';
+import { collectFailureEvents } from './domain/diagnostic-failures';
+import { createDraftSession } from './domain/drafts';
+import type {
+  AndroidDestinationReceipt,
+  ShellSession,
+} from './domain/contracts';
+import { initialSessions, makeSession } from './test/fixtures';
 import { RecoveryCandidateResolution } from './components/RecoveryResolution';
 import type { RecoveryGateway } from './domain/recovery-gateway';
 import type { MetadataGateway } from './domain/metadata-gateway';
@@ -49,7 +55,7 @@ const saveReceipt = {
 
 const invokeMenu = (name: string | RegExp) => {
   fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
-  const matcher = typeof name === 'string' ? new RegExp(`^${name}`, 'u') : name;
+  const matcher = typeof name === 'string' ? name : name;
   fireEvent.click(
     within(screen.getByRole('menu', { name: 'Glitchpad menu' })).getByRole(
       'menuitem',
@@ -57,6 +63,43 @@ const invokeMenu = (name: string | RegExp) => {
     ),
   );
 };
+
+const authoringDelivery = (
+  overrides: Partial<AndroidDeliveryGateway> = {},
+): AndroidDeliveryGateway => ({
+  choose: vi.fn().mockResolvedValue(null),
+  close: vi.fn().mockResolvedValue(undefined),
+  drain: vi.fn().mockResolvedValue({ sources: [], rejections: [] }),
+  materialize: vi.fn(),
+  subscribe: vi.fn().mockResolvedValue(() => undefined),
+  ...overrides,
+});
+const destinationFor = (session: ShellSession): AndroidDestinationReceipt => ({
+  saved_revision: session.revision,
+  byte_count: session.text_document?.source_bytes ?? 0,
+  source: {
+    source_id: 'saved-source',
+    descriptor: {
+      ...session.source,
+      kind: 'document_uri',
+      display_name: 'Saved.txt',
+    },
+    external_revision: {
+      identity: session.source.identity,
+      byte_length: session.text_document?.source_bytes ?? 0,
+      modified_unix_nanos: null,
+      change_token: null,
+    },
+    delivery_kind: 'create_result',
+    grant: {
+      read: true,
+      write: true,
+      persisted_read: true,
+      persisted_write: true,
+      restorable: true,
+    },
+  },
+});
 
 describe('document foundation shell', () => {
   const persistenceGateway = (
@@ -100,6 +143,713 @@ describe('document foundation shell', () => {
     reset: vi.fn().mockResolvedValue(false),
     ...overrides,
   });
+
+  it('creates separate Android Markdown and text drafts and preserves edits while switching', async () => {
+    render(
+      <App
+        androidDeliveryGateway={authoringDelivery()}
+        recoveryGateway={null}
+      />,
+    );
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Add document' }),
+    );
+    fireEvent.click(screen.getByRole('menuitem', { name: 'New Markdown' }));
+    expect(document.querySelector('[data-draft-identity]')).toHaveTextContent(
+      'Untitled.md',
+    );
+    expect(document.querySelector('[data-draft-identity]')).toHaveTextContent(
+      'Unsaved changes',
+    );
+    const markdown = screen.getByRole('textbox', {
+      name: 'Untitled.md text editor',
+    });
+    act(() => {
+      const view = EditorView.findFromDOM(markdown)!;
+      view.dispatch({ changes: { from: 0, insert: '# Local draft' } });
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Add document' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'New text file' }));
+    expect(
+      screen.getByRole('textbox', { name: 'Untitled.txt text editor' }),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('tab', { name: /Untitled.md/u }));
+    expect(
+      screen.getByRole('textbox', { name: 'Untitled.md text editor' }),
+    ).toHaveTextContent('# Local draft');
+  });
+
+  it('keeps Android draft edits after cancelled Save and blocks Close while the native write is pending', async () => {
+    const draft = createDraftSession('text');
+    let finish:
+      ((receipt: AndroidDestinationReceipt | null) => void) | undefined;
+    const saveAs = vi.fn(
+      () =>
+        new Promise<AndroidDestinationReceipt | null>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    render(
+      <App
+        sessions={[draft]}
+        androidDeliveryGateway={authoringDelivery()}
+        androidAuthoringGateway={{ saveAs }}
+        recoveryGateway={null}
+      />,
+    );
+    fireEvent.keyDown(getApplicationShell(), { key: 's', ctrlKey: true });
+    await waitFor(() => expect(saveAs).toHaveBeenCalledOnce());
+    fireEvent.keyDown(getApplicationShell(), { key: 'w', ctrlKey: true });
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    await act(async () => {
+      finish?.(null);
+      await Promise.resolve();
+    });
+    expect(
+      screen.getByRole('region', { name: 'Untitled.txt' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('Cancelled. Your document and edits remain available.'),
+    ).toBeInTheDocument();
+    fireEvent.keyDown(getApplicationShell(), { key: 'w', ctrlKey: true });
+    expect(screen.getByRole('dialog')).toHaveTextContent('Unsaved changes');
+  });
+
+  it('does not launch native Save after recovery replaces the application while flushing', async () => {
+    const draft = createDraftSession('text');
+    let finishSnapshot: (() => void) | undefined;
+    const remove = vi.fn().mockResolvedValue(true);
+    const gateway: RecoveryGateway = {
+      inventory: vi.fn().mockResolvedValue([]),
+      load: vi.fn(),
+      remove,
+      persist: vi.fn<RecoveryGateway['persist']>(
+        (record) =>
+          new Promise((resolve) => {
+            finishSnapshot = () =>
+              resolve({
+                record_id: record.record_id,
+                display_hint: record.display_hint,
+                status: 'available',
+                updated_unix_ms: record.updated_unix_ms,
+                expires_unix_ms: record.updated_unix_ms + 1,
+                committed_bytes: 0,
+              });
+          }),
+      ),
+    };
+    const saveAs = vi.fn().mockResolvedValue(null);
+    const app = render(
+      <App
+        sessions={[draft]}
+        androidDeliveryGateway={authoringDelivery()}
+        androidAuthoringGateway={{ saveAs }}
+        recoveryGateway={gateway}
+      />,
+    );
+    fireEvent.keyDown(getApplicationShell(), { key: 's', ctrlKey: true });
+    await waitFor(() => expect(finishSnapshot).toBeDefined());
+    app.unmount();
+    await act(async () => {
+      finishSnapshot?.();
+      await Promise.resolve();
+    });
+    expect(saveAs).not.toHaveBeenCalled();
+    expect(remove).not.toHaveBeenCalled();
+  });
+
+  it('releases a native destination returned after application recovery unmounts the shell', async () => {
+    const draft = createDraftSession('text');
+    let finish: ((receipt: AndroidDestinationReceipt) => void) | undefined;
+    const saveAs = vi.fn(
+      () =>
+        new Promise<AndroidDestinationReceipt>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const close = vi.fn().mockResolvedValue(undefined);
+    const app = render(
+      <App
+        sessions={[draft]}
+        androidDeliveryGateway={authoringDelivery({ close })}
+        androidAuthoringGateway={{ saveAs }}
+        recoveryGateway={null}
+      />,
+    );
+    fireEvent.keyDown(getApplicationShell(), { key: 's', ctrlKey: true });
+    await waitFor(() => expect(saveAs).toHaveBeenCalledOnce());
+    app.unmount();
+    await act(async () => {
+      finish?.(destinationFor(draft));
+      await Promise.resolve();
+    });
+    expect(close).toHaveBeenCalledExactlyOnceWith('saved-source');
+  });
+
+  it('preserves native copy and undo shortcuts in the rendered Markdown search field', async () => {
+    const write = vi.fn().mockResolvedValue(undefined);
+    render(
+      <App
+        sessions={[initialSessions[3]]}
+        clipboardGateway={{ write }}
+        recoveryGateway={null}
+      />,
+    );
+    fireEvent.keyDown(getApplicationShell(), { key: 'f', ctrlKey: true });
+    const search = await screen.findByRole('textbox', {
+      name: 'Find rendered text',
+    });
+    fireEvent.change(search, { target: { value: 'Draft' } });
+    search.focus();
+    for (const key of ['c', 'z']) {
+      expect(fireEvent.keyDown(search, { key, ctrlKey: true })).toBe(true);
+      expect(fireEvent.keyDown(search, { key, metaKey: true })).toBe(true);
+    }
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(write).not.toHaveBeenCalled();
+    expect(search).toHaveValue('Draft');
+  });
+
+  it('keeps Preferences field shortcuts from copying or undoing the active document', async () => {
+    const write = vi.fn().mockResolvedValue(undefined);
+    render(
+      <App
+        sessions={[createDraftSession('text')]}
+        clipboardGateway={{ write }}
+        recoveryGateway={null}
+      />,
+    );
+    const editor = screen.getByRole('textbox', {
+      name: 'Untitled.txt text editor',
+    });
+    act(() => {
+      EditorView.findFromDOM(editor)!.dispatch({
+        changes: { from: 0, insert: 'Keep document edit' },
+      });
+    });
+    invokeMenu('Preferences');
+    const font = await screen.findByRole('textbox', {
+      name: 'Editor font family',
+    });
+    font.focus();
+    for (const key of ['c', 'z']) {
+      expect(fireEvent.keyDown(font, { key, ctrlKey: true })).toBe(true);
+      expect(fireEvent.keyDown(font, { key, metaKey: true })).toBe(true);
+    }
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(write).not.toHaveBeenCalled();
+    expect(editor).toHaveTextContent('Keep document edit');
+    fireEvent.click(screen.getByRole('button', { name: 'Close preferences' }));
+    editor.focus();
+    fireEvent.keyDown(editor, { key: 'z', ctrlKey: true });
+    expect(editor).not.toHaveTextContent('Keep document edit');
+  });
+
+  it('binds a successful native destination without cleaning edits made after the requested revision', async () => {
+    const draft = createDraftSession('text');
+    let finish: ((receipt: AndroidDestinationReceipt) => void) | undefined;
+    const saveAs = vi.fn(
+      () =>
+        new Promise<AndroidDestinationReceipt>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    render(
+      <App
+        sessions={[draft]}
+        androidDeliveryGateway={authoringDelivery()}
+        androidAuthoringGateway={{ saveAs }}
+        recoveryGateway={null}
+      />,
+    );
+    fireEvent.keyDown(getApplicationShell(), { key: 's', ctrlKey: true });
+    await waitFor(() => expect(saveAs).toHaveBeenCalledOnce());
+    const textbox = screen.getByRole('textbox', {
+      name: 'Untitled.txt text editor',
+    });
+    act(() => {
+      const view = EditorView.findFromDOM(textbox)!;
+      view.dispatch({ changes: { from: 0, insert: 'Newer edits' } });
+    });
+    await act(async () => {
+      finish?.(destinationFor(draft));
+      await Promise.resolve();
+    });
+    expect(
+      screen.getByRole('textbox', { name: 'Saved.txt text editor' }),
+    ).toHaveTextContent('Newer edits');
+    expect(
+      screen.getByText('Saved earlier revision. Newer edits remain unsaved.'),
+    ).toBeInTheDocument();
+    fireEvent.keyDown(getApplicationShell(), { key: 'w', ctrlKey: true });
+    expect(screen.getByRole('dialog')).toHaveTextContent('Unsaved changes');
+  });
+
+  it('dismisses the Android application menu before Back can close the current document', async () => {
+    let back: ((id: string) => void) | undefined;
+    const completeBack = vi.fn().mockResolvedValue(undefined);
+    const delivery = authoringDelivery({
+      subscribeBack: (handler) => {
+        back = handler;
+        return Promise.resolve(() => undefined);
+      },
+      completeBack,
+    });
+    render(
+      <App sessions={[initialSessions[2]]} androidDeliveryGateway={delivery} />,
+    );
+    await waitFor(() => expect(back).toBeDefined());
+    fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
+    act(() => back?.('first'));
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('menu', { name: 'Glitchpad menu' }),
+      ).not.toBeInTheDocument(),
+    );
+    expect(
+      screen.getByRole('region', { name: 'notes.txt' }),
+    ).toBeInTheDocument();
+    expect(completeBack).toHaveBeenCalledWith('first', true);
+  });
+
+  it('keeps every dirty-close decision disabled until the withheld Android Save As receipt settles', async () => {
+    const draft = createDraftSession('text');
+    let finish:
+      ((receipt: AndroidDestinationReceipt | null) => void) | undefined;
+    let back: ((id: string) => void) | undefined;
+    const saveAs = vi.fn(
+      () =>
+        new Promise<AndroidDestinationReceipt | null>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const completeBack = vi.fn().mockResolvedValue(undefined);
+    render(
+      <App
+        sessions={[draft]}
+        androidDeliveryGateway={authoringDelivery({
+          subscribeBack: (handler) => {
+            back = handler;
+            return Promise.resolve(() => undefined);
+          },
+          completeBack,
+        })}
+        androidAuthoringGateway={{ saveAs }}
+        recoveryGateway={null}
+      />,
+    );
+    const editor = screen.getByRole('textbox', {
+      name: 'Untitled.txt text editor',
+    });
+    act(() => {
+      EditorView.findFromDOM(editor)!.dispatch({
+        changes: { from: 0, insert: 'Exact pending draft\n' },
+      });
+    });
+    fireEvent.keyDown(getApplicationShell(), { key: 'w', ctrlKey: true });
+    const dialog = screen.getByRole('dialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save As' }));
+    await waitFor(() => expect(saveAs).toHaveBeenCalledOnce());
+    for (const button of within(dialog).getAllByRole('button'))
+      expect(button).toBeDisabled();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Discard' }));
+    fireEvent.keyDown(dialog, { key: 'Escape' });
+    await waitFor(() => expect(back).toBeDefined());
+    act(() => back?.('pending-close'));
+    expect(completeBack).toHaveBeenCalledWith('pending-close', true);
+    expect(screen.getByRole('dialog')).toBe(dialog);
+    expect(EditorView.findFromDOM(editor)!.state.doc.toString()).toBe(
+      'Exact pending draft\n',
+    );
+    for (const button of within(dialog).getAllByRole('button'))
+      expect(button).toBeDisabled();
+    await act(async () => {
+      finish?.(null);
+      await Promise.resolve();
+    });
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(EditorView.findFromDOM(editor)!.state.doc.toString()).toBe(
+      'Exact pending draft\n',
+    );
+    expect(
+      screen.getByText('Save cancelled. Edits remain open.'),
+    ).toBeInTheDocument();
+    fireEvent.keyDown(getApplicationShell(), { key: 'w', ctrlKey: true });
+    for (const button of within(screen.getByRole('dialog')).getAllByRole(
+      'button',
+    ))
+      expect(button).toBeEnabled();
+  });
+
+  it('does not launch a native save for a dirty-close decision invalidated by a later editor transaction', async () => {
+    let finish:
+      ((receipt: AndroidDestinationReceipt | null) => void) | undefined;
+    const saveAs = vi.fn(
+      () =>
+        new Promise<AndroidDestinationReceipt | null>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    render(
+      <App
+        sessions={[createDraftSession('text')]}
+        androidDeliveryGateway={authoringDelivery()}
+        androidAuthoringGateway={{ saveAs }}
+        recoveryGateway={null}
+      />,
+    );
+    invokeMenu('Toggle wrap');
+    expect(
+      await screen.findByText('Completed Toggle wrap.'),
+    ).toBeInTheDocument();
+    const editor = screen.getByRole('textbox', {
+      name: 'Untitled.txt text editor',
+    });
+    fireEvent.keyDown(getApplicationShell(), { key: 'w', ctrlKey: true });
+    act(() => {
+      EditorView.findFromDOM(editor)!.dispatch({
+        changes: { from: 0, insert: 'Late native commit\n' },
+      });
+    });
+    fireEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'Save As',
+      }),
+    );
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(saveAs).not.toHaveBeenCalled();
+    expect(
+      screen.getByText(
+        'Untitled.txt changed while the decision was open. Review the current unsaved changes.',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText('Completed Toggle wrap.'),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('dialog')).toHaveTextContent(
+      'No content has been discarded.',
+    );
+    expect(EditorView.findFromDOM(editor)!.state.doc.toString()).toBe(
+      'Late native commit\n',
+    );
+    fireEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'Save As',
+      }),
+    );
+    await waitFor(() => expect(saveAs).toHaveBeenCalledOnce());
+    for (const button of within(screen.getByRole('dialog')).getAllByRole(
+      'button',
+    ))
+      expect(button).toBeDisabled();
+    await act(async () => {
+      finish?.(null);
+      await Promise.resolve();
+    });
+  });
+
+  it('releases the new Android source after dirty-close Save As completes', async () => {
+    const draft = createDraftSession('text');
+    let finish: ((receipt: AndroidDestinationReceipt) => void) | undefined;
+    const saveAs = vi.fn(
+      () =>
+        new Promise<AndroidDestinationReceipt>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const close = vi.fn().mockResolvedValue(undefined);
+    render(
+      <App
+        sessions={[draft]}
+        androidDeliveryGateway={authoringDelivery({ close })}
+        androidAuthoringGateway={{ saveAs }}
+        recoveryGateway={null}
+      />,
+    );
+    fireEvent.keyDown(getApplicationShell(), { key: 'w', ctrlKey: true });
+    fireEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'Save As',
+      }),
+    );
+    await waitFor(() => expect(saveAs).toHaveBeenCalledOnce());
+    expect(screen.getByRole('button', { name: 'Discard' })).toBeDisabled();
+    await act(async () => {
+      finish?.(destinationFor(draft));
+      await Promise.resolve();
+    });
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    await waitFor(() => expect(close).toHaveBeenCalledWith('saved-source'));
+  });
+
+  it('keeps draft and gives an actionable destination-conflict outcome without exposing native details', async () => {
+    const draft = createDraftSession('text');
+    const saveAs = vi.fn().mockRejectedValue({
+      context: { reason: 'destination_conflict' },
+      message: 'content://private/file',
+    });
+    render(
+      <App
+        sessions={[draft]}
+        androidDeliveryGateway={authoringDelivery()}
+        androidAuthoringGateway={{ saveAs }}
+        recoveryGateway={null}
+      />,
+    );
+    fireEvent.keyDown(getApplicationShell(), { key: 's', ctrlKey: true });
+    expect(
+      await screen.findByText(/That destination already contains a document/u),
+    ).toBeInTheDocument();
+    expect(document.body).not.toHaveTextContent('content://private/file');
+    fireEvent.keyDown(getApplicationShell(), { key: 'w', ctrlKey: true });
+    expect(screen.getByRole('dialog')).toHaveTextContent('Unsaved changes');
+  });
+
+  it('does not publish an earlier document save result onto a newly active document', async () => {
+    const draft = createDraftSession('text');
+    const second = {
+      ...createDraftSession('text'),
+      source: {
+        ...createDraftSession('text').source,
+        display_name: 'Second.txt',
+      },
+    };
+    let finish: ((receipt: AndroidDestinationReceipt) => void) | undefined;
+    const saveAs = vi.fn(
+      () =>
+        new Promise<AndroidDestinationReceipt>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    render(
+      <App
+        sessions={[draft, second]}
+        androidDeliveryGateway={authoringDelivery()}
+        androidAuthoringGateway={{ saveAs }}
+        recoveryGateway={null}
+      />,
+    );
+    fireEvent.keyDown(getApplicationShell(), { key: 's', ctrlKey: true });
+    await waitFor(() => expect(saveAs).toHaveBeenCalledOnce());
+    fireEvent.click(screen.getByRole('tab', { name: /Second.txt/u }));
+    await act(async () => {
+      finish?.(destinationFor(draft));
+      await Promise.resolve();
+    });
+    expect(
+      screen.getByRole('textbox', { name: 'Second.txt text editor' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText('Saved after native verification.'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('dismisses the active Markdown external-link modal before native Back can close its clean document', async () => {
+    let back: ((id: string) => void) | undefined;
+    const completeBack = vi.fn().mockResolvedValue(undefined);
+    const open = vi.fn().mockResolvedValue(undefined);
+    const session = makeSession(
+      'external-link',
+      'external.md',
+      'Markdown',
+      '[destination](https://example.com/path)',
+      { search: true },
+    );
+    render(
+      <App
+        sessions={[session]}
+        androidDeliveryGateway={authoringDelivery({
+          subscribeBack: (handler) => {
+            back = handler;
+            return Promise.resolve(() => undefined);
+          },
+          completeBack,
+        })}
+        externalLinkGateway={{ open }}
+        recoveryGateway={null}
+      />,
+    );
+    await waitFor(() => expect(back).toBeDefined());
+    const trigger = await screen.findByRole('button', { name: /destination/u });
+    fireEvent.click(trigger);
+    expect(
+      await screen.findByRole('dialog', { name: 'Open external destination?' }),
+    ).toBeInTheDocument();
+    act(() => back?.('modal-back'));
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+    expect(
+      screen.getByRole('region', { name: 'external.md' }),
+    ).toBeInTheDocument();
+    expect(open).not.toHaveBeenCalled();
+    expect(completeBack).toHaveBeenCalledWith('modal-back', true);
+    await waitFor(() => expect(trigger).toHaveFocus());
+    act(() => back?.('document-back'));
+    expect(
+      screen.queryByRole('region', { name: 'external.md' }),
+    ).not.toBeInTheDocument();
+    expect(completeBack).toHaveBeenCalledWith('document-back', true);
+    act(() => back?.('empty-back'));
+    expect(completeBack).toHaveBeenCalledWith('empty-back', false);
+  });
+
+  it('consumes committed native Back at exactly the focused Add document layer', async () => {
+    let back: ((id: string) => void) | undefined;
+    const completeBack = vi.fn().mockResolvedValue(undefined);
+    render(
+      <App
+        sessions={[initialSessions[2]]}
+        androidDeliveryGateway={authoringDelivery({
+          subscribeBack: (handler) => {
+            back = handler;
+            return Promise.resolve(() => undefined);
+          },
+          completeBack,
+        })}
+        recoveryGateway={null}
+      />,
+    );
+    await waitFor(() => expect(back).toBeDefined());
+    const trigger = await screen.findByRole('button', { name: 'Add document' });
+    fireEvent.click(trigger);
+    expect(
+      await screen.findByRole('menu', { name: 'Add document choices' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('menuitem', { name: 'New Markdown' }),
+    ).toHaveFocus();
+    act(() => back?.('add-layer'));
+    expect(
+      screen.queryByRole('menu', { name: 'Add document choices' }),
+    ).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+    expect(
+      screen.getByRole('region', { name: 'notes.txt' }),
+    ).toBeInTheDocument();
+    expect(completeBack).toHaveBeenCalledExactlyOnceWith('add-layer', true);
+    act(() => back?.('document-layer'));
+    expect(
+      screen.queryByRole('region', { name: 'notes.txt' }),
+    ).not.toBeInTheDocument();
+    expect(completeBack).toHaveBeenCalledWith('document-layer', true);
+  });
+
+  it('consumes measured IME Back before requesting dirty document close', async () => {
+    let back: ((id: string) => void) | undefined;
+    const delivery = authoringDelivery({
+      subscribeBack: (handler) => {
+        back = handler;
+        return Promise.resolve(() => undefined);
+      },
+      completeBack: vi.fn().mockResolvedValue(undefined),
+    });
+    render(
+      <App
+        sessions={[createDraftSession('text')]}
+        androidDeliveryGateway={delivery}
+        recoveryGateway={null}
+      />,
+    );
+    await waitFor(() => expect(back).toBeDefined());
+    const textbox = screen.getByRole('textbox', {
+      name: 'Untitled.txt text editor',
+    });
+    textbox.focus();
+    const frame = document.querySelector<HTMLElement>('[data-bb-app-frame]')!;
+    frame.style.setProperty('--bb-ime-block-end', '200px');
+    act(() => back?.('ime'));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    frame.style.setProperty('--bb-ime-block-end', '0px');
+    act(() => back?.('document'));
+    expect(screen.getByRole('dialog')).toHaveTextContent('Unsaved changes');
+  });
+
+  it('keeps a busy diagnostic panel open when native Back arrives', async () => {
+    let back: ((id: string) => void) | undefined;
+    let finish: (() => void) | undefined;
+    const delivery = authoringDelivery({
+      subscribeBack: (handler) => {
+        back = handler;
+        return Promise.resolve(() => undefined);
+      },
+      completeBack: vi.fn().mockResolvedValue(undefined),
+    });
+    const exporter = {
+      export: vi.fn(
+        () =>
+          new Promise<void>((resolve) => {
+            finish = resolve;
+          }),
+      ),
+    };
+    render(
+      <App
+        androidDeliveryGateway={delivery}
+        diagnosticExportGateway={exporter}
+        persistenceGateway={persistenceGateway()}
+      />,
+    );
+    invokeMenu('Diagnostics');
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Export previewed bundle' }),
+    );
+    await waitFor(() => expect(exporter.export).toHaveBeenCalledOnce());
+    act(() => back?.('pending'));
+    expect(
+      screen.getByRole('heading', { name: 'Diagnostics' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Close diagnostics' }),
+    ).toBeDisabled();
+    await act(async () => {
+      finish?.();
+      await Promise.resolve();
+    });
+    act(() => back?.('complete'));
+    expect(
+      screen.queryByRole('heading', { name: 'Diagnostics' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ['worker', 'Markdown preview worker failed.'],
+    ['parser', 'Markdown preview failed safely.'],
+    ['projection', 'Markdown projection failed.'],
+  ] as const)(
+    'contains the compiled %s fault at the active Markdown boundary and recovers',
+    async (stage, message) => {
+      vi.stubEnv('VITE_GLITCHPAD_RECOVERY_PROBES', '1');
+      try {
+        render(<App sessions={[initialSessions[3]]} />);
+        await screen.findByText('Unsaved fixture content.');
+        act(() => {
+          window.dispatchEvent(
+            new CustomEvent('glitchpad:test-recovery', { detail: { stage } }),
+          );
+        });
+        expect(await screen.findByRole('alert')).toHaveTextContent(message);
+        expect(screen.getByRole('button', { name: 'Menu' })).toBeEnabled();
+        fireEvent.click(screen.getByRole('button', { name: 'View source' }));
+        expect(
+          screen.getByRole('textbox', { name: 'draft.md text editor' }),
+        ).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'Retry preview' }));
+        expect(
+          await screen.findByText('Unsaved fixture content.'),
+        ).toBeInTheDocument();
+      } finally {
+        vi.unstubAllEnvs();
+      }
+    },
+  );
 
   it('starts with no synthetic documents in the production shell', () => {
     render(<App />);
@@ -165,6 +915,127 @@ describe('document foundation shell', () => {
     }
   });
 
+  it('does not apply a native Android layout contraction twice', () => {
+    const originalInnerHeight = Object.getOwnPropertyDescriptor(
+      window,
+      'innerHeight',
+    );
+    const userAgent = vi
+      .spyOn(navigator, 'userAgent', 'get')
+      .mockReturnValue('Android');
+    vi.stubGlobal('__TAURI_INTERNALS__', {
+      invoke: vi.fn().mockResolvedValue(undefined),
+    });
+    vi.stubGlobal('visualViewport', undefined);
+    const probe = document.createElement('textarea');
+    let view: ReturnType<typeof render> | undefined;
+    try {
+      Object.defineProperty(window, 'innerHeight', {
+        configurable: true,
+        value: 640,
+      });
+      view = render(
+        <App
+          androidDeliveryGateway={authoringDelivery()}
+          androidRestorationGateway={null}
+          desktopDeliveryGateway={null}
+          recoveryGateway={null}
+          metadataGateway={null}
+          persistenceGateway={null}
+        />,
+      );
+      document.body.append(probe);
+      probe.focus();
+      Object.defineProperty(window, 'innerHeight', {
+        configurable: true,
+        value: 370,
+      });
+      act(() => {
+        window.dispatchEvent(new Event('resize'));
+      });
+      expect(
+        document.documentElement.style.getPropertyValue(
+          '--bb-visual-viewport-height',
+        ),
+      ).toBe('370px');
+      expect(
+        document.documentElement.style.getPropertyValue('--bb-ime-block-end'),
+      ).toBe('0px');
+      Object.defineProperty(window, 'innerHeight', {
+        configurable: true,
+        value: 640,
+      });
+      act(() => {
+        window.dispatchEvent(new Event('resize'));
+      });
+      expect(
+        document.documentElement.style.getPropertyValue('--bb-ime-block-end'),
+      ).toBe('0px');
+    } finally {
+      view?.unmount();
+      probe.remove();
+      if (originalInnerHeight)
+        Object.defineProperty(window, 'innerHeight', originalInnerHeight);
+      userAgent.mockRestore();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('retains visual-only Android IME obstruction when the layout has not resized', () => {
+    const originalInnerHeight = Object.getOwnPropertyDescriptor(
+      window,
+      'innerHeight',
+    );
+    const userAgent = vi
+      .spyOn(navigator, 'userAgent', 'get')
+      .mockReturnValue('Android');
+    vi.stubGlobal('__TAURI_INTERNALS__', {
+      invoke: vi.fn().mockResolvedValue(undefined),
+    });
+    const viewport = Object.assign(new EventTarget(), {
+      height: 640,
+      offsetTop: 0,
+    });
+    vi.stubGlobal('visualViewport', viewport);
+    let view: ReturnType<typeof render> | undefined;
+    try {
+      Object.defineProperty(window, 'innerHeight', {
+        configurable: true,
+        value: 640,
+      });
+      view = render(
+        <App
+          androidDeliveryGateway={authoringDelivery()}
+          androidRestorationGateway={null}
+          desktopDeliveryGateway={null}
+          recoveryGateway={null}
+          metadataGateway={null}
+          persistenceGateway={null}
+        />,
+      );
+      act(() => {
+        viewport.height = 370;
+        viewport.dispatchEvent(new Event('resize'));
+      });
+      expect(
+        document.documentElement.style.getPropertyValue('--bb-ime-block-end'),
+      ).toBe('270px');
+      act(() => {
+        viewport.height = 640;
+        viewport.dispatchEvent(new Event('resize'));
+      });
+      expect(
+        document.documentElement.style.getPropertyValue('--bb-ime-block-end'),
+      ).toBe('0px');
+    } finally {
+      view?.unmount();
+      if (originalInnerHeight)
+        Object.defineProperty(window, 'innerHeight', originalInnerHeight);
+      userAgent.mockRestore();
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('retains the focused layout baseline when the host declares resize can be IME', () => {
     const originalInnerHeight = Object.getOwnPropertyDescriptor(
       window,
@@ -222,6 +1093,392 @@ describe('document foundation shell', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'The selected file cannot be read.',
     );
+  });
+
+  for (const platform of ['desktop', 'android'] as const) {
+    const boundaries =
+      platform === 'android'
+        ? ([
+            'rejection',
+            'drain',
+            'read',
+            'picker',
+            'subscription',
+            'picker_read',
+          ] as const)
+        : (['rejection', 'drain', 'read', 'picker', 'subscription'] as const);
+    for (const boundary of boundaries) {
+      it(
+        'captures one bounded ' +
+          platform +
+          ' source failure at the ' +
+          boundary +
+          ' boundary',
+        async () => {
+          const baseline = new Set(
+            (await collectFailureEvents()).map(
+              (event) => event.failure?.correlation_id,
+            ),
+          );
+          const privateDetail =
+            'Secret-document content://private/provider C:\\private\\document';
+          const error = new Error(privateDetail);
+          const source = destinationFor(createDraftSession('text')).source;
+          source.source_id = privateDetail;
+          source.descriptor.display_name = privateDetail;
+          const close = vi.fn().mockResolvedValue(undefined);
+          const choose = vi.fn();
+          const drain = vi.fn();
+          const materialize = vi.fn().mockRejectedValue(error);
+          const subscribe = vi.fn().mockResolvedValue(() => undefined);
+          if (platform === 'desktop') {
+            const delivered = {
+              sequence: 1,
+              kind: 'association',
+              status: 'opened',
+              source,
+              error: null,
+            };
+            choose.mockResolvedValue([]);
+            drain.mockResolvedValue([]);
+            if (boundary === 'rejection')
+              drain.mockResolvedValueOnce([
+                {
+                  ...delivered,
+                  status: 'rejected',
+                  source: null,
+                  error: {
+                    summary: 'The selected file cannot be read.',
+                    retryable: true,
+                  },
+                },
+              ]);
+            if (boundary === 'read') drain.mockResolvedValueOnce([delivered]);
+            if (boundary === 'drain') drain.mockRejectedValueOnce(error);
+            if (boundary === 'picker') choose.mockRejectedValue(error);
+            if (boundary === 'subscription') subscribe.mockRejectedValue(error);
+            const gateway: DesktopDeliveryGateway = {
+              choose,
+              drain,
+              materialize,
+              subscribe,
+              close,
+              save: vi.fn(),
+              saveAs: vi.fn(),
+            };
+            render(
+              <App
+                sessions={[initialSessions[2]]}
+                desktopDeliveryGateway={gateway}
+                recoveryGateway={null}
+              />,
+            );
+          } else {
+            choose.mockResolvedValue(null);
+            drain.mockResolvedValue({ sources: [], rejections: [] });
+            if (boundary === 'rejection')
+              drain.mockResolvedValueOnce({
+                sources: [],
+                rejections: [{ code: privateDetail, retryable: true }],
+              });
+            if (boundary === 'read')
+              drain.mockResolvedValueOnce({
+                sources: [source],
+                rejections: [],
+              });
+            if (boundary === 'drain') drain.mockRejectedValueOnce(error);
+            if (boundary === 'picker') choose.mockRejectedValue(error);
+            if (boundary === 'picker_read') choose.mockResolvedValue(source);
+            if (boundary === 'subscription') subscribe.mockRejectedValue(error);
+            render(
+              <App
+                sessions={[initialSessions[2]]}
+                androidDeliveryGateway={authoringDelivery({
+                  choose,
+                  drain,
+                  materialize,
+                  subscribe,
+                  close,
+                })}
+                recoveryGateway={null}
+              />,
+            );
+          }
+          if (boundary === 'picker' || boundary === 'picker_read')
+            invokeMenu('Open…');
+          const captured = () =>
+            collectFailureEvents().then((events) =>
+              events.filter(
+                (event) =>
+                  event.failure?.component === 'source' &&
+                  !baseline.has(event.failure.correlation_id),
+              ),
+            );
+          await waitFor(async () => expect(await captured()).toHaveLength(1));
+          const events = await captured();
+          const isRead = boundary === 'read' || boundary === 'picker_read';
+          expect(events[0]).toMatchObject({
+            event_id: 'task_failed',
+            error_code: isRead
+              ? 'source_read_failed'
+              : 'source_delivery_failed',
+            failure: {
+              component: 'source',
+              stage: isRead ? 'read' : 'delivery',
+              reason: isRead ? 'source_read_failed' : 'source_delivery_failed',
+            },
+          });
+          expect(events[0].failure?.correlation_id).toMatch(/^[0-9a-f]{32}$/u);
+          expect(JSON.stringify(events)).not.toMatch(
+            /Secret-document|content:|private|provider|Error:/u,
+          );
+          expect(
+            screen.getByRole('region', { name: 'notes.txt' }),
+          ).toBeInTheDocument();
+          if (boundary === 'subscription' && platform === 'android') {
+            expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+            await waitFor(() => expect(drain).toHaveBeenCalled());
+          } else
+            expect(await screen.findByRole('alert')).not.toBeEmptyDOMElement();
+          if (isRead)
+            expect(close).toHaveBeenCalledExactlyOnceWith(privateDetail);
+        },
+      );
+    }
+
+    it(
+      'keeps a neutral ' +
+        platform +
+        ' Open cancellation out of failure diagnostics',
+      async () => {
+        const before = await collectFailureEvents();
+        const choose = vi
+          .fn()
+          .mockResolvedValue(platform === 'android' ? null : []);
+        if (platform === 'android')
+          render(
+            <App
+              sessions={[initialSessions[2]]}
+              androidDeliveryGateway={authoringDelivery({ choose })}
+              recoveryGateway={null}
+            />,
+          );
+        else {
+          const gateway: DesktopDeliveryGateway = {
+            choose,
+            drain: vi.fn().mockResolvedValue([]),
+            materialize: vi.fn(),
+            close: vi.fn(),
+            save: vi.fn(),
+            saveAs: vi.fn(),
+            subscribe: vi.fn().mockResolvedValue(() => undefined),
+          };
+          render(
+            <App
+              sessions={[initialSessions[2]]}
+              desktopDeliveryGateway={gateway}
+              recoveryGateway={null}
+            />,
+          );
+        }
+        invokeMenu('Open…');
+        await waitFor(() => expect(choose).toHaveBeenCalledOnce());
+        await act(async () => {
+          await Promise.resolve();
+        });
+        expect(await collectFailureEvents()).toEqual(before);
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+        expect(
+          screen.getByRole('region', { name: 'notes.txt' }),
+        ).toBeInTheDocument();
+      },
+    );
+  }
+
+  for (const entrypoint of ['delivery', 'picker'] as const) {
+    for (const ownership of ['tab', 'copy', 'unowned'] as const) {
+      it(
+        'retains current edits and respects ' +
+          ownership +
+          ' ownership after failed Android acquisition via ' +
+          entrypoint,
+        async () => {
+          const dirty: ShellSession = {
+            ...makeSession(
+              'dirty',
+              'Untitled.txt',
+              'Text',
+              'Exact dirty draft bytes\n',
+              { search: true, edit: true, save: true },
+              { dirty: true, writable: true },
+            ),
+            edit_origin: 'draft',
+          };
+          const incoming = destinationFor(dirty).source;
+          incoming.source_id = 'incoming-source';
+          incoming.descriptor.display_name = 'Original.txt';
+          const original: ShellSession = {
+            ...makeSession(
+              'android-incoming-source',
+              'Original.txt',
+              'Text',
+              'Exact original source bytes\n',
+              { search: true },
+            ),
+            source_id: incoming.source_id,
+            source: incoming.descriptor,
+            external_revision: incoming.external_revision,
+          };
+          const editable: ShellSession =
+            ownership === 'copy'
+              ? {
+                  ...dirty,
+                  edit_origin: 'copy',
+                  copy_source: {
+                    source_id: incoming.source_id,
+                    external_revision: incoming.external_revision,
+                  },
+                }
+              : dirty;
+          const close = vi.fn().mockResolvedValue(undefined);
+          const materialize = vi
+            .fn()
+            .mockRejectedValue(new Error('controlled materialization failure'));
+          const gateway = authoringDelivery({
+            close,
+            materialize,
+            choose: vi.fn().mockResolvedValue(incoming),
+            drain: vi
+              .fn()
+              .mockResolvedValueOnce({
+                sources: entrypoint === 'delivery' ? [incoming] : [],
+                rejections: [],
+              })
+              .mockResolvedValue({ sources: [], rejections: [] }),
+          });
+          render(
+            <App
+              sessions={ownership === 'tab' ? [editable, original] : [editable]}
+              androidDeliveryGateway={gateway}
+              recoveryGateway={null}
+            />,
+          );
+          if (entrypoint === 'picker') invokeMenu('Open…');
+          await screen.findByRole('alert');
+          expect(materialize).toHaveBeenCalledExactlyOnceWith(incoming);
+          const editor = screen.getByRole('textbox', {
+            name: 'Untitled.txt text editor',
+          });
+          expect(EditorView.findFromDOM(editor)!.state.doc.toString()).toBe(
+            'Exact dirty draft bytes\n',
+          );
+          expect(
+            document.querySelector('[data-draft-identity]'),
+          ).toHaveTextContent('Unsaved changes');
+          expect(original.content).toBe('Exact original source bytes\n');
+          if (ownership === 'unowned') {
+            await waitFor(() =>
+              expect(close).toHaveBeenCalledExactlyOnceWith(incoming.source_id),
+            );
+            return;
+          }
+          expect(close).not.toHaveBeenCalled();
+          if (ownership === 'tab')
+            fireEvent.click(screen.getByRole('tab', { name: 'Original.txt' }));
+          fireEvent.keyDown(getApplicationShell(), { key: 'w', ctrlKey: true });
+          if (ownership === 'copy')
+            fireEvent.click(
+              within(screen.getByRole('dialog')).getByRole('button', {
+                name: 'Discard',
+              }),
+            );
+          await waitFor(() =>
+            expect(close).toHaveBeenCalledExactlyOnceWith(incoming.source_id),
+          );
+          if (ownership === 'tab')
+            expect(
+              EditorView.findFromDOM(
+                screen.getByRole('textbox', {
+                  name: 'Untitled.txt text editor',
+                }),
+              )!.state.doc.toString(),
+            ).toBe('Exact dirty draft bytes\n');
+        },
+      );
+    }
+  }
+
+  it('uses live Android ownership acquired while an earlier materialization is pending', async () => {
+    const dirty = createDraftSession('text');
+    const incoming = destinationFor(dirty).source;
+    incoming.source_id = 'incoming-source';
+    incoming.descriptor.display_name = 'Original.txt';
+    const original: ShellSession = {
+      ...makeSession(
+        'android-incoming-source',
+        'Original.txt',
+        'Text',
+        'Exact original bytes\n',
+        { search: true },
+      ),
+      source_id: incoming.source_id,
+      source: incoming.descriptor,
+      external_revision: incoming.external_revision,
+    };
+    let rejectFirst: ((error: Error) => void) | undefined;
+    const materialize = vi
+      .fn<AndroidDeliveryGateway['materialize']>()
+      .mockImplementationOnce(
+        () =>
+          new Promise((_resolve, reject) => {
+            rejectFirst = reject;
+          }),
+      )
+      .mockResolvedValueOnce(original);
+    const close = vi.fn().mockResolvedValue(undefined);
+    const gateway = authoringDelivery({
+      close,
+      materialize,
+      choose: vi.fn().mockResolvedValue(incoming),
+      drain: vi
+        .fn()
+        .mockResolvedValueOnce({ sources: [incoming], rejections: [] })
+        .mockResolvedValue({ sources: [], rejections: [] }),
+    });
+    render(
+      <App
+        sessions={[dirty]}
+        androidDeliveryGateway={gateway}
+        recoveryGateway={null}
+      />,
+    );
+    const editor = screen.getByRole('textbox', {
+      name: 'Untitled.txt text editor',
+    });
+    act(() => {
+      EditorView.findFromDOM(editor)!.dispatch({
+        changes: { from: 0, insert: 'Live retained bytes\n' },
+      });
+    });
+    await waitFor(() => expect(materialize).toHaveBeenCalledOnce());
+    invokeMenu('Open…');
+    await screen.findByRole('tabpanel', { name: 'Original.txt' });
+    await act(async () => {
+      rejectFirst?.(new Error('earlier acquisition failed'));
+      await Promise.resolve();
+    });
+    await screen.findByRole('alert');
+    expect(close).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('tab', { name: /^Untitled\.txt/u }));
+    expect(
+      EditorView.findFromDOM(
+        screen.getByRole('textbox', { name: 'Untitled.txt text editor' }),
+      )!.state.doc.toString(),
+    ).toBe('Live retained bytes\n');
+    expect(document.querySelector('[data-draft-identity]')).toHaveTextContent(
+      'Unsaved changes',
+    );
+    expect(original.content).toBe('Exact original bytes\n');
   });
 
   it('opens initial and warm Android deliveries and releases closed sources', async () => {
@@ -317,6 +1574,137 @@ describe('document foundation shell', () => {
     });
   });
 
+  it('offers native desktop Save As for an editable copy and retains its edits after picker cancellation', async () => {
+    const original: ShellSession = {
+      ...initialSessions[2],
+      id: 'desktop-readonly-source',
+      source_id: 'readonly-source',
+      external_revision: revision,
+      source: {
+        ...initialSessions[2].source,
+        capabilities: {
+          ...initialSessions[2].source.capabilities,
+          write: false,
+        },
+      },
+    };
+    const saveAs = vi
+      .fn<DesktopDeliveryGateway['saveAs']>()
+      .mockResolvedValue(false);
+    const save = vi.fn();
+    const gateway: DesktopDeliveryGateway = {
+      choose: vi.fn().mockResolvedValue([]),
+      drain: vi.fn().mockResolvedValue([]),
+      materialize: vi.fn(),
+      subscribe: vi.fn().mockResolvedValue(() => undefined),
+      close: vi.fn().mockResolvedValue(undefined),
+      save,
+      saveAs,
+    };
+    render(
+      <App
+        sessions={[original]}
+        desktopDeliveryGateway={gateway}
+        recoveryGateway={null}
+      />,
+    );
+    invokeMenu('Edit a copy');
+    const editor = await screen.findByRole('textbox', {
+      name: 'Copy of notes.txt text editor',
+    });
+    act(() => {
+      const view = EditorView.findFromDOM(editor)!;
+      view.dispatch({
+        changes: { from: view.state.doc.length, insert: '\nLocal copy edit' },
+      });
+    });
+    invokeMenu('Save As…');
+    await waitFor(() => expect(saveAs).toHaveBeenCalledOnce());
+    expect(saveAs).toHaveBeenCalledWith(
+      expect.objectContaining({
+        source_id: null,
+        edit_origin: 'copy',
+        dirty: true,
+        content: original.content + '\nLocal copy edit',
+      }),
+    );
+    expect(saveAs.mock.calls[0][0].text_document?.raw_text).toBe(
+      original.content + '\nLocal copy edit',
+    );
+    expect(save).not.toHaveBeenCalled();
+    expect(
+      await screen.findByText(
+        'Cancelled. Your document and edits remain available.',
+      ),
+    ).toBeVisible();
+    expect(editor).toHaveTextContent('Local copy edit');
+    expect(screen.getByRole('tab', { name: 'notes.txt' })).toBeInTheDocument();
+    fireEvent.keyDown(getApplicationShell(), { key: 'w', ctrlKey: true });
+    expect(screen.getByRole('dialog')).toHaveTextContent('Unsaved changes');
+  });
+
+  it('retains the desktop source lease until the last editable copy closes', async () => {
+    const original: ShellSession = {
+      ...initialSessions[2],
+      id: 'desktop-original',
+      source_id: 'original',
+      external_revision: revision,
+      source: {
+        ...initialSessions[2].source,
+        capabilities: {
+          ...initialSessions[2].source.capabilities,
+          write: false,
+        },
+      },
+    };
+    const close = vi.fn().mockResolvedValue(undefined);
+    const saveAs = vi
+      .fn<DesktopDeliveryGateway['saveAs']>()
+      .mockResolvedValue(false);
+    const gateway: DesktopDeliveryGateway = {
+      choose: vi.fn().mockResolvedValue([]),
+      drain: vi.fn().mockResolvedValue([]),
+      materialize: vi.fn(),
+      subscribe: vi.fn().mockResolvedValue(() => undefined),
+      close,
+      saveAs,
+      save: vi.fn(),
+    };
+    render(
+      <App
+        sessions={[original]}
+        desktopDeliveryGateway={gateway}
+        recoveryGateway={null}
+      />,
+    );
+    invokeMenu('Edit a copy');
+    await screen.findByRole('textbox', {
+      name: 'Copy of notes.txt text editor',
+    });
+    fireEvent.click(screen.getByRole('tab', { name: 'notes.txt' }));
+    fireEvent.keyDown(getApplicationShell(), { key: 'w', ctrlKey: true });
+    expect(
+      screen.getByRole('textbox', { name: 'Copy of notes.txt text editor' }),
+    ).toBeInTheDocument();
+    expect(close).not.toHaveBeenCalled();
+    invokeMenu('Save As…');
+    await waitFor(() => expect(saveAs).toHaveBeenCalledOnce());
+    expect(saveAs.mock.calls[0][0].copy_source).toEqual({
+      source_id: 'original',
+      external_revision: revision,
+    });
+    expect(close).not.toHaveBeenCalled();
+    fireEvent.keyDown(getApplicationShell(), { key: 'w', ctrlKey: true });
+    fireEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'Discard',
+      }),
+    );
+    await waitFor(() =>
+      expect(close).toHaveBeenCalledExactlyOnceWith('original'),
+    );
+  });
+
   it('opens native desktop deliveries through the compact application commands', async () => {
     const subscriptionOrder: string[] = [];
     const delivered = {
@@ -340,7 +1728,12 @@ describe('document foundation shell', () => {
     ]);
     const materialize = vi.fn().mockResolvedValue(delivered);
     const close = vi.fn().mockResolvedValue(undefined);
-    const save = vi.fn().mockResolvedValue(saveReceipt);
+    const save = vi.fn((captured: ShellSession) =>
+      Promise.resolve({
+        ...saveReceipt,
+        operation_id: captured.destination_save_operation_id!,
+      }),
+    );
     const gateway: DesktopDeliveryGateway = {
       choose,
       drain: vi.fn().mockImplementation(() => {
@@ -379,7 +1772,9 @@ describe('document foundation shell', () => {
       ),
     );
     await waitFor(() =>
-      expect(screen.getByRole('status')).toHaveTextContent(/saved durably/i),
+      expect(screen.getByRole('status')).toHaveTextContent(
+        /Saved after native verification/i,
+      ),
     );
     fireEvent.keyDown(getApplicationShell(), { key: 'w', ctrlKey: true });
     await waitFor(() => expect(close).toHaveBeenCalledWith('source'));
@@ -397,7 +1792,7 @@ describe('document foundation shell', () => {
       'a small text fixture',
     );
     fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
-    expect(screen.getByRole('menuitem', { name: /^Save/u })).toBeEnabled();
+    expect(screen.getByRole('menuitem', { name: 'Save' })).toBeEnabled();
   });
 
   it('renders semantic compact tabs and an active document surface', async () => {
@@ -528,10 +1923,13 @@ describe('document foundation shell', () => {
       source_id: 'source',
       external_revision: revision,
     };
-    const save = vi.fn().mockResolvedValue({
-      ...saveReceipt,
-      accepted_session_revision: session.revision,
-    });
+    const save = vi.fn((captured: ShellSession) =>
+      Promise.resolve({
+        ...saveReceipt,
+        operation_id: captured.destination_save_operation_id!,
+        accepted_session_revision: session.revision,
+      }),
+    );
     const gateway: DesktopDeliveryGateway = {
       choose: vi.fn().mockResolvedValue([]),
       drain: vi.fn().mockResolvedValue([]),
@@ -568,7 +1966,7 @@ describe('document foundation shell', () => {
     expect(screen.getByText(/source changed outside/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
     expect(
-      screen.queryByRole('menuitem', { name: /Save Ctrl\+S/i }),
+      screen.queryByRole('menuitem', { name: 'Save' }),
     ).not.toBeInTheDocument();
     fireEvent.keyDown(getApplicationShell(), { key: 'w', ctrlKey: true });
     const dialog = within(screen.getByRole('dialog'));
@@ -688,18 +2086,24 @@ describe('document foundation shell', () => {
     }
   });
 
-  it('derives commands from the active capabilities and reports interaction changes', () => {
+  it('derives commands from the active capabilities and reports unavailable execution', async () => {
     render(<App sessions={initialSessions} />);
     fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
-    expect(screen.getByRole('menuitem', { name: /copy/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('menuitem', { name: /^Copy\b/i }),
+    ).toBeInTheDocument();
     expect(
       screen.queryByRole('menuitem', { name: /save/i }),
     ).not.toBeInTheDocument();
     fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' });
 
     fireEvent.click(screen.getByRole('tab', { name: /draft\.md/i }));
-    invokeMenu(/save/i);
-    expect(screen.getByRole('status')).toHaveTextContent(/save.*draft\.md/i);
+    invokeMenu('Save');
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent(
+        /unavailable for the current document/i,
+      ),
+    );
   });
 
   it('opens one shell-owned inspector, retargets it with the active tab, and restores opener focus', async () => {

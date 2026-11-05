@@ -1,4 +1,6 @@
 import type { DesktopSourceSummary } from './contracts';
+import { createDraftSession } from './drafts';
+import { applyTextTransaction } from './text-document';
 import {
   consumeDesktopMarkdownFailureProbe,
   createDesktopDeliveryGateway,
@@ -12,7 +14,12 @@ const bytes = new TextEncoder().encode('# Delivered\n');
 const source: DesktopSourceSummary = {
   source_id: 'native-source',
   descriptor: {
-    identity: { authority: 'filesystem', scope: 'volume', token: 'opaque', strength: 'strong' },
+    identity: {
+      authority: 'filesystem',
+      scope: 'volume',
+      token: 'opaque',
+      strength: 'strong',
+    },
     restoration_reference: 'opaque-reference',
     display_name: 'delivered.md',
     claimed_media_type: 'text/markdown',
@@ -20,14 +27,29 @@ const source: DesktopSourceSummary = {
     modified_unix_ms: 1,
     kind: 'file',
     capabilities: {
-      read: true, seek: true, stream: true, metadata: true, observe_revision: true,
-      revalidate: true, watch: true, write: true, replace_atomically: true,
-      persistent_permission: false, rename: true, observe_deletion: true, reopen: true,
+      read: true,
+      seek: true,
+      stream: true,
+      metadata: true,
+      observe_revision: true,
+      revalidate: true,
+      watch: true,
+      write: true,
+      replace_atomically: true,
+      persistent_permission: false,
+      rename: true,
+      observe_deletion: true,
+      reopen: true,
       reveal_location: false,
     },
   },
   external_revision: {
-    identity: { authority: 'filesystem', scope: 'volume', token: 'opaque', strength: 'strong' },
+    identity: {
+      authority: 'filesystem',
+      scope: 'volume',
+      token: 'opaque',
+      strength: 'strong',
+    },
     byte_length: bytes.length,
     modified_unix_nanos: '1',
     change_token: null,
@@ -46,7 +68,9 @@ test('content-verified raster delivery bypasses text decoding and stays read-onl
     if (command === 'identify_image_source') return Promise.resolve('png');
     throw new Error(`Unexpected image text read: ${command}`);
   });
-  const session = await createDesktopDeliveryGateway(call, () => Promise.resolve(() => undefined)).materialize(result);
+  const session = await createDesktopDeliveryGateway(call, () =>
+    Promise.resolve(() => undefined),
+  ).materialize(result);
   expect(session?.image_document?.codec).toBe('png');
   expect(session?.text_document).toBeNull();
   expect(session?.dirty).toBe(false);
@@ -55,7 +79,10 @@ test('content-verified raster delivery bypasses text decoding and stays read-onl
 });
 
 test('requires the complete Tauri callback boundary before enabling native delivery', () => {
-  const descriptor = Object.getOwnPropertyDescriptor(window, '__TAURI_INTERNALS__');
+  const descriptor = Object.getOwnPropertyDescriptor(
+    window,
+    '__TAURI_INTERNALS__',
+  );
   try {
     Object.defineProperty(window, '__TAURI_INTERNALS__', {
       configurable: true,
@@ -68,32 +95,42 @@ test('requires the complete Tauri callback boundary before enabling native deliv
     });
     expect(nativeDesktopDeliveryAvailable()).toBe(true);
   } finally {
-    if (descriptor) Object.defineProperty(window, '__TAURI_INTERNALS__', descriptor);
+    if (descriptor)
+      Object.defineProperty(window, '__TAURI_INTERNALS__', descriptor);
     else Reflect.deleteProperty(window, '__TAURI_INTERNALS__');
   }
 });
 
 test('native lifecycle probes expose only event and delivery sequence', async () => {
-  const descriptor = Object.getOwnPropertyDescriptor(window, '__TAURI_INTERNALS__');
+  const descriptor = Object.getOwnPropertyDescriptor(
+    window,
+    '__TAURI_INTERNALS__',
+  );
   const call = vi.fn().mockResolvedValue(true);
   try {
     Object.defineProperty(window, '__TAURI_INTERNALS__', {
       configurable: true,
       value: { invoke: vi.fn(), transformCallback: vi.fn() },
     });
-    await expect(reportDesktopLifecycleProbe('delivery-ready', 7, call)).resolves.toBe(true);
+    await expect(
+      reportDesktopLifecycleProbe('delivery-ready', 7, call),
+    ).resolves.toBe(true);
     expect(call).toHaveBeenCalledWith('record_desktop_lifecycle_probe', {
       event: 'delivery-ready',
       sequence: 7,
     });
   } finally {
-    if (descriptor) Object.defineProperty(window, '__TAURI_INTERNALS__', descriptor);
+    if (descriptor)
+      Object.defineProperty(window, '__TAURI_INTERNALS__', descriptor);
     else Reflect.deleteProperty(window, '__TAURI_INTERNALS__');
   }
 });
 
 test('native device-scale probes expose only the numeric browser scale', async () => {
-  const descriptor = Object.getOwnPropertyDescriptor(window, '__TAURI_INTERNALS__');
+  const descriptor = Object.getOwnPropertyDescriptor(
+    window,
+    '__TAURI_INTERNALS__',
+  );
   const call = vi.fn().mockResolvedValue(true);
   try {
     Object.defineProperty(window, '__TAURI_INTERNALS__', {
@@ -105,13 +142,17 @@ test('native device-scale probes expose only the numeric browser scale', async (
       deviceScale: 1.25,
     });
   } finally {
-    if (descriptor) Object.defineProperty(window, '__TAURI_INTERNALS__', descriptor);
+    if (descriptor)
+      Object.defineProperty(window, '__TAURI_INTERNALS__', descriptor);
     else Reflect.deleteProperty(window, '__TAURI_INTERNALS__');
   }
 });
 
 test('native Markdown failure probes expose no document data', async () => {
-  const descriptor = Object.getOwnPropertyDescriptor(window, '__TAURI_INTERNALS__');
+  const descriptor = Object.getOwnPropertyDescriptor(
+    window,
+    '__TAURI_INTERNALS__',
+  );
   const call = vi.fn().mockResolvedValue(true);
   try {
     Object.defineProperty(window, '__TAURI_INTERNALS__', {
@@ -121,7 +162,8 @@ test('native Markdown failure probes expose no document data', async () => {
     await expect(consumeDesktopMarkdownFailureProbe(call)).resolves.toBe(true);
     expect(call).toHaveBeenCalledWith('consume_desktop_markdown_failure_probe');
   } finally {
-    if (descriptor) Object.defineProperty(window, '__TAURI_INTERNALS__', descriptor);
+    if (descriptor)
+      Object.defineProperty(window, '__TAURI_INTERNALS__', descriptor);
     else Reflect.deleteProperty(window, '__TAURI_INTERNALS__');
   }
 });
@@ -129,7 +171,8 @@ test('native Markdown failure probes expose no document data', async () => {
 test('materializes a bounded path-free native summary', async () => {
   const call = vi.fn((command: string, args?: Record<string, unknown>) => {
     if (command === 'identify_image_source') return Promise.resolve(null);
-    if (command !== 'read_source_range') throw new Error(`unexpected ${command}`);
+    if (command !== 'read_source_range')
+      throw new Error(`unexpected ${command}`);
     const offset = args?.offset as number;
     const length = args?.length as number;
     return Promise.resolve({
@@ -139,17 +182,24 @@ test('materializes a bounded path-free native summary', async () => {
       end_of_source: offset + length >= bytes.length,
     });
   });
-  const gateway = createDesktopDeliveryGateway(call, () => Promise.resolve(() => undefined));
+  const gateway = createDesktopDeliveryGateway(call, () =>
+    Promise.resolve(() => undefined),
+  );
   const session = await gateway.materialize(result);
   expect(session?.id).toBe('desktop-native-source');
   expect(session?.content).toBe('# Delivered\n');
   expect(session?.renderer.id).toBe('markdown');
   expect(JSON.stringify(session)).not.toContain('C:\\');
-  expect(call).toHaveBeenCalledWith('read_source_range', expect.objectContaining({ operationBudget: bytes.length }));
+  expect(call).toHaveBeenCalledWith(
+    'read_source_range',
+    expect.objectContaining({ operationBudget: bytes.length }),
+  );
 });
 
 test('materializes exact TXT content without injecting shell fixtures', async () => {
-  const textBytes = new TextEncoder().encode('S027 TXT CONTENT 7E5A\nsecond line\n');
+  const textBytes = new TextEncoder().encode(
+    'S027 TXT CONTENT 7E5A\nsecond line\n',
+  );
   const textSource = {
     ...source,
     descriptor: {
@@ -170,7 +220,9 @@ test('materializes exact TXT content without injecting shell fixtures', async ()
       end_of_source: offset + length >= textBytes.length,
     });
   });
-  const gateway = createDesktopDeliveryGateway(call, () => Promise.resolve(() => undefined));
+  const gateway = createDesktopDeliveryGateway(call, () =>
+    Promise.resolve(() => undefined),
+  );
   const session = await gateway.materialize({ ...result, source: textSource });
   expect(session?.content).toBe('S027 TXT CONTENT 7E5A\nsecond line\n');
   expect(session?.renderer.id).toBe('text');
@@ -183,13 +235,19 @@ test('detects a large desktop source BOM from a bounded prefix', async () => {
     ...source,
     descriptor: { ...source.descriptor, byte_length: 32 * 1024 * 1024 + 2 },
   };
-  const call = vi.fn((command: string) => command === 'identify_image_source' ? Promise.resolve(null) : Promise.resolve({
-    source_id: source.source_id,
-    offset: 0,
-    bytes: [0xff, 0xfe, 0x41],
-    end_of_source: false,
-  }));
-  const gateway = createDesktopDeliveryGateway(call, () => Promise.resolve(() => undefined));
+  const call = vi.fn((command: string) =>
+    command === 'identify_image_source'
+      ? Promise.resolve(null)
+      : Promise.resolve({
+          source_id: source.source_id,
+          offset: 0,
+          bytes: [0xff, 0xfe, 0x41],
+          end_of_source: false,
+        }),
+  );
+  const gateway = createDesktopDeliveryGateway(call, () =>
+    Promise.resolve(() => undefined),
+  );
   const session = await gateway.materialize({ ...result, source: largeSource });
   expect(session?.text_document?.mode).toBe('large_read_only');
   expect(session?.text_document?.profile.encoding).toBe('utf16_le_bom');
@@ -202,16 +260,28 @@ test('detects a large desktop source BOM from a bounded prefix', async () => {
 });
 
 test('duplicates and rejections never create sessions', async () => {
-  const gateway = createDesktopDeliveryGateway(vi.fn(), () => Promise.resolve(() => undefined));
-  await expect(gateway.materialize({ ...result, status: 'duplicate' })).resolves.toBeNull();
-  await expect(gateway.materialize({ ...result, status: 'rejected', source: null, error: { summary: 'Unavailable', retryable: true } })).resolves.toBeNull();
+  const gateway = createDesktopDeliveryGateway(vi.fn(), () =>
+    Promise.resolve(() => undefined),
+  );
+  await expect(
+    gateway.materialize({ ...result, status: 'duplicate' }),
+  ).resolves.toBeNull();
+  await expect(
+    gateway.materialize({
+      ...result,
+      status: 'rejected',
+      source: null,
+      error: { summary: 'Unavailable', retryable: true },
+    }),
+  ).resolves.toBeNull();
 });
 
 test('drain is bounded and subscription uses the injected event boundary', async () => {
-  const full = Array.from({ length: 64 }, (_, index) => ({ ...result, sequence: index + 1 }));
-  const call = vi.fn()
-    .mockResolvedValueOnce(full)
-    .mockResolvedValueOnce([]);
+  const full = Array.from({ length: 64 }, (_, index) => ({
+    ...result,
+    sequence: index + 1,
+  }));
+  const call = vi.fn().mockResolvedValueOnce(full).mockResolvedValueOnce([]);
   const handler = vi.fn();
   const subscribe = vi.fn((callback: () => void) => {
     callback();
@@ -222,54 +292,142 @@ test('drain is bounded and subscription uses the injected event boundary', async
   expect(handler).toHaveBeenCalledOnce();
   await gateway.drain();
   expect(call).toHaveBeenCalledTimes(2);
-  expect(call).toHaveBeenNthCalledWith(1, 'drain_desktop_deliveries', { maximum: 64 });
-  expect(call).toHaveBeenNthCalledWith(2, 'drain_desktop_deliveries', { maximum: 64 });
+  expect(call).toHaveBeenNthCalledWith(1, 'drain_desktop_deliveries', {
+    maximum: 64,
+  });
+  expect(call).toHaveBeenNthCalledWith(2, 'drain_desktop_deliveries', {
+    maximum: 64,
+  });
 });
 
 test('close releases the native source and duplicate-delivery tracking', async () => {
   const call = vi.fn().mockResolvedValue(undefined);
-  const gateway = createDesktopDeliveryGateway(call, () => Promise.resolve(() => undefined));
+  const gateway = createDesktopDeliveryGateway(call, () =>
+    Promise.resolve(() => undefined),
+  );
   await gateway.close('native-source');
-  expect(call).toHaveBeenCalledWith('close_desktop_source', { sourceId: 'native-source' });
+  expect(call).toHaveBeenCalledWith('close_desktop_source', {
+    sourceId: 'native-source',
+  });
 });
 
 test('Save As serializes exact text bytes and reports native cancellation', async () => {
   const call = vi.fn().mockResolvedValue(false);
-  const gateway = createDesktopDeliveryGateway(call, () => Promise.resolve(() => undefined));
-  const sourceGateway = createDesktopDeliveryGateway((command, args) => {
-    if (command === 'identify_image_source') return Promise.resolve(null);
-    if (command !== 'read_source_range') throw new Error('unexpected command');
-    const offset = args?.offset as number;
-    const length = args?.length as number;
-    return Promise.resolve({ source_id: source.source_id, offset, bytes: [...bytes.slice(offset, offset + length)], end_of_source: true });
-  }, () => Promise.resolve(() => undefined));
+  const gateway = createDesktopDeliveryGateway(call, () =>
+    Promise.resolve(() => undefined),
+  );
+  const sourceGateway = createDesktopDeliveryGateway(
+    (command, args) => {
+      if (command === 'identify_image_source') return Promise.resolve(null);
+      if (command !== 'read_source_range')
+        throw new Error('unexpected command');
+      const offset = args?.offset as number;
+      const length = args?.length as number;
+      return Promise.resolve({
+        source_id: source.source_id,
+        offset,
+        bytes: [...bytes.slice(offset, offset + length)],
+        end_of_source: true,
+      });
+    },
+    () => Promise.resolve(() => undefined),
+  );
   const session = await sourceGateway.materialize(result);
   expect(session).not.toBeNull();
   await expect(gateway.saveAs(session!)).resolves.toBe(false);
   expect(call).toHaveBeenCalledWith('save_desktop_source_as', {
     suggestedName: 'delivered.md',
     bytes: [...bytes],
+    originalSourceId: null,
+    expectedOriginalRevision: null,
   });
 });
 
-test('Save sends exact bytes and revision guards to the native source command', async () => {
-  const sourceGateway = createDesktopDeliveryGateway((command, args) => {
-    if (command === 'identify_image_source') return Promise.resolve(null);
-    if (command !== 'read_source_range') throw new Error('unexpected command');
-    const offset = args?.offset as number;
-    return Promise.resolve({
-      source_id: source.source_id,
-      offset,
-      bytes: [...bytes],
-      end_of_source: true,
+test.each([true, false])(
+  'source-independent copy Save As retains original guards and returns native outcome %s',
+  async (outcome) => {
+    const sourceGateway = createDesktopDeliveryGateway(
+      (command, args) => {
+        if (command === 'identify_image_source') return Promise.resolve(null);
+        if (command !== 'read_source_range')
+          throw new Error('unexpected command');
+        return Promise.resolve({
+          source_id: source.source_id,
+          offset: args?.offset,
+          bytes: [...bytes],
+          end_of_source: true,
+        });
+      },
+      () => Promise.resolve(() => undefined),
+    );
+    const original = await sourceGateway.materialize({
+      ...result,
+      source: {
+        ...source,
+        descriptor: {
+          ...source.descriptor,
+          capabilities: { ...source.descriptor.capabilities, write: false },
+        },
+      },
     });
-  }, () => Promise.resolve(() => undefined));
+    expect(original).not.toBeNull();
+    const originalSnapshot = structuredClone(original);
+    const copy = createDraftSession('markdown', original!);
+    const changed = applyTextTransaction(
+      copy.text_document!,
+      copy.revision,
+      copy.revision,
+      [{ from: 0, to: copy.content.length, insert: '# Copy 🧪\n' }],
+    );
+    if (!changed.ok) throw new Error('copy edit failed');
+    copy.text_document = changed.document;
+    copy.content = changed.document.normalized_text;
+    copy.revision = changed.revision;
+    const copySnapshot = structuredClone(copy);
+    const call = vi.fn().mockResolvedValue(outcome);
+    const gateway = createDesktopDeliveryGateway(call, () =>
+      Promise.resolve(() => undefined),
+    );
+
+    await expect(gateway.saveAs(copy)).resolves.toBe(outcome);
+    expect(call).toHaveBeenCalledExactlyOnceWith('save_desktop_source_as', {
+      suggestedName: 'Copy of delivered.md',
+      bytes: [...new TextEncoder().encode('# Copy 🧪\n')],
+      originalSourceId: source.source_id,
+      expectedOriginalRevision: source.external_revision,
+    });
+    expect(copy.source_id).toBeNull();
+    expect(copy.source.capabilities.write).toBe(false);
+    expect(copy).toEqual(copySnapshot);
+    expect(original).toEqual(originalSnapshot);
+  },
+);
+
+test('Save sends exact bytes and revision guards to the native source command', async () => {
+  const sourceGateway = createDesktopDeliveryGateway(
+    (command, args) => {
+      if (command === 'identify_image_source') return Promise.resolve(null);
+      if (command !== 'read_source_range')
+        throw new Error('unexpected command');
+      const offset = args?.offset as number;
+      return Promise.resolve({
+        source_id: source.source_id,
+        offset,
+        bytes: [...bytes],
+        end_of_source: true,
+      });
+    },
+    () => Promise.resolve(() => undefined),
+  );
   const session = await sourceGateway.materialize(result);
   const call = vi.fn((command: string, args?: Record<string, unknown>) => {
     void command;
     void args;
     return Promise.resolve({
-      operation_id: '1',
+      operation_id:
+        command === 'save_source'
+          ? (args?.request as { operation_id: string }).operation_id
+          : '1',
       source_id: source.source_id,
       accepted_session_revision: 2,
       previous_external_revision: source.external_revision,
@@ -278,7 +436,9 @@ test('Save sends exact bytes and revision guards to the native source command', 
       durability: 'atomic_file_and_directory',
     });
   });
-  const gateway = createDesktopDeliveryGateway(call, () => Promise.resolve(() => undefined));
+  const gateway = createDesktopDeliveryGateway(call, () =>
+    Promise.resolve(() => undefined),
+  );
   await gateway.save({ ...session!, revision: 2 });
   expect(call).toHaveBeenCalledTimes(2);
   expect(call.mock.calls[0]).toEqual([

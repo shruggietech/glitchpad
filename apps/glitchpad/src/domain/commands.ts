@@ -14,6 +14,9 @@ export type CommandId =
   | 'toggle_wrap'
   | 'zoom_out'
   | 'zoom_in'
+  | 'fit'
+  | 'save_as'
+  | 'edit_copy'
   | 'edit'
   | 'save'
   | 'metadata'
@@ -29,19 +32,36 @@ export interface CommandDescriptor {
   enabled: boolean;
   targetSessionId: string;
   targetRevision: number;
+  role?: 'primary' | 'secondary';
+  group?: 'document' | 'view';
+  rank?: number;
+  reason?: string;
 }
 
-export type CommandResult = { ok: true; message: string } | { ok: false; reason: 'stale_session' | 'unsupported' };
+export type CommandResult =
+  | { ok: true; message: string }
+  | { ok: false; reason: 'stale_session' | 'unsupported' };
 
-export const commandSetFor = (session: ShellSession | null): CommandDescriptor[] => {
+export const commandSetFor = (
+  session: ShellSession | null,
+): CommandDescriptor[] => {
   if (!session) return [];
   const renderer = session.renderer.capabilities;
   const source = session.source.capabilities;
-  const canEditSource = renderer.edit && (source.write || session.integrity === 'recovery_only');
-  const documentMode = session.markdown_document?.mode ?? session.mermaid_document?.mode;
+  const canEditSource =
+    renderer.edit &&
+    (source.write ||
+      Boolean(session.edit_origin) ||
+      session.integrity === 'recovery_only');
+  const documentMode =
+    session.markdown_document?.mode ?? session.mermaid_document?.mode;
   const canToggleSource = Boolean(
-    (session.markdown_document && (documentMode === 'rendered' || session.markdown_document.eligibility !== 'source_only')) ||
-    (session.mermaid_document && (documentMode === 'rendered' || session.mermaid_document.render_revision !== null)),
+    (session.markdown_document &&
+      (documentMode === 'rendered' ||
+        session.markdown_document.eligibility !== 'source_only')) ||
+    (session.mermaid_document &&
+      (documentMode === 'rendered' ||
+        session.mermaid_document.render_revision !== null)),
   );
   const definitions: Array<[boolean, CommandId, string, string?]> = [
     [renderer.copy, 'copy', 'Copy', 'Ctrl+C'],
@@ -53,13 +73,58 @@ export const commandSetFor = (session: ShellSession | null): CommandDescriptor[]
     [canEditSource, 'redo', 'Redo', 'Ctrl+Shift+Z'],
     [canEditSource, 'indent', 'Indent', 'Tab'],
     [canEditSource, 'outdent', 'Outdent', 'Shift+Tab'],
-    [Boolean(session.text_document && session.text_document.mode === 'editable'), 'toggle_wrap', 'Toggle wrap'],
+    [
+      Boolean(
+        session.text_document && session.text_document.mode === 'editable',
+      ),
+      'toggle_wrap',
+      'Toggle wrap',
+    ],
     [renderer.zoom, 'zoom_out', 'Zoom out', 'Ctrl+-'],
     [renderer.zoom, 'zoom_in', 'Zoom in', 'Ctrl++'],
-    [canToggleSource, 'edit', documentMode === 'source' ? 'Preview' : canEditSource ? 'Edit source' : 'View source'],
-    [renderer.save && source.write, 'save', 'Save', 'Ctrl+S'],
-    [renderer.inspect_metadata && source.metadata, 'metadata', 'File information'],
-    [Boolean(session.markdown_document && documentMode === 'rendered' && session.markdown_document.outline_count > 0), 'outline', 'Outline'],
+    [renderer.zoom, 'fit', 'Fit'],
+    [
+      Boolean(session.text_document?.mode === 'editable' && !canEditSource),
+      'edit_copy',
+      'Edit a copy',
+    ],
+    [
+      canToggleSource,
+      'edit',
+      documentMode === 'source'
+        ? 'Preview'
+        : canEditSource
+          ? 'Edit source'
+          : 'View source',
+    ],
+    [
+      renderer.save &&
+        (source.write ||
+          Boolean(session.edit_origin) ||
+          session.integrity === 'recovery_only'),
+      'save',
+      'Save',
+      'Ctrl+S',
+    ],
+    [
+      renderer.save && session.text_document?.mode === 'editable',
+      'save_as',
+      'Save As…',
+    ],
+    [
+      renderer.inspect_metadata && source.metadata,
+      'metadata',
+      'File information',
+    ],
+    [
+      Boolean(
+        session.markdown_document &&
+        documentMode === 'rendered' &&
+        session.markdown_document.outline_count > 0,
+      ),
+      'outline',
+      'Outline',
+    ],
     [Boolean(session.markdown_document?.printable), 'print', 'Print', 'Ctrl+P'],
     [renderer.navigate, 'previous_page', 'Previous page', 'PageUp'],
     [renderer.navigate, 'next_page', 'Next page', 'PageDown'],
@@ -71,21 +136,68 @@ export const commandSetFor = (session: ShellSession | null): CommandDescriptor[]
       id,
       label,
       shortcut,
-      enabled: session.lifecycle === 'active',
+      enabled:
+        session.lifecycle === 'active' &&
+        session.destination_save_revision == null,
+      role: id === 'save' ? 'primary' : 'secondary',
+      group:
+        id === 'zoom_in' || id === 'zoom_out' || id === 'fit'
+          ? 'view'
+          : 'document',
+      rank: definitions.findIndex(([, candidate]) => candidate === id),
       targetSessionId: session.id,
       targetRevision: session.revision,
     }));
 };
 
-export const executeCommand = (command: CommandDescriptor, currentSession: ShellSession | null): CommandResult => {
-  if (!currentSession || command.targetSessionId !== currentSession.id || command.targetRevision !== currentSession.revision) {
+export const executeCommand = (
+  command: CommandDescriptor,
+  currentSession: ShellSession | null,
+): CommandResult => {
+  if (
+    !currentSession ||
+    command.targetSessionId !== currentSession.id ||
+    command.targetRevision !== currentSession.revision
+  ) {
     return { ok: false, reason: 'stale_session' };
   }
-  if (!commandSetFor(currentSession).some(({ id }) => id === command.id)) {
+  if (
+    !commandSetFor(currentSession).some(
+      ({ id, enabled }) => id === command.id && enabled,
+    )
+  ) {
     return { ok: false, reason: 'unsupported' };
   }
   return {
     ok: true,
-    message: `${command.label} applied to ${currentSession.source.display_name}`,
+    message: `${command.label} is available`,
   };
+};
+
+export type ActionResult =
+  | { status: 'performed' }
+  | { status: 'failed' | 'cancelled' | 'unavailable'; reason: string };
+
+export const performCommand = async (
+  command: CommandDescriptor,
+  current: () => ShellSession | null,
+  handler: () => boolean | ActionResult | Promise<boolean | ActionResult>,
+): Promise<ActionResult> => {
+  const validation = executeCommand(command, current());
+  if (!validation.ok)
+    return {
+      status:
+        validation.reason === 'stale_session' ? 'cancelled' : 'unavailable',
+      reason: validation.reason,
+    };
+  try {
+    const result = await handler();
+    return typeof result === 'boolean'
+      ? result
+        ? { status: 'performed' }
+        : { status: 'unavailable', reason: 'operation_unavailable' }
+      : result;
+  } catch {
+    return { status: 'failed', reason: 'operation_failed' };
+  }
 };

@@ -126,6 +126,7 @@ fn corrupt_categories_self_heal_on_the_next_valid_write() {
                 duration_ms: None,
                 byte_count: None,
                 error_code: None,
+                failure: None,
             },
             10,
         )
@@ -309,6 +310,7 @@ fn diagnostics_are_allowlisted_retained_and_previewed_without_hostile_strings() 
         duration_ms: Some(4),
         byte_count: Some(128),
         error_code: Some("state_corrupt".into()),
+        failure: None,
     };
     store
         .append_diagnostic(valid.clone(), now)

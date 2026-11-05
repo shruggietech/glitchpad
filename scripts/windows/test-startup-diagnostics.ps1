@@ -20,3 +20,16 @@ $observation.automation_descendant_present = $null
 $receipt = New-PortableStartupDiagnostic -Observation $observation -Scenario clean -Stage launch -SourceCommit ('a' * 40) -ManifestDigest ('b' * 64) -Succeeded $false -ElapsedMilliseconds 0
 if ($null -ne $receipt.main_window_visible -or $null -ne $receipt.automation_descendant_present) { throw 'Unavailable visibility diagnostics must remain unknown.' }
 Write-Output 'Content-free portable startup diagnostic tests passed.'
+
+$receipt = New-PortableStartupDiagnostic -Observation $observation -Scenario clean -Stage named_element_wait -SourceCommit ('a' * 40) -ManifestDigest ('b' * 64) -Succeeded $false -ElapsedMilliseconds 20000 -WaitKind named_element -WaitCallerLine 500
+if ($receipt.readiness_wait.function -cne 'Wait-NamedElement' -or $receipt.readiness_wait.caller_line -ne 500) { throw 'Failed named readiness caller site was not retained.' }
+$json = $receipt | ConvertTo-Json -Depth 4 -Compress
+if ($json -match 'private-title|private-arguments|document.pdf|/private|\\') { throw 'Caller-site observation exposed private text or a path.' }
+$receipt = New-PortableStartupDiagnostic -Observation $observation -Scenario clean -Stage named_element_ready -SourceCommit ('a' * 40) -ManifestDigest ('b' * 64) -Succeeded $true -ElapsedMilliseconds 1 -WaitKind named_element -WaitCallerLine 500
+if ($receipt.Contains('readiness_wait')) { throw 'Successful readiness must omit failure-only caller diagnostics.' }
+foreach ($arguments in @(@{ WaitKind = 'private-control' }, @{ WaitCallerLine = -1 }, @{ WaitCallerLine = 100001 })) {
+    $refused = $false
+    try { New-PortableStartupDiagnostic -Observation $observation -Scenario clean -Stage named_element_wait -SourceCommit ('a' * 40) -ManifestDigest ('b' * 64) -Succeeded $false -ElapsedMilliseconds 20000 @arguments | Out-Null } catch { $refused = $true }
+    if (-not $refused) { throw 'Non-allowlisted readiness site was admitted.' }
+}
+Write-Output 'Failure-only named readiness caller-site tests passed.'

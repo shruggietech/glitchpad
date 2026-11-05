@@ -42,6 +42,7 @@ class PickerArgs {
   var mediaType: String? = null
   var suggestedName: String? = null
   var bytes: IntArray? = null
+  var protectedBridgeToken: String? = null
 }
 
 @InvokeArg
@@ -92,3 +93,12 @@ internal data class NativeStream(
     runCatching(descriptor::close)
   }
 }
+
+@InvokeArg
+class DiagnosticEnvironmentArgs { var includeViewport: Boolean = false }
+
+@InvokeArg
+class DiagnosticShareArgs { lateinit var json: String }
+
+@InvokeArg
+class AndroidBackArgs { lateinit var requestId: String; var handled: Boolean = true }

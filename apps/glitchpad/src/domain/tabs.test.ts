@@ -58,6 +58,92 @@ const sessions = (count: number): ShellSession[] =>
   }));
 
 describe('tab state', () => {
+  it('accepts only an owned desktop receipt and retains newer edits while cancelling dirty close', () => {
+    const target = {
+      ...sessions(1)[0],
+      source_id: 'source-one',
+      dirty: true,
+      revision: 1,
+      saved_revision: 0,
+      integrity: 'dirty' as const,
+    };
+    target.source.capabilities.write = true;
+    target.source.capabilities.revalidate = true;
+    const previous = {
+      identity: target.source.identity,
+      byte_length: 10,
+      modified_unix_nanos: '1',
+      change_token: null,
+    };
+    const next = { ...previous, byte_length: 11, modified_unix_nanos: '2' };
+    const first = { ...target, external_revision: previous };
+    const other = { ...sessions(1)[0], id: 'other', dirty: false };
+    let state = createTabState([first, other]);
+    state = tabReducer(state, { type: 'close', id: first.id });
+    state = tabReducer(state, { type: 'resolve_transition', decision: 'save' });
+    state = tabReducer(state, {
+      type: 'destination_save_started',
+      id: first.id,
+      revision: 1,
+      operationId: '42',
+    });
+    state = {
+      ...state,
+      sessions: state.sessions.map((s) =>
+        s.id === first.id ? { ...s, revision: 2, content: 'newer edits' } : s,
+      ),
+    };
+    state = tabReducer(state, { type: 'activate', id: 'other' });
+    const receipt = {
+      operation_id: '42',
+      source_id: 'source-one',
+      accepted_session_revision: 1,
+      previous_external_revision: previous,
+      new_external_revision: next,
+      byte_count: 11,
+      durability: 'atomic_file_and_directory' as const,
+    };
+    expect(
+      tabReducer(state, {
+        type: 'save_completed',
+        id: first.id,
+        receipt: { ...receipt, operation_id: 'other-operation' },
+      }),
+    ).toBe(state);
+    expect(
+      tabReducer(state, {
+        type: 'save_completed',
+        id: first.id,
+        receipt: { ...receipt, source_id: 'other-source' },
+      }),
+    ).toBe(state);
+    expect(
+      tabReducer(state, {
+        type: 'save_completed',
+        id: first.id,
+        receipt: {
+          ...receipt,
+          previous_external_revision: { ...previous, change_token: 'changed' },
+        },
+      }),
+    ).toBe(state);
+    const saved = tabReducer(state, {
+      type: 'save_completed',
+      id: first.id,
+      receipt,
+    });
+    expect(saved.sessions.find((s) => s.id === first.id)).toMatchObject({
+      revision: 2,
+      content: 'newer edits',
+      dirty: true,
+      integrity: 'dirty',
+      saved_revision: 1,
+      external_revision: next,
+    });
+    expect(saved.activeId).toBe('other');
+    expect(saved.pendingTransition).toBeNull();
+  });
+
   it('activates, cycles, reorders, and closes with a deterministic successor', () => {
     let state = createTabState(sessions(4));
     state = tabReducer(state, { type: 'activate', id: 'session-2' });
@@ -268,44 +354,91 @@ describe('tab state', () => {
       preview_stale: false,
       viewport: { mode: 'fit' as const, zoom: 1, pan_x: 0, pan_y: 0 },
     };
-    const updated = tabReducer(initial, { type: 'update_mermaid', id: 'session-1', expectedRevision: 1, mermaid });
+    const updated = tabReducer(initial, {
+      type: 'update_mermaid',
+      id: 'session-1',
+      expectedRevision: 1,
+      mermaid,
+    });
     expect(updated.sessions[0]?.mermaid_document).toEqual(mermaid);
-    const stale = tabReducer(updated, { type: 'update_mermaid', id: 'session-1', expectedRevision: 0, mermaid: { ...mermaid, preview_stale: true } });
+    const stale = tabReducer(updated, {
+      type: 'update_mermaid',
+      id: 'session-1',
+      expectedRevision: 0,
+      mermaid: { ...mermaid, preview_stale: true },
+    });
     expect(stale.sessions[0]?.mermaid_document?.preview_stale).toBe(false);
   });
 
   it('merges metadata without disturbing document state and rejects stale contributions', () => {
     const first = sessions(1)[0];
-    const initial = createTabState([{ ...first, metadata: projectSessionMetadata(first) }]);
+    const initial = createTabState([
+      { ...first, metadata: projectSessionMetadata(first) },
+    ]);
     const contribution: MetadataContribution = {
       session_id: first.id,
       expected_session_revision: first.revision,
       expected_external_revision: null,
       producer: 'renderer',
       renderer_revision: 1,
-      facts: [{ key: 'renderer.status', availability: 'available', value: { kind: 'text', value: 'ready' } }],
+      facts: [
+        {
+          key: 'renderer.status',
+          availability: 'available',
+          value: { kind: 'text', value: 'ready' },
+        },
+      ],
     };
-    const updated = tabReducer(initial, { type: 'update_metadata', contribution });
-    expect(updated.sessions[0]).toMatchObject({ content: first.content, dirty: first.dirty, revision: first.revision });
-    expect(updated.sessions[0]?.metadata?.facts.find(({ key }) => key === 'renderer.status')?.value).toEqual({ kind: 'text', value: 'ready' });
-    const stale = tabReducer(updated, { type: 'update_metadata', contribution: { ...contribution, expected_session_revision: 0 } });
+    const updated = tabReducer(initial, {
+      type: 'update_metadata',
+      contribution,
+    });
+    expect(updated.sessions[0]).toMatchObject({
+      content: first.content,
+      dirty: first.dirty,
+      revision: first.revision,
+    });
+    expect(
+      updated.sessions[0]?.metadata?.facts.find(
+        ({ key }) => key === 'renderer.status',
+      )?.value,
+    ).toEqual({ kind: 'text', value: 'ready' });
+    const stale = tabReducer(updated, {
+      type: 'update_metadata',
+      contribution: { ...contribution, expected_session_revision: 0 },
+    });
     expect(stale).toBe(updated);
   });
 
   it('refreshes source facts without advancing the document external revision', () => {
-    const base = { ...sessions(1)[0], source_id: 'source', external_revision: {
-      identity: { authority: 'filesystem' as const, scope: 'volume', token: 'original', strength: 'strong' as const },
-      byte_length: 3,
-      modified_unix_nanos: '1',
-      change_token: 'original',
-    } };
+    const base = {
+      ...sessions(1)[0],
+      source_id: 'source',
+      external_revision: {
+        identity: {
+          authority: 'filesystem' as const,
+          scope: 'volume',
+          token: 'original',
+          strength: 'strong' as const,
+        },
+        byte_length: 3,
+        modified_unix_nanos: '1',
+        change_token: 'original',
+      },
+    };
     const original = {
       ...base,
       metadata: {
         ...projectSessionMetadata(base),
-        facts: projectSessionMetadata(base).facts.map((fact) => fact.key === 'derived.sha256'
-          ? { ...fact, availability: 'available' as const, value: { kind: 'text' as const, value: 'a'.repeat(64) } }
-          : fact),
+        facts: projectSessionMetadata(base).facts.map((fact) =>
+          fact.key === 'derived.sha256'
+            ? {
+                ...fact,
+                availability: 'available' as const,
+                value: { kind: 'text' as const, value: 'a'.repeat(64) },
+              }
+            : fact,
+        ),
       },
     };
     const observed = {
@@ -332,30 +465,104 @@ describe('tab state', () => {
         identity_confidence: 'strong',
       },
     });
-    expect(updated.sessions[0]?.external_revision).toEqual(original.external_revision);
+    expect(updated.sessions[0]?.external_revision).toEqual(
+      original.external_revision,
+    );
     expect(updated.sessions[0]?.content).toBe(original.content);
     expect(updated.sessions[0]?.metadata?.external_revision).toEqual(observed);
-    expect(updated.sessions[0]?.metadata?.facts.find(({ key }) => key === 'derived.sha256')?.availability).toBe('not_provided');
-    expect(updated.sessions[0]?.metadata?.facts.find(({ key }) => key === 'host.display_name')?.value).toEqual({ kind: 'text', value: 'renamed.txt' });
+    expect(
+      updated.sessions[0]?.metadata?.facts.find(
+        ({ key }) => key === 'derived.sha256',
+      )?.availability,
+    ).toBe('not_provided');
+    expect(
+      updated.sessions[0]?.metadata?.facts.find(
+        ({ key }) => key === 'host.display_name',
+      )?.value,
+    ).toEqual({ kind: 'text', value: 'renamed.txt' });
   });
 
   it('invalidates image selection and export facts atomically on refresh or permission loss', () => {
     const source = sessions(1)[0].source;
-    const revision = { identity: source.identity, byte_length: 10, modified_unix_nanos: '1', change_token: 'old' };
+    const revision = {
+      identity: source.identity,
+      byte_length: 10,
+      modified_unix_nanos: '1',
+      change_token: 'old',
+    };
     const image = createImageSession(source, 'opaque', revision, 'ico', 'test');
     image.image_document!.selection = 2;
-    image.image_document!.viewport = { mode: 'actual', zoom: 2, pan_x: 4, pan_y: 5, background: 'dark' };
-    image.image_document!.family_state = { family: 'ico', entries: [], selected_entry: 2, selected_entry_export: true };
+    image.image_document!.viewport = {
+      mode: 'actual',
+      zoom: 2,
+      pan_x: 4,
+      pan_y: 5,
+      background: 'dark',
+    };
+    image.image_document!.family_state = {
+      family: 'ico',
+      entries: [],
+      selected_entry: 2,
+      selected_entry_export: true,
+    };
     const observed = { ...revision, change_token: 'new', byte_length: 12 };
-    const refreshed = tabReducer(createTabState([image]), { type: 'refresh_metadata', id: image.id, expectedRevision: 1, expectedExternalRevision: revision, source: {
-      source_id: 'opaque', external_revision: observed, display_name: 'icon.ico', source_kind: 'file', byte_length: '12', modified_unix_nanos: '1', created_unix_nanos: null, accessed_unix_nanos: null, write_state: 'read_only', identity_confidence: 'strong',
-    } });
-    expect(refreshed.sessions[0]).toMatchObject({ id: image.id, revision: 2, external_revision: observed, dirty: false, image_document: { selection: null, family_state: null, descriptor: null, metadata: null, viewport: image.image_document!.viewport } });
-    const stale = tabReducer(refreshed, { type: 'update_image', id: image.id, expectedRevision: 1, image: image.image_document! });
+    const refreshed = tabReducer(createTabState([image]), {
+      type: 'refresh_metadata',
+      id: image.id,
+      expectedRevision: 1,
+      expectedExternalRevision: revision,
+      source: {
+        source_id: 'opaque',
+        external_revision: observed,
+        display_name: 'icon.ico',
+        source_kind: 'file',
+        byte_length: '12',
+        modified_unix_nanos: '1',
+        created_unix_nanos: null,
+        accessed_unix_nanos: null,
+        write_state: 'read_only',
+        identity_confidence: 'strong',
+      },
+    });
+    expect(refreshed.sessions[0]).toMatchObject({
+      id: image.id,
+      revision: 2,
+      external_revision: observed,
+      dirty: false,
+      image_document: {
+        selection: null,
+        family_state: null,
+        descriptor: null,
+        metadata: null,
+        viewport: image.image_document!.viewport,
+      },
+    });
+    const stale = tabReducer(refreshed, {
+      type: 'update_image',
+      id: image.id,
+      expectedRevision: 1,
+      image: image.image_document!,
+    });
     expect(stale).toBe(refreshed);
-    const unavailable = tabReducer(refreshed, { type: 'metadata_unavailable', id: image.id, expectedRevision: 2, sourceId: 'opaque' });
-    expect(unavailable.sessions[0]).toMatchObject({ revision: 3, source_state: 'unavailable', image_document: { selection: null, family_state: null, status: 'failed' } });
-    expect(tabReducer(unavailable, { type: 'metadata_unavailable', id: image.id, expectedRevision: 3, sourceId: 'opaque' })).toBe(unavailable);
+    const unavailable = tabReducer(refreshed, {
+      type: 'metadata_unavailable',
+      id: image.id,
+      expectedRevision: 2,
+      sourceId: 'opaque',
+    });
+    expect(unavailable.sessions[0]).toMatchObject({
+      revision: 3,
+      source_state: 'unavailable',
+      image_document: { selection: null, family_state: null, status: 'failed' },
+    });
+    expect(
+      tabReducer(unavailable, {
+        type: 'metadata_unavailable',
+        id: image.id,
+        expectedRevision: 3,
+        sourceId: 'opaque',
+      }),
+    ).toBe(unavailable);
   });
 
   it('marks cached source and integrity facts unavailable after observation fails', () => {
@@ -375,9 +582,16 @@ describe('tab state', () => {
       ...source,
       metadata: {
         ...snapshot,
-        facts: snapshot.facts.map((fact) => fact.key === 'derived.sha256'
-          ? { ...fact, availability: 'available' as const, value: { kind: 'text' as const, value: 'a'.repeat(64) }, provenance: 'integrity' as const }
-          : fact),
+        facts: snapshot.facts.map((fact) =>
+          fact.key === 'derived.sha256'
+            ? {
+                ...fact,
+                availability: 'available' as const,
+                value: { kind: 'text' as const, value: 'a'.repeat(64) },
+                provenance: 'integrity' as const,
+              }
+            : fact,
+        ),
       },
     };
     const updated = tabReducer(createTabState([withDigest]), {
@@ -387,8 +601,14 @@ describe('tab state', () => {
       sourceId: 'source',
     });
     const facts = updated.sessions[0].metadata!.facts;
-    expect(facts.find(({ key }) => key === 'host.display_name')?.availability).toBe('errored');
-    expect(facts.find(({ key }) => key === 'derived.sha256')?.availability).toBe('errored');
-    expect(facts.find(({ key }) => key === 'renderer.name')?.availability).toBe('available');
+    expect(
+      facts.find(({ key }) => key === 'host.display_name')?.availability,
+    ).toBe('errored');
+    expect(
+      facts.find(({ key }) => key === 'derived.sha256')?.availability,
+    ).toBe('errored');
+    expect(facts.find(({ key }) => key === 'renderer.name')?.availability).toBe(
+      'available',
+    );
   });
 });

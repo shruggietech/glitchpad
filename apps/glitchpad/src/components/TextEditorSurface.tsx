@@ -54,8 +54,9 @@ import {
 } from '../domain/text-document';
 
 export interface TextEditorHandle {
-  invoke(command: CommandId): boolean;
+  invoke(command: CommandId): boolean | Promise<boolean>;
   selectRange(from: number, to: number): boolean;
+  dismissModal?(): boolean;
 }
 
 interface TextEditorSurfaceProps {
@@ -89,6 +90,10 @@ export const TextEditorSurface = forwardRef<
   const wrappingCompartment = useRef(new Compartment());
   const editableCompartment = useRef(new Compartment());
   const settingsCompartment = useRef(new Compartment());
+  const attributesCompartment = useRef(new Compartment());
+  const sourceNameRef = useRef(session.source.display_name);
+  sourceNameRef.current = session.source.display_name;
+  const canEdit = session.text_document?.mode === 'editable' && session.renderer.capabilities.edit && (session.source.capabilities.write || session.integrity === 'recovery_only' || Boolean(session.edit_origin));
   const preferences = usePreferences();
   const wrappedRef = useRef(preferences.line_wrap);
   const [languageStatus, setLanguageStatus] = useState(
@@ -131,8 +136,8 @@ export const TextEditorSurface = forwardRef<
                 .map(({ from, to }) => view.state.sliceDoc(from, to))
                 .join('\n')
             : view.state.doc.toString();
-        void navigator.clipboard?.writeText(content);
-        return true;
+        if (!navigator.clipboard?.writeText) return false;
+        return navigator.clipboard.writeText(content).then(() => true);
       }
       return false;
     },
@@ -157,11 +162,6 @@ export const TextEditorSurface = forwardRef<
     const host = hostRef.current;
     const textDocument = session.text_document;
     if (!host || !textDocument) return;
-    const canEdit =
-      textDocument.mode === 'editable' &&
-      session.renderer.capabilities.edit &&
-      (session.source.capabilities.write ||
-        session.integrity === 'recovery_only');
     documentRef.current = textDocument;
     revisionRef.current = session.revision;
     setPerformanceReady(false);
@@ -199,8 +199,7 @@ export const TextEditorSurface = forwardRef<
           wrappingCompartment.current.of(
             preferences.line_wrap ? EditorView.lineWrapping : [],
           ),
-          editableCompartment.current.of(EditorView.editable.of(canEdit)),
-          EditorState.readOnly.of(!canEdit),
+          editableCompartment.current.of([EditorView.editable.of(canEdit), EditorState.readOnly.of(!canEdit)]),
           EditorState.changeFilter.of((transaction) => {
             if (!transaction.docChanged) return true;
             const changes: Array<{
@@ -215,9 +214,9 @@ export const TextEditorSurface = forwardRef<
             );
             return textChangesFitEditableLimit(documentRef.current, changes);
           }),
-          EditorView.contentAttributes.of({
+          attributesCompartment.current.of(EditorView.contentAttributes.of({
             'aria-label': `${session.source.display_name} text editor`,
-          }),
+          })),
           EditorView.updateListener.of((update) => {
             if (!update.docChanged) return;
             const changes: Array<{ from: number; to: number; insert: string }> =
@@ -241,7 +240,7 @@ export const TextEditorSurface = forwardRef<
                     ...result.document,
                     language: {
                       ...detectLanguage(
-                        session.source.display_name,
+                        sourceNameRef.current,
                         result.document.normalized_text,
                       ),
                       load_revision: result.document.language.load_revision + 1,
@@ -284,6 +283,14 @@ export const TextEditorSurface = forwardRef<
       view.destroy();
     };
   }, [session.id]);
+
+  useEffect(() => {
+    viewRef.current?.dispatch({ effects: attributesCompartment.current.reconfigure(EditorView.contentAttributes.of({ 'aria-label': session.source.display_name + ' text editor' })) });
+  }, [session.id, session.source.display_name]);
+
+  useEffect(() => {
+    viewRef.current?.dispatch({ effects: editableCompartment.current.reconfigure([EditorView.editable.of(canEdit), EditorState.readOnly.of(!canEdit)]) });
+  }, [session.id, canEdit]);
 
   useEffect(() => {
     const view = viewRef.current;
@@ -361,10 +368,7 @@ export const TextEditorSurface = forwardRef<
         <summary>Document details</summary>
         <div className="editor-status" aria-label="Text document status">
         <span>
-          {session.text_document?.mode === 'editable' &&
-          session.renderer.capabilities.edit &&
-          (session.source.capabilities.write ||
-            session.integrity === 'recovery_only')
+          {canEdit
             ? 'Editable'
             : 'Read only'}
         </span>

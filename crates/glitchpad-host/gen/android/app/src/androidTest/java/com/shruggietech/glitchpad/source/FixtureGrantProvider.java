@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.DocumentsContract;
 
 public final class FixtureGrantProvider extends ContentProvider {
   static final Uri COMMAND_URI = Uri.parse("content://com.shruggietech.glitchpad.fixture.grants");
@@ -26,12 +27,34 @@ public final class FixtureGrantProvider extends ContentProvider {
 
   @Override
   public Bundle call(String method, String argument, Bundle extras) {
-    if (!METHOD_GRANT.equals(method) || argument == null) {
+    if ("share_result".equals(method)) {
+      Bundle result = new Bundle();
+      result.putString("json", getContext().getSharedPreferences("s046-share", 0).getString("json", null));
+      result.putBoolean("read_granted", getContext().getSharedPreferences("s046-share", 0).getBoolean("read_granted", false));
+      result.putString("error", getContext().getSharedPreferences("s046-share", 0).getString("error", null));
+      return result;
+    }
+    if ("clear_share_result".equals(method)) {
+      getContext().getSharedPreferences("s046-share", 0).edit().clear().commit();
+      return new Bundle();
+    }
+    boolean heldWriteCommand = "arm_held_write".equals(method) || "held_write_status".equals(method) || "release_held_write".equals(method);
+    if ((!METHOD_GRANT.equals(method) && !heldWriteCommand) || argument == null) {
       throw new IllegalArgumentException("unsupported fixture grant request");
     }
     Uri uri = Uri.parse(argument);
     if (!DOCUMENT_AUTHORITY.equals(uri.getAuthority())) {
       throw new SecurityException("fixture grant URI must use the controlled document authority");
+    }
+    if (heldWriteCommand) {
+      String documentId = DocumentsContract.getDocumentId(uri);
+      Bundle status = "arm_held_write".equals(method)
+          ? FixtureDocumentsProvider.armHeldWrite(documentId)
+          : "release_held_write".equals(method)
+              ? FixtureDocumentsProvider.releaseHeldWrite(documentId)
+              : FixtureDocumentsProvider.heldWriteStatus(documentId);
+      status.putInt("control_process_id", android.os.Process.myPid());
+      return status;
     }
     Context context = getContext();
     if (context == null) {

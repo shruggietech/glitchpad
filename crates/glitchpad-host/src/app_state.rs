@@ -171,6 +171,7 @@ impl ApplicationStateStore {
                 schema_version: APPLICATION_STATE_SCHEMA_VERSION,
                 generated_unix_ms: now_unix_ms,
                 environment,
+                native_environment: None,
                 events: loaded.value.retained(now_unix_ms).events,
             },
         })

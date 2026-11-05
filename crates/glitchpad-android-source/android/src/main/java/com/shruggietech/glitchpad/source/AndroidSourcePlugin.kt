@@ -1,6 +1,19 @@
 package com.shruggietech.glitchpad.source
 
 import android.app.Activity
+import android.app.PendingIntent
+import android.content.ClipData
+import android.os.Build
+import android.os.Handler
+import android.os.Looper
+import androidx.activity.OnBackPressedCallback
+import androidx.activity.OnBackPressedDispatcherOwner
+import androidx.core.content.FileProvider
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
+import androidx.webkit.WebViewCompat
+import java.io.File
 import android.content.Intent
 import android.content.UriPermission
 import android.net.Uri
@@ -36,19 +49,124 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
   private val streams = ConcurrentHashMap<String, NativeStream>()
   private val restoration = RestorationStore(activity)
   private val initialIntentConsumed = AtomicBoolean(false)
+  private var backCallback: OnBackPressedCallback? = null
+  private var pendingBack: String? = null
+  private val shareJobs = ConcurrentHashMap<Invoke, DiagnosticShareJob>()
+  private val sharePending = AtomicBoolean(false)
+  private val mainHandler = Handler(Looper.getMainLooper())
+  private var deliveryWebView: WebView? = null
+  private var deliveryLifecycleObserver: DefaultLifecycleObserver? = null
+  private val deliveryWake = PendingDeliveryWake(
+    hasPending = {
+      val owner = activity as? LifecycleOwner
+      owner?.lifecycle?.currentState?.isAtLeast(Lifecycle.State.RESUMED) == true &&
+        (pending.isNotEmpty() || rejections.isNotEmpty())
+    },
+    post = { task -> deliveryWebView?.postOnAnimation(task) },
+    remove = { task -> deliveryWebView?.removeCallbacks(task) },
+    notifyReady = { notifyDeliveriesReady() },
+  )
+
+  // Hosted instrumentation reads this private, bounded state by reflection only.
+  private val deliveryObservation = if ((activity.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0) DeliveryObservation() else null
+
+  private enum class SaveObservationStage {
+    PICKER_LAUNCH_REQUESTED, PICKER_LAUNCH_RETURNED, PICKER_LAUNCH_FAILED,
+    RESULT_CANCELLED, RESULT_OK, RESULT_OTHER, CANCEL_REJECT_REQUESTED, CANCEL_REJECT_RETURNED
+  }
+
+  private fun observeSave(stage: SaveObservationStage) {
+    if (deliveryObservation != null) runCatching { android.util.Log.d("GlitchpadSaveObs", stage.name) }
+  }
+
+  private enum class DeliveryStage {
+    CREATED, LOADED, NEW_INTENT_RECEIVED, INBOUND_IGNORED, CANDIDATE_QUEUED,
+    CANDIDATE_REJECTED, QUEUE_FULL, NOTIFICATION_CALLED, NOTIFICATION_RETURNED,
+    DRAIN_REQUESTED, DRAIN_COMPLETED
+  }
+
+  private class DeliveryObservation {
+    private var loadCount = 0
+    private var newIntentCount = 0
+    private var notificationCount = 0
+    private var drainCount = 0
+    private var lastStage = DeliveryStage.CREATED
+    private var lastInboundStage = DeliveryStage.CREATED
+    private var lastHandled = false
+    private var listenerAtNotification = false
+
+    @Synchronized
+    fun record(stage: DeliveryStage, handled: Boolean? = null, listener: Boolean? = null) {
+      when (stage) {
+        DeliveryStage.LOADED -> loadCount = minOf(loadCount + 1, 65_535)
+        DeliveryStage.NEW_INTENT_RECEIVED -> newIntentCount = minOf(newIntentCount + 1, 65_535)
+        DeliveryStage.NOTIFICATION_CALLED -> notificationCount = minOf(notificationCount + 1, 65_535)
+        DeliveryStage.DRAIN_REQUESTED -> drainCount = minOf(drainCount + 1, 65_535)
+        else -> Unit
+      }
+      lastStage = stage
+      if (handled != null) { lastInboundStage = stage; lastHandled = handled }
+      if (listener != null) listenerAtNotification = listener
+    }
+
+    @Synchronized
+    fun snapshot(): JSObject = JSObject().put("enabled", true).put("load_count", loadCount)
+      .put("new_intent_count", newIntentCount).put("notification_count", notificationCount).put("drain_count", drainCount)
+      .put("last_stage", lastStage.name).put("last_inbound_stage", lastInboundStage.name)
+      .put("last_inbound_handled", lastHandled).put("listener_at_notification", listenerAtNotification)
+  }
+
+  private fun deliveryRouteSnapshot(): JSObject = (deliveryObservation?.snapshot() ?: JSObject().put("enabled", false))
+    .put("pending_count", pending.size).put("rejection_count", rejections.size)
+    .put("delivery_listener_present", hasListener("deliveriesReady"))
 
   override fun load(webView: WebView) {
     super.load(webView)
+    deliveryObservation?.record(DeliveryStage.LOADED)
+    installBackCallback()
+    installDeliveryWake(webView)
     if (initialIntentConsumed.compareAndSet(false, true) && enqueueInbound(activity.intent))
       notifyDeliveriesReady()
   }
 
+  private fun installDeliveryWake(webView: WebView) {
+    activity.runOnUiThread {
+      deliveryWake.cancel()
+      deliveryWebView = webView
+      val owner = activity as? LifecycleOwner ?: return@runOnUiThread
+      if (deliveryLifecycleObserver == null) {
+        val observer = object : DefaultLifecycleObserver {
+          override fun onResume(owner: LifecycleOwner) {
+            // The next WebView frame runs after WryActivity activates the WebView.
+            deliveryWake.schedule()
+          }
+
+          override fun onPause(owner: LifecycleOwner) {
+            deliveryWake.cancel()
+          }
+
+          override fun onDestroy(owner: LifecycleOwner) {
+            deliveryWake.cancel()
+            deliveryWebView = null
+            owner.lifecycle.removeObserver(this)
+            deliveryLifecycleObserver = null
+          }
+        }
+        deliveryLifecycleObserver = observer
+        owner.lifecycle.addObserver(observer)
+      }
+      deliveryWake.schedule()
+    }
+  }
+
   override fun onNewIntent(intent: Intent) {
+    deliveryObservation?.record(DeliveryStage.NEW_INTENT_RECEIVED)
     if (enqueueInbound(intent)) notifyDeliveriesReady()
   }
 
   @Command
   fun drainDeliveries(invoke: Invoke) {
+    deliveryObservation?.record(DeliveryStage.DRAIN_REQUESTED)
     val maximum = invoke.parseArgs(DrainArgs::class.java).maximum.coerceIn(1, MAX_QUEUE_DRAIN)
     ioExecutor.execute {
       val deliveries = JSArray()
@@ -61,6 +179,7 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
         val rejection = rejections.poll() ?: return@repeat
         rejected.put(JSObject().put("code", rejection).put("retryable", rejection == "provider_unavailable"))
       }
+      deliveryObservation?.record(DeliveryStage.DRAIN_COMPLETED)
       invoke.resolve(JSObject().put("deliveries", deliveries).put("rejections", rejected))
     }
   }
@@ -228,17 +347,22 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
   @Command
   fun saveAs(invoke: Invoke) {
     val args = invoke.parseArgs(PickerArgs::class.java)
-    if ((args.bytes?.size ?: 0) > MAX_SAVE_BYTES) return invoke.reject("budget_exceeded")
+    runCatching { DocumentWritePolicy.payload(args.bytes?.size ?: 0, args.suggestedName ?: "document", args.mediaType) }
+      .onFailure { return invoke.reject(code(it)) }
+    if (args.protectedBridgeToken != null && !sources.containsKey(args.protectedBridgeToken)) return invoke.reject("source_not_found")
     val intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
       .addCategory(Intent.CATEGORY_OPENABLE)
-      .setType(args.mediaType?.takeIf(String::isNotBlank) ?: "application/octet-stream")
-      .putExtra(Intent.EXTRA_TITLE, args.suggestedName?.take(MAX_NAME_CHARS) ?: "document")
-      .addFlags(
-        Intent.FLAG_GRANT_READ_URI_PERMISSION or
-          Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
-          Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION,
-      )
-    startActivityForResult(invoke, intent, "saveAsResult")
+      .setType(args.mediaType ?: "application/octet-stream")
+      .putExtra(Intent.EXTRA_TITLE, args.suggestedName ?: "document")
+      .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
+    observeSave(SaveObservationStage.PICKER_LAUNCH_REQUESTED)
+    try {
+      startActivityForResult(invoke, intent, "saveAsResult")
+      observeSave(SaveObservationStage.PICKER_LAUNCH_RETURNED)
+    } catch (error: Exception) {
+      observeSave(SaveObservationStage.PICKER_LAUNCH_FAILED)
+      invoke.reject("picker_failed")
+    }
   }
 
   @Command
@@ -320,39 +444,189 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
 
   @ActivityCallback
   fun saveAsResult(invoke: Invoke, result: ActivityResult) {
-    if (result.resultCode == Activity.RESULT_CANCELED) return invoke.reject("picker_cancelled")
-    if (result.resultCode != Activity.RESULT_OK) return invoke.reject("picker_failed")
+    if (result.resultCode == Activity.RESULT_CANCELED) {
+      observeSave(SaveObservationStage.RESULT_CANCELLED)
+      observeSave(SaveObservationStage.CANCEL_REJECT_REQUESTED)
+      invoke.reject("picker_cancelled")
+      observeSave(SaveObservationStage.CANCEL_REJECT_RETURNED)
+      return
+    }
+    if (result.resultCode != Activity.RESULT_OK) {
+      observeSave(SaveObservationStage.RESULT_OTHER)
+      return invoke.reject("picker_failed")
+    }
+    observeSave(SaveObservationStage.RESULT_OK)
     val args = invoke.parseArgs(PickerArgs::class.java)
     val bytes = args.bytes?.map(Int::toByte)?.toByteArray() ?: ByteArray(0)
     ioExecutor.execute {
-      DeliveryPolicy.pickerResult(result.data, DeliveryKind.CREATE_RESULT).flatMap { candidate ->
-        runCatching {
-          activity.contentResolver.openFileDescriptor(candidate.uri, "w", CancellationSignal())?.use { descriptor ->
-            descriptor.fileDescriptor.let { fileDescriptor ->
-              java.io.FileOutputStream(fileDescriptor).use { stream ->
-                stream.write(bytes)
-                stream.flush()
-                fileDescriptor.sync()
-              }
-              descriptor.checkError()
-            }
-          } ?: throw IllegalStateException("provider_unavailable")
-          val observed = activity.contentResolver.openInputStream(candidate.uri)?.use { input ->
-            input.readBytes(MAX_SAVE_BYTES + 1)
-          } ?: throw IllegalStateException("provider_unavailable")
-          if (!observed.contentEquals(bytes)) throw IllegalStateException("write_verification_failed")
-          acquire(candidate).getOrThrow() to bytes.size
-        }.onFailure {
-          // ACTION_CREATE_DOCUMENT may already have created a destination. Remove an
-          // unverified partial write when the provider supports deletion, while
-          // preserving the caller's staged bytes for a later retry or Save As.
-          runCatching { DocumentsContract.deleteDocument(activity.contentResolver, candidate.uri) }
+      var started = false
+      var destination: Uri? = null
+      runCatching {
+        DocumentWritePolicy.payload(bytes.size, args.suggestedName ?: "document", args.mediaType)
+        val candidate = DeliveryPolicy.pickerResult(result.data, DeliveryKind.CREATE_RESULT).getOrThrow()
+        destination = candidate.uri
+        val protected = args.protectedBridgeToken?.let { sources[it] ?: throw IllegalStateException("source_not_found") }
+        val known = sources.values.map { documentDestination(it.uri) }.toMutableList()
+        if (protected != null) known.add(documentDestination(protected.uri))
+        DocumentWritePolicy.destination(known, documentDestination(candidate.uri), queryMetadata(candidate.uri).size)
+        // rw does not truncate: metadata and descriptor must independently agree this is a new empty destination.
+        activity.contentResolver.openFileDescriptor(candidate.uri, "rw", CancellationSignal())?.use { descriptor ->
+          DocumentWritePolicy.descriptorSize(descriptor.statSize)
+          if (args.protectedBridgeToken != null && !sources.containsKey(args.protectedBridgeToken)) throw IllegalStateException("source_not_found")
+          started = true
+          java.io.FileOutputStream(descriptor.fileDescriptor).use { output -> output.write(bytes); output.flush(); descriptor.fileDescriptor.sync() }
+          descriptor.checkError()
+        } ?: throw IllegalStateException("provider_unavailable")
+        val observed = activity.contentResolver.openInputStream(candidate.uri)?.use { it.readBytes(MAX_SAVE_BYTES + 1) }
+          ?: throw IllegalStateException("provider_unavailable")
+        DocumentWritePolicy.verified(bytes, observed)
+        acquire(candidate).getOrThrow() to bytes.size
+      }.onSuccess { (delivery, count) -> invoke.resolve(JSObject().put("delivery", delivery).put("byteCount", count)) }
+        .onFailure {
+          // Cleanup never deletes a refused source/alias or a destination we did not write.
+          if (started) destination?.let { uri -> runCatching { DocumentsContract.deleteDocument(activity.contentResolver, uri) } }
+          invoke.reject(code(it))
         }
-      }.onSuccess { (delivery, count) ->
-        invoke.resolve(JSObject().put("delivery", delivery).put("byteCount", count))
-      }.onFailure { invoke.reject(code(it)) }
     }
   }
+
+  private fun documentDestination(uri: Uri): DocumentDestination {
+    if (!DocumentsContract.isDocumentUri(activity, uri)) return DocumentDestination(uri.authority, null)
+    return DocumentDestination(uri.authority, runCatching { DocumentsContract.getDocumentId(uri) }.getOrNull())
+  }
+
+  private fun installBackCallback() {
+    if (backCallback != null) return
+    val owner = activity as? OnBackPressedDispatcherOwner ?: return
+    val callback = object : OnBackPressedCallback(true) {
+      override fun handleOnBackPressed() {
+        if (pendingBack != null) return
+        val request = UUID.randomUUID().toString()
+        pendingBack = request
+        trigger("androidBackRequested", JSObject().put("requestId", request))
+        mainHandler.postDelayed({ if (pendingBack == request) pendingBack = null }, 5_000)
+      }
+    }
+    backCallback = callback
+    owner.onBackPressedDispatcher.addCallback(callback)
+  }
+
+  @Command
+  fun completeAndroidBack(invoke: Invoke) {
+    val args = invoke.parseArgs(AndroidBackArgs::class.java)
+    activity.runOnUiThread {
+      if (args.requestId == pendingBack) {
+        pendingBack = null
+        if (!args.handled) {
+          val owner = activity as? OnBackPressedDispatcherOwner
+          backCallback?.isEnabled = false
+          try { owner?.onBackPressedDispatcher?.onBackPressed() }
+          finally { backCallback?.isEnabled = true }
+        }
+      }
+      invoke.resolve()
+    }
+  }
+
+  @Command
+  fun diagnosticEnvironment(invoke: Invoke) {
+    val args = invoke.parseArgs(DiagnosticEnvironmentArgs::class.java)
+    activity.runOnUiThread {
+      val webview = runCatching { WebViewCompat.getCurrentWebViewPackage(activity) }.getOrNull()
+      val response = JSObject().put("androidVersion", Build.VERSION.RELEASE.take(64)).put("apiLevel", Build.VERSION.SDK_INT)
+        .put("webviewVersion", webview?.versionName?.take(128)).put("webviewPackage", webview?.packageName?.take(128))
+      if (args.includeViewport) response.put("viewport", runCatching { diagnosticViewportSnapshot() }.getOrNull() ?: org.json.JSONObject.NULL)
+      invoke.resolve(response)
+    }
+  }
+
+  private fun diagnosticViewportSnapshot(): JSObject? {
+    val view = deliveryWebView ?: return null
+    if (!view.isAttachedToWindow || !view.isShown || view.windowVisibility != android.view.View.VISIBLE) return null
+    val location = IntArray(2)
+    view.getLocationOnScreen(location)
+    val local = android.graphics.Rect()
+    if (!view.getLocalVisibleRect(local)) return null
+    val window = android.graphics.Rect()
+    view.getWindowVisibleDisplayFrame(window)
+    val observed = DiagnosticViewportGeometry.snapshot(location[0], location[1], view.width, view.height, view.scrollX, view.scrollY,
+      DiagnosticPixelRect(local.left, local.top, local.right, local.bottom),
+      DiagnosticPixelRect(window.left, window.top, window.right, window.bottom), view.resources.displayMetrics.density) ?: return null
+    fun rectangle(value: DiagnosticPixelRect): JSObject = JSObject().put("left", value.left).put("top", value.top)
+      .put("right", value.right).put("bottom", value.bottom)
+    return JSObject().put("webviewScreen", rectangle(observed.webviewScreen)).put("visibleScreen", rectangle(observed.visibleScreen))
+      .put("viewWidth", observed.viewWidth).put("viewHeight", observed.viewHeight).put("density", observed.density.toDouble())
+  }
+
+  @Command
+  fun shareDiagnostics(invoke: Invoke) {
+    val args = invoke.parseArgs(DiagnosticShareArgs::class.java)
+    if (args.json.length > MAX_DIAGNOSTIC_BYTES || args.json.toByteArray(Charsets.UTF_8).size > MAX_DIAGNOSTIC_BYTES)
+      return invoke.reject("budget_exceeded")
+    if (!sharePending.compareAndSet(false, true)) return invoke.reject("operation_pending")
+    ioExecutor.execute {
+      var file: File? = null
+      runCatching {
+        val directory = File(activity.cacheDir, "diagnostics")
+        if (!directory.isDirectory && !directory.mkdirs()) throw IllegalStateException("provider_unavailable")
+        val now = System.currentTimeMillis()
+        directory.listFiles()?.filter { it.name.startsWith("diagnostics-") && now - it.lastModified() >= DIAGNOSTIC_SHARE_TTL_MS }?.forEach { it.delete() }
+        if ((directory.listFiles()?.size ?: 0) >= MAX_DIAGNOSTIC_SHARE_FILES) throw IllegalStateException("share_capacity_exceeded")
+        val bytes = args.json.toByteArray(Charsets.UTF_8)
+        file = File.createTempFile("diagnostics-", ".json", directory)
+        java.io.FileOutputStream(file!!).use { output -> output.write(bytes); output.flush(); output.fd.sync() }
+        if (!file!!.readBytes().contentEquals(bytes)) throw IllegalStateException("write_verification_failed")
+        val uri = FileProvider.getUriForFile(activity, activity.packageName + ".fileprovider", file!!)
+        val token = UUID.randomUUID().toString()
+        val job = DiagnosticShareJob(token, file!!, AtomicBoolean(false))
+        shareJobs[invoke] = job
+        DiagnosticShareSelections.register(token) {
+          if (job.finished.compareAndSet(false, true)) {
+            sharePending.set(false)
+            invoke.resolve(JSObject().put("status", "handed_off"))
+          }
+        }
+        activity.runOnUiThread {
+          try {
+            val selected = Intent(activity, DiagnosticShareReceiver::class.java).putExtra("token", token)
+            val pendingFlags = PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_CANCEL_CURRENT or if (Build.VERSION.SDK_INT >= 31) PendingIntent.FLAG_MUTABLE else 0
+            val callback = PendingIntent.getBroadcast(activity, 0, selected, pendingFlags)
+            val send = Intent(Intent.ACTION_SEND).setType("application/json").putExtra(Intent.EXTRA_STREAM, uri)
+              .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            send.clipData = ClipData.newRawUri("Glitchpad diagnostics", uri)
+            val chooser = Intent.createChooser(send, "Share diagnostics", callback.intentSender).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            startActivityForResult(invoke, chooser, "shareDiagnosticsResult")
+            mainHandler.postDelayed({
+              DiagnosticShareSelections.remove(token); shareJobs.remove(invoke); job.file.delete()
+              if (job.finished.compareAndSet(false, true)) { sharePending.set(false); invoke.reject("share_unavailable") }
+            }, DIAGNOSTIC_SHARE_TTL_MS)
+          } catch (error: Exception) {
+            DiagnosticShareSelections.remove(token); shareJobs.remove(invoke); sharePending.set(false); job.file.delete()
+            if (job.finished.compareAndSet(false, true)) invoke.reject("share_unavailable")
+          }
+        }
+      }.onFailure { file?.delete(); sharePending.set(false); invoke.reject(code(it)) }
+    }
+  }
+
+  @ActivityCallback
+  fun shareDiagnosticsResult(invoke: Invoke, result: ActivityResult) {
+    val job = shareJobs[invoke] ?: return
+    // Give the chooser's selection broadcast its next main-thread turn before classifying a cancellation.
+    mainHandler.postDelayed({
+      shareJobs.remove(invoke)
+      DiagnosticShareSelections.remove(job.token)
+      if (job.finished.compareAndSet(false, true)) {
+        sharePending.set(false)
+        if (result.resultCode == Activity.RESULT_CANCELED) {
+          job.file.delete()
+          invoke.resolve(JSObject().put("status", "cancelled"))
+        } else invoke.resolve(JSObject().put("status", "handed_off"))
+      }
+    }, if (result.resultCode == Activity.RESULT_CANCELED) 250 else 0)
+  }
+
+  private data class DiagnosticShareJob(val token: String, val file: File, val finished: AtomicBoolean)
 
   @Command
   fun close(invoke: Invoke) {
@@ -392,12 +666,22 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
   }
 
   private fun enqueueInbound(intent: Intent?): Boolean {
-    if (intent?.action != Intent.ACTION_VIEW && intent?.action != Intent.ACTION_SEND) return false
+    if (intent?.action != Intent.ACTION_VIEW && intent?.action != Intent.ACTION_SEND) {
+      deliveryObservation?.record(DeliveryStage.INBOUND_IGNORED, handled = false)
+      return false
+    }
     DeliveryPolicy.inbound(intent)
       .onSuccess { candidate ->
-        if (!pending.offer(candidate)) enqueueRejection("delivery_queue_full")
+        if (pending.offer(candidate)) deliveryObservation?.record(DeliveryStage.CANDIDATE_QUEUED, handled = true)
+        else {
+          deliveryObservation?.record(DeliveryStage.QUEUE_FULL, handled = true)
+          enqueueRejection("delivery_queue_full")
+        }
       }
-      .onFailure { enqueueRejection(code(it)) }
+      .onFailure {
+        deliveryObservation?.record(DeliveryStage.CANDIDATE_REJECTED, handled = true)
+        enqueueRejection(code(it))
+      }
     return true
   }
 
@@ -408,7 +692,9 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
   }
 
   private fun notifyDeliveriesReady() {
+    deliveryObservation?.record(DeliveryStage.NOTIFICATION_CALLED, listener = hasListener("deliveriesReady"))
     trigger("deliveriesReady", JSObject())
+    deliveryObservation?.record(DeliveryStage.NOTIFICATION_RETURNED)
   }
 
   private fun acquire(candidate: DeliveryCandidate): Result<JSObject> = runCatching {
@@ -560,13 +846,18 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
     private const val MAX_PENDING_REJECTIONS = 64
     private const val MAX_CHUNK_BYTES = 1024L * 1024L
     private const val MAX_SAVE_BYTES = 16 * 1024 * 1024
+    private const val MAX_DIAGNOSTIC_BYTES = 2 * 1024 * 1024
+    private const val MAX_DIAGNOSTIC_SHARE_FILES = 16
+    private const val DIAGNOSTIC_SHARE_TTL_MS = 60L * 60 * 1000
     private const val MAX_NAME_CHARS = 256
     private const val MAX_MEDIA_TYPE_CHARS = 128
     private val SAFE_CODES = setOf(
       "missing_delivery", "unsupported_action", "invalid_source_shape", "read_authority_required",
       "missing_picker_source", "invalid_source_scheme", "directory_unsupported",
       "virtual_document_unsupported", "provider_unavailable", "write_verification_failed",
-      "restoration_capacity_exceeded",
+      "restoration_capacity_exceeded", "original_destination_denied", "destination_conflict",
+      "independent_destination_required", "invalid_destination_name", "invalid_media_type",
+      "share_capacity_exceeded", "share_unavailable", "operation_pending", "picker_failed", "picker_cancelled", "budget_exceeded", "source_not_found",
     )
     private val PORTABLE_METADATA_PROJECTION = arrayOf(OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE)
     private val DOCUMENT_METADATA_PROJECTION = arrayOf(

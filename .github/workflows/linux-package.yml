@@ -69,10 +69,11 @@ jobs:
       - name: Build governed AppImage and Debian candidates
         run: |
           docker run --rm --volume "$PWD:/workspace" --workdir /workspace \
+            --env GLITCHPAD_BUILD_COMMIT --env GITHUB_SHA \
             --volume "$RUNNER_TEMP/glitchpad-cargo/registry:/usr/local/cargo/registry" \
             --volume "$RUNNER_TEMP/glitchpad-cargo/git:/usr/local/cargo/git" glitchpad-linux-package:local sh -lc '
             set -eu
-            pnpm tauri build --bundles appimage,deb --config tauri.s021-linux.conf.json
+            pnpm tauri build --verbose --bundles appimage,deb --config tauri.s021-linux.conf.json
           '
 
       - name: Assemble final-byte candidate and evidence

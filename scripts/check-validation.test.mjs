@@ -323,10 +323,7 @@ test('Android delivery instrumentation gets a bounded clean-state retry without 
     runner,
     /ANDROID_INSTRUMENTATION_RESET_APP_DATA:-false.*pm clear com\.shruggietech\.glitchpad/su,
   );
-  assert.match(
-    workflow,
-    /ANDROID_INSTRUMENTATION_RESET_APP_DATA=true bash scripts\/run-android-instrumentation\.sh[^\n]+delivery_evidence=/u,
-  );
+  assert.match(workflow, /bash scripts\/run-android-s046-journeys\.sh/u);
   assert.doesNotMatch(
     workflow,
     /ANDROID_INSTRUMENTATION_RESET_APP_DATA=true[^\n]+RestorationInstrumentedTest/u,
@@ -390,6 +387,18 @@ test('link validation keeps local provenance while excluding exact upstream vend
     'vendor/tauri-plugin-single-instance-2.4.5/CHANGELOG.md',
     '# Upstream changelog\n',
   );
+  await writeFixture(root, 'vendor/tao-0.35.3/README.md', '# Upstream Tao\n');
+  await writeFixture(root, 'vendor/tao-0.35.4/README.md', '# Other version\n');
+  await writeFixture(
+    root,
+    'docs/tao-0.35.3/README.md',
+    '# Owned same basename\n',
+  );
+  await writeFixture(
+    root,
+    'vendor/tauri-2.11.6/README.md',
+    '# Retired unowned tree\n',
+  );
   const seen = [];
   const result = await validateLinks({
     repositoryRoot: root,
@@ -399,6 +408,14 @@ test('link validation keeps local provenance while excluding exact upstream vend
       return [];
     },
   });
-  assert.equal(result.fileCount, 1);
-  assert.deepEqual(seen, ['# Local patch provenance\n']);
+  assert.equal(result.fileCount, 4);
+  assert.deepEqual(
+    seen.sort(),
+    [
+      '# Local patch provenance\n',
+      '# Other version\n',
+      '# Owned same basename\n',
+      '# Retired unowned tree\n',
+    ].sort(),
+  );
 });

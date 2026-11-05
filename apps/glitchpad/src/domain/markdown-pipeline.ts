@@ -1,5 +1,10 @@
 import type { Element, Root as HastRoot, Text as HastText } from 'hast';
-import type { Html, Parent as MdastParent, Root as MdastRoot, Text as MdastText } from 'mdast';
+import type {
+  Html,
+  Parent as MdastParent,
+  Root as MdastRoot,
+  Text as MdastText,
+} from 'mdast';
 import rehypeSanitize from 'rehype-sanitize';
 import remarkGfm from 'remark-gfm';
 import remarkParse from 'remark-parse';
@@ -23,7 +28,10 @@ import {
   type SearchTextEntry,
   type SourceRange,
 } from './markdown-contract';
-import { classifyMarkdownResource, classifyMarkdownTarget } from './markdown-url';
+import {
+  classifyMarkdownResource,
+  classifyMarkdownTarget,
+} from './markdown-url';
 import { extractMermaidBlocks } from './mermaid-markdown';
 import type { EmbeddedMermaidBlock } from './mermaid-contract';
 
@@ -67,7 +75,12 @@ const sanitationSchema = {
   tagNames: [...allowedTags],
   attributes: {
     '*': ['className', 'id'],
-    a: ['ariaDescribedBy', 'dataFootnoteRef', 'dataFootnoteBackref', 'dataMarkdownTarget'],
+    a: [
+      'ariaDescribedBy',
+      'dataFootnoteRef',
+      'dataFootnoteBackref',
+      'dataMarkdownTarget',
+    ],
     img: ['alt', 'title', 'dataMarkdownTarget'],
     input: ['type', 'checked', 'disabled'],
     li: ['className'],
@@ -92,7 +105,8 @@ const inertRawHtml: Plugin<[], MdastRoot> = () => (tree) => {
 
 const stripActiveTargets: Plugin<[], HastRoot> = () => (tree) => {
   visit(tree, 'element', (node: Element) => {
-    const property = node.tagName === 'a' ? 'href' : node.tagName === 'img' ? 'src' : null;
+    const property =
+      node.tagName === 'a' ? 'href' : node.tagName === 'img' ? 'src' : null;
     if (!property) return;
     const target = node.properties[property];
     if (typeof target === 'string') node.properties.dataMarkdownTarget = target;
@@ -119,7 +133,12 @@ interface ProjectionContext {
 }
 
 const toSourceRange = (
-  position: { start: { line: number; offset?: number }; end: { line: number; offset?: number } } | undefined,
+  position:
+    | {
+        start: { line: number; offset?: number };
+        end: { line: number; offset?: number };
+      }
+    | undefined,
 ): SourceRange | null => {
   if (
     position?.start.offset === undefined ||
@@ -154,10 +173,16 @@ const safeProperties = (
   const result: Record<string, string | number | boolean | string[]> = {};
   for (const [key, value] of Object.entries(properties)) {
     if (!accepted.has(key)) continue;
-    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean')
+    if (
+      typeof value === 'string' ||
+      typeof value === 'number' ||
+      typeof value === 'boolean'
+    )
       result[key] = value;
     else if (Array.isArray(value))
-      result[key] = value.filter((item): item is string => typeof item === 'string');
+      result[key] = value.filter(
+        (item): item is string => typeof item === 'string',
+      );
   }
   return result;
 };
@@ -165,7 +190,9 @@ const safeProperties = (
 const textOf = (node: SafeRenderedNode): string => {
   if (node.type === 'text') return node.value;
   if (node.type === 'element' && node.resource)
-    return node.resource.alt ? `Image unavailable: ${node.resource.alt}` : 'Image unavailable';
+    return node.resource.alt
+      ? `Image unavailable: ${node.resource.alt}`
+      : 'Image unavailable';
   return node.children.map(textOf).join('');
 };
 
@@ -182,7 +209,10 @@ const projectNode = (
   context: ProjectionContext,
   depth = 0,
 ): SafeRenderedNode | null => {
-  if (depth > MARKDOWN_NODE_MAX_DEPTH || context.nodes >= MARKDOWN_NODE_MAX_COUNT)
+  if (
+    depth > MARKDOWN_NODE_MAX_DEPTH ||
+    context.nodes >= MARKDOWN_NODE_MAX_COUNT
+  )
     throw new MarkdownOutputLimitError();
   context.nodes += 1;
   const id = `md-${context.nextId++}`;
@@ -199,9 +229,13 @@ const projectNode = (
       .filter((child): child is SafeRenderedNode => child !== null);
     return { type: 'root', id, children, source_range: sourceRange };
   }
-  const mermaid = node.tagName === 'pre'
-    ? context.mermaidBlocks.find((block) => block.source_range?.start_offset === sourceRange?.start_offset) ?? null
-    : null;
+  const mermaid =
+    node.tagName === 'pre'
+      ? (context.mermaidBlocks.find(
+          (block) =>
+            block.source_range?.start_offset === sourceRange?.start_offset,
+        ) ?? null)
+      : null;
   if (mermaid) {
     return {
       type: 'element',
@@ -215,9 +249,14 @@ const projectNode = (
       mermaid,
     };
   }
-  if (!allowedTags.includes(node.tagName as (typeof allowedTags)[number])) return null;
-  const target = typeof node.properties.dataMarkdownTarget === 'string' ? node.properties.dataMarkdownTarget : '';
-  const alt = typeof node.properties.alt === 'string' ? node.properties.alt : '';
+  if (!allowedTags.includes(node.tagName as (typeof allowedTags)[number]))
+    return null;
+  const target =
+    typeof node.properties.dataMarkdownTarget === 'string'
+      ? node.properties.dataMarkdownTarget
+      : '';
+  const alt =
+    typeof node.properties.alt === 'string' ? node.properties.alt : '';
   const children = node.children
     .map((child) =>
       child.type === 'element' || child.type === 'text'
@@ -279,12 +318,14 @@ const collectSearchText = (
   if (node.type === 'text') return;
   if (node.type === 'element' && node.mermaid) {
     const text = node.mermaid.source.replace(/\s+/gu, ' ').trim();
-    if (text) entries.push({ node_id: node.id, text, source_range: node.source_range });
+    if (text)
+      entries.push({ node_id: node.id, text, source_range: node.source_range });
     return;
   }
   if (node.type === 'element' && searchableTags.has(node.tag_name)) {
     const text = textOf(node).replace(/\s+/gu, ' ').trim();
-    if (text) entries.push({ node_id: node.id, text, source_range: node.source_range });
+    if (text)
+      entries.push({ node_id: node.id, text, source_range: node.source_range });
     return;
   }
   for (const child of node.children) collectSearchText(child, entries);
@@ -322,17 +363,34 @@ export const renderMarkdown = async (
     return {
       ...base,
       status: 'failed',
-      diagnostics: [{ code: 'markdown_policy_mismatch', message: 'The Markdown safety policy changed. Reopen the document and try again.' }],
+      diagnostics: [
+        {
+          code: 'markdown_policy_mismatch',
+          message:
+            'The Markdown safety policy changed. Reopen the document and try again.',
+        },
+      ],
     };
   }
   if (sourceBytes > MARKDOWN_RENDER_MAX_BYTES) {
     return {
       ...base,
       status: 'limited',
-      diagnostics: [{ code: 'markdown_preview_limited', message: 'Live preview is unavailable above 16 MiB. Source editing remains available.' }],
+      diagnostics: [
+        {
+          code: 'markdown_preview_limited',
+          message:
+            'Live preview is unavailable above 16 MiB. Source editing remains available.',
+        },
+      ],
     };
   }
   try {
+    if (
+      import.meta.env.VITE_GLITCHPAD_RECOVERY_PROBES === '1' &&
+      request.failure_probe === 'parser'
+    )
+      throw new Error('injected_parser_failure');
     const parsed = processor.parse(request.source_text);
     const transformed = await processor.run(parsed);
     const context: ProjectionContext = {
@@ -340,7 +398,11 @@ export const renderMarkdown = async (
       nextId: 1,
       slugCounts: new Map(),
       outline: [],
-      mermaidBlocks: extractMermaidBlocks(request.source_text, request.session_id, request.source_revision),
+      mermaidBlocks: extractMermaidBlocks(
+        request.source_text,
+        request.session_id,
+        request.source_revision,
+      ),
     };
     const tree = projectNode(transformed, context);
     if (!tree || tree.type !== 'root') throw new Error('invalid root');
@@ -354,7 +416,12 @@ export const renderMarkdown = async (
       outline: context.outline,
       search_text: searchText,
       diagnostics: empty
-        ? [{ code: 'markdown_empty', message: 'This Markdown document has no rendered content.' }]
+        ? [
+            {
+              code: 'markdown_empty',
+              message: 'This Markdown document has no rendered content.',
+            },
+          ]
         : [],
       measurements: {
         source_bytes: sourceBytes,
@@ -368,8 +435,15 @@ export const renderMarkdown = async (
   } catch (error) {
     const outputLimited = error instanceof MarkdownOutputLimitError;
     const diagnostic: SafeDiagnostic = outputLimited
-      ? { code: 'markdown_output_limited', message: 'The rendered structure exceeds the safe preview limit. Source remains available.' }
-      : { code: 'markdown_parse_failed', message: 'Markdown preview failed safely. Source remains available.' };
+      ? {
+          code: 'markdown_output_limited',
+          message:
+            'The rendered structure exceeds the safe preview limit. Source remains available.',
+        }
+      : {
+          code: 'markdown_parse_failed',
+          message: 'Markdown preview failed safely. Source remains available.',
+        };
     return {
       ...base,
       status: outputLimited ? 'limited' : 'failed',

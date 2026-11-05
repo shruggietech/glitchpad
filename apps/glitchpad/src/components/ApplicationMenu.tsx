@@ -94,10 +94,12 @@ export function ApplicationMenu({ active = true, commands, canOpen, onOpen, onIn
               role="menuitem"
               key={command.id}
               disabled={!command.enabled}
+              title={command.reason}
+              aria-keyshortcuts={command.shortcut?.replaceAll('Ctrl','Control')}
               onClick={() => invoke((opener) => onInvoke(command, opener))}
             >
               <span>{command.label}</span>
-              {command.shortcut && <kbd>{command.shortcut}</kbd>}
+              {command.shortcut && <kbd aria-hidden="true">{command.shortcut}</kbd>}
             </button>
           ))}
           <div className="application-menu-separator" role="separator" />

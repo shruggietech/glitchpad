@@ -8,6 +8,8 @@ import type {
 } from './recovery-gateway';
 import { projectRecoveryInventory } from './recovery';
 
+let retainedRestartListener: ((event: Event) => void) | null = null;
+
 const IDLE_SNAPSHOT_MS = 2_000;
 const MAX_SNAPSHOT_MS = 30_000;
 const CLEANUP_RETRY_MS = 30_000;
@@ -70,12 +72,15 @@ interface RecordBinding {
   recordId: string;
   createdUnixMs: number;
   lastSnapshotRevision: number | null;
+  pendingRevision?: number;
+  pending?: Promise<void>;
 }
 
 export interface RecoveryController {
   candidates: RecoveryInventoryEntry[];
   recordIds: ReadonlyMap<string, string>;
   warning: string | null;
+  flush(): Promise<void>;
   accept(entry: RecoveryInventoryEntry): Promise<RecoveryRecord>;
   refuse(entry: RecoveryInventoryEntry): Promise<void>;
   defer(entry: RecoveryInventoryEntry): void;
@@ -96,6 +101,7 @@ export const useRecovery = (
   const pendingAcceptedSessions = useRef(new Set<string>());
   const pendingCleanups = useRef(new Set<string>());
   const cleanupInFlight = useRef(new Set<string>());
+  const writes = useRef(new Map<string, Promise<void>>());
   const sessionsRef = useRef(sessions);
   sessionsRef.current = sessions;
 
@@ -132,8 +138,9 @@ export const useRecovery = (
       )
         return;
       cleanupInFlight.current.add(recordId);
-      void gateway
-        .remove(recordId)
+      void (writes.current.get(recordId) ?? Promise.resolve())
+        .catch(() => undefined)
+        .then(() => gateway.remove(recordId))
         .then(() => {
           pendingCleanups.current.delete(recordId);
           if (pendingCleanups.current.size === 0) setCleanupWarning(null);
@@ -145,12 +152,16 @@ export const useRecovery = (
   );
 
   const persist = useCallback(
-    (session: ShellSession) => {
-      if (!gateway || !session.dirty) return;
+    (session: ShellSession): Promise<void> => {
+      if (!session.dirty) return Promise.resolve();
+      if (!gateway) return Promise.reject(new Error('recovery_unavailable'));
       const existing = bindings.current.get(session.id);
-      if (existing?.lastSnapshotRevision === session.revision) return;
+      if (existing?.pendingRevision === session.revision && existing.pending)
+        return existing.pending;
+      if (existing?.lastSnapshotRevision === session.revision)
+        return Promise.resolve();
       const now = Date.now();
-      const binding = existing ?? {
+      const binding: RecordBinding = existing ?? {
         recordId: createRecoveryRecordId(),
         createdUnixMs: now,
         lastSnapshotRevision: null,
@@ -162,9 +173,13 @@ export const useRecovery = (
         binding.createdUnixMs,
         now,
       );
-      void gateway
-        .persist(record)
+      const pending = (
+        writes.current.get(binding.recordId) ?? Promise.resolve()
+      )
+        .catch(() => undefined)
+        .then(() => gateway.persist(record))
         .then(() => {
+          if (bindings.current.get(session.id) !== binding) return;
           binding.lastSnapshotRevision = session.revision;
           setRecordIds((current) => {
             if (current.get(session.id) === binding.recordId) return current;
@@ -184,10 +199,67 @@ export const useRecovery = (
               `Recovery coverage is at risk for ${session.source.display_name}. Keep the document open and free private storage before retrying.`,
             ),
           );
+          throw new Error('recovery_write_failed');
         });
+      binding.pendingRevision = session.revision;
+      binding.pending = pending;
+      writes.current.set(binding.recordId, pending);
+      const clearPending = () => {
+        if (writes.current.get(binding.recordId) === pending)
+          writes.current.delete(binding.recordId);
+        if (binding.pending === pending) {
+          binding.pending = undefined;
+          binding.pendingRevision = undefined;
+        }
+      };
+      void pending.then(clearPending, clearPending);
+      return pending;
     },
     [gateway],
   );
+
+  const flush = useCallback(async () => {
+    await Promise.all(sessionsRef.current.filter((s) => s.dirty).map(persist));
+  }, [persist]);
+
+  useEffect(() => {
+    if (retainedRestartListener) {
+      window.removeEventListener(
+        'glitchpad:before-restart',
+        retainedRestartListener,
+      );
+      retainedRestartListener = null;
+    }
+    const suspend = () => {
+      void flush().catch(() => undefined);
+    };
+    const visibility = () => {
+      if (document.visibilityState === 'hidden') suspend();
+    };
+    const restart = (event: Event) => {
+      (
+        event as CustomEvent<{ waitUntil(promise: Promise<unknown>): void }>
+      ).detail.waitUntil(flush());
+    };
+    document.addEventListener('visibilitychange', visibility);
+    window.addEventListener('pagehide', suspend);
+    window.addEventListener('glitchpad:before-restart', restart);
+    return () => {
+      document.removeEventListener('visibilitychange', visibility);
+      window.removeEventListener('pagehide', suspend);
+      window.removeEventListener('glitchpad:before-restart', restart);
+      void flush().catch(() => undefined);
+      retainedRestartListener = (event: Event) => {
+        (
+          event as CustomEvent<{ waitUntil(promise: Promise<unknown>): void }>
+        ).detail.waitUntil(flush());
+      };
+      window.addEventListener(
+        'glitchpad:before-restart',
+        retainedRestartListener,
+      );
+    };
+  }, [flush]);
 
   useEffect(() => {
     if (!gateway) return;
@@ -213,7 +285,11 @@ export const useRecovery = (
     }
     const timers = sessions
       .filter(({ dirty }) => dirty)
-      .map((session) => setTimeout(() => persist(session), IDLE_SNAPSHOT_MS));
+      .map((session) =>
+        setTimeout(() => {
+          void persist(session).catch(() => undefined);
+        }, IDLE_SNAPSHOT_MS),
+      );
     return () => timers.forEach(clearTimeout);
   }, [attemptCleanup, gateway, persist, sessions]);
 
@@ -228,10 +304,10 @@ export const useRecovery = (
   useEffect(() => {
     if (!gateway) return;
     const timer = setInterval(() => {
-      sessionsRef.current.filter(({ dirty }) => dirty).forEach(persist);
+      void flush().catch(() => undefined);
     }, MAX_SNAPSHOT_MS);
     return () => clearInterval(timer);
-  }, [gateway, persist]);
+  }, [flush, gateway]);
 
   const dismiss = (recordId: string) =>
     setCandidates((entries) =>
@@ -250,6 +326,7 @@ export const useRecovery = (
     candidates,
     recordIds,
     warning: warning || null,
+    flush,
     async accept(entry) {
       const record = await gateway!.load(entry.record_id);
       const sessionId = `recovery-${entry.record_id}`;

@@ -1,6 +1,8 @@
 //! Tauri host boundary for desktop and Android builds.
 
-use tauri::{Emitter, Manager};
+#[cfg(not(mobile))]
+use tauri::Emitter;
+use tauri::Manager;
 
 pub mod app_state;
 #[cfg(not(mobile))]
@@ -14,6 +16,8 @@ pub mod recovery;
 #[cfg(not(mobile))]
 pub mod source;
 
+#[cfg(any(target_os = "android", test))]
+mod android_interactive;
 pub mod android_source;
 
 struct RecoveryHostState {
@@ -187,6 +191,10 @@ pub fn run() {
         revalidate_android_source,
         restore_android_sources,
         save_android_source_as,
+        create_android_document,
+        share_diagnostics,
+        android_diagnostic_environment,
+        complete_android_back,
         close_android_source,
     ]);
 
@@ -368,7 +376,9 @@ fn diagnostic_environment() -> glitchpad_core::persistence::DiagnosticEnvironmen
         architecture: std::env::consts::ARCH.into(),
         webview_version: None,
         core_version: glitchpad_core::VERSION.into(),
-        build_commit: option_env!("GLITCHPAD_BUILD_COMMIT").map(str::to_owned),
+        build_commit: option_env!("GLITCHPAD_BUILD_COMMIT")
+            .or(option_env!("GITHUB_SHA"))
+            .map(str::to_owned),
     }
 }
 
@@ -444,6 +454,61 @@ fn remove_recovery(
 mod tests {
     use super::*;
 
+    // The validation matrix supplies an independent expected value while Cargo
+    // compiles with absent, CI-only, and explicitly overridden source identities.
+    #[test]
+    fn diagnostic_environment_serializes_the_compiled_source_identity() {
+        let environment = diagnostic_environment();
+        let serialized =
+            serde_json::to_value(environment).expect("diagnostic environment serializes");
+        assert_eq!(serialized["product_version"], glitchpad_core::VERSION);
+        let expected = std::env::var("GLITCHPAD_TEST_EXPECT_BUILD_COMMIT")
+            .or_else(|_| std::env::var("GLITCHPAD_BUILD_COMMIT"))
+            .or_else(|_| std::env::var("GITHUB_SHA"))
+            .ok();
+        let expected_value = expected
+            .filter(|value| value != "<absent>")
+            .map_or(serde_json::Value::Null, serde_json::Value::String);
+        assert_eq!(serialized["build_commit"], expected_value);
+    }
+
+    #[test]
+    fn native_android_listener_commands_match_the_runtime_plugin_acl() {
+        use std::collections::BTreeMap;
+        use tauri::utils::acl::{capability::Capability, manifest::Manifest, resolved::Resolved};
+
+        let manifests: BTreeMap<String, Manifest> =
+            serde_json::from_str(include_str!("../gen/schemas/acl-manifests.json"))
+                .expect("generated plugin manifests parse");
+        let capabilities: BTreeMap<String, Capability> =
+            serde_json::from_str(include_str!("../gen/schemas/capabilities.json"))
+                .expect("generated capabilities parse");
+        let acl = Resolved::resolve(
+            &manifests,
+            capabilities,
+            tauri::utils::platform::Target::Android,
+        )
+        .expect("Android capabilities resolve");
+        // The runtime Builder consumes this same identity without requiring a GUI here.
+        let name = glitchpad_android_source::PLUGIN_NAME;
+        for command in ["register_listener", "remove_listener"] {
+            let qualified = format!("plugin:{name}|{command}");
+            assert!(
+                acl.allowed_commands.contains_key(&qualified),
+                "runtime listener command {qualified} must be granted by the generated Android ACL"
+            );
+            let stale_command = format!("plugin:android-source|{command}");
+            assert!(!acl.allowed_commands.contains_key(&stale_command));
+        }
+        let prefix = format!("plugin:{name}|");
+        let private_commands = acl
+            .allowed_commands
+            .keys()
+            .filter(|command| command.starts_with(&prefix))
+            .count();
+        assert_eq!(private_commands, 2);
+    }
+
     #[test]
     fn unavailable_recovery_storage_degrades_to_a_safe_command_error() {
         let state = RecoveryHostState::unavailable(recovery_unavailable());
@@ -473,11 +538,15 @@ fn drain_android_deliveries(
 
 #[cfg(target_os = "android")]
 #[tauri::command]
-fn open_android_document(
-    host: tauri::State<'_, android_source::AndroidSourceHost>,
+async fn open_android_document(
+    app: tauri::AppHandle,
     media_type: Option<String>,
 ) -> Result<glitchpad_core::source::AndroidSourceSummary, glitchpad_core::contracts::CoreError> {
-    host.open_document(media_type.as_deref())
+    android_interactive::run(move || {
+        app.state::<android_source::AndroidSourceHost>()
+            .open_document(media_type.as_deref())
+    })
+    .await
 }
 
 #[cfg(target_os = "android")]
@@ -578,11 +647,28 @@ fn restore_android_sources(
 
 #[cfg(target_os = "android")]
 #[tauri::command]
-fn save_android_source_as(
-    host: tauri::State<'_, android_source::AndroidSourceHost>,
+async fn save_android_source_as(
+    app: tauri::AppHandle,
     request: glitchpad_core::source::AndroidSaveAsRequest,
 ) -> Result<glitchpad_core::source::AndroidSaveAsReceipt, glitchpad_core::contracts::CoreError> {
-    host.save_as(request)
+    let result = android_interactive::run(move || {
+        app.state::<android_source::AndroidSourceHost>()
+            .save_as(request)
+    })
+    .await;
+    #[cfg(debug_assertions)]
+    if result.is_ok() {
+        let _ = std::io::Write::write_all(
+            &mut std::io::stderr(),
+            b"android_save_observation=save_as_host_completed_ok\n",
+        );
+    } else {
+        let _ = std::io::Write::write_all(
+            &mut std::io::stderr(),
+            b"android_save_observation=save_as_host_completed_error\n",
+        );
+    }
+    result
 }
 
 #[cfg(target_os = "android")]
@@ -592,4 +678,69 @@ fn close_android_source(
     source_id: glitchpad_core::source::SourceId,
 ) -> Result<(), glitchpad_core::contracts::CoreError> {
     host.close(&source_id)
+}
+
+#[cfg(target_os = "android")]
+#[tauri::command]
+async fn create_android_document(
+    app: tauri::AppHandle,
+    request: glitchpad_core::source::AndroidCreateRequest,
+) -> Result<glitchpad_core::source::AndroidCreateReceipt, glitchpad_core::contracts::CoreError> {
+    let result = android_interactive::run(move || {
+        app.state::<android_source::AndroidSourceHost>()
+            .create_document(request)
+    })
+    .await;
+    #[cfg(debug_assertions)]
+    if result.is_ok() {
+        let _ = std::io::Write::write_all(
+            &mut std::io::stderr(),
+            b"android_save_observation=create_host_completed_ok\n",
+        );
+    } else {
+        let _ = std::io::Write::write_all(
+            &mut std::io::stderr(),
+            b"android_save_observation=create_host_completed_error\n",
+        );
+    }
+    result
+}
+
+#[cfg(target_os = "android")]
+#[tauri::command]
+async fn share_diagnostics(
+    app: tauri::AppHandle,
+    json: String,
+) -> Result<
+    glitchpad_android_source::models::DiagnosticShareResponse,
+    glitchpad_core::contracts::CoreError,
+> {
+    android_interactive::run(move || {
+        app.state::<android_source::AndroidSourceHost>()
+            .share_diagnostics(&json)
+    })
+    .await
+}
+
+#[cfg(target_os = "android")]
+#[tauri::command]
+async fn android_diagnostic_environment(
+    app: tauri::AppHandle,
+    include_viewport: Option<bool>,
+) -> Result<serde_json::Value, glitchpad_core::contracts::CoreError> {
+    android_interactive::run(move || {
+        app.state::<android_source::AndroidSourceHost>()
+            .diagnostic_environment(include_viewport.unwrap_or(false))
+    })
+    .await
+}
+
+#[cfg(target_os = "android")]
+#[tauri::command]
+fn complete_android_back(
+    host: tauri::State<'_, android_source::AndroidSourceHost>,
+    request_id: String,
+    handled: bool,
+) -> Result<(), glitchpad_core::contracts::CoreError> {
+    host.complete_back(&request_id, handled)
 }

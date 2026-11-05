@@ -9,11 +9,7 @@ export const MARKDOWN_PREVIEW_DEBOUNCE_MS = 100;
 export const MARKDOWN_RENDER_TIMEOUT_MS = 5_000;
 
 export type MarkdownRenderStatus =
-  | 'ready'
-  | 'empty'
-  | 'limited'
-  | 'cancelled'
-  | 'failed';
+  'ready' | 'empty' | 'limited' | 'cancelled' | 'failed';
 
 export interface SourceRange {
   start_offset: number;
@@ -23,12 +19,7 @@ export interface SourceRange {
 }
 
 export type LinkCandidateKind =
-  | 'external'
-  | 'email'
-  | 'fragment'
-  | 'local'
-  | 'blocked'
-  | 'malformed';
+  'external' | 'email' | 'fragment' | 'local' | 'blocked' | 'malformed';
 
 export interface LinkCandidate {
   kind: LinkCandidateKind;
@@ -94,6 +85,10 @@ export interface SafeDiagnostic {
     | 'markdown_preview_limited'
     | 'markdown_cancelled'
     | 'markdown_parse_failed'
+    | 'markdown_worker_failed'
+    | 'markdown_render_timeout'
+    | 'markdown_projection_invalid'
+    | 'markdown_projection_failed'
     | 'markdown_policy_mismatch'
     | 'markdown_output_limited';
   message: string;
@@ -108,6 +103,8 @@ export interface MarkdownMeasurements {
 }
 
 export interface MarkdownRenderRequest {
+  /** Ignored unless the explicitly instrumented package build enables probes. */
+  failure_probe?: 'parser';
   request_id: string;
   session_id: string;
   source_revision: number;

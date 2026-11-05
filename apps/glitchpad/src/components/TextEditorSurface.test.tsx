@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { createRef } from 'react';
 import { EditorView } from '@codemirror/view';
 import { describe, expect, it, vi } from 'vitest';
@@ -196,5 +196,77 @@ describe('TextEditorSurface', () => {
       1,
       expect.objectContaining({ language: 'rust', origin: 'session_override' }),
     );
+  });
+});
+
+
+describe('truthful editor command outcomes', () => {
+  it('updates editable presentation and editor policy when local-copy authority changes', async () => {
+    const session = makeSession();
+    const props = { onDocumentChange: vi.fn(), onLanguageChange: vi.fn() };
+    const { rerender } = render(<TextEditorSurface session={session} {...props} />);
+    const original = screen.getByRole('textbox', { name: 'editor.ts text editor' });
+    await waitFor(() => expect(original.closest('.text-editor')).toHaveAttribute('data-performance-ready', 'true'));
+    const view = EditorView.findFromDOM(original)!;
+    const readonly = { ...session, source: { ...session.source, capabilities: { ...session.source.capabilities, write: false } } };
+    rerender(<TextEditorSurface session={readonly} {...props} />);
+    expect(original).toHaveAttribute('contenteditable', 'false');
+    expect(view.state.readOnly).toBe(true);
+    rerender(<TextEditorSurface session={{ ...readonly, edit_origin: 'copy' }} {...props} />);
+    expect(original).toHaveAttribute('contenteditable', 'true');
+    expect(view.state.readOnly).toBe(false);
+    expect(screen.getByLabelText('Text document status')).toHaveTextContent('Editable');
+    expect(readonly.source.capabilities.write).toBe(false);
+  });
+  it('updates the accessible saved name without replacing the editor or losing undo history', async () => {
+    const ref = createRef<TextEditorHandle>();
+    const session = makeSession();
+    const props = { onDocumentChange: vi.fn(), onLanguageChange: vi.fn() };
+    const { rerender } = render(<TextEditorSurface ref={ref} session={session} {...props} />);
+    const original = screen.getByRole('textbox', { name: 'editor.ts text editor' });
+    await waitFor(() => expect(original.closest('.text-editor')).toHaveAttribute('data-performance-ready', 'true'));
+    const view = EditorView.findFromDOM(original)!;
+    act(() => view.dispatch({ changes: { from: 0, insert: '// edit\n' } }));
+    rerender(<TextEditorSurface ref={ref} session={{ ...session, source: { ...session.source, display_name: 'Saved.ts' } }} {...props} />);
+    expect(screen.getByRole('textbox', { name: 'Saved.ts text editor' })).toBe(original);
+    act(() => { expect(ref.current!.invoke('undo')).toBe(true); });
+    expect(view.state.doc.toString()).toBe('const value = 1;\n');
+  });
+  it('awaits clipboard completion and propagates denied writes', async () => {
+    let complete!: () => void;
+    const writeText = vi.fn(() => new Promise<void>((resolve) => { complete = resolve; }));
+    const original = Object.getOwnPropertyDescriptor(navigator, 'clipboard');
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
+    try {
+      const ref = createRef<TextEditorHandle>();
+      render(<TextEditorSurface ref={ref} session={makeSession()} onDocumentChange={vi.fn()} onLanguageChange={vi.fn()} />);
+      await waitFor(() => expect(screen.getByRole('textbox', { name: 'editor.ts text editor' }).closest('.text-editor')).toHaveAttribute('data-performance-ready', 'true'));
+      const pending = ref.current!.invoke('copy');
+      expect(pending).toBeInstanceOf(Promise);
+      expect(writeText).toHaveBeenCalledWith('const value = 1;\n');
+      complete();
+      await expect(pending).resolves.toBe(true);
+      writeText.mockImplementationOnce(() => Promise.reject(new Error('clipboard denied')));
+      await expect(ref.current!.invoke('copy')).rejects.toThrow('clipboard denied');
+      expect(ref.current!.invoke('undo')).toBe(false);
+      expect(ref.current!.invoke('redo')).toBe(false);
+    } finally {
+      if (original) Object.defineProperty(navigator, 'clipboard', original);
+      else Reflect.deleteProperty(navigator, 'clipboard');
+    }
+  });
+
+  it('reports unavailable copy without a clipboard implementation', async () => {
+    const original = Object.getOwnPropertyDescriptor(navigator, 'clipboard');
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: undefined });
+    try {
+      const ref = createRef<TextEditorHandle>();
+      render(<TextEditorSurface ref={ref} session={makeSession()} onDocumentChange={vi.fn()} onLanguageChange={vi.fn()} />);
+      await waitFor(() => expect(screen.getByRole('textbox', { name: 'editor.ts text editor' }).closest('.text-editor')).toHaveAttribute('data-performance-ready', 'true'));
+      expect(ref.current!.invoke('copy')).toBe(false);
+    } finally {
+      if (original) Object.defineProperty(navigator, 'clipboard', original);
+      else Reflect.deleteProperty(navigator, 'clipboard');
+    }
   });
 });

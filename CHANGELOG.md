@@ -8,11 +8,15 @@ All notable changes to Glitchpad are documented in this file. The format follows
 
 ### Fixed
 
+- S046 restores Android standalone New/Open/edit/save/copy/recovery flows, verified diagnostic Save/Share, visible Markdown/root recovery and actual command outcomes; qualification remains bound to the tested candidate artifact.
+
 - Production deployment verification follows the approved homepage release destination and requires its redirect to the exact published tag, while retaining source, version, documentation and brand checks.
 
 ### Decisions
 
 - 2026-11-03 (S045): Reconcile the production verifier with the approved releases/latest homepage destination by requiring its redirect to the exact published tag. Preserve the deployed f6a1515 site, immutable product bytes and all version/source/content checks; retain the automatic Pages rejection and stale-verifier failure with their recovery evidence.
+
+- 2026-11-04 (S046): Reuse guarded source-independent native destination writes and existing bounded recovery; retain exact installed/tested APK and runtime identity, every failed attempt and the owner-controlled final merge/release boundary. Keep unavailable original incident inputs explicit.
 
 ## [0.2.0] - 2026-11-03
 

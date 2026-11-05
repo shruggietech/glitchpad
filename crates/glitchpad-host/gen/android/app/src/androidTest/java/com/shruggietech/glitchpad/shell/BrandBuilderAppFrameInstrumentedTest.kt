@@ -4,6 +4,7 @@ import android.app.ActivityManager
 import android.content.pm.ActivityInfo
 import android.content.Context
 import android.content.res.Configuration
+import android.graphics.Rect
 import android.os.Build
 import android.os.Bundle
 import android.os.ParcelFileDescriptor
@@ -16,6 +17,7 @@ import android.view.WindowInsets
 import android.view.WindowManager
 import android.view.inputmethod.InputMethodManager
 import android.webkit.WebView
+import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -25,13 +27,37 @@ import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
+import org.junit.After
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import kotlin.math.abs
+import kotlin.math.max
 
 @RunWith(AndroidJUnit4::class)
 class BrandBuilderAppFrameInstrumentedTest {
+    private var ownedScenario: ActivityScenario<MainActivity>? = null
+
+    @Before
+    fun requireRunnerOwnedCompletion() {
+        assertEquals(
+            "Dedicated Tauri UI instrumentation must own terminal completion",
+            "false",
+            InstrumentationRegistry.getArguments().getString("waitForActivitiesToComplete"),
+        )
+    }
+
+    @After
+    fun stopOwnedActivityBeforeRunnerCompletion() {
+        val scenario = ownedScenario ?: return
+        // Stop through AndroidX so onPause/onStop run before framework-owned process completion.
+        scenario.moveToState(Lifecycle.State.CREATED)
+        assertEquals("Tauri activity must be stopped before instrumentation completes", Lifecycle.State.CREATED, scenario.state)
+        ownedScenario = null
+    }
+
     private fun findWebView(view: View): WebView? {
         if (view is WebView) return view
         if (view !is ViewGroup) return null
@@ -185,6 +211,9 @@ class BrandBuilderAppFrameInstrumentedTest {
                 shellInsideMain: Boolean(main && shell && main.contains(shell)),
                 rootOverflow: getComputedStyle(document.documentElement).overflow,
                 bodyOverflow: getComputedStyle(document.body).overflow,
+                layoutViewportHeight: window.innerHeight,
+                measuredVisualViewportHeight: viewport.height,
+                measuredVisualViewportOffset: viewport.offsetTop,
                 visualViewportHeight: Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--bb-visual-viewport-height')),
                 visualViewportOffset: Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--bb-visual-viewport-offset-block-start')),
                 imeBlockEnd: Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--bb-ime-block-end')),
@@ -200,7 +229,60 @@ class BrandBuilderAppFrameInstrumentedTest {
             })()
             """.trimIndent(),
         )
-        return JSONObject(decodedJavascriptString(result))
+        val observed = JSONObject(decodedJavascriptString(result))
+        scenario.onActivity { activity ->
+            val webView = findWebView(activity.window.decorView)!!
+            val visibleFrame = Rect()
+            webView.getWindowVisibleDisplayFrame(visibleFrame)
+            val native = JSONObject()
+                .put("webViewHeightPx", webView.height)
+                .put("visibleDisplayHeightPx", visibleFrame.height())
+            if (Build.VERSION.SDK_INT >= 30) {
+                val insets = webView.rootWindowInsets
+                native.put("imeVisible", insets?.isVisible(WindowInsets.Type.ime()) ?: false)
+                native.put("imeBottomPx", insets?.getInsets(WindowInsets.Type.ime())?.bottom ?: 0)
+            }
+            observed.put("native", native)
+        }
+        return observed
+    }
+
+    private fun visualImeObstruction(observed: JSONObject): Double = max(
+        0.0,
+        observed.getDouble("layoutViewportHeight") - observed.getDouble("measuredVisualViewportHeight") -
+            observed.getDouble("measuredVisualViewportOffset"),
+    )
+
+    private fun nativeLayoutReduced(before: JSONObject, observed: JSONObject): Boolean =
+        observed.getJSONObject("native").getInt("webViewHeightPx") < before.getJSONObject("native").getInt("webViewHeightPx") &&
+            observed.getDouble("layoutViewportHeight") < before.getDouble("layoutViewportHeight")
+
+    private fun nativeImeShown(before: JSONObject, observed: JSONObject): Boolean {
+        val native = observed.getJSONObject("native")
+        return if (Build.VERSION.SDK_INT >= 30) {
+            native.getBoolean("imeVisible") && native.getInt("imeBottomPx") > 0
+        } else {
+            native.getInt("visibleDisplayHeightPx") < before.getJSONObject("native").getInt("visibleDisplayHeightPx") &&
+                nativeLayoutReduced(before, observed)
+        }
+    }
+
+    private fun imeGeometryObserved(before: JSONObject, observed: JSONObject): Boolean =
+        nativeImeShown(before, observed) &&
+            (nativeLayoutReduced(before, observed) || visualImeObstruction(observed) > 0.0)
+
+    private fun imeGeometryRestored(before: JSONObject, observed: JSONObject): Boolean {
+        val native = observed.getJSONObject("native")
+        val priorNative = before.getJSONObject("native")
+        val nativeHidden = Build.VERSION.SDK_INT < 30 ||
+            (!native.getBoolean("imeVisible") && native.getInt("imeBottomPx") == 0)
+        return nativeHidden &&
+            native.getInt("webViewHeightPx") >= priorNative.getInt("webViewHeightPx") - 1 &&
+            native.getInt("visibleDisplayHeightPx") >= priorNative.getInt("visibleDisplayHeightPx") - 1 &&
+            observed.getDouble("layoutViewportHeight") >= before.getDouble("layoutViewportHeight") - 1.0 &&
+            observed.getDouble("measuredVisualViewportHeight") >= before.getDouble("measuredVisualViewportHeight") - 1.0 &&
+            abs(observed.getDouble("measuredVisualViewportOffset") - before.getDouble("measuredVisualViewportOffset")) <= 1.0 &&
+            abs(observed.getDouble("imeBlockEnd")) <= 1.0
     }
 
     private fun assertAppFrame(snapshot: JSONObject) {
@@ -295,6 +377,17 @@ class BrandBuilderAppFrameInstrumentedTest {
             assertTrue("WebView window must have focus before the IME probe touch ($viewState; $windowDump)", false)
         }
 
+        val beforeIme = snapshot(scenario)
+        assertAppFrame(beforeIme)
+        assertTrue(
+            "IME baseline must have positive native and layout bounds: $beforeIme",
+            beforeIme.getJSONObject("native").getInt("webViewHeightPx") > 0 && beforeIme.getDouble("layoutViewportHeight") > 0.0,
+        )
+        assertTrue("IME baseline must be unobstructed before the native probe: $beforeIme", abs(beforeIme.getDouble("imeBlockEnd")) <= 1.0)
+        if (Build.VERSION.SDK_INT >= 30) {
+            assertTrue("Native IME must be hidden before the probe: $beforeIme", !beforeIme.getJSONObject("native").getBoolean("imeVisible"))
+        }
+
         val probe = JSONObject(
             decodedJavascriptString(
                 evaluate(
@@ -377,7 +470,7 @@ class BrandBuilderAppFrameInstrumentedTest {
         SystemClock.sleep(250L)
         val imeDeadline = SystemClock.elapsedRealtime() + 15_000L
         var imeSnapshot = snapshot(scenario)
-        while (imeSnapshot.getDouble("imeBlockEnd") <= 0.0 && SystemClock.elapsedRealtime() < imeDeadline) {
+        while (!imeGeometryObserved(beforeIme, imeSnapshot) && SystemClock.elapsedRealtime() < imeDeadline) {
             if (Build.VERSION.SDK_INT >= 30) requestIme()
             SystemClock.sleep(250L)
             imeSnapshot = snapshot(scenario)
@@ -387,26 +480,21 @@ class BrandBuilderAppFrameInstrumentedTest {
             "IME probe must retain DOM focus ($imeRequestPath accepted: $imeShowRequested after $imeRequestAttempts attempts): $imeSnapshot",
             imeSnapshot.getBoolean("imeProbeFocused"),
         )
-        var nativeImeState = "unavailable before API 30"
-        if (Build.VERSION.SDK_INT >= 30) {
-            scenario.onActivity { activity ->
-                val webView = findWebView(activity.window.decorView)!!
-                val insets = webView.rootWindowInsets
-                nativeImeState =
-                    "windowFocus=${webView.hasWindowFocus()}, webViewFocus=${webView.hasFocus()}, " +
-                        "imeVisible=${insets?.isVisible(WindowInsets.Type.ime())}, " +
-                        "imeBottom=${insets?.getInsets(WindowInsets.Type.ime())?.bottom}, " +
-                        "webViewHeight=${webView.height}"
-            }
-        }
         assertTrue(
-            "IME must publish a positive AppFrame block-end inset ($imeRequestPath accepted: $imeShowRequested after $imeRequestAttempts attempts; $nativeImeState): $imeSnapshot",
-            imeSnapshot.getDouble("imeBlockEnd") > 0.0,
+            "A real native IME must contract WebView/layout bounds or obstruct the visual viewport ($imeRequestPath accepted: $imeShowRequested after $imeRequestAttempts attempts; before=$beforeIme): $imeSnapshot",
+            imeGeometryObserved(beforeIme, imeSnapshot),
+        )
+        val remainingObstruction = visualImeObstruction(imeSnapshot)
+        assertEquals(
+            "AppFrame must reserve only remaining visual obstruction after native resize: $imeSnapshot",
+            remainingObstruction,
+            imeSnapshot.getDouble("imeBlockEnd"),
+            1.0,
         )
 
         evaluate(
             scenario,
-            "document.querySelector('#brandbuilder-ime-probe')?.blur(); document.querySelector('#brandbuilder-ime-probe')?.remove(); true",
+            "var probe = document.querySelector('#brandbuilder-ime-probe'); if (probe) { probe.blur(); probe.remove(); } true",
         )
         scenario.onActivity { activity ->
             val webView = findWebView(activity.window.decorView)!!
@@ -419,19 +507,24 @@ class BrandBuilderAppFrameInstrumentedTest {
         }
         val hiddenDeadline = SystemClock.elapsedRealtime() + 15_000L
         var hiddenSnapshot = snapshot(scenario)
-        while (hiddenSnapshot.getDouble("imeBlockEnd") > 0.0 && SystemClock.elapsedRealtime() < hiddenDeadline) {
+        while (!imeGeometryRestored(beforeIme, hiddenSnapshot) && SystemClock.elapsedRealtime() < hiddenDeadline) {
             SystemClock.sleep(100L)
             hiddenSnapshot = snapshot(scenario)
         }
-        assertTrue("IME inset must clear before orientation evidence: $hiddenSnapshot", hiddenSnapshot.getDouble("imeBlockEnd") <= 0.0)
+        assertTrue("Native/layout/visual IME bounds must restore before orientation evidence (before=$beforeIme): $hiddenSnapshot", imeGeometryRestored(beforeIme, hiddenSnapshot))
+        assertAppFrame(hiddenSnapshot)
         return imeSnapshot
+            .put("beforeIme", beforeIme)
+            .put("afterIme", hiddenSnapshot)
+            .put("nativeLayoutReduced", nativeLayoutReduced(beforeIme, imeSnapshot))
+            .put("remainingVisualObstruction", remainingObstruction)
     }
 
     @Test
     fun appFrameOwnsActualAndroidWebViewGeometry() {
         assertCallbackDiagnosticsContainOnlyBoundedNativeState()
         assertTrue("reference API must be governed", Build.VERSION.SDK_INT == 24 || Build.VERSION.SDK_INT == 36)
-        val scenario = ActivityScenario.launch(MainActivity::class.java)
+        val scenario = ActivityScenario.launch(MainActivity::class.java).also { ownedScenario = it }
         scenario.onActivity { activity ->
             assertEquals(
                 "Android host must resize the WebView for IME geometry",

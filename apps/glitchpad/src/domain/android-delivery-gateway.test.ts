@@ -1,4 +1,8 @@
-import type { PluginListener } from '@tauri-apps/api/core';
+import { addPluginListener, type PluginListener } from '@tauri-apps/api/core';
+vi.mock('@tauri-apps/api/core', async (original) => ({
+  ...(await original<typeof import('@tauri-apps/api/core')>()),
+  addPluginListener: vi.fn(),
+}));
 
 import type { AndroidSourceSummary } from './contracts';
 import { createNativeAndroidDeliveryGateway } from './android-delivery-gateway';
@@ -59,23 +63,29 @@ const source: AndroidSourceSummary = {
 
 describe('Android delivery gateway', () => {
   it('drains, materializes, observes, and closes Android sources', async () => {
-    const nativeCall = vi.fn((command: string): Promise<unknown> => {
-      if (command === 'identify_image_source') return Promise.resolve(null);
-      if (command === 'drain_android_deliveries')
-        return Promise.resolve({ sources: [source], rejections: [] });
-      if (command === 'read_android_range')
-        return Promise.resolve({
-          source_id: source.source_id,
-          offset: 0,
-          bytes,
-          end_of_source: true,
-        });
-      if (command === 'close_android_source') return Promise.resolve();
-      throw new Error(`Unexpected command: ${command}`);
-    });
+    const nativeCall = vi.fn(
+      (command: string, args?: Record<string, unknown>): Promise<unknown> => {
+        if (command === 'identify_image_source') return Promise.resolve(null);
+        if (command === 'drain_android_deliveries')
+          return Promise.resolve({ sources: [source], rejections: [] });
+        if (command === 'read_android_range') {
+          const offset = args?.offset as number;
+          const length = args?.length as number;
+          const chunk = bytes.slice(offset, offset + length);
+          return Promise.resolve({
+            source_id: source.source_id,
+            offset,
+            bytes: chunk,
+            end_of_source: chunk.length < length,
+          });
+        }
+        if (command === 'close_android_source') return Promise.resolve();
+        throw new Error(`Unexpected command: ${command}`);
+      },
+    );
     const unregister = vi.fn().mockResolvedValue(undefined);
     const listener: PluginListener = {
-      plugin: 'android-source',
+      plugin: 'glitchpad-android-source',
       event: 'deliveriesReady',
       channelId: 1,
       unregister,
@@ -97,6 +107,8 @@ describe('Android delivery gateway', () => {
       content: '# Opened',
       source_id: 'android-source',
       renderer: { id: 'markdown' },
+      text_document: { mode: 'editable', source_bytes: bytes.length },
+      markdown_document: { mode: 'rendered', eligibility: 'full' },
     });
     expect(subscribe).toHaveBeenCalledOnce();
     expect(unregister).toHaveBeenCalledOnce();
@@ -104,4 +116,33 @@ describe('Android delivery gateway', () => {
       sourceId: 'android-source',
     });
   });
+});
+
+it('registers delivery and committed Back listeners in the generated plugin permission scope', async () => {
+  const unregister = vi.fn().mockResolvedValue(undefined);
+  const register = vi.mocked(addPluginListener);
+  register.mockReset();
+  register.mockResolvedValue({
+    plugin: 'glitchpad-android-source',
+    event: 'deliveriesReady',
+    channelId: 1,
+    unregister,
+  });
+  const gateway = createNativeAndroidDeliveryGateway();
+  const delivered = vi.fn();
+  const back = vi.fn();
+  const disposeDelivery = await gateway.subscribe(delivered);
+  const disposeBack = await gateway.subscribeBack!(back);
+  expect(register.mock.calls[0]).toEqual([
+    'glitchpad-android-source',
+    'deliveriesReady',
+    delivered,
+  ]);
+  expect(register.mock.calls[1][0]).toBe('glitchpad-android-source');
+  expect(register.mock.calls[1][1]).toBe('androidBackRequested');
+  register.mock.calls[1][2]({ requestId: 'committed-back' });
+  expect(back).toHaveBeenCalledExactlyOnceWith('committed-back');
+  disposeDelivery();
+  disposeBack();
+  expect(unregister).toHaveBeenCalledTimes(2);
 });

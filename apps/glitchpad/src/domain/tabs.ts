@@ -1,3 +1,5 @@
+import { integrityOf } from './recovery';
+import { externalRevisionMatches } from './contracts';
 import type {
   DestructiveTransition,
   DestructiveTransitionKind,
@@ -30,7 +32,24 @@ export interface TabState {
 }
 
 export type TabAction =
-  | { type: 'update_image'; id: string; expectedRevision: number; image: import('./image-contract').ImageDocumentState }
+  | {
+      type: 'destination_save_started';
+      id: string;
+      revision: number;
+      operationId?: string;
+    }
+  | { type: 'destination_save_finished'; id: string }
+  | {
+      type: 'destination_saved';
+      id: string;
+      receipt: import('./contracts').AndroidDestinationReceipt;
+    }
+  | {
+      type: 'update_image';
+      id: string;
+      expectedRevision: number;
+      image: import('./image-contract').ImageDocumentState;
+    }
   | { type: 'open'; session: ShellSession }
   | { type: 'activate'; id: string }
   | { type: 'close'; id: string }
@@ -153,6 +172,73 @@ export const projectTabs = (
 
 export const tabReducer = (state: TabState, action: TabAction): TabState => {
   switch (action.type) {
+    case 'destination_save_started':
+      return {
+        ...state,
+        sessions: state.sessions.map((s) =>
+          s.id === action.id && s.revision === action.revision
+            ? {
+                ...s,
+                destination_save_revision: action.revision,
+                destination_save_operation_id: action.operationId ?? null,
+              }
+            : s,
+        ),
+      };
+    case 'destination_save_finished':
+      return {
+        ...state,
+        sessions: state.sessions.map((s) =>
+          s.id === action.id
+            ? {
+                ...s,
+                destination_save_revision: null,
+                destination_save_operation_id: null,
+              }
+            : s,
+        ),
+      };
+    case 'destination_saved': {
+      const target = state.sessions.find((s) => s.id === action.id);
+      if (
+        !target ||
+        target.destination_save_revision !== action.receipt.saved_revision
+      )
+        return state;
+      const exact = target.revision === action.receipt.saved_revision;
+      const saved = {
+        ...state,
+        sessions: state.sessions.map((s) =>
+          s.id === target.id
+            ? {
+                ...s,
+                source: action.receipt.source.descriptor,
+                source_id: action.receipt.source.source_id,
+                external_revision: action.receipt.source.external_revision,
+                source_state: 'available' as const,
+                saved_revision: action.receipt.saved_revision,
+                destination_save_revision: null,
+                dirty: !exact,
+                integrity: exact ? ('clean' as const) : ('dirty' as const),
+                edit_origin: s.edit_origin ?? ('copy' as const),
+                copy_source: undefined,
+                metadata: undefined,
+              }
+            : s,
+        ),
+      };
+      return exact &&
+        saved.pendingTransition?.target_session_id === target.id &&
+        saved.pendingTransition.status === 'saving'
+        ? completeTransition(saved, target.id, saved.pendingTransition.kind)
+        : {
+            ...saved,
+            pendingTransition:
+              saved.pendingTransition?.target_session_id === target.id
+                ? null
+                : saved.pendingTransition,
+          };
+    }
     case 'open': {
       const existing = state.sessions.find(
         ({ id }) => id === action.session.id,
@@ -191,7 +277,8 @@ export const tabReducer = (state: TabState, action: TabAction): TabState => {
       return {
         ...state,
         sessions: state.sessions.map((session) =>
-          session.id === action.id && session.revision === action.expectedRevision
+          session.id === action.id &&
+          session.revision === action.expectedRevision
             ? { ...session, markdown_document: action.markdown }
             : session,
         ),
@@ -200,7 +287,8 @@ export const tabReducer = (state: TabState, action: TabAction): TabState => {
       return {
         ...state,
         sessions: state.sessions.map((session) =>
-          session.id === action.id && session.revision === action.expectedRevision
+          session.id === action.id &&
+          session.revision === action.expectedRevision
             ? { ...session, mermaid_document: action.mermaid }
             : session,
         ),
@@ -209,13 +297,23 @@ export const tabReducer = (state: TabState, action: TabAction): TabState => {
       return {
         ...state,
         sessions: state.sessions.map((session) =>
-          session.id === action.id && session.revision === action.expectedRevision && session.text_document
-            ? { ...session, text_document: { ...session.text_document, language: action.language } }
+          session.id === action.id &&
+          session.revision === action.expectedRevision &&
+          session.text_document
+            ? {
+                ...session,
+                text_document: {
+                  ...session.text_document,
+                  language: action.language,
+                },
+              }
             : session,
         ),
       };
     case 'update_metadata': {
-      const target = state.sessions.find(({ id }) => id === action.contribution.session_id);
+      const target = state.sessions.find(
+        ({ id }) => id === action.contribution.session_id,
+      );
       if (!target) return state;
       const metadata = mergeMetadataContribution(
         target,
@@ -231,34 +329,81 @@ export const tabReducer = (state: TabState, action: TabAction): TabState => {
       };
     }
     case 'update_image': {
-      const target = state.sessions.find(s => s.id === action.id && s.revision === action.expectedRevision && s.image_document);
+      const target = state.sessions.find(
+        (s) =>
+          s.id === action.id &&
+          s.revision === action.expectedRevision &&
+          s.image_document,
+      );
       if (!target) return state;
-      const metadata = target.metadata ? { ...target.metadata, facts: target.metadata.facts.filter(f => !f.key.startsWith('image.')) } : undefined;
-      return { ...state, sessions: state.sessions.map(s => s.id === target.id ? { ...target, image_document: action.image, metadata } : s) };
+      const metadata = target.metadata
+        ? {
+            ...target.metadata,
+            facts: target.metadata.facts.filter(
+              (f) => !f.key.startsWith('image.'),
+            ),
+          }
+        : undefined;
+      return {
+        ...state,
+        sessions: state.sessions.map((s) =>
+          s.id === target.id
+            ? { ...target, image_document: action.image, metadata }
+            : s,
+        ),
+      };
     }
     case 'refresh_metadata': {
       const target = state.sessions.find(
-        (session) => session.id === action.id && session.revision === action.expectedRevision,
+        (session) =>
+          session.id === action.id &&
+          session.revision === action.expectedRevision,
       );
       if (
         !target ||
         target.source_id !== action.source.source_id ||
-        JSON.stringify(target.external_revision ?? null) !== JSON.stringify(action.expectedExternalRevision)
-      ) return state;
-      if (target.image_document && (target.source_state === 'unavailable' || JSON.stringify(target.external_revision) !== JSON.stringify(action.source.external_revision))) {
+        JSON.stringify(target.external_revision ?? null) !==
+          JSON.stringify(action.expectedExternalRevision)
+      )
+        return state;
+      if (
+        target.image_document &&
+        (target.source_state === 'unavailable' ||
+          JSON.stringify(target.external_revision) !==
+            JSON.stringify(action.source.external_revision))
+      ) {
         const refreshed = {
           ...target,
           revision: target.revision + 1,
           saved_revision: target.revision + 1,
-          source: { ...target.source, byte_length: action.source.external_revision.byte_length },
+          source: {
+            ...target.source,
+            byte_length: action.source.external_revision.byte_length,
+          },
           external_revision: action.source.external_revision,
           source_state: 'available' as const,
-          image_document: { ...target.image_document, descriptor: null, metadata: null, family_state: null, selection: null, status: 'idle' as const },
+          image_document: {
+            ...target.image_document,
+            descriptor: null,
+            metadata: null,
+            family_state: null,
+            selection: null,
+            status: 'idle' as const,
+          },
           metadata: undefined,
         };
-        const metadata = mergeSourceMetadataSnapshot(refreshed, projectSessionMetadata(refreshed), action.source);
+        const metadata = mergeSourceMetadataSnapshot(
+          refreshed,
+          projectSessionMetadata(refreshed),
+          action.source,
+        );
         if (!metadata) return state;
-        return { ...state, sessions: state.sessions.map(s => s.id === target.id ? { ...refreshed, metadata } : s) };
+        return {
+          ...state,
+          sessions: state.sessions.map((s) =>
+            s.id === target.id ? { ...refreshed, metadata } : s,
+          ),
+        };
       }
       const metadata = mergeSourceMetadataSnapshot(
         target,
@@ -275,57 +420,107 @@ export const tabReducer = (state: TabState, action: TabAction): TabState => {
     }
     case 'metadata_unavailable': {
       const target = state.sessions.find(
-        (session) => session.id === action.id && session.revision === action.expectedRevision,
+        (session) =>
+          session.id === action.id &&
+          session.revision === action.expectedRevision,
       );
       if (!target || target.source_id !== action.sourceId) return state;
       if (target.image_document) {
         if (target.source_state === 'unavailable') return state;
-        const unavailable = { ...target, revision: target.revision + 1, source_state: 'unavailable' as const,
-          image_document: { ...target.image_document, descriptor: null, metadata: null, family_state: null, selection: null, status: 'failed' as const }, metadata: undefined };
-        return { ...state, sessions: state.sessions.map(s => s.id === target.id ? { ...unavailable, metadata: markSourceMetadataUnavailable(unavailable, projectSessionMetadata(unavailable)) } : s) };
+        const unavailable = {
+          ...target,
+          revision: target.revision + 1,
+          source_state: 'unavailable' as const,
+          image_document: {
+            ...target.image_document,
+            descriptor: null,
+            metadata: null,
+            family_state: null,
+            selection: null,
+            status: 'failed' as const,
+          },
+          metadata: undefined,
+        };
+        return {
+          ...state,
+          sessions: state.sessions.map((s) =>
+            s.id === target.id
+              ? {
+                  ...unavailable,
+                  metadata: markSourceMetadataUnavailable(
+                    unavailable,
+                    projectSessionMetadata(unavailable),
+                  ),
+                }
+              : s,
+          ),
+        };
       }
       const snapshot = target.metadata ?? projectSessionMetadata(target);
       return {
         ...state,
         sessions: state.sessions.map((session) =>
           session.id === target.id
-            ? { ...target, metadata: markSourceMetadataUnavailable(target, snapshot) }
+            ? {
+                ...target,
+                metadata: markSourceMetadataUnavailable(target, snapshot),
+              }
             : session,
         ),
       };
     }
     case 'save_completed': {
-      const target = state.sessions.find(({ id }) => id === action.id);
+      const target = state.sessions.find((session) => session.id === action.id);
+      const receipt = action.receipt;
       if (
-        !target
-        || target.source_id !== action.receipt.source_id
-        || target.revision !== action.receipt.accepted_session_revision
-      ) return state;
+        !target ||
+        target.source_id !== receipt.source_id ||
+        target.destination_save_revision !==
+          receipt.accepted_session_revision ||
+        target.destination_save_operation_id !== receipt.operation_id ||
+        receipt.accepted_session_revision > target.revision ||
+        !externalRevisionMatches(
+          target.external_revision,
+          receipt.previous_external_revision,
+        ) ||
+        (target.source_state ?? 'available') !== 'available' ||
+        integrityOf(target) === 'conflicted'
+      )
+        return state;
+      const exact = target.revision === receipt.accepted_session_revision;
       const saved: TabState = {
         ...state,
-        sessions: state.sessions.map((session) => session.id === target.id
-          ? {
-              ...session,
-              dirty: false,
-              integrity: 'clean',
-              saved_revision: session.revision,
-              pending_save: null,
-              recovery_coverage: 'none',
-              external_revision: action.receipt.new_external_revision,
-              source: {
-                ...session.source,
-                byte_length: action.receipt.new_external_revision.byte_length,
-              },
-            }
-          : session),
-        announcement: `${target.source.display_name} saved durably`,
+        sessions: state.sessions.map((session) =>
+          session.id === target.id
+            ? {
+                ...session,
+                dirty: !exact,
+                integrity: exact ? 'clean' : 'dirty',
+                saved_revision: receipt.accepted_session_revision,
+                pending_save: null,
+                recovery_coverage: exact ? 'none' : session.recovery_coverage,
+                external_revision: receipt.new_external_revision,
+                source: {
+                  ...session.source,
+                  byte_length: receipt.new_external_revision.byte_length,
+                },
+              }
+            : session,
+        ),
+        announcement: exact
+          ? target.source.display_name + ' saved durably'
+          : 'Earlier revision saved. Newer edits remain unsaved.',
       };
       const transition = saved.pendingTransition;
-      return transition?.target_session_id === target.id
-        && transition.status === 'saving'
-        && transition.save_intent === 'save'
+      if (
+        transition?.target_session_id !== target.id ||
+        transition.status !== 'saving' ||
+        transition.save_intent !== 'save'
+      )
+        return saved;
+      return exact
         ? completeTransition(saved, target.id, transition.kind)
-        : saved;
+        : { ...saved, pendingTransition: null };
     }
   }
 };
@@ -375,6 +570,11 @@ const requestDestructiveTransition = (
   if (state.pendingTransition) return state;
   const target = state.sessions.find((session) => session.id === id);
   if (!target) return state;
+  if (target.destination_save_revision != null)
+    return {
+      ...state,
+      announcement: 'A save is pending. Wait for its result before closing.',
+    };
   if (!hasUnresolvedEdits(target)) return completeTransition(state, id, kind);
   return {
     ...state,
@@ -393,6 +593,7 @@ const resolveTransition = (
     ({ id }) => id === transition.target_session_id,
   );
   if (!target) return { ...state, pendingTransition: null };
+  if (target.destination_save_revision != null) return state;
   if (target.revision !== transition.requested_session_revision) {
     return {
       ...state,

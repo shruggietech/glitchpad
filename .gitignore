@@ -54,3 +54,6 @@ Thumbs.db
 /fuzz/target/
 /fuzz/artifacts/
 /fuzz/corpus/
+
+# Android source-plugin build output
+crates/glitchpad-android-source/android/build/

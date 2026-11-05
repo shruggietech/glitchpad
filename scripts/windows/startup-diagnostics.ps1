@@ -6,9 +6,11 @@ function New-PortableStartupDiagnostic {
         [Parameter(Mandatory)][ValidatePattern('^[a-f0-9]{40}$')][string] $SourceCommit,
         [Parameter(Mandatory)][ValidatePattern('^[a-f0-9]{64}$')][string] $ManifestDigest,
         [Parameter(Mandatory)][bool] $Succeeded,
-        [Parameter(Mandatory)][long] $ElapsedMilliseconds
+        [Parameter(Mandatory)][long] $ElapsedMilliseconds,
+        [ValidateSet('none', 'named_element')][string] $WaitKind = 'none',
+        [ValidateRange(0, 100000)][int] $WaitCallerLine = 0
     )
-    [ordered]@{
+    $record = [ordered]@{
         schema_version = 1
         scenario = $Scenario
         stage = $Stage
@@ -24,4 +26,11 @@ function New-PortableStartupDiagnostic {
         process_state_available = [bool]$Observation['process_state_available']
         content_free = $true
     }
+    if (-not $Succeeded -and $WaitKind -eq 'named_element' -and $WaitCallerLine -gt 0) {
+        $record['readiness_wait'] = [ordered]@{
+            function = 'Wait-NamedElement'
+            caller_line = $WaitCallerLine
+        }
+    }
+    return $record
 }

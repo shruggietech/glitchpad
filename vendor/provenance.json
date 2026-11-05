@@ -22,6 +22,14 @@
         {
           "path": "src/reveal_item_in_dir.rs",
           "sha256": "de6b382594b07975634b5cb3fac079420749eb4f7bda922c2ed2995cade13a7f"
+        },
+        {
+          "path": "permissions/default.toml",
+          "sha256": "be51e660b67485882ccc78126de75c5b86e140bcb41994edf52db4811ae2d446"
+        },
+        {
+          "path": "permissions/allow-default-urls.toml",
+          "sha256": "fe7807563ebb5feb81663a3c540ed027b30dd271bb4d335894f2928342beb49b"
         }
       ]
     },
@@ -46,12 +54,96 @@
           "sha256": "ee166e8defc9fedf5b1d6c7852129f4d472e9dab01a452da4d9d7c40df834e28"
         }
       ]
+    },
+    {
+      "name": "tao",
+      "registry_version": "0.35.3",
+      "crate_sha256": "d1c93047acf68669466a34690ac58cca7010bd1b201e1ec86f1fd0a75d3dd4a9",
+      "source": {
+        "git": {
+          "sha1": "5a14e624c81b7a799728129417e9218be25f17d9",
+          "dirty": true
+        },
+        "path_in_vcs": ""
+      },
+      "license": "Apache-2.0",
+      "upstream_archive_files": 119,
+      "upstream_archive_bytes": 308672,
+      "upstream_uncompressed_bytes": 1302732,
+      "modified_files": [
+        {
+          "path": "src/platform_impl/android/mod.rs",
+          "sha256": "fb6bc93e35bae2597cfbbf0385727653cddf48def11921f8d40cdf1813730298"
+        }
+      ],
+      "added_files": [
+        {
+          "path": "src/platform_impl/android/user_event_queue.rs",
+          "sha256": "c5183ae0b9c8fdaf1615ae595d2100a558e4262dd67f21349276140a0873893c"
+        },
+        {
+          "path": "tests/android_user_event_queue.rs",
+          "sha256": "792b7680659101ea642d8e43aa474e6dc0799387c88f168bc77c905a75bbe21c"
+        }
+      ],
+      "purpose": "S046 T056 Android poll/wake contract repair: poll_once, common user-event drain and truthful nonblocking queue admission; existing non-Android source and manifest bytes remain exact.",
+      "retirement": "Remove when an upstream replacement preserves the same dispatch/queue contracts and passes the existing strict Android cancellation qualification."
     }
   ],
   "modified_files": [
     "Cargo.toml (Linux zbus dependency only)",
     "tauri-plugin-opener/src/reveal_item_in_dir.rs (Linux implementation and persistent-runtime regression)",
-    "tauri-plugin-single-instance/src/platform_impl/linux.rs"
+    "tauri-plugin-single-instance/src/platform_impl/linux.rs",
+    "tauri-plugin-opener/permissions/{default,allow-default-urls}.toml (explicit relative schema targets; permission bodies unchanged)",
+    "tao/src/platform_impl/android/mod.rs (Android poll/wake and queue admission only)",
+    "tao/src/platform_impl/android/user_event_queue.rs and tests/android_user_event_queue.rs (production channel helpers and workspace-integrated regressions)"
   ],
-  "retirement": "Remove patches after maintained upstream releases provide compatible zbus 6 integration and full Linux lifecycle qualification passes"
+  "retirement": "Remove patches after maintained upstream releases provide compatible zbus 6 integration and full Linux lifecycle qualification passes",
+  "follow_up_decisions": [
+    {
+      "date": "2026-11-04",
+      "slice": "S046",
+      "reason": "Use explicit ./ relative schema paths for the pinned TOML validator without disabling source schema validation or changing permission definitions",
+      "files": [
+        "permissions/default.toml",
+        "permissions/allow-default-urls.toml"
+      ]
+    },
+    {
+      "date": "2026-11-04",
+      "slice": "S046",
+      "reason": "Observe actual default create_android_document error reply formatting, enqueue and WebView acknowledgement only under Android debug compilation; retain identical script and unchanged release/other-command paths",
+      "files": ["tauri-2.11.6/src/ipc/protocol.rs"]
+    },
+    {
+      "date": "2026-11-04",
+      "slice": "S046",
+      "task": "T056",
+      "reason": "Repair exact locked Android poll/wake contract without timers, retries, dependency version changes or non-Android source edits; replace the temporary observation-only Tauri patch with ordinary registry Tauri.",
+      "files": [
+        "tao-0.35.3/src/platform_impl/android/mod.rs",
+        "tao-0.35.3/src/platform_impl/android/user_event_queue.rs",
+        "tao-0.35.3/tests/android_user_event_queue.rs"
+      ],
+      "retired_observation": {
+        "source_commit": "45b379dd36be8a580bfc2e81efdf834df217aea3",
+        "archive": "artifacts/s046-t052-tauri-observation-source.tar.gz",
+        "archive_sha256": "490e8365565a5f6feea056b0b6a4db00746cd3452d4f085a32cb26c155e06305",
+        "protocol_sha256": "d903c4902fb112707abb1d8ec9d42bb5e9924b88921b4d64ae6ee48c52a55774",
+        "diff_sha256": "78ead490ae0f9650a0f2394d21ad3f1892e99bb4d4a6fe1a0e0ac785cab0056a",
+        "registry_crate_sha256": "6fa5bacdb9bbad5954af3d1bd6cf6ae9192cab1b2e270f4a07f904610b9e85f4"
+      }
+    },
+    {
+      "date": "2026-11-04",
+      "slice": "S046",
+      "task": "T059",
+      "reason": "Retain the raw Poll::Timeout distinction before projecting Android poll results, preserving WaitUntil cancellation versus deadline StartCause without changing queue, timing or exit behavior.",
+      "files": [
+        "tao-0.35.3/src/platform_impl/android/mod.rs",
+        "tao-0.35.3/tests/android_user_event_queue.rs"
+      ],
+      "verification": "Exact production poll and WaitUntil-arm fixtures fail Wake/Callback before repair and pass all4return cases afterward; existing5host queue cases pass. Public Android run_return deadline cases compile only locally; installed-APK qualification remains separate."
+    }
+  ]
 }

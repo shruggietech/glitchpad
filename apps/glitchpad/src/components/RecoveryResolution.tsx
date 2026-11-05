@@ -110,10 +110,10 @@ export function RecoveryResolution({
           >
             Save As
           </button>
-          <button type="button" onClick={() => onDecision('discard')}>
+          <button type="button" disabled={waitingForReceipt} onClick={() => onDecision('discard')}>
             Discard
           </button>
-          <button type="button" onClick={() => onDecision('cancel')}>
+          <button type="button" disabled={waitingForReceipt} onClick={() => onDecision('cancel')}>
             Cancel
           </button>
         </div>

@@ -106,9 +106,10 @@ button:focus-visible,
   max-height: 100%;
   padding: clamp(1rem, 4vw, 1.5rem);
   overflow: auto;
-  border: 1px solid #555c68;
+  border: 1px solid var(--gl-border);
   border-radius: 0.5rem;
-  background: #1b1e24;
+  background: var(--gl-panel);
+  color: var(--gl-fg);
   box-shadow: 0 1rem 3rem #000a;
 }
 
@@ -123,7 +124,7 @@ button:focus-visible,
 }
 
 .resolution-status {
-  color: #f3c97d;
+  color: var(--gl-fg-muted);
   font-size: 0.85rem;
 }
 
@@ -138,9 +139,10 @@ button:focus-visible,
 .resolution-actions button {
   min-height: 2.5rem;
   padding: 0.45rem 0.85rem;
-  border: 1px solid #555c68;
+  border: 1px solid var(--gl-border);
   border-radius: 0.3rem;
-  background: #272b33;
+  background: var(--gl-panel-raised);
+  color: var(--gl-fg);
   cursor: pointer;
 }
 
@@ -982,6 +984,37 @@ button:focus-visible,
   box-shadow: -0.75rem 0 2rem #0008;
 }
 
+/* A local sheet stays above shell and Add chrome; AppFrame retains platform inset ownership. */
+.diagnostics-sheet {
+  z-index: 9;
+  border-color: var(--gl-border);
+  background: var(--gl-panel);
+  color: var(--gl-fg);
+}
+.diagnostics-sheet button {
+  border-color: var(--gl-border);
+  background: var(--gl-panel-raised);
+  color: var(--gl-fg);
+}
+.diagnostics-sheet .application-sheet-header {
+  flex-wrap: wrap;
+}
+.diagnostics-sheet .application-sheet-header > div {
+  min-width: 0;
+  max-width: 100%;
+}
+.diagnostics-sheet .application-sheet-header > button {
+  flex: 0 0 auto;
+  max-width: 100%;
+}
+.diagnostics-sheet[data-native-viewport='true'] {
+  top: auto;
+  right: var(--gl-diagnostic-inline-end);
+  bottom: var(--gl-diagnostic-block-end);
+  height: var(--gl-diagnostic-block-size);
+  max-width: var(--gl-diagnostic-inline-size);
+}
+
 .application-sheet-header {
   display: flex;
   align-items: flex-start;
@@ -1026,8 +1059,9 @@ button:focus-visible,
   max-height: 60vh;
   padding: 0.75rem;
   overflow: auto;
-  border: 1px solid #343842;
-  background: #101114;
+  border: 1px solid var(--gl-border);
+  background: var(--gl-bg);
+  color: var(--gl-fg);
   font-size: 0.7rem;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -1276,17 +1310,6 @@ button:focus-visible,
     color: #5d3b07;
   }
 
-  .resolution-dialog {
-    border-color: #b9bdc5;
-    background: var(--gl-bg);
-    box-shadow: 0 1rem 3rem #0004;
-  }
-
-  .resolution-actions button {
-    border-color: #aeb3bc;
-    background: #e5e7ea;
-  }
-
   .metadata-inspector {
     border-color: #cfd2d8;
     background: #f7f7f5;
@@ -1297,15 +1320,10 @@ button:focus-visible,
     border-color: #d9dce1;
   }
 
-  .application-sheet {
+  .application-sheet:not(.diagnostics-sheet) {
     border-color: #cfd2d8;
     background: #f7f7f5;
     box-shadow: -0.75rem 0 2rem #0003;
-  }
-
-  .diagnostic-preview {
-    border-color: #cfd2d8;
-    background: #fff;
   }
 }
 
@@ -1347,9 +1365,8 @@ button:focus-visible,
 :root[data-theme='light'] .tab-button.active,
 :root[data-theme='light'] .tab-close-slot.active,
 :root[data-theme='light'] .overflow-menu,
-:root[data-theme='light'] .resolution-dialog,
 :root[data-theme='light'] .metadata-inspector,
-:root[data-theme='light'] .application-sheet {
+:root[data-theme='light'] .application-sheet:not(.diagnostics-sheet) {
   border-color: #b9bdc5;
   background: var(--gl-bg);
   box-shadow: 0 0.75rem 2rem #0003;
@@ -1365,18 +1382,12 @@ button:focus-visible,
   color: #5d3b07;
 }
 
-:root[data-theme='light'] .resolution-actions button,
 :root[data-theme='light'] .application-actions button,
-:root[data-theme='light'] .application-sheet button,
+:root[data-theme='light'] .application-sheet:not(.diagnostics-sheet) button,
 :root[data-theme='light'] .application-sheet input,
 :root[data-theme='light'] .application-sheet select {
   border-color: #aeb3bc;
   background: #e5e7ea;
-}
-
-:root[data-theme='light'] .diagnostic-preview {
-  border-color: #cfd2d8;
-  background: #fff;
 }
 
 :root[data-theme='dark'] {
@@ -1385,8 +1396,7 @@ button:focus-visible,
 }
 
 :root[data-theme='dark'] .app-shell,
-:root[data-theme='dark'] .document-surface,
-:root[data-theme='dark'] .diagnostic-preview {
+:root[data-theme='dark'] .document-surface {
   color: var(--gl-fg);
   background: var(--gl-bg);
 }
@@ -1411,9 +1421,8 @@ button:focus-visible,
 }
 
 :root[data-theme='dark'] .overflow-menu,
-:root[data-theme='dark'] .resolution-dialog,
 :root[data-theme='dark'] .metadata-inspector,
-:root[data-theme='dark'] .application-sheet {
+:root[data-theme='dark'] .application-sheet:not(.diagnostics-sheet) {
   border-color: #4c5260;
   background: #181a20;
   box-shadow: -0.75rem 0 2rem #0008;
@@ -1491,4 +1500,16 @@ button:focus-visible,
     color: #000;
     background: #fff;
   }
+}
+
+.command-result {
+  position: absolute;
+  z-index: 9;
+  inset-block-start: var(--shell-row-height);
+  inset-inline: var(--bb-spacing-control-block);
+  padding: var(--bb-spacing-control-block);
+  border: var(--bb-border-default) solid var(--gl-border);
+  background: var(--gl-panel-raised);
+  color: var(--gl-fg);
+  overflow-wrap: anywhere;
 }

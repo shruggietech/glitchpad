@@ -85,6 +85,22 @@ test('Windows lifecycle policy rejects removal of content-first release assertio
   assert.throws(
     () =>
       validatePortableSmokeContract(
+        lifecycle.replace("markdown_governed_corpus = 'pass'", ''),
+        workflow,
+      ),
+    /portable smoke lifecycle omits/u,
+  );
+  assert.throws(
+    () =>
+      validatePortableSmokeContract(
+        lifecycle.replaceAll('S046_GOVERNED_RAW_SENTINEL', 'missing-sentinel'),
+        workflow,
+      ),
+    /portable smoke lifecycle omits/u,
+  );
+  assert.throws(
+    () =>
+      validatePortableSmokeContract(
         lifecycle.replace(
           '-PassThru -WindowStyle Normal',
           '-PassThru -WindowStyle Hidden',

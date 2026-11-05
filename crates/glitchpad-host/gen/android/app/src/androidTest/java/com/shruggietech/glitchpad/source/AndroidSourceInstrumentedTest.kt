@@ -1,6 +1,9 @@
 package com.shruggietech.glitchpad.source
 
+import android.content.ContextWrapper
 import android.content.Intent
+import android.content.pm.ProviderInfo
+import android.content.res.AssetManager
 import android.net.Uri
 import android.os.SystemClock
 import android.provider.DocumentsContract
@@ -8,8 +11,10 @@ import android.system.Os
 import android.system.OsConstants
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.util.UUID
 import org.junit.After
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
@@ -146,6 +151,82 @@ class AndroidSourceInstrumentedTest {
     revoke(source)
     grantedUris.remove(source)
     assertGrantRevoked(source)
+  }
+
+  @Test
+  fun controlledProviderRecreationKeepsCanonicalRevisionAndRefreshesChangedBytes() {
+    val isolated = File(clientContext.cacheDir, "canonical-provider-recreation-" + UUID.randomUUID())
+    assertTrue("the isolated provider fixture root must be created", isolated.mkdir())
+    val fixtureContext = object : ContextWrapper(clientContext) {
+      override fun getFilesDir(): File = isolated
+      override fun getAssets(): AssetManager = instrumentation.context.assets
+    }
+    fun recreate(): FixtureDocumentsProvider {
+      val provider = FixtureDocumentsProvider()
+      val info = ProviderInfo().apply {
+        authority = AUTHORITY
+        exported = true
+        grantUriPermissions = true
+        readPermission = "android.permission.MANAGE_DOCUMENTS"
+        writePermission = "android.permission.MANAGE_DOCUMENTS"
+      }
+      provider.attachInfo(fixtureContext, info)
+      return provider
+    }
+    fun overwrite(file: File, bytes: ByteArray) {
+      FileOutputStream(file).use { output -> output.write(bytes); output.fd.sync() }
+    }
+    fun revision(provider: FixtureDocumentsProvider, id: String): Long =
+      provider.queryDocument(id, arrayOf(DocumentsContract.Document.COLUMN_LAST_MODIFIED)).use { cursor ->
+        assertTrue("the recreated provider must expose revision evidence", cursor.moveToFirst())
+        cursor.getLong(0)
+      }
+    try {
+      val first = recreate()
+      val directory = File(isolated, "document-provider-fixtures")
+      val expected = requireNotNull(directory.listFiles()).associate { it.name to it.readBytes() }
+      assertTrue("text, binary and empty canonical fixtures must all be present", expected.containsKey("recovery-warm-corpus.md") && expected.containsKey("original.png") && expected.getValue("recovery-empty.md").isEmpty())
+      val stableTime = 1577836800000L
+      expected.keys.forEach { name -> assertTrue("a controlled canonical timestamp must be supported", File(directory, name).setLastModified(stableTime)) }
+      assertEquals(stableTime, revision(first, "resolver-warm"))
+      val second = recreate()
+      expected.forEach { (name, bytes) ->
+        val file = File(directory, name)
+        assertArrayEquals("provider recreation must retain exact canonical bytes", bytes, file.readBytes())
+        assertEquals("matching canonical bytes must retain modification time", stableTime, file.lastModified())
+      }
+      assertEquals("the public warm-source revision must remain stable", stableTime, revision(second, "resolver-warm"))
+      assertEquals("the public warm-corpus revision must remain stable", stableTime, revision(second, "recovery-warm-corpus.md"))
+
+      val changedNames = listOf("recovery-warm-corpus.md", "original.png")
+      changedNames.forEach { name ->
+        val stale = expected.getValue(name).clone()
+        stale[stale.lastIndex] = (stale.last().toInt() xor 1).toByte()
+        overwrite(File(directory, name), stale)
+        assertTrue(File(directory, name).setLastModified(stableTime + 12_000L))
+      }
+      assertTrue("a missing canonical fixture must be recreated", File(directory, "seekable.txt").delete())
+      val explicitId = second.createDocument(ROOT_ID, "text/plain", "s046-explicit-mutation.txt")
+      val explicit = File(directory, explicitId)
+      val explicitBytes = "S046_EXPLICIT_MUTATION_RETAINED\n".toByteArray(Charsets.UTF_8)
+      overwrite(explicit, explicitBytes)
+      assertTrue(explicit.setLastModified(stableTime))
+      val third = recreate()
+      expected.forEach { (name, bytes) -> assertArrayEquals("stale or missing canonical fixtures must match the current APK", bytes, File(directory, name).readBytes()) }
+      changedNames.forEach { name -> assertTrue("changed canonical bytes must be refreshed", File(directory, name).lastModified() != stableTime + 12_000L) }
+      assertArrayEquals("provider initialization must retain explicit noncanonical mutations", explicitBytes, explicit.readBytes())
+      assertEquals(stableTime, explicit.lastModified())
+      val refreshedRevision = revision(third, "recovery-warm-corpus.md")
+      val refreshedTimes = expected.keys.associateWith { File(directory, it).lastModified() }
+      val fourth = recreate()
+      expected.forEach { (name, bytes) ->
+        assertArrayEquals(bytes, File(directory, name).readBytes())
+        assertEquals("a refreshed canonical fixture must become idempotent", refreshedTimes.getValue(name), File(directory, name).lastModified())
+      }
+      assertEquals(refreshedRevision, revision(fourth, "recovery-warm-corpus.md"))
+    } finally {
+      assertTrue("the isolated provider fixture root must be removed", isolated.deleteRecursively())
+    }
   }
 
   private fun grant(uri: Uri): Uri {

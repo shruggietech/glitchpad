@@ -1,4 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+
+import type { TextEditorHandle } from './TextEditorSurface';
 
 import type { ShellSession } from '../domain/contracts';
 import {
@@ -18,7 +20,7 @@ interface SearchCursor {
   index: number;
 }
 
-export function LargeTextSurface({ session, gateway }: LargeTextSurfaceProps) {
+export const LargeTextSurface = forwardRef<TextEditorHandle, LargeTextSurfaceProps>(function LargeTextSurface({ session, gateway }, handleRef) {
   const selectedGateway = useMemo(
     () => gateway ?? createNativeLargeTextGateway(),
     [gateway],
@@ -44,16 +46,22 @@ export function LargeTextSurface({ session, gateway }: LargeTextSurfaceProps) {
   const [searchCursor, setSearchCursor] = useState<SearchCursor | null>(null);
   const [line, setLine] = useState('1');
   const previousOffsets = useRef<number[]>([]);
+  const findInput = useRef<HTMLInputElement>(null);
+  const lineInput = useRef<HTMLInputElement>(null);
+  const generation = useRef(0);
   const byteLength =
     session.source.byte_length ?? session.text_document?.source_bytes ?? 0;
 
   useEffect(() => {
+    generation.current += 1;
+    previousOffsets.current = [];
+    setWindow(null);
+    setSearchCursor(null);
     if (!reader) {
       setStatus('Large text source authority is unavailable');
       return;
     }
     let live = true;
-    previousOffsets.current = [];
     void reader
       .window(0)
       .then((value) => {
@@ -68,53 +76,137 @@ export function LargeTextSurface({ session, gateway }: LargeTextSurfaceProps) {
       });
     return () => {
       live = false;
+      generation.current += 1;
       reader.cancel();
     };
   }, [reader]);
 
-  const move = (
+  const move = async (
     offset: number,
     rememberCurrent = true,
     loadedStatus?: string,
-  ) => {
-    if (!reader) return;
-    if (rememberCurrent && window) previousOffsets.current.push(window.offset);
+  ): Promise<boolean> => {
+    if (!reader) return false;
+    const expectedGeneration = generation.current;
+    const previousOffset = window?.offset;
     setStatus('Loading bounded text window');
-    void reader
-      .window(Math.max(0, offset))
-      .then((value) => {
-        setWindow(value);
-        setStatus(
-          loadedStatus ??
-            (value.end_of_source
-              ? 'End of source'
-              : 'Read-only bounded window'),
-        );
-      })
-      .catch((error: unknown) => {
-        if (!(error instanceof DOMException && error.name === 'AbortError'))
-          setStatus('Large text window could not be decoded safely');
-      });
+    try {
+      const value = await reader.window(Math.max(0, offset));
+      if (generation.current !== expectedGeneration) return false;
+      if (rememberCurrent && previousOffset !== undefined) previousOffsets.current.push(previousOffset);
+      setWindow(value);
+      setStatus(loadedStatus ?? (value.end_of_source ? 'End of source' : 'Read-only bounded window'));
+      return true;
+    } catch (error: unknown) {
+      if (generation.current !== expectedGeneration) return false;
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        setStatus('Text operation cancelled');
+        return false;
+      }
+      setStatus('Large text window could not be decoded safely');
+      throw error;
+    }
   };
 
-  const findNextMatch = async () => {
-    if (!reader || !query) return;
-    const matches =
-      searchCursor?.query === query
+  const previousWindow = async () => {
+    if (!window || window.offset === 0) return false;
+    const moved = await move(previousOffsets.current.at(-1) ?? 0, false);
+    if (moved) previousOffsets.current.pop();
+    return moved;
+  };
+
+  const nextWindow = () => !window || window.end_of_source
+    ? false
+    : move(window.offset + window.byte_count);
+
+  const findMatch = async (direction: 1 | -1 = 1): Promise<boolean> => {
+    if (!reader || !query) return false;
+    const expectedGeneration = generation.current;
+    try {
+      const matches = searchCursor?.query === query
         ? searchCursor.matches
         : await reader.search(query, byteLength);
-    if (matches.length === 0) {
-      setSearchCursor({ query, matches, index: -1 });
-      setStatus('No match');
-      return;
+      if (generation.current !== expectedGeneration) return false;
+      if (matches.length === 0) {
+        setSearchCursor({ query, matches, index: -1 });
+        setStatus('No match');
+        return true;
+      }
+      const index = searchCursor?.query === query
+        ? (searchCursor.index + direction + matches.length) % matches.length
+        : direction === 1 ? 0 : matches.length - 1;
+      const moved = await move(matches[index], true, 'Match ' + (index + 1) + ' of ' + matches.length);
+      if (moved) setSearchCursor({ query, matches, index });
+      return moved;
+    } catch (error: unknown) {
+      if (generation.current !== expectedGeneration) return false;
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        setStatus('Text search cancelled');
+        return false;
+      }
+      setStatus('Text search could not complete');
+      throw error;
     }
-    const index =
-      searchCursor?.query === query
-        ? (searchCursor.index + 1) % matches.length
-        : 0;
-    setSearchCursor({ query, matches, index });
-    move(matches[index], true, `Match ${index + 1} of ${matches.length}`);
   };
+
+  const goToLine = async (): Promise<boolean> => {
+    if (!reader) return false;
+    const expectedGeneration = generation.current;
+    try {
+      const offset = await reader.lineOffset(Number(line), byteLength);
+      if (generation.current !== expectedGeneration) return false;
+      if (offset === null) { setStatus('Line is outside the source'); return false; }
+      return await move(offset);
+    } catch (error: unknown) {
+      if (generation.current !== expectedGeneration) return false;
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        setStatus('Line navigation cancelled');
+        return false;
+      }
+      setStatus('Line navigation could not complete');
+      throw error;
+    }
+  };
+
+  const copyWindow = () => {
+    if (!window || !navigator.clipboard?.writeText) return false;
+    const expectedGeneration = generation.current;
+    return navigator.clipboard.writeText(window.text).then(() => {
+      if (generation.current !== expectedGeneration) return false;
+      setStatus('Text window copied');
+      return true;
+    }).catch((error: unknown) => {
+      if (generation.current === expectedGeneration) setStatus('Clipboard copy could not complete');
+      throw error;
+    });
+  };
+
+  const local = (operation: () => boolean | Promise<boolean>) => {
+    void Promise.resolve().then(operation).catch(() => undefined);
+  };
+
+  useImperativeHandle(handleRef, () => ({
+    invoke(command) {
+      if (session.lifecycle !== 'active') return false;
+      if (command === 'copy') return copyWindow();
+      if (command === 'previous_page') return previousWindow();
+      if (command === 'next_page') return nextWindow();
+      if (command === 'find_next') return findMatch();
+      if (command === 'find_previous') return findMatch(-1);
+      if (command === 'search' && reader && findInput.current) {
+        findInput.current.focus();
+        findInput.current.select();
+        return true;
+      }
+      if (command === 'go_to_line' && reader && lineInput.current) {
+        lineInput.current.focus();
+        lineInput.current.select();
+        return true;
+      }
+      return false;
+    },
+    selectRange() { return false; },
+  }));
 
   return (
     <div
@@ -125,22 +217,21 @@ export function LargeTextSurface({ session, gateway }: LargeTextSurfaceProps) {
         <button
           type="button"
           disabled={!window || window.offset === 0}
-          onClick={() => move(previousOffsets.current.pop() ?? 0, false)}
+          onClick={() => local(previousWindow)}
         >
           Previous window
         </button>
         <button
           type="button"
           disabled={!window || window.end_of_source}
-          onClick={() =>
-            move((window?.offset ?? 0) + (window?.byte_count ?? 0))
-          }
+          onClick={() => local(nextWindow)}
         >
           Next window
         </button>
         <label>
           Find{' '}
           <input
+            ref={findInput}
             value={query}
             onChange={(event) => {
               setQuery(event.target.value);
@@ -151,13 +242,14 @@ export function LargeTextSurface({ session, gateway }: LargeTextSurfaceProps) {
         <button
           type="button"
           disabled={!query || !reader}
-          onClick={() => void findNextMatch()}
+          onClick={() => local(() => findMatch())}
         >
           Find next
         </button>
         <label>
           Line{' '}
           <input
+            ref={lineInput}
             inputMode="numeric"
             value={line}
             onChange={(event) => setLine(event.target.value)}
@@ -166,24 +258,14 @@ export function LargeTextSurface({ session, gateway }: LargeTextSurfaceProps) {
         <button
           type="button"
           disabled={!reader}
-          onClick={() =>
-            void reader
-              ?.lineOffset(Number(line), byteLength)
-              .then((offset) =>
-                offset === null
-                  ? setStatus('Line is outside the source')
-                  : move(offset),
-              )
-          }
+          onClick={() => local(goToLine)}
         >
           Go to line
         </button>
         <button
           type="button"
           disabled={!window}
-          onClick={() =>
-            void navigator.clipboard?.writeText(window?.text ?? '')
-          }
+          onClick={() => local(copyWindow)}
         >
           Copy window
         </button>
@@ -194,4 +276,4 @@ export function LargeTextSurface({ session, gateway }: LargeTextSurfaceProps) {
       </pre>
     </div>
   );
-}
+});

@@ -120,10 +120,13 @@ describe('useRecovery', () => {
     const { result } = renderHook(() => useRecovery([], recoveryGateway));
     await waitFor(() => expect(result.current.candidates).toEqual([entry]));
 
-    await act(async () => { await result.current.accept(entry); });
+    await act(async () => {
+      await result.current.accept(entry);
+    });
 
-    expect(result.current.recordIds.get(`recovery-${entry.record_id}`))
-      .toBe(entry.record_id);
+    expect(result.current.recordIds.get(`recovery-${entry.record_id}`)).toBe(
+      entry.record_id,
+    );
   });
 
   it('surfaces safe notices for non-available startup inventory', async () => {
@@ -193,7 +196,9 @@ describe('useRecovery', () => {
       displayName: 'draft.txt',
       encoding: 'utf16_be_bom',
     });
-    const { result } = renderHook(() => useRecovery([session], recoveryGateway));
+    const { result } = renderHook(() =>
+      useRecovery([session], recoveryGateway),
+    );
 
     await act(async () => vi.advanceTimersByTimeAsync(2_000));
 
@@ -213,4 +218,106 @@ describe('useRecovery', () => {
       /^[0-9a-f-]{36}$/u,
     );
   });
+});
+
+it('flushes a draft before restart and retains newer edits in ordered snapshots', async () => {
+  const persisted: string[] = [];
+  const g = gateway({
+    persist: vi.fn(
+      (record: import('./recovery-gateway').RecoveryRecordDraft) => {
+        persisted.push(record.content);
+        return Promise.resolve(inventoryEntry('available'));
+      },
+    ),
+  });
+  const first = dirtySession();
+  const { result, rerender } = renderHook(
+    ({ sessions }) => useRecovery(sessions, g),
+    { initialProps: { sessions: [first] } },
+  );
+  await act(async () => {
+    await result.current.flush();
+  });
+  expect(persisted).toEqual(['draft']);
+  rerender({
+    sessions: [
+      {
+        ...first,
+        revision: 2,
+        content: 'new',
+        text_document: createTextDocument({
+          rawText: 'new',
+          displayName: 'draft.txt',
+        }),
+      },
+    ],
+  });
+  const waits: Promise<unknown>[] = [];
+  act(() => {
+    window.dispatchEvent(
+      new CustomEvent('glitchpad:before-restart', {
+        detail: {
+          waitUntil: (promise: Promise<unknown>) => {
+            waits.push(promise);
+          },
+        },
+      }),
+    );
+  });
+  await act(async () => {
+    await Promise.all(waits);
+  });
+  expect(persisted).toEqual(['draft', 'new']);
+});
+
+it('retries a failed snapshot for the same unchanged revision', async () => {
+  const persist = vi
+    .fn()
+    .mockRejectedValueOnce(new Error('temporary storage failure'))
+    .mockResolvedValue(inventoryEntry('available'));
+  const recoveryGateway = gateway({ persist });
+  const { result } = renderHook(() =>
+    useRecovery([dirtySession()], recoveryGateway),
+  );
+  await act(async () => {
+    await expect(result.current.flush()).rejects.toThrow(
+      'recovery_write_failed',
+    );
+  });
+  await act(async () => {
+    await expect(result.current.flush()).resolves.toBeUndefined();
+  });
+  expect(persist).toHaveBeenCalledTimes(2);
+});
+
+it('keeps restart flush retryable after application unmount', async () => {
+  const persist = vi
+    .fn()
+    .mockRejectedValueOnce(new Error('temporary'))
+    .mockResolvedValue(inventoryEntry('available'));
+  const recoveryGateway = gateway({ persist });
+  const { unmount } = renderHook(() =>
+    useRecovery([dirtySession()], recoveryGateway),
+  );
+  unmount();
+  await act(async () => {
+    await Promise.resolve();
+  });
+  const waits: Promise<unknown>[] = [];
+  const restart = () => {
+    window.dispatchEvent(
+      new CustomEvent('glitchpad:before-restart', {
+        detail: {
+          waitUntil: (pending: Promise<unknown>) => waits.push(pending),
+        },
+      }),
+    );
+  };
+  act(restart);
+  await Promise.allSettled(waits);
+  waits.length = 0;
+  act(restart);
+  expect(waits).toHaveLength(1);
+  await expect(Promise.all(waits)).resolves.toEqual([undefined]);
+  expect(persist).toHaveBeenCalledTimes(2);
 });

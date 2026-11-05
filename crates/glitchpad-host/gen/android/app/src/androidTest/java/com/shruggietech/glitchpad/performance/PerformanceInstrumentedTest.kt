@@ -7,6 +7,7 @@ import android.os.SystemClock
 import android.view.View
 import android.view.ViewGroup
 import android.webkit.WebView
+import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -14,7 +15,10 @@ import com.shruggietech.glitchpad.BuildConfig
 import com.shruggietech.glitchpad.MainActivity
 import org.json.JSONArray
 import org.json.JSONObject
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.After
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.text.SimpleDateFormat
@@ -26,6 +30,26 @@ import java.util.concurrent.TimeUnit
 
 @RunWith(AndroidJUnit4::class)
 class PerformanceInstrumentedTest {
+    private var ownedScenario: ActivityScenario<MainActivity>? = null
+
+    @Before
+    fun requireRunnerOwnedCompletion() {
+        assertEquals(
+            "Dedicated Tauri UI instrumentation must own terminal completion",
+            "false",
+            InstrumentationRegistry.getArguments().getString("waitForActivitiesToComplete"),
+        )
+    }
+
+    @After
+    fun stopOwnedActivityBeforeRunnerCompletion() {
+        val scenario = ownedScenario ?: return
+        // Stop through AndroidX so onPause/onStop run before framework-owned process completion.
+        scenario.moveToState(Lifecycle.State.CREATED)
+        assertEquals("Tauri activity must be stopped before instrumentation completes", Lifecycle.State.CREATED, scenario.state)
+        ownedScenario = null
+    }
+
     private fun findWebView(view: View): WebView? {
         if (view is WebView) return view
         if (view !is ViewGroup) return null
@@ -73,7 +97,7 @@ class PerformanceInstrumentedTest {
     @Test
     fun idlePssProducesContentFreeInstrumentationEvidence() {
         assertTrue("reference API must be governed", Build.VERSION.SDK_INT == 24 || Build.VERSION.SDK_INT == 36)
-        val scenario = ActivityScenario.launch(MainActivity::class.java)
+        val scenario = ActivityScenario.launch(MainActivity::class.java).also { ownedScenario = it }
         waitForSettledShell(scenario)
         val samples = LongArray(5) {
             (Debug.getPss().toLong() * 1024L).also { SystemClock.sleep(100L) }
@@ -114,8 +138,6 @@ class PerformanceInstrumentedTest {
             0,
             Bundle().apply { putString("performance_evidence", evidence.toString()) },
         )
-        // MainActivity owns the Tauri process. Closing its ActivityScenario here invokes
-        // onDestroy before JUnit records success, so the instrumentation process disappears.
-        // The ephemeral emulator tears the activity down after the runner has published its result.
+        // @After stops the activity; framework instrumentation publishes the terminal result.
     }
 }

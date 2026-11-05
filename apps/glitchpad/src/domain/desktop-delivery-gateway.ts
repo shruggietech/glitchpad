@@ -2,6 +2,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 
 import {
+  externalRevisionMatches,
   noRendererCapabilities,
   type DesktopSourceSummary,
   type SaveReceipt,
@@ -37,7 +38,10 @@ export interface DesktopDeliveryResult {
   error: { summary: string; retryable: boolean } | null;
 }
 
-type NativeInvoke = (command: string, args?: Record<string, unknown>) => Promise<unknown>;
+type NativeInvoke = (
+  command: string,
+  args?: Record<string, unknown>,
+) => Promise<unknown>;
 
 export interface DesktopDeliveryGateway {
   choose(): Promise<DesktopDeliveryResult[]>;
@@ -50,11 +54,17 @@ export interface DesktopDeliveryGateway {
 }
 
 export const nativeDesktopDeliveryAvailable = (): boolean => {
-  if (typeof window === 'undefined' || /android/iu.test(navigator.userAgent)) return false;
-  const internals = (window as unknown as {
-    __TAURI_INTERNALS__?: { invoke?: unknown; transformCallback?: unknown };
-  }).__TAURI_INTERNALS__;
-  return typeof internals?.invoke === 'function' && typeof internals.transformCallback === 'function';
+  if (typeof window === 'undefined' || /android/iu.test(navigator.userAgent))
+    return false;
+  const internals = (
+    window as unknown as {
+      __TAURI_INTERNALS__?: { invoke?: unknown; transformCallback?: unknown };
+    }
+  ).__TAURI_INTERNALS__;
+  return (
+    typeof internals?.invoke === 'function' &&
+    typeof internals.transformCallback === 'function'
+  );
 };
 
 export const reportDesktopLifecycleProbe = async (
@@ -63,7 +73,10 @@ export const reportDesktopLifecycleProbe = async (
   call: NativeInvoke = invoke,
 ): Promise<boolean> => {
   if (!nativeDesktopDeliveryAvailable()) return false;
-  return call('record_desktop_lifecycle_probe', { event, sequence: sequence ?? null }) as Promise<boolean>;
+  return call('record_desktop_lifecycle_probe', {
+    event,
+    sequence: sequence ?? null,
+  }) as Promise<boolean>;
 };
 
 export const reportDesktopDeviceScaleProbe = async (
@@ -71,7 +84,9 @@ export const reportDesktopDeviceScaleProbe = async (
   call: NativeInvoke = invoke,
 ): Promise<boolean> => {
   if (!nativeDesktopDeliveryAvailable()) return false;
-  return call('record_desktop_device_scale_probe', { deviceScale }) as Promise<boolean>;
+  return call('record_desktop_device_scale_probe', {
+    deviceScale,
+  }) as Promise<boolean>;
 };
 
 export const consumeDesktopMarkdownFailureProbe = async (
@@ -81,13 +96,16 @@ export const consumeDesktopMarkdownFailureProbe = async (
   return call('consume_desktop_markdown_failure_probe') as Promise<boolean>;
 };
 
-const decode = (bytes: Uint8Array): { text: string; encoding: TextEncoding } => {
+const decode = (
+  bytes: Uint8Array,
+): { text: string; encoding: TextEncoding } => {
   const encoding = detectEncoding(bytes);
-  const decoder = encoding === 'utf16_le_bom'
-    ? new TextDecoder('utf-16le', { fatal: true })
-    : encoding === 'utf16_be_bom'
-      ? new TextDecoder('utf-16be', { fatal: true })
-      : new TextDecoder('utf-8', { fatal: true });
+  const decoder =
+    encoding === 'utf16_le_bom'
+      ? new TextDecoder('utf-16le', { fatal: true })
+      : encoding === 'utf16_be_bom'
+        ? new TextDecoder('utf-16be', { fatal: true })
+        : new TextDecoder('utf-8', { fatal: true });
   return { text: decoder.decode(bytes), encoding };
 };
 
@@ -110,27 +128,39 @@ const readSource = async (
   if (declared > LARGE_TEXT_MAX_BYTES)
     throw new RangeError('Desktop source exceeds the supported viewing limit');
   if (declared > EDITABLE_TEXT_MAX_BYTES) {
-    const prefix = await call('read_source_range', {
+    const prefix = (await call('read_source_range', {
       sourceId: source.source_id,
       offset: 0,
       length: Math.min(3, declared),
       operationBudget: Math.min(3, declared),
-    }) as RangeReadResult;
-    if (prefix.source_id !== source.source_id || prefix.offset !== 0 || prefix.bytes.length > 3)
+    })) as RangeReadResult;
+    if (
+      prefix.source_id !== source.source_id ||
+      prefix.offset !== 0 ||
+      prefix.bytes.length > 3
+    )
       throw new Error('Desktop delivery returned an invalid encoding prefix');
-    return { text: '', sourceBytes: declared, encoding: detectEncoding(Uint8Array.from(prefix.bytes)) };
+    return {
+      text: '',
+      sourceBytes: declared,
+      encoding: detectEncoding(Uint8Array.from(prefix.bytes)),
+    };
   }
   const bytes = new Uint8Array(declared);
   let offset = 0;
   while (offset < declared) {
     const length = Math.min(SOURCE_CHUNK_BYTES, declared - offset);
-    const result = await call('read_source_range', {
+    const result = (await call('read_source_range', {
       sourceId: source.source_id,
       offset,
       length,
       operationBudget: length,
-    }) as RangeReadResult;
-    if (result.source_id !== source.source_id || result.offset !== offset || result.bytes.length > length)
+    })) as RangeReadResult;
+    if (
+      result.source_id !== source.source_id ||
+      result.offset !== offset ||
+      result.bytes.length > length
+    )
       throw new Error('Desktop delivery returned an invalid bounded range');
     if (result.bytes.length === 0 && !result.end_of_source)
       throw new Error('Desktop delivery read made no progress');
@@ -143,7 +173,9 @@ const readSource = async (
   return { ...decoded, sourceBytes: declared };
 };
 
-const rendererFor = (displayName: string): 'markdown' | 'mermaid' | 'text' | 'source' => {
+const rendererFor = (
+  displayName: string,
+): 'markdown' | 'mermaid' | 'text' | 'source' => {
   const extension = displayName.toLowerCase().split('.').at(-1);
   if (extension === 'md' || extension === 'markdown') return 'markdown';
   if (extension === 'mmd' || extension === 'mermaid') return 'mermaid';
@@ -151,7 +183,7 @@ const rendererFor = (displayName: string): 'markdown' | 'mermaid' | 'text' | 'so
   return 'source';
 };
 
-const saveOperationId = (): string => {
+export const createDesktopSaveOperationId = (): string => {
   const words = crypto.getRandomValues(new Uint32Array(2));
   return ((BigInt(words[0]) << 32n) | BigInt(words[1])).toString();
 };
@@ -161,11 +193,14 @@ export const createDesktopDeliveryGateway = (
   subscribeEvent: (handler: () => void) => Promise<UnlistenFn> = (handler) =>
     listen('desktop-deliveries-ready', handler),
 ): DesktopDeliveryGateway => ({
-  choose: () => call('choose_desktop_sources') as Promise<DesktopDeliveryResult[]>,
+  choose: () =>
+    call('choose_desktop_sources') as Promise<DesktopDeliveryResult[]>,
   async drain() {
     const results: DesktopDeliveryResult[] = [];
     for (;;) {
-      const batch = await call('drain_desktop_deliveries', { maximum: 64 }) as DesktopDeliveryResult[];
+      const batch = (await call('drain_desktop_deliveries', {
+        maximum: 64,
+      })) as DesktopDeliveryResult[];
       results.push(...batch);
       if (batch.length < 64) return results;
     }
@@ -174,17 +209,30 @@ export const createDesktopDeliveryGateway = (
     await call('close_desktop_source', { sourceId });
   },
   async save(session) {
-    if (!session.source_id || !session.external_revision || !session.text_document)
+    if (
+      !session.source_id ||
+      !session.external_revision ||
+      !session.text_document
+    )
       throw new Error('Desktop Save requires an open writable source');
-    const serialized = serializeTextDocument(session.text_document, session.revision, session.revision);
-    if (!serialized.ok) throw new Error(`Desktop Save serialization failed: ${serialized.reason}`);
+    const serialized = serializeTextDocument(
+      session.text_document,
+      session.revision,
+      session.revision,
+    );
+    if (!serialized.ok)
+      throw new Error(
+        `Desktop Save serialization failed: ${serialized.reason}`,
+      );
     await call('note_source_session_revision', {
       sourceId: session.source_id,
       revision: session.revision,
     });
-    return call('save_source', {
+    const operationId =
+      session.destination_save_operation_id ?? createDesktopSaveOperationId();
+    const receipt = (await call('save_source', {
       request: {
-        operation_id: saveOperationId(),
+        operation_id: operationId,
         source_id: session.source_id,
         expected_external_revision: session.external_revision,
         expected_session_revision: session.revision,
@@ -192,23 +240,56 @@ export const createDesktopDeliveryGateway = (
         durability_acknowledgement: null,
         overwrite_authorization: null,
       },
-    }) as Promise<SaveReceipt>;
+    })) as SaveReceipt;
+    if (
+      receipt.operation_id !== operationId ||
+      receipt.source_id !== session.source_id ||
+      receipt.accepted_session_revision !== session.revision ||
+      receipt.byte_count !== serialized.payload.bytes.length ||
+      !externalRevisionMatches(
+        receipt.previous_external_revision,
+        session.external_revision,
+      )
+    )
+      throw new Error('invalid_receipt');
+    return receipt;
   },
   subscribe: subscribeEvent,
   async saveAs(session) {
-    if (!session.text_document) throw new Error('Desktop Save As requires a text document');
-    const serialized = serializeTextDocument(session.text_document, session.revision, session.revision);
-    if (!serialized.ok) throw new Error(`Desktop Save As serialization failed: ${serialized.reason}`);
+    if (!session.text_document)
+      throw new Error('Desktop Save As requires a text document');
+    const serialized = serializeTextDocument(
+      session.text_document,
+      session.revision,
+      session.revision,
+    );
+    if (!serialized.ok)
+      throw new Error(
+        `Desktop Save As serialization failed: ${serialized.reason}`,
+      );
     return call('save_desktop_source_as', {
       suggestedName: session.source.display_name,
       bytes: [...serialized.payload.bytes],
+      originalSourceId: session.copy_source?.source_id ?? null,
+      expectedOriginalRevision: session.copy_source?.external_revision ?? null,
     }) as Promise<boolean>;
   },
   async materialize(result) {
     if (result.status !== 'opened' || !result.source) return null;
     const source = result.source;
-    const imageCodec = await identifyImageSource(call, source.source_id, source.external_revision);
-    if (imageCodec) return createImageSession(source.descriptor, source.source_id, source.external_revision, imageCodec, 'desktop');
+    const imageCodec = await identifyImageSource(
+      call,
+      source.source_id,
+      source.external_revision,
+    );
+    if (imageCodec)
+      return createImageSession(
+        source.descriptor,
+        source.source_id,
+        source.external_revision,
+        imageCodec,
+        'desktop',
+      );
     const { text, sourceBytes, encoding } = await readSource(call, source);
     const renderer = rendererFor(source.descriptor.display_name);
     const textDocument = createTextDocument({
@@ -219,13 +300,21 @@ export const createDesktopDeliveryGateway = (
       language: detectLanguage(source.descriptor.display_name, text),
     });
     const markdown = markdownEligibility(sourceBytes);
-    const editable = textDocument.mode === 'editable' && source.descriptor.capabilities.write;
+    const editable =
+      textDocument.mode === 'editable' && source.descriptor.capabilities.write;
     return {
       id: `desktop-${source.source_id}`,
       source: source.descriptor,
       renderer: {
         id: renderer,
-        label: renderer === 'markdown' ? 'Markdown' : renderer === 'mermaid' ? 'Mermaid' : renderer === 'source' ? 'Source' : 'Text',
+        label:
+          renderer === 'markdown'
+            ? 'Markdown'
+            : renderer === 'mermaid'
+              ? 'Mermaid'
+              : renderer === 'source'
+                ? 'Source'
+                : 'Text',
         capabilities: {
           ...noRendererCapabilities(),
           view: true,
@@ -246,12 +335,28 @@ export const createDesktopDeliveryGateway = (
       content: text,
       source_id: source.source_id,
       text_document: textDocument,
-      markdown_document: renderer === 'markdown'
-        ? { mode: markdown === 'full' ? 'rendered' : 'source', eligibility: markdown, render_revision: null, render_status: markdown === 'full' ? 'idle' : 'limited', printable: false, outline_count: 0, source_selection: null }
-        : null,
-      mermaid_document: renderer === 'mermaid'
-        ? { mode: text.trim() ? 'rendered' : 'source', render_revision: null, render_status: 'idle', preview_stale: false, viewport: initialMermaidViewport() }
-        : null,
+      markdown_document:
+        renderer === 'markdown'
+          ? {
+              mode: markdown === 'full' ? 'rendered' : 'source',
+              eligibility: markdown,
+              render_revision: null,
+              render_status: markdown === 'full' ? 'idle' : 'limited',
+              printable: false,
+              outline_count: 0,
+              source_selection: null,
+            }
+          : null,
+      mermaid_document:
+        renderer === 'mermaid'
+          ? {
+              mode: text.trim() ? 'rendered' : 'source',
+              render_revision: null,
+              render_status: 'idle',
+              preview_stale: false,
+              viewport: initialMermaidViewport(),
+            }
+          : null,
     };
   },
 });

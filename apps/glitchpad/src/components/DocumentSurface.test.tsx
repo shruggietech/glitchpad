@@ -6,26 +6,82 @@ import { initialSessions } from '../test/fixtures';
 import { DocumentSurface } from './DocumentSurface';
 
 vi.mock('./MarkdownSurface', () => ({
-  MarkdownSurface: forwardRef<unknown, { lifecycleFailureProbe?: boolean; projectionSuppressed?: boolean; recoveryAttempt?: number; session: { id: string } }>(
-    function ThrowingMarkdownSurface({ lifecycleFailureProbe = false, projectionSuppressed, recoveryAttempt = 0, session }, ref) {
-      void ref;
-      const deterministicFailure = session.id === 'probe-only'
+  MarkdownSurface: forwardRef<
+    unknown,
+    {
+      lifecycleFailureProbe?: boolean;
+      projectionSuppressed?: boolean;
+      recoveryAttempt?: number;
+      session: { id: string };
+    }
+  >(function ThrowingMarkdownSurface(
+    {
+      lifecycleFailureProbe = false,
+      projectionSuppressed,
+      recoveryAttempt = 0,
+      session,
+    },
+    ref,
+  ) {
+    void ref;
+    const deterministicFailure =
+      session.id === 'probe-only'
         ? lifecycleFailureProbe && recoveryAttempt === 0
         : recoveryAttempt === 0 || session.id === 'repeat-failure';
-      if (!projectionSuppressed && deterministicFailure)
-        throw new Error('deterministic projection failure');
-      return <div>{projectionSuppressed ? 'Recovered source without projection' : 'Fresh rendered preview'}</div>;
-    },
-  ),
+    if (!projectionSuppressed && deterministicFailure)
+      throw new Error('deterministic projection failure');
+    return (
+      <div>
+        {projectionSuppressed
+          ? 'Recovered source without projection'
+          : 'Fresh rendered preview'}
+      </div>
+    );
+  }),
 }));
 
 describe('Document surface recovery', () => {
-  it('contains the opt-in packaged lifecycle failure and succeeds on retry', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  it('reports only a bounded document failure and keeps source recovery reachable', () => {
+    const onFailure = vi.fn();
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined);
     try {
       render(
         <DocumentSurface
-          session={{ ...initialSessions[3], id: 'probe-only', lifecycle: 'active' }}
+          session={{ ...initialSessions[3], lifecycle: 'active' }}
+          onFailure={onFailure}
+          onDocumentChange={vi.fn()}
+          onLanguageChange={vi.fn()}
+          onMarkdownChange={vi.fn()}
+        />,
+      );
+      expect(onFailure).toHaveBeenCalledWith(
+        'document',
+        'render',
+        'document_render_failed',
+      );
+      expect(JSON.stringify(onFailure.mock.calls)).not.toContain(
+        'deterministic projection failure',
+      );
+      expect(screen.getByRole('button', { name: 'View source' })).toBeEnabled();
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
+
+  it('contains the opt-in packaged lifecycle failure and succeeds on retry', async () => {
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined);
+    try {
+      render(
+        <DocumentSurface
+          session={{
+            ...initialSessions[3],
+            id: 'probe-only',
+            lifecycle: 'active',
+          }}
           markdownFailureProbe
           onDocumentChange={vi.fn()}
           onLanguageChange={vi.fn()}
@@ -37,7 +93,9 @@ describe('Document surface recovery', () => {
         'This document could not be displayed',
       );
       fireEvent.click(screen.getByRole('button', { name: 'View source' }));
-      expect(screen.getByText('Recovered source without projection')).toBeInTheDocument();
+      expect(
+        screen.getByText('Recovered source without projection'),
+      ).toBeInTheDocument();
       fireEvent.click(screen.getByRole('button', { name: 'Retry preview' }));
       expect(screen.getByText('Fresh rendered preview')).toBeInTheDocument();
     } finally {
@@ -77,11 +135,16 @@ describe('Document surface recovery', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Retry preview' }));
 
       expect(screen.getByText('Fresh rendered preview')).toBeInTheDocument();
-      expect(screen.queryByText('Recovered source without projection')).not.toBeInTheDocument();
+      expect(
+        screen.queryByText('Recovered source without projection'),
+      ).not.toBeInTheDocument();
       expect(onMarkdownChange).toHaveBeenLastCalledWith(
         initialSessions[3].id,
         initialSessions[3].revision,
-        expect.objectContaining({ mode: 'rendered', render_status: 'scheduled' }),
+        expect.objectContaining({
+          mode: 'rendered',
+          render_status: 'scheduled',
+        }),
       );
     } finally {
       consoleError.mockRestore();
@@ -89,42 +152,70 @@ describe('Document surface recovery', () => {
   });
 
   it('retains source recovery independently for multiple document revisions', () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined);
     const onMarkdownChange = vi.fn();
     const commonProps = {
       onDocumentChange: vi.fn(),
       onLanguageChange: vi.fn(),
       onMarkdownChange,
     };
-    const first = { ...initialSessions[3], id: 'recovery-a', lifecycle: 'active' as const };
-    const second = { ...initialSessions[3], id: 'recovery-b', lifecycle: 'active' as const };
+    const first = {
+      ...initialSessions[3],
+      id: 'recovery-a',
+      lifecycle: 'active' as const,
+    };
+    const second = {
+      ...initialSessions[3],
+      id: 'recovery-b',
+      lifecycle: 'active' as const,
+    };
     try {
       const view = render(<DocumentSurface session={first} {...commonProps} />);
       fireEvent.click(screen.getByRole('button', { name: 'View source' }));
-      expect(screen.getByText('Recovered source without projection')).toBeInTheDocument();
+      expect(
+        screen.getByText('Recovered source without projection'),
+      ).toBeInTheDocument();
 
       view.rerender(<DocumentSurface session={second} {...commonProps} />);
       fireEvent.click(screen.getByRole('button', { name: 'View source' }));
-      expect(screen.getByText('Recovered source without projection')).toBeInTheDocument();
+      expect(
+        screen.getByText('Recovered source without projection'),
+      ).toBeInTheDocument();
 
       view.rerender(<DocumentSurface session={first} {...commonProps} />);
-      expect(screen.getByText('Recovered source without projection')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Retry preview' })).toBeEnabled();
+      expect(
+        screen.getByText('Recovered source without projection'),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: 'Retry preview' }),
+      ).toBeEnabled();
 
       view.rerender(<DocumentSurface session={second} {...commonProps} />);
-      expect(screen.getByText('Recovered source without projection')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Retry preview' })).toBeEnabled();
+      expect(
+        screen.getByText('Recovered source without projection'),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: 'Retry preview' }),
+      ).toBeEnabled();
     } finally {
       consoleError.mockRestore();
     }
   });
 
   it('returns repeated retry failures to contained feedback with source still available', () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined);
     try {
       render(
         <DocumentSurface
-          session={{ ...initialSessions[3], id: 'repeat-failure', lifecycle: 'active' }}
+          session={{
+            ...initialSessions[3],
+            id: 'repeat-failure',
+            lifecycle: 'active',
+          }}
           onDocumentChange={vi.fn()}
           onLanguageChange={vi.fn()}
           onMarkdownChange={vi.fn()}
@@ -134,9 +225,13 @@ describe('Document surface recovery', () => {
       fireEvent.click(screen.getByRole('button', { name: 'View source' }));
       fireEvent.click(screen.getByRole('button', { name: 'Retry preview' }));
 
-      expect(screen.getByRole('alert')).toHaveTextContent('This document could not be displayed');
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'This document could not be displayed',
+      );
       expect(screen.getByRole('button', { name: 'View source' })).toBeEnabled();
-      expect(screen.getByRole('button', { name: 'Retry preview' })).toBeEnabled();
+      expect(
+        screen.getByRole('button', { name: 'Retry preview' }),
+      ).toBeEnabled();
     } finally {
       consoleError.mockRestore();
     }

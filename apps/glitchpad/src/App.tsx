@@ -1,3 +1,12 @@
+import { createDesktopSaveOperationId } from './domain/desktop-delivery-gateway';
+import { externalRevisionMatches } from './domain/contracts';
+import { installRecoveryProbeListener } from './domain/recovery-probes';
+import {
+  saveFailureReason,
+  saveFailureMessage,
+} from './domain/android-authoring-gateway';
+import { recordFailure } from './domain/diagnostic-failures';
+import { markSaveObservation } from './domain/save-observation-probes';
 import {
   useCallback,
   useEffect,
@@ -10,6 +19,12 @@ import {
 import { AppFrame } from '../../../brand/web/react/server';
 import { AppFrameEnvironmentBridge } from '../../../brand/web/react/environment';
 
+import { AddDocumentMenu } from './components/AddDocumentMenu';
+import { createDraftSession } from './domain/drafts';
+import {
+  nativeAndroidAuthoringGateway,
+  type AndroidAuthoringGateway,
+} from './domain/android-authoring-gateway';
 import { ApplicationMenu } from './components/ApplicationMenu';
 import { DocumentSurface } from './components/DocumentSurface';
 import { MetadataInspector } from './components/MetadataInspector';
@@ -23,11 +38,11 @@ import {
 } from './components/RecoveryResolution';
 import { TabStrip } from './components/TabStrip';
 import {
-  executeCommand,
+  performCommand,
   commandSetFor,
   type CommandDescriptor,
 } from './domain/commands';
-import { type SaveReceipt, type ShellSession } from './domain/contracts';
+import { type ShellSession } from './domain/contracts';
 import {
   canSaveInPlace,
   integrityOf,
@@ -67,6 +82,7 @@ import {
 } from './domain/persistence';
 import {
   browserDiagnosticExportGateway,
+  nativeAndroidDiagnosticExportGateway,
   nativePersistenceAvailable,
   nativePersistenceGateway,
   type DiagnosticExportGateway,
@@ -98,6 +114,27 @@ import {
   reportPackageWorkflowFailure,
 } from './domain/package-workflow-probe';
 
+const ownedAndroidSourceIds = (
+  sessions: readonly ShellSession[],
+): Set<string> => {
+  const current = new Set(
+    sessions
+      .filter(
+        (session) =>
+          session.source_id &&
+          (session.source.kind === 'document_uri' ||
+            session.id === `android-${session.source_id}`),
+      )
+      .flatMap((session) => [
+        session.source_id!,
+        ...(session.copy_source ? [session.copy_source.source_id] : []),
+      ]),
+  );
+  for (const session of sessions)
+    if (session.copy_source) current.add(session.copy_source.source_id);
+  return current;
+};
+
 interface AppProps {
   sessions?: ShellSession[];
   recoveryGateway?: RecoveryGateway | null;
@@ -108,6 +145,7 @@ interface AppProps {
   persistenceGateway?: PersistenceGateway | null;
   diagnosticExportGateway?: DiagnosticExportGateway;
   androidDeliveryGateway?: AndroidDeliveryGateway | null;
+  androidAuthoringGateway?: AndroidAuthoringGateway;
   androidRestorationGateway?: AndroidRestorationGateway | null;
   desktopDeliveryGateway?: DesktopDeliveryGateway | null;
   layoutResizeCanBeIme?: boolean;
@@ -121,14 +159,35 @@ export function App({
   metadataGateway,
   clipboardGateway = browserClipboardGateway,
   persistenceGateway,
-  diagnosticExportGateway = browserDiagnosticExportGateway,
+  diagnosticExportGateway,
   androidDeliveryGateway,
+  androidAuthoringGateway = nativeAndroidAuthoringGateway,
   androidRestorationGateway,
   desktopDeliveryGateway,
-  layoutResizeCanBeIme = nativeAndroidDeliveryAvailable(),
+  // MainActivity already resizes the WebView for the IME; reserve only visual obstruction.
+  layoutResizeCanBeIme = false,
 }: AppProps) {
   const [state, dispatch] = useReducer(tabReducer, sessions, createTabState);
   const [commandStatus, setCommandStatus] = useState('');
+  const [addDocumentOpen, setAddDocumentOpen] = useState(false);
+  const [recoveryProbeGeneration, setRecoveryProbeGeneration] = useState(0);
+  useEffect(
+    () =>
+      installRecoveryProbeListener((stage) => {
+        if (stage !== 'root') setRecoveryProbeGeneration((value) => value + 1);
+      }),
+    [],
+  );
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+  const stateRef = useRef(state);
+  stateRef.current = state;
+  const pendingActions = useRef(new Set<string>());
   const [deliveryError, setDeliveryError] = useState('');
   const [markdownFailureProbe, setMarkdownFailureProbe] = useState(false);
   const [inspectorOpen, setInspectorOpen] = useState(false);
@@ -233,6 +292,7 @@ export function App({
       if (!selectedDesktopDeliveryGateway) return;
       for (const result of results) {
         if (result.status === 'rejected') {
+          recordFailure('source', 'delivery', 'source_delivery_failed');
           setDeliveryError(
             result.error?.summary ?? 'The delivered file could not be opened.',
           );
@@ -266,8 +326,11 @@ export function App({
             dispatch({ type: 'open', session });
           }
         } catch {
+          recordFailure('source', 'read', 'source_read_failed');
           if (result.source)
-            void selectedDesktopDeliveryGateway.close(result.source.source_id);
+            void selectedDesktopDeliveryGateway
+              .close(result.source.source_id)
+              .catch(() => undefined);
           setDeliveryError(
             'The delivered file could not be decoded safely. Check that it is readable UTF-8 or UTF-16 text.',
           );
@@ -283,13 +346,15 @@ export function App({
       void selectedDesktopDeliveryGateway
         .drain()
         .then((results) => {
-          if (active) void applyDesktopDeliveries(results);
+          if (active) return applyDesktopDeliveries(results);
         })
         .catch(() => {
-          if (active)
+          if (active) {
+            recordFailure('source', 'delivery', 'source_delivery_failed');
             setDeliveryError(
               'Desktop delivery is temporarily unavailable. Try Open again.',
             );
+          }
         });
     };
     let unlisten: (() => void) | undefined;
@@ -302,10 +367,12 @@ export function App({
         } else dispose();
       })
       .catch(() => {
-        if (active)
+        if (active) {
+          recordFailure('source', 'delivery', 'source_delivery_failed');
           setDeliveryError(
             'Desktop delivery is temporarily unavailable. Try Open again.',
           );
+        }
       });
     return () => {
       active = false;
@@ -337,6 +404,8 @@ export function App({
         )
         .map((session) => session.source_id as string),
     );
+    for (const session of state.sessions)
+      if (session.copy_source) current.add(session.copy_source.source_id);
     for (const sourceId of openDesktopSourceIdsRef.current) {
       if (!current.has(sourceId))
         void selectedDesktopDeliveryGateway.close(sourceId);
@@ -346,10 +415,12 @@ export function App({
   const applyAndroidDeliveries = useCallback(async () => {
     if (!selectedAndroidDeliveryGateway) return;
     const delivery = await selectedAndroidDeliveryGateway.drain();
-    for (const rejection of delivery.rejections)
+    for (const rejection of delivery.rejections) {
+      recordFailure('source', 'delivery', 'source_delivery_failed');
       setDeliveryError(
         `The delivered Android file could not be opened (${rejection.code}).`,
       );
+    }
     for (const source of delivery.sources) {
       try {
         const session =
@@ -357,7 +428,15 @@ export function App({
         setDeliveryError('');
         dispatch({ type: 'open', session });
       } catch {
-        void selectedAndroidDeliveryGateway.close(source.source_id);
+        recordFailure('source', 'read', 'source_read_failed');
+        if (
+          !ownedAndroidSourceIds(stateRef.current.sessions).has(
+            source.source_id,
+          )
+        )
+          void selectedAndroidDeliveryGateway
+            .close(source.source_id)
+            .catch(() => undefined);
         setDeliveryError(
           'The delivered Android file could not be decoded safely. Check that it is readable UTF-8 or UTF-16 text.',
         );
@@ -369,10 +448,12 @@ export function App({
     let active = true;
     const drain = () => {
       void applyAndroidDeliveries().catch(() => {
-        if (active)
+        if (active) {
+          recordFailure('source', 'delivery', 'source_delivery_failed');
           setDeliveryError(
             'Android file delivery is temporarily unavailable. Open the file again.',
           );
+        }
       });
     };
     let unlisten: (() => void) | undefined;
@@ -385,7 +466,10 @@ export function App({
         } else dispose();
       })
       .catch(() => {
-        if (active) fallbackTimer = setInterval(drain, 500);
+        if (active) {
+          recordFailure('source', 'delivery', 'source_delivery_failed');
+          fallbackTimer = setInterval(drain, 500);
+        }
       })
       .finally(drain);
     return () => {
@@ -396,17 +480,12 @@ export function App({
   }, [applyAndroidDeliveries, selectedAndroidDeliveryGateway]);
   useEffect(() => {
     if (!selectedAndroidDeliveryGateway) return;
-    const current = new Set(
-      state.sessions
-        .filter(
-          (session) =>
-            session.source_id && session.id === `android-${session.source_id}`,
-        )
-        .map((session) => session.source_id as string),
-    );
+    const current = ownedAndroidSourceIds(state.sessions);
     for (const sourceId of openAndroidSourceIdsRef.current) {
       if (!current.has(sourceId))
-        void selectedAndroidDeliveryGateway.close(sourceId);
+        void selectedAndroidDeliveryGateway
+          .close(sourceId)
+          .catch(() => recordFailure('source', 'session', 'action_failed'));
     }
     openAndroidSourceIdsRef.current = current;
   }, [selectedAndroidDeliveryGateway, state.sessions]);
@@ -526,7 +605,9 @@ export function App({
       const desiredMode =
         projection?.presentation_mode ??
         (session.markdown_document
-          ? persistence.preferences.markdown_default_mode
+          ? session.edit_origin || session.integrity === 'recovery_only'
+            ? session.markdown_document.mode
+            : persistence.preferences.markdown_default_mode
           : null);
       if (desiredMode !== 'rendered' && desiredMode !== 'source') continue;
       const signature = `${projection?.session_key ?? 'default'}:${desiredMode}`;
@@ -594,9 +675,20 @@ export function App({
       });
     }
   }, [persistence.preferences.language_overrides, state.sessions]);
+  useEffect(() => {
+    if (activeSession?.image_document?.status === 'failed')
+      recordFailure('image', 'render', 'image_render_failed');
+  }, [
+    activeSession?.id,
+    activeSession?.revision,
+    activeSession?.image_document?.status,
+  ]);
   const commands = commandSetFor(activeSession).filter(
     ({ id }) =>
-      id !== 'save' || (activeSession && canSaveInPlace(activeSession)),
+      id !== 'save' ||
+      (activeSession &&
+        (Boolean(selectedAndroidDeliveryGateway) ||
+          canSaveInPlace(activeSession))),
   );
   const resolutionSession = state.pendingTransition
     ? (state.sessions.find(
@@ -680,7 +772,7 @@ export function App({
 
   const openMetadata = (opener: HTMLElement) => {
     windowProjectionChangedRef.current = true;
-    editorRef.current?.invoke('close_search');
+    void editorRef.current?.invoke('close_search');
     metadataOpenerRef.current = opener;
     setApplicationPanel('closed');
     setInspectorOpen(true);
@@ -711,7 +803,7 @@ export function App({
     opener: HTMLButtonElement,
   ) => {
     windowProjectionChangedRef.current = true;
-    editorRef.current?.invoke('close_search');
+    void editorRef.current?.invoke('close_search');
     applicationOpenerRef.current = opener;
     setInspectorOpen(false);
     setApplicationPanel(panel);
@@ -726,45 +818,152 @@ export function App({
     });
   };
 
-  const invoke = (command: CommandDescriptor, opener: HTMLButtonElement) => {
-    const result = executeCommand(command, activeSession);
-    if (
-      result.ok &&
-      command.id === 'save' &&
-      activeSession &&
-      selectedDesktopDeliveryGateway
-    ) {
-      void selectedDesktopDeliveryGateway
-        .save(activeSession)
-        .then((receipt) => {
-          dispatch({ type: 'save_completed', id: activeSession.id, receipt });
-          setCommandStatus(
-            `${activeSession.source.display_name} saved durably.`,
-          );
-        })
-        .catch(() =>
-          setCommandStatus(
-            `Save failed for ${activeSession.source.display_name}. The document remains open with its edits.`,
-          ),
-        );
-      setCommandStatus(
-        `Saving ${activeSession.source.display_name}. Waiting for a durable save receipt.`,
+  const saveSession = async (
+    session: ShellSession,
+  ): Promise<import('./domain/commands').ActionResult> => {
+    if (pendingActions.current.has(session.id))
+      return { status: 'unavailable', reason: 'operation_pending' };
+    pendingActions.current.add(session.id);
+    const operationId = selectedAndroidDeliveryGateway
+      ? undefined
+      : createDesktopSaveOperationId();
+    dispatch({
+      type: 'destination_save_started',
+      id: session.id,
+      revision: session.revision,
+      operationId,
+    });
+    setCommandStatus('Saving. Waiting for a verified native write receipt.');
+    try {
+      await recovery.flush().catch(() => undefined);
+      if (!mountedRef.current)
+        return { status: 'unavailable', reason: 'stale_session' };
+      if (selectedAndroidDeliveryGateway) {
+        const receipt = await androidAuthoringGateway.saveAs(session);
+        if (!receipt)
+          return { status: 'cancelled', reason: 'picker_cancelled' };
+        if (!mountedRef.current) {
+          await selectedAndroidDeliveryGateway
+            .close(receipt.source.source_id)
+            .catch(() => undefined);
+          return { status: 'unavailable', reason: 'stale_session' };
+        }
+        openAndroidSourceIdsRef.current.add(receipt.source.source_id);
+        dispatch({ type: 'destination_saved', id: session.id, receipt });
+        return { status: 'performed' };
+      }
+      if (!selectedDesktopDeliveryGateway)
+        return { status: 'unavailable', reason: 'native_save_unavailable' };
+      const receipt = await selectedDesktopDeliveryGateway.save({
+        ...session,
+        destination_save_operation_id: operationId,
+      });
+      if (!mountedRef.current)
+        return { status: 'unavailable', reason: 'stale_session' };
+      if (
+        receipt.operation_id !== operationId ||
+        receipt.source_id !== session.source_id ||
+        receipt.accepted_session_revision !== session.revision ||
+        !externalRevisionMatches(
+          receipt.previous_external_revision,
+          session.external_revision,
+        )
+      )
+        return { status: 'failed', reason: 'invalid_receipt' };
+      const current = stateRef.current.sessions.find(
+        (value) => value.id === session.id,
       );
+      if (
+        !current ||
+        current.source_id !== session.source_id ||
+        !externalRevisionMatches(
+          current.external_revision,
+          session.external_revision,
+        )
+      )
+        return { status: 'failed', reason: 'source_changed' };
+      dispatch({ type: 'save_completed', id: session.id, receipt });
+      return { status: 'performed' };
+    } catch (error) {
+      markSaveObservation(session, 'save_session_catch');
+      recordFailure('action', 'write', 'action_failed');
+      return { status: 'failed', reason: saveFailureReason(error) };
+    } finally {
+      markSaveObservation(session, 'save_session_finally');
+      pendingActions.current.delete(session.id);
+      if (mountedRef.current)
+        dispatch({ type: 'destination_save_finished', id: session.id });
+    }
+  };
+
+  const invoke = async (
+    command: CommandDescriptor,
+    opener?: HTMLButtonElement,
+  ) => {
+    const current = () =>
+      stateRef.current.sessions.find(
+        (s) => s.id === stateRef.current.activeId,
+      ) ?? null;
+    const target = current();
+    const result = await performCommand(command, current, async () => {
+      if (!target) return false;
+      if (command.id === 'save' || command.id === 'save_as') {
+        if (command.id === 'save_as' && !selectedAndroidDeliveryGateway) {
+          if (!selectedDesktopDeliveryGateway) return false;
+          return (await selectedDesktopDeliveryGateway.saveAs(target))
+            ? ({ status: 'performed' } as const)
+            : ({ status: 'cancelled', reason: 'picker_cancelled' } as const);
+        }
+        return saveSession(target);
+      }
+      if (command.id === 'edit_copy') {
+        dispatch({
+          type: 'open',
+          session: createDraftSession(
+            target.markdown_document ? 'markdown' : 'text',
+            target,
+          ),
+        });
+        return true;
+      }
+      if (command.id === 'metadata') {
+        if (!opener) return false;
+        openMetadata(opener);
+        return true;
+      }
+      return (await editorRef.current?.invoke(command.id)) ?? false;
+    });
+    if (!mountedRef.current) return;
+    if (result.status === 'failed' || result.status === 'unavailable')
+      recordFailure(
+        'action',
+        'execute',
+        result.status === 'failed' ? 'action_failed' : 'action_unavailable',
+      );
+    const latest = stateRef.current.sessions.find((s) => s.id === target?.id);
+    if (target && stateRef.current.activeId !== target.id) return;
+    if (
+      result.status === 'performed' &&
+      (command.id === 'save' || command.id === 'save_as') &&
+      latest &&
+      target &&
+      latest.revision !== target.revision
+    ) {
+      setCommandStatus('Saved earlier revision. Newer edits remain unsaved.');
       return;
     }
-    const applied =
-      result.ok &&
-      (command.id === 'metadata'
-        ? (openMetadata(opener), true)
-        : (editorRef.current?.invoke(command.id) ?? false));
     setCommandStatus(
-      result.ok
-        ? command.id === 'save' && activeSession
-          ? `Save requested for ${activeSession.source.display_name}. Waiting for a durable save receipt.`
-          : applied
-            ? `${command.label} applied to ${activeSession?.source.display_name ?? 'document'}`
-            : result.message
-        : 'Command cancelled because the active document changed',
+      result.status === 'performed'
+        ? command.id === 'save' || command.id === 'save_as'
+          ? 'Saved after native verification.'
+          : 'Completed ' + command.label + '.'
+        : result.status === 'cancelled'
+          ? 'Cancelled. Your document and edits remain available.'
+          : result.status === 'failed'
+            ? command.id === 'save' || command.id === 'save_as'
+              ? saveFailureMessage(result.reason)
+              : 'The action failed. Your document and edits remain available.'
+            : 'This action is unavailable for the current document.',
     );
   };
 
@@ -774,11 +973,12 @@ export function App({
     void selectedDesktopDeliveryGateway
       .choose()
       .then(applyDesktopDeliveries)
-      .catch(() =>
+      .catch(() => {
+        recordFailure('source', 'delivery', 'source_delivery_failed');
         setDeliveryError(
           'The native Open dialog is unavailable. Try again or open the file from your desktop.',
-        ),
-      );
+        );
+      });
   };
 
   const publishMetadata = (contribution: MetadataContribution) =>
@@ -939,8 +1139,40 @@ export function App({
   const resolveDestructiveTransition = (
     decision: 'save' | 'save_as' | 'discard' | 'cancel',
   ) => {
+    const transition = stateRef.current.pendingTransition;
+    const session = stateRef.current.sessions.find(
+      (value) => value.id === transition?.target_session_id,
+    );
+    if (!transition || !session || pendingActions.current.has(session.id))
+      return;
     if (
-      !resolutionSession ||
+      (decision === 'save' || decision === 'save_as') &&
+      session.revision !== transition.requested_session_revision
+    ) {
+      setCommandStatus('');
+      dispatch({ type: 'resolve_transition', decision });
+      return;
+    }
+    if (
+      selectedAndroidDeliveryGateway &&
+      (decision === 'save' || decision === 'save_as')
+    ) {
+      dispatch({ type: 'resolve_transition', decision: 'save_as' });
+      void saveSession(session).then((result) => {
+        if (!mountedRef.current) return;
+        if (result.status !== 'performed')
+          dispatch({ type: 'resolve_transition', decision: 'cancel' });
+        setCommandStatus(
+          result.status === 'performed'
+            ? 'Saved after native verification.'
+            : result.status === 'cancelled'
+              ? 'Save cancelled. Edits remain open.'
+              : saveFailureMessage(result.reason),
+        );
+      });
+      return;
+    }
+    if (
       !selectedDesktopDeliveryGateway ||
       (decision !== 'save' && decision !== 'save_as')
     ) {
@@ -948,52 +1180,190 @@ export function App({
       return;
     }
     dispatch({ type: 'resolve_transition', decision });
-    const operation: Promise<SaveReceipt | boolean> =
-      decision === 'save'
-        ? selectedDesktopDeliveryGateway.save(resolutionSession)
-        : selectedDesktopDeliveryGateway.saveAs(resolutionSession);
-    void operation
-      .then((receipt) => {
-        if (decision === 'save') {
-          dispatch({
-            type: 'save_completed',
-            id: resolutionSession.id,
-            receipt: receipt as SaveReceipt,
-          });
-        } else {
-          dispatch({
-            type: 'resolve_transition',
-            decision: receipt ? 'discard' : 'cancel',
-          });
-        }
-      })
+    if (decision === 'save') {
+      void saveSession(session).then((result) => {
+        if (result.status !== 'performed')
+          dispatch({ type: 'resolve_transition', decision: 'cancel' });
+      });
+      return;
+    }
+    void selectedDesktopDeliveryGateway
+      .saveAs(session)
+      .then((saved) =>
+        dispatch({
+          type: 'resolve_transition',
+          decision: saved ? 'discard' : 'cancel',
+        }),
+      )
       .catch(() => {
         dispatch({ type: 'resolve_transition', decision: 'cancel' });
-        setCommandStatus(
-          `${decision === 'save' ? 'Save' : 'Save As'} did not complete. The document remains open with its edits.`,
-        );
+        setCommandStatus('Save As failed. Edits remain open.');
       });
   };
 
-  const handleShellKey = (event: React.KeyboardEvent<HTMLElement>) => {
-    if (!event.ctrlKey) return;
-    if (event.key === 'Tab') {
-      event.preventDefault();
-      dispatch({ type: event.shiftKey ? 'previous' : 'next' });
-    } else if (event.key.toLowerCase() === 'w' && state.activeId) {
-      event.preventDefault();
-      dispatch({ type: 'close', id: state.activeId });
+  const chooseSources = async () => {
+    if (!selectedAndroidDeliveryGateway) {
+      chooseDesktopSources();
+      return;
+    }
+    setDeliveryError('');
+    let readingSource = false;
+    try {
+      const source = await selectedAndroidDeliveryGateway.choose?.();
+      if (!source) return;
+      readingSource = true;
+      try {
+        dispatch({
+          type: 'open',
+          session: await selectedAndroidDeliveryGateway.materialize(source),
+        });
+      } catch (error) {
+        if (
+          !ownedAndroidSourceIds(stateRef.current.sessions).has(
+            source.source_id,
+          )
+        )
+          await selectedAndroidDeliveryGateway.close(source.source_id);
+        throw error;
+      }
+    } catch {
+      recordFailure(
+        'source',
+        readingSource ? 'read' : 'delivery',
+        readingSource ? 'source_read_failed' : 'source_delivery_failed',
+      );
+      setDeliveryError(
+        'This file could not be opened. Check access or choose it again.',
+      );
     }
   };
 
+  const handleShellKey = (event: React.KeyboardEvent<HTMLElement>) => {
+    if (event.defaultPrevented) return;
+    const editableTarget =
+      event.target instanceof Element
+        ? event.target.closest(
+            'input, textarea, select, [contenteditable]:not([contenteditable="false"])',
+          )
+        : null;
+    if (
+      editableTarget &&
+      !editableTarget.matches('.document-surface .cm-content')
+    )
+      return;
+    const key = event.key.toLowerCase();
+    const modifier = event.ctrlKey || event.metaKey;
+    if (modifier && event.key === 'Tab') {
+      event.preventDefault();
+      dispatch({ type: event.shiftKey ? 'previous' : 'next' });
+      return;
+    }
+    if (modifier && key === 'w' && state.activeId) {
+      event.preventDefault();
+      dispatch({ type: 'close', id: state.activeId });
+      return;
+    }
+    const id = modifier
+      ? (
+          {
+            s: 'save',
+            c: 'copy',
+            f: 'search',
+            g: 'go_to_line',
+            p: 'print',
+            z: event.shiftKey ? 'redo' : 'undo',
+            '+': 'zoom_in',
+            '=': 'zoom_in',
+            '-': 'zoom_out',
+          } as const
+        )[key as 's']
+      : event.key === 'F3'
+        ? event.shiftKey
+          ? 'find_previous'
+          : 'find_next'
+        : event.key === 'PageUp'
+          ? 'previous_page'
+          : event.key === 'PageDown'
+            ? 'next_page'
+            : undefined;
+    const command = commands.find((c) => c.id === id && c.enabled);
+    if (command) {
+      event.preventDefault();
+      void invoke(command);
+    }
+  };
+
+  const backHandler = useRef<(requestId: string) => void>(() => undefined);
+  backHandler.current = (requestId) => {
+    let handled = true;
+    const frame = document.querySelector<HTMLElement>('[data-bb-app-frame]');
+    const ime =
+      Number.parseFloat(
+        getComputedStyle(frame ?? document.documentElement).getPropertyValue(
+          '--bb-ime-block-end',
+        ),
+      ) || 0;
+    const menu = document.querySelector<HTMLElement>(
+      '.application-menu[role="menu"]',
+    );
+    const search = document.querySelector<HTMLElement>(
+      '.cm-search,[role="search"]',
+    );
+    if (ime > 0 && document.activeElement instanceof HTMLElement)
+      document.activeElement.blur();
+    else if (addDocumentOpen) setAddDocumentOpen(false);
+    else if (recoveryCandidate) resolveRecoveryCandidate('cancel');
+    else if (state.pendingTransition) resolveDestructiveTransition('cancel');
+    else if (applicationPanel !== 'closed') {
+      if (!document.querySelector('.application-sheet[aria-busy="true"]'))
+        closeApplicationPanel();
+    } else if (inspectorOpen) closeMetadata();
+    else if (menu)
+      menu.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'Escape',
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
+    else if (!editorRef.current?.dismissModal?.()) {
+      if (search)
+        void Promise.resolve(editorRef.current?.invoke('close_search')).catch(
+          () => recordFailure('action', 'execute', 'action_failed'),
+        );
+      else if (state.activeId) dispatch({ type: 'close', id: state.activeId });
+      else handled = false;
+    }
+    void selectedAndroidDeliveryGateway
+      ?.completeBack?.(requestId, handled)
+      .catch(() => undefined);
+  };
+  useEffect(() => {
+    if (!selectedAndroidDeliveryGateway?.subscribeBack) return;
+    let active = true;
+    let dispose: (() => void) | undefined;
+    void selectedAndroidDeliveryGateway
+      .subscribeBack((id) => backHandler.current(id))
+      .then((fn) => {
+        if (active) dispose = fn;
+        else fn();
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+      dispose?.();
+    };
+  }, [selectedAndroidDeliveryGateway]);
+
   return (
     <>
-      <AppFrameEnvironmentBridge
-        layoutResizeCanBeIme={layoutResizeCanBeIme}
-      />
+      <AppFrameEnvironmentBridge layoutResizeCanBeIme={layoutResizeCanBeIme} />
       <AppFrame host="tauri" layout="full-bleed">
         <div
           className="app-shell"
+          data-android={Boolean(selectedAndroidDeliveryGateway)}
+          data-has-draft-identity={Boolean(activeSession?.edit_origin)}
+          inert={addDocumentOpen}
           data-has-tabs={state.sessions.length > 1 ? 'true' : 'false'}
           data-performance-ready="true"
           onKeyDown={handleShellKey}
@@ -1005,9 +1375,13 @@ export function App({
             <ApplicationMenu
               active={applicationPanel === 'closed' && !inspectorOpen}
               commands={commands}
-              canOpen={Boolean(selectedDesktopDeliveryGateway)}
-              onOpen={chooseDesktopSources}
-              onInvoke={invoke}
+              canOpen={Boolean(
+                selectedDesktopDeliveryGateway ||
+                (selectedAndroidDeliveryGateway &&
+                  typeof selectedAndroidDeliveryGateway.choose === 'function'),
+              )}
+              onOpen={() => void chooseSources()}
+              onInvoke={(command, opener) => void invoke(command, opener)}
               onPreferences={(opener) =>
                 openApplicationPanel('preferences', opener)
               }
@@ -1017,6 +1391,18 @@ export function App({
             />
             <TabStrip state={state} dispatch={dispatch} />
           </div>
+          {activeSession?.edit_origin && (
+            <div className="draft-identity" data-draft-identity role="status">
+              <span>{activeSession.source.display_name}</span>
+              <span>
+                {activeSession.destination_save_revision != null
+                  ? 'Saving…'
+                  : activeSession.dirty
+                    ? 'Unsaved changes'
+                    : 'Saved'}
+              </span>
+            </div>
+          )}
           {deliveryError && (
             <aside className="delivery-error" role="alert">
               {deliveryError}
@@ -1056,8 +1442,16 @@ export function App({
           <PreferenceContext.Provider value={persistence.preferences}>
             <DocumentSurface
               ref={editorRef}
+              onFailure={(component, stage, reason) =>
+                window.dispatchEvent(
+                  new CustomEvent('glitchpad:failure', {
+                    detail: { component, stage, reason },
+                  }),
+                )
+              }
               session={activeSession}
               markdownFailureProbe={markdownFailureProbe}
+              recoveryProbeGeneration={recoveryProbeGeneration}
               canOpen={Boolean(selectedDesktopDeliveryGateway)}
               onOpen={chooseDesktopSources}
               labelledByTab={state.sessions.length > 1}
@@ -1152,7 +1546,12 @@ export function App({
           {applicationPanel === 'diagnostics' && (
             <DiagnosticsPanel
               load={persistence.previewDiagnostics}
-              exporter={diagnosticExportGateway}
+              exporter={
+                diagnosticExportGateway ??
+                (selectedAndroidDeliveryGateway
+                  ? nativeAndroidDiagnosticExportGateway
+                  : browserDiagnosticExportGateway)
+              }
               onReset={() => persistence.reset('diagnostics')}
               onClose={closeApplicationPanel}
             />
@@ -1173,7 +1572,7 @@ export function App({
             />
           )}
           <p
-            className="visually-hidden"
+            className={commandStatus ? 'command-result' : 'visually-hidden'}
             role="status"
             aria-live="polite"
             aria-atomic="true"
@@ -1181,6 +1580,31 @@ export function App({
             {commandStatus || state.announcement}
           </p>
         </div>
+        {selectedAndroidDeliveryGateway && (
+          <AddDocumentMenu
+            open={addDocumentOpen}
+            onOpenChange={setAddDocumentOpen}
+            onNew={(kind) =>
+              dispatch({ type: 'open', session: createDraftSession(kind) })
+            }
+            onChoose={() => void chooseSources()}
+            canChoose={
+              typeof selectedAndroidDeliveryGateway.choose === 'function'
+            }
+            viewport={
+              diagnosticExportGateway?.viewport ??
+              (nativeAndroidDeliveryAvailable()
+                ? nativeAndroidDiagnosticExportGateway.viewport
+                : undefined)
+            }
+            disabled={
+              applicationPanel !== 'closed' ||
+              inspectorOpen ||
+              Boolean(state.pendingTransition) ||
+              Boolean(recoveryCandidate)
+            }
+          />
+        )}
       </AppFrame>
     </>
   );

@@ -1,3 +1,4 @@
+import { consumeRecoveryProbe } from '../domain/recovery-probes';
 import {
   createElement,
   forwardRef,
@@ -11,6 +12,10 @@ import {
   type ReactNode,
 } from 'react';
 
+import {
+  reportRecoveryFailure,
+  type RecoveryFailureReporter,
+} from '../bootstrap-recovery';
 import type { CommandId } from '../domain/commands';
 import type {
   LanguageDecision,
@@ -19,6 +24,7 @@ import type {
   TextDocumentState,
 } from '../domain/contracts';
 import {
+  MARKDOWN_SANITIZER_VERSION,
   findRenderedMatches,
   markdownEligibility,
   type LinkCandidate,
@@ -36,14 +42,16 @@ import {
 import { MarkdownRendererClient } from '../domain/markdown-renderer';
 import { rendererResourceLedger } from '../domain/resource-ledger';
 import { EmbeddedMermaidSurface } from './EmbeddedMermaidSurface';
-import { rendererContribution, type MetadataContribution, type MetadataObservation } from '../domain/metadata';
 import {
-  TextEditorSurface,
-  type TextEditorHandle,
-} from './TextEditorSurface';
+  rendererContribution,
+  type MetadataContribution,
+  type MetadataObservation,
+} from '../domain/metadata';
+import { TextEditorSurface, type TextEditorHandle } from './TextEditorSurface';
 
 interface MarkdownSurfaceProps {
   session: ShellSession;
+  onFailure?: RecoveryFailureReporter;
   projectionSuppressed?: boolean;
   recoveryAttempt?: number;
   lifecycleFailureProbe?: boolean;
@@ -130,7 +138,13 @@ function LocalMarkdownResource({
     currentAsset &&
     /^(?:blob:|asset:|https?:\/\/asset\.localhost\/)/u.test(currentAsset);
   if (trustedAsset) {
-    return <img src={currentAsset} alt={resource.alt} className="markdown-local-image" />;
+    return (
+      <img
+        src={currentAsset}
+        alt={resource.alt}
+        className="markdown-local-image"
+      />
+    );
   }
   return (
     <span className="markdown-resource-unavailable" role="note">
@@ -190,20 +204,33 @@ function SafeTree({
       />
     );
   }
-  const forbidsWhitespaceChildren = ['table', 'thead', 'tbody', 'tfoot', 'tr'].includes(node.tag_name);
+  const forbidsWhitespaceChildren = [
+    'table',
+    'thead',
+    'tbody',
+    'tfoot',
+    'tr',
+  ].includes(node.tag_name);
   const children = node.children
-    .filter((child) => !(forbidsWhitespaceChildren && child.type === 'text' && child.value.trim() === ''))
+    .filter(
+      (child) =>
+        !(
+          forbidsWhitespaceChildren &&
+          child.type === 'text' &&
+          child.value.trim() === ''
+        ),
+    )
     .map((child) => (
-    <SafeTree
-      key={child.id}
-      node={child}
-      session={session}
-      activeNodeId={activeNodeId}
-      onLink={onLink}
-      onLocalLink={onLocalLink}
-      localAssetGateway={localAssetGateway}
-      onMermaidSource={onMermaidSource}
-    />
+      <SafeTree
+        key={child.id}
+        node={child}
+        session={session}
+        activeNodeId={activeNodeId}
+        onLink={onLink}
+        onLocalLink={onLocalLink}
+        localAssetGateway={localAssetGateway}
+        onMermaidSource={onMermaidSource}
+      />
     ));
   if (node.link) {
     const candidate = node.link;
@@ -248,10 +275,20 @@ function SafeTree({
               : undefined
           }
           data-footnote-ref={
-            Object.prototype.hasOwnProperty.call(node.properties, 'dataFootnoteRef') ? '' : undefined
+            Object.prototype.hasOwnProperty.call(
+              node.properties,
+              'dataFootnoteRef',
+            )
+              ? ''
+              : undefined
           }
           data-footnote-backref={
-            Object.prototype.hasOwnProperty.call(node.properties, 'dataFootnoteBackref') ? '' : undefined
+            Object.prototype.hasOwnProperty.call(
+              node.properties,
+              'dataFootnoteBackref',
+            )
+              ? ''
+              : undefined
           }
           onClick={activate}
           onKeyDown={(event) => activateOnKeyboard(event, activate)}
@@ -292,8 +329,10 @@ function SafeTree({
   const common = {
     'data-markdown-node': node.id,
     className:
-      [safeClassName(node.properties.className),
-        activeNodeId === node.id ? 'markdown-search-match' : undefined]
+      [
+        safeClassName(node.properties.className),
+        activeNodeId === node.id ? 'markdown-search-match' : undefined,
+      ]
         .filter(Boolean)
         .join(' ') || undefined,
   };
@@ -315,7 +354,10 @@ function SafeTree({
   }
   if (node.tag_name === 'ol' && typeof node.properties.start === 'number')
     properties.start = node.properties.start;
-  if ((node.tag_name === 'td' || node.tag_name === 'th') && typeof node.properties.align === 'string')
+  if (
+    (node.tag_name === 'td' || node.tag_name === 'th') &&
+    typeof node.properties.align === 'string'
+  )
     properties.align = node.properties.align;
   if (node.tag_name === 'input') {
     return (
@@ -324,7 +366,9 @@ function SafeTree({
         checked={Boolean(node.properties.checked)}
         disabled
         readOnly
-        aria-label={node.properties.checked ? 'Completed task' : 'Incomplete task'}
+        aria-label={
+          node.properties.checked ? 'Completed task' : 'Incomplete task'
+        }
       />
     );
   }
@@ -332,7 +376,9 @@ function SafeTree({
 }
 
 const initialMarkdownState = (session: ShellSession): MarkdownDocumentState => {
-  const eligibility = markdownEligibility(session.text_document?.source_bytes ?? 0);
+  const eligibility = markdownEligibility(
+    session.text_document?.source_bytes ?? 0,
+  );
   return {
     mode: eligibility === 'full' ? 'rendered' : 'source',
     eligibility,
@@ -350,6 +396,7 @@ export const MarkdownSurface = forwardRef<
 >(function MarkdownSurface(
   {
     session,
+    onFailure,
     projectionSuppressed = false,
     recoveryAttempt = 0,
     lifecycleFailureProbe = false,
@@ -370,16 +417,23 @@ export const MarkdownSurface = forwardRef<
   const lifecycleGeneration = useRef(0);
   const renderGeneration = useRef(0);
   if (!ownedClient.current)
-    ownedClient.current = rendererClient ?? new MarkdownRendererClient(
-      undefined,
-      undefined,
-      undefined,
-      rendererResourceLedger.register(`markdown:${session.id}:${performanceInstanceId}`, textDocumentBytes(session)),
-    );
+    ownedClient.current =
+      rendererClient ??
+      new MarkdownRendererClient(
+        undefined,
+        undefined,
+        undefined,
+        rendererResourceLedger.register(
+          `markdown:${session.id}:${performanceInstanceId}`,
+          textDocumentBytes(session),
+        ),
+      );
   const client = ownedClient.current;
   const editorRef = useRef<TextEditorHandle>(null);
+  const renderedContentRef = useRef<HTMLElement>(null);
   const linkTriggerRef = useRef<HTMLElement | null>(null);
-  const projectedMode = session.markdown_document?.mode ?? initialMarkdownState(session).mode;
+  const projectedMode =
+    session.markdown_document?.mode ?? initialMarkdownState(session).mode;
   const [modeState, setModeState] = useState(() => ({
     sessionId: session.id,
     projectedMode,
@@ -403,14 +457,18 @@ export const MarkdownSurface = forwardRef<
   const modeRef = useRef(projectedMode);
   const sourceSelectionRef = useRef(sourceSelection);
   const onMarkdownChangeRef = useRef(onMarkdownChange);
+  const onFailureRef = useRef(onFailure);
+  onFailureRef.current = onFailure;
   const textDocument = session.text_document!;
   const eligibility = markdownEligibility(textDocument.source_bytes);
   const currentResult =
-    result?.session_id === session.id && result.source_revision === session.revision
+    result?.session_id === session.id &&
+    result.source_revision === session.revision
       ? result
       : null;
   const synchronizedMode =
-    modeState.sessionId === session.id && modeState.projectedMode === projectedMode
+    modeState.sessionId === session.id &&
+    modeState.projectedMode === projectedMode
       ? modeState.localMode
       : projectedMode;
   const mode = projectionSuppressed ? 'source' : synchronizedMode;
@@ -445,21 +503,42 @@ export const MarkdownSurface = forwardRef<
     }
     setResult(null);
     setStatus('scheduled');
-    void client
-      .render({
-        session_id: session.id,
-        source_revision: session.revision,
-        source_text: textDocument.normalized_text,
-      })
+    void Promise.resolve()
+      .then(() =>
+        client.render({
+          session_id: session.id,
+          source_revision: session.revision,
+          source_text: textDocument.normalized_text,
+        }),
+      )
       .then((next) => {
         if (
           !next ||
           renderGeneration.current !== generation ||
           next.session_id !== session.id ||
           next.source_revision !== session.revision
-        ) return;
+        )
+          return;
+        if (consumeRecoveryProbe('projection'))
+          throw new Error('injected_projection_failure');
         setResult(next);
         const nextStatus = next.status;
+        if (nextStatus === 'failed') {
+          const reason = next.diagnostics[0]?.code ?? 'markdown_parse_failed';
+          const stage =
+            reason === 'markdown_worker_failed' ||
+            reason === 'markdown_render_timeout'
+              ? 'worker'
+              : reason === 'markdown_projection_invalid'
+                ? 'projection'
+                : 'parse';
+          reportRecoveryFailure(
+            onFailureRef.current,
+            'markdown',
+            stage,
+            reason,
+          );
+        }
         setStatus(nextStatus);
         const selection = sourceSelectionRef.current;
         onMarkdownChangeRef.current(session.id, session.revision, {
@@ -474,12 +553,64 @@ export const MarkdownSurface = forwardRef<
             : null,
         });
         onMetadataContribution?.(
-          rendererContribution(session, markdownMetadataFacts(next), next.source_revision),
+          rendererContribution(
+            session,
+            markdownMetadataFacts(next),
+            next.source_revision,
+          ),
         );
+      })
+      .catch(() => {
+        if (renderGeneration.current !== generation) return;
+        const failure: MarkdownRenderResult = {
+          request_id: 'projection-failure',
+          session_id: session.id,
+          source_revision: session.revision,
+          sanitizer_version: MARKDOWN_SANITIZER_VERSION,
+          status: 'failed',
+          tree: null,
+          outline: [],
+          search_text: [],
+          diagnostics: [
+            {
+              code: 'markdown_projection_failed',
+              message: 'Markdown projection failed. Source remains available.',
+            },
+          ],
+          measurements: {
+            source_bytes: textDocument.source_bytes,
+            parse_duration_ms: 0,
+            node_count: 0,
+            heading_count: 0,
+            search_entry_count: 0,
+          },
+        };
+        setResult(failure);
+        setStatus('failed');
+        reportRecoveryFailure(
+          onFailureRef.current,
+          'markdown',
+          'projection',
+          'markdown_projection_failed',
+        );
+        try {
+          onMarkdownChangeRef.current(session.id, session.revision, {
+            mode: modeRef.current,
+            eligibility,
+            render_revision: null,
+            render_status: 'failed',
+            printable: false,
+            outline_count: 0,
+            source_selection: null,
+          });
+        } catch {
+          /* Keep the local source fallback available even if shell projection fails. */
+        }
       });
     return () => {
       client.cancel();
-      if (renderGeneration.current === generation) renderGeneration.current += 1;
+      if (renderGeneration.current === generation)
+        renderGeneration.current += 1;
     };
   }, [
     client,
@@ -490,20 +621,17 @@ export const MarkdownSurface = forwardRef<
     textDocument.normalized_text,
   ]);
 
-  useEffect(
-    () => {
-      const generation = ++lifecycleGeneration.current;
-      return () => {
-        void Promise.resolve().then(() => {
-          if (ownsClient.current && lifecycleGeneration.current === generation) {
-            ownedClient.current?.dispose();
-            ownedClient.current = null;
-          }
-        });
-      };
-    },
-    [],
-  );
+  useEffect(() => {
+    const generation = ++lifecycleGeneration.current;
+    return () => {
+      void Promise.resolve().then(() => {
+        if (ownsClient.current && lifecycleGeneration.current === generation) {
+          ownedClient.current?.dispose();
+          ownedClient.current = null;
+        }
+      });
+    };
+  }, []);
 
   useEffect(() => {
     if (mode !== 'source' || !sourceSelection) return;
@@ -617,12 +745,43 @@ export const MarkdownSurface = forwardRef<
         return true;
       }
       if (command === 'copy') {
-        void navigator.clipboard?.writeText(
-          currentResult?.search_text.map(({ text }) => text).join('\n') ?? '',
-        );
-        return true;
+        if (!navigator.clipboard) return false;
+        const selection = window.getSelection();
+        const content = renderedContentRef.current;
+        const selectedText =
+          session.lifecycle === 'active' &&
+          currentResult?.tree &&
+          content &&
+          selection &&
+          selection.rangeCount > 0 &&
+          Array.from({ length: selection.rangeCount }, (_, index) =>
+            selection.getRangeAt(index),
+          ).every(
+            (range) =>
+              content.contains(range.startContainer) &&
+              content.contains(range.endContainer),
+          )
+            ? selection.toString()
+            : '';
+        return navigator.clipboard
+          .writeText(
+            selectedText ||
+              currentResult?.search_text.map(({ text }) => text).join('\n') ||
+              '',
+          )
+          .then(() => true);
       }
       return false;
+    },
+    dismissModal() {
+      if (
+        session.lifecycle !== 'active' ||
+        mode !== 'rendered' ||
+        !pendingLink?.normalized_target
+      )
+        return false;
+      closeLink();
+      return true;
     },
     selectRange(from, to) {
       setSourceSelection({
@@ -673,7 +832,11 @@ export const MarkdownSurface = forwardRef<
   if (mode === 'source' || eligibility !== 'full') {
     return (
       <div className="markdown-surface markdown-source-mode">
-        {eligibility !== 'full' && <span className="visually-hidden" role="status">Live preview is unavailable above 16 MiB.</span>}
+        {eligibility !== 'full' && (
+          <span className="visually-hidden" role="status">
+            Live preview is unavailable above 16 MiB.
+          </span>
+        )}
         <div className="markdown-source-editor">
           <TextEditorSurface
             ref={editorRef}
@@ -684,7 +847,15 @@ export const MarkdownSurface = forwardRef<
         </div>
         {!projectionSuppressed && currentResult?.tree && (
           <article className="markdown-document markdown-print-document">
-            <SafeTree node={currentResult.tree} session={session} activeNodeId={null} onLink={beginLink} onLocalLink={openLocalLink} localAssetGateway={localAssetGateway} onMermaidSource={enterMermaidSource} />
+            <SafeTree
+              node={currentResult.tree}
+              session={session}
+              activeNodeId={null}
+              onLink={beginLink}
+              onLocalLink={openLocalLink}
+              localAssetGateway={localAssetGateway}
+              onMermaidSource={enterMermaidSource}
+            />
           </article>
         )}
       </div>
@@ -693,7 +864,9 @@ export const MarkdownSurface = forwardRef<
 
   return (
     <div className="markdown-surface">
-      {lifecycleFailureProbe && recoveryAttempt === 0 && <LifecycleMarkdownFailure />}
+      {lifecycleFailureProbe && recoveryAttempt === 0 && (
+        <LifecycleMarkdownFailure />
+      )}
       <span className="visually-hidden" aria-live="polite">
         {status === 'scheduled' || status === 'rendering'
           ? 'Rendering preview'
@@ -712,7 +885,9 @@ export const MarkdownSurface = forwardRef<
               <li key={heading.id} data-level={heading.level}>
                 <button
                   type="button"
-                  onClick={() => selectHeading(heading.source_range, heading.node_id)}
+                  onClick={() =>
+                    selectHeading(heading.source_range, heading.node_id)
+                  }
                 >
                   {heading.label}
                 </button>
@@ -736,10 +911,18 @@ export const MarkdownSurface = forwardRef<
               ? 'No matches'
               : `${(activeMatch ?? 0) + 1} of ${matches.length}`}
           </span>
-          <button type="button" onClick={() => moveMatch(-1)} disabled={!matches.length}>
+          <button
+            type="button"
+            onClick={() => moveMatch(-1)}
+            disabled={!matches.length}
+          >
             Previous
           </button>
-          <button type="button" onClick={() => moveMatch(1)} disabled={!matches.length}>
+          <button
+            type="button"
+            onClick={() => moveMatch(1)}
+            disabled={!matches.length}
+          >
             Next
           </button>
           <button type="button" onClick={() => setSearchOpen(false)}>
@@ -748,14 +931,17 @@ export const MarkdownSurface = forwardRef<
         </div>
       )}
       <article
+        ref={renderedContentRef}
         className="markdown-document"
         aria-busy={status === 'scheduled'}
         data-performance-ready={currentResult?.tree ? 'true' : 'pending'}
         data-performance-status={currentResult?.status ?? status}
-        data-performance-duration={currentResult?.measurements.parse_duration_ms ?? ''}
+        data-performance-duration={
+          currentResult?.measurements.parse_duration_ms ?? ''
+        }
         data-performance-diagnostic={currentResult?.diagnostics[0]?.code ?? ''}
       >
-        {currentResult?.tree ? (
+        {currentResult?.tree && status !== 'empty' ? (
           <SafeTree
             node={currentResult.tree}
             session={session}
@@ -765,15 +951,25 @@ export const MarkdownSurface = forwardRef<
             localAssetGateway={localAssetGateway}
             onMermaidSource={enterMermaidSource}
           />
-        ) : status === 'failed' ? (
+        ) : status === 'failed' || status === 'limited' ? (
           <div className="markdown-failure">
-            <p role="alert">Markdown preview failed safely. Source remains available.</p>
-            <button type="button" onClick={onEnterRecoverySource ?? enterSourceMode}>View source</button>
+            <p role="alert">
+              {currentResult?.diagnostics[0]?.message ??
+                'Markdown preview failed safely. Source remains available.'}
+            </p>
+            <button
+              type="button"
+              onClick={onEnterRecoverySource ?? enterSourceMode}
+            >
+              View source
+            </button>
           </div>
         ) : status === 'empty' ? (
           <p>This document is empty.</p>
         ) : (
-          <p className="markdown-pending" aria-hidden="true">Rendering preview</p>
+          <p className="markdown-pending" aria-hidden="true">
+            Rendering preview
+          </p>
         )}
       </article>
       {localLinkError && <p role="alert">{localLinkError}</p>}
@@ -826,14 +1022,56 @@ export const MarkdownSurface = forwardRef<
   );
 });
 
-const markdownMetadataFacts = (result: MarkdownRenderResult): MetadataObservation[] => [
-  { key: 'renderer.status', availability: 'available', value: { kind: 'text', value: result.status } },
-  { key: 'markdown.sanitizer_version', availability: 'available', value: { kind: 'integer', value: String(result.sanitizer_version) } },
-  { key: 'markdown.source_bytes', availability: 'available', value: { kind: 'integer', value: String(result.measurements.source_bytes) }, unit: 'bytes' },
-  { key: 'markdown.node_count', availability: 'available', value: { kind: 'integer', value: String(result.measurements.node_count) } },
-  { key: 'markdown.heading_count', availability: 'available', value: { kind: 'integer', value: String(result.measurements.heading_count) } },
-  { key: 'markdown.search_entry_count', availability: 'available', value: { kind: 'integer', value: String(result.measurements.search_entry_count) } },
-  { key: 'markdown.parse_duration', availability: 'available', value: { kind: 'decimal', value: String(result.measurements.parse_duration_ms) }, unit: 'ms' },
+const markdownMetadataFacts = (
+  result: MarkdownRenderResult,
+): MetadataObservation[] => [
+  {
+    key: 'renderer.status',
+    availability: 'available',
+    value: { kind: 'text', value: result.status },
+  },
+  {
+    key: 'markdown.sanitizer_version',
+    availability: 'available',
+    value: { kind: 'integer', value: String(result.sanitizer_version) },
+  },
+  {
+    key: 'markdown.source_bytes',
+    availability: 'available',
+    value: { kind: 'integer', value: String(result.measurements.source_bytes) },
+    unit: 'bytes',
+  },
+  {
+    key: 'markdown.node_count',
+    availability: 'available',
+    value: { kind: 'integer', value: String(result.measurements.node_count) },
+  },
+  {
+    key: 'markdown.heading_count',
+    availability: 'available',
+    value: {
+      kind: 'integer',
+      value: String(result.measurements.heading_count),
+    },
+  },
+  {
+    key: 'markdown.search_entry_count',
+    availability: 'available',
+    value: {
+      kind: 'integer',
+      value: String(result.measurements.search_entry_count),
+    },
+  },
+  {
+    key: 'markdown.parse_duration',
+    availability: 'available',
+    value: {
+      kind: 'decimal',
+      value: String(result.measurements.parse_duration_ms),
+    },
+    unit: 'ms',
+  },
 ];
 
-const textDocumentBytes = (session: ShellSession): number => session.text_document?.source_bytes ?? 0;
+const textDocumentBytes = (session: ShellSession): number =>
+  session.text_document?.source_bytes ?? 0;

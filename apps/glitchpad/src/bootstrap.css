@@ -1,0 +1,31 @@
+@import '../../../brand/fonts/fonts.css';
+@import '../../../brand/tokens/colors.css';
+@import '../../../brand/tokens/interface.css';
+
+.application-recovery {
+  box-sizing: border-box;
+  min-height: 100vh;
+  padding: var(--bb-layout-gutter-compact);
+  padding-top: max(var(--bb-layout-gutter-compact), env(safe-area-inset-top));
+  padding-bottom: max(
+    var(--bb-layout-gutter-compact),
+    env(safe-area-inset-bottom)
+  );
+  overflow-wrap: anywhere;
+  background: var(--gl-bg);
+  color: var(--gl-fg);
+  font-family: var(--bb-typography-body-family);
+}
+.application-recovery button {
+  min-height: var(--bb-layout-gutter-expanded);
+  max-width: 100%;
+  padding: var(--bb-spacing-control-block) var(--bb-spacing-control-inline);
+  border: var(--bb-border-default) solid var(--gl-border);
+  background: var(--gl-panel-raised);
+  color: var(--gl-fg);
+  font: inherit;
+}
+.application-recovery button:focus-visible {
+  outline: var(--bb-focus-width) solid var(--bb-focus-ring);
+  outline-offset: var(--bb-focus-offset);
+}

@@ -1,6 +1,9 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { createRef, useState } from 'react';
+import { collectFailureEvents, recordFailure } from '../domain/diagnostic-failures';
 import { ImageSurface } from './ImageSurface';
+import type { TextEditorHandle } from './TextEditorSurface';
 import { createImageSession, type ImageRenderResult } from '../domain/image-contract';
 import { makeSession } from '../test/fixtures';
 import type { ShellSession } from '../domain/contracts';
@@ -21,6 +24,63 @@ const createUrl = vi.fn(() => 'blob:owned-image');
 const revokeUrl = vi.fn();
 
 describe('read-only raster viewport', () => {
+  it('publishes one failed image state for a native render rejection without leaking exception text or restarting render', async () => {
+    vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue('SyntheticWebViewNoPlatform/1');
+    const original = { ...imageSession(), lifecycle: 'active' as const };
+    const ref = createRef<TextEditorHandle>();
+    const renderImage = vi.fn(() => Promise.reject(new Error('private document bytes content://private/provider')));
+    const published = vi.fn();
+    const before = (await collectFailureEvents()).length;
+    function ParentContract() {
+      const [session, setSession] = useState(original);
+      return <ImageSurface ref={ref} session={session} gateway={gateway} onImageChange={(id, revision, image) => {
+        published(id, revision, image);
+        setSession(previous => ({ ...previous, image_document: image }));
+        if (image.status === 'failed') recordFailure('image', 'render', 'image_render_failed');
+      }} />;
+    }
+    const gateway = { render: renderImage };
+    {
+      render(<ParentContract />);
+      await waitFor(() => expect(screen.getByText(/This image could not be previewed safely/u)).toBeInTheDocument());
+      expect(published).toHaveBeenCalledTimes(1);
+      expect(published).toHaveBeenCalledWith(original.id, original.revision, expect.objectContaining({ status: 'failed' }));
+      expect(renderImage).toHaveBeenCalledTimes(1);
+      expect(ref.current!.invoke('zoom_in')).toBe(false);
+      expect(ref.current!.invoke('fit')).toBe(false);
+      const failures = (await collectFailureEvents()).slice(before);
+      expect(failures).toHaveLength(1);
+      const { occurred_unix_ms, platform, failure, ...fields } = failures[0];
+      expect(Number.isSafeInteger(occurred_unix_ms)).toBe(true);
+      expect(platform).toBe('unknown');
+      expect(fields).toEqual({ level: 'error', event_id: 'task_failed', component: 'renderer', duration_ms: null, byte_count: null, error_code: 'image_render_failed' });
+      expect(failure).toBeDefined();
+      const { correlation_id, ...failureFields } = failure!;
+      expect(correlation_id).toMatch(/^[0-9a-f]{32}$/u);
+      expect(failureFields).toEqual({ component: 'image', stage: 'render', reason: 'image_render_failed' });
+      expect(JSON.stringify(published.mock.calls)).not.toContain('content://private');
+      expect(JSON.stringify(failures)).not.toContain('private document bytes');
+      expect(original.source_id).toBe('opaque');
+    }
+  });
+
+  it('routes shared Zoom and Fit to the same local viewport and refuses without preview', async () => {
+    const ref = createRef<TextEditorHandle>();
+    let resolve!: (value: ImageRenderResult) => void;
+    const renderImage = vi.fn(() => new Promise<ImageRenderResult>((done) => { resolve = done; }));
+    render(<ImageSurface ref={ref} session={{ ...imageSession(), lifecycle: 'active' }} gateway={{ render: renderImage }} />);
+    expect(ref.current).not.toBeNull();
+    expect(ref.current!.invoke('zoom_in')).toBe(false);
+    expect(ref.current!.invoke('fit')).toBe(false);
+    await act(async () => { resolve(result()); await Promise.resolve(); });
+    await screen.findByRole('img');
+    act(() => { expect(ref.current!.invoke('zoom_in')).toBe(true); });
+    expect(screen.getByLabelText('Image zoom')).toHaveTextContent('125%');
+    fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }));
+    expect(screen.getByLabelText('Image zoom')).toHaveTextContent('156%');
+    act(() => { expect(ref.current!.invoke('fit')).toBe(true); });
+    expect(screen.getByLabelText('Image zoom')).toHaveTextContent('100%');
+  });
   beforeEach(() => { createUrl.mockClear(); revokeUrl.mockClear(); vi.stubGlobal('URL', class extends URL { static createObjectURL = createUrl; static revokeObjectURL = revokeUrl; }); });
   afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
   it('pauses active animation when reduced motion changes and schedules no subsequent frames', async () => {
@@ -198,9 +258,16 @@ describe('read-only raster viewport', () => {
     expect(revokeUrl).toHaveBeenCalledWith('blob:owned-image');
   });
   it('releases a rejected browser preview exactly once', async () => {
-    const view = render(<ImageSurface session={imageSession()} gateway={{ render: () => Promise.resolve(result()) }} />);
-    fireEvent.error(await screen.findByRole('img'));
+    const onImageChange = vi.fn();
+    const session = imageSession();
+    const view = render(<ImageSurface session={session} onImageChange={onImageChange} gateway={{ render: () => Promise.resolve(result()) }} />);
+    const image = await screen.findByRole('img');
+    onImageChange.mockClear();
+    fireEvent.error(image);
+    fireEvent.error(image);
     await waitFor(() => expect(screen.queryByRole('img')).not.toBeInTheDocument());
+    expect(onImageChange).toHaveBeenCalledTimes(1);
+    expect(onImageChange).toHaveBeenCalledWith(session.id, session.revision, expect.objectContaining({ status: 'failed' }));
     expect(revokeUrl).toHaveBeenCalledTimes(1);
     view.unmount();
     expect(revokeUrl).toHaveBeenCalledTimes(1);

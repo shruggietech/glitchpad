@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{Mutex, MutexGuard};
 
 use glitchpad_core::contracts::{CoreError, CoreErrorCategory};
-use glitchpad_core::source::{DesktopSourceSummary, SourceId};
+use glitchpad_core::source::{DesktopSourceSummary, ExternalRevision, SourceId};
 use serde::Serialize;
 #[cfg(target_os = "macos")]
 use tauri::Emitter;
@@ -336,6 +336,8 @@ pub(crate) async fn save_desktop_source_as(
     app: tauri::AppHandle,
     suggested_name: String,
     bytes: Vec<u8>,
+    original_source_id: Option<SourceId>,
+    expected_original_revision: Option<ExternalRevision>,
 ) -> Result<bool, CoreError> {
     let safe_name = Path::new(&suggested_name)
         .file_name()
@@ -367,7 +369,12 @@ pub(crate) async fn save_desktop_source_as(
             "The selected Save As destination is not a local file",
         )
     })?;
-    app.state::<DesktopSourceHost>().save_as(&path, &bytes)?;
+    app.state::<DesktopSourceHost>().save_as_with_original(
+        &path,
+        &bytes,
+        original_source_id.as_ref(),
+        expected_original_revision.as_ref(),
+    )?;
     Ok(true)
 }
 

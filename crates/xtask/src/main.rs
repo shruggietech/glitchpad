@@ -215,6 +215,11 @@ fn docs(repository: &Path) -> Result<(), String> {
     run(repository, "pnpm", ["run", "check:persistence"])?;
     run(repository, "pnpm", ["run", "check:performance"])?;
     run(repository, "pnpm", ["run", "check:shell-layout"])?;
+    run(
+        repository,
+        "pnpm",
+        ["run", "check:android-authoring-layout"],
+    )?;
     run(repository, "pnpm", ["run", "check:android-package"])?;
     run(repository, "pnpm", ["run", "check:linux-package"])?;
     run(repository, "pnpm", ["run", "check:macos-package"])?;

@@ -1,7 +1,9 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { EditorView } from '@codemirror/view';
 import axe from 'axe-core';
-import { StrictMode } from 'react';
+import { createRef, StrictMode } from 'react';
+import { MermaidSurface } from './MermaidSurface';
+import type { TextEditorHandle } from './TextEditorSurface';
 import { describe, expect, it, vi } from 'vitest';
 
 import { App } from '../App';
@@ -56,6 +58,28 @@ const mermaidSession = (content: string) => ({
 });
 
 describe('Mermaid surface', () => {
+  it('reports unavailable viewport actions when only source exists', () => {
+    const ref = createRef<TextEditorHandle>();
+    render(<MermaidSurface ref={ref} session={mermaidSession('')} onDocumentChange={vi.fn()} onLanguageChange={vi.fn()} onMermaidChange={vi.fn()} />);
+    expect(ref.current!.invoke('zoom_in')).toBe(false);
+    expect(ref.current!.invoke('zoom_out')).toBe(false);
+    expect(ref.current!.invoke('fit')).toBe(false);
+  });
+
+  it('awaits preview clipboard writes and exposes denial', async () => {
+    const ref = createRef<TextEditorHandle>();
+    const original = Object.getOwnPropertyDescriptor(navigator, 'clipboard');
+    const writeText = vi.fn(() => Promise.reject(new Error('clipboard denied')));
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
+    try {
+      render(<MermaidSurface ref={ref} session={mermaidSession('flowchart TB\n  A --> B')} onDocumentChange={vi.fn()} onLanguageChange={vi.fn()} onMermaidChange={vi.fn()} />);
+      await screen.findByRole('img');
+      await expect(ref.current!.invoke('copy')).rejects.toThrow('clipboard denied');
+    } finally {
+      if (original) Object.defineProperty(navigator, 'clipboard', original);
+      else Reflect.deleteProperty(navigator, 'clipboard');
+    }
+  });
   it('renders standalone source locally and exposes navigation and metadata', async () => {
     render(<App sessions={[mermaidSession('flowchart LR\n  Alpha --> Beta')]} />);
     expect(await screen.findByRole('img', { name: /architecture\.mmd Mermaid diagram/iu }, { timeout: 10_000 })).toBeInTheDocument();

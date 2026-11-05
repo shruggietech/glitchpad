@@ -1094,14 +1094,53 @@ impl DesktopSourceHost {
     ///
     /// Returns a safe budget or persistence error without exposing the destination path.
     pub fn save_as(&self, path: &Path, bytes: &[u8]) -> Result<DurabilityGuarantee, CoreError> {
-        let byte_count = u64::try_from(bytes.len())
-            .map_err(|_| budget_error("The Save As payload does not fit this platform"))?;
-        if byte_count > MAX_SAVE_BYTES {
-            return Err(budget_error(
-                "The Save As payload exceeds the 16 MiB host budget",
-            ));
-        }
+        validate_save_as_payload(bytes)?;
         persistence::save_as(path, bytes)
+    }
+
+    /// Saves an explicit copy without replacing its captured original or a file alias.
+    ///
+    /// # Errors
+    ///
+    /// Refuses incomplete protection, stale/closed sources, original aliases, or a destination
+    /// changed during staging. Without protection, ordinary Save As keeps its existing behavior.
+    pub fn save_as_with_original(
+        &self,
+        path: &Path,
+        bytes: &[u8],
+        original_source: Option<&SourceId>,
+        expected_original: Option<&ExternalRevision>,
+    ) -> Result<DurabilityGuarantee, CoreError> {
+        let (source, expected) = match (original_source, expected_original) {
+            (None, None) => return self.save_as(path, bytes),
+            (Some(source), Some(expected)) => (source, expected),
+            _ => {
+                return Err(CoreError::new(
+                    CoreErrorCategory::InvalidInput,
+                    "Copy Save As requires both original source and revision",
+                    false,
+                    true,
+                ));
+            }
+        };
+        validate_save_as_payload(bytes)?;
+        let destination = self.prepare_independent_destination(source, expected, path)?;
+        let validate = || {
+            if self
+                .prepare_independent_destination(source, expected, path)?
+                .as_ref()
+                != destination.as_ref()
+            {
+                return Err(CoreError::new(
+                    CoreErrorCategory::Conflict,
+                    "The copy destination changed while saving",
+                    true,
+                    true,
+                ));
+            }
+            Ok(())
+        };
+        persistence::export_generated(path, bytes, destination.as_ref(), validate)
     }
 
     /// Observes an export destination without granting permission to replace the original.
@@ -1114,10 +1153,24 @@ impl DesktopSourceHost {
         expected: &ExternalRevision,
         path: &Path,
     ) -> Result<Option<ExternalRevision>, CoreError> {
-        if !self.image_revision_matches(source, expected)? {
+        self.prepare_independent_destination(source, expected, path)
+    }
+
+    fn prepare_independent_destination(
+        &self,
+        source: &SourceId,
+        expected: &ExternalRevision,
+        path: &Path,
+    ) -> Result<Option<ExternalRevision>, CoreError> {
+        let current = {
+            let state = self.lock_state()?;
+            let record = state.sources.get(source).ok_or_else(source_not_found)?;
+            observe_revision(&record.path)?.1
+        };
+        if !integrity_expected_matches(source, expected, &current) {
             return Err(CoreError::new(
                 CoreErrorCategory::Conflict,
-                "The icon source changed",
+                "The original source changed before the independent write",
                 true,
                 true,
             ));
@@ -1127,19 +1180,19 @@ impl DesktopSourceHost {
                 if metadata.file_type().is_symlink() || !metadata.is_file() {
                     return Err(CoreError::new(
                         CoreErrorCategory::InvalidInput,
-                        "The export destination must be an independent regular file",
+                        "The destination must be an independent regular file",
                         false,
                         true,
                     ));
                 }
                 let (identity, revision) = observe_revision(path)?;
                 if identity.contract.strength != IdentityStrength::Strong
-                    || expected.identity.strength != IdentityStrength::Strong
-                    || identity.contract == expected.identity
+                    || current.identity.strength != IdentityStrength::Strong
+                    || identity.contract == current.identity
                 {
                     return Err(CoreError::new(
                         CoreErrorCategory::CapabilityDenied,
-                        "Export cannot replace the original icon or an alias",
+                        "The destination cannot replace the original source or an alias",
                         false,
                         true,
                     ));
@@ -1703,6 +1756,17 @@ fn failed_integrity_read(operation: &IntegrityOperation, error: &CoreError) -> I
     )
 }
 
+fn validate_save_as_payload(bytes: &[u8]) -> Result<(), CoreError> {
+    let byte_count = u64::try_from(bytes.len())
+        .map_err(|_| budget_error("The Save As payload does not fit this platform"))?;
+    if byte_count > MAX_SAVE_BYTES {
+        return Err(budget_error(
+            "The Save As payload exceeds the 16 MiB host budget",
+        ));
+    }
+    Ok(())
+}
+
 fn integrity_expected_matches(
     source_id: &SourceId,
     expected: &ExternalRevision,
@@ -1926,6 +1990,143 @@ pub(crate) mod tests {
         fn drop(&mut self) {
             let _ = fs::remove_dir_all(&self.directory);
         }
+    }
+
+    #[test]
+    fn protected_copy_save_as_writes_independent_exact_bytes_and_keeps_original_state() {
+        let file = TemporarySource::new(b"# original\n");
+        let host = DesktopSourceHost::new();
+        let source = host.acquire(DesktopDelivery::dialog(file.path())).unwrap();
+        let destination = file.directory.join("copy.md");
+        let expected = path_free_external_revision(&source.source_id, &source.external_revision);
+        let bytes = "# edited copy\nUnicode 文本\n".as_bytes();
+        host.save_as_with_original(
+            &destination,
+            bytes,
+            Some(&source.source_id),
+            Some(&expected),
+        )
+        .unwrap();
+        assert_eq!(fs::read(&destination).unwrap(), bytes);
+        assert_eq!(fs::read(file.path()).unwrap(), b"# original\n");
+        assert_eq!(
+            host.lock_state().unwrap().sources[&source.source_id]
+                .summary
+                .external_revision,
+            source.external_revision
+        );
+        fs::write(&destination, b"previous independent destination").unwrap();
+        host.save_as_with_original(
+            &destination,
+            b"replace independent copy",
+            Some(&source.source_id),
+            Some(&expected),
+        )
+        .unwrap();
+        assert_eq!(fs::read(&destination).unwrap(), b"replace independent copy");
+        assert_eq!(fs::read(file.path()).unwrap(), b"# original\n");
+    }
+
+    #[test]
+    fn protected_copy_save_as_refuses_original_and_hardlink_even_with_path_free_revision() {
+        let file = TemporarySource::new(b"original bytes");
+        let alias = file.directory.join("alias.md");
+        fs::hard_link(file.path(), &alias).unwrap();
+        let host = DesktopSourceHost::new();
+        let source = host.acquire(DesktopDelivery::dialog(file.path())).unwrap();
+        let expected = path_free_external_revision(&source.source_id, &source.external_revision);
+        for destination in [file.path(), alias.as_path()] {
+            let error = host
+                .save_as_with_original(
+                    destination,
+                    b"edited copy",
+                    Some(&source.source_id),
+                    Some(&expected),
+                )
+                .unwrap_err();
+            assert_eq!(error.category, CoreErrorCategory::CapabilityDenied);
+        }
+        assert_eq!(fs::read(file.path()).unwrap(), b"original bytes");
+        assert_eq!(fs::read(&alias).unwrap(), b"original bytes");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn protected_copy_save_as_refuses_symbolic_alias_without_changing_link_or_original() {
+        let file = TemporarySource::new(b"original bytes");
+        let alias = file.directory.join("symbolic-alias.md");
+        std::os::unix::fs::symlink(file.path(), &alias).unwrap();
+        let host = DesktopSourceHost::new();
+        let source = host.acquire(DesktopDelivery::dialog(file.path())).unwrap();
+        assert!(
+            host.save_as_with_original(
+                &alias,
+                b"edited copy",
+                Some(&source.source_id),
+                Some(&source.external_revision)
+            )
+            .is_err()
+        );
+        assert!(
+            fs::symlink_metadata(&alias)
+                .unwrap()
+                .file_type()
+                .is_symlink()
+        );
+        assert_eq!(fs::read(file.path()).unwrap(), b"original bytes");
+    }
+
+    #[test]
+    fn protected_copy_save_as_preserves_destinations_for_stale_closed_or_partial_authority() {
+        let file = TemporarySource::new(b"original bytes");
+        let host = DesktopSourceHost::new();
+        let source = host.acquire(DesktopDelivery::dialog(file.path())).unwrap();
+        let destination = file.directory.join("copy.md");
+        for (id, revision) in [
+            (Some(&source.source_id), None),
+            (None, Some(&source.external_revision)),
+        ] {
+            assert_eq!(
+                host.save_as_with_original(&destination, b"copy", id, revision)
+                    .unwrap_err()
+                    .category,
+                CoreErrorCategory::InvalidInput
+            );
+            assert!(!destination.exists());
+        }
+        fs::write(file.path(), b"externally changed original").unwrap();
+        assert_eq!(
+            host.save_as_with_original(
+                &destination,
+                b"copy",
+                Some(&source.source_id),
+                Some(&source.external_revision)
+            )
+            .unwrap_err()
+            .category,
+            CoreErrorCategory::Conflict
+        );
+        assert!(!destination.exists());
+        assert_eq!(
+            fs::read(file.path()).unwrap(),
+            b"externally changed original"
+        );
+        host.close(&source.source_id).unwrap();
+        assert_eq!(
+            host.save_as_with_original(
+                &destination,
+                b"copy",
+                Some(&source.source_id),
+                Some(&source.external_revision)
+            )
+            .unwrap_err()
+            .category,
+            CoreErrorCategory::NotFound
+        );
+        assert!(!destination.exists());
+        host.save_as_with_original(file.path(), b"ordinary explicit Save As", None, None)
+            .unwrap();
+        assert_eq!(fs::read(file.path()).unwrap(), b"ordinary explicit Save As");
     }
 
     #[test]

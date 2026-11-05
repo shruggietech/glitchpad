@@ -46,7 +46,7 @@ jobs:
         run: pnpm check:brand
 
       - name: Setup Python for the bundled BrandBuilder verifier
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: '3.12'
 

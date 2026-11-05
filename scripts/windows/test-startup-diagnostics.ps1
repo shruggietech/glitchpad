@@ -55,3 +55,10 @@ $refused = $false
 try { New-PortableStartupDiagnostic -Observation $observation -Scenario editable -Stage named_button_ready -SourceCommit ('a' * 40) -ManifestDigest ('b' * 64) -Succeeded $false -ElapsedMilliseconds 1 -DocumentAction $action | Out-Null } catch { $refused = $true }
 if (-not $refused) { throw 'Arbitrary document action phase was admitted.' }
 Write-Output 'Failure-only document action allowlist tests passed.'
+
+$action = @{ phase = 'action_wait'; resolver_error = $true; resolver_method_missing = $true; exception_message = 'private-error-content'; error_id = 'private-error-id' }
+$receipt = New-PortableStartupDiagnostic -Observation $observation -Scenario editable -Stage named_button_ready -SourceCommit ('a' * 40) -ManifestDigest ('b' * 64) -Succeeded $false -ElapsedMilliseconds 10000 -DocumentAction $action
+if (-not $receipt.document_action.resolver_error -or -not $receipt.document_action.resolver_method_missing) { throw 'Fixed UIA error classification is missing.' }
+$json = $receipt | ConvertTo-Json -Depth 4 -Compress
+if ($json -match 'private-error|exception_message|error_id') { throw 'Raw UIA error was included in failure observations.' }
+Write-Output 'Failure-only UIA error classification redaction tests passed.'

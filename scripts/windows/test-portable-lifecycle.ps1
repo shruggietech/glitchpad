@@ -303,13 +303,13 @@ function Wait-ActionableNamedElement([Diagnostics.Process] $Process, [string] $N
             foreach ($candidate in $candidates) {
                 try {
                     $owner = $candidate
-                    while ($owner -and -not [System.Windows.Automation.AutomationElement]::Compare($owner, $menu)) {
+                    while ($owner -and -not [System.Windows.Automation.Automation]::Compare($owner, $menu)) {
                         $owner = [System.Windows.Automation.TreeWalker]::ControlViewWalker.GetParent($owner)
                     }
                     $script:documentActionObservation['menu_owned'] = $null -ne $owner
                     if (-not $owner) { continue }
                     $element = $candidate
-                    while ($element -and -not [System.Windows.Automation.AutomationElement]::Compare($element, $menu)) {
+                    while ($element -and -not [System.Windows.Automation.Automation]::Compare($element, $menu)) {
                         $patternObject = $null
                         if ($element.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern, [ref]$patternObject)) {
                             $script:documentActionObservation['enabled'] = $element.Current.IsEnabled
@@ -332,7 +332,11 @@ function Wait-ActionableNamedElement([Diagnostics.Process] $Process, [string] $N
                         $element = [System.Windows.Automation.TreeWalker]::ControlViewWalker.GetParent($element)
                     }
                 }
-                catch { continue }
+                catch {
+                    $script:documentActionObservation['resolver_error'] = $true
+                    if ($_.FullyQualifiedErrorId -eq 'MethodNotFound') { $script:documentActionObservation['resolver_method_missing'] = $true }
+                    continue
+                }
             }
         }
         Start-Sleep -Milliseconds 50
@@ -384,7 +388,7 @@ function Invoke-NamedButton([Diagnostics.Process] $Process, [string] $Name) {
 }
 
 function Invoke-DocumentCommand([Diagnostics.Process] $Process, [string] $Name, [string] $Shortcut = '') {
-    $script:documentActionObservation = @{ phase = 'menu_wait'; menu_available = $false; candidate_available = $false; menu_owned = $false; enabled = $null; visible = $null; scroll_requested = $false; click_dispatched = $false }
+    $script:documentActionObservation = @{ phase = 'menu_wait'; menu_available = $false; candidate_available = $false; menu_owned = $false; enabled = $null; visible = $null; scroll_requested = $false; click_dispatched = $false; resolver_error = $false; resolver_method_missing = $false }
     Invoke-NamedButton $Process 'Document tools'
     $item = Wait-ActionableNamedElement $Process $Name $Shortcut
     Click-AutomationElement $Process $item $Name

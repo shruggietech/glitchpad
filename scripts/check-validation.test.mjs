@@ -416,7 +416,7 @@ test('Android delivery instrumentation gets a bounded clean-state retry without 
   );
   assert.match(
     native,
-    /fun s047FaultJourney\(\)[\s\S]+rootFailureRetainsDraft\(\)[\s\S]+verifyMarkdownFailures\(scenario, corpus\)/u,
+    /fun s047FaultJourney\(\)[\s\S]+verifyRootFailureRetainsDraft\(scenario\)[\s\S]+verifyMarkdownFailures\(scenario, corpus\)/u,
   );
   assert.match(
     native,

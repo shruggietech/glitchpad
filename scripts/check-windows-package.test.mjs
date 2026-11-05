@@ -286,6 +286,15 @@ test('desktop lifecycle observes the active modal and preserves document action 
   assert.match(menu, /title="Application menu"/u);
   assert.match(menu, /title="Document tools"/u);
   assert.ok(app.includes('inert={'));
+  assert.ok(
+    !lifecycle.includes(
+      '[System.Windows.Automation.AutomationElement]::Compare',
+    ),
+    'Compare is declared on Automation, not AutomationElement',
+  );
+  assert.ok(
+    lifecycle.includes('[System.Windows.Automation.Automation]::Compare'),
+  );
   const geometry = lifecycle.slice(
     lifecycle.indexOf('function Assert-MenuGeometry('),
     lifecycle.indexOf('function Wait-DeviceScaleMarker('),

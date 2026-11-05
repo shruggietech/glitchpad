@@ -1,5 +1,17 @@
+[CmdletBinding()]
+param([switch] $ApiPreflightOnly)
+
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
+if ($IsWindows) {
+    Add-Type -AssemblyName UIAutomationClient
+    $compare = [System.Windows.Automation.Automation].GetMethod('Compare', [Type[]]@([System.Windows.Automation.AutomationElement], [System.Windows.Automation.AutomationElement]))
+    if ($null -eq $compare -or -not $compare.IsStatic -or $compare.ReturnType -ne [bool] -or $compare.DeclaringType -ne [System.Windows.Automation.Automation]) { throw 'actual_windows_uia_compare_api_unavailable' }
+    Write-Output 'Actual Windows UIA Compare API preflight passed (real UIAutomationClient, no app launch).'
+} elseif ($ApiPreflightOnly) {
+    throw 'actual_windows_uia_preflight_requires_windows'
+}
+if ($ApiPreflightOnly) { return }
 # Execute the actual coordinator with only the Windows UIA/native input boundary substituted.
 $tokens = $null; $parseErrors = $null
 $ast = [Management.Automation.Language.Parser]::ParseFile("$PSScriptRoot/test-portable-lifecycle.ps1", [ref]$tokens, [ref]$parseErrors)
@@ -8,7 +20,8 @@ Add-Type -TypeDefinition @'
 namespace PortableMenuTest {
  public class ScrollState { public double HorizontalScrollPercent; public double VerticalScrollPercent; }
  public class ScrollPattern { public static object Pattern = new object(); public ScrollState Current = new ScrollState(); }
- public class AutomationElement { public static object FocusedElement; public static object ControlTypeProperty = new object(); public static object NameProperty = new object(); public static System.Func<object, object, bool> Same; public static bool Compare(object a, object b) { return Same(a,b); } }
+ public class AutomationElement { public static object FocusedElement; public static object ControlTypeProperty = new object(); public static object NameProperty = new object(); }
+ public class Automation { public static System.Func<object, object, bool> Same; public static bool Compare(object a, object b) { return Same(a,b); } }
  public class PropertyCondition { public PropertyCondition(object property, object value) {} }
  public class ControlType { public static object ScrollBar = new object(); public static object Menu = new object(); }
  public class AndCondition { public AndCondition(object a, object b) {} }
@@ -124,7 +137,7 @@ foreach ($name in @('Find-DocumentToolsMenu', 'Wait-ActionableNamedElement')) {
     $source = $function.Extent.Text.Replace('System.Windows.Automation.', 'PortableMenuTest.').Replace('List[PortableMenuTest.AutomationElement]', 'List[object]').Replace('[PortableMenuTest.AutomationElement] $Window', '[object] $Window')
     Invoke-Expression $source
 }
-[PortableMenuTest.AutomationElement]::Same = [Func[object,object,bool]] { param($a,$b) [object]::ReferenceEquals($a,$b) }
+[PortableMenuTest.Automation]::Same = [Func[object,object,bool]] { param($a,$b) [object]::ReferenceEquals($a,$b) }
 [PortableMenuTest.TreeWalker]::ControlViewWalker.Parent = [Func[object,object]] { param($element) $element.Parent }
 function Action-Element($name, $bounds, $parent) {
     $element = Element $name $bounds
@@ -189,3 +202,16 @@ Write-Output 'Portable document action scope fixtures passed (simulated UIA boun
 Reset-ActionCase
 Invoke-DocumentCommand $script:testProcess 'Save' 'Ctrl+S'
 if ($script:clicked -cne 'Save' -or $script:clickCount -ne 1 -or -not $script:documentActionObservation.click_dispatched -or -not $script:documentActionObservation.menu_owned) { throw 'Scoped document command must dispatch exactly one owned click.' }
+
+# A wrong SDK method must remain a failure and expose only a fixed classification.
+$function = $ast.Find({ param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq 'Wait-ActionableNamedElement' }, $true)
+$source = $function.Extent.Text.Replace('System.Windows.Automation.', 'PortableMenuTest.').Replace('List[PortableMenuTest.AutomationElement]', 'List[object]').Replace('[PortableMenuTest.Automation]::Compare', '[PortableMenuTest.AutomationElement]::Compare')
+Invoke-Expression $source
+Reset-ActionCase
+$rejected=$false
+try { Wait-ActionableNamedElement $script:testProcess 'Save' -Seconds 0 | Out-Null } catch {
+    if ($_.Exception.Message -cne "Portable UI did not expose actionable element 'Save'.") { throw }
+    $rejected=$true
+}
+if (-not $rejected -or -not $script:documentActionObservation.resolver_error -or -not $script:documentActionObservation.resolver_method_missing) { throw 'Missing UIA method was accepted or not classified.' }
+Write-Output 'Portable missing-method classification fixture passed (simulated UIA boundary).'

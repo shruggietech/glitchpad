@@ -248,6 +248,9 @@ function Send-MarkdownDelivery([string] $Path, [Diagnostics.Process] $HostProces
 }
 
 function Wait-NamedButton([Diagnostics.Process] $Process, [string] $Name, [int] $Seconds = 10) {
+    $script:readinessWaitKind = 'named_button'
+    $script:readinessWaitCallerLine = $MyInvocation.ScriptLineNumber
+    $script:readinessStage = 'named_button_wait'
     $deadline = [DateTimeOffset]::UtcNow.AddSeconds($Seconds)
     $condition = New-Object System.Windows.Automation.AndCondition(
         (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::NameProperty, $Name)),
@@ -257,7 +260,12 @@ function Wait-NamedButton([Diagnostics.Process] $Process, [string] $Name, [int] 
         $window = Get-WindowRoot $Process
         if ($window) {
             $button = $window.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $condition)
-            if ($button) { return $button }
+            if ($button) {
+                $script:readinessStage = 'named_button_ready'
+                $script:readinessWaitKind = 'none'
+                $script:readinessWaitCallerLine = 0
+                return $button
+            }
         }
         Start-Sleep -Milliseconds 50
     } while ([DateTimeOffset]::UtcNow -lt $deadline)
@@ -342,8 +350,8 @@ function Invoke-NamedButton([Diagnostics.Process] $Process, [string] $Name) {
     Invoke-AutomationElement $Process $button $Name
 }
 
-function Invoke-MenuCommand([Diagnostics.Process] $Process, [string] $Name, [string] $Shortcut = '') {
-    Invoke-NamedButton $Process 'Menu'
+function Invoke-DocumentCommand([Diagnostics.Process] $Process, [string] $Name, [string] $Shortcut = '') {
+    Invoke-NamedButton $Process 'Document tools'
     $item = Wait-ActionableNamedElement $Process $Name $Shortcut
     Click-AutomationElement $Process $item $Name
 }
@@ -353,15 +361,15 @@ function Exercise-MarkdownEditSavePreview([Diagnostics.Process] $Process, [strin
     $initialText = 'S038 Editable Markdown 1A2B'
     $savedText = 'S038 Saved Markdown 4C7D'
     Wait-NamedElement $Process $initialText | Out-Null
-    Invoke-MenuCommand $Process 'Edit source'
+    Invoke-DocumentCommand $Process 'Edit'
     $editor = Wait-NamedElement $Process ("{0} text editor" -f $name)
     $editor.SetFocus()
     [System.Windows.Forms.SendKeys]::SendWait('^a')
     [System.Windows.Forms.SendKeys]::SendWait($savedText)
     Wait-WindowText $Process $savedText
-    Invoke-MenuCommand $Process 'Save' 'Ctrl+S'
+    Invoke-DocumentCommand $Process 'Save' 'Ctrl+S'
     Wait-FileText $Path $savedText
-    Invoke-MenuCommand $Process 'Preview'
+    Invoke-DocumentCommand $Process 'Read'
     Wait-SafeMarkdownOutcome $Process $savedText 'S038_EDIT_RAW_SENTINEL'
     if ([IO.File]::ReadAllText($Path, [Text.Encoding]::UTF8) -ne $savedText) {
         throw 'The exact packaged application did not persist the expected Markdown edit.'
@@ -402,26 +410,23 @@ function Assert-MenuGeometry([Diagnostics.Process] $Process, [string] $DocumentN
     }
     Invoke-NamedButton $Process 'Menu'
     $menu = Wait-NamedElement $Process 'Glitchpad menu'
-    $during = (Wait-NamedButton $Process 'Menu').Current.BoundingRectangle
-    foreach ($field in @('X', 'Y', 'Width', 'Height')) {
-        if ([Math]::Abs($before.$field - $during.$field) -gt 1) { throw "Menu trigger moved while disclosed ($field)." }
-    }
+    # TaskSurface owns accessibility and focus while open. Background controls and
+    # the document are inert; measure them again only after Escape closes the modal.
     $window = Get-WindowRoot $Process
+    $surface = Find-LargestNamedElement $window 'Application menu'
+    if (-not $surface) { throw 'The application menu modal could not be measured.' }
+    $close = Wait-NamedButton $Process 'Close Application menu'
+    if ($close.Current.IsOffscreen -or -not $close.Current.IsEnabled) { throw 'Application menu close control is unavailable.' }
     $windowBounds = $window.Current.BoundingRectangle
-    $menuBounds = $menu.Current.BoundingRectangle
-    if ($menuBounds.Top -lt ($during.Bottom - 1)) { throw 'Application menu popup covers its trigger.' }
-    if ($menuBounds.Left -lt ($windowBounds.Left - 1) -or $menuBounds.Right -gt ($windowBounds.Right + 1) -or $menuBounds.Bottom -gt ($windowBounds.Bottom + 1)) { throw 'Application menu popup escaped the application viewport.' }
-    $documentDuring = (Find-LargestNamedElement $window $DocumentName).Current.BoundingRectangle
-    foreach ($field in @('X', 'Y', 'Width', 'Height')) {
-        if ([Math]::Abs($documentBefore.$field - $documentDuring.$field) -gt 1) { throw "Document client reflowed while the menu was disclosed ($field)." }
+    $surfaceBounds = $surface.Current.BoundingRectangle
+    foreach ($rect in @($surfaceBounds, $menu.Current.BoundingRectangle, $close.Current.BoundingRectangle)) {
+        if ($rect.Width -le 0 -or $rect.Height -le 0 -or $rect.Left -lt ($windowBounds.Left - 1) -or $rect.Top -lt ($windowBounds.Top - 1) -or $rect.Right -gt ($windowBounds.Right + 1) -or $rect.Bottom -gt ($windowBounds.Bottom + 1)) { throw 'Application menu modal escaped the application viewport.' }
     }
     $scrollCondition = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::ScrollBar)
-    foreach ($scrollbar in $window.FindAll([System.Windows.Automation.TreeScope]::Descendants, $scrollCondition)) {
+    foreach ($scrollbar in $surface.FindAll([System.Windows.Automation.TreeScope]::Descendants, $scrollCondition)) {
         $scrollRect = $scrollbar.Current.BoundingRectangle
-        foreach ($surface in @($during, $menu.Current.BoundingRectangle)) {
-            $intersects = $surface.Left -lt $scrollRect.Right -and $surface.Right -gt $scrollRect.Left -and $surface.Top -lt $scrollRect.Bottom -and $surface.Bottom -gt $scrollRect.Top
-            if ($intersects) { throw 'Application menu intersects a document scrollbar hit region.' }
-        }
+        $closeRect = $close.Current.BoundingRectangle
+        if (-not $scrollbar.Current.IsOffscreen -and $closeRect.Left -lt $scrollRect.Right -and $closeRect.Right -gt $scrollRect.Left -and $closeRect.Top -lt $scrollRect.Bottom -and $closeRect.Bottom -gt $scrollRect.Top) { throw 'Application menu close control intersects its scrollbar hit region.' }
     }
     [GlitchpadNativeInput]::SetForegroundWindow($Process.MainWindowHandle) | Out-Null
     [System.Windows.Forms.SendKeys]::SendWait('{ESC}')
@@ -433,16 +438,16 @@ function Assert-MenuGeometry([Diagnostics.Process] $Process, [string] $DocumentN
         if ([Math]::Abs($before.$field - $after.$field) -gt 1) { throw "Menu trigger moved after disclosure ($field)." }
     }
     $documentAfterElement = Find-LargestNamedElement (Get-WindowRoot $Process) $DocumentName
+    if (-not $documentAfterElement) { throw 'The active document client region did not return after menu dismissal.' }
     $documentAfter = $documentAfterElement.Current.BoundingRectangle
     foreach ($field in @('X', 'Y', 'Width', 'Height')) {
         if ([Math]::Abs($documentBefore.$field - $documentAfter.$field) -gt 1) { throw "Document client changed after menu disclosure ($field)." }
     }
     if ($scrollBefore) {
         $scrollAfterObject = $null
-        if ($documentAfterElement.TryGetCurrentPattern([System.Windows.Automation.ScrollPattern]::Pattern, [ref]$scrollAfterObject)) {
-            $scrollAfter = @(([System.Windows.Automation.ScrollPattern]$scrollAfterObject).Current.HorizontalScrollPercent, ([System.Windows.Automation.ScrollPattern]$scrollAfterObject).Current.VerticalScrollPercent)
-            if ($scrollBefore[0] -ne $scrollAfter[0] -or $scrollBefore[1] -ne $scrollAfter[1]) { throw 'Menu disclosure changed document scroll position.' }
-        }
+        if (-not $documentAfterElement.TryGetCurrentPattern([System.Windows.Automation.ScrollPattern]::Pattern, [ref]$scrollAfterObject)) { throw 'Document scroll observation disappeared after menu dismissal.' }
+        $scrollAfter = @(([System.Windows.Automation.ScrollPattern]$scrollAfterObject).Current.HorizontalScrollPercent, ([System.Windows.Automation.ScrollPattern]$scrollAfterObject).Current.VerticalScrollPercent)
+        if ($scrollBefore[0] -ne $scrollAfter[0] -or $scrollBefore[1] -ne $scrollAfter[1]) { throw 'Menu disclosure changed document scroll position.' }
     }
     $focused = [System.Windows.Automation.AutomationElement]::FocusedElement
     if (-not $focused -or $focused.Current.Name -ne 'Menu') { throw 'Escape did not restore focus to the application menu trigger.' }

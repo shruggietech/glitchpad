@@ -33,3 +33,11 @@ foreach ($arguments in @(@{ WaitKind = 'private-control' }, @{ WaitCallerLine = 
     if (-not $refused) { throw 'Non-allowlisted readiness site was admitted.' }
 }
 Write-Output 'Failure-only named readiness caller-site tests passed.'
+
+$receipt = New-PortableStartupDiagnostic -Observation $observation -Scenario clean -Stage named_button_wait -SourceCommit ('a' * 40) -ManifestDigest ('b' * 64) -Succeeded $false -ElapsedMilliseconds 10000 -WaitKind named_button -WaitCallerLine 405
+if ($receipt.readiness_wait.function -cne 'Wait-NamedButton' -or $receipt.readiness_wait.caller_line -ne 405) { throw 'Failed button caller site was not retained.' }
+$json = $receipt | ConvertTo-Json -Depth 4 -Compress
+if ($json -match 'private-title|private-arguments|document.pdf|/private|\\') { throw 'Button caller-site observation exposed private input.' }
+$receipt = New-PortableStartupDiagnostic -Observation $observation -Scenario clean -Stage named_button_ready -SourceCommit ('a' * 40) -ManifestDigest ('b' * 64) -Succeeded $true -ElapsedMilliseconds 1 -WaitKind named_button -WaitCallerLine 405
+if ($receipt.Contains('readiness_wait')) { throw 'Successful button readiness must omit failure-only caller diagnostics.' }
+Write-Output 'Failure-only button readiness caller-site tests passed.'

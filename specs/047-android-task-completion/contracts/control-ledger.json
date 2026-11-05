@@ -3201,7 +3201,9 @@
             "R2_U_IMAGE_PROVIDER",
             "R2_U_IMAGE_MORE",
             "R2_U_DIAGRAM_MORE",
-            "R2_B_MORE"
+            "R2_B_MORE",
+            "R2_U_IMAGE_ZOOM_BOUNDS",
+            "R2_U_DIAGRAM_ZOOM_BOUNDS"
           ],
           "native_route_preparation_refs": [
             "R2_N_IMAGE",
@@ -3221,7 +3223,9 @@
           "supplemental_evidence_refs": [
             "R2_U_IMAGE_PROVIDER",
             "R2_U_IMAGE_MORE",
-            "R2_U_DIAGRAM_MORE"
+            "R2_U_DIAGRAM_MORE",
+            "R2_U_IMAGE_ZOOM_BOUNDS",
+            "R2_U_DIAGRAM_ZOOM_BOUNDS"
           ],
           "native_route_preparation_refs": [
             "R2_N_IMAGE"
@@ -3239,7 +3243,9 @@
           "supplemental_evidence_refs": [
             "R2_U_IMAGE_PROVIDER",
             "R2_U_IMAGE_MORE",
-            "R2_U_DIAGRAM_MORE"
+            "R2_U_DIAGRAM_MORE",
+            "R2_U_IMAGE_ZOOM_BOUNDS",
+            "R2_U_DIAGRAM_ZOOM_BOUNDS"
           ],
           "native_route_preparation_refs": [
             "R2_N_DIAGRAM"
@@ -3258,7 +3264,9 @@
             "R2_U_IMAGE_PROVIDER",
             "R2_U_IMAGE_MORE",
             "R2_U_DIAGRAM_MORE",
-            "R2_B_MORE"
+            "R2_B_MORE",
+            "R2_U_IMAGE_ZOOM_BOUNDS",
+            "R2_U_DIAGRAM_ZOOM_BOUNDS"
           ],
           "native_route_preparation_refs": [
             "R2_N_IMAGE",
@@ -3279,7 +3287,9 @@
             "R2_U_IMAGE_PROVIDER",
             "R2_U_IMAGE_MORE",
             "R2_U_DIAGRAM_MORE",
-            "R2_B_MORE"
+            "R2_B_MORE",
+            "R2_U_IMAGE_ZOOM_BOUNDS",
+            "R2_U_DIAGRAM_ZOOM_BOUNDS"
           ],
           "native_route_preparation_refs": [
             "R2_N_IMAGE",
@@ -3299,7 +3309,9 @@
           "supplemental_evidence_refs": [
             "R2_U_IMAGE_PROVIDER",
             "R2_U_IMAGE_MORE",
-            "R2_U_DIAGRAM_MORE"
+            "R2_U_DIAGRAM_MORE",
+            "R2_U_IMAGE_ZOOM_BOUNDS",
+            "R2_U_DIAGRAM_ZOOM_BOUNDS"
           ],
           "native_route_preparation_refs": [
             "R2_N_IMAGE"
@@ -3317,7 +3329,9 @@
           "supplemental_evidence_refs": [
             "R2_U_IMAGE_PROVIDER",
             "R2_U_IMAGE_MORE",
-            "R2_U_DIAGRAM_MORE"
+            "R2_U_DIAGRAM_MORE",
+            "R2_U_IMAGE_ZOOM_BOUNDS",
+            "R2_U_DIAGRAM_ZOOM_BOUNDS"
           ],
           "native_route_preparation_refs": [
             "R2_N_DIAGRAM"
@@ -3405,7 +3419,9 @@
             "R2_U_IMAGE_PROVIDER",
             "R2_U_IMAGE_MORE",
             "R2_U_DIAGRAM_MORE",
-            "R2_B_MORE"
+            "R2_B_MORE",
+            "R2_U_IMAGE_ZOOM_BOUNDS",
+            "R2_U_DIAGRAM_ZOOM_BOUNDS"
           ],
           "native_route_preparation_refs": [
             "R2_N_IMAGE",
@@ -3425,7 +3441,9 @@
           "supplemental_evidence_refs": [
             "R2_U_IMAGE_PROVIDER",
             "R2_U_DIAGRAM_FIT",
-            "R2_B_COMPONENT"
+            "R2_B_COMPONENT",
+            "R2_U_IMAGE_ZOOM_BOUNDS",
+            "R2_U_DIAGRAM_ZOOM_BOUNDS"
           ],
           "native_route_preparation_refs": [
             "R2_N_IMAGE",
@@ -3444,7 +3462,9 @@
           "supplemental_evidence_refs": [
             "R2_U_IMAGE_PROVIDER",
             "R2_U_DIAGRAM_FIT",
-            "R2_B_COMPONENT"
+            "R2_B_COMPONENT",
+            "R2_U_IMAGE_ZOOM_BOUNDS",
+            "R2_U_DIAGRAM_ZOOM_BOUNDS"
           ],
           "native_route_preparation_refs": [
             "R2_N_IMAGE",
@@ -3464,7 +3484,9 @@
             "R2_U_IMAGE_PROVIDER",
             "R2_U_IMAGE_MORE",
             "R2_U_DIAGRAM_MORE",
-            "R2_B_MORE"
+            "R2_B_MORE",
+            "R2_U_IMAGE_ZOOM_BOUNDS",
+            "R2_U_DIAGRAM_ZOOM_BOUNDS"
           ],
           "native_route_preparation_refs": [
             "R2_N_IMAGE",
@@ -3485,7 +3507,9 @@
             "R2_U_IMAGE_PROVIDER",
             "R2_U_IMAGE_MORE",
             "R2_U_DIAGRAM_MORE",
-            "R2_B_MORE"
+            "R2_B_MORE",
+            "R2_U_IMAGE_ZOOM_BOUNDS",
+            "R2_U_DIAGRAM_ZOOM_BOUNDS"
           ],
           "native_route_preparation_refs": [
             "R2_N_IMAGE",
@@ -3505,7 +3529,9 @@
           "supplemental_evidence_refs": [
             "R2_U_IMAGE_PROVIDER",
             "R2_U_DIAGRAM_FIT",
-            "R2_B_COMPONENT"
+            "R2_B_COMPONENT",
+            "R2_U_IMAGE_ZOOM_BOUNDS",
+            "R2_U_DIAGRAM_ZOOM_BOUNDS"
           ],
           "native_route_preparation_refs": [
             "R2_N_IMAGE",
@@ -3524,7 +3550,9 @@
           "supplemental_evidence_refs": [
             "R2_U_IMAGE_PROVIDER",
             "R2_U_DIAGRAM_FIT",
-            "R2_B_COMPONENT"
+            "R2_B_COMPONENT",
+            "R2_U_IMAGE_ZOOM_BOUNDS",
+            "R2_U_DIAGRAM_ZOOM_BOUNDS"
           ],
           "native_route_preparation_refs": [
             "R2_N_IMAGE",
@@ -3544,7 +3572,9 @@
             "R2_U_IMAGE_PROVIDER",
             "R2_U_IMAGE_MORE",
             "R2_U_DIAGRAM_MORE",
-            "R2_B_MORE"
+            "R2_B_MORE",
+            "R2_U_IMAGE_ZOOM_BOUNDS",
+            "R2_U_DIAGRAM_ZOOM_BOUNDS"
           ],
           "native_route_preparation_refs": [
             "R2_N_IMAGE",
@@ -8530,7 +8560,8 @@
           "native_route_preparation_refs": [
             "R2_N_IMAGE",
             "R2_N_MORE"
-          ]
+          ],
+          "supplemental_evidence_limits": []
         },
         {
           "id": "CTRL-071-case-2",
@@ -8547,7 +8578,8 @@
           "native_route_preparation_refs": [
             "R2_N_IMAGE",
             "R2_N_MORE"
-          ]
+          ],
+          "supplemental_evidence_limits": []
         },
         {
           "id": "CTRL-071-case-3",
@@ -8564,7 +8596,8 @@
           "native_route_preparation_refs": [
             "R2_N_IMAGE",
             "R2_N_MORE"
-          ]
+          ],
+          "supplemental_evidence_limits": []
         },
         {
           "id": "CTRL-071-case-4",
@@ -8649,7 +8682,8 @@
           "native_route_preparation_refs": [
             "R2_N_IMAGE",
             "R2_N_SECONDARY"
-          ]
+          ],
+          "supplemental_evidence_limits": []
         },
         {
           "id": "CTRL-072-case-2",
@@ -8665,7 +8699,8 @@
           "native_route_preparation_refs": [
             "R2_N_IMAGE",
             "R2_N_SECONDARY"
-          ]
+          ],
+          "supplemental_evidence_limits": []
         }
       ],
       "candidate_status": "pending",
@@ -9104,7 +9139,8 @@
           "native_preparation": "explicit_assertion_prepared",
           "supplemental_evidence_refs": [
             "R2_U_IMAGE_KEYBOARD",
-            "R2_B_COMPONENT"
+            "R2_B_COMPONENT",
+            "R2_U_IMAGE_ZOOM_BOUNDS"
           ],
           "native_route_preparation_refs": [
             "R2_N_IMAGE"
@@ -9195,7 +9231,8 @@
           ],
           "native_route_preparation_refs": [
             "R2_N_SECONDARY"
-          ]
+          ],
+          "supplemental_evidence_limits": []
         },
         {
           "id": "CTRL-076-2",
@@ -9210,7 +9247,8 @@
           ],
           "native_route_preparation_refs": [
             "R2_N_SECONDARY"
-          ]
+          ],
+          "supplemental_evidence_limits": []
         },
         {
           "id": "CTRL-076-case-3",
@@ -9225,7 +9263,8 @@
           ],
           "native_route_preparation_refs": [
             "R2_N_SECONDARY"
-          ]
+          ],
+          "supplemental_evidence_limits": []
         },
         {
           "id": "CTRL-076-case-4",
@@ -9475,7 +9514,8 @@
           ],
           "native_route_preparation_refs": [
             "R2_N_SECONDARY"
-          ]
+          ],
+          "supplemental_evidence_limits": []
         },
         {
           "id": "CTRL-079-case-2",
@@ -9489,7 +9529,8 @@
           ],
           "native_route_preparation_refs": [
             "R2_N_SECONDARY"
-          ]
+          ],
+          "supplemental_evidence_limits": []
         },
         {
           "id": "CTRL-079-case-3",
@@ -9502,7 +9543,8 @@
           ],
           "native_route_preparation_refs": [
             "R2_N_SECONDARY"
-          ]
+          ],
+          "supplemental_evidence_limits": []
         },
         {
           "id": "CTRL-079-case-4",
@@ -9515,7 +9557,8 @@
           ],
           "native_route_preparation_refs": [
             "R2_N_SECONDARY"
-          ]
+          ],
+          "supplemental_evidence_limits": []
         },
         {
           "id": "CTRL-079-case-5",
@@ -9528,7 +9571,8 @@
           ],
           "native_route_preparation_refs": [
             "R2_N_SECONDARY"
-          ]
+          ],
+          "supplemental_evidence_limits": []
         }
       ],
       "candidate_status": "pending",
@@ -13792,7 +13836,7 @@
       "kind": "unit_passed",
       "path": "apps/glitchpad/src/components/ImageSurface.test.tsx",
       "line": 184,
-      "source_sha256": "2258adbd023de0954f50f8b94bc67890f4ae400c53924c5300cc6b7a1624fba3",
+      "source_sha256": "8d120231cedb4d631c87ff7dc0298c07139375b8fa1e6a93cb17fd0e2410c2d1",
       "effect": "The shared provider changes the same local viewport and returns false without a usable preview.",
       "limit": "",
       "anchor": "it('routes shared Zoom and Fit to the same local viewport and refuses without preview', async () => {"
@@ -13800,8 +13844,8 @@
     "R2_U_IMAGE_MORE": {
       "kind": "unit_passed",
       "path": "apps/glitchpad/src/components/ImageSurface.test.tsx",
-      "line": 1389,
-      "source_sha256": "2258adbd023de0954f50f8b94bc67890f4ae400c53924c5300cc6b7a1624fba3",
+      "line": 1482,
+      "source_sha256": "8d120231cedb4d631c87ff7dc0298c07139375b8fa1e6a93cb17fd0e2410c2d1",
       "effect": "Scoped More Fit and Zoom use the same provider state; image display failure disables all three controls and makes the provider refuse.",
       "limit": "",
       "anchor": "it('keeps More Fit and multiplicative Zoom on the same provider viewport and refuses after display failure', async () => {"
@@ -13810,7 +13854,7 @@
       "kind": "unit_passed",
       "path": "apps/glitchpad/src/components/ImageSurface.test.tsx",
       "line": 1229,
-      "source_sha256": "2258adbd023de0954f50f8b94bc67890f4ae400c53924c5300cc6b7a1624fba3",
+      "source_sha256": "8d120231cedb4d631c87ff7dc0298c07139375b8fa1e6a93cb17fd0e2410c2d1",
       "effect": "A live ResizeObserver callback recomputes Fit; explicit Actual size zoom and nonzero pan survive a later resize; the actual Reset view button then clears pan and returns Fit using the new bounds.",
       "limit": "",
       "anchor": "it('recomputes live Fit and preserves explicit actual-size zoom and pan across resize', async () => {"
@@ -13819,7 +13863,7 @@
       "kind": "unit_passed",
       "path": "apps/glitchpad/src/components/ImageSurface.test.tsx",
       "line": 1285,
-      "source_sha256": "2258adbd023de0954f50f8b94bc67890f4ae400c53924c5300cc6b7a1624fba3",
+      "source_sha256": "8d120231cedb4d631c87ff7dc0298c07139375b8fa1e6a93cb17fd0e2410c2d1",
       "effect": "The UI selects initial PNG0, duplicate2, corrupt3 and valid DIB1; duplicate selection survives actual Close and reopen with no new decode; corrupt selection has no bitmap, disabled Export/Fit and no identical Retry; a valid entry recovers.",
       "limit": "Synthetic gateway projection; independent native PNG pixels are a distinct evidence class.",
       "anchor": "it('selects duplicate and corrupt ICO rows truthfully and retains selection after closing and reopening tools', async () => {"
@@ -13828,7 +13872,7 @@
       "kind": "unit_passed",
       "path": "apps/glitchpad/src/components/ImageSurface.test.tsx",
       "line": 701,
-      "source_sha256": "2258adbd023de0954f50f8b94bc67890f4ae400c53924c5300cc6b7a1624fba3",
+      "source_sha256": "8d120231cedb4d631c87ff7dc0298c07139375b8fa1e6a93cb17fd0e2410c2d1",
       "effect": "Keyboard plus reaches125percent, repeated ArrowRight clamps pan, zero fits, and actual Dark→Light→Checkerboard transitions change the viewport class and state.",
       "limit": "",
       "anchor": "it('renders inert image and supports keyboard zoom, pan recovery, fit, and background', async () => {"
@@ -13837,7 +13881,7 @@
       "kind": "unit_passed",
       "path": "apps/glitchpad/src/components/ImageSurface.test.tsx",
       "line": 824,
-      "source_sha256": "2258adbd023de0954f50f8b94bc67890f4ae400c53924c5300cc6b7a1624fba3",
+      "source_sha256": "8d120231cedb4d631c87ff7dc0298c07139375b8fa1e6a93cb17fd0e2410c2d1",
       "effect": "Two DOM PointerEvents increase zoom to200percent; cancel and release recover; Reset returns measured Fit.",
       "limit": "DOM PointerEvents, not actual native gesture injection.",
       "anchor": "it('supports two touch pointers without losing reset or pan recovery', async () => {"
@@ -13846,7 +13890,7 @@
       "kind": "unit_passed",
       "path": "apps/glitchpad/src/components/ImageSurface.test.tsx",
       "line": 1123,
-      "source_sha256": "2258adbd023de0954f50f8b94bc67890f4ae400c53924c5300cc6b7a1624fba3",
+      "source_sha256": "8d120231cedb4d631c87ff7dc0298c07139375b8fa1e6a93cb17fd0e2410c2d1",
       "effect": "A transient gateway failure recovers on Retry; Reset retains ICO selection1 and Dark background.",
       "limit": "",
       "anchor": "it('retries a transient native failure once and preserves selected icon/background through Reset', async () => {"
@@ -13855,7 +13899,7 @@
       "kind": "unit_passed",
       "path": "apps/glitchpad/src/components/ImageSurface.test.tsx",
       "line": 411,
-      "source_sha256": "2258adbd023de0954f50f8b94bc67890f4ae400c53924c5300cc6b7a1624fba3",
+      "source_sha256": "8d120231cedb4d631c87ff7dc0298c07139375b8fa1e6a93cb17fd0e2410c2d1",
       "effect": "The animation starts paused, Next advances one frame, Play advances by a timer, finite looping and Pause are exercised.",
       "limit": "This test does not start playback and then click Previous or Next, and does not assert first/last manual bounds.",
       "anchor": "it('starts animation paused, steps frames, and releases native retention only on suspension', async () => {"
@@ -13864,7 +13908,7 @@
       "kind": "unit_passed",
       "path": "apps/glitchpad/src/components/ImageSurface.test.tsx",
       "line": 316,
-      "source_sha256": "2258adbd023de0954f50f8b94bc67890f4ae400c53924c5300cc6b7a1624fba3",
+      "source_sha256": "8d120231cedb4d631c87ff7dc0298c07139375b8fa1e6a93cb17fd0e2410c2d1",
       "effect": "An initial reduced-motion preference disables Play while manual Next remains usable; another test changes that preference during active playback.",
       "limit": "",
       "anchor": "it('prevents playback when reduced motion already matches while retaining manual frame controls', async () => {"
@@ -13873,7 +13917,7 @@
       "kind": "unit_passed",
       "path": "apps/glitchpad/src/components/ImageSurface.test.tsx",
       "line": 915,
-      "source_sha256": "2258adbd023de0954f50f8b94bc67890f4ae400c53924c5300cc6b7a1624fba3",
+      "source_sha256": "8d120231cedb4d631c87ff7dc0298c07139375b8fa1e6a93cb17fd0e2410c2d1",
       "effect": "Playback advances before backgrounding, then hidden state stops all frame renders. Returning retains the selected frame and remains paused for1000ms. Explicit Play resumes.",
       "limit": "",
       "anchor": "it('stops active animated playback in the background and remains paused after returning', async () => {"
@@ -13882,7 +13926,7 @@
       "kind": "unit_passed",
       "path": "apps/glitchpad/src/components/ImageSurface.test.tsx",
       "line": 1182,
-      "source_sha256": "2258adbd023de0954f50f8b94bc67890f4ae400c53924c5300cc6b7a1624fba3",
+      "source_sha256": "8d120231cedb4d631c87ff7dc0298c07139375b8fa1e6a93cb17fd0e2410c2d1",
       "effect": "Empty, out-of-range and fractional frame drafts retain selection and schedule no decode. A valid frame recovers.",
       "limit": "",
       "anchor": "it('keeps invalid animation frame drafts visible without changing selection or scheduling another decode', async () => {"
@@ -13891,7 +13935,7 @@
       "kind": "unit_passed",
       "path": "apps/glitchpad/src/components/ImageSurface.test.tsx",
       "line": 797,
-      "source_sha256": "2258adbd023de0954f50f8b94bc67890f4ae400c53924c5300cc6b7a1624fba3",
+      "source_sha256": "8d120231cedb4d631c87ff7dc0298c07139375b8fa1e6a93cb17fd0e2410c2d1",
       "effect": "A preview refusal still publishes independent metadata.",
       "limit": "No composed failed-preview inspector route is asserted here.",
       "anchor": "it('publishes independent metadata when preview is refused', async () => {"
@@ -13900,7 +13944,7 @@
       "kind": "unit_passed",
       "path": "apps/glitchpad/src/components/ImageSurface.test.tsx",
       "line": 1093,
-      "source_sha256": "2258adbd023de0954f50f8b94bc67890f4ae400c53924c5300cc6b7a1624fba3",
+      "source_sha256": "8d120231cedb4d631c87ff7dc0298c07139375b8fa1e6a93cb17fd0e2410c2d1",
       "effect": "A deterministic SVG refusal has no identical Retry and refuses Fit; File information invokes its callback.",
       "limit": "The callback alone does not prove actual inspector facts in the failed-preview context.",
       "anchor": "it('does not offer identical retry for a deterministic SVG reference refusal and retains file details', async () => {"
@@ -13909,7 +13953,7 @@
       "kind": "unit_passed",
       "path": "apps/glitchpad/src/components/ImageSurface.test.tsx",
       "line": 578,
-      "source_sha256": "2258adbd023de0954f50f8b94bc67890f4ae400c53924c5300cc6b7a1624fba3",
+      "source_sha256": "8d120231cedb4d631c87ff7dc0298c07139375b8fa1e6a93cb17fd0e2410c2d1",
       "effect": "A pending mock export survives visibility suspension and retains its cancellation receipt after regeneration; selection change aborts an obsolete export.",
       "limit": "Mock gateway; no actual provider write failure.",
       "anchor": "it('preserves native chooser export and its receipt across visibility suspension and preview regeneration', async () => {"
@@ -13927,7 +13971,7 @@
       "kind": "unit_passed",
       "path": "apps/glitchpad/src/components/DiagramViewport.test.tsx",
       "line": 131,
-      "source_sha256": "c884accedac6c7cfaaaa834503d3043ad9938714bb4c231f4088aced829f410e",
+      "source_sha256": "c6e1f0a9974f93b3d12e26c96e738c9cadc9b11bdf4cc42570e3408498102118",
       "effect": "First Zoom from Fit changes width300to375; first pan preserves the effective scale.",
       "limit": "",
       "anchor": "it('starts custom zoom and pan from measured Fit instead of intrinsic scale', () => {"
@@ -13936,7 +13980,7 @@
       "kind": "unit_passed",
       "path": "apps/glitchpad/src/components/DiagramViewport.test.tsx",
       "line": 65,
-      "source_sha256": "c884accedac6c7cfaaaa834503d3043ad9938714bb4c231f4088aced829f410e",
+      "source_sha256": "c6e1f0a9974f93b3d12e26c96e738c9cadc9b11bdf4cc42570e3408498102118",
       "effect": "A live ResizeObserver callback changes Fit width300to600; custom scale750px and nonzero pan survive resize to450px; Fit then uses450px.",
       "limit": "",
       "anchor": "it('recomputes live Fit while preserving a manually chosen effective scale across resize', () => {"
@@ -13945,7 +13989,7 @@
       "kind": "unit_passed",
       "path": "apps/glitchpad/src/components/DiagramViewport.test.tsx",
       "line": 161,
-      "source_sha256": "c884accedac6c7cfaaaa834503d3043ad9938714bb4c231f4088aced829f410e",
+      "source_sha256": "c6e1f0a9974f93b3d12e26c96e738c9cadc9b11bdf4cc42570e3408498102118",
       "effect": "Fit returns false and Zoom is disabled before decoding; a display failure returns false for Zoom.",
       "limit": "",
       "anchor": "it('refuses actions until decoded and after display failure', () => {"
@@ -13953,8 +13997,8 @@
     "R2_U_DIAGRAM_BOUNDS": {
       "kind": "unit_passed",
       "path": "apps/glitchpad/src/components/DiagramViewport.test.tsx",
-      "line": 181,
-      "source_sha256": "c884accedac6c7cfaaaa834503d3043ad9938714bb4c231f4088aced829f410e",
+      "line": 256,
+      "source_sha256": "c6e1f0a9974f93b3d12e26c96e738c9cadc9b11bdf4cc42570e3408498102118",
       "effect": "A second pointer cannot steal drag ownership; overflowing pan clamps both axes; zoom caps at8; Fit clears pan.",
       "limit": "",
       "anchor": "it('bounds zoom and pan, preserves scale, and ignores a second pointer owner', () => {"
@@ -13962,8 +14006,8 @@
     "R2_U_DIAGRAM_TOOLS": {
       "kind": "unit_passed",
       "path": "apps/glitchpad/src/components/DiagramViewport.test.tsx",
-      "line": 219,
-      "source_sha256": "c884accedac6c7cfaaaa834503d3043ad9938714bb4c231f4088aced829f410e",
+      "line": 294,
+      "source_sha256": "c6e1f0a9974f93b3d12e26c96e738c9cadc9b11bdf4cc42570e3408498102118",
       "effect": "More Actual size sets scale1, Pan right changes80px, Reset restores Fit, and dismissModal handles the modal once.",
       "limit": "The other three Pan direction effects are prepared natively, not clicked in this unit test.",
       "anchor": "it('discloses actual/reset/pan with a real modal and handles Back dismissal before viewport actions', () => {"
@@ -13971,8 +14015,8 @@
     "R2_U_DIAGRAM_MORE": {
       "kind": "unit_passed",
       "path": "apps/glitchpad/src/components/DiagramViewport.test.tsx",
-      "line": 255,
-      "source_sha256": "c884accedac6c7cfaaaa834503d3043ad9938714bb4c231f4088aced829f410e",
+      "line": 330,
+      "source_sha256": "c6e1f0a9974f93b3d12e26c96e738c9cadc9b11bdf4cc42570e3408498102118",
       "effect": "A figure-embedded More surface changes only its own viewport; another provider viewport remains independent; failure disables Fit and Zoom.",
       "limit": "A shared component in a figure; actual Markdown/Mermaid integration needs its separate composed App evidence.",
       "anchor": "it('keeps embedded More Fit/Zoom scoped and shares the same measured state with a provider', () => {"
@@ -14098,7 +14142,7 @@
       "kind": "unit_passed",
       "path": "apps/glitchpad/src/components/ImageSurface.test.tsx",
       "line": 854,
-      "source_sha256": "2258adbd023de0954f50f8b94bc67890f4ae400c53924c5300cc6b7a1624fba3",
+      "source_sha256": "8d120231cedb4d631c87ff7dc0298c07139375b8fa1e6a93cb17fd0e2410c2d1",
       "effect": "Play actually advances to frame2, Previous returns frame1 and pauses over1000ms, first Previous is disabled; Play advances again, Next selects frame3 and pauses over1000ms, last Next is disabled.",
       "limit": "",
       "anchor": "it('pauses active playback when stepping frames and enforces first and last frame bounds', async () => {"
@@ -14107,9 +14151,10 @@
       "kind": "unit_gateway_failure_passed",
       "path": "apps/glitchpad/src/components/ImageSurface.test.tsx",
       "line": 460,
-      "source_sha256": "2258adbd023de0954f50f8b94bc67890f4ae400c53924c5300cc6b7a1624fba3",
+      "source_sha256": "8d120231cedb4d631c87ff7dc0298c07139375b8fa1e6a93cb17fd0e2410c2d1",
       "effect": "The selected PNG export gateway receives the original source identity/revision and ICO selection1, remains pending, then rejects with a write-error category. The component shows its explicit bounded failure, no success/private error text, keeps selection, zoom/pan/background, bitmap URL and source/session unchanged, and leaves export usable.",
-      "limit": "Injected gateway rejection only. No installed provider write I/O, partial-file behavior, or independent original-byte readback is claimed."
+      "limit": "Injected gateway rejection only. No installed provider write I/O, partial-file behavior, or independent original-byte readback is claimed.",
+      "anchor": "it('reports a selected PNG export write-error rejection and retains entry, viewport, and source identity', async () => {"
     },
     "US4_UNIT_CTRL-027-case-2": {
       "kind": "unit_passed",
@@ -18881,6 +18926,25 @@
         "DocumentSurface unitrenderer iscontrolled. Actualworker/parser/projection retry isfault-build nativepreparation, stillunexecuted."
       ],
       "candidate_status": "pending"
+    },
+    "R2_U_IMAGE_ZOOM_BOUNDS": {
+      "kind": "unit_passed",
+      "path": "apps/glitchpad/src/components/ImageSurface.test.tsx",
+      "line": 1389,
+      "source_sha256": "8d120231cedb4d631c87ff7dc0298c07139375b8fa1e6a93cb17fd0e2410c2d1",
+      "anchor": "it.each([\n    {\n      limit: 'maximum',\n      zoom: 16",
+      "effect": "At image zoom multipliers16 and0.1, provider and keyboard refuse unchanged relative Zoom with no publication, local and More disable only that direction, opposite direction changes scale by0.8or1.25 and re-enables it, selection/background remain, and Fit remains idempotently performed.",
+      "limit": "Component/provider/keyboard unit behavior. Exact installed native min/max interactions have not been executed by this regression."
+    },
+    "R2_U_DIAGRAM_ZOOM_BOUNDS": {
+      "kind": "unit_passed",
+      "path": "apps/glitchpad/src/components/DiagramViewport.test.tsx",
+      "line": 181,
+      "source_sha256": "c6e1f0a9974f93b3d12e26c96e738c9cadc9b11bdf4cc42570e3408498102118",
+      "anchor": "it.each([\n    {\n      limit: 'maximum',\n      zoom: 8",
+      "effect": "At diagram scale8 and measured dynamic minimum0.01, provider and keyboard refuse unchanged relative Zoom with no publication, local and More disable only that direction, opposite direction changes scale by0.8or1.25 and re-enables it, and Fit remains idempotently performed.",
+      "limit": "Component/provider/keyboard unit behavior. Exact installed native min/max interactions have not been executed by this regression."
     }
-  }
+  },
+  "local_candidate_note": "Current Zoom limit behavior is covered by 59 focused renderer tests and the rebuilt R29 application matrix (84 modern and 84 exact Chromium 69 cases). Installed execution remains pending."
 }

@@ -178,6 +178,81 @@ describe('DiagramViewport', () => {
       screen.getByText(/The diagram preview could not be displayed/u),
     ).toBeInTheDocument();
   });
+  it.each([
+    {
+      limit: 'maximum',
+      zoom: 8,
+      blocked: 'zoomIn' as const,
+      blockedLabel: 'Zoom in',
+      oppositeLabel: 'Zoom out',
+      recoveryFactor: 0.8,
+      key: '+',
+    },
+    {
+      limit: 'measured minimum',
+      zoom: 0.01,
+      blocked: 'zoomOut' as const,
+      blockedLabel: 'Zoom out',
+      oppositeLabel: 'Zoom in',
+      recoveryFactor: 1.25,
+      key: '-',
+    },
+  ])(
+    'refuses unchanged relative Zoom at the diagram $limit and disables only that direction',
+    ({ zoom, blocked, blockedLabel, oppositeLabel, recoveryFactor, key }) => {
+      const ref = createRef<DiagramViewportHandle>();
+      const changes = vi.fn();
+      render(
+        <DiagramViewport
+          ref={ref}
+          svg='<svg xmlns="http://www.w3.org/2000/svg"/>'
+          label="Bounded diagram"
+          description={null}
+          initialState={{ mode: 'custom', zoom, pan_x: 0, pan_y: 0 }}
+          onChange={changes}
+        />,
+      );
+      setViewportDimensions(3000, 1000, 300, 300);
+      const canvas = screen.getByRole('group');
+      changes.mockClear();
+      act(() => {
+        expect(ref.current![blocked]()).toBe(false);
+      });
+      fireEvent.keyDown(canvas, { key });
+      expect(changes).not.toHaveBeenCalled();
+      expect(Number(canvas.getAttribute('data-viewport-scale'))).toBe(zoom);
+      const localBlocked = screen.getByRole('button', { name: blockedLabel });
+      const localOpposite = screen.getByRole('button', { name: oppositeLabel });
+      expect(localBlocked).toBeDisabled();
+      expect(localOpposite).toBeEnabled();
+      fireEvent.click(
+        screen.getByRole('button', { name: 'More diagram tools' }),
+      );
+      const tools = within(
+        screen.getByRole('dialog', { name: 'Diagram tools' }),
+      );
+      expect(tools.getByRole('button', { name: blockedLabel })).toBeDisabled();
+      expect(tools.getByRole('button', { name: oppositeLabel })).toBeEnabled();
+      fireEvent.click(tools.getByRole('button', { name: oppositeLabel }));
+      expect(Number(canvas.getAttribute('data-viewport-scale'))).toBeCloseTo(
+        zoom * recoveryFactor,
+      );
+      expect(changes).toHaveBeenCalledOnce();
+      expect(localBlocked).toBeEnabled();
+      expect(tools.getByRole('button', { name: blockedLabel })).toBeEnabled();
+      act(() => {
+        expect(ref.current![blocked]()).toBe(true);
+      });
+      act(() => {
+        expect(ref.current!.fit()).toBe(true);
+      });
+      act(() => {
+        expect(ref.current!.fit()).toBe(true);
+      });
+      expect(canvas).toHaveAttribute('data-viewport-mode', 'fit');
+    },
+  );
+
   it('bounds zoom and pan, preserves scale, and ignores a second pointer owner', () => {
     const ref = createRef<DiagramViewportHandle>();
     render(

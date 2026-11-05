@@ -172,18 +172,14 @@ export const DiagramViewport = forwardRef<
       ),
     };
   };
-  const zoom = (factor: number) => {
-    if (!usable) return false;
-    publish(
-      bounded({
-        ...state,
-        mode: 'custom',
-        zoom: clampMermaidZoom(
-          scale * factor,
-          Math.min(0.1, mermaidFitScale(extents) / 10),
-        ),
-      }),
-    );
+  const minimumZoom = Math.min(0.1, mermaidFitScale(extents) / 10);
+  const zoomInValue = clampMermaidZoom(scale * 1.25, minimumZoom);
+  const zoomOutValue = clampMermaidZoom(scale * 0.8, minimumZoom);
+  const canZoomIn = usable && zoomInValue !== scale;
+  const canZoomOut = usable && zoomOutValue !== scale;
+  const zoom = (nextZoom: number) => {
+    if (!usable || nextZoom === scale) return false;
+    publish(bounded({ ...state, mode: 'custom', zoom: nextZoom }));
     return true;
   };
   const fit = () => {
@@ -215,8 +211,8 @@ export const DiagramViewport = forwardRef<
     return true;
   };
   useImperativeHandle(ref, () => ({
-    zoomIn: () => zoom(1.25),
-    zoomOut: () => zoom(0.8),
+    zoomIn: () => zoom(zoomInValue),
+    zoomOut: () => zoom(zoomOutValue),
     fit,
     actual,
     dismissModal,
@@ -230,8 +226,9 @@ export const DiagramViewport = forwardRef<
         </button>
         <button
           type="button"
-          disabled={!usable}
-          onClick={() => zoom(0.8)}
+          disabled={!canZoomOut}
+          title={usable && !canZoomOut ? 'Minimum zoom reached.' : undefined}
+          onClick={() => zoom(zoomOutValue)}
           aria-label="Zoom out"
         >
           −
@@ -241,8 +238,9 @@ export const DiagramViewport = forwardRef<
         </output>
         <button
           type="button"
-          disabled={!usable}
-          onClick={() => zoom(1.25)}
+          disabled={!canZoomIn}
+          title={usable && !canZoomIn ? 'Maximum zoom reached.' : undefined}
+          onClick={() => zoom(zoomInValue)}
           aria-label="Zoom in"
         >
           +
@@ -269,10 +267,20 @@ export const DiagramViewport = forwardRef<
         <button type="button" disabled={!usable} onClick={fit}>
           Fit
         </button>
-        <button type="button" disabled={!usable} onClick={() => zoom(0.8)}>
+        <button
+          type="button"
+          disabled={!canZoomOut}
+          title={usable && !canZoomOut ? 'Minimum zoom reached.' : undefined}
+          onClick={() => zoom(zoomOutValue)}
+        >
           Zoom out
         </button>
-        <button type="button" disabled={!usable} onClick={() => zoom(1.25)}>
+        <button
+          type="button"
+          disabled={!canZoomIn}
+          title={usable && !canZoomIn ? 'Maximum zoom reached.' : undefined}
+          onClick={() => zoom(zoomInValue)}
+        >
           Zoom in
         </button>
         <button type="button" disabled={!usable} onClick={actual}>
@@ -338,8 +346,8 @@ export const DiagramViewport = forwardRef<
           else if (event.key === 'ArrowRight') pan(movement, 0);
           else if (event.key === 'ArrowUp') pan(0, -movement);
           else if (event.key === 'ArrowDown') pan(0, movement);
-          else if (event.key === '+' || event.key === '=') zoom(1.25);
-          else if (event.key === '-') zoom(0.8);
+          else if (event.key === '+' || event.key === '=') zoom(zoomInValue);
+          else if (event.key === '-') zoom(zoomOutValue);
           else if (event.key === '0') fit();
           else return;
           event.preventDefault();

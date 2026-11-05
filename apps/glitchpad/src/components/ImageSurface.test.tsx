@@ -1386,6 +1386,99 @@ describe('read-only raster viewport', () => {
     ).toEqual([0, 2, 3, 1]);
   });
 
+  it.each([
+    {
+      limit: 'maximum',
+      zoom: 16,
+      blocked: 'zoom_in' as const,
+      blockedLabel: 'Zoom in',
+      opposite: 'zoom_out' as const,
+      oppositeLabel: 'Zoom out',
+      recoveryFactor: 0.8,
+      key: '+',
+    },
+    {
+      limit: 'minimum',
+      zoom: 0.1,
+      blocked: 'zoom_out' as const,
+      blockedLabel: 'Zoom out',
+      opposite: 'zoom_in' as const,
+      oppositeLabel: 'Zoom in',
+      recoveryFactor: 1.25,
+      key: '-',
+    },
+  ])(
+    'refuses unchanged relative Zoom at the image $limit and disables only that direction',
+    async ({
+      zoom,
+      blocked,
+      blockedLabel,
+      oppositeLabel,
+      recoveryFactor,
+      key,
+    }) => {
+      const ref = createRef<TextEditorHandle>();
+      const changes = vi.fn();
+      const session = imageSession();
+      session.lifecycle = 'active';
+      session.image_document!.selection = 1;
+      session.image_document!.viewport = {
+        mode: 'actual',
+        zoom,
+        pan_x: 0,
+        pan_y: 0,
+        background: 'dark',
+      };
+      render(
+        <ImageSurface
+          ref={ref}
+          session={session}
+          gateway={{ render: () => Promise.resolve(result()) }}
+          onImageChange={changes}
+        />,
+      );
+      await screen.findByRole('img');
+      const pane = document.querySelector('.image-pane')!;
+      await waitFor(() =>
+        expect(pane).toHaveAttribute('data-preview-ready', 'true'),
+      );
+      changes.mockClear();
+      act(() => {
+        expect(ref.current!.invoke(blocked)).toBe(false);
+      });
+      fireEvent.keyDown(pane, { key });
+      expect(changes).not.toHaveBeenCalled();
+      expect(Number(pane.getAttribute('data-viewport-scale'))).toBe(zoom);
+      const localBlocked = screen.getByRole('button', { name: blockedLabel });
+      const localOpposite = screen.getByRole('button', { name: oppositeLabel });
+      expect(localBlocked).toBeDisabled();
+      expect(localOpposite).toBeEnabled();
+      fireEvent.click(screen.getByRole('button', { name: 'More image tools' }));
+      const tools = within(screen.getByRole('dialog', { name: 'Image tools' }));
+      expect(tools.getByRole('button', { name: blockedLabel })).toBeDisabled();
+      expect(tools.getByRole('button', { name: oppositeLabel })).toBeEnabled();
+      fireEvent.click(tools.getByRole('button', { name: oppositeLabel }));
+      expect(Number(pane.getAttribute('data-viewport-scale'))).toBeCloseTo(
+        zoom * recoveryFactor,
+      );
+      expect(changes).toHaveBeenCalledOnce();
+      expect(localBlocked).toBeEnabled();
+      expect(tools.getByRole('button', { name: blockedLabel })).toBeEnabled();
+      expect(pane).toHaveAttribute('data-viewport-background', 'dark');
+      expect(pane).toHaveAttribute('data-image-selection', '1');
+      act(() => {
+        expect(ref.current!.invoke(blocked)).toBe(true);
+      });
+      act(() => {
+        expect(ref.current!.invoke('fit')).toBe(true);
+      });
+      act(() => {
+        expect(ref.current!.invoke('fit')).toBe(true);
+      });
+      expect(pane).toHaveAttribute('data-viewport-mode', 'fit');
+    },
+  );
+
   it('keeps More Fit and multiplicative Zoom on the same provider viewport and refuses after display failure', async () => {
     const ref = createRef<TextEditorHandle>();
     render(

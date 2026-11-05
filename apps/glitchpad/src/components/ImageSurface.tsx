@@ -393,23 +393,24 @@ export const ImageSurface = forwardRef<TextEditorHandle, Props>(
         viewport: bounded,
       });
     };
-    const zoom = (factor: number) =>
-      apply({ ...viewport, zoom: clamp(viewport.zoom * factor, 0.1, 16) });
     const usable = ready && Boolean(url && descriptor);
+    const zoomInValue = clamp(viewport.zoom * 1.25, 0.1, 16);
+    const zoomOutValue = clamp(viewport.zoom * 0.8, 0.1, 16);
+    const canZoomIn = usable && zoomInValue !== viewport.zoom;
+    const canZoomOut = usable && zoomOutValue !== viewport.zoom;
+    const zoom = (nextZoom: number) => {
+      if (!usable || nextZoom === viewport.zoom) return false;
+      apply({ ...viewport, zoom: nextZoom });
+      return true;
+    };
     const fit = () =>
       apply({ ...viewport, mode: 'fit', zoom: 1, pan_x: 0, pan_y: 0 });
     useImperativeHandle(handleRef, () => ({
       invoke(command) {
         if (!ready || !url || !descriptor || session.lifecycle !== 'active')
           return false;
-        if (command === 'zoom_in') {
-          zoom(1.25);
-          return true;
-        }
-        if (command === 'zoom_out') {
-          zoom(1 / 1.25);
-          return true;
-        }
+        if (command === 'zoom_in') return zoom(zoomInValue);
+        if (command === 'zoom_out') return zoom(zoomOutValue);
         if (command === 'fit') {
           fit();
           return true;
@@ -451,9 +452,10 @@ export const ImageSurface = forwardRef<TextEditorHandle, Props>(
           </button>
           <button
             type="button"
-            disabled={!usable}
+            disabled={!canZoomOut}
+            title={usable && !canZoomOut ? 'Minimum zoom reached.' : undefined}
             aria-label="Zoom out"
-            onClick={() => zoom(0.8)}
+            onClick={() => zoom(zoomOutValue)}
           >
             −
           </button>
@@ -462,9 +464,10 @@ export const ImageSurface = forwardRef<TextEditorHandle, Props>(
           </output>
           <button
             type="button"
-            disabled={!usable}
+            disabled={!canZoomIn}
+            title={usable && !canZoomIn ? 'Maximum zoom reached.' : undefined}
             aria-label="Zoom in"
-            onClick={() => zoom(1.25)}
+            onClick={() => zoom(zoomInValue)}
           >
             +
           </button>
@@ -490,10 +493,20 @@ export const ImageSurface = forwardRef<TextEditorHandle, Props>(
           <button type="button" disabled={!usable} onClick={fit}>
             Fit
           </button>
-          <button type="button" disabled={!usable} onClick={() => zoom(0.8)}>
+          <button
+            type="button"
+            disabled={!canZoomOut}
+            title={usable && !canZoomOut ? 'Minimum zoom reached.' : undefined}
+            onClick={() => zoom(zoomOutValue)}
+          >
             Zoom out
           </button>
-          <button type="button" disabled={!usable} onClick={() => zoom(1.25)}>
+          <button
+            type="button"
+            disabled={!canZoomIn}
+            title={usable && !canZoomIn ? 'Maximum zoom reached.' : undefined}
+            onClick={() => zoom(zoomInValue)}
+          >
             Zoom in
           </button>
           <button
@@ -788,8 +801,8 @@ export const ImageSurface = forwardRef<TextEditorHandle, Props>(
           data-image-selection={selection ?? 0}
           onKeyDown={(e) => {
             if (!usable) return;
-            if (e.key === '+' || e.key === '=') zoom(1.25);
-            else if (e.key === '-') zoom(1 / 1.25);
+            if (e.key === '+' || e.key === '=') zoom(zoomInValue);
+            else if (e.key === '-') zoom(zoomOutValue);
             else if (e.key === '0') fit();
             else if (e.key.startsWith('Arrow'))
               apply({

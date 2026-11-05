@@ -2,12 +2,12 @@ function New-PortableStartupDiagnostic {
     param(
         [Parameter(Mandatory)][System.Collections.IDictionary] $Observation,
         [Parameter(Mandatory)][ValidateSet('clean', 'reverse', 'minimal', 'editable', 'recovery', 'webview')][string] $Scenario,
-        [Parameter(Mandatory)][ValidateSet('launch', 'named_element_wait', 'named_element_ready', 'content_wait', 'content_ready', 'scenario_checks')][string] $Stage,
+        [Parameter(Mandatory)][ValidateSet('launch', 'named_element_wait', 'named_element_ready', 'named_button_wait', 'named_button_ready', 'content_wait', 'content_ready', 'scenario_checks')][string] $Stage,
         [Parameter(Mandatory)][ValidatePattern('^[a-f0-9]{40}$')][string] $SourceCommit,
         [Parameter(Mandatory)][ValidatePattern('^[a-f0-9]{64}$')][string] $ManifestDigest,
         [Parameter(Mandatory)][bool] $Succeeded,
         [Parameter(Mandatory)][long] $ElapsedMilliseconds,
-        [ValidateSet('none', 'named_element')][string] $WaitKind = 'none',
+        [ValidateSet('none', 'named_element', 'named_button')][string] $WaitKind = 'none',
         [ValidateRange(0, 100000)][int] $WaitCallerLine = 0
     )
     $record = [ordered]@{
@@ -26,9 +26,9 @@ function New-PortableStartupDiagnostic {
         process_state_available = [bool]$Observation['process_state_available']
         content_free = $true
     }
-    if (-not $Succeeded -and $WaitKind -eq 'named_element' -and $WaitCallerLine -gt 0) {
+    if (-not $Succeeded -and $WaitKind -in @('named_element', 'named_button') -and $WaitCallerLine -gt 0) {
         $record['readiness_wait'] = [ordered]@{
-            function = 'Wait-NamedElement'
+            function = if ($WaitKind -eq 'named_button') { 'Wait-NamedButton' } else { 'Wait-NamedElement' }
             caller_line = $WaitCallerLine
         }
     }

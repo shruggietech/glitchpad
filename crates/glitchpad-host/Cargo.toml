@@ -30,7 +30,7 @@ uuid.workspace = true
 
 [dev-dependencies]
 chrono.workspace = true
-crossbeam-channel = "=0.5.16"
+crossbeam-channel = "=0.5.17"
 
 [target.'cfg(target_os = "android")'.dev-dependencies]
 ndk = "=0.9.0"

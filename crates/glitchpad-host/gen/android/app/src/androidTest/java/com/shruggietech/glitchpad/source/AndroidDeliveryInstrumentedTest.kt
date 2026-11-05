@@ -896,7 +896,9 @@ class AndroidDeliveryInstrumentedTest {
     }
   }
 
-  private fun visibleNativeImeBounds(): List<android.graphics.Rect> = instrumentation.uiAutomation.windows
+  private fun visibleNativeImeBounds(
+    windows: List<android.view.accessibility.AccessibilityWindowInfo> = instrumentation.uiAutomation.windows
+  ): List<android.graphics.Rect> = windows
     .filter { it.type == android.view.accessibility.AccessibilityWindowInfo.TYPE_INPUT_METHOD }.take(4)
     .map { android.graphics.Rect().also { bounds -> it.getBoundsInScreen(bounds) } }.filter { !it.isEmpty }
 
@@ -1433,8 +1435,9 @@ class AndroidDeliveryInstrumentedTest {
     throw AssertionError(reason)
   }
 
-  private fun externalNativeWindowState(): JSONObject {
-    val root = instrumentation.uiAutomation.rootInActiveWindow
+  private fun externalNativeWindowState(
+    root: android.view.accessibility.AccessibilityNodeInfo? = instrumentation.uiAutomation.rootInActiveWindow
+  ): JSONObject {
     val bounds = android.graphics.Rect()
     root?.getBoundsInScreen(bounds)
     return nativeRectBounds(bounds).put("package", root?.packageName?.toString() ?: JSONObject.NULL)
@@ -1442,12 +1445,25 @@ class AndroidDeliveryInstrumentedTest {
   }
 
   private fun externalNativeLayerState(expectedPackage: String): JSONObject {
-    val window = externalNativeWindowState()
+    val root = instrumentation.uiAutomation.rootInActiveWindow
+    val fresh = root?.refresh() == true
+    val windows = instrumentation.uiAutomation.windows
+    val window = externalNativeWindowState(root)
+    val owner = windows.firstOrNull { it.id == root?.windowId && it.type == android.view.accessibility.AccessibilityWindowInfo.TYPE_APPLICATION }
     val bounds = android.graphics.Rect(window.getInt("left"), window.getInt("top"), window.getInt("right"), window.getInt("bottom"))
-    val ime = visibleNativeImeBounds().filter { android.graphics.Rect.intersects(it, bounds) }
-    return window.put("verified_owner", expectedPackage.isNotEmpty() && expectedPackage != TARGET_PACKAGE &&
-      window.optString("package") == expectedPackage && window.optBoolean("visible") && window.optInt("width") > 0 && window.optInt("height") > 0)
+    val ime = visibleNativeImeBounds(windows).filter { android.graphics.Rect.intersects(it, bounds) }
+    return window.put("root_fresh", fresh).put("owner_window_present", owner != null)
+      .put("owner_focused", owner?.isFocused == true).put("owner_active", owner?.isActive == true)
+      .put("verified_owner", fresh && owner?.isFocused == true && expectedPackage.isNotEmpty() && expectedPackage != TARGET_PACKAGE &&
+        window.optString("package") == expectedPackage && window.optBoolean("visible") && window.optInt("width") > 0 && window.optInt("height") > 0)
       .put("ime_window_bounds", JSONArray(ime.map { nativeRectBounds(it) }))
+  }
+
+  private fun awaitExternalNativeIdle(deadline: Long) {
+    val remaining = deadline - SystemClock.elapsedRealtime()
+    assertTrue("native layer readiness must begin inside the original handoff-return budget", remaining > 0L)
+    instrumentation.uiAutomation.waitForIdle(100L, remaining)
+    assertTrue("native layer readiness must finish inside the original handoff-return budget", SystemClock.elapsedRealtime() < deadline)
   }
 
   private fun cancelExternalNativeWindow(scenario: ActivityScenario<MainActivity>, control: String, expectedPackage: String) {
@@ -1466,6 +1482,9 @@ class AndroidDeliveryInstrumentedTest {
     }
     try {
       enableNativeWindowObservation()
+      phase = "await_initial_native_idle"
+      awaitExternalNativeIdle(deadline)
+      phase = "observe_layers"
       layers = externalNativeLayerState(expectedPackage)
       assertTrue("cancellation must start at the verified visible external owner", layers.getBoolean("verified_owner"))
       println("external_native_cancel_layers=" + JSONObject().put("control", control).put("expected_package", expectedPackage).put("layers", layers))
@@ -1474,7 +1493,7 @@ class AndroidDeliveryInstrumentedTest {
         assertTrue("keyboard dismissal must begin inside the original handoff-return budget", SystemClock.elapsedRealtime() < deadline)
         phase = "ime_back"
         imeBackRequested = true
-        pressExternalWindowBack(control + " keyboard", expectedPackage)
+        pressExternalWindowBack(control + " keyboard", expectedPackage, true, deadline)
         phase = "await_ime_hidden"
         var imeHiddenAtOwner = false
         while (SystemClock.elapsedRealtime() < deadline) {
@@ -1488,13 +1507,19 @@ class AndroidDeliveryInstrumentedTest {
           SystemClock.sleep(100L)
         }
         assertTrue("the observed external IME must disappear while the same owner persists before any window Back", imeHiddenAtOwner)
+        phase = "await_post_ime_native_idle"
+        awaitExternalNativeIdle(deadline)
         app = nativeHandoffState(scenario, control, expectedPackage)
         if (actualAppNativeWindowReady(app)) { completed("returned_after_first_pair"); return }
+        phase = "verify_post_ime_layers"
+        layers = externalNativeLayerState(expectedPackage)
+        assertTrue("the same focused external owner must persist after IME readiness", layers.getBoolean("verified_owner"))
+        assertTrue("a dismissed IME must stay absent before the single window Back", layers.getJSONArray("ime_window_bounds").length() == 0)
       }
       assertTrue("window cancellation must begin inside the original handoff-return budget", SystemClock.elapsedRealtime() < deadline)
       phase = "window_back"
       windowBackRequested = true
-      pressExternalWindowBack(control + " window", expectedPackage)
+      pressExternalWindowBack(control + " window", expectedPackage, false, deadline)
       phase = "await_app_return"
       waitForAppNativeWindow(scenario, control, expectedPackage, deadline)
       app = nativeHandoffState(scenario, control, expectedPackage)
@@ -1503,27 +1528,35 @@ class AndroidDeliveryInstrumentedTest {
     } catch (failure: Throwable) {
       val after = runCatching { externalNativeLayerState(expectedPackage) }.getOrElse { JSONObject().put("capture_failed", true) }
       val appAfter = runCatching { nativeHandoffState(scenario, control, expectedPackage) }.getOrElse { JSONObject().put("capture_failed", true) }
+      val screenshotSaved = runCatching { saveScreenshot("s046-authoring.png") }.getOrDefault(false)
       println("external_native_cancel_failure=" + JSONObject().put("control", control).put("expected_package", expectedPackage)
         .put("phase", phase).put("failure_type", failure.javaClass.simpleName).put("ime_back_requested", imeBackRequested)
-        .put("window_back_requested", windowBackRequested).put("last_layers", layers).put("layers_after", after).put("app_window_after", appAfter))
+        .put("window_back_requested", windowBackRequested).put("last_layers", layers).put("layers_after", after).put("app_window_after", appAfter)
+        .put("screenshot_saved", screenshotSaved))
       System.out.flush()
       throw failure
     }
   }
 
-  private fun pressExternalWindowBack(control: String, expectedPackage: String) {
-    val before = externalNativeWindowState()
-    var phase = "owner_check"
+  private fun pressExternalWindowBack(control: String, expectedPackage: String, expectedIme: Boolean, deadline: Long) {
+    val before = externalNativeLayerState(expectedPackage)
+    var phase = "owner_and_layer_check"
     var downAccepted = false
     var upAccepted = false
     try {
+      println("external_native_back_before=" + JSONObject().put("control", control).put("expected_package", expectedPackage)
+        .put("expected_ime", expectedIme).put("remaining_ms", deadline - SystemClock.elapsedRealtime()).put("layers", before))
+      System.out.flush()
       assertTrue("external Back must name a different application owner", expectedPackage.isNotEmpty() && expectedPackage != TARGET_PACKAGE)
       assertEquals("external Back must target the verified current native window", expectedPackage, before.optString("package"))
       assertTrue("external Back must target a visible native window", before.getBoolean("visible") && before.getInt("width") > 0 && before.getInt("height") > 0)
+      assertTrue("external Back must retain a fresh focused native owner", before.getBoolean("verified_owner"))
+      assertEquals("the observed IME layer must still match the selected single Back", expectedIme, before.getJSONArray("ime_window_bounds").length() > 0)
       val downTime = SystemClock.uptimeMillis()
       val down = KeyEvent(downTime, downTime, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_BACK, 0, 0,
         android.view.KeyCharacterMap.VIRTUAL_KEYBOARD, 0, KeyEvent.FLAG_FROM_SYSTEM, InputDevice.SOURCE_KEYBOARD)
       phase = "down"
+      assertTrue("Back DOWN must begin inside the original handoff-return budget", SystemClock.elapsedRealtime() < deadline)
       downAccepted = instrumentation.uiAutomation.injectInputEvent(down, true)
       assertTrue("the external native window must accept the single Back DOWN", downAccepted)
       val up = KeyEvent(downTime, SystemClock.uptimeMillis(), KeyEvent.ACTION_UP, KeyEvent.KEYCODE_BACK, 0, 0,
@@ -1535,7 +1568,7 @@ class AndroidDeliveryInstrumentedTest {
         .put("phase", "event_pair_accepted").put("window_before", before).put("down_accepted", downAccepted).put("up_accepted", upAccepted))
       System.out.flush()
     } catch (failure: Throwable) {
-      val after = runCatching { externalNativeWindowState() }.getOrElse { JSONObject().put("capture_failed", true) }
+      val after = runCatching { externalNativeLayerState(expectedPackage) }.getOrElse { JSONObject().put("capture_failed", true) }
       println("external_native_back_failure=" + JSONObject().put("control", control).put("expected_package", expectedPackage)
         .put("phase", phase).put("failure_type", failure.javaClass.simpleName).put("window_before", before).put("window_after", after)
         .put("down_accepted", downAccepted).put("up_accepted", upAccepted))
@@ -1572,9 +1605,9 @@ class AndroidDeliveryInstrumentedTest {
     File(clientContext.applicationInfo.sourceDir).inputStream().use { input -> val bytes = ByteArray(65536); var count = input.read(bytes); while (count != -1) { digest.update(bytes, 0, count); count = input.read(bytes) } }
     return digest.digest().joinToString("") { "%02x".format(it.toInt() and 255) }
   }
-  private fun saveScreenshot(name: String) {
-    val bitmap = instrumentation.uiAutomation.takeScreenshot() ?: return
-    try { clientContext.openFileOutput(name, 0).use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) } } finally { bitmap.recycle() }
+  private fun saveScreenshot(name: String): Boolean {
+    val bitmap = instrumentation.uiAutomation.takeScreenshot() ?: return false
+    return try { clientContext.openFileOutput(name, 0).use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) } } finally { bitmap.recycle() }
   }
 
   private fun viewIntent(uri: Uri, mediaType: String): Intent =

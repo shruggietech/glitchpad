@@ -97,7 +97,7 @@ mod android_loop {
         time::{Duration, Instant},
     };
     use tao::{
-        event::Event,
+        event::{Event, StartCause},
         event_loop::{ControlFlow, EventLoopBuilder},
         platform::{
             android::prelude::NDK_GLUE_LOOPER_INPUT_QUEUE_IDENT, run_return::EventLoopExtRunReturn,
@@ -106,6 +106,7 @@ mod android_loop {
 
     #[derive(Clone, Copy, Debug)]
     enum PollCase {
+        Wake,
         Source,
         Callback,
         Timeout,
@@ -119,7 +120,12 @@ mod android_loop {
 
     #[test]
     fn real_run_return_services_source_callback_and_timeout_with_fifo_and_sticky_exit() {
-        for case in [PollCase::Source, PollCase::Callback, PollCase::Timeout] {
+        for case in [
+            PollCase::Wake,
+            PollCase::Source,
+            PollCase::Callback,
+            PollCase::Timeout,
+        ] {
             let looper = ThreadLooper::prepare();
             let mut event_loop = EventLoopBuilder::<Work>::with_user_event().build();
             let proxy = event_loop.create_proxy();
@@ -162,22 +168,32 @@ mod android_loop {
             });
             let mut armed = false;
             let mut observed = Vec::new();
+            let mut requested_resume = None;
+            let mut observed_start = None;
             let code = event_loop.run_return(|event, _, control_flow| match event {
+                Event::NewEvents(cause) if armed && observed_start.is_none() => {
+                    observed_start = Some((cause, Instant::now()));
+                }
                 Event::RedrawEventsCleared if !armed => {
                     armed = true;
                     proxy.send_event(Work::First).unwrap();
                     proxy.send_event(Work::Second).unwrap();
+                    let deadline = if matches!(case, PollCase::Timeout) {
+                        Instant::now()
+                    } else {
+                        Instant::now() + Duration::from_secs(5)
+                    };
+                    requested_resume = Some(deadline);
                     if matches!(case, PollCase::Timeout) {
                         // Consume the public proxy's wake while retaining its queued work.
                         assert!(matches!(
                             looper.poll_once_timeout(Duration::ZERO).unwrap(),
                             Poll::Wake
                         ));
-                        *control_flow = ControlFlow::WaitUntil(Instant::now());
-                    } else {
+                    } else if !matches!(case, PollCase::Wake) {
                         writer.write_all(&[1]).unwrap();
-                        *control_flow = ControlFlow::Wait;
                     }
+                    *control_flow = ControlFlow::WaitUntil(deadline);
                 }
                 Event::UserEvent(work) => {
                     observed.push(work);
@@ -205,6 +221,40 @@ mod android_loop {
             );
             assert_eq!(observed, [Work::First, Work::Second], "{case:?}");
             assert_eq!(code, 7, "exit must stay sticky: {case:?}");
+            let deadline = requested_resume.unwrap();
+            let (cause, observed_at) = observed_start.unwrap();
+            match (case, cause) {
+                (
+                    PollCase::Timeout,
+                    StartCause::ResumeTimeReached {
+                        requested_resume, ..
+                    },
+                ) => {
+                    assert_eq!(requested_resume, deadline);
+                    assert!(observed_at >= deadline);
+                }
+                (
+                    _,
+                    StartCause::WaitCancelled {
+                        start,
+                        requested_resume: Some(requested),
+                        ..
+                    },
+                ) if !matches!(case, PollCase::Timeout) => {
+                    assert_eq!(requested, deadline);
+                    assert!(
+                        start < deadline,
+                        "wait must start before its controlled deadline"
+                    );
+                    assert!(
+                        observed_at < deadline,
+                        "{case:?} must interrupt before the deadline"
+                    );
+                }
+                (_, unexpected) => {
+                    panic!("wrong deadline classification for {case:?}: {unexpected:?}")
+                }
+            }
             if matches!(case, PollCase::Callback) {
                 assert!(
                     callback_ran.load(Ordering::SeqCst),

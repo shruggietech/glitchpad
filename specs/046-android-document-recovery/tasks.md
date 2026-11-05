@@ -134,10 +134,18 @@ T001-T004 precede implementation. Native contracts/writer (T008-T009/T017) and r
 
 ## Phase 16: Provider fixture continuity and duplicate cleanup
 
-- [ ] T054 Preserve canonical fixture bytes and modification metadata across provider recreation when expected content is identical, update missing/changed fixtures deliberately, and add focused initialization plus actual recreation coverage in FixtureDocumentsProvider.java and affected instrumentation per FR-001/016/018 (partial verification, HIGH F7).
+- [x] T054 Preserve canonical fixture bytes and modification metadata across provider recreation when expected content is identical, update missing/changed fixtures deliberately, and add focused initialization plus actual recreation coverage in FixtureDocumentsProvider.java and affected instrumentation per FR-001/016/018 (partial verification, HIGH F7).
 - [x] T055 Retain sources already owned by an open session or copy reference when a strong duplicate fails materialization in App.tsx, preserve exactly-once cleanup for unowned failures, and add red-first ownership/error regressions per FR-001/008/009/016/017 (partial execution, HIGH F8).
 
 ## Phase 17: Native dispatch and physical Add visibility
 
 - [ ] T056 Repair the locked Tao Android poll/wake contract and truthful queue admission with exactly-once/source/exit ordering regressions, preserve dependency versions/provenance/licenses and non-Android source, remove temporary diagnosis-only Tauri vendoring while retaining its evidence, and qualify the normal reply path on fresh APKs per FR-008/010/016/017/018 (partial execution, HIGH F9).
-- [ ] T057 Fit Add document to the actual native-visible parent using the existing viewport observer/intersection policy, preserve canonical inset ownership and document clearance, strengthen physical native trigger/choice assertions and retain old/modern browser default/scaled/rotated regressions per FR-003/005/016/017 (partial execution and verification, HIGH F10).
+- [x] T057 Fit Add document to the actual native-visible parent using the existing viewport observer/intersection policy, preserve canonical inset ownership and document clearance, strengthen physical native trigger/choice assertions and retain old/modern browser default/scaled/rotated regressions per FR-003/005/016/017 (partial execution and verification, HIGH F10).
+
+## Phase 18: External native cancellation coherence
+
+- [ ] T058 Establish coherent actual IME/window readiness for external picker cancellation in AndroidDeliveryInstrumentedTest.kt, preserve the existing absolute deadline and per-observed-layer gesture cap, add meaningful late-IME scheduling regressions and bounded failure capture, and retain actual APK cancellation/source assertions per FR-005/008/013/016/018 (partial verification, HIGH F11).
+
+## Phase 19: Android timed-poll classification
+
+- [ ] T059 Preserve raw Android poll timeout versus wake/callback classification before native-source projection in the locked Tao WaitUntil arm, retain existing public StartCause/deadline and dispatch semantics, and add exact-source plus actual-run_return regression cases without expanding dependencies per FR-008/010/016/017/018 and plan T056 (partial execution, HIGH F12).

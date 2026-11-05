@@ -73,7 +73,7 @@
       "modified_files": [
         {
           "path": "src/platform_impl/android/mod.rs",
-          "sha256": "8b7f5bdb6bd87d4f42017b073bb17024da1c6f1ca7665251bfd85c6c607d43e3"
+          "sha256": "fb6bc93e35bae2597cfbbf0385727653cddf48def11921f8d40cdf1813730298"
         }
       ],
       "added_files": [
@@ -83,7 +83,7 @@
         },
         {
           "path": "tests/android_user_event_queue.rs",
-          "sha256": "af0731a76d37f2a71b9833645753b456d5b48bb03461919a110087f4298476cc"
+          "sha256": "792b7680659101ea642d8e43aa474e6dc0799387c88f168bc77c905a75bbe21c"
         }
       ],
       "purpose": "S046 T056 Android poll/wake contract repair: poll_once, common user-event drain and truthful nonblocking queue admission; existing non-Android source and manifest bytes remain exact.",
@@ -133,6 +133,17 @@
         "diff_sha256": "78ead490ae0f9650a0f2394d21ad3f1892e99bb4d4a6fe1a0e0ac785cab0056a",
         "registry_crate_sha256": "6fa5bacdb9bbad5954af3d1bd6cf6ae9192cab1b2e270f4a07f904610b9e85f4"
       }
+    },
+    {
+      "date": "2026-11-04",
+      "slice": "S046",
+      "task": "T059",
+      "reason": "Retain the raw Poll::Timeout distinction before projecting Android poll results, preserving WaitUntil cancellation versus deadline StartCause without changing queue, timing or exit behavior.",
+      "files": [
+        "tao-0.35.3/src/platform_impl/android/mod.rs",
+        "tao-0.35.3/tests/android_user_event_queue.rs"
+      ],
+      "verification": "Exact production poll and WaitUntil-arm fixtures fail Wake/Callback before repair and pass all4return cases afterward; existing5host queue cases pass. Public Android run_return deadline cases compile only locally; installed-APK qualification remains separate."
     }
   ]
 }

@@ -508,8 +508,10 @@ impl<T: 'static> EventLoop<T> {
           } else {
             instant - start
           };
-          self.first_event = poll(self.looper.poll_once_timeout(duration).unwrap());
-          self.start_cause = if self.first_event.is_some() {
+          let result = self.looper.poll_once_timeout(duration).unwrap();
+          let timed_out = matches!(result, Poll::Timeout);
+          self.first_event = poll(result);
+          self.start_cause = if !timed_out {
             event::StartCause::WaitCancelled {
               start,
               requested_resume: Some(instant),

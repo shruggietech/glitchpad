@@ -1022,192 +1022,196 @@ export const MarkdownSurface = forwardRef<
     <>
       {(mode === 'source' || sourceVisited || eligibility !== 'full') &&
         sourceView}
-      <div
-        className="markdown-surface markdown-rendered-mode"
-        hidden={mode === 'source' || eligibility !== 'full'}
-      >
-        {lifecycleFailureProbe && recoveryAttempt === 0 && (
-          <LifecycleMarkdownFailure />
-        )}
-        <span className="visually-hidden" aria-live="polite">
-          {status === 'scheduled' || status === 'rendering'
-            ? 'Rendering preview'
-            : status === 'ready'
-              ? 'Preview current'
-              : status === 'empty'
-                ? 'Empty document'
-                : status === 'failed'
-                  ? 'Preview failed safely'
-                  : status}
-        </span>
-        <TaskSurface
-          open={mode === 'rendered' && outlineOpen && Boolean(currentResult)}
-          onOpenChange={setOutlineOpen}
-          title="Document outline"
-          className="markdown-outline-task document-tools"
-          opener={outlineTargetRef.current ?? renderedContentRef.current}
+      {!projectionSuppressed && (
+        <div
+          className="markdown-surface markdown-rendered-mode"
+          hidden={mode === 'source' || eligibility !== 'full'}
         >
-          <nav className="markdown-outline" aria-label="Document outline">
-            <ol>
-              {currentResult?.outline.map((heading) => (
-                <li key={heading.id} data-level={heading.level}>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      selectHeading(heading.source_range, heading.node_id)
-                    }
-                  >
-                    {heading.label}
-                  </button>
-                </li>
-              ))}
-            </ol>
-          </nav>
-        </TaskSurface>
-        <TaskSurface
-          open={searchOpen && mode === 'rendered'}
-          onOpenChange={(open) => {
-            if (!open) closeSearch();
-          }}
-          title="Find in Markdown"
-          opener={renderedContentRef.current}
-          className="markdown-search-task document-tools"
-        >
-          <div className="markdown-search" role="search">
-            <label>
-              Find rendered text
-              <input
-                data-task-initial-focus
-                autoFocus
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-              />
-            </label>
-            <span
-              role="status"
-              aria-label="Rendered search results"
-              aria-live="polite"
-            >
-              {!query
-                ? 'Enter search text'
-                : matches.length === 0
-                  ? 'No matches'
-                  : `${(activeMatch ?? 0) + 1} of ${matches.length}`}
-            </span>
-            <button
-              type="button"
-              onClick={() => moveMatch(-1)}
-              disabled={!matches.length}
-            >
-              Previous
-            </button>
-            <button
-              type="button"
-              onClick={() => moveMatch(1)}
-              disabled={!matches.length}
-            >
-              Next
-            </button>
-            <button type="button" onClick={closeSearch}>
-              Close search
-            </button>
-          </div>
-        </TaskSurface>
-        <article
-          ref={renderedContentRef}
-          tabIndex={-1}
-          className="markdown-document"
-          aria-busy={status === 'scheduled'}
-          data-performance-ready={currentResult?.tree ? 'true' : 'pending'}
-          data-performance-status={currentResult?.status ?? status}
-          data-performance-duration={
-            currentResult?.measurements.parse_duration_ms ?? ''
-          }
-          data-performance-diagnostic={
-            currentResult?.diagnostics[0]?.code ?? ''
-          }
-        >
-          {currentResult?.tree && status !== 'empty' ? (
-            <SafeTree
-              node={currentResult.tree}
-              session={session}
-              activeNodeId={activeNodeId}
-              onLink={beginLink}
-              onLocalLink={openLocalLink}
-              localAssetGateway={localAssetGateway}
-              onMermaidSource={enterMermaidSource}
-              onFragmentNavigation={fragmentNavigation}
-              unavailableFragmentId={unavailableFragmentId}
-            />
-          ) : status === 'failed' || status === 'limited' ? (
-            <div className="markdown-failure">
-              <p role="alert">
-                {currentResult?.diagnostics[0]?.message ??
-                  'Markdown preview failed safely. Source remains available.'}
-              </p>
+          {lifecycleFailureProbe && recoveryAttempt === 0 && (
+            <LifecycleMarkdownFailure />
+          )}
+          <span className="visually-hidden" aria-live="polite">
+            {status === 'scheduled' || status === 'rendering'
+              ? 'Rendering preview'
+              : status === 'ready'
+                ? 'Preview current'
+                : status === 'empty'
+                  ? 'Empty document'
+                  : status === 'failed'
+                    ? 'Preview failed safely'
+                    : status}
+          </span>
+          <TaskSurface
+            open={mode === 'rendered' && outlineOpen && Boolean(currentResult)}
+            onOpenChange={setOutlineOpen}
+            title="Document outline"
+            className="markdown-outline-task document-tools"
+            opener={outlineTargetRef.current ?? renderedContentRef.current}
+          >
+            <nav className="markdown-outline" aria-label="Document outline">
+              <ol>
+                {currentResult?.outline.map((heading) => (
+                  <li key={heading.id} data-level={heading.level}>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        selectHeading(heading.source_range, heading.node_id)
+                      }
+                    >
+                      {heading.label}
+                    </button>
+                  </li>
+                ))}
+              </ol>
+            </nav>
+          </TaskSurface>
+          <TaskSurface
+            open={searchOpen && mode === 'rendered'}
+            onOpenChange={(open) => {
+              if (!open) closeSearch();
+            }}
+            title="Find in Markdown"
+            opener={renderedContentRef.current}
+            className="markdown-search-task document-tools"
+          >
+            <div className="markdown-search" role="search">
+              <label>
+                Find rendered text
+                <input
+                  data-task-initial-focus
+                  autoFocus
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                />
+              </label>
+              <span
+                role="status"
+                aria-label="Rendered search results"
+                aria-live="polite"
+              >
+                {!query
+                  ? 'Enter search text'
+                  : matches.length === 0
+                    ? 'No matches'
+                    : `${(activeMatch ?? 0) + 1} of ${matches.length}`}
+              </span>
               <button
                 type="button"
-                onClick={onEnterRecoverySource ?? enterSourceMode}
+                onClick={() => moveMatch(-1)}
+                disabled={!matches.length}
               >
-                View source
+                Previous
+              </button>
+              <button
+                type="button"
+                onClick={() => moveMatch(1)}
+                disabled={!matches.length}
+              >
+                Next
+              </button>
+              <button type="button" onClick={closeSearch}>
+                Close search
               </button>
             </div>
-          ) : status === 'empty' ? (
-            <p>This document is empty.</p>
-          ) : (
-            <p className="markdown-pending" aria-hidden="true">
-              Rendering preview
+          </TaskSurface>
+          <article
+            ref={renderedContentRef}
+            tabIndex={-1}
+            className="markdown-document"
+            aria-busy={status === 'scheduled'}
+            data-performance-ready={currentResult?.tree ? 'true' : 'pending'}
+            data-performance-status={currentResult?.status ?? status}
+            data-performance-duration={
+              currentResult?.measurements.parse_duration_ms ?? ''
+            }
+            data-performance-diagnostic={
+              currentResult?.diagnostics[0]?.code ?? ''
+            }
+          >
+            {currentResult?.tree && status !== 'empty' ? (
+              <SafeTree
+                node={currentResult.tree}
+                session={session}
+                activeNodeId={activeNodeId}
+                onLink={beginLink}
+                onLocalLink={openLocalLink}
+                localAssetGateway={localAssetGateway}
+                onMermaidSource={enterMermaidSource}
+                onFragmentNavigation={fragmentNavigation}
+                unavailableFragmentId={unavailableFragmentId}
+              />
+            ) : status === 'failed' || status === 'limited' ? (
+              <div className="markdown-failure">
+                <p role="alert">
+                  {currentResult?.diagnostics[0]?.message ??
+                    'Markdown preview failed safely. Source remains available.'}
+                </p>
+                <button
+                  type="button"
+                  onClick={onEnterRecoverySource ?? enterSourceMode}
+                >
+                  View source
+                </button>
+              </div>
+            ) : status === 'empty' ? (
+              <p>This document is empty.</p>
+            ) : (
+              <p className="markdown-pending" aria-hidden="true">
+                Rendering preview
+              </p>
+            )}
+          </article>
+          {localLinkError && <p role="alert">{localLinkError}</p>}
+          <TaskSurface
+            open={
+              mode === 'rendered' && Boolean(pendingLink?.normalized_target)
+            }
+            onOpenChange={(open) => {
+              if (!open) closeLink();
+            }}
+            title="Open external destination?"
+            className="markdown-link-task document-tools"
+            opener={linkTriggerRef.current}
+          >
+            <p className="markdown-link-destination">
+              {pendingLink?.display_target}
             </p>
-          )}
-        </article>
-        {localLinkError && <p role="alert">{localLinkError}</p>}
-        <TaskSurface
-          open={mode === 'rendered' && Boolean(pendingLink?.normalized_target)}
-          onOpenChange={(open) => {
-            if (!open) closeLink();
-          }}
-          title="Open external destination?"
-          className="markdown-link-task document-tools"
-          opener={linkTriggerRef.current}
-        >
-          <p className="markdown-link-destination">
-            {pendingLink?.display_target}
-          </p>
-          <p>The destination will open in your system application.</p>
-          {linkError && <p role="alert">{linkError}</p>}
-          <div className="resolution-actions">
-            <button
-              type="button"
-              disabled={linkOpening}
-              onClick={() => {
-                const target = pendingLink?.normalized_target;
-                if (!target || linkPending.current) return;
-                linkPending.current = true;
-                const operation = ++linkOperation.current;
-                setLinkOpening(true);
-                void externalLinkGateway
-                  .open(target)
-                  .then(() => {
-                    if (operation === linkOperation.current) closeLink();
-                  })
-                  .catch(() => {
-                    if (operation !== linkOperation.current) return;
-                    linkPending.current = false;
-                    setLinkOpening(false);
-                    setLinkError(
-                      'The destination could not be opened. The document remains available.',
-                    );
-                  });
-              }}
-            >
-              {linkOpening ? 'Opening destination' : 'Open destination'}
-            </button>
-            <button type="button" onClick={closeLink} data-task-initial-focus>
-              Cancel
-            </button>
-          </div>
-        </TaskSurface>
-      </div>
+            <p>The destination will open in your system application.</p>
+            {linkError && <p role="alert">{linkError}</p>}
+            <div className="resolution-actions">
+              <button
+                type="button"
+                disabled={linkOpening}
+                onClick={() => {
+                  const target = pendingLink?.normalized_target;
+                  if (!target || linkPending.current) return;
+                  linkPending.current = true;
+                  const operation = ++linkOperation.current;
+                  setLinkOpening(true);
+                  void externalLinkGateway
+                    .open(target)
+                    .then(() => {
+                      if (operation === linkOperation.current) closeLink();
+                    })
+                    .catch(() => {
+                      if (operation !== linkOperation.current) return;
+                      linkPending.current = false;
+                      setLinkOpening(false);
+                      setLinkError(
+                        'The destination could not be opened. The document remains available.',
+                      );
+                    });
+                }}
+              >
+                {linkOpening ? 'Opening destination' : 'Open destination'}
+              </button>
+              <button type="button" onClick={closeLink} data-task-initial-focus>
+                Cancel
+              </button>
+            </div>
+          </TaskSurface>
+        </div>
+      )}
     </>
   );
 });

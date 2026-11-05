@@ -118,7 +118,7 @@ it('maps legacy overlay insets from canonical inputs and restores owned styles o
   }
 });
 
-it('starts native observation after portal mount and ignores a pending receipt once Add is disabled', async () => {
+it('retains measured native geometry while disabled and ignores receipts after unmount', async () => {
   vi.stubGlobal('CSS', { supports: () => true });
   const width = Object.getOwnPropertyDescriptor(window, 'innerWidth');
   const height = Object.getOwnPropertyDescriptor(window, 'innerHeight');
@@ -139,9 +139,27 @@ it('starts native observation after portal mount and ignores a pending receipt o
   );
   frame.append(host);
   document.body.append(frame);
+  const surface = document.createElement('section');
+  surface.className = 'document-surface';
+  frame.prepend(surface);
+  const bounds = vi
+    .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+    .mockImplementation(function (this: HTMLElement) {
+      if (this === surface) return new DOMRect(0, 0, 640, 320);
+      if (this.classList.contains('add-document-trigger')) {
+        const bottom =
+          Number.parseFloat(
+            this.parentElement!.style.getPropertyValue(
+              '--gl-add-native-block-end',
+            ),
+          ) || 0;
+        return new DOMRect(500, 272 - bottom, 100, 48);
+      }
+      return new DOMRect();
+    });
   const observed = {
     webview_screen: { left: 0, top: 0, right: 640, bottom: 320 },
-    visible_screen: { left: 48, top: 24, right: 592, bottom: 320 },
+    visible_screen: { left: 48, top: 24, right: 592, bottom: 296 },
     view_width: 640,
     view_height: 320,
     density: 1,
@@ -175,7 +193,17 @@ it('starts native observation after portal mount and ignores a pending receipt o
       await Promise.resolve();
     });
     expect(trigger).toBeDisabled();
-    expect(add).not.toHaveAttribute('data-native-viewport');
+    await waitFor(() =>
+      expect(add).toHaveAttribute('data-native-viewport', 'true'),
+    );
+    expect(add.style.getPropertyValue('--gl-add-native-block-end')).toBe(
+      '24px',
+    );
+    await waitFor(() =>
+      expect(frame.style.getPropertyValue('--gl-add-document-clearance')).toBe(
+        '72px',
+      ),
+    );
     app.rerender(<AddDocumentMenu {...props} />);
     await waitFor(() =>
       expect(add).toHaveAttribute('data-native-viewport', 'true'),
@@ -188,11 +216,37 @@ it('starts native observation after portal mount and ignores a pending receipt o
     expect(add.style.getPropertyValue('--gl-add-native-inline-size')).toBe(
       '544px',
     );
+    expect(read).toHaveBeenCalledOnce();
+    app.rerender(<AddDocumentMenu {...props} disabled />);
+    expect(add.style.getPropertyValue('--gl-add-native-block-end')).toBe(
+      '24px',
+    );
+    expect(frame.style.getPropertyValue('--gl-add-document-clearance')).toBe(
+      '72px',
+    );
+    let finishAfterUnmount: (() => void) | undefined;
+    read.mockImplementationOnce(
+      () =>
+        new Promise<typeof observed>((resolve) => {
+          finishAfterUnmount = () => resolve(observed);
+        }),
+    );
+    fireEvent(window, new Event('resize'));
+    await waitFor(() => expect(read).toHaveBeenCalledTimes(2));
     app.unmount();
+    await act(async () => {
+      finishAfterUnmount?.();
+      await Promise.resolve();
+    });
     expect(add).not.toHaveAttribute('data-native-viewport');
+    expect(add.style.getPropertyValue('--gl-add-native-block-end')).toBe('');
+    expect(frame.style.getPropertyValue('--gl-add-document-clearance')).toBe(
+      '',
+    );
   } finally {
     app.unmount();
     frame.remove();
+    bounds.mockRestore();
     if (width) Object.defineProperty(window, 'innerWidth', width);
     if (height) Object.defineProperty(window, 'innerHeight', height);
     vi.unstubAllGlobals();

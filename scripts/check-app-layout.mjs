@@ -723,6 +723,174 @@ export async function checkAppLayout({
               await page.waitForSelector('.document-tools-menu');
               await click(label, '.document-tools-menu button');
             };
+            const assertMarkdownSource = async function (stage) {
+              await page.waitForSelector(
+                '.markdown-source-mode:not([hidden]) .cm-content',
+              );
+              await page.evaluate(function () {
+                return new Promise(function (resolve) {
+                  requestAnimationFrame(function () {
+                    requestAnimationFrame(resolve);
+                  });
+                });
+              });
+              const measured = await page.evaluate(function () {
+                const source = document.querySelector(
+                  '.markdown-source-mode:not([hidden])',
+                );
+                const editor = source.querySelector('.cm-content');
+                const scroller = source.querySelector('.cm-scroller');
+                const surface = source.closest('.document-surface');
+                const rect = scroller.getBoundingClientRect();
+                const area = surface.getBoundingClientRect();
+                const content = editor.getBoundingClientRect();
+                const visible = window.__toolsVisible;
+                const left = Math.max(content.left, rect.left, visible.left);
+                const top = Math.max(content.top, rect.top, visible.top);
+                const right = Math.min(
+                  content.right,
+                  rect.right,
+                  visible.right,
+                );
+                const bottom = Math.min(
+                  content.bottom,
+                  rect.bottom,
+                  visible.bottom,
+                );
+                const x = left + Math.min(16, (right - left) / 2);
+                const y = top + Math.min(13.5, (bottom - top) / 2);
+                const hit = document.elementFromPoint(x, y);
+                const hidden = Array.from(
+                  source.parentElement.querySelectorAll(
+                    '.markdown-surface[hidden]',
+                  ),
+                ).map(function (node) {
+                  const box = node.getBoundingClientRect();
+                  return {
+                    display: getComputedStyle(node).display,
+                    width: box.width,
+                    height: box.height,
+                  };
+                });
+                const box = function (node) {
+                  const r = node.getBoundingClientRect();
+                  return {
+                    left: r.left,
+                    top: r.top,
+                    right: r.right,
+                    bottom: r.bottom,
+                    width: r.width,
+                    height: r.height,
+                  };
+                };
+                const shell = box(document.querySelector('.app-shell'));
+                const chrome = box(document.querySelector('.shell-chrome'));
+                const workarea = {
+                  left: shell.left,
+                  top: chrome.bottom,
+                  right: shell.right,
+                  bottom: shell.bottom,
+                  width: shell.width,
+                  height: shell.bottom - chrome.bottom,
+                };
+                const statusNode = document.querySelector('.command-result');
+                const feedback = statusNode
+                  ? {
+                      rect: box(statusNode),
+                      display: getComputedStyle(statusNode).display,
+                      text: statusNode.textContent,
+                      visible: document
+                        .querySelector('.app-shell')
+                        .getAttribute('data-command-result-visible'),
+                    }
+                  : null;
+                const outer = [];
+                for (
+                  let n = scroller;
+                  n && n !== document.documentElement;
+                  n = n.parentElement
+                )
+                  outer.push({
+                    className: n.className,
+                    rect: box(n),
+                    gridRows: getComputedStyle(n).gridTemplateRows,
+                  });
+                const labelledBy = surface.getAttribute('aria-labelledby');
+                return {
+                  fixedWorkarea: workarea,
+                  fullWorkareaRatio: rect.height / workarea.height,
+                  frame: box(document.querySelector('[data-bb-app-frame]')),
+                  shell: shell,
+                  chrome: chrome,
+                  outer: outer,
+                  feedback: feedback,
+                  width: rect.width,
+                  height: rect.height,
+                  clientHeight: scroller.clientHeight,
+                  left: rect.left,
+                  top: rect.top,
+                  right: rect.right,
+                  bottom: rect.bottom,
+                  visible: visible,
+                  surfaceWidth: area.width,
+                  surfaceHeight: area.height,
+                  ratio: rect.height / area.height,
+                  x: x,
+                  y: y,
+                  hit: hit === editor || editor.contains(hit),
+                  hitClass: hit && hit.className,
+                  name:
+                    surface.getAttribute('aria-label') ||
+                    (labelledBy &&
+                      document.getElementById(labelledBy) &&
+                      document.getElementById(labelledBy).textContent),
+                  hiddenModes: hidden,
+                };
+              });
+              row.source_mode_viewports ??= [];
+              row.source_mode_viewports.push({ stage, ...measured });
+              assert.ok(
+                measured.width >= 48 - tolerance &&
+                  measured.height >= 48 - tolerance &&
+                  measured.clientHeight > 0,
+                'Markdown source requires an actual reachable editor viewport',
+              );
+              assert.ok(
+                measured.ratio >= 0.7,
+                'Markdown source viewport must own at least70% of actual document area',
+              );
+              assert.ok(
+                measured.left >= measured.visible.left - tolerance &&
+                  measured.top >= measured.visible.top - tolerance &&
+                  measured.right <= measured.visible.right + tolerance &&
+                  measured.bottom <= measured.visible.bottom + tolerance,
+                'Markdown source viewport must fit the actual modeled native frame',
+              );
+              assert.equal(
+                measured.hit,
+                true,
+                'Markdown source input point must hit the actual current editor',
+              );
+              assert.ok(
+                measured.fullWorkareaRatio >= 0.7,
+                'Current source must retain at least70% of the full document workarea after transitions: ' +
+                  measured.fullWorkareaRatio,
+              );
+              assert.ok(
+                measured.name,
+                'Current source surface requires an actual mounted accessible name',
+              );
+              for (const mode of measured.hiddenModes) {
+                assert.equal(
+                  mode.display,
+                  'none',
+                  'A retained hidden Markdown mode must not occupy document space',
+                );
+                assert.equal(mode.width, 0);
+                assert.equal(mode.height, 0);
+              }
+              return measured;
+            };
             const exerciseDiagramTools = async function (scope) {
               const canvasSelector = scope + ' .diagram-canvas';
               await page.waitForFunction(
@@ -839,6 +1007,45 @@ export async function checkAppLayout({
                 };
               },
             );
+            row.add_clearance = await page.evaluate(function () {
+              const frame = document.querySelector('[data-bb-app-frame]');
+              const surface = document.querySelector('.document-surface');
+              const trigger = document.querySelector('.add-document-trigger');
+              return {
+                measured: Number.parseFloat(
+                  getComputedStyle(frame).getPropertyValue(
+                    '--gl-add-document-clearance',
+                  ),
+                ),
+                padding: Number.parseFloat(
+                  getComputedStyle(surface).paddingBottom,
+                ),
+                header: !!trigger.closest('.shell-chrome'),
+                triggerHeight: trigger.getBoundingClientRect().height,
+              };
+            });
+            assert.ok(
+              Number.isFinite(row.add_clearance.measured),
+              'Actual Add clearance must have a measured authority',
+            );
+            assert.ok(
+              Math.abs(
+                row.add_clearance.padding - row.add_clearance.measured,
+              ) <= tolerance,
+              'Document space must consume actual measured Add clearance exactly once',
+            );
+            if (row.add_clearance.header)
+              assert.equal(
+                row.add_clearance.measured,
+                0,
+                'Header Add must not reserve a bottom dock',
+              );
+            else
+              assert.ok(
+                row.add_clearance.measured >=
+                  row.add_clearance.triggerHeight - tolerance,
+                'A floating Add must retain measured obstruction clearance',
+              );
             row.document_viewport = await page.evaluate(function (group) {
               const selector =
                 group === 'markdown'
@@ -973,6 +1180,71 @@ export async function checkAppLayout({
                 id: 'CTRL-006/041',
                 cold_new_text: true,
                 exact_multiline: true,
+              });
+              await click('Add document');
+              await page.waitForSelector('.add-document-menu');
+              await click('New Markdown', '.add-document-menu button');
+              const source = await assertMarkdownSource('cold-new-markdown');
+              await page.mouse.click(source.x, source.y);
+              assert.equal(
+                await page.$eval(
+                  '.markdown-source-mode:not([hidden]) .cm-content',
+                  function (node) {
+                    return document.activeElement === node;
+                  },
+                ),
+                true,
+                'Real Markdown pointer input must focus the editor',
+              );
+              await page.keyboard.type('Markdown draft');
+              await page.keyboard.press('Enter');
+
+              await page.keyboard.type('second line');
+              const exactSource = await page.$$eval(
+                '.markdown-source-mode:not([hidden]) .cm-content .cm-line',
+                function (nodes) {
+                  return nodes
+                    .map(function (node) {
+                      return node.textContent;
+                    })
+                    .join('\n');
+                },
+              );
+              assert.equal(exactSource, 'Markdown draft\nsecond line');
+              await command('Copy');
+              assert.equal(
+                await page.evaluate(function () {
+                  return window.__toolsClipboard;
+                }),
+                exactSource,
+              );
+              await command('Read');
+              await page.waitForSelector(
+                '.markdown-rendered-mode:not([hidden]) .markdown-document p',
+              );
+              await command('Edit');
+              await assertMarkdownSource('cold-draft-after-read-edit');
+              assert.equal(
+                await page.$$eval(
+                  '.markdown-source-mode:not([hidden]) .cm-content .cm-line',
+                  function (nodes) {
+                    return nodes
+                      .map(function (node) {
+                        return node.textContent;
+                      })
+                      .join('\n');
+                  },
+                ),
+                exactSource,
+              );
+              row.outcomes.push({
+                id: 'CTRL-005/041/054',
+                cold_new_markdown: true,
+                actual_pointer_keyboard: true,
+                rapid_enter_without_wait: true,
+                authoritative_copy: true,
+                exact_multiline: true,
+                read_edit_retains_bytes: true,
               });
             } else if (group === 'editor') {
               await page.waitForSelector('.cm-content');
@@ -1173,7 +1445,9 @@ export async function checkAppLayout({
                 invalid_line: true,
               });
             } else if (group === 'markdown') {
-              await page.waitForSelector('.markdown-document h1');
+              await page.waitForSelector(
+                '.markdown-rendered-mode:not([hidden]) .markdown-document h1',
+              );
               await page.waitForFunction(function () {
                 const figure = document.querySelector('.embedded-mermaid');
                 const canvas =
@@ -1360,7 +1634,7 @@ export async function checkAppLayout({
               );
               await click('Cancel', '.task-surface button');
               await click('View source', '.embedded-mermaid button');
-              await page.waitForSelector('.cm-content');
+              await assertMarkdownSource('embedded-view-source');
               await command('Copy');
               await page.waitForFunction(function () {
                 return (
@@ -1369,19 +1643,84 @@ export async function checkAppLayout({
                 );
               });
               await command('Read');
-              await page.waitForSelector('.markdown-document h1');
+              await page.waitForSelector(
+                '.markdown-rendered-mode:not([hidden]) .markdown-document h1',
+              );
               row.outcomes.push({
                 id: 'CTRL-062',
                 embedded_valid_preview: true,
                 exact_selected_fence: true,
               });
+              const retainedArticle = await page.$(
+                '.markdown-rendered-mode:not([hidden]) .markdown-document',
+              );
+              const retainedArticlePosition = await page.evaluate(function (
+                node,
+              ) {
+                return { top: node.scrollTop, left: node.scrollLeft };
+              }, retainedArticle);
               await command('Edit');
-              await page.waitForSelector('.cm-content');
+              await assertMarkdownSource('document-edit');
               const before = await page.$eval('.cm-content', function (n) {
                 return n.textContent;
               });
               await command('Read');
-              await page.waitForSelector('.markdown-document h1');
+              await page.waitForSelector(
+                '.markdown-rendered-mode:not([hidden]) .markdown-document h1',
+              );
+              await page.waitForFunction(function () {
+                const active = document.activeElement;
+                const rect = active && active.getBoundingClientRect();
+                return (
+                  !!active &&
+                  active !== document.body &&
+                  !active.closest('[hidden],[inert],[aria-hidden=true]') &&
+                  !!rect &&
+                  rect.width > 0 &&
+                  rect.height > 0
+                );
+              });
+              const articleRetention = await page.evaluate(function (original) {
+                const current = document.querySelector(
+                  '.markdown-rendered-mode:not([hidden]) .markdown-document',
+                );
+                const active = document.activeElement;
+                const rect = active && active.getBoundingClientRect();
+                return {
+                  same: current === original,
+                  top: current.scrollTop,
+                  left: current.scrollLeft,
+                  usableFocus:
+                    !!active &&
+                    active !== document.body &&
+                    !active.closest('[hidden],[inert],[aria-hidden=true]') &&
+                    !!rect &&
+                    rect.width > 0 &&
+                    rect.height > 0,
+                };
+              }, retainedArticle);
+              row.normal_read_edit_retention = articleRetention;
+              assert.equal(
+                articleRetention.same,
+                true,
+                'Normal Read/Edit must retain the actual rendered article',
+              );
+              assert.equal(
+                articleRetention.top,
+                retainedArticlePosition.top,
+                'Normal Read/Edit must retain rendered vertical position',
+              );
+              assert.equal(
+                articleRetention.left,
+                retainedArticlePosition.left,
+                'Normal Read/Edit must retain rendered horizontal position',
+              );
+              assert.equal(
+                articleRetention.usableFocus,
+                true,
+                'Normal Read/Edit must retain usable foreground focus',
+              );
+              await retainedArticle.dispose();
               await command('Edit');
               assert.equal(
                 await page.$eval('.cm-content', function (n) {

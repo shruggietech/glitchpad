@@ -6,6 +6,7 @@ import {
   indentLess,
   indentMore,
   indentWithTab,
+  insertNewlineAndIndent,
   redo,
   undo,
   undoDepth,
@@ -112,6 +113,8 @@ export const TextEditorSurface = forwardRef<
       Boolean(session.edit_origin));
   const canEditRef = useRef(canEdit);
   canEditRef.current = canEdit;
+  const activeRef = useRef(session.lifecycle === 'active');
+  activeRef.current = session.lifecycle === 'active';
   const commandCallback = useRef(onCommandStateChange);
   commandCallback.current = onCommandStateChange;
   const previousCommandState = useRef<EditorCommandState | null>(null);
@@ -555,6 +558,36 @@ export const TextEditorSurface = forwardRef<
         searchAction.current = 'replace';
       }
     };
+    // Android Chrome defers Enter before its normal keymap. With EditContext,
+    // a rapid hardware sequence can lose that deferred newline after a text update.
+    const hardwareEnter = (event: KeyboardEvent) => {
+      if (
+        event.defaultPrevented ||
+        event.key !== 'Enter' ||
+        (event.code !== 'Enter' && event.code !== 'NumpadEnter') ||
+        event.altKey ||
+        event.ctrlKey ||
+        event.metaKey ||
+        event.shiftKey ||
+        event.isComposing ||
+        event.keyCode === 229 ||
+        view.composing ||
+        !('editContext' in view.contentDOM && view.contentDOM.editContext) ||
+        !activeRef.current ||
+        !canEditRef.current ||
+        view.state.readOnly ||
+        !view.state.facet(EditorView.editable) ||
+        !view.hasFocus ||
+        !(event.target instanceof Node) ||
+        !view.contentDOM.contains(event.target)
+      )
+        return;
+      if (insertNewlineAndIndent(view)) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    };
+    view.dom.addEventListener('keydown', hardwareEnter, true);
     view.dom.addEventListener('keydown', searchKey, true);
     view.dom.addEventListener('click', searchClick, true);
     searchContainer.addEventListener('keydown', searchKey, true);
@@ -575,6 +608,7 @@ export const TextEditorSurface = forwardRef<
       searchContainer.removeEventListener('keydown', searchKey, true);
       searchContainer.removeEventListener('click', searchClick, true);
       view.dom.removeEventListener('keydown', searchKey, true);
+      view.dom.removeEventListener('keydown', hardwareEnter, true);
       view.destroy();
     };
   }, [session.id]);

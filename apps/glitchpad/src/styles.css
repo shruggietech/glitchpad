@@ -1658,7 +1658,7 @@ button:focus-visible,
   margin: 0.75rem 0;
 }
 .app-shell[data-compact='true'] .document-surface {
-  padding-bottom: var(--gl-add-document-clearance, 4.5rem);
+  padding-bottom: var(--gl-add-document-clearance, 0px);
 }
 .app-shell[data-compact='true'] .shell-chrome {
   gap: 0;

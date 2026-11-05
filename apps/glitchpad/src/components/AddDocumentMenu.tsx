@@ -27,11 +27,7 @@ export function AddDocumentMenu({
   const [host, setHost] = useState<HTMLElement | null>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const container = useRef<HTMLDivElement>(null);
-  useNativeViewport(
-    container,
-    host && !disabled ? viewport : undefined,
-    '--gl-add-native',
-  );
+  useNativeViewport(container, host ? viewport : undefined, '--gl-add-native');
   const menu = useRef<HTMLDivElement>(null);
   const wasOpen = useRef(false);
   useEffect(() => {

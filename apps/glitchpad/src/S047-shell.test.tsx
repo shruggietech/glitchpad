@@ -1,4 +1,11 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
+import { EditorView } from '@codemirror/view';
 import { expect, it, vi } from 'vitest';
 import { App } from './App';
 import { createDraftSession } from './domain/drafts';
@@ -148,4 +155,102 @@ it('keeps short-window Add and document tools in one chrome row without duplicat
       value: previous.height,
     });
   }
+});
+
+it('names the active document from mounted controls across compact and wide multi-document layouts', () => {
+  const previous = { width: window.innerWidth, height: window.innerHeight };
+  const resize = (width: number, height: number) => {
+    Object.defineProperty(window, 'innerWidth', {
+      configurable: true,
+      value: width,
+    });
+    Object.defineProperty(window, 'innerHeight', {
+      configurable: true,
+      value: height,
+    });
+    fireEvent(window, new Event('resize'));
+  };
+  resize(320, 640);
+  try {
+    render(
+      <App
+        sessions={initialSessions.slice(0, 2)}
+        persistenceGateway={null}
+        recoveryGateway={null}
+      />,
+    );
+    const first = screen.getByRole('region', {
+      name: initialSessions[0].source.display_name,
+    });
+    expect(first).not.toHaveAttribute('aria-labelledby');
+    expect(screen.queryByRole('tab')).not.toBeInTheDocument();
+
+    resize(1200, 800);
+    const wide = screen.getByRole('tabpanel', {
+      name: initialSessions[0].source.display_name,
+    });
+    const label = document.getElementById(
+      wide.getAttribute('aria-labelledby') ?? '',
+    );
+    expect(label).toHaveAttribute('role', 'tab');
+    expect(label).toHaveAttribute('aria-controls', wide.id);
+
+    resize(320, 640);
+    expect(
+      screen.getByRole('region', {
+        name: initialSessions[0].source.display_name,
+      }),
+    ).toBe(wide);
+    expect(wide).not.toHaveAttribute('aria-labelledby');
+  } finally {
+    resize(previous.width, previous.height);
+  }
+});
+
+it('keeps Read and Edit completion contextual without reserving document space', async () => {
+  const session = createDraftSession('markdown', initialSessions[0]);
+  render(
+    <App
+      sessions={[session]}
+      persistenceGateway={null}
+      recoveryGateway={null}
+    />,
+  );
+  const editor = screen.getByRole('textbox');
+  const view = EditorView.findFromDOM(editor)!;
+  const source = view.state.doc.toString();
+  const invoke = (label: string) => {
+    fireEvent.click(screen.getByRole('button', { name: 'Document tools' }));
+    fireEvent.click(
+      within(screen.getByRole('menu', { name: 'Document tools' })).getByRole(
+        'menuitem',
+        { name: label },
+      ),
+    );
+  };
+  invoke('Read');
+  expect(await screen.findByText('Completed Read.')).toHaveAttribute(
+    'aria-live',
+    'polite',
+  );
+  expect(document.querySelector('.app-shell')).toHaveAttribute(
+    'data-command-result-visible',
+    'false',
+  );
+  invoke('Edit');
+  expect(await screen.findByText('Completed Edit.')).toHaveAttribute(
+    'aria-live',
+    'polite',
+  );
+  await waitFor(() =>
+    expect(
+      screen.getByRole('button', { name: 'Document tools' }),
+    ).toHaveFocus(),
+  );
+  expect(document.querySelector('.app-shell')).toHaveAttribute(
+    'data-command-result-visible',
+    'false',
+  );
+  expect(EditorView.findFromDOM(editor)).toBe(view);
+  expect(view.state.doc.toString()).toBe(source);
 });

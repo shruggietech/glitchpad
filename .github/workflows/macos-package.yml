@@ -128,7 +128,7 @@ jobs:
       - name: Prove native stable-document contracts
         run: |
           cargo test -p glitchpad-host --locked --test desktop_source_conformance --test desktop_delivery_conformance --test recovery_conformance
-          pnpm --filter @shruggietech/glitchpad exec vitest run src/App.test.tsx src/domain/desktop-delivery-gateway.test.ts src/domain/editor-conformance.test.ts src/domain/metadata-gateway.test.ts src/domain/persistence-gateway.test.ts src/domain/recovery.test.ts
+          pnpm --filter @shruggietech/glitchpad exec vitest run --maxWorkers=2 src/App.test.tsx src/domain/desktop-delivery-gateway.test.ts src/domain/editor-conformance.test.ts src/domain/metadata-gateway.test.ts src/domain/persistence-gateway.test.ts src/domain/recovery.test.ts
 
       - name: Download universal candidate
         uses: actions/download-artifact@v8

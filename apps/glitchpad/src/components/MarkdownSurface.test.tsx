@@ -1317,3 +1317,70 @@ it('moves and wraps exact rendered matches through Next, Previous and current pr
     screen.getByRole('status', { name: 'Rendered search results' }),
   ).toHaveTextContent('1 of 2');
 });
+
+it('keeps the current suppressed source editor and history without reevaluating the failed rendered subtree', () => {
+  const content = '# Retained source\n';
+  const session = markdownSession(content);
+  const handle = createRef<TextEditorHandle>();
+  const properties = {
+    ref: handle,
+    session,
+    projectionSuppressed: true,
+    recoveryAttempt: 0,
+    onDocumentChange: vi.fn(),
+    onLanguageChange: vi.fn(),
+    onMarkdownChange: vi.fn(),
+  };
+  const { rerender } = render(
+    <AppFrame>
+      <MarkdownSurface {...properties} lifecycleFailureProbe={false} />
+    </AppFrame>,
+  );
+  const input = screen.getByRole('textbox', { name: 'test.md text editor' });
+  const view = EditorView.findFromDOM(input)!;
+  act(() => view.dispatch({ changes: { from: 0, insert: 'retained ' } }));
+  rerender(
+    <AppFrame>
+      <MarkdownSurface {...properties} lifecycleFailureProbe />
+    </AppFrame>,
+  );
+  expect(screen.getByRole('textbox', { name: 'test.md text editor' })).toBe(
+    input,
+  );
+  expect(EditorView.findFromDOM(input)).toBe(view);
+  expect(view.state.doc.toString()).toBe('retained ' + content);
+  act(() => {
+    expect(handle.current?.invoke('undo')).toBe(true);
+  });
+  expect(view.state.doc.toString()).toBe(content);
+});
+
+it('retains the same rendered article position and focus through normal Read and Edit', async () => {
+  const session = markdownSession('# Heading\n\nVisible body.\n');
+  const renderer = new MarkdownRendererClient(
+    { execute: (request) => Promise.resolve(renderMarkdown(request)) },
+    0,
+  );
+  const handle = createRef<TextEditorHandle>();
+  renderDirectSurface(session, renderer, handle);
+  await screen.findByRole('heading', { name: 'Heading' });
+  const article = document.querySelector<HTMLElement>(
+    '.markdown-rendered-mode .markdown-document',
+  )!;
+  article.scrollTop = 90;
+  act(() => {
+    expect(handle.current?.invoke('edit')).toBe(true);
+  });
+  expect(
+    screen.getByRole('textbox', { name: 'test.md text editor' }),
+  ).toBeInTheDocument();
+  act(() => {
+    expect(handle.current?.invoke('edit')).toBe(true);
+  });
+  article.focus({ preventScroll: true });
+  expect(article).toHaveFocus();
+  expect(
+    document.querySelector('.markdown-rendered-mode .markdown-document'),
+  ).toBe(article);
+  expect(article.scrollTop).toBe(90);
+});

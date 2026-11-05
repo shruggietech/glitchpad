@@ -6,6 +6,8 @@ if [[ "$api" != 24 && "$api" != 36 ]] || [[ ! "$source" =~ ^[0-9a-f]{40}$ ]] || 
   echo 'S047 requires API24/36, full source, ordinary/fault_probe and RUNNER_TEMP.' >&2; exit 2
 fi
 runner="${BASH_SOURCE[0]%/*}/run-android-instrumentation.sh"
+navigation="${BASH_SOURCE[0]%/*}/android-navigation-mode.sh"
+navigation_restore_pending=false
 failures=0
 run_task() {
   local name="$1" method="$2" marker="s047_journey_evidence="
@@ -13,7 +15,10 @@ run_task() {
   if ! ANDROID_INSTRUMENTATION_RESET_APP_DATA=true bash "$runner" "$RUNNER_TEMP/s047-$name.txt" "$marker" -e waitForActivitiesToComplete false -e s047 true -e expectedSource "$source" -e expectedRole "$role" -e class "com.shruggietech.glitchpad.source.AndroidDeliveryInstrumentedTest#$method" "$@"; then failures=$((failures+1)); fi
 }
 restore_navigation() {
-  if [[ -n "${original_navigation:-}" ]]; then adb shell cmd overlay enable --exclusive --category "$original_navigation" || failures=$((failures+1)); original_navigation=""; fi
+  if [[ "$navigation_restore_pending" == true ]]; then
+    navigation_restore_pending=false
+    bash "$navigation" restore "$RUNNER_TEMP/s047-navigation" || failures=$((failures+1))
+  fi
 }
 cleanup() {
   local status=$?
@@ -32,9 +37,13 @@ if [[ "$role" == ordinary ]]; then
   run_task images s047ImageJourney
   run_task layout s047LayoutJourney
   if [[ "$api" = 36 ]]; then
-    adb shell cmd overlay list > "$RUNNER_TEMP/s047-navigation-before.txt"
-    original_navigation=$(sed -n 's/^\[x\] \(com\.android\.internal\.systemui\.navbar\.[a-z]*\).*$/\1/p' "$RUNNER_TEMP/s047-navigation-before.txt" | head -1)
-    if [[ -n "$original_navigation" ]] && grep -Fq 'com.android.internal.systemui.navbar.gestural' "$RUNNER_TEMP/s047-navigation-before.txt" && adb shell cmd overlay enable --exclusive --category com.android.internal.systemui.navbar.gestural; then run_task back s047BackJourney; else echo 'S047 actual gesture-navigation setup failed.' >&2; failures=$((failures+1)); fi
+    navigation_restore_pending=true
+    if bash "$navigation" setup "$RUNNER_TEMP/s047-navigation"; then
+      run_task back s047BackJourney
+    else
+      echo 'S047 actual gesture-navigation setup failed.' >&2
+      failures=$((failures+1))
+    fi
     restore_navigation
   else run_task back s047BackJourney; fi
   run_task about s047AboutJourney

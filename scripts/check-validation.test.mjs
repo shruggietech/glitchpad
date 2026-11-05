@@ -5,7 +5,10 @@ import { dirname, join, relative, resolve, sep } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { assertValidatorTopology } from './check-config.mjs';
+import {
+  assertValidatorTopology,
+  checkConfiguration,
+} from './check-config.mjs';
 import { validateLinks } from './check-links.mjs';
 import { extractMermaidBlocks, validateMermaid } from './check-mermaid.mjs';
 import { collectMarkdownFiles } from './validation-files.mjs';
@@ -28,6 +31,68 @@ async function writeFixture(root, path, content) {
 function repositoryPaths(root, files) {
   return files.map((file) => relative(root, file).split(sep).join('/'));
 }
+
+async function temporaryConfigurationRepository(t) {
+  const root = await temporaryRepository(t);
+  for (const path of [
+    'package.json',
+    'scripts/check-links.mjs',
+    'scripts/check-mermaid.mjs',
+    '.github/workflows/docs.yml',
+    '.github/workflows/delete-merged-branch.yml',
+    '.github/workflows/release.yml',
+  ]) {
+    await writeFixture(
+      root,
+      path,
+      await readFile(join(repositoryRoot, path), 'utf8'),
+    );
+  }
+  return root;
+}
+
+for (const [path, invalid] of [
+  ['config/source.json', '{"incomplete":'],
+  ['config/source.yaml', 'source: [unterminated'],
+]) {
+  test(`Configuration discovery ignores private failed captures but rejects malformed ${path}`, async (t) => {
+    const root = await temporaryConfigurationRepository(t);
+    const capture = 'cat: files/s047-row-1.json: No such file or directory\n';
+    const capturePath = await writeFixture(
+      root,
+      '.codex-tmp/s047/failed-attempt/_temp/s047-row-1.json',
+      capture,
+    );
+
+    assert.equal(await checkConfiguration(root), 4);
+    assert.equal(await readFile(capturePath, 'utf8'), capture);
+
+    await writeFixture(root, path, invalid);
+    await assert.rejects(checkConfiguration(root), (error) => {
+      assert.ok(
+        error.message.startsWith(
+          `Invalid configuration in ${relative(root, join(root, path))}:`,
+        ),
+      );
+      return true;
+    });
+    assert.equal(await readFile(capturePath, 'utf8'), capture);
+  });
+}
+
+test('Configuration discovery excludes only the root private session directory', async (t) => {
+  const root = await temporaryConfigurationRepository(t);
+  const path = 'config/.codex-tmp/source.json';
+  await writeFixture(root, path, '{"incomplete":');
+  await assert.rejects(checkConfiguration(root), (error) => {
+    assert.ok(
+      error.message.startsWith(
+        `Invalid configuration in ${relative(root, join(root, path))}:`,
+      ),
+    );
+    return true;
+  });
+});
 
 test('Markdown discovery is deterministic and preserves exclusion policy', async (t) => {
   const root = await temporaryRepository(t);

@@ -968,3 +968,133 @@ describe('remaining search and line drafts', () => {
     }
   });
 });
+
+describe('EditContext hardware Enter ownership', () => {
+  it('inserts one undoable newline with an attached EditContext and keeps the current editor', () => {
+    const ref = createRef<TextEditorHandle>();
+    const session = makeSession();
+    session.text_document = createTextDocument({
+      rawText: 'first',
+      displayName: 'editor.ts',
+    });
+    const changed = vi.fn();
+    render(
+      <TextEditorSurface
+        ref={ref}
+        session={session}
+        onDocumentChange={changed}
+        onLanguageChange={vi.fn()}
+      />,
+    );
+    const input = screen.getByRole('textbox', {
+      name: 'editor.ts text editor',
+    });
+    const view = EditorView.findFromDOM(input)!;
+    Object.defineProperty(input, 'editContext', {
+      configurable: true,
+      value: {},
+    });
+    act(() => view.dispatch({ selection: { anchor: 5 } }));
+    input.focus();
+    fireEvent.keyDown(input, {
+      key: 'Enter',
+      code: 'NumpadEnter',
+      keyCode: 13,
+    });
+    expect(view.state.doc.toString()).toBe('first\n');
+    expect(changed).toHaveBeenCalledTimes(1);
+    act(() => {
+      expect(ref.current?.invoke('undo')).toBe(true);
+    });
+    expect(view.state.doc.toString()).toBe('first');
+    act(() => {
+      expect(ref.current?.invoke('redo')).toBe(true);
+    });
+    expect(view.state.doc.toString()).toBe('first\n');
+    expect(EditorView.findFromDOM(input)).toBe(view);
+  });
+
+  it.each([
+    { label: 'composition key', detail: { keyCode: 229 }, composing: false },
+    {
+      label: 'composing event',
+      detail: { keyCode: 13, isComposing: true },
+      composing: false,
+    },
+    {
+      label: 'modified Enter',
+      detail: { keyCode: 13, shiftKey: true },
+      composing: false,
+    },
+    { label: 'composing view', detail: { keyCode: 13 }, composing: true },
+  ])(
+    'leaves $label on the existing editor input route',
+    ({ detail, composing }) => {
+      const session = makeSession();
+      render(
+        <TextEditorSurface
+          session={session}
+          onDocumentChange={vi.fn()}
+          onLanguageChange={vi.fn()}
+        />,
+      );
+      const input = screen.getByRole('textbox', {
+        name: 'editor.ts text editor',
+      });
+      Object.defineProperty(input, 'editContext', {
+        configurable: true,
+        value: {},
+      });
+      if (composing)
+        vi.spyOn(
+          EditorView.findFromDOM(input)!,
+          'composing',
+          'get',
+        ).mockReturnValue(true);
+      const existingInputRoute = vi.fn();
+      input.addEventListener('keydown', existingInputRoute);
+      input.focus();
+      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter', ...detail });
+      expect(existingInputRoute).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it('does not consume hardware Enter after current source authority is withdrawn', () => {
+    const session = makeSession();
+    const changed = vi.fn();
+    const { rerender } = render(
+      <TextEditorSurface
+        session={session}
+        onDocumentChange={changed}
+        onLanguageChange={vi.fn()}
+      />,
+    );
+    const input = screen.getByRole('textbox', {
+      name: 'editor.ts text editor',
+    });
+    const view = EditorView.findFromDOM(input)!;
+    Object.defineProperty(input, 'editContext', {
+      configurable: true,
+      value: {},
+    });
+    const readonly = {
+      ...session,
+      source: {
+        ...session.source,
+        capabilities: { ...session.source.capabilities, write: false },
+      },
+    };
+    rerender(
+      <TextEditorSurface
+        session={readonly}
+        onDocumentChange={changed}
+        onLanguageChange={vi.fn()}
+      />,
+    );
+    const before = view.state.doc.toString();
+    fireEvent.keyDown(input, { key: 'Enter', code: 'Enter', keyCode: 13 });
+    expect(view.state.doc.toString()).toBe(before);
+    expect(changed).not.toHaveBeenCalled();
+    expect(EditorView.findFromDOM(input)).toBe(view);
+  });
+});

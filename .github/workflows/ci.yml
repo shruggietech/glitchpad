@@ -328,6 +328,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           shared-key: android-x86_64-api-${{ matrix.api-level }}
+          cache-on-failure: true
 
       - name: Build emulator APK and provider unit tests
         env:

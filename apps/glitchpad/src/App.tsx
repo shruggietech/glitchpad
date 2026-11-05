@@ -58,6 +58,7 @@ import {
   performCommand,
   commandSetFor,
   type CommandDescriptor,
+  type CommandId,
 } from './domain/commands';
 import { type ShellSession } from './domain/contracts';
 import {
@@ -152,6 +153,22 @@ const ownedAndroidSourceIds = (
   return current;
 };
 
+const contextualCommandIds: readonly CommandId[] = [
+  'search',
+  'find_next',
+  'find_previous',
+  'close_search',
+  'go_to_line',
+  'zoom_in',
+  'zoom_out',
+  'fit',
+  'edit',
+  'outline',
+  'metadata',
+  'document_details',
+  'large_text_tools',
+];
+
 interface AppProps {
   sessions?: ShellSession[];
   recoveryGateway?: RecoveryGateway | null;
@@ -191,6 +208,7 @@ export function App({
   const [commandFeedback, setCommandFeedback] = useState<{
     text: string;
     contextual: boolean;
+    announce?: boolean;
   }>({ text: '', contextual: false });
   const commandStatus = commandFeedback.text;
   const commandStatusVisible =
@@ -1048,25 +1066,12 @@ export function App({
     }
     if (
       result.status === 'performed' &&
-      [
-        'search',
-        'find_next',
-        'find_previous',
-        'close_search',
-        'go_to_line',
-        'zoom_in',
-        'zoom_out',
-        'fit',
-        'toggle_source',
-        'outline',
-        'metadata',
-        'document_details',
-        'large_text_tools',
-      ].includes(command.id)
+      contextualCommandIds.includes(command.id)
     ) {
       setCommandFeedback({
         text: 'Completed ' + command.label + '.',
         contextual: true,
+        announce: command.id === 'edit',
       });
       return;
     }
@@ -1670,7 +1675,7 @@ export function App({
               recoveryProbeGeneration={recoveryProbeGeneration}
               canOpen={Boolean(selectedDesktopDeliveryGateway)}
               onOpen={chooseDesktopSources}
-              labelledByTab={state.sessions.length > 1}
+              labelledByTab={!compact && state.sessions.length > 1}
               onCommandStateChange={setEditorCommandState}
               onDocumentChange={(id, expectedRevision, document, revision) =>
                 dispatch({
@@ -1905,7 +1910,11 @@ export function App({
               commandStatusVisible ? 'command-result' : 'visually-hidden'
             }
             role="status"
-            aria-live={commandFeedback.contextual ? 'off' : 'polite'}
+            aria-live={
+              commandFeedback.contextual && !commandFeedback.announce
+                ? 'off'
+                : 'polite'
+            }
             aria-atomic="true"
           >
             {commandStatus || state.announcement}

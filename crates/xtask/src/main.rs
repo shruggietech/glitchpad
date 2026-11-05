@@ -211,7 +211,11 @@ fn docs(repository: &Path) -> Result<(), String> {
     run(repository, "pnpm", ["run", "check:validation"])?;
     // These runners execute POSIX shell behavior, covered on Linux/macOS hosts.
     #[cfg(unix)]
-    for pattern in ["test_android*runner.py", "test_android_s047_campaign.py"] {
+    for pattern in [
+        "test_android*runner.py",
+        "test_android_s047_campaign.py",
+        "test_android_navigation_setup.py",
+    ] {
         run(
             repository,
             "python3",

@@ -27,6 +27,10 @@ import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.runner.intent.IntentCallback
+import androidx.test.runner.intent.IntentMonitorRegistry
+import androidx.test.runner.intent.IntentStubber
+import androidx.test.runner.intent.IntentStubberRegistry
 import com.shruggietech.glitchpad.MainActivity
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -134,8 +138,15 @@ class AndroidDeliveryInstrumentedTest {
       assertTrue("image-family preview changed original provider bytes", before.contentEquals(resolver.openInputStream(uri)!!.use { it.readBytes() }))
     }
     val hostile = grant(documentUri("hostile.svg"))
+    val hostileBefore = readBytes(hostile)
     clientContext.startActivity(viewIntent(hostile, "image/*").setComponent(component).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-    waitForBodyText(scenario, "hostile.svg", "Image preview unavailable")
+    waitForDocumentIdentity(scenario, "hostile.svg")
+    waitForCondition(scenario, "!!document.querySelector('[data-preview-failure=svg_unsupported]')", "SCRIPT-first hostile SVG must expose its exact finite unsupported category")
+    assertEquals("true", evaluate(scenario, "!document.querySelector('.image-preview')&&!Array.from(document.querySelectorAll('button')).some(b=>b.textContent.trim()==='Retry preview')"))
+    menuAction(scenario, "File information")
+    waitForBodyText(scenario, "File information", "hostile.svg")
+    clickControl(scenario, "Close File information")
+    assertTrue("unsupported SVG preview must preserve every original source byte", hostileBefore.contentEquals(readBytes(hostile)))
     println("image_family_evidence=gif:pass,animated_webp:pass,svg:pass,ico_png_dib:pass,hostile_svg:refused,source_unchanged:pass,api:${android.os.Build.VERSION.SDK_INT}")
     println("image_evidence=png:pass,jpeg:pass,webp:pass,bmp:pass,tiff:pass,source_unchanged:pass,api:${android.os.Build.VERSION.SDK_INT}")
     println("delivery_evidence=cold:pass,warm:pass,api:${android.os.Build.VERSION.SDK_INT}")
@@ -947,11 +958,11 @@ class AndroidDeliveryInstrumentedTest {
     clickControl(scenario, name, "[role=menuitem]")
   }
 
-  private fun clickControl(scenario: ActivityScenario<MainActivity>, name: String, selector: String = "button") {
+  private fun clickControl(scenario: ActivityScenario<MainActivity>, name: String, selector: String = "button", deadlineOverride: Long? = null) {
     val nameLiteral = JSONObject.quote(name)
     val selectorLiteral = JSONObject.quote(selector)
-    waitForCondition(scenario, "Array.from(document.querySelectorAll(" + selectorLiteral + ")).some(b=>!b.disabled&&(b.getAttribute('aria-label')||(b.querySelector('span')?b.querySelector('span').textContent:b.textContent)).trim()===" + nameLiteral + ")", "named actual-app control must be enabled: " + name)
-    assertEquals("actual-app control must be clicked once", "true", evaluate(scenario, "(()=>{const button=Array.from(document.querySelectorAll(" + selectorLiteral + ")).find(b=>!b.disabled&&(b.getAttribute('aria-label')||(b.querySelector('span')?b.querySelector('span').textContent:b.textContent)).trim()===" + nameLiteral + ");if(!button)return false;button.click();return true;})()"))
+    waitForCondition(scenario, "Array.from(document.querySelectorAll(" + selectorLiteral + ")).some(b=>!b.disabled&&(b.getAttribute('aria-label')||(b.querySelector('span')?b.querySelector('span').textContent:b.textContent)).trim()===" + nameLiteral + ")", "named actual-app control must be enabled: " + name, deadlineOverride = deadlineOverride)
+    assertEquals("actual-app control must be clicked once", "true", evaluate(scenario, "(()=>{const button=Array.from(document.querySelectorAll(" + selectorLiteral + ")).find(b=>!b.disabled&&(b.getAttribute('aria-label')||(b.querySelector('span')?b.querySelector('span').textContent:b.textContent)).trim()===" + nameLiteral + ");if(!button)return false;button.click();return true;})()", deadlineOverride = deadlineOverride))
   }
 
   // Read native visible bounds and IME windows before mapping a CSS control to screen input.
@@ -968,19 +979,88 @@ class AndroidDeliveryInstrumentedTest {
 
 
 
+  private fun verifyExternalViewDispatch(scenario: ActivityScenario<MainActivity>, expectedUrl: String, trigger: (Long) -> Unit) {
+    val deadline = SystemClock.elapsedRealtime() + 30_000L
+    val requests = java.util.concurrent.CopyOnWriteArrayList<Intent>()
+    val callback = IntentCallback { intent -> if (intent.action == Intent.ACTION_VIEW) requests.add(Intent(intent)) }
+    val monitor = IntentMonitorRegistry.getInstance()
+    assertTrue("the scoped native intent observation must not replace another stub owner", !IntentStubberRegistry.isLoaded())
+    monitor.addIntentCallback(callback)
+    var stubOwned = false
+    try {
+      IntentStubberRegistry.load(object : IntentStubber {
+        override fun getActivityResultForIntent(intent: Intent): ActivityResult? =
+          if (intent.action == Intent.ACTION_VIEW) ActivityResult(Activity.RESULT_CANCELED, Intent()) else null
+      })
+      stubOwned = true
+      trigger(deadline)
+      while (requests.isEmpty() && SystemClock.elapsedRealtime() < deadline) SystemClock.sleep(100L)
+      assertTrue("the actual application context must dispatch an external intent within the action deadline", SystemClock.elapsedRealtime() < deadline && requests.isNotEmpty())
+      assertEquals("one explicit destination action must dispatch exactly one native intent", 1, requests.size)
+      val request = requests.single()
+      assertEquals(Intent.ACTION_VIEW, request.action)
+      assertEquals(expectedUrl, request.dataString)
+      assertTrue("external handoff must not attach document or diagnostic content", !request.hasExtra(Intent.EXTRA_STREAM) && !request.hasExtra(Intent.EXTRA_TEXT) && request.clipData == null)
+    } finally {
+      if (stubOwned) IntentStubberRegistry.reset()
+      monitor.removeIntentCallback(callback)
+    }
+  }
+
+  private fun waitForFocusedInputConnection(
+    scenario: ActivityScenario<MainActivity>, focusScript: String, deadline: Long, expectedText: String
+  ): Pair<android.view.inputmethod.InputConnection, android.os.Handler> {
+    var latest = JSONObject()
+    while (SystemClock.elapsedRealtime() < deadline) {
+      val focused = runCatching { evaluate(scenario, focusScript, deadlineOverride = deadline) == "true" }.getOrDefault(false)
+      var connection: android.view.inputmethod.InputConnection? = null
+      var handler: android.os.Handler? = null
+      latest = JSONObject().put("document_target_focused", focused).put("scenario_state", scenario.state.name)
+      if (focused && scenario.state == Lifecycle.State.RESUMED) scenario.onActivity { activity ->
+        val view = findWebView(activity.window.decorView)
+        val nativeFocused = activity.hasWindowFocus() && view?.hasWindowFocus() == true && view.hasFocus() && view.isShown
+        latest.put("native_input_focused", nativeFocused)
+        if (nativeFocused) {
+          val info = android.view.inputmethod.EditorInfo()
+          connection = view.onCreateInputConnection(info)
+          handler = connection?.handler ?: view.handler
+          latest.put("connection_available", connection != null).put("input_type", info.inputType).put("ime_options", info.imeOptions)
+        }
+      }
+      if (connection != null && handler != null && SystemClock.elapsedRealtime() < deadline) {
+        val current = requireNotNull(connection)
+        val dispatch = requireNotNull(handler)
+        val extracted = onEditorInputThread(current, dispatch, deadlineOverride = deadline) {
+          it.getExtractedText(android.view.inputmethod.ExtractedTextRequest().apply { hintMaxChars = 16_384; hintMaxLines = 1_024 }, 0)
+        }
+        val actual = extracted?.text?.toString()
+        latest.put("native_buffer_available", extracted != null).put("native_buffer_length", actual?.length ?: JSONObject.NULL)
+          .put("native_buffer_exact", actual == expectedText).put("native_buffer_start_offset", extracted?.startOffset ?: JSONObject.NULL)
+          .put("expected_buffer_length", expectedText.length)
+        if (extracted?.startOffset == 0 && actual == expectedText &&
+          evaluate(scenario, focusScript, deadlineOverride = deadline) == "true" && SystemClock.elapsedRealtime() < deadline) {
+          println("native_input_ready=" + latest); System.out.flush()
+          return Pair(current, dispatch)
+        }
+      }
+      SystemClock.sleep(100L)
+    }
+    throw AssertionError("the exact actual field and native WebView must own focus and expose a public InputConnection within the original action deadline: " + latest)
+  }
+
   private fun setTaskInput(scenario: ActivityScenario<MainActivity>, label: String, text: String, deadlineOverride: Long? = null) {
     val deadline = deadlineOverride ?: (SystemClock.elapsedRealtime() + 30_000L)
     tapNativeControlOnce(scenario, label, "input,textarea", deadlineOverride = deadline)
-    val before = stringValue(evaluate(scenario, "document.activeElement.value"))
-    val connection = AtomicReference<android.view.inputmethod.InputConnection?>(); val handler = AtomicReference<android.os.Handler?>()
-    scenario.onActivity { activity -> val view = requireNotNull(findWebView(activity.window.decorView)); val info = android.view.inputmethod.EditorInfo(); val current = view.onCreateInputConnection(info); connection.set(current); handler.set(current?.handler ?: view.handler) }
-    val current = requireNotNull(connection.get()); val dispatch = requireNotNull(handler.get())
+    val focusScript = "(()=>{const field=Array.from(document.querySelectorAll('input,textarea')).find(n=>!n.disabled&&n.getBoundingClientRect().width>0&&!n.closest('[aria-hidden=true],[inert]')&&(n.getAttribute('aria-label')||(n.labels?Array.from(n.labels).map(l=>l.textContent).join(' '):'')).trim().startsWith(" + JSONObject.quote(label) + "));return document.hasFocus()&&!!field&&document.activeElement===field;})()"
+    waitForCondition(scenario, focusScript, "the exact requested task input must own actual browser focus after the one native tap", deadlineOverride = deadline)
+    val before = stringValue(evaluate(scenario, "document.activeElement.value", deadlineOverride = deadline))
+    val (current, dispatch) = waitForFocusedInputConnection(scenario, focusScript, deadline, before)
     waitForNativeEditorState(current, dispatch, before, "task_input_before", deadlineOverride = deadline)
-    assertTrue(onEditorInputThread(current, dispatch) { it.finishComposingText() })
-    assertTrue(onEditorInputThread(current, dispatch) { it.setSelection(0, before.length) })
+    assertTrue(onEditorInputThread(current, dispatch, deadlineOverride = deadline) { it.finishComposingText() })
+    assertTrue(onEditorInputThread(current, dispatch, deadlineOverride = deadline) { it.setSelection(0, before.length) })
     waitForNativeEditorState(current, dispatch, before, "task_input_selected", 0, before.length, deadlineOverride = deadline)
-    assertTrue(onEditorInputThread(current, dispatch) { it.commitText(text, 1) })
-    waitForCondition(scenario, "document.activeElement&&document.activeElement.value===" + JSONObject.quote(text), "native public input must update only the focused real task field", deadlineOverride = deadline)
+    assertTrue(onEditorInputThread(current, dispatch, deadlineOverride = deadline) { it.commitText(text, 1) })
+    waitForCondition(scenario, focusScript + "&&document.activeElement.value===" + JSONObject.quote(text), "native public input must update only the focused real task field", deadlineOverride = deadline)
     waitForNativeEditorState(current, dispatch, text, "task_input_committed", text.length, text.length, deadlineOverride = deadline)
   }
   private fun chooseTaskOption(scenario: ActivityScenario<MainActivity>, label: String, index: Int, expected: String) {
@@ -1193,27 +1273,12 @@ class AndroidDeliveryInstrumentedTest {
       waitForCondition(scenario, "!document.querySelector('[role=dialog]')", "one native Back must cancel one external confirmation")
     }
 
-    val seenDestination = AtomicReference<Intent?>()
-    val destinationMonitor = object : android.app.Instrumentation.ActivityMonitor() {
-      override fun onStartActivity(intent: Intent): ActivityResult? {
-        if (intent.action != Intent.ACTION_VIEW) return null
-        seenDestination.set(Intent(intent)); return ActivityResult(Activity.RESULT_CANCELED, Intent())
-      }
-    }
-    instrumentation.addMonitor(destinationMonitor)
-    try {
-      val target = "https://example.invalid/s047"
-      val selector = ".markdown-document button[title=" + JSONObject.quote(target) + "]"
-      val label = stringValue(evaluate(scenario, "document.querySelector(" + JSONObject.quote(selector) + ").textContent.trim()"))
-      tapNativeControlOnce(scenario,label,selector)
-      clickControl(scenario,"Open destination")
-      val deadline=SystemClock.elapsedRealtime()+30_000L
-      while(seenDestination.get()==null&&SystemClock.elapsedRealtime()<deadline)SystemClock.sleep(100L)
-      val request=requireNotNull(seenDestination.get()) { "confirmed destination must reach actual native dispatch" }
-      assertEquals(target,request.dataString)
-      assertTrue(!request.hasExtra(Intent.EXTRA_TEXT)&&!request.hasExtra(Intent.EXTRA_STREAM)&&request.clipData==null)
-      waitForCondition(scenario,"!document.querySelector('[role=dialog]')","native external handoff must finish its confirmation")
-    } finally { instrumentation.removeMonitor(destinationMonitor) }
+    val target = "https://example.invalid/s047"
+    val selector = ".markdown-document button[title=" + JSONObject.quote(target) + "]"
+    val label = stringValue(evaluate(scenario, "document.querySelector(" + JSONObject.quote(selector) + ").textContent.trim()"))
+    tapNativeControlOnce(scenario, label, selector)
+    verifyExternalViewDispatch(scenario, target) { deadline -> clickControl(scenario, "Open destination", deadlineOverride = deadline) }
+    waitForCondition(scenario,"!document.querySelector('[role=dialog]')","native external handoff must finish its confirmation")
     assertEquals("true",evaluate(scenario,"(()=>{const n=Array.from(document.querySelectorAll('.markdown-document input[type=checkbox]'));return n.length===2&&n.every(c=>c.disabled&&c.readOnly)&&n.some(c=>c.checked)&&n.some(c=>!c.checked);})()"))
     observeVisibleTaskControls(scenario,"markdown")
     verifyS047DiagramRoutes(scenario, ".embedded-mermaid .diagram-canvas", false)
@@ -1956,7 +2021,7 @@ class AndroidDeliveryInstrumentedTest {
     createNewDraftForInput(scenario, "New text file", "Untitled.txt")
     val switcher = stringValue(evaluate(scenario, "document.querySelector('.document-count-trigger').textContent.trim()"))
     clickControl(scenario, switcher)
-    clickControl(scenario, "Untitled.md", ".document-switcher button")
+    clickControl(scenario, "Untitled.md (unsaved)", ".document-switcher button")
     waitForDocumentIdentity(scenario, "Untitled.md")
     val monitor = instrumentation.addMonitor(IntentFilter(Intent.ACTION_OPEN_DOCUMENT).apply { addCategory(Intent.CATEGORY_OPENABLE); addDataType("*/*") }, ActivityResult(Activity.RESULT_CANCELED, Intent()), true)
     try { clickControl(scenario, "Add document"); clickControl(scenario, "Open file"); waitForBodyText(scenario, "Cancelled"); assertEquals(1, monitor.hits) } finally { instrumentation.removeMonitor(monitor) }
@@ -1994,16 +2059,55 @@ class AndroidDeliveryInstrumentedTest {
   }
 
 
+  private fun observedAppImeLayer(scenario: ActivityScenario<MainActivity>): JSONObject {
+    val windows = instrumentation.uiAutomation.windows
+    val root = instrumentation.uiAutomation.rootInActiveWindow
+    val activeOwner = windows.firstOrNull { it.id == root?.windowId && it.type == android.view.accessibility.AccessibilityWindowInfo.TYPE_APPLICATION }
+    val focusedOwner = activeOwner?.takeIf { it.isFocused } ?: windows.firstOrNull { it.type == android.view.accessibility.AccessibilityWindowInfo.TYPE_APPLICATION && it.isFocused }
+    val ownerRoot = if (focusedOwner?.id == root?.windowId) root else focusedOwner?.root
+    val ownerBounds = android.graphics.Rect().also { focusedOwner?.getBoundsInScreen(it) }
+    val fresh = ownerRoot?.refresh() == true
+    val ime = visibleNativeImeBounds(windows).filter { android.graphics.Rect.intersects(it, ownerBounds) }
+    val app = nativeHandoffState(scenario, "app_ime_back")
+    return JSONObject().put("verified_app_owner", fresh && focusedOwner?.isFocused == true && ownerRoot?.packageName?.toString() == TARGET_PACKAGE &&
+      ownerRoot?.isVisibleToUser == true && !ownerBounds.isEmpty && actualAppNativeWindowReady(app))
+      .put("owner_package", ownerRoot?.packageName?.toString() ?: JSONObject.NULL).put("active_root_available", root != null)
+      .put("owner_window_id", focusedOwner?.id ?: JSONObject.NULL).put("owner_bounds", nativeRectBounds(ownerBounds))
+      .put("ime_window_bounds", JSONArray(ime.map { nativeRectBounds(it) })).put("app_window", app)
+  }
+
   private fun dismissObservedAppIme(scenario: ActivityScenario<MainActivity>, deadlineOverride: Long? = null): Boolean {
-    enableNativeWindowObservation()
-    if (visibleNativeImeBounds().isEmpty()) return false
-    assertEquals(TARGET_PACKAGE, instrumentation.uiAutomation.rootInActiveWindow?.packageName?.toString())
     val deadline = deadlineOverride ?: (SystemClock.elapsedRealtime() + 30_000L)
-    instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
-    while (SystemClock.elapsedRealtime() < deadline && visibleNativeImeBounds().isNotEmpty()) SystemClock.sleep(100L)
-    assertTrue("one Back must dismiss the actually observed app IME before another layer", visibleNativeImeBounds().isEmpty())
-    assertTrue("IME Back must retain actual app window", nativeHandoffState(scenario, "IME Back").getString("scenario_state") == Lifecycle.State.RESUMED.name)
-    return true
+    var phase = "native_owner_readiness"
+    var observed = JSONObject()
+    try {
+      enableNativeWindowObservation()
+      while (SystemClock.elapsedRealtime() < deadline) {
+        observed = observedAppImeLayer(scenario)
+        if (observed.optBoolean("verified_app_owner")) break
+        SystemClock.sleep(100L)
+      }
+      assertTrue("an actual focused native app window must own keyboard dismissal within the original action deadline", observed.optBoolean("verified_app_owner") && SystemClock.elapsedRealtime() < deadline)
+      if (observed.getJSONArray("ime_window_bounds").length() == 0) return false
+      phase = "pre_dispatch"
+      val confirmed = observedAppImeLayer(scenario)
+      assertTrue("one keyboard Back must retain the same real focused app owner and observed IME immediately before input",
+        confirmed.optBoolean("verified_app_owner") && confirmed.optInt("owner_window_id") == observed.optInt("owner_window_id") &&
+          confirmed.getJSONArray("ime_window_bounds").length() > 0 && SystemClock.elapsedRealtime() < deadline)
+      observed = confirmed
+      println("app_ime_back=" + JSONObject().put("phase", phase).put("native_layer", observed)); System.out.flush()
+      phase = "one_back"
+      instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
+      while (SystemClock.elapsedRealtime() < deadline) {
+        observed = observedAppImeLayer(scenario)
+        if (observed.optBoolean("verified_app_owner") && observed.getJSONArray("ime_window_bounds").length() == 0) return true
+        SystemClock.sleep(100L)
+      }
+      throw AssertionError("one Back must dismiss the actually observed app IME and retain its focused resumed native window within the original action deadline")
+    } catch (failure: Throwable) {
+      println("app_ime_back_failure=" + JSONObject().put("phase", phase).put("native_layer", observed).put("failure_type", failure.javaClass.simpleName)); System.out.flush()
+      throw failure
+    }
   }
 
   @Test fun s047BackJourney() {
@@ -2050,8 +2154,14 @@ class AndroidDeliveryInstrumentedTest {
 
   private fun checkedShell(command: String): String {
     val script = "(" + command + ")\ncode=\$?\nprintf '\\nS047_SHELL_EXIT=%s\\n' \"\$code\"\n"
-    val output = shellOutput("sh -c '" + script.replace("'", "'\\''") + "'")
+    // UiAutomation uses Runtime.exec(String), whose argv tokenization does not group shell quotes.
+    // Encode only these fixed test-owned setup scripts into one whitespace-free -c argument.
+    val encoded = script.toByteArray(Charsets.UTF_8).joinToString("") { "\\0%03o".format(it.toInt() and 0xff) }
+    val output = shellOutput("sh -c eval\${IFS}\"\$(printf\${IFS}%b\${IFS}'" + encoded + "')\"")
     val code = Regex("(?m)^S047_SHELL_EXIT=([0-9]+)\\s*$").findAll(output).lastOrNull()
+    if (code == null || code.groupValues[1] != "0") {
+      println("s047_shell_failure=" + JSONObject().put("status_marker_present", code != null).put("output_length", output.length).put("exit_code", code?.groupValues?.get(1)?.toIntOrNull() ?: JSONObject.NULL)); System.out.flush()
+    }
     assertTrue("hosted setup must expose a real shell exit status", code != null)
     assertEquals("hosted shell operation must succeed", 0, code!!.groupValues[1].toInt())
     return output.substringBeforeLast("\nS047_SHELL_EXIT=").trim()
@@ -2107,24 +2217,7 @@ class AndroidDeliveryInstrumentedTest {
     assertEquals(source, displayed.getString("Build"))
     val destinations = listOf("Official documentation" to "https://glitchpad.com/docs", "GitHub repository" to "https://github.com/ShruggieTech/glitchpad", "Report an issue" to "https://github.com/ShruggieTech/glitchpad/issues/new/choose", "ShruggieTech" to "https://shruggie.tech/")
     for ((label, target) in destinations) {
-      val seen = AtomicReference<Intent?>()
-      val dispatches=java.util.concurrent.atomic.AtomicInteger(0)
-      val monitor = object : android.app.Instrumentation.ActivityMonitor() {
-        override fun onStartActivity(intent: Intent): ActivityResult? {
-          if (intent.action != Intent.ACTION_VIEW) return null
-          dispatches.incrementAndGet();seen.set(Intent(intent)); return ActivityResult(Activity.RESULT_CANCELED, Intent())
-        }
-      }
-      instrumentation.addMonitor(monitor)
-      try {
-        clickControl(scenario, label)
-        val deadline = SystemClock.elapsedRealtime() + 30_000L
-        while (seen.get() == null && SystemClock.elapsedRealtime() < deadline) SystemClock.sleep(100L)
-        val request = requireNotNull(seen.get()) { "explicit destination must reach native activity dispatch" }
-        assertEquals("one explicit destination action must dispatch exactly one native intent",1,dispatches.get())
-        assertEquals(target, request.dataString)
-        assertTrue("support must not attach document or diagnostic content", !request.hasExtra(Intent.EXTRA_STREAM) && !request.hasExtra(Intent.EXTRA_TEXT) && request.clipData == null)
-      } finally { instrumentation.removeMonitor(monitor) }
+      verifyExternalViewDispatch(scenario, target) { deadline -> clickControl(scenario, label, deadlineOverride = deadline) }
     }
     val offline = verifyOfflineNotices(scenario)
     clickControl(scenario,"Close About Glitchpad")
@@ -2374,6 +2467,19 @@ class AndroidDeliveryInstrumentedTest {
     return observed
   }
 
+  private fun nativeTapObservationsAgree(before: JSONObject, beforeNative: JSONObject, after: JSONObject, afterNative: JSONObject): Boolean {
+    val cssKeys = listOf("x", "y", "left", "top", "right", "bottom", "viewport_width", "viewport_height")
+    val nativeKeys = listOf("view_left", "view_top", "view_width", "view_height", "screen_x", "screen_y")
+    fun close(a: JSONObject, b: JSONObject, keys: List<String>): Boolean = keys.all { key ->
+      a.has(key) && b.has(key) && a.optDouble(key).isFinite() && b.optDouble(key).isFinite() && kotlin.math.abs(a.getDouble(key) - b.getDouble(key)) <= 0.6
+    }
+    return before.optBoolean("found") && after.optBoolean("found") && close(before, after, cssKeys) && close(beforeNative, afterNative, nativeKeys) &&
+      before.optString("surface_id") == after.optString("surface_id") && before.optString("editor_label") == after.optString("editor_label")
+  }
+
+  private fun nativeTapForeground(mapping: JSONObject): Boolean = mapping.optString("scenario_state") == Lifecycle.State.RESUMED.name &&
+    mapping.optBoolean("activity_window_focus") && mapping.optBoolean("webview_window_focus") && mapping.optBoolean("shown")
+
   private fun tapNativeControlOnce(scenario: ActivityScenario<MainActivity>, name: String, selector: String = "button", deadlineOverride: Long? = null) {
     val deadline = deadlineOverride ?: (SystemClock.elapsedRealtime() + 30_000L)
     val script = """
@@ -2405,7 +2511,7 @@ class AndroidDeliveryInstrumentedTest {
       enableNativeWindowObservation()
       var ready = false
       while (SystemClock.elapsedRealtime() < deadline) {
-        target = runCatching { JSONObject(evaluate(scenario, script)) }
+        target = runCatching { JSONObject(evaluate(scenario, script, deadlineOverride = deadline)) }
           .getOrElse { JSONObject().put("capture_failed", true).put("failure_type", it.javaClass.simpleName) }
         mapping = nativeControlGeometry(scenario, target)
         val foreground = mapping.getString("scenario_state") == androidx.lifecycle.Lifecycle.State.RESUMED.name &&
@@ -2420,8 +2526,15 @@ class AndroidDeliveryInstrumentedTest {
           }
         } else if (foreground && target.optBoolean("found") && target.optDouble("width") > 0 && target.optDouble("height") > 0 &&
           target.optBoolean("fully_visible") && target.optBoolean("hit") && !target.optBoolean("disabled") && mapping.optBoolean("whole_control_visible")) {
-          ready = true
-          break
+          val confirmed = JSONObject(evaluate(scenario, script.replace("button.scrollIntoView({block:'nearest',inline:'nearest'});", ""), deadlineOverride = deadline))
+          val confirmedMapping = nativeControlGeometry(scenario, confirmed)
+          if (nativeTapObservationsAgree(target, mapping, confirmed, confirmedMapping) && nativeTapForeground(confirmedMapping) &&
+            confirmed.optBoolean("fully_visible") && confirmed.optBoolean("hit") && !confirmed.optBoolean("disabled") && confirmedMapping.optBoolean("whole_control_visible")) {
+            target = confirmed
+            mapping = confirmedMapping
+            ready = true
+            break
+          }
         }
         phase = "readiness"
         SystemClock.sleep(100L)
@@ -2542,10 +2655,10 @@ class AndroidDeliveryInstrumentedTest {
     instrumentation.sendKeySync(KeyEvent(downTime, SystemClock.uptimeMillis(), KeyEvent.ACTION_UP, KeyEvent.KEYCODE_S, 0, KeyEvent.META_CTRL_ON))
   }
 
-  private fun focusNativeWebView(scenario: ActivityScenario<MainActivity>): JSONObject {
+  private fun focusNativeWebView(scenario: ActivityScenario<MainActivity>, deadlineOverride: Long? = null): JSONObject {
     scenario.onActivity { activity -> requireNotNull(findWebView(activity.window.decorView)).requestFocus() }
     instrumentation.waitForIdleSync()
-    val deadline = SystemClock.elapsedRealtime() + 10_000L
+    val deadline = minOf(SystemClock.elapsedRealtime() + 10_000L, deadlineOverride ?: Long.MAX_VALUE)
     var latest = JSONObject()
     while (SystemClock.elapsedRealtime() < deadline) {
       scenario.onActivity { activity ->
@@ -2559,11 +2672,13 @@ class AndroidDeliveryInstrumentedTest {
   }
 
   private fun replaceEditorText(scenario: ActivityScenario<MainActivity>, text: String) {
-    waitForCondition(scenario, "!!document.querySelector('.cm-content[contenteditable=true]')", "draft must expose the actual editable surface")
-    val nativeFocus = focusNativeWebView(scenario)
-    val target = JSONObject(evaluate(scenario, """
+    val deadline = SystemClock.elapsedRealtime() + 30_000L
+    waitForCondition(scenario, "!!document.querySelector('.cm-content[contenteditable=true]')", "draft must expose the actual editable surface", deadlineOverride = deadline)
+    val nativeFocus = focusNativeWebView(scenario, deadlineOverride = deadline)
+    val script = """
       (()=>{
         const editor=document.querySelector('.cm-content[contenteditable=true]');
+        if(!editor)return {found:false};
         editor.scrollIntoView({block:'nearest',inline:'nearest'});
         const rect=editor.getBoundingClientRect();
         const viewport=window.visualViewport;
@@ -2575,26 +2690,42 @@ class AndroidDeliveryInstrumentedTest {
         const clientX=visible.left+Math.min(16,(visible.right-visible.left)/2);
         const clientY=visible.top+Math.min(16,(visible.bottom-visible.top)/2);
         const hit=document.elementFromPoint(clientX,clientY);
-        return {x:clientX-left,y:clientY-top,client_x:clientX,client_y:clientY,viewport_width:width,visible_width:visible.right-visible.left,visible_height:visible.bottom-visible.top,
+        return {found:true,x:clientX-left,y:clientY-top,left:clientX-left,top:clientY-top,right:clientX-left+1,bottom:clientY-top+1,
+          client_x:clientX,client_y:clientY,viewport_width:width,viewport_height:height,visible_width:visible.right-visible.left,visible_height:visible.bottom-visible.top,
           editor_rect:{left:rect.left,top:rect.top,right:rect.right,bottom:rect.bottom,width:rect.width,height:rect.height},
           viewport:{left:left,top:top,width:width,height:height,scale:viewport?viewport.scale:1},
           hit_is_editor:hit===editor||editor.contains(hit),hit_tag:hit?hit.nodeName:null,hit_class:hit?String(hit.className).slice(0,128):null,
           surface_id:document.querySelector('.document-surface').id,editor_label:editor.getAttribute('aria-label')};
       })()
-    """.trimIndent()))
-    assertTrue("the native edit tap must target visible editor content: " + target, target.getDouble("visible_width") > 0 && target.getDouble("visible_height") > 0)
-    val point = FloatArray(2)
-    val nativeMapping = JSONObject().put("focus_before", nativeFocus)
-    scenario.onActivity { activity ->
-      val view = requireNotNull(findWebView(activity.window.decorView))
-      val location = IntArray(2)
-      view.getLocationOnScreen(location)
-      val scale = view.width / target.getDouble("viewport_width")
-      point[0] = (location[0] + target.getDouble("x") * scale).toFloat()
-      point[1] = (location[1] + target.getDouble("y") * scale).toFloat()
-      nativeMapping.put("view_left", location[0]).put("view_top", location[1]).put("view_width", view.width).put("view_height", view.height)
-        .put("css_to_native_scale", scale).put("screen_x", point[0]).put("screen_y", point[1]).put("density", view.resources.displayMetrics.density)
+    """.trimIndent()
+    var target = JSONObject()
+    var nativeMapping = JSONObject()
+    try {
+      enableNativeWindowObservation()
+      var ready = false
+      while (SystemClock.elapsedRealtime() < deadline) {
+        target = JSONObject(evaluate(scenario, script, deadlineOverride = deadline))
+        nativeMapping = nativeControlGeometry(scenario, target)
+        if (target.optBoolean("hit_is_editor") && target.optDouble("visible_width") > 0 && target.optDouble("visible_height") > 0 &&
+          nativeTapForeground(nativeMapping) && nativeMapping.optBoolean("whole_control_visible")) {
+          val confirmed = JSONObject(evaluate(scenario, script.replace("editor.scrollIntoView({block:'nearest',inline:'nearest'});", ""), deadlineOverride = deadline))
+          val confirmedMapping = nativeControlGeometry(scenario, confirmed)
+          if (nativeTapObservationsAgree(target, nativeMapping, confirmed, confirmedMapping) && confirmed.optBoolean("hit_is_editor") &&
+            confirmed.optDouble("visible_width") > 0 && confirmed.optDouble("visible_height") > 0 && nativeTapForeground(confirmedMapping) && confirmedMapping.optBoolean("whole_control_visible")) {
+            target = confirmed
+            nativeMapping = confirmedMapping.put("focus_before", nativeFocus)
+            ready = true
+            break
+          }
+        }
+        SystemClock.sleep(100L)
+      }
+      assertTrue("the sole native edit tap must hit actual editor content in a coherent visible native window within the original action deadline", ready && SystemClock.elapsedRealtime() < deadline)
+    } catch (failure: Throwable) {
+      captureEditorFocusFailure(scenario, "before_native_touch", target, nativeMapping)
+      throw failure
     }
+    val point = floatArrayOf(nativeMapping.getDouble("screen_x").toFloat(), nativeMapping.getDouble("screen_y").toFloat())
     val downTime = SystemClock.uptimeMillis()
     val down = MotionEvent.obtain(downTime, downTime, MotionEvent.ACTION_DOWN, point[0], point[1], 0)
     val up = MotionEvent.obtain(downTime, SystemClock.uptimeMillis(), MotionEvent.ACTION_UP, point[0], point[1], 0)
@@ -2606,12 +2737,12 @@ class AndroidDeliveryInstrumentedTest {
     } finally { down.recycle(); up.recycle() }
     instrumentation.waitForIdleSync()
     try {
-      waitForCondition(scenario, "document.hasFocus() && document.activeElement===document.querySelector('.cm-content[contenteditable=true]')", "the actual editor must own browser focus after a native touch before editing")
+      waitForCondition(scenario, "document.hasFocus() && document.activeElement===document.querySelector('.cm-content[contenteditable=true]')", "the actual editor must own browser focus after a native touch before editing", deadlineOverride = deadline)
     } catch (failure: AssertionError) {
       captureEditorFocusFailure(scenario, "after_native_touch", target, nativeMapping)
       throw failure
     }
-    val browserBefore = browserEditorInputSnapshot(scenario)
+    val browserBefore = browserEditorInputSnapshot(scenario, deadlineOverride = deadline)
     val beforeInputText = browserBefore.getString("editing_text")
     val beforeSemanticText = browserBefore.getString("semantic_text")
     browserBefore.remove("editing_text")
@@ -2622,34 +2753,21 @@ class AndroidDeliveryInstrumentedTest {
     val semanticSelectionEnd = beforeSemanticText.length
     browserBefore.put("requested_semantic_selection_start", 0).put("requested_semantic_selection_end", semanticSelectionEnd)
     assertTrue("the controlled native input fixture must fit a bounded complete input buffer", beforeInputText.length <= 16_384 && text.length <= 16_384)
-    val connectionReference = AtomicReference<android.view.inputmethod.InputConnection?>()
-    val handlerReference = AtomicReference<android.os.Handler?>()
-    val inputInfo = JSONObject()
-    scenario.onActivity { activity ->
-      val view = requireNotNull(findWebView(activity.window.decorView))
-      val info = android.view.inputmethod.EditorInfo()
-      val connection = view.onCreateInputConnection(info)
-      connectionReference.set(connection)
-      handlerReference.set(connection?.handler ?: view.handler)
-      inputInfo.put("connection_created", connection != null).put("input_type", info.inputType).put("ime_options", info.imeOptions)
-        .put("initial_selection_start", info.initialSelStart).put("initial_selection_end", info.initialSelEnd)
-        .put("connection_class", connection?.javaClass?.simpleName)
-    }
+    val (connection, handler) = waitForFocusedInputConnection(scenario,
+      "document.hasFocus()&&document.activeElement===document.querySelector('.cm-content[contenteditable=true]')&&document.querySelector('.document-surface').id===" + JSONObject.quote(target.getString("surface_id")), deadline, beforeInputText)
     println("native_editor_input=" + JSONObject().put("phase", "before_native_commit").put("api_level", Build.VERSION.SDK_INT)
-      .put("native_focus", nativeFocus).put("browser_edit", browserBefore).put("input_connection", inputInfo))
+      .put("native_focus", nativeFocus).put("browser_edit", browserBefore).put("input_connection", JSONObject().put("connection_created", true)))
     System.out.flush()
-    val connection = requireNotNull(connectionReference.get()) { "focused WebView must expose its public native InputConnection" }
-    val handler = requireNotNull(handlerReference.get()) { "native InputConnection must expose its input dispatch handler" }
-    waitForNativeEditorState(connection, handler, beforeInputText, "before_native_selection")
-    assertTrue("native IME must finish any active composition", onEditorInputThread(connection, handler) { it.finishComposingText() })
-    assertTrue("native IME must select the complete semantic source, excluding rendered paragraph markers", onEditorInputThread(connection, handler) { it.setSelection(0, semanticSelectionEnd) })
-    val selectedState = waitForNativeEditorState(connection, handler, beforeInputText, "selected_before_commit", 0, semanticSelectionEnd)
+    waitForNativeEditorState(connection, handler, beforeInputText, "before_native_selection", deadlineOverride = deadline)
+    assertTrue("native IME must finish any active composition", onEditorInputThread(connection, handler, deadlineOverride = deadline) { it.finishComposingText() })
+    assertTrue("native IME must select the complete semantic source, excluding rendered paragraph markers", onEditorInputThread(connection, handler, deadlineOverride = deadline) { it.setSelection(0, semanticSelectionEnd) })
+    val selectedState = waitForNativeEditorState(connection, handler, beforeInputText, "selected_before_commit", 0, semanticSelectionEnd, deadlineOverride = deadline)
     if (browserBefore.getBoolean("edit_context_attached")) {
-      waitForCondition(scenario, "(()=>{const editor=document.querySelector('.cm-content[contenteditable=true]');const context=editor&&editor.editContext;return !!context&&context.selectionStart===0&&context.selectionEnd===" + semanticSelectionEnd + ";})()", "native IME selection must reach the actual EditContext before replacement")
+      waitForCondition(scenario, "(()=>{const editor=document.querySelector('.cm-content[contenteditable=true]');const context=editor&&editor.editContext;return !!context&&context.selectionStart===0&&context.selectionEnd===" + semanticSelectionEnd + ";})()", "native IME selection must reach the actual EditContext before replacement", deadlineOverride = deadline)
     }
-    assertTrue("native IME must accept the exact Unicode and multiline text", onEditorInputThread(connection, handler) { it.commitText(text, 1) })
+    assertTrue("native IME must accept the exact Unicode and multiline text", onEditorInputThread(connection, handler, deadlineOverride = deadline) { it.commitText(text, 1) })
     val browserAfter = try {
-      waitForBrowserEditorCommit(scenario, text, target.getString("surface_id"), target.getString("editor_label"))
+      waitForBrowserEditorCommit(scenario, text, target.getString("surface_id"), target.getString("editor_label"), deadlineOverride = deadline)
     } catch (failure: AssertionError) {
       captureEditorFocusFailure(scenario, "postcommit_browser_coherence", target, nativeMapping)
       throw failure
@@ -2668,7 +2786,7 @@ class AndroidDeliveryInstrumentedTest {
       .put("browser_edit_after", browserAfter))
     System.out.flush()
     val committedState = try {
-      waitForNativeEditorState(connection, handler, afterInputText, "committed", text.length, text.length)
+      waitForNativeEditorState(connection, handler, afterInputText, "committed", text.length, text.length, deadlineOverride = deadline)
     } catch (failure: AssertionError) {
       captureEditorFocusFailure(scenario, "native_committed_state", target, nativeMapping)
       throw failure
@@ -2677,18 +2795,18 @@ class AndroidDeliveryInstrumentedTest {
       .put("input_path", "WebView.InputConnection.setSelection+commitText").put("selected_state", selectedState)
       .put("committed_state", committedState).put("browser_edit_after", browserAfter).put("visible_exact_text", true).put("committed_utf8_bytes", text.toByteArray(Charsets.UTF_8).size))
     System.out.flush()
-    waitForBodyText(scenario, text.lineSequence().first())
+    waitForBodyText(scenario, text.lineSequence().first(), deadlineOverride = deadline)
   }
 
   private fun waitForBrowserEditorCommit(
-    scenario: ActivityScenario<MainActivity>, expected: String, surfaceId: String, editorLabel: String
+    scenario: ActivityScenario<MainActivity>, expected: String, surfaceId: String, editorLabel: String, deadlineOverride: Long? = null
   ): JSONObject {
     // Observe raw DOM and public editing text together before freezing the native
     // expectation from one coherent, focused current-editor snapshot.
-    val deadline = SystemClock.elapsedRealtime() + 30_000L
+    val deadline = minOf(SystemClock.elapsedRealtime() + 30_000L, deadlineOverride ?: Long.MAX_VALUE)
     var latest = JSONObject()
     while (SystemClock.elapsedRealtime() < deadline) {
-      val observed = runCatching { browserEditorInputSnapshot(scenario) }.getOrElse { JSONObject().put("capture_failed", true) }
+      val observed = runCatching { browserEditorInputSnapshot(scenario, deadlineOverride = deadline) }.getOrElse { JSONObject().put("capture_failed", true) }
       val semantic = observed.optString("semantic_text")
       val editing = observed.optString("editing_text")
       val context = observed.optBoolean("edit_context_attached")
@@ -2706,7 +2824,7 @@ class AndroidDeliveryInstrumentedTest {
         .put("expected_surface_id", surfaceId).put("expected_editor_label", editorLabel).put("browser_edit", latest))
   }
 
-  private fun browserEditorInputSnapshot(scenario: ActivityScenario<MainActivity>): JSONObject = JSONObject(evaluate(scenario, """
+  private fun browserEditorInputSnapshot(scenario: ActivityScenario<MainActivity>, deadlineOverride: Long? = null): JSONObject = JSONObject(evaluate(scenario, """
     (()=>{
       const editor=document.querySelector('.cm-content[contenteditable=true]');
       const context=editor&&editor.editContext;
@@ -2748,7 +2866,7 @@ class AndroidDeliveryInstrumentedTest {
         semantic_text:semantic,editing_text:editing
       };
     })()
-  """.trimIndent()))
+  """.trimIndent(), deadlineOverride = deadlineOverride))
 
   private fun captureEditorFocusFailure(
     scenario: ActivityScenario<MainActivity>, stage: String, target: JSONObject, mapping: JSONObject = JSONObject()
@@ -2778,15 +2896,17 @@ class AndroidDeliveryInstrumentedTest {
   private fun <T> onEditorInputThread(
     connection: android.view.inputmethod.InputConnection,
     handler: android.os.Handler,
-    action: (android.view.inputmethod.InputConnection) -> T
+    deadlineOverride: Long? = null, action: (android.view.inputmethod.InputConnection) -> T
   ): T {
+    if (deadlineOverride != null) assertTrue("native input must begin inside the original action deadline", SystemClock.elapsedRealtime() < deadlineOverride)
     val result = AtomicReference<T>()
     val failure = AtomicReference<Throwable?>()
     val done = CountDownLatch(1)
     assertTrue("native input action must be posted to the connection handler", handler.post {
       try { result.set(action(connection)) } catch (error: Throwable) { failure.set(error) } finally { done.countDown() }
     })
-    assertTrue("native input action must finish without blocking the app UI", done.await(10, TimeUnit.SECONDS))
+    val remaining = minOf(10_000L, (deadlineOverride ?: Long.MAX_VALUE) - SystemClock.elapsedRealtime())
+    assertTrue("native input action must finish within the original deadline without blocking the app UI", remaining > 0 && done.await(remaining, TimeUnit.MILLISECONDS))
     failure.get()?.let { throw AssertionError("native InputConnection action failed", it) }
     return result.get()
   }
@@ -2802,7 +2922,7 @@ class AndroidDeliveryInstrumentedTest {
     val deadline = minOf(SystemClock.elapsedRealtime() + 10_000L, deadlineOverride ?: Long.MAX_VALUE)
     var latest = JSONObject()
     while (SystemClock.elapsedRealtime() < deadline) {
-      val extracted = onEditorInputThread(connection, handler) {
+      val extracted = onEditorInputThread(connection, handler, deadlineOverride = deadline) {
         it.getExtractedText(android.view.inputmethod.ExtractedTextRequest().apply { hintMaxChars = 16_384; hintMaxLines = 1_024 }, 0)
       }
       latest = JSONObject().put("phase", phase).put("available", extracted != null).put("expected_length", expected.length)
@@ -2834,7 +2954,7 @@ class AndroidDeliveryInstrumentedTest {
         if (ready.isFailure) observations?.put("prerequisite_failure_type", ready.exceptionOrNull()?.javaClass?.simpleName)
         if (!ready.getOrDefault(false)) { SystemClock.sleep(100L); continue }
       }
-      val result = runCatching { evaluate(scenario, script) }
+      val result = runCatching { evaluate(scenario, script, deadlineOverride = deadlineOverride) }
       if (observations != null) {
         observations.put("attempt_count", observations.optInt("attempt_count") + 1)
         val value = result.getOrNull()
@@ -3103,22 +3223,22 @@ class AndroidDeliveryInstrumentedTest {
     return uri
   }
 
-  private fun waitForBodyText(scenario: ActivityScenario<MainActivity>, vararg expected: String) {
+  private fun waitForBodyText(scenario: ActivityScenario<MainActivity>, vararg expected: String, deadlineOverride: Long? = null) {
     // API 36 hosted emulators can remain CPU-bound while Google services settle.
     // Preserve the strict marker assertion while allowing WebView startup to finish.
-    val deadline = SystemClock.elapsedRealtime() + 60_000L
+    val deadline = minOf(SystemClock.elapsedRealtime() + 60_000L, deadlineOverride ?: Long.MAX_VALUE)
     var latest = ""
     while (SystemClock.elapsedRealtime() < deadline) {
       val webView = AtomicReference<WebView?>()
       scenario.onActivity { activity -> webView.set(findWebView(activity.window.decorView)) }
-      webView.get()?.let { view -> bodyText(view)?.let { text -> latest = text } }
+      webView.get()?.let { view -> bodyText(view, deadlineOverride = deadlineOverride)?.let { text -> latest = text } }
       if (expected.all(latest::contains)) return
       SystemClock.sleep(100L)
     }
     throw AssertionError("document surface did not expose expected synthetic evidence; observed length=${latest.length}")
   }
 
-  private fun bodyText(webView: WebView): String? {
+  private fun bodyText(webView: WebView, deadlineOverride: Long? = null): String? {
     val result = AtomicReference("")
     val latch = CountDownLatch(1)
     instrumentation.runOnMainSync {
@@ -3127,16 +3247,19 @@ class AndroidDeliveryInstrumentedTest {
         latch.countDown()
       }
     }
-    return if (latch.await(2, TimeUnit.SECONDS)) runCatching { stringValue(result.get()) }.getOrNull() else null
+    val remaining = minOf(2_000L, (deadlineOverride ?: Long.MAX_VALUE) - SystemClock.elapsedRealtime())
+    return if (remaining > 0 && latch.await(remaining, TimeUnit.MILLISECONDS)) runCatching { stringValue(result.get()) }.getOrNull() else null
   }
 
-  private fun evaluate(scenario: ActivityScenario<MainActivity>, script: String): String {
+  private fun evaluate(scenario: ActivityScenario<MainActivity>, script: String, deadlineOverride: Long? = null): String {
+    if (deadlineOverride != null) assertTrue("WebView observation or activation must begin inside the original action deadline", SystemClock.elapsedRealtime() < deadlineOverride)
     val view = AtomicReference<WebView?>()
     scenario.onActivity { view.set(findWebView(it.window.decorView)) }
     val latch = CountDownLatch(1)
     val result = AtomicReference("null")
     instrumentation.runOnMainSync { requireNotNull(view.get()).evaluateJavascript(script) { value -> result.set(value ?: "null"); latch.countDown() } }
-    assertTrue("WebView image control did not complete", latch.await(2, TimeUnit.SECONDS))
+    val remaining = minOf(2_000L, (deadlineOverride ?: Long.MAX_VALUE) - SystemClock.elapsedRealtime())
+    assertTrue("WebView image control did not complete", remaining > 0 && latch.await(remaining, TimeUnit.MILLISECONDS))
     return result.get()
   }
 

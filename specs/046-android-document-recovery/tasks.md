@@ -31,7 +31,7 @@
 - [x] T010 [US2] Add draft/recovery/receipt/race component tests in domain/ and App.test.tsx (FR-003/004/008/009).
 - [x] T011 [US2] Implement draft/copy identity, native gateway/receipt transitions and lifecycle recovery in domain/contracts.ts, tabs.ts, recovery.ts and use-recovery.ts (FR-003/006/008/009).
 - [x] T012 [US2] Implement Add document and native New/Open/Save/dirty-close integration in components/AddDocumentMenu.tsx and App.tsx (FR-003/004/005/008/009).
-- [ ] T013 [US2] Prove actual WebView chooser/draft/save/reopen/cancel/failure/recreation and geometry/font-scale journeys in Android instrumentation (FR-005/016).
+- [x] T013 [US2] Prove actual WebView chooser/draft/save/reopen/cancel/failure/recreation and geometry/font-scale journeys in Android instrumentation (FR-005/016).
 
 ## Phase 5: US3 Truthful actions and diagnostic export
 
@@ -45,9 +45,9 @@
 
 ## Phase 6: Qualification and handoff
 
-- [ ] T019 Retain exact installed/tested APK hash, source/package/runtime and per-journey evidence in .github/workflows/ci.yml, scripts/run-android-connected-tests.sh and verification.md (FR-016).
-- [ ] T020 Update unreleased behavior/decisions and run CI-parity, brand, encoding, security and affected package checks via cargo xtask check (FR-017/018).
-- [ ] T021 Push/open official PR, complete at most two external review rounds, reconcile final SHA/checks/threads/issue evidence and stop for owner merge in verification.md (FR-018).
+- [x] T019 Retain exact installed/tested APK hash, source/package/runtime and per-journey evidence in .github/workflows/ci.yml, scripts/run-android-connected-tests.sh and verification.md (FR-016).
+- [x] T020 Update unreleased behavior/decisions and run CI-parity, brand, encoding, security and affected package checks via cargo xtask check (FR-017/018).
+- [x] T021 Push/open official PR, complete at most two external review rounds, reconcile final SHA/checks/threads/issue evidence and stop for owner merge in verification.md (FR-018).
 
 ## Dependencies & Execution Order
 
@@ -126,7 +126,7 @@ T001-T004 precede implementation. Native contracts/writer (T008-T009/T017) and r
 
 ## Phase 14: Packaged cancellation completion
 
-- [ ] T052 Trace and repair the observed cancelled-save completion loss after the async native host has returned an error while the current draft and dirty-close dialog remain pending; retain a meaningful Activity-return/response regression, existing source/receipt/error/gesture/deadline contracts and fresh actual APK confirmation per FR-008/009/010/016/018 (partial execution, HIGH F5).
+- [x] T052 Trace and repair the observed cancelled-save completion loss after the async native host has returned an error while the current draft and dirty-close dialog remain pending; retain a meaningful Activity-return/response regression, existing source/receipt/error/gesture/deadline contracts and fresh actual APK confirmation per FR-008/009/010/016/018 (partial execution, HIGH F5).
 
 ## Phase 15: Packaged theme readability
 
@@ -139,13 +139,13 @@ T001-T004 precede implementation. Native contracts/writer (T008-T009/T017) and r
 
 ## Phase 17: Native dispatch and physical Add visibility
 
-- [ ] T056 Repair the locked Tao Android poll/wake contract and truthful queue admission with exactly-once/source/exit ordering regressions, preserve dependency versions/provenance/licenses and non-Android source, remove temporary diagnosis-only Tauri vendoring while retaining its evidence, and qualify the normal reply path on fresh APKs per FR-008/010/016/017/018 (partial execution, HIGH F9).
+- [x] T056 Repair the locked Tao Android poll/wake contract and truthful queue admission with exactly-once/source/exit ordering regressions, preserve dependency versions/provenance/licenses and non-Android source, remove temporary diagnosis-only Tauri vendoring while retaining its evidence, and qualify the normal reply path on fresh APKs per FR-008/010/016/017/018 (partial execution, HIGH F9).
 - [x] T057 Fit Add document to the actual native-visible parent using the existing viewport observer/intersection policy, preserve canonical inset ownership and document clearance, strengthen physical native trigger/choice assertions and retain old/modern browser default/scaled/rotated regressions per FR-003/005/016/017 (partial execution and verification, HIGH F10).
 
 ## Phase 18: External native cancellation coherence
 
-- [ ] T058 Establish coherent actual IME/window readiness for external picker cancellation in AndroidDeliveryInstrumentedTest.kt, preserve the existing absolute deadline and per-observed-layer gesture cap, add meaningful late-IME scheduling regressions and bounded failure capture, and retain actual APK cancellation/source assertions per FR-005/008/013/016/018 (partial verification, HIGH F11).
+- [x] T058 Establish coherent actual IME/window readiness for external picker cancellation in AndroidDeliveryInstrumentedTest.kt, preserve the existing absolute deadline and per-observed-layer gesture cap, add meaningful late-IME scheduling regressions and bounded failure capture, and retain actual APK cancellation/source assertions per FR-005/008/013/016/018 (partial verification, HIGH F11).
 
 ## Phase 19: Android timed-poll classification
 
-- [ ] T059 Preserve raw Android poll timeout versus wake/callback classification before native-source projection in the locked Tao WaitUntil arm, retain existing public StartCause/deadline and dispatch semantics, and add exact-source plus actual-run_return regression cases without expanding dependencies per FR-008/010/016/017/018 and plan T056 (partial execution, HIGH F12).
+- [x] T059 Preserve raw Android poll timeout versus wake/callback classification before native-source projection in the locked Tao WaitUntil arm, retain existing public StartCause/deadline and dispatch semantics, and add exact-source plus actual-run_return regression cases without expanding dependencies per FR-008/010/016/017/018 and plan T056 (partial execution, HIGH F12).

@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-03
 
-**Status**: Implemented; exact-candidate qualification and review in progress
+**Status**: Implemented; owner review and merge pending
 
 **Input**: Execute the approved five-issue bundle (#245, #246, #247, #248, #252) under Spec-Kit autopilot; automatically push/open the PR, monitor CI and address findings within two review rounds, then stop for owner review and merge.
 

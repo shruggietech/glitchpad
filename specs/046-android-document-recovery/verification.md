@@ -2,7 +2,7 @@
 
 ## Candidate identity
 
-Branch: codex/046-android-document-recovery. Included issues: #245, #246, #247, #248, #252. Final commit/APK/check/review authority will be recorded after candidate qualification. Official product/specification remains v0.2.0; this slice is unreleased.
+Branch: codex/046-android-document-recovery. Included issues: #245, #246, #247, #248, #252. Implementation qualification is bound below to f8420e3 and its tested PR-merge source. Final documentation-head receipts and exact check authority are recorded in PR #256 after closeout. Official product/specification remains v0.2.0; this slice is unreleased.
 
 ## 2026-11-03: Specification and research
 
@@ -18,11 +18,11 @@ Original reported Markdown bytes, incident APK hash and trace remain unavailable
 
 | Issue | Required evidence | Current disposition |
 | --- | --- | --- |
-| #245 | Governed Markdown cold/warm/in-app corpus, document/root fault containment, exact APK/runtime and Windows regression | Implementation/checkpoints present; hosted evidence pending |
-| #246 | Three Add choices, native picker/cancel/access outcomes, draft identity and real geometry/semantics | Implementation/checkpoints present; hosted evidence pending |
-| #247 | Both draft/copy writes, independent readback, failure/cancel/race/recreation and original preservation | Implementation/checkpoints present; hosted evidence pending |
-| #248 | Actual async operation results, Save/Zoom/shortcuts, stale/no-handler/clipboard/history failures | Implementation/checkpoints present; hosted evidence pending |
-| #252 | Frozen JSON equality, native Save/Share receiver, failure/Clear retention, redaction and runtime identity | Implementation/checkpoints present; hosted evidence pending |
+| #245 | Governed Markdown cold/warm/in-app corpus, document/root fault containment, exact APK/runtime and Windows regression | Passed governed routes, fault/root recovery and Windows portable corpus; original incident unavailable_not_replayed |
+| #246 | Three Add choices, native picker/cancel/access outcomes, draft identity and real geometry/semantics | Passed three choices, native picker/access/cancel, identity, actual physical bounds and semantics |
+| #247 | Both draft/copy writes, independent readback, failure/cancel/race/recreation and original preservation | Passed exact native draft/copy bytes, original preservation, failure/cancel/pending races and recovery |
+| #248 | Actual async operation results, Save/Zoom/shortcuts, stale/no-handler/clipboard/history failures | Passed actual providers, native Save/Zoom and shortcut/stale/no-handler/failure regressions |
+| #252 | Frozen JSON equality, native Save/Share receiver, failure/Clear retention, redaction and runtime identity | Passed exact frozen JSON, native Save/Share receiver, failure/Clear retention, redaction and identity |
 
 ## Review ledger
 
@@ -411,3 +411,24 @@ Native cancellation completes on the restored ordinary Tauri reply path. The rea
 T058 changes only AndroidDeliveryInstrumentedTest.kt. The existing absolute deadline and one-pair-per-observed-layer cap remain unchanged. Supported accessibility idle is followed by a refreshed root/single-window inventory and immediate owner/layer agreement before DOWN; idle timeout, changed or repeated layers fail before extra input. Thirteen exact-source coordinator cases pass after four demonstrated failures under the previous code. The single combined Kotlin/Java compile passes in 34 seconds across 71 tasks; all 61 validation policies pass, encoding is clean and seven generated schema hashes are unchanged. Failure capture uses the existing UiAutomation screenshot independently of Activity RESUMED and records actual PNG compression success. This is not a product lifecycle or permission change, and native idle is not a universal IME completion guarantee.
 
 T059 preserves the raw Poll::Timeout fact before source projection. The exact production poll/WaitUntil fragments fail early Wake/Callback classification before repair while Source/Timeout controls pass; all four cases pass after repair. Five existing host queue regressions, warnings-denied Clippy, formatting and Android-target compilation pass. Existing public Android run_return cases now assert early Wake/Source/Callback WaitCancelled and true Timeout ResumeTimeReached with the captured requested deadline, FIFO and sticky exit; those Android-specific assertions remain compiled-only. Package name/version pairs, dependency edges/manifests and all non-Android source remain unchanged from T056. Fresh actual APK qualification remains required for the corrected source.
+
+## 2026-11-04: Qualified implementation candidate and closeout boundary
+
+All ten automatic workflows for branch-head f8420e3a0af186a0551a74d871fac8e3312a7076 are terminal-successful. PR Pages deployment is intentionally skipped. The tested PR-merge commit is 045e5f2f6307dcc99559b823ad80c2683d1d66f6; its parents are current main 8160ed2a824384ed42dbd4cd43232a34373e9c20 and f8420e3, and both merge/head trees equal 978a879bd968c7768bcacb0cee4019dc94acb2f0. The checkout is clean and synchronized. This establishes the qualified implementation checkpoint; this documentation closeout receives a new commit and fresh final branch-head CI/package/CodeQL authority before the owner handoff.
+
+Both native archives independently pass strict verification with all fifteen API24 and sixteen API36 groups on first clean attempts, zero failed attempts and zero malformed marker copies. API24 archive 13378714296 is 66382012 bytes with SHA-256 9a64656dfb44484db3f67e01dc20ce28b2e0dd858ad2e4fae969ba421668bf24. API36 archive 13378564975 is 66733921 bytes with SHA-256 d97d9495a2538bf23ee794d2bed28355913d257ff2ae71beca49de3843f997b1. Each actual installed application/test pair matches its built candidates and source 045e5f2.
+
+| Runtime | Actual application SHA-256 / bytes | Actual instrumentation SHA-256 / bytes | Installed readback |
+| --- | --- | --- | --- |
+| Android 7.0 / API 24, com.android.chrome 69.0.3497.100 | 0f9bb825b0d6dc8bced21fd444ebb4465f837365f4587d2fbc92f72c7f559750 / 228286066 | 36048997b98679238754f85135de689f2a4fe123eecf7a554ade7a49ed7844c3 / 717460 | Same-installed-path run-as fallback |
+| Android 16 / API 36, com.android.webview 133.0.6943.137 | 30bb79c3cce777ceff2f3e9ee1aecd2153540740918fbd04e938ca27ef1b7f67 / 228286066 | bd53b1c5e2942fe1766d01a320e55bdaae8e102d86e20dd99562a8c12b122da0 / 717460 | Direct adb pull |
+
+API24 now observes one real IME window before its keyboard pair (29540 milliseconds remaining), then no IME before its window pair (29200 milliseconds remaining). Both observations have a refreshed root and verified focused external owner; Share cancellation uses one verified window pair. API36 uses one verified window pair for each cancellation without an observed IME. The original 30-second deadline and per-observed-layer cap are intact. Both ordinary Tauri cancellation replies complete with preserved dirty/source state, confirming the required behavior for T052/T056/T058 without claiming a uniquely proven historical dispatch location.
+
+The real held-write entry/control/provider PIDs agree (API24: 4720; API36: 4333), each with one non-main-thread entry, explicit release/finish, no timeout and all pending/discard/source/destination guards passing. Both native suites verify exact UTF-8 and frozen JSON Save, actual temporary-access Share receiver readback, root/draft recovery, keyboard ownership and applicable geometry/performance, including actual API36 200-percent text. Android-specific public Tao loop cases remain compiled-only; the exact-source classification and shared production-helper cases execute separately. Stopped-Activity failure capture is best-effort and reports actual screenshot/compression success rather than assuming it.
+
+The branch-head Windows artifact 13377419176 independently matches archive SHA-256 2ca99fa45a27a8d5e310c96d32779572d1ef18af82e9b021b4e2232a12559468 (22496921 bytes). Readback verifies source f8420e3, installer 1ed2133e3c6ba72a9cd2900b5e568f3b4297a71fa461c838730301450bbb680e (6206758 bytes), portable ZIP 7b2c7f457bb202eabc46ebcee1becb6d73a10e5d7f1bab73fe7418ace98879cc (7869395 bytes), four inventory members and installed/portable corpus/recovery/source-preservation receipts. These are unsigned candidate packages, not Authenticode or physical trust claims.
+
+Fresh review readback identifies exactly two external review submissions and four owner reply-review objects, with all four finding threads resolved. Reply objects are not extra external rounds. No third round or separate security-review receipt exists; CodeQL is separately successful. All five included issues remain OPEN, with Status In Progress and Stage PR review. The PR is open, non-draft, mergeable and auto-merge is off. Owner merge, tags, release publication and deployment remain reserved. Original incident bytes/hash/trace and waived physical/manual-screen-reader/reference checks remain unperformed.
+
+The final installed Spec-Kit convergence finds zero buildable gaps across 18 FR, 5 SC, 10 acceptance scenarios, 49 plan decisions, 59 tasks and 8 constitution principles. It preserves tasks.md byte-for-byte (SHA-256 924e2021ba5c696fb6b821b622d0de7a947f608d74342f246dcc2cac6119b220) and appends no empty phase. Final branch-head CI, Android package and CodeQL qualification follow this documentation commit; automatic desktop package runs are reused. Exact final SHA/artifact/check/thread authority is recorded in the PR after those runs terminate, before the user handoff. No merge or publication is performed.

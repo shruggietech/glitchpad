@@ -210,6 +210,40 @@ const measureInteraction = async (browser, origin, setup, interact, ready, sampl
   return values;
 };
 
+export const activatePerformanceEdit = async (page) => {
+  await page.$eval('.document-tools-trigger', (button) => button.click()).catch((error) => {
+    throw new Error('performance_menu_trigger_missing', { cause: error });
+  });
+  await page.waitForSelector('.document-tools-menu').catch((error) => {
+    throw new Error('performance_menu_not_open', { cause: error });
+  });
+  const switched = await page.$$eval('.document-tools-menu [role="menuitem"]', (buttons) => {
+    const button = buttons.find((candidate) =>
+      candidate.tagName === 'BUTTON' && !candidate.disabled &&
+      (candidate.querySelector('span')?.textContent ?? candidate.textContent)?.trim() === 'Edit');
+    if (!button) return false;
+    button.click();
+    return true;
+  });
+  if (!switched) throw new Error('performance_edit_source_command_missing');
+  await page.waitForSelector('.document-tools-menu', { hidden: true }).catch((error) => {
+    throw new Error('performance_menu_not_closed', { cause: error });
+  });
+};
+
+const performanceMermaidPanel = '#panel-performance-mermaid-edit';
+const performanceMermaidEditor = `${performanceMermaidPanel} .mermaid-source-layout:not([hidden]) .mermaid-source-editor .cm-content[contenteditable="true"]`;
+
+export const isCurrentPerformanceMermaidPreview = () => {
+  const panel = document.querySelector('#panel-performance-mermaid-edit');
+  const surfaceRevision = Number(panel?.querySelector('.mermaid-surface[data-performance-ready="true"]')?.getAttribute('data-performance-revision'));
+  const documentRevision = Number(panel?.getAttribute('data-performance-revision'));
+  const editor = panel?.querySelector('.mermaid-source-layout:not([hidden]) .mermaid-source-editor .cm-content[contenteditable="true"]');
+  const text = editor ? Array.from(editor.querySelectorAll('.cm-line')).map((line) => line.textContent).join('\n') : null;
+  const before = window.__glitchpadPerformanceMermaidSourceBefore;
+  return documentRevision > 1 && surfaceRevision === documentRevision && typeof before === 'string' && text === before + '\n%% edit';
+};
+
 const interactionDefinitions = {
   editor_input_paint: {
     setup: (page) => page.waitForSelector('.cm-content[contenteditable="true"]'),
@@ -225,39 +259,25 @@ const interactionDefinitions = {
         .catch((error) => {
           throw new Error('performance_mermaid_tab_missing', { cause: error });
         });
-      await page.waitForSelector('.mermaid-surface[data-performance-ready="true"][data-performance-revision="1"]').catch((error) => {
+      await page.waitForSelector(`${performanceMermaidPanel} .mermaid-surface[data-performance-ready="true"][data-performance-revision="1"]`).catch((error) => {
         throw new Error('performance_mermaid_preview_not_ready', {
           cause: error,
         });
       });
-      await page
-        .$eval('.application-menu-trigger', (button) => button.click())
-        .catch((error) => {
-          throw new Error('performance_menu_trigger_missing', { cause: error });
-        });
-      await page.waitForSelector('.application-menu').catch((error) => {
-        throw new Error('performance_menu_not_open', { cause: error });
-      });
-      const switched = await page.$$eval('.application-menu [role="menuitem"]', (buttons) => {
-        const button = buttons.find((candidate) => candidate.textContent?.trim().startsWith('Edit source'));
-        if (!(button instanceof HTMLButtonElement)) return false;
-        button.click();
-        return true;
-      });
-      if (!switched) throw new Error('performance_edit_source_command_missing');
-      await page.waitForSelector('.application-menu', { hidden: true }).catch((error) => {
-        throw new Error('performance_menu_not_closed', { cause: error });
-      });
-      await page.waitForSelector('.mermaid-source-editor .cm-content[contenteditable="true"]').catch((error) => {
+      await activatePerformanceEdit(page);
+      await page.waitForSelector(performanceMermaidEditor, { visible: true }).catch((error) => {
         throw new Error('performance_mermaid_editor_not_ready', {
           cause: error,
         });
       });
+      await page.$eval(performanceMermaidEditor, (editor) => {
+        window.__glitchpadPerformanceMermaidSourceBefore = Array.from(editor.querySelectorAll('.cm-line')).map((line) => line.textContent).join('\n');
+      });
     },
     interact: async (page) => {
-      await page.$eval('.mermaid-source-editor .cm-content[contenteditable="true"]', (editor) => editor.focus());
+      await page.$eval(performanceMermaidEditor, (editor) => editor.focus());
       await page
-        .waitForFunction(() => document.activeElement?.classList.contains('cm-content'))
+        .waitForFunction((selector) => document.activeElement?.matches(selector), {}, performanceMermaidEditor)
         .catch((error) => {
           throw new Error('performance_mermaid_editor_not_focused', {
             cause: error,
@@ -271,18 +291,17 @@ const interactionDefinitions = {
     },
     ready: (page) =>
       page
-        .waitForFunction(() => {
-          const surfaceRevision = Number(document.querySelector('.mermaid-surface[data-performance-ready="true"]')?.getAttribute('data-performance-revision'));
-          const documentRevision = Number(document.querySelector('[data-performance-renderer="mermaid"]')?.getAttribute('data-performance-revision'));
-          return documentRevision > 1 && surfaceRevision === documentRevision;
-        })
+        .waitForFunction(isCurrentPerformanceMermaidPreview)
         .catch(async (error) => {
-          const state = await page.evaluate(() => ({
-            surfaceReady: document.querySelector('.mermaid-surface')?.getAttribute('data-performance-ready') ?? 'missing',
-            surfaceRevision: document.querySelector('.mermaid-surface')?.getAttribute('data-performance-revision') ?? 'missing',
-            documentRevision: document.querySelector('[data-performance-renderer="mermaid"]')?.getAttribute('data-performance-revision') ?? 'missing',
-            editorText: document.querySelector('.mermaid-source-editor .cm-content')?.textContent?.slice(-20) ?? 'missing',
-          }));
+          const state = await page.evaluate(() => {
+            const panel = document.querySelector('#panel-performance-mermaid-edit');
+            return {
+              surfaceReady: panel?.querySelector('.mermaid-surface')?.getAttribute('data-performance-ready') ?? 'missing',
+              surfaceRevision: panel?.querySelector('.mermaid-surface')?.getAttribute('data-performance-revision') ?? 'missing',
+              documentRevision: panel?.getAttribute('data-performance-revision') ?? 'missing',
+              editorText: panel?.querySelector('.mermaid-source-layout:not([hidden]) .mermaid-source-editor .cm-content')?.textContent?.slice(-20) ?? 'missing',
+            };
+          });
           throw new Error(`performance_mermaid_edit_not_rendered:${state.surfaceReady}:${state.surfaceRevision}:${state.documentRevision}:${state.editorText}`, { cause: error });
         }),
   },

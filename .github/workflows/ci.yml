@@ -499,7 +499,11 @@ jobs:
           rustup toolchain install nightly-2026-10-31 --profile minimal
           cargo install cargo-fuzz --version 0.13.2 --locked
       - name: Verify valid seeds reach pixel decoding
-        run: cargo test --manifest-path fuzz/Cargo.toml --lib --locked
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .tmp/s043-fuzz
+          cargo test --manifest-path fuzz/Cargo.toml --lib --locked 2>&1 | tee .tmp/s043-fuzz/seed-check.log
       - name: Run bounded original-corpus campaign
         shell: bash
         run: |

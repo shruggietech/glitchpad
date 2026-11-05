@@ -26,6 +26,9 @@ namespace PortableMenuTest {
  public class ControlType { public static object ScrollBar = new object(); public static object Menu = new object(); }
  public class AndCondition { public AndCondition(object a, object b) {} }
  public class Condition { public static object TrueCondition = new object(); }
+ public class TextRange { public string Text; public string GetText(int count) { return Text; } }
+ public class TextPattern { public static object Pattern = new object(); public TextRange DocumentRange = new TextRange(); }
+ public class ValuePattern { public static object Pattern = new object(); }
  public class InvokePattern { public static object Pattern = new object(); }
  public class ScrollItemPattern { public static object Pattern = new object(); public System.Action Scroll; public void ScrollIntoView() { Scroll(); } }
  public class TreeWalker { public static TreeWalker ControlViewWalker = new TreeWalker(); public System.Func<object,object> Parent; public object GetParent(object element) { return Parent(element); } }
@@ -215,3 +218,58 @@ try { Wait-ActionableNamedElement $script:testProcess 'Save' -Seconds 0 | Out-Nu
 }
 if (-not $rejected -or -not $script:documentActionObservation.resolver_error -or -not $script:documentActionObservation.resolver_method_missing) { throw 'Missing UIA method was accepted or not classified.' }
 Write-Output 'Portable missing-method classification fixture passed (simulated UIA boundary).'
+
+# A paragraph may expose text ranges without an exact full accessible Name.
+foreach ($name in @('Test-WindowContainsText', 'Wait-WindowText', 'Exercise-MarkdownRecovery')) {
+    $function = $ast.Find({ param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq $name }, $true)
+    $source = $function.Extent.Text.Replace('System.Windows.Automation.', 'PortableMenuTest.').Replace('[PortableMenuTest.AutomationElement] $Window', '[object] $Window')
+    Invoke-Expression $source
+}
+$script:pausedText='Rendered preview is paused after a contained failure. Source remains available.'
+$script:recoverySourceOpened=$false
+$script:recoveryRetried=$false
+$script:recoveryParagraph=Element '' (Rect 0 48 800 48)
+$script:recoveryText=[PortableMenuTest.TextPattern]::new()
+$script:recoveryText.DocumentRange.Text=$script:pausedText + [Environment]::NewLine + 'S038 Recovery Markdown 6D2E'
+$script:recoveryParagraph | Add-Member ScriptMethod TryGetCurrentPattern {
+    param($pattern,[ref]$result)
+    if ([object]::ReferenceEquals($pattern,[PortableMenuTest.TextPattern]::Pattern)) { $result.Value=$script:recoveryText; return $true }
+    return $false
+} -Force
+$script:recoveryWindow=Element 'Glitchpad' (Rect 0 0 800 600)
+$script:recoveryWindow | Add-Member ScriptMethod FindAll { param($scope,$condition) return @($script:recoveryParagraph) } -Force
+function Get-WindowRoot($Process) { return $script:recoveryWindow }
+function Find-NamedElement($Window,$Name) {
+    if ($Name -eq 'fixture.md text editor' -and $script:recoverySourceOpened) { return $script:recoveryParagraph }
+    return $null
+}
+function Wait-NamedButton($Process,$Name) { return Element $Name (Rect 0 0 48 48) }
+function Invoke-NamedButton($Process,$Name) {
+    if ($Name -eq 'View source') { $script:recoverySourceOpened=$true; return }
+    if ($Name -eq 'Retry preview') { $script:recoveryRetried=$true; return }
+    throw 'Unexpected recovery control.'
+}
+function Wait-NamedElement($Process,$Name) {
+    if ($Name -ceq $script:pausedText) { throw 'Unlabeled recovery paragraph has no whole accessible Name.' }
+    if ($Name -eq 'fixture.md text editor' -and $script:recoverySourceOpened) { return $script:recoveryParagraph }
+    throw 'Recovery source editor is unavailable.'
+}
+function Wait-SafeMarkdownOutcome($Process,$ExpectedHeading,$RawSentinel) {
+    if (-not $script:recoveryRetried -or $ExpectedHeading -cne 'S038 Recovery Markdown 6D2E') { throw 'Recovery Retry did not retain the exact controlled source.' }
+}
+$probeDirectory=Join-Path ([IO.Path]::GetTempPath()) ('portable-recovery-fixture-' + [Guid]::NewGuid().ToString('N'))
+$probeMarker=Join-Path $probeDirectory 'markdown-failure-consumed.marker'
+[IO.Directory]::CreateDirectory($probeDirectory) | Out-Null
+[IO.File]::WriteAllText($probeMarker,('consumed'+[Environment]::NewLine),[Text.UTF8Encoding]::new($false))
+try {
+    if (Find-NamedElement $script:recoveryWindow $script:pausedText) { throw 'Fixture unexpectedly exposes a whole paragraph Name.' }
+    if (-not (Test-WindowContainsText $script:recoveryWindow $script:pausedText)) { throw 'Actual TextPattern reader did not expose the exact paragraph content.' }
+    Exercise-MarkdownRecovery $script:testProcess 'fixture.md' $probeDirectory
+    if (-not $script:recoverySourceOpened -or -not $script:recoveryRetried) { throw 'Recovery transition or Retry was skipped.' }
+    $script:recoveryText.DocumentRange.Text='Different prose'
+    if (Test-WindowContainsText $script:recoveryWindow $script:pausedText) { throw 'Incorrect recovery prose was accepted.' }
+} finally {
+    [IO.File]::Delete($probeMarker)
+    [IO.Directory]::Delete($probeDirectory)
+}
+Write-Output 'Portable recovery prose/TextPattern fixture passed (simulated UIA boundary).'

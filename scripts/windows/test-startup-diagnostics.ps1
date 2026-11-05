@@ -62,3 +62,15 @@ if (-not $receipt.document_action.resolver_error -or -not $receipt.document_acti
 $json = $receipt | ConvertTo-Json -Depth 4 -Compress
 if ($json -match 'private-error|exception_message|error_id') { throw 'Raw UIA error was included in failure observations.' }
 Write-Output 'Failure-only UIA error classification redaction tests passed.'
+
+$recovery = @{ phase = 'paused_content'; view_source_invoked = $true; capture_available = $true; paused_text_present = $true; source_editor_present = $true; retry_present = $true; view_source_present = $false; document_text = 'private-document'; control_name = 'private-control' }
+$receipt = New-PortableStartupDiagnostic -Observation $observation -Scenario recovery -Stage content_wait -SourceCommit ('a' * 40) -ManifestDigest ('b' * 64) -Succeeded $false -ElapsedMilliseconds 20000 -RecoveryObservation $recovery
+if ($receipt.recovery_observation.phase -cne 'paused_content' -or -not $receipt.recovery_observation.paused_text_present -or -not $receipt.recovery_observation.source_editor_present -or $receipt.recovery_observation.view_source_present -or $null -ne $receipt.recovery_observation.probe_consumed) { throw 'Recovery phase/boolean/unknown classification is incorrect.' }
+$json = $receipt | ConvertTo-Json -Depth 4 -Compress
+if ($json -match 'private-document|private-control|document_text|control_name') { throw 'Recovery observation exposed non-allowlisted input.' }
+$receipt = New-PortableStartupDiagnostic -Observation $observation -Scenario recovery -Stage content_ready -SourceCommit ('a' * 40) -ManifestDigest ('b' * 64) -Succeeded $true -ElapsedMilliseconds 1 -RecoveryObservation $recovery
+if ($receipt.Contains('recovery_observation')) { throw 'Successful recovery must omit failure-only observations.' }
+$recovery.phase='private-phase'; $refused=$false
+try { New-PortableStartupDiagnostic -Observation $observation -Scenario recovery -Stage content_wait -SourceCommit ('a' * 40) -ManifestDigest ('b' * 64) -Succeeded $false -ElapsedMilliseconds 20000 -RecoveryObservation $recovery | Out-Null } catch { $refused=$true }
+if (-not $refused) { throw 'Arbitrary recovery phase was admitted.' }
+Write-Output 'Failure-only recovery observation allowlist tests passed.'

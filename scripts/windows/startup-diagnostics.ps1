@@ -9,7 +9,8 @@ function New-PortableStartupDiagnostic {
         [Parameter(Mandatory)][long] $ElapsedMilliseconds,
         [ValidateSet('none', 'named_element', 'named_button')][string] $WaitKind = 'none',
         [ValidateRange(0, 100000)][int] $WaitCallerLine = 0,
-        [System.Collections.IDictionary] $DocumentAction = $null
+        [System.Collections.IDictionary] $DocumentAction = $null,
+        [System.Collections.IDictionary] $RecoveryObservation = $null
     )
     $record = [ordered]@{
         schema_version = 1
@@ -41,6 +42,15 @@ function New-PortableStartupDiagnostic {
             $action[$field] = if ($null -eq $DocumentAction[$field]) { $null } else { [bool]$DocumentAction[$field] }
         }
         $record['document_action'] = $action
+    }
+    if (-not $Succeeded -and $null -ne $RecoveryObservation) {
+        $phase = [string]$RecoveryObservation['phase']
+        if ($phase -notin @('view_source', 'paused_content', 'source_editor', 'source_content', 'retry_preview')) { throw 'Recovery observation phase is invalid.' }
+        $recovery = [ordered]@{ phase = $phase }
+        foreach ($field in @('view_source_invoked', 'capture_available', 'paused_text_present', 'source_editor_present', 'source_marker_present', 'retry_present', 'view_source_present', 'contained_failure_present', 'probe_consumed')) {
+            $recovery[$field] = if ($null -eq $RecoveryObservation[$field]) { $null } else { [bool]$RecoveryObservation[$field] }
+        }
+        $record['recovery_observation'] = $recovery
     }
     return $record
 }

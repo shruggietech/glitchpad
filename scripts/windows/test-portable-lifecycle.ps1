@@ -20,6 +20,7 @@ $startupDiagnostics = [Collections.Generic.List[object]]::new()
 $script:readinessWaitKind = 'none'
 $script:readinessWaitCallerLine = 0
 $script:documentActionObservation = $null
+$script:recoveryObservation = $null
 
 $root = (Resolve-Path -LiteralPath $PortableRoot).Path
 $manifestPath = (Resolve-Path -LiteralPath $Manifest).Path
@@ -81,7 +82,7 @@ function Save-StartupDiagnostic([Diagnostics.Process] $Process, [string] $Scenar
         }
         $observation.process_state_available = $true
     } catch { }
-    $record = New-PortableStartupDiagnostic -Observation $observation -Scenario $Scenario -Stage $script:readinessStage -SourceCommit $manifestSourceCommit -ManifestDigest $manifestDigest -Succeeded $Succeeded -ElapsedMilliseconds $Clock.ElapsedMilliseconds -WaitKind $script:readinessWaitKind -WaitCallerLine $script:readinessWaitCallerLine -DocumentAction $(if ($Scenario -eq 'editable') { $script:documentActionObservation } else { $null })
+    $record = New-PortableStartupDiagnostic -Observation $observation -Scenario $Scenario -Stage $script:readinessStage -SourceCommit $manifestSourceCommit -ManifestDigest $manifestDigest -Succeeded $Succeeded -ElapsedMilliseconds $Clock.ElapsedMilliseconds -WaitKind $script:readinessWaitKind -WaitCallerLine $script:readinessWaitCallerLine -DocumentAction $(if ($Scenario -eq 'editable') { $script:documentActionObservation } else { $null }) -RecoveryObservation $(if ($Scenario -eq 'recovery') { $script:recoveryObservation } else { $null })
     $startupDiagnostics.Add($record)
     [IO.File]::WriteAllText([IO.Path]::GetFullPath("$Receipt.startup.json"), (ConvertTo-Json -InputObject @($startupDiagnostics.ToArray()) -Depth 5) + [Environment]::NewLine, [Text.UTF8Encoding]::new($false))
 }
@@ -204,12 +205,12 @@ function Test-WindowContainsText([System.Windows.Automation.AutomationElement] $
     return $false
 }
 
-function Wait-WindowText([Diagnostics.Process] $Process, [string] $Text, [int] $Seconds = 10) {
+function Wait-WindowText([Diagnostics.Process] $Process, [string] $Text, [int] $Seconds = 10, [int] $PollMilliseconds = 50) {
     $deadline = [DateTimeOffset]::UtcNow.AddSeconds($Seconds)
     do {
         $window = Get-WindowRoot $Process
         if ($window -and (Test-WindowContainsText $window $Text)) { return }
-        Start-Sleep -Milliseconds 50
+        Start-Sleep -Milliseconds $PollMilliseconds
     } while ([DateTimeOffset]::UtcNow -lt $deadline)
     throw "Portable UI did not expose text '$Text'."
 }
@@ -434,15 +435,42 @@ function Exercise-MarkdownEditSavePreview([Diagnostics.Process] $Process, [strin
 
 function Exercise-MarkdownRecovery([Diagnostics.Process] $Process, [string] $Path, [string] $ProbeDirectory) {
     $name = [IO.Path]::GetFileName($Path)
-    Wait-NamedButton $Process 'View source' | Out-Null
-    Invoke-NamedButton $Process 'View source'
-    Wait-NamedElement $Process 'Rendered preview is paused after a contained failure. Source remains available.' | Out-Null
-    Wait-NamedElement $Process ("{0} text editor" -f $name) | Out-Null
-    Wait-WindowText $Process 'S038 Recovery Markdown 6D2E'
-    Invoke-NamedButton $Process 'Retry preview'
-    Wait-SafeMarkdownOutcome $Process 'S038 Recovery Markdown 6D2E' 'S038_RECOVERY_RAW_SENTINEL'
-    if (-not (Test-Path -LiteralPath (Join-Path $ProbeDirectory 'markdown-failure-consumed.marker') -PathType Leaf)) {
-        throw 'The packaged application did not consume the requested Markdown failure.'
+    $pausedText = 'Rendered preview is paused after a contained failure. Source remains available.'
+    $script:recoveryObservation = @{ phase = 'view_source'; view_source_invoked = $false; capture_available = $false }
+    try {
+        Wait-NamedButton $Process 'View source' | Out-Null
+        Invoke-NamedButton $Process 'View source'
+        $script:recoveryObservation['view_source_invoked'] = $true
+        $script:recoveryObservation['phase'] = 'paused_content'
+        $script:readinessStage = 'content_wait'
+        Wait-WindowText $Process $pausedText -Seconds 20 -PollMilliseconds 250
+        $script:recoveryObservation['phase'] = 'source_editor'
+        Wait-NamedElement $Process ("{0} text editor" -f $name) | Out-Null
+        $script:recoveryObservation['phase'] = 'source_content'
+        Wait-WindowText $Process 'S038 Recovery Markdown 6D2E'
+        $script:recoveryObservation['phase'] = 'retry_preview'
+        Invoke-NamedButton $Process 'Retry preview'
+        Wait-SafeMarkdownOutcome $Process 'S038 Recovery Markdown 6D2E' 'S038_RECOVERY_RAW_SENTINEL'
+        if (-not (Test-Path -LiteralPath (Join-Path $ProbeDirectory 'markdown-failure-consumed.marker') -PathType Leaf)) {
+            throw 'The packaged application did not consume the requested Markdown failure.'
+        }
+    }
+    catch {
+        $recoveryFailure = $_
+        try {
+            $window = Get-WindowRoot $Process
+            if ($window) {
+                $script:recoveryObservation['paused_text_present'] = Test-WindowContainsText $window $pausedText
+                $script:recoveryObservation['source_editor_present'] = $null -ne (Find-NamedElement $window ("{0} text editor" -f $name))
+                $script:recoveryObservation['source_marker_present'] = Test-WindowContainsText $window 'S038 Recovery Markdown 6D2E'
+                $script:recoveryObservation['retry_present'] = $null -ne (Find-NamedElement $window 'Retry preview')
+                $script:recoveryObservation['view_source_present'] = $null -ne (Find-NamedElement $window 'View source')
+                $script:recoveryObservation['contained_failure_present'] = (Test-WindowContainsText $window 'This document could not be displayed. The application remains available.') -or (Test-WindowContainsText $window 'Markdown preview failed safely. Source remains available.')
+                $script:recoveryObservation['probe_consumed'] = Test-Path -LiteralPath (Join-Path $ProbeDirectory 'markdown-failure-consumed.marker') -PathType Leaf
+                $script:recoveryObservation['capture_available'] = $true
+            }
+        } catch { }
+        throw $recoveryFailure
     }
 }
 

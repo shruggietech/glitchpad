@@ -287,6 +287,11 @@ test('desktop lifecycle observes the active modal and preserves document action 
   assert.match(menu, /title="Document tools"/u);
   assert.ok(app.includes('inert={'));
   assert.ok(
+    lifecycle.includes(
+      'Wait-WindowText $Process $pausedText -Seconds 20 -PollMilliseconds 250',
+    ),
+  );
+  assert.ok(
     !lifecycle.includes(
       '[System.Windows.Automation.AutomationElement]::Compare',
     ),

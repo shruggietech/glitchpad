@@ -437,8 +437,20 @@ test('Android delivery instrumentation gets a bounded clean-state retry without 
   assert.match(runner, /for attempt in 1 2; do/u);
   assert.match(
     runner,
-    /ANDROID_INSTRUMENTATION_RESET_APP_DATA:-false.*pm clear com\.shruggietech\.glitchpad/su,
+    /ANDROID_INSTRUMENTATION_RESET_APP_DATA:-false.*prepare_attempt_app_data.*\|\| exit 1/su,
   );
+  const setup = await readFile(
+    join(repositoryRoot, 'scripts', 'prepare-android-instrumentation.mjs'),
+    'utf8',
+  );
+  assert.match(runner, /node[^\n]+prepare-android-instrumentation\.mjs/u);
+  assert.match(setup, /com\.shruggietech\.glitchpad'/u);
+  assert.match(setup, /com\.shruggietech\.glitchpad\.test'/u);
+  assert.match(setup, /timeout: timeoutMs/u);
+  assert.match(setup, /killSignal: 'SIGKILL'/u);
+  assert.match(setup, /windowsHide: true/u);
+  assert.match(setup, /'pm', 'clear', packageName/u);
+  assert.doesNotMatch(runner, /pm clear[^\n]+\|\| true/u);
   assert.match(workflow, /bash scripts\/run-android-s047-journeys\.sh/u);
   const campaign = await readFile(
     join(repositoryRoot, 'scripts', 'run-android-s047-journeys.sh'),

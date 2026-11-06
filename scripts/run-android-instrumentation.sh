@@ -11,10 +11,6 @@ output="$1"
 marker="$2"
 shift 2
 
-if [[ "${ANDROID_INSTRUMENTATION_RESET_APP_DATA:-false}" == "true" ]]; then
-  adb shell pm clear com.shruggietech.glitchpad || exit 1
-  adb shell pm clear com.shruggietech.glitchpad.test || exit 1
-fi
 
 screenshot=""
 case "$*" in
@@ -36,7 +32,14 @@ capture_png() {
   elif [[ ! -s "$capture_error" ]]; then rm -f "$capture_error"; fi
 }
 
+prepare_attempt_app_data() {
+  node "${BASH_SOURCE[0]%/*}/prepare-android-instrumentation.mjs" "$1"
+}
+
 for attempt in 1 2; do
+  if [[ "${ANDROID_INSTRUMENTATION_RESET_APP_DATA:-false}" == "true" ]]; then
+    prepare_attempt_app_data "${output%.txt}-attempt-${attempt}-setup.txt" || exit 1
+  fi
   adb shell am force-stop com.shruggietech.glitchpad || true
   if [[ "${ANDROID_INSTRUMENTATION_PRESERVE_TEST_INPUT_METHOD:-false}" != "true" ]]; then
     adb shell am force-stop com.shruggietech.glitchpad.test || true
@@ -75,12 +78,10 @@ for attempt in 1 2; do
   fi
   if (( attempt < 2 )); then
     echo "::warning::Android instrumentation did not satisfy clean completion checks on attempt ${attempt}; resetting the test processes before retrying."
-    if [[ "${ANDROID_INSTRUMENTATION_RESET_APP_DATA:-false}" == "true" ]]; then
-      adb shell pm clear com.shruggietech.glitchpad || true
-      adb shell pm clear com.shruggietech.glitchpad.test || true
+    if [[ "${ANDROID_INSTRUMENTATION_RESET_APP_DATA:-false}" != "true" ]]; then
+      adb wait-for-device
+      sleep 3
     fi
-    adb wait-for-device
-    sleep 3
   fi
 done
 

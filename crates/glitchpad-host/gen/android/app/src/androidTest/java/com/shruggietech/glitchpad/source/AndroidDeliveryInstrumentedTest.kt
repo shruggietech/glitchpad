@@ -975,7 +975,8 @@ class AndroidDeliveryInstrumentedTest {
 
   private fun menuAction(scenario: ActivityScenario<MainActivity>, name: String) {
     clickControl(scenario, if (name in listOf("Preferences", "Diagnostics", "Help and support", "About Glitchpad")) "Menu" else "Document tools")
-    clickControl(scenario, name, "[role=menuitem]")
+    if (name == "Copy") tapNativeControlOnce(scenario, name, "[role=menuitem]")
+    else clickControl(scenario, name, "[role=menuitem]")
   }
 
   private fun clickControl(scenario: ActivityScenario<MainActivity>, name: String, selector: String = "button", deadlineOverride: Long? = null) {
@@ -1890,6 +1891,7 @@ class AndroidDeliveryInstrumentedTest {
     waitForCondition(scenario, "document.querySelector('.image-pane').getAttribute('data-image-selection')==='1'", "Previous frame must decode the prior actual frame")
     clickControl(scenario, "Next frame")
     waitForCondition(scenario, "document.querySelector('.image-pane').getAttribute('data-image-selection')==='2'", "Next frame must decode the next actual frame")
+    waitForCondition(scenario, "!!document.querySelector('.image-pane[data-preview-ready=true][data-image-selection=\"2\"]')", "Play readiness requires the actual selected decoded frame")
     val playback = JSONObject(evaluate(scenario, "(()=>{const b=Array.from(document.querySelectorAll('button')).find(n=>n.textContent.trim()==='Play');return {disabled:b.disabled,reduced:matchMedia('(prefers-reduced-motion: reduce)').matches};})()"))
     val animation=JSONObject().put("reduced_motion",playback.getBoolean("reduced")).put("play_enabled",!playback.getBoolean("disabled")).put("advanced",false).put("paused",false)
     if (playback.getBoolean("disabled")) {
@@ -1997,9 +1999,10 @@ class AndroidDeliveryInstrumentedTest {
     taskKey(KeyEvent.KEYCODE_EQUALS,KeyEvent.META_CTRL_ON)
     waitForCondition(scenario,"Math.abs(Number(document.querySelector('.image-pane').getAttribute('data-viewport-scale'))-"+beforeKeyboardOut+")<0.0001","global image CtrlPlus must restore the exact factor",deadlineOverride=imageAliasDeadline)
     evaluate(scenario,"document.querySelector('.image-pane').focus();true")
+    waitForCondition(scenario,"document.activeElement===document.querySelector('.image-pane')&&document.querySelector('.image-preview').getBoundingClientRect().width>document.querySelector('.image-pane').getBoundingClientRect().width+1","native Arrow requires focus and an actually overflowing image",deadlineOverride=imageAliasDeadline)
     val beforeArrow=imageViewState(scenario).getDouble("x")
     taskKey(KeyEvent.KEYCODE_DPAD_LEFT)
-    assertTrue("native Arrow must pan overflowing image",imageViewState(scenario).getDouble("x")<beforeArrow)
+    waitForCondition(scenario,"Number(document.querySelector('.image-pane').getAttribute('data-viewport-pan-x'))<"+beforeArrow,"native Arrow must pan overflowing image",deadlineOverride=imageAliasDeadline)
     tapNativeControlOnce(scenario,"Zoom out",".image-actions button",deadlineOverride=imageAliasDeadline)
     waitForCondition(scenario,"Math.abs(Number(document.querySelector('.image-pane').getAttribute('data-viewport-scale'))-"+(beforeKeyboardOut*0.8)+")<0.0001","local image Zoom out must invert the actual scale",deadlineOverride=imageAliasDeadline)
     menuAction(scenario,"Zoom out")
@@ -2085,9 +2088,11 @@ class AndroidDeliveryInstrumentedTest {
     waitForCondition(scenario,"!document.querySelector('[role=dialog]')&&document.querySelector('.document-count-trigger').textContent.trim()!=="+JSONObject.quote(countBefore),"closing an overflow document must remove exactly that clean draft")
     val density = clientContext.resources.displayMetrics.density
     try {
-      scenario.onActivity { it.requestedOrientation=ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED }
-      shellOutput("wm size "+(1024*density).toInt()+"x"+(640*density).toInt())
-      waitForCondition(scenario,"document.querySelector('.tab-button')&&document.querySelector('.tab-button').getBoundingClientRect().width>0","wide actual window must expose the inline document tabs")
+      // API24 clamps each natural display dimension to twice its initial value.
+      // Request a supported portrait override, then rotate the real window to landscape.
+      checkedShell("wm size "+(640*density).toInt()+"x"+(1024*density).toInt())
+      scenario.onActivity { it.requestedOrientation=ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE }
+      waitForCondition(scenario,"innerWidth>=768&&innerHeight>=480&&document.querySelector('.tab-button')&&document.querySelector('.tab-button').getBoundingClientRect().width>0","wide actual window must expose the inline document tabs")
       fun selected():String=stringValue(evaluate(scenario,"document.querySelector('.tab-button[aria-selected=true]').id"))
       fun count():Int=evaluate(scenario,"document.querySelectorAll('.tab-button').length+(document.querySelector('.overflow-trigger')?parseInt(document.querySelector('.overflow-trigger').textContent.slice(1),10):0)").toInt()
       evaluate(scenario,"document.querySelector('.tab-button[aria-selected=true]').focus();true")
@@ -2129,7 +2134,7 @@ class AndroidDeliveryInstrumentedTest {
       discardControlledEmptyDraft()
       assertEquals(before-2,count())
     } finally {
-      shellOutput("wm size reset")
+      checkedShell("wm size reset")
       scenario.onActivity { it.requestedOrientation=ActivityInfo.SCREEN_ORIENTATION_PORTRAIT }
       waitForCondition(scenario,"innerHeight>innerWidth","document keyboard aliases must restore the actual phone window")
     }
@@ -2312,13 +2317,16 @@ class AndroidDeliveryInstrumentedTest {
       }
       throw AssertionError("hosted network settings must settle within their original phase deadline: " + phase + ",wanted=" + wanted + ",actual=" + actual)
     }
+    val airplaneSupported = Build.VERSION.SDK_INT >= 30
+    val offlineAirplane = if (airplaneSupported) "1" else requireNotNull(original["airplane_mode_on"])
     fun airplane(value: String) {
-      if (Build.VERSION.SDK_INT >= 30) checkedShell("cmd connectivity airplane-mode " + if (value == "1") "enable" else "disable")
-      else { checkedShell("settings put global airplane_mode_on " + value); checkedShell("am broadcast -a android.intent.action.AIRPLANE_MODE --ez state " + if (value == "1") "true" else "false") }
+      assertTrue("airplane shell command requires API30+", airplaneSupported)
+      checkedShell("cmd connectivity airplane-mode " + if (value == "1") "enable" else "disable")
     }
     try {
-      airplane("1"); checkedShell("svc wifi disable"); checkedShell("svc data disable")
-      awaitSettings(mapOf("airplane_mode_on" to "1", "wifi_on" to "0", "mobile_data" to "0"),deadline,"offline")
+      if (airplaneSupported) airplane("1")
+      checkedShell("svc wifi disable"); checkedShell("svc data disable")
+      awaitSettings(mapOf("airplane_mode_on" to offlineAirplane, "wifi_on" to "0", "mobile_data" to "0"),deadline,"offline")
       var offline = false
       while (SystemClock.elapsedRealtime() < deadline) {
         val dump = checkedShell("dumpsys -t 2 connectivity")
@@ -2333,7 +2341,7 @@ class AndroidDeliveryInstrumentedTest {
     } catch (failure: Throwable) { originalFailure = failure; throw failure }
     finally {
       val restored = runCatching {
-        airplane(requireNotNull(original["airplane_mode_on"]))
+        if (airplaneSupported) airplane(requireNotNull(original["airplane_mode_on"]))
         checkedShell("svc wifi " + if (original["wifi_on"] == "1") "enable" else "disable")
         checkedShell("svc data " + if (original["mobile_data"] == "1") "enable" else "disable")
         awaitSettings(original,SystemClock.elapsedRealtime()+30_000L,"restore")
@@ -2514,20 +2522,28 @@ class AndroidDeliveryInstrumentedTest {
     }
     val downTime = SystemClock.uptimeMillis()
     var terminalRequested = false
+    fun gestureEvent(action: Int, x: Float): MotionEvent {
+      val pointer = MotionEvent.PointerProperties().apply { id = 0; toolType = MotionEvent.TOOL_TYPE_FINGER }
+      val coordinates = MotionEvent.PointerCoords()
+      coordinates.x = x; coordinates.y = y
+      coordinates.pressure = if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) 0f else 1f
+      coordinates.size = 0.05f
+      return MotionEvent.obtain(downTime, SystemClock.uptimeMillis(), action, 1, arrayOf(pointer), arrayOf(coordinates), 0, 0, 1f, 1f, 0, 0, InputDevice.SOURCE_TOUCHSCREEN, 0)
+    }
     fun input(action: Int, x: Float) {
       assertTrue("one gesture must remain inside the original action deadline", SystemClock.elapsedRealtime() < deadline)
       val owner = instrumentation.uiAutomation.rootInActiveWindow
       assertEquals("gesture input must retain the actual app owner", TARGET_PACKAGE, owner?.packageName?.toString())
       if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) terminalRequested = true
-      val event = MotionEvent.obtain(downTime, SystemClock.uptimeMillis(), action, x, y, 0).apply { source = InputDevice.SOURCE_TOUCHSCREEN }
+      val event = gestureEvent(action, x)
       try { assertTrue("the actual system must accept each single gesture event", instrumentation.uiAutomation.injectInputEvent(event, true)) } finally { event.recycle() }
     }
     try {
     input(MotionEvent.ACTION_DOWN, startX)
-    SystemClock.sleep(32L)
-    input(MotionEvent.ACTION_MOVE, startX + (endX - startX) * 0.35f)
-    SystemClock.sleep(32L)
-    input(MotionEvent.ACTION_MOVE, endX)
+    for (step in 1..12) {
+      SystemClock.sleep(32L)
+      input(MotionEvent.ACTION_MOVE, startX + (endX - startX) * step / 12f)
+    }
     var progressed = false
     var last = before
     while (SystemClock.elapsedRealtime() < deadline) {
@@ -2535,9 +2551,18 @@ class AndroidDeliveryInstrumentedTest {
       last = state
       if (state.getInt("started") > before.getInt("started") && state.getInt("progressed") > before.getInt("progressed")) { progressed = true; break }
       SystemClock.sleep(100L)
+      if (SystemClock.elapsedRealtime() < deadline) input(MotionEvent.ACTION_MOVE, endX)
     }
-    if (!progressed) throw AssertionError("real system gesture never produced start/progress callbacks: " + JSONObject().put("before", before).put("after", last).put("delta", deltaBack(before, last)).put("start_x", startX).put("end_x", endX).put("y", y))
-    if (cancel) input(MotionEvent.ACTION_MOVE, startX)
+    if (!progressed) {
+      val systemUi = runCatching { checkedShell("dumpsys -t 3 activity service com.android.systemui/.SystemUIService TaskbarDelegate") }.getOrElse { "capture_unavailable:" + it.javaClass.simpleName }
+      println("s047_predictive_system_ui=" + JSONObject().put("diagnostic_only", true).put("text", systemUi.take(65536))); System.out.flush()
+      throw AssertionError("real system gesture never produced start/progress callbacks: " + JSONObject().put("before", before).put("after", last).put("delta", deltaBack(before, last)).put("start_x", startX).put("end_x", endX).put("y", y))
+    }
+    if (cancel) for (step in 1..6) {
+      SystemClock.sleep(32L)
+      input(MotionEvent.ACTION_MOVE, endX + (startX - endX) * step / 6f)
+    }
+    SystemClock.sleep(32L)
     input(MotionEvent.ACTION_UP, if (cancel) startX else endX)
     var after = nativeBackObservation(scenario)
     while (SystemClock.elapsedRealtime() < deadline) {
@@ -2555,7 +2580,7 @@ class AndroidDeliveryInstrumentedTest {
     return delta
     } finally {
       if (!terminalRequested && instrumentation.uiAutomation.rootInActiveWindow?.packageName?.toString() == TARGET_PACKAGE) {
-        val event = MotionEvent.obtain(downTime, SystemClock.uptimeMillis(), MotionEvent.ACTION_CANCEL, startX, y, 0).apply { source = InputDevice.SOURCE_TOUCHSCREEN }
+        val event = gestureEvent(MotionEvent.ACTION_CANCEL, startX)
         try { runCatching { instrumentation.uiAutomation.injectInputEvent(event, true) } } finally { event.recycle() }
       }
     }
@@ -2957,7 +2982,7 @@ class AndroidDeliveryInstrumentedTest {
       .put("input_path", "WebView.InputConnection.setSelection+commitText").put("selected_state", selectedState)
       .put("committed_state", committedState).put("browser_edit_after", browserAfter).put("visible_exact_text", true).put("committed_utf8_bytes", text.toByteArray(Charsets.UTF_8).size))
     System.out.flush()
-    waitForBodyText(scenario, text.lineSequence().first(), deadlineOverride = deadline)
+    assertTrue("exact native and browser editor verification must complete inside the original action deadline", SystemClock.elapsedRealtime() < deadline)
   }
 
   private fun waitForBrowserEditorCommit(

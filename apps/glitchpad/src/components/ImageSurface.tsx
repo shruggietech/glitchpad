@@ -298,6 +298,7 @@ export const ImageSurface = forwardRef<TextEditorHandle, Props>(
         reducedMotion ||
         !visible ||
         !url ||
+        !ready ||
         family?.family !== 'animation' ||
         family.frame_count === null
       )
@@ -326,7 +327,7 @@ export const ImageSurface = forwardRef<TextEditorHandle, Props>(
           : Math.max(20, family.frame_duration_ms ?? 100),
       );
       return () => clearTimeout(timer);
-    }, [playing, reducedMotion, visible, url, family, descriptor]);
+    }, [playing, reducedMotion, visible, url, ready, family, descriptor]);
 
     useEffect(() => {
       const element = pane.current;
@@ -576,7 +577,7 @@ export const ImageSurface = forwardRef<TextEditorHandle, Props>(
             >
               <button
                 type="button"
-                disabled={!usable || reducedMotion}
+                disabled={!playing && (!usable || reducedMotion)}
                 title={
                   reducedMotion
                     ? 'Playback disabled by reduced-motion preference.'
@@ -584,13 +585,17 @@ export const ImageSurface = forwardRef<TextEditorHandle, Props>(
                 }
                 aria-pressed={playing}
                 onClick={() => {
-                  if (reducedMotion) return;
-                  if (!playing && playbackCompleted.current) {
+                  if (playing) {
+                    setPlaying(false);
+                    return;
+                  }
+                  if (reducedMotion || !usable) return;
+                  if (playbackCompleted.current) {
                     completedLoops.current = 0;
                     playbackCompleted.current = false;
                     setSelection(0);
                   }
-                  setPlaying((p) => !p);
+                  setPlaying(true);
                 }}
               >
                 {playing ? 'Pause' : 'Play'}

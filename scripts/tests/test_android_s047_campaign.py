@@ -11,7 +11,7 @@ import unittest
 
 CAMPAIGN = Path(__file__).resolve().parents[1] / 'run-android-s047-journeys.sh'
 class JourneyCampaign(unittest.TestCase):
-    def run_case(self, role='ordinary', api=24, fail='', navigation='explicit'):
+    def run_case(self, role='ordinary', api=24, fail='', navigation='explicit', diagnostic=False):
         with tempfile.TemporaryDirectory(prefix='s047-campaign-') as directory:
             root=Path(directory); binary=root/'bin'; binary.mkdir()
             shutil.copyfile(CAMPAIGN,root/'run-android-s047-journeys.sh')
@@ -46,10 +46,30 @@ set -eu
 echo "$*" >> "$VALIDATION"
 '''} .items():
                 path=binary/name;path.write_text(script,encoding='utf-8');path.chmod(0o755)
-            env={**os.environ,'PATH':str(binary)+':'+os.environ['PATH'],'RUNNER_TEMP':str(root),'CALLS':str(root/'calls'),'NATIVE':str(root/'native'),'VALIDATION':str(root/'validation'),'FAIL':fail,'NAV_STATE':str(root/'navigation-state'),'NAV_INITIAL':'threebutton' if navigation=='explicit' else ''}
+            env={**os.environ,'ANDROID_S047_BACK_DIAGNOSTIC':'true' if diagnostic else 'false','PATH':str(binary)+':'+os.environ['PATH'],'RUNNER_TEMP':str(root),'CALLS':str(root/'calls'),'NATIVE':str(root/'native'),'VALIDATION':str(root/'validation'),'FAIL':fail,'NAV_STATE':str(root/'navigation-state'),'NAV_INITIAL':'threebutton' if navigation=='explicit' else ''}
             result=subprocess.run(['bash',str(root/'run-android-s047-journeys.sh'),str(api),'a'*40,role],env=env,capture_output=True,text=True,check=False)
             read=lambda name:(root/name).read_text(encoding='utf-8') if (root/name).exists() else ''
+            result.diagnostic_receipt=json.loads(read('s047-back-diagnostic.json')) if read('s047-back-diagnostic.json') else None
             return result,read('calls'),read('native')+'\nFINAL_NAV='+read('navigation-state').strip(),read('validation')
+    def test_back_diagnostic_is_single_journey_and_cannot_emit_full_qualification(self):
+        for fail in ('','s047BackJourney'):
+            result,calls,native,validation=self.run_case(api=36,diagnostic=True,fail=fail)
+            self.assertEqual(result.returncode,1 if fail else 0,result.stdout+result.stderr)
+            self.assertEqual(calls.count('#'),1,calls)
+            self.assertEqual(calls.count('#s047BackJourney'),1,calls)
+            self.assertEqual(validation,'')
+            self.assertTrue(result.diagnostic_receipt['diagnostic_only'])
+            self.assertFalse(result.diagnostic_receipt['candidate_qualified'])
+            self.assertEqual(result.diagnostic_receipt['failures'],1 if fail else 0)
+            self.assertTrue(native.endswith('FINAL_NAV=threebutton'),native)
+            self.assertIn('wm size reset',native)
+    def test_back_diagnostic_rejects_wrong_api_or_role_before_dispatch(self):
+        for api,role in ((24,'ordinary'),(36,'fault_probe')):
+            result,calls,native,validation=self.run_case(api=api,role=role,diagnostic=True)
+            self.assertEqual(result.returncode,2,result.stdout+result.stderr)
+            self.assertEqual(calls,'')
+            self.assertEqual(validation,'')
+            self.assertIsNone(result.diagnostic_receipt)
     def test_ordinary_schedules_all_real_tasks_and_process_verify(self):
         result,calls,native,validation=self.run_case()
         self.assertEqual(result.returncode,0,result.stdout+result.stderr)

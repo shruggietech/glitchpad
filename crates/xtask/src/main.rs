@@ -339,7 +339,7 @@ fn verify_android_source_layout(repository: &Path) -> Result<(), String> {
     let workflow = std::fs::read_to_string(&workflow_path)
         .map_err(|error| format!("could not read {}: {error}", workflow_path.display()))?;
     for required in [
-        "api-level: [24, 36]",
+        r#"{"api-level":[24,36],"role":["ordinary","fault_probe"]}"#,
         "x86_64-linux-android",
         "android-instrumentation",
     ] {

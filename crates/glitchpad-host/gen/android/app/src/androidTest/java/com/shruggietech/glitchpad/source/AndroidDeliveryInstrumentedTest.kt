@@ -1086,6 +1086,7 @@ class AndroidDeliveryInstrumentedTest {
 
   private fun setTaskInput(scenario: ActivityScenario<MainActivity>, label: String, text: String, deadlineOverride: Long? = null) {
     val deadline = deadlineOverride ?: (SystemClock.elapsedRealtime() + 30_000L)
+    focusNativeWebView(scenario, deadlineOverride = deadline)
     tapNativeControlOnce(scenario, label, "input,textarea", deadlineOverride = deadline)
     val focusScript = "(()=>{const field=" + taskInputExpression(label) + ";return document.hasFocus()&&!!field&&document.activeElement===field;})()"
     waitForCondition(scenario, focusScript, "the exact requested task input must own actual browser focus after the one native tap", deadlineOverride = deadline)
@@ -1112,6 +1113,10 @@ class AndroidDeliveryInstrumentedTest {
     var target: AccessibilityNodeInfo? = null
     var seenWindow = -1
     var observedCount = 0
+    var positionRequested = false
+    var lastScroll = 0L
+    val initialIndex = evaluate(scenario, "(" + field + ").selectedIndex", deadlineOverride = deadline).toInt()
+    val inventory = JSONArray()
     while (SystemClock.elapsedRealtime() < deadline) {
       val root = instrumentation.uiAutomation.rootInActiveWindow
       if (root != null && root.windowId != priorWindow && root.packageName?.toString() == TARGET_PACKAGE) {
@@ -1130,14 +1135,44 @@ class AndroidDeliveryInstrumentedTest {
         val unique = candidates.distinctBy { it.hashCode() }
         observedCount = unique.size
         if (unique.size == 1) { target = unique.single(); break }
+        var visited = 0
+        fun scrollable(node: AccessibilityNodeInfo, depth: Int): AccessibilityNodeInfo? {
+          if (++visited > 128 || depth > 12) return null
+          if (node.isScrollable && node.windowId == root.windowId && node.packageName?.toString() == TARGET_PACKAGE) return node
+          for (childIndex in 0 until minOf(node.childCount, 64)) {
+            val child = node.getChild(childIndex) ?: continue
+            scrollable(child, depth + 1)?.let { return it }
+          }
+          return null
+        }
+        val list = scrollable(root, 0)
+        if (list != null && SystemClock.elapsedRealtime() - lastScroll >= 400L) {
+          val positioned = if (!positionRequested) {
+            positionRequested = true
+            list.performAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_TO_POSITION.id, android.os.Bundle().apply { putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_ROW_INT, index) })
+          } else false
+          if (!positioned) list.performAction(if (index < initialIndex) AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD else AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)
+          lastScroll = SystemClock.elapsedRealtime()
+        }
+        if (inventory.length() == 0) for (childIndex in 0 until minOf(root.childCount, 24)) {
+          root.getChild(childIndex)?.let { child -> inventory.put(JSONObject().put("class", child.className?.toString()).put("text", child.text?.toString()?.take(128)).put("description", child.contentDescription?.toString()?.take(128))) }
+        }
       }
       SystemClock.sleep(100L)
     }
+    if (target == null) { println("s047_native_option_failure=" + JSONObject().put("control", label).put("wanted", wanted).put("index", index).put("window", seenWindow).put("matches", observedCount).put("visible_children", inventory)); System.out.flush() }
     assertTrue("one actual native option popup must own the exact enabled setting within the original action deadline: window=" + seenWindow + ",matches=" + observedCount, target != null && SystemClock.elapsedRealtime() < deadline)
     assertTrue("the observed native option must receive exactly one accessibility activation", requireNotNull(target).performAction(AccessibilityNodeInfo.ACTION_CLICK))
     waitForCondition(scenario, "(()=>{const n=" + field + ";return !!n&&n.value===" + JSONObject.quote(expected) + ";})()", "actual native option selection must update the intended setting", deadlineOverride = deadline)
   }
-  private fun clipboardText(): String? = (clientContext.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager).primaryClip?.let { if (it.itemCount > 0) it.getItemAt(0).coerceToText(clientContext).toString() else null }
+  private fun clipboardText(): String? {
+    val observed = AtomicReference<String?>(null)
+    instrumentation.runOnMainSync {
+      val clipboard = clientContext.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+      observed.set(clipboard.primaryClip?.let { if (it.itemCount > 0) it.getItemAt(0).coerceToText(clientContext).toString() else null })
+    }
+    return observed.get()
+  }
 
   private fun taskKey(code: Int, meta: Int = 0) {
     val now = SystemClock.uptimeMillis()
@@ -1899,10 +1934,11 @@ class AndroidDeliveryInstrumentedTest {
       waitForBodyText(scenario, "Playback is paused by your reduced-motion preference")
       animation.put("branch","reduced_motion_disabled").put("policy_explanation",true).put("unexecuted_actions",JSONArray(listOf("Play","Pause")))
     } else {
+      evaluate(scenario, "window.__s040PreviousPreview=document.querySelector('.image-preview').src;true")
       clickControl(scenario, "Play")
-      waitForCondition(scenario, "document.querySelector('.image-pane').getAttribute('data-image-selection')!=='2'", "real animation must advance a native-rendered frame")
+      waitForImagePixels(scenario, "original.gif", true)
       clickControl(scenario, "Pause")
-      waitForBodyText(scenario, "Play")
+      waitForCondition(scenario, "!!document.querySelector('.image-pane[data-preview-ready=true]')&&Array.from(document.querySelectorAll('button')).some(b=>b.textContent.trim()==='Play'&&b.getAttribute('aria-pressed')==='false')", "Pause must stop playback and retain an actually displayed decoded frame")
       animation.put("branch","played_and_paused").put("advanced",true).put("paused",true).put("unexecuted_actions",JSONArray())
     }
     setTaskInput(scenario, "Animation frame", "3"); instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_ENTER)
@@ -2002,7 +2038,7 @@ class AndroidDeliveryInstrumentedTest {
     waitForCondition(scenario,"document.activeElement===document.querySelector('.image-pane')&&document.querySelector('.image-preview').getBoundingClientRect().width>document.querySelector('.image-pane').getBoundingClientRect().width+1","native Arrow requires focus and an actually overflowing image",deadlineOverride=imageAliasDeadline)
     val beforeArrow=imageViewState(scenario).getDouble("x")
     taskKey(KeyEvent.KEYCODE_DPAD_LEFT)
-    waitForCondition(scenario,"Number(document.querySelector('.image-pane').getAttribute('data-viewport-pan-x'))<"+beforeArrow,"native Arrow must pan overflowing image",deadlineOverride=imageAliasDeadline)
+    waitForCondition(scenario,"Math.abs(Number(document.querySelector('.image-pane').getAttribute('data-viewport-pan-x'))-("+beforeArrow+"+40))<0.0001","native ArrowLeft must apply the existing camera-pan direction exactly once",deadlineOverride=imageAliasDeadline)
     tapNativeControlOnce(scenario,"Zoom out",".image-actions button",deadlineOverride=imageAliasDeadline)
     waitForCondition(scenario,"Math.abs(Number(document.querySelector('.image-pane').getAttribute('data-viewport-scale'))-"+(beforeKeyboardOut*0.8)+")<0.0001","local image Zoom out must invert the actual scale",deadlineOverride=imageAliasDeadline)
     menuAction(scenario,"Zoom out")
@@ -2090,8 +2126,13 @@ class AndroidDeliveryInstrumentedTest {
     try {
       // API24 clamps each natural display dimension to twice its initial value.
       // Request a supported portrait override, then rotate the real window to landscape.
-      checkedShell("wm size "+(640*density).toInt()+"x"+(1024*density).toInt())
-      scenario.onActivity { it.requestedOrientation=ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE }
+      if (Build.VERSION.SDK_INT >= 36) {
+        scenario.onActivity { it.requestedOrientation=ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED }
+        checkedShell("wm size "+(1024*density).toInt()+"x"+(640*density).toInt())
+      } else {
+        checkedShell("wm size "+(640*density).toInt()+"x"+(1024*density).toInt())
+        scenario.onActivity { it.requestedOrientation=ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE }
+      }
       waitForCondition(scenario,"innerWidth>=768&&innerHeight>=480&&document.querySelector('.tab-button')&&document.querySelector('.tab-button').getBoundingClientRect().width>0","wide actual window must expose the inline document tabs")
       fun selected():String=stringValue(evaluate(scenario,"document.querySelector('.tab-button[aria-selected=true]').id"))
       fun count():Int=evaluate(scenario,"document.querySelectorAll('.tab-button').length+(document.querySelector('.overflow-trigger')?parseInt(document.querySelector('.overflow-trigger').textContent.slice(1),10):0)").toInt()
@@ -2273,7 +2314,8 @@ class AndroidDeliveryInstrumentedTest {
     val details = JSONObject()
     if (Build.VERSION.SDK_INT >= 34) {
       dismissObservedAppIme(scenario)
-      clickControl(scenario, "Menu")
+      focusNativeWebView(scenario)
+      tapNativeControlOnce(scenario, "Menu")
       waitForCondition(scenario, "!!document.querySelector('[role=dialog]')", "a real modal must own predictive Back")
       val before = stringValue(evaluate(scenario, "JSON.stringify({surface:document.querySelector('.document-surface').id,revision:document.querySelector('.document-surface').getAttribute('data-performance-revision'),identity:document.querySelector('[data-draft-identity]')?document.querySelector('[data-draft-identity]').textContent:null})"))
       details.put("predictive_cancel", nativeGestureBack(scenario, true).put("state_unchanged", true))
@@ -2329,7 +2371,9 @@ class AndroidDeliveryInstrumentedTest {
       awaitSettings(mapOf("airplane_mode_on" to offlineAirplane, "wifi_on" to "0", "mobile_data" to "0"),deadline,"offline")
       var offline = false
       while (SystemClock.elapsedRealtime() < deadline) {
-        val dump = checkedShell("dumpsys -t 2 connectivity")
+        val remainingSeconds = maxOf(1L, (deadline - SystemClock.elapsedRealtime()) / 1_000L)
+        val dump = checkedShell("dumpsys -t " + minOf(5L, remainingSeconds) + " connectivity")
+        assertTrue("complete connectivity observation must retain the original phase deadline", SystemClock.elapsedRealtime() < deadline)
         if (Regex("(?m)^\\s*Active default network:\\s*none\\s*$").containsMatchIn(dump)) { offline = true; break }
         SystemClock.sleep(100L)
       }
@@ -2503,6 +2547,24 @@ class AndroidDeliveryInstrumentedTest {
   private fun deltaBack(before: JSONObject, after: JSONObject): JSONObject = JSONObject().also { result ->
     for (name in listOf("started", "progressed", "cancelled", "committed", "requested", "completed", "delegated")) result.put(name, after.getInt(name) - before.getInt(name))
   }
+  private fun nativeBackBinding(scenario: ActivityScenario<MainActivity>): JSONObject {
+    val result = JSONObject().put("diagnostic_only", true)
+    scenario.onActivity { activity ->
+      val dispatcher = activity.onBackPressedDispatcher
+      result.put("dispatcher_class", dispatcher.javaClass.name)
+      runCatching {
+        val callbacks = dispatcher.javaClass.getDeclaredField("onBackPressedCallbacks").apply { isAccessible = true }.get(dispatcher) as Iterable<*>
+        result.put("callbacks", JSONArray(callbacks.filterIsInstance<androidx.activity.OnBackPressedCallback>().map { JSONObject().put("class", it.javaClass.name).put("enabled", it.isEnabled) }))
+      }.onFailure { result.put("callbacks_unavailable", it.javaClass.simpleName) }
+      if (Build.VERSION.SDK_INT >= 34) runCatching {
+        val platform = activity.onBackInvokedDispatcher
+        val top = platform.javaClass.getDeclaredMethod("getTopCallback").apply { isAccessible = true }.invoke(platform)
+        result.put("platform_dispatcher_class", platform.javaClass.name).put("platform_top_callback_class", top?.javaClass?.name ?: JSONObject.NULL)
+      }.onFailure { result.put("platform_callback_unavailable", it.javaClass.simpleName) }
+    }
+    result.put("window", nativeControlGeometry(scenario, null))
+    return result
+  }
   private fun nativeGestureBack(scenario: ActivityScenario<MainActivity>, cancel: Boolean): JSONObject {
     assertTrue("actual predictive gestures require API34+", Build.VERSION.SDK_INT >= 34)
     assertEquals("gestural", actualNavigationMode())
@@ -2520,8 +2582,13 @@ class AndroidDeliveryInstrumentedTest {
       startX = maxOf(1, insets.left / 2).toFloat(); y = bounds.exactCenterY(); endX = bounds.left + bounds.width() * 0.6f
       assertTrue("the actual app window must own the gesture", activity.hasWindowFocus() && view.hasWindowFocus() && bounds.width() > 0)
     }
+    val owner = instrumentation.uiAutomation.rootInActiveWindow
+    assertEquals("gesture input must begin with the actual app owner", TARGET_PACKAGE, owner?.packageName?.toString())
+    println("s047_predictive_binding=" + nativeBackBinding(scenario)); System.out.flush()
+    val inputTiming = JSONArray()
     val downTime = SystemClock.uptimeMillis()
     var terminalRequested = false
+    var completedGesture = false
     fun gestureEvent(action: Int, x: Float): MotionEvent {
       val pointer = MotionEvent.PointerProperties().apply { id = 0; toolType = MotionEvent.TOOL_TYPE_FINGER }
       val coordinates = MotionEvent.PointerCoords()
@@ -2532,11 +2599,17 @@ class AndroidDeliveryInstrumentedTest {
     }
     fun input(action: Int, x: Float) {
       assertTrue("one gesture must remain inside the original action deadline", SystemClock.elapsedRealtime() < deadline)
-      val owner = instrumentation.uiAutomation.rootInActiveWindow
-      assertEquals("gesture input must retain the actual app owner", TARGET_PACKAGE, owner?.packageName?.toString())
       if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) terminalRequested = true
       val event = gestureEvent(action, x)
-      try { assertTrue("the actual system must accept each single gesture event", instrumentation.uiAutomation.injectInputEvent(event, true)) } finally { event.recycle() }
+      val eventElapsed = event.eventTime - downTime
+      val injectedAt = SystemClock.uptimeMillis()
+      try {
+        // Accessibility snapshots and synchronous transaction waits distort an edge stream. Observe ownership before DOWN and real callback counters after MOVE.
+        assertTrue("the actual system must accept each single gesture event", instrumentation.uiAutomation.injectInputEvent(event, false))
+      } finally {
+        inputTiming.put(JSONObject().put("action", action).put("elapsed_ms", eventElapsed).put("inject_ms", SystemClock.uptimeMillis() - injectedAt))
+        event.recycle()
+      }
     }
     try {
     input(MotionEvent.ACTION_DOWN, startX)
@@ -2554,8 +2627,6 @@ class AndroidDeliveryInstrumentedTest {
       if (SystemClock.elapsedRealtime() < deadline) input(MotionEvent.ACTION_MOVE, endX)
     }
     if (!progressed) {
-      val systemUi = runCatching { checkedShell("dumpsys -t 3 activity service com.android.systemui/.SystemUIService TaskbarDelegate") }.getOrElse { "capture_unavailable:" + it.javaClass.simpleName }
-      println("s047_predictive_system_ui=" + JSONObject().put("diagnostic_only", true).put("text", systemUi.take(65536))); System.out.flush()
       throw AssertionError("real system gesture never produced start/progress callbacks: " + JSONObject().put("before", before).put("after", last).put("delta", deltaBack(before, last)).put("start_x", startX).put("end_x", endX).put("y", y))
     }
     if (cancel) for (step in 1..6) {
@@ -2577,11 +2648,17 @@ class AndroidDeliveryInstrumentedTest {
     for (key in listOf("committed", "requested", "completed")) assertEquals("one commit must traverse one existing callback/request/reply", if (cancel) 0 else 1, delta.getInt(key))
     assertEquals("a handled modal must not delegate another Back", 0, delta.getInt("delegated"))
     println("s047_predictive_back=" + JSONObject().put("cancel", cancel).put("delta", delta)); System.out.flush()
+    completedGesture = true
     return delta
     } finally {
-      if (!terminalRequested && instrumentation.uiAutomation.rootInActiveWindow?.packageName?.toString() == TARGET_PACKAGE) {
+      if (!terminalRequested) {
         val event = gestureEvent(MotionEvent.ACTION_CANCEL, startX)
-        try { runCatching { instrumentation.uiAutomation.injectInputEvent(event, true) } } finally { event.recycle() }
+        try { runCatching { instrumentation.uiAutomation.injectInputEvent(event, false) } } finally { event.recycle() }
+      }
+      println("s047_predictive_input_timing=" + JSONObject().put("diagnostic_only", true).put("events", inputTiming)); System.out.flush()
+      if (!completedGesture) {
+        val systemUi = runCatching { checkedShell("dumpsys -t 3 activity service com.android.systemui/.SystemUIService TaskbarDelegate") }.getOrElse { "capture_unavailable:" + it.javaClass.simpleName }
+        println("s047_predictive_system_ui=" + JSONObject().put("diagnostic_only", true).put("text", systemUi.take(65536))); System.out.flush()
       }
     }
   }

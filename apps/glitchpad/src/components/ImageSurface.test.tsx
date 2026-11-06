@@ -383,6 +383,138 @@ describe('read-only raster viewport', () => {
     }
     expect(motion.removeEventListener).toHaveBeenCalledWith('change', change);
   });
+  it('can pause while the next animation frame is still decoding and schedules no later frame', async () => {
+    vi.stubGlobal('matchMedia', () => ({
+      matches: false,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }));
+    const animationFrame = (selection: number) => {
+      const preview = result();
+      Object.assign(preview.preview!.descriptor, {
+        codec: 'gif',
+        family: 'animation',
+      });
+      preview.family_state = {
+        family: 'animation',
+        paused: true,
+        selected_frame: selection,
+        frame_count: 3,
+        loop_count: 0,
+        frame_duration_ms: 40,
+        max_composited_frames: 2,
+      };
+      return preview;
+    };
+    let completeFrame!: (value: ImageRenderResult) => void;
+    const renderFrame = vi.fn((session: ShellSession) => {
+      const selection = session.image_document?.selection ?? 0;
+      return selection === 1
+        ? new Promise<ImageRenderResult>((resolve) => {
+            completeFrame = resolve;
+          })
+        : Promise.resolve(animationFrame(selection));
+    });
+    const view = render(
+      <ImageSurface
+        session={imageSession()}
+        gateway={{ render: renderFrame }}
+      />,
+    );
+    await waitFor(() =>
+      expect(document.querySelector('.image-pane')).toHaveAttribute(
+        'data-preview-ready',
+        'true',
+      ),
+    );
+    vi.useFakeTimers();
+    try {
+      fireEvent.click(imageControl('Play'));
+      await act(() => vi.advanceTimersByTimeAsync(40));
+      expect(renderFrame).toHaveBeenCalledTimes(2);
+      expect(document.querySelector('.image-pane')).toHaveAttribute(
+        'data-preview-ready',
+        'false',
+      );
+      expect(imageControl('Pause')).toBeEnabled();
+      fireEvent.click(imageControl('Pause'));
+      expect(imageControl('Play')).toHaveAttribute('aria-pressed', 'false');
+      expect(imageControl('Play')).toBeDisabled();
+      await act(async () => {
+        completeFrame(animationFrame(1));
+        await Promise.resolve();
+      });
+      await act(() => vi.advanceTimersByTimeAsync(1000));
+      expect(renderFrame).toHaveBeenCalledTimes(2);
+      expect(document.querySelector('.image-pane')).toHaveAttribute(
+        'data-image-selection',
+        '1',
+      );
+      expect(imageControl('Play')).toHaveAttribute('aria-pressed', 'false');
+    } finally {
+      vi.useRealTimers();
+      view.unmount();
+    }
+  });
+  it('waits for the actual displayed frame before starting its playback duration', async () => {
+    decoder.disconnect();
+    vi.stubGlobal('matchMedia', () => ({
+      matches: false,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }));
+    const renderFrame = vi.fn((session: ShellSession) => {
+      const preview = result();
+      Object.assign(preview.preview!.descriptor, {
+        codec: 'gif',
+        family: 'animation',
+      });
+      preview.family_state = {
+        family: 'animation',
+        paused: true,
+        selected_frame: session.image_document?.selection ?? 0,
+        frame_count: 3,
+        loop_count: 0,
+        frame_duration_ms: 40,
+        max_composited_frames: 2,
+      };
+      return Promise.resolve(preview);
+    });
+    const view = render(
+      <ImageSurface
+        session={imageSession()}
+        gateway={{ render: renderFrame }}
+      />,
+    );
+    fireEvent.load(await screen.findByRole('img', { hidden: true }));
+    await waitFor(() =>
+      expect(document.querySelector('.image-pane')).toHaveAttribute(
+        'data-preview-ready',
+        'true',
+      ),
+    );
+    vi.useFakeTimers();
+    try {
+      fireEvent.click(imageControl('Play'));
+      await act(() => vi.advanceTimersByTimeAsync(40));
+      expect(renderFrame).toHaveBeenCalledTimes(2);
+      expect(document.querySelector('.image-pane')).toHaveAttribute(
+        'data-preview-ready',
+        'false',
+      );
+      await act(() => vi.advanceTimersByTimeAsync(200));
+      expect(renderFrame).toHaveBeenCalledTimes(2);
+      fireEvent.load(screen.getByRole('img', { hidden: true }));
+      await act(() => vi.advanceTimersByTimeAsync(39));
+      expect(renderFrame).toHaveBeenCalledTimes(2);
+      await act(() => vi.advanceTimersByTimeAsync(1));
+      expect(renderFrame).toHaveBeenCalledTimes(3);
+      fireEvent.click(imageControl('Pause'));
+    } finally {
+      vi.useRealTimers();
+      view.unmount();
+    }
+  });
   it('prevents playback when reduced motion already matches while retaining manual frame controls', async () => {
     vi.stubGlobal('matchMedia', () => ({
       matches: true,

@@ -434,6 +434,52 @@ test('Android delivery instrumentation gets a bounded clean-state retry without 
     'utf8',
   );
 
+  const topology = (await import('yaml')).parse(workflow);
+  const runtime = topology.jobs['android-instrumentation'];
+  const sourceExpression =
+    '${{ github.event.pull_request.head.sha || github.sha }}';
+  const manual = topology.on.workflow_dispatch?.inputs?.android_runtime;
+  assert.equal(manual?.type, 'choice');
+  assert.equal(
+    manual?.default,
+    'full',
+    'manual dispatch must retain full native qualification by default',
+  );
+  assert.deepEqual(manual?.options, ['full', 'source_only', 'back_diagnostic']);
+  assert.equal(
+    runtime.if,
+    "github.event_name != 'workflow_dispatch' || inputs.android_runtime != 'source_only'",
+  );
+  assert.equal(
+    runtime.steps.find((step) => step.name === 'Checkout').with.ref,
+    sourceExpression,
+  );
+  assert.equal(runtime.env.GLITCHPAD_BUILD_COMMIT, sourceExpression);
+  assert.equal(runtime.env.VITE_GLITCHPAD_BUILD_COMMIT, sourceExpression);
+  assert.ok(
+    runtime.strategy.matrix.includes(
+      "github.event_name == 'workflow_dispatch' && inputs.android_runtime == 'back_diagnostic'",
+    ),
+  );
+  const matrices = [...runtime.strategy.matrix.matchAll(/'(\{[^']+\})'/gu)].map(
+    (match) => JSON.parse(match[1]),
+  );
+  assert.deepEqual(matrices, [
+    { 'api-level': [36], role: ['ordinary'] },
+    { 'api-level': [24, 36], role: ['ordinary', 'fault_probe'] },
+  ]);
+  assert.equal(
+    topology.jobs['ci-ok'].name,
+    "${{ github.event_name == 'workflow_dispatch' && inputs.android_runtime != 'full' && format('{0}-ci', inputs.android_runtime) || 'ci-ok' }}",
+  );
+  assert.ok(
+    runtime.steps
+      .find((step) =>
+        step.uses?.startsWith('ReactiveCircus/android-emulator-runner@'),
+      )
+      .with.script.includes('"$GLITCHPAD_BUILD_COMMIT"'),
+  );
+
   assert.match(runner, /for attempt in 1 2; do/u);
   assert.match(
     runner,

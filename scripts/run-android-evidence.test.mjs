@@ -85,6 +85,7 @@ function run(script, state, args = [], environment = {}) {
 
 for (const [name, environment, expected] of [
   ['retains exact installed application and test APKs with source identity', {}, 0],
+  ['prefers the compiled PR head over the temporary merge ref', { GITHUB_SHA: 'b'.repeat(40) }, 0],
   ['labels the compiled-test fault variant separately from ordinary APKs', { GLITCHPAD_RECOVERY_PROBE_VARIANT: 'compiled_test_only' }, 0],
   ['rejects failed candidate installation before capture', { MOCK_INSTALL_FAILURE: '1' }, 1],
   ['rejects installed bytes differing from the built APK', { MOCK_MISMATCH: '1' }, 1],

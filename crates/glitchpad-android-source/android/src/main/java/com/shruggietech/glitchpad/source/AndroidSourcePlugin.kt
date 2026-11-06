@@ -516,6 +516,12 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
       override fun handleOnBackCancelled() { observeBack(2) }
       override fun handleOnBackPressed() {
         observeBack(3)
+        if (!hasListener("androidBackRequested")) {
+          pendingBack = null
+          observeBack(6)
+          delegateAndroidBack(owner, this)
+          return
+        }
         if (pendingBack != null) return
         val request = UUID.randomUUID().toString()
         pendingBack = request
@@ -538,9 +544,8 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
         if (!args.handled) {
           observeBack(6)
           val owner = activity as? OnBackPressedDispatcherOwner
-          backCallback?.isEnabled = false
-          try { owner?.onBackPressedDispatcher?.onBackPressed() }
-          finally { backCallback?.isEnabled = true }
+          val callback = backCallback
+          if (owner != null && callback != null) delegateAndroidBack(owner, callback)
         }
       }
       invoke.resolve()

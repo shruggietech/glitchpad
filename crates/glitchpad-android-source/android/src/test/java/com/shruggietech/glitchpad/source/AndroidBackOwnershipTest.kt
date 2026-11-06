@@ -7,6 +7,8 @@ import androidx.activity.OnBackPressedDispatcherOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleRegistry
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AndroidBackOwnershipTest {
@@ -51,15 +53,26 @@ class AndroidBackOwnershipTest {
     owner.registry.handleLifecycleEvent(Lifecycle.Event.ON_START)
     gesture(owner)
     assertEquals(1, source.started); assertEquals(1, source.progressed); assertEquals(1, source.cancelled)
-    source.isEnabled = false
-    owner.onBackPressedDispatcher.onBackPressed()
+    delegateAndroidBack(owner, source)
     assertEquals(1, framework.committed); assertEquals(0, source.committed)
-    source.isEnabled = true
+    assertTrue(source.isEnabled)
     owner.onBackPressedDispatcher.onBackPressed()
     assertEquals(1, source.committed)
     owner.registry.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
     owner.registry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
     owner.onBackPressedDispatcher.onBackPressed()
     assertEquals(2, owner.fallback); assertEquals(1, source.committed)
+  }
+  @Test fun fallbackFailureRestoresTheExistingSourceRoute() {
+    val owner = Owner(); val source = Callback(); val failure = IllegalStateException("controlled fallback")
+    owner.onBackPressedDispatcher.addCallback(owner, object : OnBackPressedCallback(true) {
+      override fun handleOnBackPressed() { throw failure }
+    })
+    registerAndroidBackCallback(owner, source)
+    owner.registry.handleLifecycleEvent(Lifecycle.Event.ON_START)
+    assertSame(failure, runCatching { delegateAndroidBack(owner, source) }.exceptionOrNull())
+    assertTrue(source.isEnabled)
+    owner.onBackPressedDispatcher.onBackPressed()
+    assertEquals(1, source.committed)
   }
 }

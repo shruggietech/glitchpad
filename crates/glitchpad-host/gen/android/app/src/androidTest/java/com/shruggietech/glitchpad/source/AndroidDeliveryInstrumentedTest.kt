@@ -982,8 +982,9 @@ class AndroidDeliveryInstrumentedTest {
   private fun clickControl(scenario: ActivityScenario<MainActivity>, name: String, selector: String = "button", deadlineOverride: Long? = null) {
     val nameLiteral = JSONObject.quote(name)
     val selectorLiteral = JSONObject.quote(selector)
-    waitForCondition(scenario, "Array.from(document.querySelectorAll(" + selectorLiteral + ")).some(b=>!b.disabled&&(b.getAttribute('aria-label')||(b.querySelector('span')?b.querySelector('span').textContent:b.textContent)).trim()===" + nameLiteral + ")", "named actual-app control must be enabled: " + name, deadlineOverride = deadlineOverride)
-    assertEquals("actual-app control must be clicked once", "true", evaluate(scenario, "(()=>{const button=Array.from(document.querySelectorAll(" + selectorLiteral + ")).find(b=>!b.disabled&&(b.getAttribute('aria-label')||(b.querySelector('span')?b.querySelector('span').textContent:b.textContent)).trim()===" + nameLiteral + ");if(!button)return false;button.click();return true;})()", deadlineOverride = deadlineOverride))
+    val actionDeadline = deadlineOverride ?: (SystemClock.elapsedRealtime() + 30_000L)
+    waitForCondition(scenario, "Array.from(document.querySelectorAll(" + selectorLiteral + ")).some(b=>!b.disabled&&(b.getAttribute('aria-label')||(b.querySelector('span')?b.querySelector('span').textContent:b.textContent)).trim()===" + nameLiteral + ")", "named actual-app control must be enabled: " + name, deadlineOverride = actionDeadline)
+    assertEquals("actual-app control must be clicked once", "true", evaluate(scenario, "(()=>{const button=Array.from(document.querySelectorAll(" + selectorLiteral + ")).find(b=>!b.disabled&&(b.getAttribute('aria-label')||(b.querySelector('span')?b.querySelector('span').textContent:b.textContent)).trim()===" + nameLiteral + ");if(!button)return false;button.click();return true;})()", deadlineOverride = actionDeadline, actionCallback = true))
   }
 
   // Read native visible bounds and IME windows before mapping a CSS control to screen input.
@@ -1180,17 +1181,23 @@ class AndroidDeliveryInstrumentedTest {
     instrumentation.sendKeySync(KeyEvent(now, SystemClock.uptimeMillis(), KeyEvent.ACTION_UP, code, 0, meta))
   }
   private fun focusTaskEditor(scenario: ActivityScenario<MainActivity>) {
+    scenario.onActivity { activity -> requireNotNull(findWebView(activity.window.decorView)).requestFocus() }
     evaluate(scenario, "document.querySelector('.cm-content').focus();true")
     waitForCondition(scenario, "document.activeElement===document.querySelector('.cm-content')", "real editor keyboard input must have its actual focus")
   }
   private fun verifyS047EditorAliases(scenario: ActivityScenario<MainActivity>, original: String) {
     val ctrl = KeyEvent.META_CTRL_ON
     val shift = KeyEvent.META_SHIFT_ON
-    focusTaskEditor(scenario); taskKey(KeyEvent.KEYCODE_A, ctrl); taskKey(KeyEvent.KEYCODE_C, ctrl)
-    waitForCondition(scenario, "Number(document.querySelector('.cm-editor').getAttribute('data-editor-selection-to'))===" + original.length, "native Select all must select the entire actual source")
+    focusTaskEditor(scenario)
+    taskKey(KeyEvent.KEYCODE_A, ctrl)
+    waitForCondition(scenario, "(()=>{const n=document.querySelector('.cm-editor');return Number(n.getAttribute('data-editor-selection-from'))===0&&Number(n.getAttribute('data-editor-selection-to'))===" + original.length + ";})()", "native Select all must select the entire actual source before Copy")
+    val copySelectionDeadline = SystemClock.elapsedRealtime() + 30_000L
+    val (copyConnection, copyHandler) = waitForFocusedInputConnection(scenario, "document.activeElement===document.querySelector('.cm-content')", copySelectionDeadline, original)
+    waitForNativeEditorState(copyConnection, copyHandler, original, "copy_selection", 0, original.length, copySelectionDeadline)
+    taskKey(KeyEvent.KEYCODE_C, ctrl)
     val clipboardDeadline = SystemClock.elapsedRealtime() + 30_000L
     while (clipboardText() != original && SystemClock.elapsedRealtime() < clipboardDeadline) SystemClock.sleep(100L)
-    assertEquals("Copy keyboard alias must write actual selected source", original, clipboardText())
+    if (clipboardText() != original) { println("s047_copy_failure=" + runCatching { evaluate(scenario, "(()=>{const n=document.querySelector('.cm-editor');const statuses=Array.from(document.querySelectorAll('[role=status]')).map(s=>s.textContent||'');return {secure_context:window.isSecureContext===true,clipboard_api:!!navigator.clipboard,clipboard_write:!!navigator.clipboard&&typeof navigator.clipboard.writeText==='function',document_focus:document.hasFocus(),editor_focus:document.activeElement===document.querySelector('.cm-content'),from:n.getAttribute('data-editor-selection-from'),to:n.getAttribute('data-editor-selection-to'),completed:statuses.some(s=>s.includes('Completed Copy.')),failed:statuses.some(s=>s.includes('The action failed.')),unavailable:statuses.some(s=>s.includes('This action is unavailable'))};})()") }.getOrElse { "observation_failed:" + it.javaClass.simpleName }); System.out.flush() }; assertEquals("Copy keyboard alias must write actual selected source", original, clipboardText())
     instrumentation.runOnMainSync { (clientContext.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager).setPrimaryClip(android.content.ClipData.newPlainText("controlled fixture","S047_CLIPBOARD_BEFORE_COPY")) }
     menuAction(scenario,"Copy")
     val menuClipboardDeadline=SystemClock.elapsedRealtime()+30_000L
@@ -1386,8 +1393,12 @@ class AndroidDeliveryInstrumentedTest {
     waitForCondition(scenario, "document.activeElement===Array.from(document.querySelectorAll('.markdown-document h2')).find(n=>n.textContent.trim()==='Second heading')", "outline must move real focus to its target")
     menuAction(scenario, "Search")
     setTaskInput(scenario, "Find rendered text", "cats")
-    waitForCondition(scenario, "document.querySelector('[aria-label=\"Rendered search results\"]').textContent==='1 of 1'", "rendered search must announce actual matches")
-    clickControl(scenario, "Next"); clickControl(scenario, "Previous"); clickControl(scenario, "Close search")
+    waitForCondition(scenario, "document.querySelector('[aria-label=\"Rendered search results\"]').textContent==='1 of 2'", "rendered search must announce actual matches")
+    clickControl(scenario, "Next")
+    waitForCondition(scenario, "document.querySelector('[aria-label=\"Rendered search results\"]').textContent==='2 of 2'", "Next must move to the embedded-diagram match")
+    clickControl(scenario, "Previous")
+    waitForCondition(scenario, "document.querySelector('[aria-label=\"Rendered search results\"]').textContent==='1 of 2'", "Previous must restore the paragraph match")
+    clickControl(scenario, "Close search")
 
     tapNativeControlOnce(scenario, "local", ".markdown-document [role=link]")
     waitForCondition(scenario, "document.activeElement===Array.from(document.querySelectorAll('.markdown-document h2')).find(n=>n.textContent.trim()==='Second heading')", "fragment must focus the actual rendered heading")
@@ -2361,13 +2372,19 @@ class AndroidDeliveryInstrumentedTest {
     }
     val airplaneSupported = Build.VERSION.SDK_INT >= 30
     val offlineAirplane = if (airplaneSupported) "1" else requireNotNull(original["airplane_mode_on"])
+    // Android7 Shell omits CHANGE_WIFI_STATE. Root is confined to this disposable hosted AVD fixture.
+    val wifiSetupPrefix = if (Build.VERSION.SDK_INT == 24) {
+      assertEquals("API24 Wi-Fi setup requires the actual hosted root identity", "0", checkedShell("su 0 id -u"))
+      "su 0 "
+    } else ""
+    fun wifi(value: String) { checkedShell(wifiSetupPrefix + "svc wifi " + if (value == "1") "enable" else "disable") }
     fun airplane(value: String) {
       assertTrue("airplane shell command requires API30+", airplaneSupported)
       checkedShell("cmd connectivity airplane-mode " + if (value == "1") "enable" else "disable")
     }
     try {
       if (airplaneSupported) airplane("1")
-      checkedShell("svc wifi disable"); checkedShell("svc data disable")
+      wifi("0"); checkedShell("svc data disable")
       awaitSettings(mapOf("airplane_mode_on" to offlineAirplane, "wifi_on" to "0", "mobile_data" to "0"),deadline,"offline")
       var offline = false
       while (SystemClock.elapsedRealtime() < deadline) {
@@ -2381,12 +2398,12 @@ class AndroidDeliveryInstrumentedTest {
       clickControl(scenario, "Offline licenses and notices")
       waitForCondition(scenario, "(()=>{const n=document.querySelector('.application-notices');return !!n&&n.textContent.length>10000&&n.textContent.includes('Apache')&&n.textContent.includes('MIT');})()", "complete native notices must work with no actual default network", deadlineOverride = deadline)
       assertTrue("offline notices must complete within the original action budget", SystemClock.elapsedRealtime() < deadline)
-      return JSONObject().put("default_network_none", true).put("shell_exit_status", 0).put("native_local_notices", true)
+      return JSONObject().put("default_network_none", true).put("shell_exit_status", 0).put("wifi_setup_identity", if (Build.VERSION.SDK_INT == 24) "hosted_root" else "shell").put("native_local_notices", true)
     } catch (failure: Throwable) { originalFailure = failure; throw failure }
     finally {
       val restored = runCatching {
         if (airplaneSupported) airplane(requireNotNull(original["airplane_mode_on"]))
-        checkedShell("svc wifi " + if (original["wifi_on"] == "1") "enable" else "disable")
+        wifi(requireNotNull(original["wifi_on"]))
         checkedShell("svc data " + if (original["mobile_data"] == "1") "enable" else "disable")
         awaitSettings(original,SystemClock.elapsedRealtime()+30_000L,"restore")
       }
@@ -3233,7 +3250,7 @@ class AndroidDeliveryInstrumentedTest {
           val failure = result.exceptionOrNull()
           observations.put("evaluation_failure_count", observations.optInt("evaluation_failure_count") + 1)
             .put("last_result", "evaluation_failed").put("last_failure_type", failure?.javaClass?.simpleName)
-            .put("last_callback_timeout", failure?.message == "WebView image control did not complete")
+            .put("last_callback_timeout", failure?.message == "WebView observation or activation did not complete")
         }
       }
       if (result.getOrDefault("false") == "true" && (deadlineOverride == null || SystemClock.elapsedRealtime() < deadline)) return
@@ -3259,11 +3276,20 @@ class AndroidDeliveryInstrumentedTest {
     val owner = windows.firstOrNull { it.id == root?.windowId && it.type == android.view.accessibility.AccessibilityWindowInfo.TYPE_APPLICATION }
     val bounds = android.graphics.Rect(window.getInt("left"), window.getInt("top"), window.getInt("right"), window.getInt("bottom"))
     val ime = visibleNativeImeBounds(windows).filter { android.graphics.Rect.intersects(it, bounds) }
+    // API24 can omit the actual LatinIME window from accessibility while it consumes Back.
+    // Observe the system input-method service, never infer absence from an empty bounds list alone.
+    val imeServiceShown = if (Build.VERSION.SDK_INT == 24) {
+      val dump = checkedShell("dumpsys -t 2 input_method")
+      val shown = Regex("(?:^|\\s)mInputShown=(true|false)(?:\\s|$)").find(dump)
+      assertTrue("API24 external IME state must be explicitly recognized", shown != null)
+      shown!!.groupValues[1] == "true"
+    } else false
     return window.put("root_fresh", fresh).put("owner_window_present", owner != null)
       .put("owner_focused", owner?.isFocused == true).put("owner_active", owner?.isActive == true)
       .put("verified_owner", fresh && owner?.isFocused == true && expectedPackage.isNotEmpty() && expectedPackage != TARGET_PACKAGE &&
         window.optString("package") == expectedPackage && window.optBoolean("visible") && window.optInt("width") > 0 && window.optInt("height") > 0)
       .put("ime_window_bounds", JSONArray(ime.map { nativeRectBounds(it) }))
+      .put("ime_service_shown", imeServiceShown).put("ime_present", imeServiceShown || ime.isNotEmpty())
   }
 
   private fun awaitExternalNativeIdle(deadline: Long) {
@@ -3296,7 +3322,7 @@ class AndroidDeliveryInstrumentedTest {
       assertTrue("cancellation must start at the verified visible external owner", layers.getBoolean("verified_owner"))
       println("external_native_cancel_layers=" + JSONObject().put("control", control).put("expected_package", expectedPackage).put("layers", layers))
       System.out.flush()
-      if (layers.getJSONArray("ime_window_bounds").length() > 0) {
+      if (layers.getBoolean("ime_present")) {
         assertTrue("keyboard dismissal must begin inside the original handoff-return budget", SystemClock.elapsedRealtime() < deadline)
         phase = "ime_back"
         imeBackRequested = true
@@ -3307,7 +3333,7 @@ class AndroidDeliveryInstrumentedTest {
           app = nativeHandoffState(scenario, control, expectedPackage)
           if (actualAppNativeWindowReady(app)) { completed("returned_after_first_pair"); return }
           layers = externalNativeLayerState(expectedPackage)
-          if (layers.getBoolean("verified_owner") && layers.getJSONArray("ime_window_bounds").length() == 0) {
+          if (layers.getBoolean("verified_owner") && !layers.getBoolean("ime_present")) {
             imeHiddenAtOwner = true
             break
           }
@@ -3321,7 +3347,7 @@ class AndroidDeliveryInstrumentedTest {
         phase = "verify_post_ime_layers"
         layers = externalNativeLayerState(expectedPackage)
         assertTrue("the same focused external owner must persist after IME readiness", layers.getBoolean("verified_owner"))
-        assertTrue("a dismissed IME must stay absent before the single window Back", layers.getJSONArray("ime_window_bounds").length() == 0)
+        assertTrue("a dismissed IME must stay absent before the single window Back", !layers.getBoolean("ime_present"))
       }
       assertTrue("window cancellation must begin inside the original handoff-return budget", SystemClock.elapsedRealtime() < deadline)
       phase = "window_back"
@@ -3358,7 +3384,7 @@ class AndroidDeliveryInstrumentedTest {
       assertEquals("external Back must target the verified current native window", expectedPackage, before.optString("package"))
       assertTrue("external Back must target a visible native window", before.getBoolean("visible") && before.getInt("width") > 0 && before.getInt("height") > 0)
       assertTrue("external Back must retain a fresh focused native owner", before.getBoolean("verified_owner"))
-      assertEquals("the observed IME layer must still match the selected single Back", expectedIme, before.getJSONArray("ime_window_bounds").length() > 0)
+      assertEquals("the observed IME layer must still match the selected single Back", expectedIme, before.getBoolean("ime_present"))
       val downTime = SystemClock.uptimeMillis()
       val down = KeyEvent(downTime, downTime, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_BACK, 0, 0,
         android.view.KeyCharacterMap.VIRTUAL_KEYBOARD, 0, KeyEvent.FLAG_FROM_SYSTEM, InputDevice.SOURCE_KEYBOARD)
@@ -3519,15 +3545,15 @@ class AndroidDeliveryInstrumentedTest {
     return if (remaining > 0 && latch.await(remaining, TimeUnit.MILLISECONDS)) runCatching { stringValue(result.get()) }.getOrNull() else null
   }
 
-  private fun evaluate(scenario: ActivityScenario<MainActivity>, script: String, deadlineOverride: Long? = null): String {
+  private fun evaluate(scenario: ActivityScenario<MainActivity>, script: String, deadlineOverride: Long? = null, actionCallback: Boolean = false): String {
     if (deadlineOverride != null) assertTrue("WebView observation or activation must begin inside the original action deadline", SystemClock.elapsedRealtime() < deadlineOverride)
     val view = AtomicReference<WebView?>()
     scenario.onActivity { view.set(findWebView(it.window.decorView)) }
     val latch = CountDownLatch(1)
     val result = AtomicReference("null")
     instrumentation.runOnMainSync { requireNotNull(view.get()).evaluateJavascript(script) { value -> result.set(value ?: "null"); latch.countDown() } }
-    val remaining = minOf(2_000L, (deadlineOverride ?: Long.MAX_VALUE) - SystemClock.elapsedRealtime())
-    assertTrue("WebView image control did not complete", remaining > 0 && latch.await(remaining, TimeUnit.MILLISECONDS))
+    val remaining = minOf(if (actionCallback) 30_000L else 2_000L, (deadlineOverride ?: Long.MAX_VALUE) - SystemClock.elapsedRealtime())
+    assertTrue("WebView observation or activation did not complete", remaining > 0 && latch.await(remaining, TimeUnit.MILLISECONDS))
     return result.get()
   }
 

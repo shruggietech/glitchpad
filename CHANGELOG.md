@@ -24,6 +24,8 @@ All notable changes to Glitchpad are documented in this file. The format follows
 
 - 2026-11-05 (S047): Keep Mermaid12.0.0 pinned and patch its private stylesheet construction for the minimum Android WebView using a disabled stylesheet in an isolated document. Preserve generated styles, sanitization, bounds and resource ownership; retain the original dependency license and patch provenance.
 
+- 2026-11-06 (S047): Bind the existing Android Back callback to activity lifecycle ownership and retain dispatcher fallback when no application listener is running. Preserve native focus and original action errors in Windows package qualification. Keep actual installed role/API results distinct from source, synthetic-browser and diagnostic evidence.
+
 ## [0.2.0] - 2026-11-03
 
 ### Changed

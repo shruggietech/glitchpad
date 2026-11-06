@@ -15,6 +15,7 @@ shift 2
 screenshot=""
 case "$*" in
   *#standaloneAuthoringAndDiagnosticJourneys*) screenshot="s046-authoring" ;;
+  *#s047BackJourney*) screenshot="s046-authoring" ;;
   *#addDocumentAtMaximumFontScale*) screenshot="s046-font-scale" ;;
   *#rootFailureRetainsDraft*) screenshot="s046-root-recovery" ;;
   *#governedMarkdownDeliveryRoutes*) screenshot="s046-markdown-delivery-failure" ;;

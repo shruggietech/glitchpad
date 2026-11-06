@@ -1523,8 +1523,10 @@ class AndroidDeliveryInstrumentedTest {
     tapNativeControlOnce(scenario, "Disclose External revision")
     clickControl(scenario, "Cancel")
     waitForCondition(scenario, "document.activeElement&&document.activeElement.getAttribute('aria-label')==='Disclose External revision'", "cancellation must restore the sensitive disclosure focus")
-    tapNativeControlOnce(scenario, "Disclose External revision")
-    val expected = stringValue(evaluate(scenario, "document.querySelector('.metadata-copy-confirmation').closest('.metadata-fact').querySelector('.metadata-value').textContent"))
+    val disclosureDeadline = SystemClock.elapsedRealtime() + 30_000L
+    tapNativeControlOnce(scenario, "Disclose External revision", deadlineOverride = disclosureDeadline)
+    waitForCondition(scenario, "(()=>{const confirmation=document.querySelector('.metadata-copy-confirmation');const fact=confirmation&&confirmation.closest('.metadata-fact');const value=fact&&fact.querySelector('.metadata-value');return !!fact&&fact.getAttribute('data-availability')==='available'&&fact.querySelector('dt').textContent==='External revision'&&!!value&&value.textContent.length>0;})()", "the single disclosure must render its actual available sensitive value before the clipboard baseline is read", deadlineOverride = disclosureDeadline)
+    val expected = stringValue(evaluate(scenario, "document.querySelector('.metadata-copy-confirmation').closest('.metadata-fact').querySelector('.metadata-value').textContent", deadlineOverride = disclosureDeadline))
     tapNativeControlOnce(scenario, "Copy External revision")
     waitForBodyText(scenario, "External revision copied")
     assertEquals(expected, clipboardText())

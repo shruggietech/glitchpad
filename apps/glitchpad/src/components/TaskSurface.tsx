@@ -46,6 +46,7 @@ interface Props {
   children: ReactNode;
   viewport?: DiagnosticExportGateway['viewport'];
   opener?: HTMLElement | null;
+  restoreFocus?: (target: HTMLElement) => void;
   modal?: boolean;
   className?: string;
   canClose?: boolean;
@@ -59,6 +60,7 @@ export function TaskSurface({
   children,
   viewport,
   opener,
+  restoreFocus,
   modal = true,
   className = '',
   canClose = true,
@@ -223,7 +225,10 @@ export function TaskSurface({
               !target?.closest('.document-surface')
             )
               return;
-            target?.focus({ preventScroll: true });
+            if (target) {
+              if (restoreFocus) restoreFocus(target);
+              else target.focus({ preventScroll: true });
+            }
           }}
         >
           <header className="task-surface-heading">

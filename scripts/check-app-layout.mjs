@@ -59,6 +59,8 @@ export function installDocumentToolsSeams() {
   const sources = new Map();
   let serial = 0;
   window.__toolsChoice = 'text';
+  window.__toolsReadOnly = false;
+  window.__toolsLastSourceId = null;
   window.__toolsClipboard = null;
   const text = 'cat Cat scatter cat\nsecond line\n';
   const markdown =
@@ -66,6 +68,8 @@ export function installDocumentToolsSeams() {
   const diagram = 'flowchart TB\n  Alpha[Alpha] --> Beta[Beta]\n';
   function source(kind) {
     const id = 'tools-' + ++serial;
+    const writable = kind !== 'large' && !window.__toolsReadOnly;
+    window.__toolsLastSourceId = id;
     const content =
       kind === 'markdown'
         ? markdown
@@ -111,7 +115,7 @@ export function installDocumentToolsSeams() {
         observe_revision: false,
         revalidate: false,
         watch: false,
-        write: kind !== 'large',
+        write: writable,
         replace_atomically: false,
         persistent_permission: false,
         rename: false,
@@ -127,7 +131,7 @@ export function installDocumentToolsSeams() {
       delivery_kind: 'open_document',
       grant: {
         read: true,
-        write: kind !== 'large',
+        write: writable,
         persisted_read: false,
         persisted_write: false,
         restorable: false,
@@ -537,6 +541,7 @@ export async function checkAppLayout({
     'apps/glitchpad/src/components/PreferencesPanel.tsx',
     'apps/glitchpad/src/components/DocumentTools.css',
     'apps/glitchpad/src/domain/commands.ts',
+    'apps/glitchpad/src/domain/drafts.ts',
     'apps/glitchpad/src/domain/metadata.ts',
     'apps/glitchpad/src/runtime-polyfills.ts',
     'scripts/check-app-layout.mjs',
@@ -1957,6 +1962,256 @@ export async function checkAppLayout({
               await command('Edit');
               await page.waitForSelector('.cm-content');
               await command('Read');
+              const sourceBeforeCopy = await page.$eval(
+                '.document-surface',
+                function (node) {
+                  return node.id;
+                },
+              );
+              await page.evaluate(function () {
+                window.__toolsReadOnly = true;
+                window.__toolsChoice = 'mermaid';
+              });
+              await click('Add document');
+              await page.waitForSelector('.add-document-menu');
+              await click('Open file', '.add-document-menu button');
+              await page.waitForFunction(
+                function (previous) {
+                  return (
+                    document.querySelector('.document-surface').id !== previous
+                  );
+                },
+                {},
+                sourceBeforeCopy,
+              );
+              await page.waitForSelector(
+                '.mermaid-rendered-mode[data-performance-ready=true]',
+              );
+              const originalProvider = await page.evaluate(function () {
+                return window.__toolsLastSourceId;
+              });
+              const sourceBytes = await page.evaluate(function (id) {
+                return window.__TAURI_INTERNALS__.invoke('read_android_range', {
+                  sourceId: id,
+                  offset: 0,
+                  length: 65536,
+                });
+              }, originalProvider);
+              await command('Edit a copy');
+              row.copy_phase = 'editable_copy';
+              await page.waitForSelector('.document-tools-menu', {
+                hidden: true,
+              });
+              await page.waitForSelector(
+                '.mermaid-source-mode .cm-content[contenteditable=true]',
+              );
+              const copyTarget = await captureTaskControl(
+                page,
+                '.mermaid-source-mode .cm-content',
+                0,
+              );
+              row.copy_target = copyTarget;
+              const copyPoint = await page.$eval(
+                '.mermaid-source-mode .cm-content',
+                function (node) {
+                  const r = node.getBoundingClientRect();
+                  const s = node
+                    .closest('.cm-scroller')
+                    .getBoundingClientRect();
+                  const left = Math.max(r.left, s.left, 0),
+                    right = Math.min(r.right, s.right, innerWidth),
+                    top = Math.max(r.top, s.top, 0),
+                    bottom = Math.min(r.bottom, s.bottom, innerHeight);
+                  const x = left + Math.min(16, (right - left) / 2),
+                    y = top + Math.min(16, (bottom - top) / 2),
+                    hit = document.elementFromPoint(x, y);
+                  return { x, y, hit: hit === node || node.contains(hit) };
+                },
+              );
+              assert.equal(
+                copyPoint.hit,
+                true,
+                'Mermaid source input must use an actual visible editor point',
+              );
+              await page.mouse.click(copyPoint.x, copyPoint.y);
+              await page.keyboard.down('Control');
+              await page.keyboard.press('a');
+              await page.keyboard.up('Control');
+              await page.keyboard.type('flowchart TB');
+              row.copy_phase = 'typed_header';
+              await page.waitForFunction(function () {
+                return (
+                  Array.from(
+                    document.querySelectorAll(
+                      '.mermaid-source-mode .cm-content .cm-line',
+                    ),
+                  )
+                    .map(function (n) {
+                      return n.textContent;
+                    })
+                    .join('\n') === 'flowchart TB'
+                );
+              });
+              await page.keyboard.press('Enter');
+              row.copy_enter_observation = await page.evaluate(function () {
+                const editor = document.querySelector(
+                  '.mermaid-source-mode .cm-content',
+                );
+                const node = editor && editor.closest('.cm-editor');
+                return {
+                  text: Array.from(
+                    editor ? editor.querySelectorAll('.cm-line') : [],
+                  )
+                    .map(function (n) {
+                      return n.textContent;
+                    })
+                    .join('\n'),
+                  focused: document.activeElement === editor,
+                  active: document.activeElement
+                    ? document.activeElement.getAttribute('aria-label')
+                    : null,
+                  from: node
+                    ? node.getAttribute('data-editor-selection-from')
+                    : null,
+                  to: node
+                    ? node.getAttribute('data-editor-selection-to')
+                    : null,
+                };
+              });
+              row.copy_phase = 'first_newline';
+              await page.waitForFunction(function () {
+                return (
+                  Array.from(
+                    document.querySelectorAll(
+                      '.mermaid-source-mode .cm-content .cm-line',
+                    ),
+                  )
+                    .map(function (n) {
+                      return n.textContent;
+                    })
+                    .join('\n') === 'flowchart TB\n'
+                );
+              });
+              await page.keyboard.type('  Alpha --> CopyResult');
+              const copiedText = 'flowchart TB\n  Alpha --> CopyResult';
+              row.copy_phase = 'exact_source';
+              row.copy_observation = await page.evaluate(function () {
+                const root = document.querySelector('.mermaid-surface');
+                const editor = document.querySelector(
+                  '.mermaid-source-mode .cm-content',
+                );
+                return {
+                  mode: root ? root.className : null,
+                  text: Array.from(
+                    editor ? editor.querySelectorAll('.cm-line') : [],
+                  )
+                    .map(function (n) {
+                      return n.textContent;
+                    })
+                    .join('\n'),
+                  focused: document.activeElement === editor,
+                };
+              });
+              await page.waitForFunction(
+                function (expected) {
+                  return (
+                    Array.from(
+                      document.querySelectorAll(
+                        '.mermaid-source-mode .cm-content .cm-line',
+                      ),
+                    )
+                      .map(function (n) {
+                        return n.textContent;
+                      })
+                      .join('\n') === expected
+                  );
+                },
+                {},
+                copiedText,
+              );
+              const copyState = await page.$eval(
+                '.mermaid-source-mode .cm-editor',
+                function (node) {
+                  window.__mermaidCopyEditor = node;
+                  return {
+                    from: node.dataset.editorSelectionFrom,
+                    to: node.dataset.editorSelectionTo,
+                    undo: node.dataset.editorUndoDepth,
+                    redo: node.dataset.editorRedoDepth,
+                  };
+                },
+              );
+              row.copy_phase = 'preview_ready';
+              await page.waitForSelector(
+                '.mermaid-source-mode[data-performance-ready=true]',
+              );
+              row.copy_phase = 'render_copy';
+              await command('Read');
+              await page.waitForFunction(async function () {
+                const image = document.querySelector(
+                  '.mermaid-rendered-mode .diagram-canvas img',
+                );
+                if (!image || !image.complete || image.naturalWidth === 0)
+                  return false;
+                const svg = await fetch(image.src)
+                  .then(function (r) {
+                    return r.text();
+                  })
+                  .catch(function () {
+                    return '';
+                  });
+                return svg.includes('CopyResult');
+              });
+              await command('Edit');
+              await page.waitForSelector(
+                '.mermaid-source-mode .cm-content[contenteditable=true]',
+              );
+              const restoredCopy = await page.$eval(
+                '.mermaid-source-mode .cm-editor',
+                function (node) {
+                  return {
+                    same: node === window.__mermaidCopyEditor,
+                    text: Array.from(node.querySelectorAll('.cm-line'))
+                      .map(function (n) {
+                        return n.textContent;
+                      })
+                      .join('\n'),
+                    state: {
+                      from: node.dataset.editorSelectionFrom,
+                      to: node.dataset.editorSelectionTo,
+                      undo: node.dataset.editorUndoDepth,
+                      redo: node.dataset.editorRedoDepth,
+                    },
+                  };
+                },
+              );
+              assert.equal(
+                restoredCopy.same,
+                true,
+                'Mermaid copy Read/Edit must retain the actual source editor',
+              );
+              assert.equal(restoredCopy.text, copiedText);
+              assert.deepEqual(restoredCopy.state, copyState);
+              const originalAfterCopy = await page.evaluate(function (id) {
+                return window.__TAURI_INTERNALS__.invoke('read_android_range', {
+                  sourceId: id,
+                  offset: 0,
+                  length: 65536,
+                });
+              }, originalProvider);
+              assert.deepEqual(
+                originalAfterCopy.bytes,
+                sourceBytes.bytes,
+                'Editing a Mermaid copy must preserve the independent original source bytes',
+              );
+              row.outcomes.push({
+                id: 'CTRL-034/062-063',
+                mermaid_copy: true,
+                rendered_copy_label: 'CopyResult',
+                exact_source: copiedText,
+                retained_editor_and_history: true,
+                original_unchanged: true,
+              });
               row.outcomes.push({
                 id: 'CTRL-034/062-063',
                 matching_label: true,
@@ -2025,6 +2280,7 @@ export async function checkAppLayout({
                 );
               });
               await click('Disclose External revision');
+              await page.waitForSelector('.metadata-copy-confirmation');
               const sensitiveValue = await page.$eval(
                 '.metadata-copy-confirmation',
                 function (node) {

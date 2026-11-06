@@ -248,12 +248,14 @@ it('keeps focus inside the remaining decision instead of restoring an outside op
   const outside = document.createElement('button');
   outside.textContent = 'Outside opener';
   document.body.append(outside);
+  const restoreFocus = vi.fn((target: HTMLElement) => target.focus());
   const layers = (normalOpen: boolean, decisionOpen: boolean) => (
     <>
       <TaskSurface
         open={normalOpen}
         title="Normal task"
         opener={outside}
+        restoreFocus={restoreFocus}
         onOpenChange={() => undefined}
       >
         <button>Normal action</button>
@@ -284,6 +286,7 @@ it('keeps focus inside the remaining decision instead of restoring an outside op
   ).toBeInTheDocument();
   expect(outside).not.toHaveFocus();
   expect(action).toHaveFocus();
+  expect(restoreFocus).not.toHaveBeenCalled();
   outside.remove();
 });
 

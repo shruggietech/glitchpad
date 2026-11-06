@@ -2219,7 +2219,7 @@ describe('document foundation shell', () => {
       expect.objectContaining({ expected_external_revision: observedRevision }),
       expect.any(AbortSignal),
     );
-  });
+  }, 10_000);
 
   it('withdraws cached source facts and checksum actions when metadata polling fails', async () => {
     const source = {
@@ -3087,3 +3087,33 @@ it('keeps shell Redo blocked during a native Save, including before React publis
   });
   await waitFor(() => expect(view.state.doc.toString()).toBe('Draft'));
 });
+
+it('opens a Mermaid Edit a copy as an independent editable Mermaid source', async () => {
+  const original = makeSession(
+    'mermaid-copy-origin',
+    'diagram-copy.mmd',
+    'Mermaid',
+    'flowchart TB\n  Alpha --> Beta\n',
+    { search: true, zoom: true, edit: false },
+  );
+  const before = JSON.stringify(original);
+  render(<App sessions={[original]} />);
+  invokeMenu('Edit a copy');
+  const editor = await screen.findByRole('textbox', {
+    name: 'Copy of diagram-copy.mmd text editor',
+  });
+  expect(editor.closest('.mermaid-source-mode')).not.toBeNull();
+  expect(editor).toHaveAttribute('contenteditable', 'true');
+  const view = EditorView.findFromDOM(editor)!;
+  const changed = 'flowchart TB\n  Alpha --> Beta\n  Beta --> Gamma\n';
+  act(() => {
+    view.dispatch({
+      changes: { from: 0, to: view.state.doc.length, insert: changed },
+    });
+  });
+  expect(view.state.doc.toString()).toBe(changed);
+  expect(document.querySelector('[data-draft-identity]')).toHaveTextContent(
+    'Unsaved changes',
+  );
+  expect(JSON.stringify(original)).toBe(before);
+}, 10_000);

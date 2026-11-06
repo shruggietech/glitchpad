@@ -169,12 +169,14 @@
   flex: 1 1 0;
   min-height: 0;
 }
-.markdown-source-editor {
+.markdown-source-editor,
+.mermaid-source-editor {
   display: flex;
   flex-direction: column;
   min-width: 0;
 }
-.markdown-source-editor > .text-editor-shell {
+.markdown-source-editor > .text-editor-shell,
+.mermaid-source-editor > .text-editor-shell {
   flex: 1 1 0;
   min-width: 0;
   min-height: 0;

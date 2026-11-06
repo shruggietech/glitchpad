@@ -255,6 +255,11 @@ export const TextEditorSurface = forwardRef<
     );
     searchAction.current = '';
   };
+  const restoreEditorFocus = (target: HTMLElement) => {
+    const view = viewRef.current;
+    if (view && target === view.contentDOM) view.focus();
+    else target.focus({ preventScroll: true });
+  };
   const closeFind = () => {
     const view = viewRef.current;
     if (view) closeSearchPanel(view);
@@ -730,6 +735,7 @@ export const TextEditorSurface = forwardRef<
   return (
     <div className="text-editor-shell document-tools-editor">
       <TaskSurface
+        restoreFocus={restoreEditorFocus}
         open={searchOpen}
         onOpenChange={(open) => {
           if (!open) closeFind();
@@ -765,6 +771,7 @@ export const TextEditorSurface = forwardRef<
           : 'Wrap lines off for this document'}
       </span>
       <TaskSurface
+        restoreFocus={restoreEditorFocus}
         open={lineOpen}
         onOpenChange={(open) => {
           if (!open) closeLine();
@@ -800,6 +807,7 @@ export const TextEditorSurface = forwardRef<
         </form>
       </TaskSurface>
       <TaskSurface
+        restoreFocus={restoreEditorFocus}
         open={detailsOpen}
         onOpenChange={setDetailsOpen}
         title="Document details"

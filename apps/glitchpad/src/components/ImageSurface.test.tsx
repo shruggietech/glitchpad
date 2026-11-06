@@ -13,6 +13,7 @@ import {
   recordFailure,
 } from '../domain/diagnostic-failures';
 import { ImageSurface } from './ImageSurface';
+import { ImagePreviewError } from '../domain/image-gateway';
 import type { TextEditorHandle } from './TextEditorSurface';
 import {
   createImageSession,
@@ -262,6 +263,75 @@ describe('read-only raster viewport', () => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
+  it('rerenders the settled current image for a recovery generation and retries the native failure once', async () => {
+    const current = { ...imageSession(), lifecycle: 'active' as const };
+    const originalSource = JSON.stringify(current.source);
+    const ref = createRef<TextEditorHandle>();
+    const nativeFailure = new ImagePreviewError({
+      kind: 'host_transport',
+      retryable: true,
+    });
+    const renderImage = vi
+      .fn<
+        (
+          session: ShellSession,
+          signal: AbortSignal,
+        ) => Promise<ImageRenderResult>
+      >()
+      .mockResolvedValueOnce(result())
+      .mockRejectedValueOnce(nativeFailure)
+      .mockResolvedValueOnce(result());
+    const gateway = { render: renderImage };
+    const { rerender } = render(
+      <ImageSurface
+        ref={ref}
+        session={current}
+        gateway={gateway}
+        recoveryProbeGeneration={0}
+      />,
+    );
+    await waitFor(() =>
+      expect(
+        document.querySelector('[data-preview-ready=true]'),
+      ).not.toBeNull(),
+    );
+    expect(renderImage).toHaveBeenCalledTimes(1);
+    rerender(
+      <ImageSurface
+        ref={ref}
+        session={current}
+        gateway={gateway}
+        recoveryProbeGeneration={1}
+      />,
+    );
+    await waitFor(() =>
+      expect(
+        document.querySelector('[data-preview-failure=host_transport]'),
+      ).not.toBeNull(),
+    );
+    expect(renderImage).toHaveBeenCalledTimes(2);
+    expect(ref.current!.invoke('fit')).toBe(false);
+    expect(ref.current!.invoke('zoom_in')).toBe(false);
+    expect(screen.queryByRole('img', { hidden: true })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Retry preview' }));
+    await waitFor(() =>
+      expect(
+        document.querySelector('[data-preview-ready=true]'),
+      ).not.toBeNull(),
+    );
+    expect(renderImage).toHaveBeenCalledTimes(3);
+    expect(
+      renderImage.mock.calls.every(
+        ([session]) =>
+          session.id === current.id && session.source_id === current.source_id,
+      ),
+    ).toBe(true);
+    expect(JSON.stringify(current.source)).toBe(originalSource);
+    expect(
+      document.querySelector('[data-preview-failure=host_transport]'),
+    ).toBeNull();
+  });
+
   it('pauses active animation when reduced motion changes and schedules no subsequent frames', async () => {
     let change!: () => void;
     const motion = {

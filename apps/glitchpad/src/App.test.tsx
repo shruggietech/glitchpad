@@ -2228,8 +2228,9 @@ describe('document foundation shell', () => {
       source_id: 'source',
       external_revision: revision,
     };
+    let rejectPoll: (error: unknown) => void = () => undefined;
     const query = vi
-      .fn()
+      .fn<MetadataGateway['query']>()
       .mockResolvedValueOnce({
         source_id: 'source',
         external_revision: revision,
@@ -2242,7 +2243,12 @@ describe('document foundation shell', () => {
         write_state: 'writable' as const,
         identity_confidence: 'strong' as const,
       })
-      .mockRejectedValue(new Error('source unavailable'));
+      .mockImplementation(
+        () =>
+          new Promise((_resolve, reject) => {
+            rejectPoll = reject;
+          }),
+      );
     const gateway: MetadataGateway = {
       query,
       startIntegrity: vi.fn(),
@@ -2251,11 +2257,21 @@ describe('document foundation shell', () => {
     };
     render(<App sessions={[source]} metadataGateway={gateway} />);
     invokeMenu('File information');
+    const inspector = await screen.findByRole('complementary');
     expect(
-      await screen.findByRole('button', { name: 'Calculate SHA-256' }),
+      await within(inspector).findByRole('button', {
+        name: 'Calculate SHA-256',
+      }),
     ).toBeInTheDocument();
     await waitFor(() => expect(query).toHaveBeenCalledTimes(2), {
       timeout: 2_000,
+    });
+    expect(
+      within(inspector).getByRole('button', { name: 'Calculate SHA-256' }),
+    ).toBeInTheDocument();
+    await act(async () => {
+      rejectPoll(new Error('source unavailable'));
+      await Promise.resolve();
     });
     await waitFor(() =>
       expect(
@@ -2266,11 +2282,16 @@ describe('document foundation shell', () => {
           ),
       ).toBe(true),
     );
+    const unavailableInspector = screen.getByRole('complementary');
     expect(
-      screen.queryByRole('button', { name: 'Calculate SHA-256' }),
+      within(unavailableInspector).queryByRole('button', {
+        name: 'Calculate SHA-256',
+      }),
     ).not.toBeInTheDocument();
     expect(
-      screen.getAllByText('Unavailable (metadata_unavailable)').length,
+      within(unavailableInspector).getAllByText(
+        'Unavailable (metadata_unavailable)',
+      ).length,
     ).toBeGreaterThan(0);
   });
 
@@ -2326,8 +2347,11 @@ describe('document foundation shell', () => {
     };
     render(<App sessions={[source]} metadataGateway={gateway} />);
     invokeMenu('File information');
+    const inspector = await screen.findByRole('complementary');
     fireEvent.click(
-      await screen.findByRole('button', { name: 'Calculate SHA-256' }),
+      await within(inspector).findByRole('button', {
+        name: 'Calculate SHA-256',
+      }),
     );
     await waitFor(() => expect(advanceIntegrity).toHaveBeenCalled());
     fireEvent.click(
@@ -2335,15 +2359,18 @@ describe('document foundation shell', () => {
     );
     await waitFor(() => expect(cancelIntegrity).toHaveBeenCalledOnce());
     invokeMenu('File information');
+    const reopenedInspector = await screen.findByRole('complementary');
     expect
       .soft(
-        screen
+        within(reopenedInspector)
           .getByText('SHA-256', { selector: 'dt' })
           .closest('.metadata-fact'),
       )
       .toHaveAttribute('data-availability', 'not_provided');
     fireEvent.click(
-      await screen.findByRole('button', { name: 'Calculate SHA-256' }),
+      await within(reopenedInspector).findByRole('button', {
+        name: 'Calculate SHA-256',
+      }),
     );
     await waitFor(() => expect(advanceIntegrity).toHaveBeenCalledTimes(2));
     const currentId = startIntegrity.mock.calls[1][0].request_id;

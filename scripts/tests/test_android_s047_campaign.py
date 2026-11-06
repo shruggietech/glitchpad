@@ -134,12 +134,12 @@ echo "$*" >> "$VALIDATION"
         script=re.search(r'val script = ('+literal+r') \+ command \+ ('+literal+r')',helper)
         output=re.search(r'val output = shellOutput\(('+literal+r') \+ encoded \+ ('+literal+r')\)',helper)
         self.assertIsNotNone(script);self.assertIsNotNone(output)
-        self.assertIn('"\\\\0%03o".format(it.toInt() and 0xff)',helper)
+        self.assertIn('"\\\\%03o".format(it.toInt() and 0xff)',helper)
         prefix,suffix=map(decode,script.groups());before,after=map(decode,output.groups())
         cases=[]
         for command,expected,expected_output in (("printf fixture",0,"fixture"),("printf '%s' 'Unicode Ω two words'",0,"Unicode Ω two words"),("printf '%s' \"single ' double \\\" dollar \\$ semicolon ; Ω\"",0,"single ' double \" dollar $ semicolon ; Ω"),("exit 7",7,"")):
             source=prefix+command+suffix
-            encoded=''.join('\\0'+format(byte,'03o') for byte in source.encode('utf-8'))
+            encoded=''.join('\\'+format(byte,'03o') for byte in source.encode('utf-8'))
             actual=before+encoded+after
             self.assertEqual(len(actual.split()),3,'the whole -c script must survive Runtime.exec whitespace tokenization')
             cases.append((actual,expected,expected_output))

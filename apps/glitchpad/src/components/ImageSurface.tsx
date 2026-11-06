@@ -28,6 +28,7 @@ import './ImageSurface.css';
 interface Props {
   session: ShellSession;
   gateway?: ImageGateway;
+  recoveryProbeGeneration?: number;
   onImageChange?: (
     id: string,
     expectedRevision: number,
@@ -41,7 +42,13 @@ const clamp = (value: number, low: number, high: number) =>
 
 export const ImageSurface = forwardRef<TextEditorHandle, Props>(
   function ImageSurface(
-    { session, gateway = nativeImageGateway, onImageChange, onOpenMetadata },
+    {
+      session,
+      gateway = nativeImageGateway,
+      recoveryProbeGeneration = 0,
+      onImageChange,
+      onOpenMetadata,
+    },
     handleRef,
   ) {
     const pane = useRef<HTMLDivElement>(null);
@@ -270,6 +277,7 @@ export const ImageSurface = forwardRef<TextEditorHandle, Props>(
       visible,
       selection,
       session.source_state,
+      recoveryProbeGeneration,
     ]);
 
     useEffect(

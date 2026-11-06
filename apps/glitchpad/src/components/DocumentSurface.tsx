@@ -199,6 +199,7 @@ export const DocumentSurface = forwardRef<
       ref={ref}
       key={session.id}
       session={session}
+      recoveryProbeGeneration={recoveryProbeGeneration}
       onImageChange={onImageChange}
       onOpenMetadata={onOpenMetadata}
     />

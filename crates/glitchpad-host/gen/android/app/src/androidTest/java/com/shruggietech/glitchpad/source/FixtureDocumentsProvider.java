@@ -25,7 +25,7 @@ public final class FixtureDocumentsProvider extends DocumentsProvider {
   private static final java.util.concurrent.ConcurrentHashMap<String, java.util.concurrent.atomic.AtomicInteger> READ_FAILURES = new java.util.concurrent.ConcurrentHashMap<>();
 
   static Bundle configureReadFailure(String documentId, int allowedReads) {
-    if (allowedReads < 0 || allowedReads > 4) throw new IllegalArgumentException("fixture_read_budget_invalid");
+    if (allowedReads < 0 || allowedReads > 8) throw new IllegalArgumentException("fixture_read_budget_invalid");
     READ_FAILURES.put(documentId, new java.util.concurrent.atomic.AtomicInteger(allowedReads));
     Bundle result = new Bundle(); result.putInt("provider_process_id", android.os.Process.myPid()); return result;
   }

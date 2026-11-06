@@ -55,6 +55,13 @@ class AndroidDeliveryInstrumentedTest {
   @Before
   fun requireRunnerOwnedCompletion() {
     assertEquals("Dedicated Tauri UI instrumentation must own terminal completion", "false", InstrumentationRegistry.getArguments().getString("waitForActivitiesToComplete"))
+    val power = clientContext.getSystemService(android.content.Context.POWER_SERVICE) as android.os.PowerManager
+    val keyguard = clientContext.getSystemService(android.content.Context.KEYGUARD_SERVICE) as android.app.KeyguardManager
+    if (!power.isInteractive) shellOutput("input keyevent 224")
+    if (keyguard.isKeyguardLocked) shellOutput("input keyevent 82")
+    val inputDeadline = SystemClock.elapsedRealtime() + 10_000L
+    while ((!power.isInteractive || keyguard.isKeyguardLocked) && SystemClock.elapsedRealtime() < inputDeadline) SystemClock.sleep(100L)
+    assertTrue("hosted UI fixture must be interactive and unlocked before app actions", power.isInteractive && !keyguard.isKeyguardLocked)
   }
 
   @After
@@ -72,6 +79,14 @@ class AndroidDeliveryInstrumentedTest {
       }
       grantedUris.clear()
     }
+  }
+
+  @Test fun shellCommandTransportPreservesFixtureBytesAndExitStatus() {
+    assertEquals("fixture Ω two words", checkedShell("printf '%s' 'fixture Ω two words'"))
+    assertEquals("line one\nline two", checkedShell("printf 'line one\\nline two'"))
+    assertEquals("", checkedShell(":"))
+    val failed = runCatching { checkedShell("exit 7") }.exceptionOrNull()
+    assertTrue("a nonzero native command must expose its actual exit status rather than a missing marker", failed is AssertionError && failed.message?.contains("expected:<0> but was:<7>") == true)
   }
 
   @Test
@@ -821,11 +836,13 @@ class AndroidDeliveryInstrumentedTest {
     openFromAddDocument(scenario, grant(documentUri("original.png")))
     waitForImagePixels(scenario, "original.png")
     menuAction(scenario, "Zoom in")
-    waitForCondition(scenario, "document.querySelector('output[aria-label=\"Image zoom\"]').textContent==='125%'", "menu Zoom must change the actual image viewport")
+    val imageOwner = stringValue(evaluate(scenario, "document.querySelector('.document-surface').id"))
+    fun imageScaleIs(scale: Double, label: String): String = "(()=>{const owner=document.querySelector('.document-surface');const pane=owner&&owner.querySelector('.image-pane');const output=owner&&owner.querySelector('output[aria-label=\"Image zoom\"]');return !!pane&&!!output&&owner.id===" + JSONObject.quote(imageOwner) + "&&Math.abs(Number(pane.getAttribute('data-viewport-scale'))-" + scale + ")<0.0001&&output.textContent===" + JSONObject.quote(label) + ";})()"
+    waitForCondition(scenario, imageScaleIs(1.25, "125%"), "menu Zoom must change the actual current image viewport")
     clickControl(scenario, "Zoom in")
-    waitForCondition(scenario, "document.querySelector('output[aria-label=\"Image zoom\"]').textContent==='156%'", "local Zoom must continue the same viewport state")
+    waitForCondition(scenario, imageScaleIs(1.5625, "156.3%"), "local Zoom must multiply the same current viewport scale and display its truthful rounded percentage")
     menuAction(scenario, "Fit")
-    waitForCondition(scenario, "document.querySelector('output[aria-label=\"Image zoom\"]').textContent==='100%'", "menu Fit must reset the same viewport")
+    waitForCondition(scenario, imageScaleIs(1.0, "100%"), "menu Fit must reset the same current viewport")
   }
 
   private fun verifyDiagnosticTasks(scenario: ActivityScenario<MainActivity>, destination: Uri, refused: Uri) {
@@ -1064,11 +1081,42 @@ class AndroidDeliveryInstrumentedTest {
     waitForNativeEditorState(current, dispatch, text, "task_input_committed", text.length, text.length, deadlineOverride = deadline)
   }
   private fun chooseTaskOption(scenario: ActivityScenario<MainActivity>, label: String, index: Int, expected: String) {
-    tapNativeControlOnce(scenario, label, "select")
-    instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_MOVE_HOME)
-    repeat(index) { instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_DOWN) }
-    instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_ENTER)
-    waitForCondition(scenario, "Array.from(document.querySelectorAll('select')).some(n=>(n.getAttribute('aria-label')===" + JSONObject.quote(label) + "||(n.labels&&Array.from(n.labels).some(l=>l.textContent.trim().startsWith(" + JSONObject.quote(label) + "))))&&n.value===" + JSONObject.quote(expected) + ")", "actual native option selection must update the intended setting")
+    val deadline = SystemClock.elapsedRealtime() + 30_000L
+    val field = "Array.from(document.querySelectorAll('select')).find(n=>!n.disabled&&!n.closest('[aria-hidden=true],[inert]')&&(n.getAttribute('aria-label')===" + JSONObject.quote(label) + "||(n.labels&&Array.from(n.labels).some(l=>l.textContent.trim().startsWith(" + JSONObject.quote(label) + ")))))"
+    val option = JSONObject(evaluate(scenario, "(()=>{const n=" + field + ";const o=n&&n.options[" + index + "];return {found:!!o,value:o?o.value:null,label:o?o.textContent.trim():null,disabled:!o||o.disabled};})()", deadlineOverride = deadline))
+    assertTrue("the intended actual option must exist and be enabled", option.optBoolean("found") && !option.optBoolean("disabled"))
+    assertEquals("option index and expected value must identify the same setting", expected, option.getString("value"))
+    val wanted = option.getString("label").replace(Regex("\\s+"), " ")
+    enableNativeWindowObservation()
+    val priorWindow = instrumentation.uiAutomation.rootInActiveWindow?.windowId
+    tapNativeControlOnce(scenario, label, "select", deadlineOverride = deadline)
+    var target: AccessibilityNodeInfo? = null
+    var seenWindow = -1
+    var observedCount = 0
+    while (SystemClock.elapsedRealtime() < deadline) {
+      val root = instrumentation.uiAutomation.rootInActiveWindow
+      if (root != null && root.windowId != priorWindow && root.packageName?.toString() == TARGET_PACKAGE) {
+        seenWindow = root.windowId
+        val candidates = mutableListOf<AccessibilityNodeInfo>()
+        for (node in root.findAccessibilityNodeInfosByText(wanted)) {
+          if (node.text?.toString()?.trim()?.replace(Regex("\\s+"), " ") != wanted || node.windowId != root.windowId) continue
+          var clickable: AccessibilityNodeInfo? = node
+          var depth = 0
+          while (clickable != null && !clickable.isClickable && depth++ < 4) clickable = clickable.parent
+          val selected = clickable ?: continue
+          if (selected.windowId != root.windowId || selected.packageName?.toString() != TARGET_PACKAGE || !selected.isVisibleToUser || !selected.isEnabled) continue
+          val bounds = android.graphics.Rect().also { selected.getBoundsInScreen(it) }
+          if (!bounds.isEmpty) candidates.add(selected)
+        }
+        val unique = candidates.distinctBy { it.hashCode() }
+        observedCount = unique.size
+        if (unique.size == 1) { target = unique.single(); break }
+      }
+      SystemClock.sleep(100L)
+    }
+    assertTrue("one actual native option popup must own the exact enabled setting within the original action deadline: window=" + seenWindow + ",matches=" + observedCount, target != null && SystemClock.elapsedRealtime() < deadline)
+    assertTrue("the observed native option must receive exactly one accessibility activation", requireNotNull(target).performAction(AccessibilityNodeInfo.ACTION_CLICK))
+    waitForCondition(scenario, "(()=>{const n=" + field + ";return !!n&&n.value===" + JSONObject.quote(expected) + ";})()", "actual native option selection must update the intended setting", deadlineOverride = deadline)
   }
   private fun clipboardText(): String? = (clientContext.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager).primaryClip?.let { if (it.itemCount > 0) it.getItemAt(0).coerceToText(clientContext).toString() else null }
 
@@ -1117,11 +1165,27 @@ class AndroidDeliveryInstrumentedTest {
     setTaskInput(scenario, "Find", "cat")
     clickControl(scenario,"Close search")
     focusTaskEditor(scenario)
+    val expectedMatches = listOf(0, original.lastIndexOf("cat"))
+    assertTrue("controlled case-sensitive whole-word query must have two distinct expected matches", expectedMatches.distinct().size == 2 && expectedMatches.all { original.substring(it, it + 3) == "cat" })
+    fun selectionAt(offset: Int): String = "(()=>{const n=document.querySelector('.cm-editor');return !!n&&Number(n.getAttribute('data-editor-selection-from'))===" + offset + "&&Number(n.getAttribute('data-editor-selection-to'))===" + (offset + 3) + ";})()"
     taskKey(KeyEvent.KEYCODE_F3)
-    val next = stringValue(evaluate(scenario, "document.querySelector('.cm-editor').getAttribute('data-editor-selection-from')"))
+    val next = stringValue(evaluate(scenario, "document.querySelector('.cm-editor').getAttribute('data-editor-selection-from')")).toInt()
+    assertTrue("F3 must select one exact controlled whole-word match", next in expectedMatches)
+    waitForCondition(scenario, selectionAt(next), "F3 must retain the exact current source match range")
+    val previous = expectedMatches.single { it != next }
     taskKey(KeyEvent.KEYCODE_F3, shift)
-    waitForCondition(scenario, "document.querySelector('.cm-editor').getAttribute('data-editor-selection-from')!==" + JSONObject.quote(next), "Shift+F3 must select the previous actual occurrence")
-    menuAction(scenario, "Find next"); menuAction(scenario, "Find previous")
+    waitForCondition(scenario, selectionAt(previous), "Shift+F3 must select the exact previous actual occurrence")
+    menuAction(scenario, "Find next")
+    waitForCondition(scenario, selectionAt(next), "Find next menu must move to the exact next current source match")
+    menuAction(scenario, "Find previous")
+    waitForCondition(scenario, selectionAt(previous), "Find previous menu must move back to the exact current source match")
+    menuAction(scenario, "Search")
+    clickControl(scenario, "Next")
+    waitForCondition(scenario, selectionAt(next), "CodeMirror Next must select the exact next current source match")
+    clickControl(scenario, "Previous")
+    waitForCondition(scenario, selectionAt(previous), "CodeMirror Previous must select the exact previous current source match")
+    clickControl(scenario, "Close search")
+    assertEquals("all Find aliases must preserve every source character", original, browserEditorInputSnapshot(scenario).getString("semantic_text"))
     focusTaskEditor(scenario); taskKey(KeyEvent.KEYCODE_G, ctrl)
     waitForCondition(scenario, "!!document.querySelector('input[aria-label=\"Line number\"]')", "Ctrl+G must open the real validated line task")
     clickControl(scenario, "Cancel")
@@ -1172,6 +1236,7 @@ class AndroidDeliveryInstrumentedTest {
     menuAction(scenario, "Undo")
     assertEquals(original, browserEditorInputSnapshot(scenario).getString("semantic_text"))
     menuAction(scenario,"Search")
+    setTaskInput(scenario, "Replace", "dog")
     clickControl(scenario, "Replace all")
     val replaced = "dog Cat scatter dog\nsecond"
     waitForCondition(scenario, "Array.from(document.querySelectorAll('.cm-line')).map(n=>n.textContent).join('\\n')===" + JSONObject.quote(replaced), "Replace all must change exactly whole-word case-sensitive source")
@@ -1863,7 +1928,8 @@ class AndroidDeliveryInstrumentedTest {
       assertTrue("refused SVG must preserve source bytes", before.contentEquals(readBytes(uri)))
     }
     val denied = grant(documentUri("svg-read-denied.svg"))
-    resolver.call(FixtureGrantProvider.COMMAND_URI, "arm_read_failure", denied.toString(), android.os.Bundle().apply { putInt("successful_reads", 1) })
+    // Acquisition checks seekability once; image identification revalidates three times and reads its prefix once. Deny the subsequent preview read.
+    resolver.call(FixtureGrantProvider.COMMAND_URI, "arm_read_failure", denied.toString(), android.os.Bundle().apply { putInt("successful_reads", 5) })
     try {
       openFromAddDocument(scenario, denied)
       waitForCondition(scenario, "!!document.querySelector('[data-preview-failure=source_read]')", "native provider denial after identification must remain distinct from transport or malformed content")
@@ -2024,7 +2090,17 @@ class AndroidDeliveryInstrumentedTest {
     clickControl(scenario, "Untitled.md (unsaved)", ".document-switcher button")
     waitForDocumentIdentity(scenario, "Untitled.md")
     val monitor = instrumentation.addMonitor(IntentFilter(Intent.ACTION_OPEN_DOCUMENT).apply { addCategory(Intent.CATEGORY_OPENABLE); addDataType("*/*") }, ActivityResult(Activity.RESULT_CANCELED, Intent()), true)
-    try { clickControl(scenario, "Add document"); clickControl(scenario, "Open file"); waitForBodyText(scenario, "Cancelled"); assertEquals(1, monitor.hits) } finally { instrumentation.removeMonitor(monitor) }
+    val retainedDraft = evaluate(scenario, "JSON.stringify({surface:document.querySelector('.document-surface').id,tabs:Array.from(document.querySelectorAll('.tab-button')).map(n=>({id:n.id,text:n.textContent})),source:Array.from(document.querySelectorAll('.cm-content > .cm-line')).map(n=>n.textContent).join('\\n')})")
+    try {
+      clickControl(scenario, "Add document"); clickControl(scenario, "Open file")
+      val deadline = SystemClock.elapsedRealtime() + 15_000L
+      while (monitor.hits == 0 && SystemClock.elapsedRealtime() < deadline) SystemClock.sleep(50L)
+      assertEquals("cancelled Open must invoke its native chooser once", 1, monitor.hits)
+      instrumentation.waitForIdleSync()
+      waitForDocumentIdentity(scenario, "Untitled.md")
+      waitForCondition(scenario, "!document.querySelector('[aria-label=\"Add document choices\"]')&&!document.querySelector('[role=alert]')", "neutral Open cancellation must return to the current document without a failure")
+      assertEquals("neutral Open cancellation must preserve both drafts and the exact current source", retainedDraft, evaluate(scenario, "JSON.stringify({surface:document.querySelector('.document-surface').id,tabs:Array.from(document.querySelectorAll('.tab-button')).map(n=>({id:n.id,text:n.textContent})),source:Array.from(document.querySelectorAll('.cm-content > .cm-line')).map(n=>n.textContent).join('\\n')})"))
+    } finally { instrumentation.removeMonitor(monitor) }
     verifyS047ShellAliases(scenario)
     emitS047Journey(scenario, 1, listOf("choices", "close", "outside", "button_back", "shell_keyboard", "tab_activation_close_reorder"))
   }
@@ -2156,8 +2232,9 @@ class AndroidDeliveryInstrumentedTest {
     val script = "(" + command + ")\ncode=\$?\nprintf '\\nS047_SHELL_EXIT=%s\\n' \"\$code\"\n"
     // UiAutomation uses Runtime.exec(String), whose argv tokenization does not group shell quotes.
     // Encode only these fixed test-owned setup scripts into one whitespace-free -c argument.
-    val encoded = script.toByteArray(Charsets.UTF_8).joinToString("") { "\\0%03o".format(it.toInt() and 0xff) }
-    val output = shellOutput("sh -c eval\${IFS}\"\$(printf\${IFS}%b\${IFS}'" + encoded + "')\"")
+    // Use three-digit octal in the printf FORMAT. API24 printf counts the leading zero in a four-digit %b escape.
+    val encoded = script.toByteArray(Charsets.UTF_8).joinToString("") { "\\%03o".format(it.toInt() and 0xff) }
+    val output = shellOutput("sh -c eval\${IFS}\"\$(printf\${IFS}'" + encoded + "')\"")
     val code = Regex("(?m)^S047_SHELL_EXIT=([0-9]+)\\s*$").findAll(output).lastOrNull()
     if (code == null || code.groupValues[1] != "0") {
       println("s047_shell_failure=" + JSONObject().put("status_marker_present", code != null).put("output_length", output.length).put("exit_code", code?.groupValues?.get(1)?.toIntOrNull() ?: JSONObject.NULL)); System.out.flush()
@@ -2203,6 +2280,7 @@ class AndroidDeliveryInstrumentedTest {
   }
 
   @Test fun s047AboutJourney() {
+    shellCommandTransportPreservesFixtureBytesAndExitStatus()
     val scenario = launchS047()
     verifyS047ProviderDenial(scenario)
     menuAction(scenario, "About Glitchpad")
@@ -2246,6 +2324,7 @@ class AndroidDeliveryInstrumentedTest {
   }
 
   @Test fun s047FaultJourney() {
+    shellCommandTransportPreservesFixtureBytesAndExitStatus()
     assertEquals("fault_probe", expectedBuildVariant())
     val scenario = launchS047()
     var originalUrl: String? = null
@@ -2264,11 +2343,17 @@ class AndroidDeliveryInstrumentedTest {
     val corpus = grant(documentUri("recovery-corpus.md"))
     openFromAddDocument(scenario, corpus)
     verifyMarkdownFailures(scenario, corpus)
+    val hostSource = grant(documentUri("svg-presentation.svg"))
+    val hostSourceBefore = readBytes(hostSource)
+    openFromAddDocument(scenario, hostSource)
+    waitForDocumentIdentity(scenario, "svg-presentation.svg")
+    waitForCondition(scenario, "!!document.querySelector('[data-preview-ready=true]')", "the current SVG must finish actual native delivery before arming its host probe")
     injectRecoveryFailure(scenario, "host")
-    openFromAddDocument(scenario, grant(documentUri("svg-presentation.svg")))
     waitForCondition(scenario, "!!document.querySelector('[data-preview-failure=host_transport]')", "actual absent native command rejection must reach host fallback")
     clickControl(scenario, "Retry preview")
     waitForCondition(scenario, "!!document.querySelector('[data-preview-ready=true]')", "one-shot host failure must recover through actual native renderer")
+    waitForDocumentIdentity(scenario, "svg-presentation.svg")
+    assertTrue("host failure and Retry must preserve every original SVG byte", hostSourceBefore.contentEquals(readBytes(hostSource)))
     emitS047Journey(scenario, 3, listOf("worker", "parser", "projection", "root", "bootstrap_import", "host_transport", "source_retained", "draft_recovered", "recovery_decisions"))
     val root = grant(documentUri("fixture-root"))
     val saved = grant(requireNotNull(DocumentsContract.createDocument(resolver, root, "application/json", "s047-fault-diagnostic-" + UUID.randomUUID() + ".json")))
@@ -2668,6 +2753,12 @@ class AndroidDeliveryInstrumentedTest {
       if (latest.getBoolean("activity_window_focus") && latest.getBoolean("webview_focus") && latest.getBoolean("webview_window_focus") && latest.getBoolean("webview_shown")) return latest
       SystemClock.sleep(100L)
     }
+    val focusedRoot = instrumentation.uiAutomation.rootInActiveWindow
+    latest.put("power_interactive", (clientContext.getSystemService(android.content.Context.POWER_SERVICE) as android.os.PowerManager).isInteractive)
+      .put("keyguard_locked", (clientContext.getSystemService(android.content.Context.KEYGUARD_SERVICE) as android.app.KeyguardManager).isKeyguardLocked)
+      .put("native_owner_is_target", focusedRoot?.packageName?.toString() == TARGET_PACKAGE)
+      .put("native_owner_window_id", focusedRoot?.windowId ?: JSONObject.NULL)
+      .put("native_owner_class", focusedRoot?.className?.toString()?.take(80) ?: JSONObject.NULL)
     throw AssertionError("the actual app WebView must own native input focus before input: " + latest)
   }
 

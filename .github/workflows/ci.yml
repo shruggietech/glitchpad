@@ -281,7 +281,9 @@ jobs:
     # on Linux-hosted runners. The Intel macOS image provides accelerated x86_64
     # emulation for the required API 24 and API 36 lifecycle evidence.
     runs-on: macos-15-intel
-    timeout-minutes: 60
+    # Retain the full composed campaign after the observed build/emulator setup cost.
+    # Per-action and per-process attempt limits remain enforced by their runners.
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
@@ -364,7 +366,9 @@ jobs:
             set -e; for package in com.google.android.gms com.google.android.googlequicksearchbox; do if adb shell pm list packages "$package" | grep -Fq "package:$package"; then adb shell pm disable-user --user 0 "$package"; fi; done
             # The API 36 system Bluetooth service can crash and leave its error dialog above
             # the AppFrame activity, stealing input focus from the WebView under test.
-            if [ "${{ matrix.api-level }}" = "36" ]; then adb shell svc power stayon true && adb shell svc bluetooth disable; fi
+            adb shell svc power stayon true
+            adb shell input keyevent 224
+            if [ "${{ matrix.api-level }}" = "36" ]; then adb shell svc bluetooth disable; fi
             # Follow AOSP CTS input-test setup: suppress later system crash/ANR dialogs and
             # close any dialog already present before testing the foreground WebView.
             if [ "${{ matrix.api-level }}" = "36" ]; then adb shell settings put global hide_error_dialogs 1 && adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS; fi

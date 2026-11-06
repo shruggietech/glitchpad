@@ -1,3 +1,7 @@
+import {
+  clipboardTextAvailable,
+  writeClipboardText,
+} from '../domain/clipboard-gateway';
 import { consumeRecoveryProbe } from '../domain/recovery-probes';
 import {
   createElement,
@@ -871,7 +875,7 @@ export const MarkdownSurface = forwardRef<
         );
       }
       if (command === 'copy') {
-        if (!navigator.clipboard) return false;
+        if (!clipboardTextAvailable()) return false;
         const selection = window.getSelection();
         const content = renderedContentRef.current;
         const selectedText =
@@ -889,13 +893,11 @@ export const MarkdownSurface = forwardRef<
           )
             ? selection.toString()
             : '';
-        return navigator.clipboard
-          .writeText(
-            selectedText ||
-              currentResult?.search_text.map(({ text }) => text).join('\n') ||
-              '',
-          )
-          .then(() => true);
+        return writeClipboardText(
+          selectedText ||
+            currentResult?.search_text.map(({ text }) => text).join('\n') ||
+            '',
+        ).then(() => true);
       }
       return false;
     },

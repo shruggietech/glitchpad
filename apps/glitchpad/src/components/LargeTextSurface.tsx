@@ -1,4 +1,8 @@
 import {
+  clipboardTextAvailable,
+  writeClipboardText,
+} from '../domain/clipboard-gateway';
+import {
   forwardRef,
   useEffect,
   useImperativeHandle,
@@ -265,7 +269,7 @@ export const LargeTextSurface = forwardRef<
   };
   const copySection = () => {
     if (!section) return false;
-    if (!navigator.clipboard?.writeText) {
+    if (!clipboardTextAvailable()) {
       setStatus('Clipboard is unavailable. The visible section remains open.');
       return false;
     }
@@ -273,7 +277,7 @@ export const LargeTextSurface = forwardRef<
       'Copying visible section',
       'Clipboard copy could not complete',
       async (current) => {
-        await navigator.clipboard.writeText(section.text);
+        await writeClipboardText(section.text);
         if (!current()) return false;
         setStatus('Visible section copied');
         return true;

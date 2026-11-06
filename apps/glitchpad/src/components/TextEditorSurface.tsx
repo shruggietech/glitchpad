@@ -1,3 +1,7 @@
+import {
+  clipboardTextAvailable,
+  writeClipboardText,
+} from '../domain/clipboard-gateway';
 import { closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete';
 import {
   history,
@@ -341,8 +345,8 @@ export const TextEditorSurface = forwardRef<
                 .map(({ from, to }) => view.state.sliceDoc(from, to))
                 .join('\n')
             : view.state.doc.toString();
-        if (!navigator.clipboard?.writeText) return false;
-        return navigator.clipboard.writeText(content).then(() => true);
+        if (!clipboardTextAvailable()) return false;
+        return writeClipboardText(content).then(() => true);
       }
       return false;
     },

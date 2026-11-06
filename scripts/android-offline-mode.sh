@@ -9,7 +9,18 @@ mkdir -p "$(dirname "$prefix")" || exit 1
 run_adb() {
   local label="$1" status
   shift
-  timeout 15s adb "$@" > "$prefix-$label.txt" 2> "$prefix-$label-stderr.txt"
+  # Node is available on both macOS and Linux CI hosts; GNU timeout is not.
+  node - "$prefix-$label.txt" "$prefix-$label-stderr.txt" "$@" <<'NODE'
+const fs = require('node:fs');
+const { spawnSync } = require('node:child_process');
+const child = spawnSync('adb', process.argv.slice(4), {
+  timeout: 15_000, windowsHide: true, encoding: 'utf8',
+  stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 4 * 1024 * 1024,
+});
+fs.writeFileSync(process.argv[2], child.stdout ?? '', 'utf8');
+fs.writeFileSync(process.argv[3], child.stderr ?? '', 'utf8');
+process.exit(child.error?.code === 'ETIMEDOUT' ? 124 : child.status ?? 127);
+NODE
   status=$?
   printf '%s exit=%s\n' "$label" "$status" >> "$prefix-commands.txt"
   return "$status"

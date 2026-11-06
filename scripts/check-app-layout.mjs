@@ -146,6 +146,10 @@ export function installDocumentToolsSeams() {
   });
   window.__TAURI_INTERNALS__.invoke = async function (command, args) {
     args = args || {};
+    if (command === 'write_android_clipboard') {
+      window.__toolsClipboard = args.text;
+      return;
+    }
     if (command === 'application_info')
       return {
         package_identifier: 'synthetic.browser.only',

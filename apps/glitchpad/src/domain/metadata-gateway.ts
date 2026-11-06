@@ -1,5 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 
+import { writeClipboardText } from './clipboard-gateway';
+
 import type {
   ExternalRevision,
   IntegrityProgress,
@@ -13,10 +15,7 @@ export interface ClipboardGateway {
 }
 
 export const browserClipboardGateway: ClipboardGateway = {
-  write: (text) => {
-    if (!navigator.clipboard) return Promise.reject(new Error('clipboard_unavailable'));
-    return navigator.clipboard.writeText(text);
-  },
+  write: writeClipboardText,
 };
 
 export class MemoryClipboardGateway implements ClipboardGateway {

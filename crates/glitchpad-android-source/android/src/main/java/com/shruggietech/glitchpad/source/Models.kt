@@ -102,3 +102,6 @@ class DiagnosticShareArgs { lateinit var json: String }
 
 @InvokeArg
 class AndroidBackArgs { lateinit var requestId: String; var handled: Boolean = true }
+
+@InvokeArg
+class ClipboardTextArgs { lateinit var text: String }

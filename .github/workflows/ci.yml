@@ -328,6 +328,10 @@ jobs:
           node-version-file: .node-version
           cache: pnpm
 
+      - name: Verify hosted offline controller before the APK build
+        if: matrix.api-level == 24 && matrix.role == 'ordinary'
+        run: node --test scripts/android-offline-mode.test.mjs
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 

@@ -1,3 +1,7 @@
+import {
+  clipboardTextAvailable,
+  writeClipboardText,
+} from '../domain/clipboard-gateway';
 import { TaskSurface } from './TaskSurface';
 import {
   forwardRef,
@@ -399,13 +403,11 @@ export const MermaidSurface = forwardRef<TextEditorHandle, MermaidSurfaceProps>(
         if (mode === 'source')
           return editorRef.current?.invoke(command, opener) ?? false;
         if (command === 'copy') {
-          if (!navigator.clipboard?.writeText) return false;
-          return navigator.clipboard
-            .writeText(
-              visibleResult?.search_text.join('\n') ??
-                textDocument.normalized_text,
-            )
-            .then(() => true);
+          if (!clipboardTextAvailable()) return false;
+          return writeClipboardText(
+            visibleResult?.search_text.join('\n') ??
+              textDocument.normalized_text,
+          ).then(() => true);
         }
         return false;
       },

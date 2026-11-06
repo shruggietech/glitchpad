@@ -180,6 +180,11 @@ pub struct AndroidBackResponse<'a> {
     pub handled: bool,
 }
 
+#[derive(Clone, Debug, Serialize)]
+pub struct ClipboardTextRequest<'a> {
+    pub text: &'a str,
+}
+
 /// Installed package facts read from Android's package manager.
 #[derive(Clone, Debug, Deserialize)]
 pub struct InstalledApplicationInfo {

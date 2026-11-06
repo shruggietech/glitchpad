@@ -8,8 +8,8 @@ import { test } from 'node:test';
 const source = '7a7600e3424650cd8d9aa7af528e11d1353002aa';
 const script = resolve('scripts/android-offline-mode.sh');
 const skip =
-  process.platform !== 'linux'
-    ? 'Disposable Android AVD controller runs on hosted Linux.'
+  process.platform === 'win32'
+    ? 'Android AVD controller runs on hosted macOS or Linux.'
     : false;
 const mock = String.raw`#!/usr/bin/env node
 const fs = require('node:fs');
@@ -251,6 +251,32 @@ test(
       } finally {
         await f.cleanup();
       }
+    }
+  },
+);
+
+test(
+  'setup and exact restoration do not require GNU timeout',
+  { skip },
+  async () => {
+    const f = await fixture();
+    try {
+      const marker = join(f.dir, 'gnu-timeout-was-called');
+      await writeFile(
+        join(f.dir, 'timeout'),
+        '#!/usr/bin/env bash\nprintf called > "' + marker + '"\nexit 127\n',
+      );
+      await chmod(join(f.dir, 'timeout'), 0o755);
+      assert.equal(f.run('setup').status, 0);
+      assert.equal(f.run('restore').status, 0);
+      await assert.rejects(readFile(marker), { code: 'ENOENT' });
+      const state = await f.state();
+      assert.deepEqual(
+        [state.uid, state.wifi_on, state.mobile_data],
+        [2000, 1, 1],
+      );
+    } finally {
+      await f.cleanup();
     }
   },
 );

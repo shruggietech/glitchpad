@@ -251,6 +251,20 @@ impl<R: Runtime> AndroidSource<R> {
             .map_err(|error| error.to_string())
     }
 
+    /// Writes text to the actual Android clipboard.
+    ///
+    /// # Errors
+    ///
+    /// Returns the bridge failure if the clipboard service cannot complete the write.
+    pub fn write_clipboard(&self, text: &str) -> Result<(), String> {
+        self.0
+            .run_mobile_plugin(
+                "writeClipboard",
+                crate::models::ClipboardTextRequest { text },
+            )
+            .map_err(|error| error.to_string())
+    }
+
     /// Reads installed package identity without accepting caller-supplied facts.
     ///
     /// # Errors

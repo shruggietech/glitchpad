@@ -553,6 +553,20 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
   }
 
   @Command
+  fun writeClipboard(invoke: Invoke) {
+    val args = invoke.parseArgs(ClipboardTextArgs::class.java)
+    activity.runOnUiThread {
+      try {
+        val clipboard = activity.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+        clipboard.setPrimaryClip(ClipData.newPlainText("Glitchpad", args.text))
+        invoke.resolve()
+      } catch (_: Exception) {
+        invoke.reject("Clipboard copy could not complete")
+      }
+    }
+  }
+
+  @Command
   fun applicationInfo(invoke: Invoke) {
     activity.runOnUiThread {
       val info = activity.packageManager.getPackageInfo(activity.packageName, 0)

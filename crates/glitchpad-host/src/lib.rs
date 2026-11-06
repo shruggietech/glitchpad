@@ -200,6 +200,7 @@ pub fn run() {
         share_diagnostics,
         android_diagnostic_environment,
         complete_android_back,
+        write_android_clipboard,
         close_android_source,
     ]);
 
@@ -748,6 +749,26 @@ fn complete_android_back(
     handled: bool,
 ) -> Result<(), glitchpad_core::contracts::CoreError> {
     host.complete_back(&request_id, handled)
+}
+
+#[cfg(target_os = "android")]
+#[tauri::command]
+async fn write_android_clipboard(
+    app: tauri::AppHandle,
+    text: String,
+) -> Result<(), glitchpad_core::contracts::CoreError> {
+    use glitchpad_android_source::AndroidSourceExt;
+    android_interactive::run(move || {
+        app.android_source().write_clipboard(&text).map_err(|_| {
+            glitchpad_core::contracts::CoreError::new(
+                glitchpad_core::contracts::CoreErrorCategory::Unavailable,
+                "Clipboard copy could not complete",
+                true,
+                true,
+            )
+        })
+    })
+    .await
 }
 
 #[tauri::command]

@@ -74,3 +74,22 @@ $recovery.phase='private-phase'; $refused=$false
 try { New-PortableStartupDiagnostic -Observation $observation -Scenario recovery -Stage content_wait -SourceCommit ('a' * 40) -ManifestDigest ('b' * 64) -Succeeded $false -ElapsedMilliseconds 20000 -RecoveryObservation $recovery | Out-Null } catch { $refused=$true }
 if (-not $refused) { throw 'Arbitrary recovery phase was admitted.' }
 Write-Output 'Failure-only recovery observation allowlist tests passed.'
+
+# Every literal readiness state emitted by the production driver must reach its receipt.
+$driverAst = [Management.Automation.Language.Parser]::ParseFile((Join-Path $PSScriptRoot 'test-portable-lifecycle.ps1'), [ref]$null, [ref]$null)
+$assignments = $driverAst.FindAll({ param($node) $node -is [Management.Automation.Language.AssignmentStatementAst] }, $true)
+foreach ($assignment in $assignments) {
+    if ($assignment.Left.Extent.Text -cne '$script:readinessStage') { continue }
+    $stageValue = $assignment.Right.Extent.Text.Trim("'")
+    $receipt = New-PortableStartupDiagnostic -Observation $observation -Scenario editable -Stage $stageValue -SourceCommit ('a' * 40) -ManifestDigest ('b' * 64) -Succeeded $false -ElapsedMilliseconds 1
+    if ($receipt.stage -cne $stageValue) { throw 'Production readiness stage was not retained.' }
+}
+foreach ($stageValue in @('foreground_wait', 'foreground_ready')) {
+    $receipt = New-PortableStartupDiagnostic -Observation $observation -Scenario editable -Stage $stageValue -SourceCommit ('a' * 40) -ManifestDigest ('b' * 64) -Succeeded $false -ElapsedMilliseconds 1 -WaitKind foreground -WaitCallerLine 420
+    if ($receipt.readiness_wait.function -cne 'Wait-ApplicationForeground' -or $receipt.readiness_wait.caller_line -ne 420) { throw 'Foreground readiness caller site was not retained.' }
+}
+$action = @{ phase = 'click_dispatched'; foreground_before_menu = $true; foreground_at_click = $false; private_handle = 'private-native-handle' }
+$receipt = New-PortableStartupDiagnostic -Observation $observation -Scenario editable -Stage foreground_ready -SourceCommit ('a' * 40) -ManifestDigest ('b' * 64) -Succeeded $false -ElapsedMilliseconds 1 -DocumentAction $action
+if (-not $receipt.document_action.foreground_before_menu -or $receipt.document_action.foreground_at_click -or $null -eq $receipt.document_action.foreground_at_click) { throw 'Observed foreground ownership was not retained.' }
+if (($receipt | ConvertTo-Json -Depth 4 -Compress) -match 'private_handle|private-native-handle') { throw 'Foreground observation exposed non-allowlisted input.' }
+Write-Output 'Production readiness and foreground diagnostic contract tests passed.'

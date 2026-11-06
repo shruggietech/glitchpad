@@ -889,13 +889,16 @@ class AndroidDeliveryInstrumentedTest {
 
     if (isS047Evidence()) {
       val surface = stringValue(evaluate(scenario,"document.querySelector('.document-surface').id"))
+      val clearRequestedAt = System.currentTimeMillis()
       clickControl(scenario,"Clear diagnostics")
       waitForBodyText(scenario,"Stored diagnostics cleared")
       assertEquals(0,JSONObject(stringValue(evaluate(scenario,"document.querySelector('.diagnostic-preview').textContent"))).getJSONArray("events").length())
       clickControl(scenario,"Close Diagnostics")
       menuAction(scenario,"Diagnostics")
       waitForBodyText(scenario,"Redacted diagnostic preview ready")
-      assertEquals("cleared native event store must remain empty after panel recreation",0,JSONObject(stringValue(evaluate(scenario,"document.querySelector('.diagnostic-preview').textContent"))).getJSONArray("events").length())
+      val afterClear = JSONObject(stringValue(evaluate(scenario,"document.querySelector('.diagnostic-preview').textContent"))).getJSONArray("events")
+      for (index in 0 until afterClear.length()) assertTrue("recreated diagnostics must contain no event predating Clear: " + afterClear.getJSONObject(index), afterClear.getJSONObject(index).getLong("occurred_unix_ms") >= clearRequestedAt)
+      println("s047_diagnostics_after_clear=" + afterClear); System.out.flush()
       assertEquals("clearing diagnostics must preserve current document",surface,stringValue(evaluate(scenario,"document.querySelector('.document-surface').id")))
     }
     clickControl(scenario, "Close Diagnostics")
@@ -1065,10 +1068,25 @@ class AndroidDeliveryInstrumentedTest {
     throw AssertionError("the exact actual field and native WebView must own focus and expose a public InputConnection within the original action deadline: " + latest)
   }
 
+  private fun taskInputExpression(label: String, selector: String = "input,textarea"): String =
+    "Array.from(document.querySelectorAll(" + JSONObject.quote(selector) + ")).find(n=>!n.disabled&&n.getBoundingClientRect().width>0&&!n.closest('[aria-hidden=true],[inert]')&&(n.getAttribute('aria-label')||(n.labels?Array.from(n.labels).map(l=>l.textContent).join(' '):'')).trim().startsWith(" + JSONObject.quote(label) + "))"
+
+  private fun setSearchOption(scenario: ActivityScenario<MainActivity>, label: String, checked: Boolean) {
+    val deadline = SystemClock.elapsedRealtime() + 30_000L
+    val field = taskInputExpression(label, "input[type=checkbox]")
+    fun observation(): JSONObject = JSONObject(evaluate(scenario,
+      "(()=>{const n=" + field + ";const results=document.querySelector('[aria-label=\"Find results\"]');return {found:!!n,checked:!!n&&n.checked,results:results?results.textContent:null};})()", deadlineOverride = deadline))
+    val before = observation()
+    assertTrue("the actual named search checkbox must exist: " + label, before.getBoolean("found"))
+    if (before.getBoolean("checked") != checked) tapNativeControlOnce(scenario, label, "input[type=checkbox]", deadlineOverride = deadline)
+    waitForCondition(scenario, "(()=>{const n=" + field + ";return !!n&&n.checked===" + checked + ";})()", "the one native activation must set the actual requested search flag: " + label + ",before=" + before, deadlineOverride = deadline)
+    println("s047_search_option=" + JSONObject().put("label", label).put("requested", checked).put("before", before).put("after", observation())); System.out.flush()
+  }
+
   private fun setTaskInput(scenario: ActivityScenario<MainActivity>, label: String, text: String, deadlineOverride: Long? = null) {
     val deadline = deadlineOverride ?: (SystemClock.elapsedRealtime() + 30_000L)
     tapNativeControlOnce(scenario, label, "input,textarea", deadlineOverride = deadline)
-    val focusScript = "(()=>{const field=Array.from(document.querySelectorAll('input,textarea')).find(n=>!n.disabled&&n.getBoundingClientRect().width>0&&!n.closest('[aria-hidden=true],[inert]')&&(n.getAttribute('aria-label')||(n.labels?Array.from(n.labels).map(l=>l.textContent).join(' '):'')).trim().startsWith(" + JSONObject.quote(label) + "));return document.hasFocus()&&!!field&&document.activeElement===field;})()"
+    val focusScript = "(()=>{const field=" + taskInputExpression(label) + ";return document.hasFocus()&&!!field&&document.activeElement===field;})()"
     waitForCondition(scenario, focusScript, "the exact requested task input must own actual browser focus after the one native tap", deadlineOverride = deadline)
     val before = stringValue(evaluate(scenario, "document.activeElement.value", deadlineOverride = deadline))
     val (current, dispatch) = waitForFocusedInputConnection(scenario, focusScript, deadline, before)
@@ -1163,6 +1181,10 @@ class AndroidDeliveryInstrumentedTest {
     focusTaskEditor(scenario); taskKey(KeyEvent.KEYCODE_F, ctrl)
     waitForCondition(scenario, "!!document.querySelector('.cm-search input[aria-label=Find]')", "Ctrl+F must open actual Find")
     setTaskInput(scenario, "Find", "cat")
+    setSearchOption(scenario, "Match case", true)
+    setSearchOption(scenario, "Whole word", true)
+    setSearchOption(scenario, "Regular expression", false)
+    waitForCondition(scenario, "document.querySelector('[aria-label=\"Find results\"]').textContent.includes('2')", "alias preparation must observe the exact two-match case-sensitive whole-word query")
     clickControl(scenario,"Close search")
     focusTaskEditor(scenario)
     val expectedMatches = listOf(0, original.lastIndexOf("cat"))
@@ -1187,7 +1209,7 @@ class AndroidDeliveryInstrumentedTest {
     clickControl(scenario, "Close search")
     assertEquals("all Find aliases must preserve every source character", original, browserEditorInputSnapshot(scenario).getString("semantic_text"))
     focusTaskEditor(scenario); taskKey(KeyEvent.KEYCODE_G, ctrl)
-    waitForCondition(scenario, "!!document.querySelector('input[aria-label=\"Line number\"]')", "Ctrl+G must open the real validated line task")
+    waitForCondition(scenario, "!!(" + taskInputExpression("Line number") + ")", "Ctrl+G must open the real validated line task")
     clickControl(scenario, "Cancel")
     menuAction(scenario,"Document details")
     waitForCondition(scenario, "!!document.querySelector('[role=dialog] [aria-label=\"Language mode\"]')", "Document details must disclose current source facts")
@@ -1215,16 +1237,18 @@ class AndroidDeliveryInstrumentedTest {
     setTaskInput(scenario, "Find", "S047_NO_MATCH")
     waitForBodyText(scenario, "No matches")
     setTaskInput(scenario, "Find", "cat")
-    tapNativeControlOnce(scenario, "Match case", "input[type=checkbox]")
+    for (label in listOf("Match case", "Whole word", "Regular expression")) setSearchOption(scenario, label, false)
+    waitForCondition(scenario, "document.querySelector('[aria-label=\"Find results\"]').textContent.includes('4')", "the explicitly observed initial flags must restore four exact source matches")
+    setSearchOption(scenario, "Match case", true)
     waitForCondition(scenario, "document.querySelector('[aria-label=\"Find results\"]').textContent.includes('3')", "case-sensitive search must change the actual match set")
-    tapNativeControlOnce(scenario, "Whole word", "input[type=checkbox]")
+    setSearchOption(scenario, "Whole word", true)
     waitForCondition(scenario, "document.querySelector('[aria-label=\"Find results\"]').textContent.includes('2')", "whole-word search must exclude scatter")
-    tapNativeControlOnce(scenario, "Regular expression", "input[type=checkbox]")
+    setSearchOption(scenario, "Regular expression", true)
     setTaskInput(scenario, "Find", "[")
     waitForBodyText(scenario, "Invalid regular expression")
     assertEquals(original, browserEditorInputSnapshot(scenario).getString("semantic_text"))
     setTaskInput(scenario, "Find", "cat")
-    tapNativeControlOnce(scenario, "Regular expression", "input[type=checkbox]")
+    setSearchOption(scenario, "Regular expression", false)
     setTaskInput(scenario, "Replace", "dog")
     clickControl(scenario, "Next")
     val selection = JSONObject(evaluate(scenario, "(()=>{const n=document.querySelector('.cm-editor');return {from:Number(n.getAttribute('data-editor-selection-from')),to:Number(n.getAttribute('data-editor-selection-to'))};})()"))
@@ -1252,10 +1276,10 @@ class AndroidDeliveryInstrumentedTest {
     menuAction(scenario, "Go to line")
     setTaskInput(scenario, "Line number", "999")
     clickControl(scenario, "Go")
-    waitForCondition(scenario, "document.querySelector('input[aria-label=\"Line number\"]').getAttribute('aria-invalid')==='true'", "out-of-range line must remain visibly invalid")
+    waitForCondition(scenario, "(()=>{const n=" + taskInputExpression("Line number") + ";return !!n&&n.getAttribute('aria-invalid')==='true';})()", "out-of-range line must remain visibly invalid")
     setTaskInput(scenario, "Line number", "2")
     clickControl(scenario, "Go")
-    waitForCondition(scenario, "!document.querySelector('input[aria-label=\"Line number\"]')", "valid line navigation must close its task")
+    waitForCondition(scenario, "!(" + taskInputExpression("Line number") + ")", "valid line navigation must close its task")
     assertEquals(original, browserEditorInputSnapshot(scenario).getString("semantic_text"))
     assertEquals((original.indexOf('\n') + 1).toString(), stringValue(evaluate(scenario, "document.querySelector('.cm-editor').getAttribute('data-editor-selection-from')")))
     verifyS047EditorAliases(scenario, original)
@@ -1278,10 +1302,20 @@ class AndroidDeliveryInstrumentedTest {
     setTaskInput(scenario, "Tab width", "16"); instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_ENTER)
     setTaskInput(scenario, "Editor font family", "S047 Unavailable Font, monospace"); instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_ENTER)
     observeVisibleTaskControls(scenario, "preferences")
+    val resetFocus = "(()=>{const n=document.activeElement;const owner=n&&n.closest('[role=dialog]');return !!n&&n.tagName==='BUTTON'&&n.textContent.trim()==='Reset preferences'&&!!owner&&owner.querySelector('h2').textContent==='Preferences';})()"
+    for (route in listOf("native Back", "Escape", "header Close")) {
+      clickControl(scenario, "Reset preferences")
+      waitForBodyText(scenario, "Restore document defaults and theme on this device?")
+      if (route == "header Close") clickControl(scenario, "Close Reset preferences?")
+      else { focusNativeWebView(scenario); instrumentation.sendKeyDownUpSync(if (route == "native Back") KeyEvent.KEYCODE_BACK else KeyEvent.KEYCODE_ESCAPE) }
+      waitForCondition(scenario, resetFocus, route + " must restore the nested Reset opener in the still-open Preferences task")
+    }
     clickControl(scenario, "Reset preferences"); clickControl(scenario, "Cancel reset")
+    waitForCondition(scenario, resetFocus, "explicit Reset Cancel must restore the same Preferences opener")
     assertEquals("true", evaluate(scenario, "Array.from(document.querySelectorAll('input')).some(n=>n.labels&&Array.from(n.labels).some(l=>l.textContent.trim().startsWith('Editor font family'))&&n.value==='S047 Unavailable Font, monospace')"))
     clickControl(scenario, "Reset preferences"); clickControl(scenario, "Reset settings")
     waitForBodyText(scenario, "Preferences reset. Your files are unchanged.")
+    waitForCondition(scenario, resetFocus, "completed Reset must restore its opener after the actual awaited reset")
     clickControl(scenario, "Close Preferences")
     assertEquals("preference actions must not change current file", original, browserEditorInputSnapshot(scenario).getString("semantic_text"))
     assertEquals("explicit document wrap must survive unrelated/default preference changes",documentWrapBeforePreferences,stringValue(evaluate(scenario,"document.querySelector('.cm-editor').getAttribute('data-editor-wrap')")))
@@ -1413,8 +1447,8 @@ class AndroidDeliveryInstrumentedTest {
       val uri=grant(documentUri(name));val source=String(readBytes(uri),Charsets.UTF_8)
       openFromAddDocument(scenario,uri)
       waitForBodyText(scenario,"The Mermaid source is malformed. Source remains available.")
-      clickControl(scenario,"View source",if(name.endsWith(".mmd"))".mermaid-fallback button" else ".embedded-mermaid button")
-      waitForCondition(scenario,"!!document.querySelector('.cm-content[contenteditable=false]')","genuine malformed diagram fallback must expose exact read-only source")
+      if (!name.endsWith(".mmd")) clickControl(scenario,"View source",".embedded-mermaid button")
+      waitForCondition(scenario,"!!document.querySelector('.cm-content[contenteditable=false]')","standalone automatic or embedded explicit malformed-diagram fallback must expose exact read-only source")
       assertEquals(source,sourceEditorText(scenario))
     }
   }
@@ -1542,7 +1576,7 @@ class AndroidDeliveryInstrumentedTest {
       """.trimIndent().replace("INDEX", index.toString())))
       assertTrue("each live control must remain measurable: " + profile, measurement.getBoolean("found"))
       assertTrue("each action needs a meaningful accessible name", measurement.getString("label").isNotBlank())
-      assertTrue("every action target must retain 48 CSS-pixel dimensions", measurement.getDouble("width") >= 47.5 && measurement.getDouble("height") >= 47.5)
+      assertTrue("every action target must retain 48 CSS-pixel dimensions: profile=" + profile + ",control=" + measurement, measurement.getDouble("width") >= 47.5 && measurement.getDouble("height") >= 47.5)
       assertTrue("the actual visible control must receive the center hit", measurement.getBoolean("hit"))
       val native = nativeControlGeometry(scenario, measurement)
       assertTrue("the whole action must fit the actual native visible intersection", native.getBoolean("whole_control_visible"))
@@ -2009,18 +2043,39 @@ class AndroidDeliveryInstrumentedTest {
     taskKey(KeyEvent.KEYCODE_ESCAPE)
     waitForCondition(scenario, "!document.querySelector('[role=dialog]')&&(document.activeElement.getAttribute('aria-label')==='Menu'||document.activeElement.textContent.trim()==='Menu')", "Escape must close the application menu and restore its opener")
     clickControl(scenario, "Menu")
-    val dialog = JSONObject(evaluate(scenario, "(()=>{const n=document.querySelector('[role=dialog]'),r=n.getBoundingClientRect();return {left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:innerWidth,height:innerHeight};})()"))
-    val outside = mutableListOf<JSONObject>()
-    for (x in listOf(2.0, dialog.getDouble("width") / 2, dialog.getDouble("width") - 2)) for (y in listOf(2.0, dialog.getDouble("top") - 2, dialog.getDouble("bottom") + 2, dialog.getDouble("height") - 2)) {
-      if (x > 0 && y > 0 && x < dialog.getDouble("width") && y < dialog.getDouble("height") && !(x >= dialog.getDouble("left") && x <= dialog.getDouble("right") && y >= dialog.getDouble("top") && y <= dialog.getDouble("bottom"))) outside.add(JSONObject().put("found",true).put("left",x-0.5).put("right",x+0.5).put("top",y-0.5).put("bottom",y+0.5).put("x",x).put("y",y).put("viewport_width",dialog.getDouble("width")))
+    val outsideDeadline = SystemClock.elapsedRealtime() + 30_000L
+    val outsideScript = """
+      (()=>{
+        const dialog=document.querySelector('[role=dialog][data-state=open]'),scrim=document.querySelector('.task-surface-scrim[data-state=open]');
+        if(!dialog||!scrim)return {found:false};
+        const d=dialog.getBoundingClientRect(),s=scrim.getBoundingClientRect(),v=window.visualViewport;
+        const x0=v?v.offsetLeft:0,y0=v?v.offsetTop:0,w=v?v.width:innerWidth,h=v?v.height:innerHeight;
+        const l=Math.max(s.left,x0),t=Math.max(s.top,y0),r=Math.min(s.right,x0+w),b=Math.min(s.bottom,y0+h);
+        const regions=[[l,t,r,Math.min(b,d.top)],[l,Math.max(t,d.bottom),r,b],[l,t,Math.min(r,d.left),b],[Math.max(l,d.right),t,r,b]].filter(a=>a[2]-a[0]>1&&a[3]-a[1]>1).sort((a,b)=>(b[2]-b[0])*(b[3]-b[1])-(a[2]-a[0])*(a[3]-a[1]));
+        for(const a of regions){const x=(a[0]+a[2])/2,y=(a[1]+a[3])/2;if(document.elementFromPoint(x,y)!==scrim)continue;
+          return {found:true,scrim_hit:true,left:x-x0-0.5,right:x-x0+0.5,top:y-y0-0.5,bottom:y-y0+0.5,x:x-x0,y:y-y0,viewport_width:w,viewport_height:h};}
+        return {found:false};
+      })()
+    """.trimIndent()
+    var outsideTarget = JSONObject(); var geometry = JSONObject(); var outsideReady = false
+    while(SystemClock.elapsedRealtime() < outsideDeadline) {
+      val target = JSONObject(evaluate(scenario,outsideScript,deadlineOverride=outsideDeadline))
+      val mapping = nativeControlGeometry(scenario,target)
+      if(target.optBoolean("scrim_hit") && mapping.optBoolean("whole_control_visible") && nativeTapForeground(mapping)) {
+        SystemClock.sleep(100L)
+        outsideTarget = JSONObject(evaluate(scenario,outsideScript,deadlineOverride=outsideDeadline)); geometry = nativeControlGeometry(scenario,outsideTarget)
+        if(outsideTarget.optBoolean("scrim_hit") && geometry.optBoolean("whole_control_visible") && nativeTapForeground(geometry) && nativeTapObservationsAgree(target,mapping,outsideTarget,geometry)){ outsideReady=true; break }
+      }
+      SystemClock.sleep(100L)
     }
-    val geometry = outside.map { nativeControlGeometry(scenario,it) }.firstOrNull { it.getBoolean("whole_control_visible") } ?: throw AssertionError("actual application menu must expose a native-visible outside dismissal area")
+    assertTrue("the actual scrim must own one stable native-visible outside dismissal point: " + outsideTarget + ",native=" + geometry,outsideReady)
     val down = SystemClock.uptimeMillis()
     for (action in listOf(MotionEvent.ACTION_DOWN, MotionEvent.ACTION_UP)) {
       val event = MotionEvent.obtain(down,SystemClock.uptimeMillis(),action,geometry.getDouble("screen_x").toFloat(),geometry.getDouble("screen_y").toFloat(),0).apply { source=InputDevice.SOURCE_TOUCHSCREEN }
       try { instrumentation.sendPointerSync(event) } finally { event.recycle() }
     }
-    waitForCondition(scenario, "!document.querySelector('[role=dialog]')", "one actual outside tap must close the application menu")
+    println("s047_outside_dismiss=" + JSONObject().put("target",outsideTarget).put("native",geometry)); System.out.flush()
+    waitForCondition(scenario, "!document.querySelector('[role=dialog]')", "one actual outside tap must close the application menu",deadlineOverride=outsideDeadline)
     for (i in 1..6) createNewDraftForInput(scenario,"New text file","Untitled.txt")
     val countBefore = stringValue(evaluate(scenario,"document.querySelector('.document-count-trigger').textContent.trim()"))
     clickControl(scenario,countBefore)
@@ -2248,14 +2303,22 @@ class AndroidDeliveryInstrumentedTest {
     assertTrue("network settings must have recognized reversible states", original.values.all { it == "0" || it == "1" })
     val deadline = SystemClock.elapsedRealtime() + 30_000L
     var originalFailure: Throwable? = null
+    fun awaitSettings(wanted: Map<String,String>, until: Long, phase: String) {
+      var actual = emptyMap<String,String>()
+      while(SystemClock.elapsedRealtime() < until) {
+        actual = wanted.keys.associateWith { checkedShell("settings get global " + it) }
+        if(actual == wanted) return
+        SystemClock.sleep(100L)
+      }
+      throw AssertionError("hosted network settings must settle within their original phase deadline: " + phase + ",wanted=" + wanted + ",actual=" + actual)
+    }
     fun airplane(value: String) {
       if (Build.VERSION.SDK_INT >= 30) checkedShell("cmd connectivity airplane-mode " + if (value == "1") "enable" else "disable")
       else { checkedShell("settings put global airplane_mode_on " + value); checkedShell("am broadcast -a android.intent.action.AIRPLANE_MODE --ez state " + if (value == "1") "true" else "false") }
     }
     try {
       airplane("1"); checkedShell("svc wifi disable"); checkedShell("svc data disable")
-      assertEquals("1", checkedShell("settings get global airplane_mode_on"))
-      assertEquals("0", checkedShell("settings get global wifi_on")); assertEquals("0", checkedShell("settings get global mobile_data"))
+      awaitSettings(mapOf("airplane_mode_on" to "1", "wifi_on" to "0", "mobile_data" to "0"),deadline,"offline")
       var offline = false
       while (SystemClock.elapsedRealtime() < deadline) {
         val dump = checkedShell("dumpsys -t 2 connectivity")
@@ -2273,7 +2336,7 @@ class AndroidDeliveryInstrumentedTest {
         airplane(requireNotNull(original["airplane_mode_on"]))
         checkedShell("svc wifi " + if (original["wifi_on"] == "1") "enable" else "disable")
         checkedShell("svc data " + if (original["mobile_data"] == "1") "enable" else "disable")
-        for ((key, value) in original) assertEquals("hosted network setup must restore original setting", value, checkedShell("settings get global " + key))
+        awaitSettings(original,SystemClock.elapsedRealtime()+30_000L,"restore")
       }
       if (restored.isFailure) { println("s047_network_restore_failed=true"); System.out.flush(); if (originalFailure == null) throw AssertionError("hosted network restoration failed", restored.exceptionOrNull()) }
     }
@@ -2413,8 +2476,10 @@ class AndroidDeliveryInstrumentedTest {
     val receipt = JSONObject().put("journey", journey).put("status", "pass").put("identity", identity).put("profile", profile).put("variants", items).put("readbacks", journeyReadbacks[journey] ?: JSONArray()).put("observations", details).toString().toByteArray(Charsets.UTF_8)
     val name = "s047-row-" + journey + ".json"
     clientContext.openFileOutput(name, 0).use { it.write(receipt) }
-    println("s047_journey_evidence=" + JSONObject().put("journey", journey).put("file", name).put("sha256", sha256(receipt)))
-    System.out.flush()
+    val marker = "s047_journey_evidence=" + JSONObject().put("journey", journey).put("file", name).put("sha256", sha256(receipt))
+    println(marker); System.out.flush()
+    // Send a progress record through the instrumentation stream; logcat may rotate before the method finishes.
+    instrumentation.sendStatus(2, android.os.Bundle().apply { putString(android.app.Instrumentation.REPORT_KEY_STREAMRESULT, marker + "\n") })
   }
   private fun nativeBackObservation(scenario: ActivityScenario<MainActivity>): JSONObject {
     var result: JSONObject? = null
@@ -2459,15 +2524,19 @@ class AndroidDeliveryInstrumentedTest {
     }
     try {
     input(MotionEvent.ACTION_DOWN, startX)
+    SystemClock.sleep(32L)
     input(MotionEvent.ACTION_MOVE, startX + (endX - startX) * 0.35f)
+    SystemClock.sleep(32L)
     input(MotionEvent.ACTION_MOVE, endX)
     var progressed = false
+    var last = before
     while (SystemClock.elapsedRealtime() < deadline) {
       val state = nativeBackObservation(scenario)
+      last = state
       if (state.getInt("started") > before.getInt("started") && state.getInt("progressed") > before.getInt("progressed")) { progressed = true; break }
       SystemClock.sleep(100L)
     }
-    if (!progressed) { input(MotionEvent.ACTION_CANCEL, endX); throw AssertionError("real system gesture never produced start/progress callbacks") }
+    if (!progressed) throw AssertionError("real system gesture never produced start/progress callbacks: " + JSONObject().put("before", before).put("after", last).put("delta", deltaBack(before, last)).put("start_x", startX).put("end_x", endX).put("y", y))
     if (cancel) input(MotionEvent.ACTION_MOVE, startX)
     input(MotionEvent.ACTION_UP, if (cancel) startX else endX)
     var after = nativeBackObservation(scenario)
@@ -2611,6 +2680,8 @@ class AndroidDeliveryInstrumentedTest {
           }
         } else if (foreground && target.optBoolean("found") && target.optDouble("width") > 0 && target.optDouble("height") > 0 &&
           target.optBoolean("fully_visible") && target.optBoolean("hit") && !target.optBoolean("disabled") && mapping.optBoolean("whole_control_visible")) {
+          // Sample after a real frame interval so a moving IME/task cannot pass two immediate reads.
+          SystemClock.sleep(100L)
           val confirmed = JSONObject(evaluate(scenario, script.replace("button.scrollIntoView({block:'nearest',inline:'nearest'});", ""), deadlineOverride = deadline))
           val confirmedMapping = nativeControlGeometry(scenario, confirmed)
           if (nativeTapObservationsAgree(target, mapping, confirmed, confirmedMapping) && nativeTapForeground(confirmedMapping) &&

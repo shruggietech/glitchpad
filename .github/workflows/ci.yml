@@ -359,13 +359,16 @@ jobs:
           # The deprecated indirect renderer crashed during WebView teardown on both
           # governed API levels. Use Android's supported software renderer and keep
           # Vulkan disabled for this headless GLES test workload.
-          emulator-options: -no-window -no-audio -no-snapshot -no-boot-anim -gpu swiftshader -feature -Vulkan
+          # Hardware-key AVD defaults can omit the real navigation bar entirely.
+          # Require the system navigation owner before checking predictive callbacks.
+          emulator-options: -no-window -no-audio -no-snapshot -no-boot-anim -gpu swiftshader -feature -Vulkan -prop qemu.hw.mainkeys=0
           script: |
             # These offline tests do not need Google services. Avoid their first-boot
             # work starving instrumentation on the disposable hosted emulator.
             set -e; for package in com.google.android.gms com.google.android.googlequicksearchbox; do if adb shell pm list packages "$package" | grep -Fq "package:$package"; then adb shell pm disable-user --user 0 "$package"; fi; done
             # The API 36 system Bluetooth service can crash and leave its error dialog above
             # the AppFrame activity, stealing input focus from the WebView under test.
+            adb shell getprop qemu.hw.mainkeys | tr -d '\r' | grep -Fx '0'
             adb shell svc power stayon true
             adb shell input keyevent 224
             if [ "${{ matrix.api-level }}" = "36" ]; then adb shell svc bluetooth disable; fi

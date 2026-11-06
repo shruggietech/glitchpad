@@ -348,3 +348,38 @@ it('announces no diagram matches without exposing a false navigation action', as
   expect(screen.getByRole('button', { name: 'Previous match' })).toBeDisabled();
   expect(changed).not.toHaveBeenCalled();
 });
+
+it('automatically exposes exact read-only standalone source after a first malformed preview', async () => {
+  const source = 'flowchart TB\nCats -->\n';
+  const base = mermaidSession(source);
+  const { container } = render(
+    <MermaidSurface
+      session={{
+        ...base,
+        source: {
+          ...base.source,
+          capabilities: {
+            ...base.source.capabilities,
+            write: false,
+            replace_atomically: false,
+          },
+        },
+      }}
+      onDocumentChange={vi.fn()}
+      onLanguageChange={vi.fn()}
+      onMermaidChange={vi.fn()}
+    />,
+  );
+  await screen.findByText(
+    'The Mermaid source is malformed. Source remains available.',
+  );
+  const editor = await screen.findByRole('textbox', {
+    name: 'architecture.mmd text editor',
+  });
+  expect(editor).toHaveAttribute('contenteditable', 'false');
+  expect(EditorView.findFromDOM(editor)!.state.doc.toString()).toBe(source);
+  expect(container.querySelector('.mermaid-source-layout')).not.toHaveAttribute(
+    'hidden',
+  );
+  expect(container.querySelector('.mermaid-fallback')).not.toBeInTheDocument();
+});

@@ -19,14 +19,22 @@ import './TaskSurface.css';
 const TaskDepth = createContext(0);
 const layers = new Map<
   symbol,
-  { depth: number; priority: number; order: number; close: () => void }
+  {
+    depth: number;
+    priority: number;
+    order: number;
+    element: () => HTMLElement | null;
+    close: () => void;
+  }
 >();
 let order = 0;
+const orderedLayers = () =>
+  [...layers.values()].sort(
+    (a, b) => b.priority - a.priority || b.depth - a.depth || b.order - a.order,
+  );
 /** Called only by the application's existing native Back owner. */
 export function dismissTopTaskSurface(): boolean {
-  const layer = [...layers.values()].sort(
-    (a, b) => b.priority - a.priority || b.depth - a.depth || b.order - a.order,
-  )[0];
+  const layer = orderedLayers()[0];
   if (!layer) return false;
   layer.close();
   return true;
@@ -78,6 +86,7 @@ export function TaskSurface({
       depth,
       priority: level,
       order: ++order,
+      element: () => content.current,
       close: () => {
         if (allowed.current) change.current(false);
       },
@@ -170,7 +179,10 @@ export function TaskSurface({
           aria-modal={modal || undefined}
           style={{ zIndex: level + 1 + depth * 2 }}
           onEscapeKeyDown={(event) => {
-            if (!canClose) event.preventDefault();
+            if (event.defaultPrevented) return;
+            event.preventDefault();
+            // Keep Escape on the same owned layer order as native Back.
+            dismissTopTaskSurface();
           }}
           onPointerDownOutside={(event) => {
             if (!canClose) event.preventDefault();
@@ -190,12 +202,19 @@ export function TaskSurface({
           data-task-modal={modal ? 'true' : 'false'}
           onCloseAutoFocus={(event) => {
             event.preventDefault();
-            if (document.querySelector('[data-task-modal][data-state="open"]'))
-              return;
-            (opener?.isConnected
+            const target = opener?.isConnected
               ? opener
-              : document.getElementById('bb-main')
-            )?.focus({ preventScroll: true });
+              : document.getElementById('bb-main');
+            const remainingModal = orderedLayers()
+              .map((layer) => layer.element())
+              .find(
+                (node) =>
+                  node?.dataset.state === 'open' &&
+                  node.dataset.taskModal === 'true',
+              );
+            if (remainingModal && (!target || !remainingModal.contains(target)))
+              return;
+            target?.focus({ preventScroll: true });
           }}
         >
           <header className="task-surface-heading">

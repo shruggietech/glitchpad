@@ -1926,7 +1926,37 @@ export async function checkAppLayout({
                 '.task-surface[data-state=open] button',
                 'reset-confirm',
               );
+              const waitForResetOpener = async () =>
+                page.waitForFunction(function () {
+                  const active = document.activeElement;
+                  const owner = active && active.closest('[role=dialog]');
+                  return (
+                    !!active &&
+                    active.tagName === 'BUTTON' &&
+                    active.textContent.trim() === 'Reset preferences' &&
+                    !!owner &&
+                    owner.querySelector('h2').textContent === 'Preferences'
+                  );
+                });
               await click('Cancel reset');
+              await waitForResetOpener();
+              for (const route of ['Escape', 'header Close']) {
+                await click('Reset preferences');
+                await page.waitForFunction(function () {
+                  const group = document.querySelector(
+                    '[aria-label="Reset preferences?"][role=group]',
+                  );
+                  const dialog = group && group.closest('[role=dialog]');
+                  return (
+                    !!dialog &&
+                    dialog.getAttribute('data-state') === 'open' &&
+                    dialog.contains(document.activeElement)
+                  );
+                });
+                if (route === 'Escape') await page.keyboard.press('Escape');
+                else await click('Close Reset preferences?');
+                await waitForResetOpener();
+              }
               await click('Reset preferences');
               await click('Reset settings');
               await page.waitForFunction(function () {
@@ -1934,11 +1964,18 @@ export async function checkAppLayout({
                   .querySelector('.preferences-content')
                   .textContent.includes('Preferences reset.');
               });
+              await waitForResetOpener();
               row.outcomes.push({
                 id: 'CTRL-097-104',
                 theme_choices: themes,
                 numeric_draft: true,
                 reset_cancel_and_success: true,
+                reset_focus_routes: [
+                  'Cancel',
+                  'Escape',
+                  'header Close',
+                  'completion',
+                ],
               });
             }
             assert.deepEqual(row.errors, [], 'Production task must not throw');

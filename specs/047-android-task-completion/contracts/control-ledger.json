@@ -41,7 +41,7 @@
       "native_preparation": {
         "method": "verifyS047ShellAliases",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1997,
+        "line": 2031,
         "assertions": "Actual Menu Escape/outside, Skip target focus, compact switcher close, wide inline/overflow activate+close, CtrlTab/ShiftCtrlTab, Home/End/arrows, AltShift reorder, CtrlW; source count/active surface assertions.",
         "prepared_additional_labels": [
           "keyboard focus reveals skip link",
@@ -60,7 +60,7 @@
           "Alt+Shift+ArrowRight reorder"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -108,7 +108,7 @@
       "native_preparation": {
         "method": "verifyS047ShellAliases",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1997,
+        "line": 2031,
         "assertions": "Actual Menu Escape/outside, Skip target focus, compact switcher close, wide inline/overflow activate+close, CtrlTab/ShiftCtrlTab, Home/End/arrows, AltShift reorder, CtrlW; source count/active surface assertions.",
         "prepared_additional_labels": [
           "keyboard focus reveals skip link",
@@ -127,7 +127,7 @@
           "Alt+Shift+ArrowRight reorder"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -191,11 +191,11 @@
       "native_preparation": {
         "method": "s047ColdAddJourney",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2083,
+        "line": 2138,
         "assertions": "Actual Add choices, close/outside/Back and native Open one chooser/cancel; canonical current Add/Open replaces legacy labels.",
         "prepared_additional_labels": ["Open (requested + menu)"],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -245,11 +245,11 @@
       "native_preparation": {
         "method": "s047ColdAddJourney",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2083,
+        "line": 2138,
         "assertions": "Actual Add choices, close/outside/Back and native Open one chooser/cancel; canonical current Add/Open replaces legacy labels.",
         "prepared_additional_labels": ["Open (requested + menu)"],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -300,11 +300,11 @@
       "native_preparation": {
         "method": "s047ColdAddJourney",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2083,
+        "line": 2138,
         "assertions": "Actual Add choices, close/outside/Back and native Open one chooser/cancel; canonical current Add/Open replaces legacy labels.",
         "prepared_additional_labels": ["Open (requested + menu)"],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -354,11 +354,11 @@
       "native_preparation": {
         "method": "s047ColdAddJourney",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2083,
+        "line": 2138,
         "assertions": "Actual Add choices, close/outside/Back and native Open one chooser/cancel; canonical current Add/Open replaces legacy labels.",
         "prepared_additional_labels": ["Open (requested + menu)"],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -408,11 +408,11 @@
       "native_preparation": {
         "method": "s047ColdAddJourney",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2083,
+        "line": 2138,
         "assertions": "Actual Add choices, close/outside/Back and native Open one chooser/cancel; canonical current Add/Open replaces legacy labels.",
         "prepared_additional_labels": ["Open (requested + menu)"],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -458,14 +458,14 @@
       "native_preparation": {
         "method": "s047AboutJourney",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2282,
+        "line": 2345,
         "assertions": "Actual PackageManager facts, four exact allowlisted ACTION_VIEW dispatches with one-per-action count/no attached content, actual hosted network-none offline notice view with restoration, actual Help destination.",
         "prepared_additional_labels": [
           "explicit report destination",
           "no automatic attachments or upload"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -506,11 +506,11 @@
       "native_preparation": {
         "method": "verifyS047TaskGeometry",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1568,
+        "line": 1602,
         "assertions": "Actual Menu destinations plus profile-specific Preferences/metadata tasks, and ordinary diagnostics native export/Share.",
         "prepared_additional_labels": [],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -551,11 +551,11 @@
       "native_preparation": {
         "method": "verifyS047TaskGeometry",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1568,
+        "line": 1602,
         "assertions": "Actual Menu destinations plus profile-specific Preferences/metadata tasks, and ordinary diagnostics native export/Share.",
         "prepared_additional_labels": [],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -610,7 +610,7 @@
       "native_preparation": {
         "method": "verifyS047ShellAliases",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1997,
+        "line": 2031,
         "assertions": "Actual Menu Escape/outside, Skip target focus, compact switcher close, wide inline/overflow activate+close, CtrlTab/ShiftCtrlTab, Home/End/arrows, AltShift reorder, CtrlW; source count/active surface assertions.",
         "prepared_additional_labels": [
           "keyboard focus reveals skip link",
@@ -629,7 +629,7 @@
           "Alt+Shift+ArrowRight reorder"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -670,11 +670,11 @@
       "native_preparation": {
         "method": "s047BackJourney",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2189,
+        "line": 2244,
         "assertions": "Actual IME and button Back, modal background inert, rotation preservation, real picker cancel/dirty guards; API36 positive actual native callback start/progress/cancel/commit deltas.",
         "prepared_additional_labels": [],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -720,14 +720,14 @@
       "native_preparation": {
         "method": "s047AboutJourney",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2282,
+        "line": 2345,
         "assertions": "Actual PackageManager facts, four exact allowlisted ACTION_VIEW dispatches with one-per-action count/no attached content, actual hosted network-none offline notice view with restoration, actual Help destination.",
         "prepared_additional_labels": [
           "explicit report destination",
           "no automatic attachments or upload"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -773,14 +773,14 @@
       "native_preparation": {
         "method": "s047AboutJourney",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2282,
+        "line": 2345,
         "assertions": "Actual PackageManager facts, four exact allowlisted ACTION_VIEW dispatches with one-per-action count/no attached content, actual hosted network-none offline notice view with restoration, actual Help destination.",
         "prepared_additional_labels": [
           "explicit report destination",
           "no automatic attachments or upload"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -840,14 +840,14 @@
       "native_preparation": {
         "method": "s047AboutJourney",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2282,
+        "line": 2345,
         "assertions": "Actual PackageManager facts, four exact allowlisted ACTION_VIEW dispatches with one-per-action count/no attached content, actual hosted network-none offline notice view with restoration, actual Help destination.",
         "prepared_additional_labels": [
           "explicit report destination",
           "no automatic attachments or upload"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -935,14 +935,14 @@
       "native_preparation": {
         "method": "s047AboutJourney",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2282,
+        "line": 2345,
         "assertions": "Actual PackageManager facts, four exact allowlisted ACTION_VIEW dispatches with one-per-action count/no attached content, actual hosted network-none offline notice view with restoration, actual Help destination.",
         "prepared_additional_labels": [
           "explicit report destination",
           "no automatic attachments or upload"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -1002,14 +1002,14 @@
       "native_preparation": {
         "method": "s047AboutJourney",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2282,
+        "line": 2345,
         "assertions": "Actual PackageManager facts, four exact allowlisted ACTION_VIEW dispatches with one-per-action count/no attached content, actual hosted network-none offline notice view with restoration, actual Help destination.",
         "prepared_additional_labels": [
           "explicit report destination",
           "no automatic attachments or upload"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -1079,7 +1079,7 @@
       "native_preparation": {
         "method": "verifyS047ShellAliases",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1997,
+        "line": 2031,
         "assertions": "Actual Menu Escape/outside, Skip target focus, compact switcher close, wide inline/overflow activate+close, CtrlTab/ShiftCtrlTab, Home/End/arrows, AltShift reorder, CtrlW; source count/active surface assertions.",
         "prepared_additional_labels": [
           "keyboard focus reveals skip link",
@@ -1098,7 +1098,7 @@
           "Alt+Shift+ArrowRight reorder"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -1184,7 +1184,7 @@
       "native_preparation": {
         "method": "verifyS047ShellAliases",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1997,
+        "line": 2031,
         "assertions": "Actual Menu Escape/outside, Skip target focus, compact switcher close, wide inline/overflow activate+close, CtrlTab/ShiftCtrlTab, Home/End/arrows, AltShift reorder, CtrlW; source count/active surface assertions.",
         "prepared_additional_labels": [
           "keyboard focus reveals skip link",
@@ -1203,7 +1203,7 @@
           "Alt+Shift+ArrowRight reorder"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -1244,7 +1244,7 @@
       "native_preparation": {
         "method": "verifyS047ShellAliases",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1997,
+        "line": 2031,
         "assertions": "Actual Menu Escape/outside, Skip target focus, compact switcher close, wide inline/overflow activate+close, CtrlTab/ShiftCtrlTab, Home/End/arrows, AltShift reorder, CtrlW; source count/active surface assertions.",
         "prepared_additional_labels": [
           "keyboard focus reveals skip link",
@@ -1263,7 +1263,7 @@
           "Alt+Shift+ArrowRight reorder"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -1360,7 +1360,7 @@
       "native_preparation": {
         "method": "verifyS047ShellAliases",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1997,
+        "line": 2031,
         "assertions": "Actual Menu Escape/outside, Skip target focus, compact switcher close, wide inline/overflow activate+close, CtrlTab/ShiftCtrlTab, Home/End/arrows, AltShift reorder, CtrlW; source count/active surface assertions.",
         "prepared_additional_labels": [
           "keyboard focus reveals skip link",
@@ -1379,7 +1379,7 @@
           "Alt+Shift+ArrowRight reorder"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -1434,7 +1434,7 @@
       "native_preparation": {
         "method": "verifyS047ShellAliases",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1997,
+        "line": 2031,
         "assertions": "Actual Menu Escape/outside, Skip target focus, compact switcher close, wide inline/overflow activate+close, CtrlTab/ShiftCtrlTab, Home/End/arrows, AltShift reorder, CtrlW; source count/active surface assertions.",
         "prepared_additional_labels": [
           "keyboard focus reveals skip link",
@@ -1453,7 +1453,7 @@
           "Alt+Shift+ArrowRight reorder"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -1566,7 +1566,7 @@
       "native_preparation": {
         "method": "verifyS047EditorAliases",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1132,
+        "line": 1150,
         "assertions": "Actual native Copy/Indent/Outdent/Tab/ShiftTab/Undo/Redo/CtrlF/F3/ShiftF3/CtrlG; every native Language option; Wrap/Unwrap actual state; managed Details close.",
         "prepared_additional_labels": [
           "current source selection",
@@ -1593,7 +1593,7 @@
           "Control+G"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -1692,7 +1692,7 @@
       "native_preparation": {
         "method": "verifyS047EditorAndPreferences",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1205,
+        "line": 1227,
         "assertions": "Real InputConnection typing; actual source selection/history attributes; Find options/count/no-match/invalidregex; exact range Replace next and exact Replace all; menu undo/redo+disabled redo; line invalid999/valid2/cancel; every Theme/default mode; font,size/tab validation, wrap checkbox and explicit override retention, scoped reset cancel/success.",
         "prepared_additional_labels": [
           "source text search",
@@ -1740,7 +1740,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -1926,7 +1926,7 @@
       "native_preparation": {
         "method": "verifyS047EditorAndPreferences",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1205,
+        "line": 1227,
         "assertions": "Real InputConnection typing; actual source selection/history attributes; Find options/count/no-match/invalidregex; exact range Replace next and exact Replace all; menu undo/redo+disabled redo; line invalid999/valid2/cancel; every Theme/default mode; font,size/tab validation, wrap checkbox and explicit override retention, scoped reset cancel/success.",
         "prepared_additional_labels": [
           "source text search",
@@ -1974,7 +1974,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -2125,7 +2125,7 @@
       "native_preparation": {
         "method": "verifyS047EditorAndPreferences",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1205,
+        "line": 1227,
         "assertions": "Real InputConnection typing; actual source selection/history attributes; Find options/count/no-match/invalidregex; exact range Replace next and exact Replace all; menu undo/redo+disabled redo; line invalid999/valid2/cancel; every Theme/default mode; font,size/tab validation, wrap checkbox and explicit override retention, scoped reset cancel/success.",
         "prepared_additional_labels": [
           "source text search",
@@ -2173,7 +2173,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -2246,7 +2246,7 @@
       "native_preparation": {
         "method": "verifyS047EditorAndPreferences",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1205,
+        "line": 1227,
         "assertions": "Real InputConnection typing; actual source selection/history attributes; Find options/count/no-match/invalidregex; exact range Replace next and exact Replace all; menu undo/redo+disabled redo; line invalid999/valid2/cancel; every Theme/default mode; font,size/tab validation, wrap checkbox and explicit override retention, scoped reset cancel/success.",
         "prepared_additional_labels": [
           "source text search",
@@ -2294,7 +2294,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -2427,7 +2427,7 @@
       "native_preparation": {
         "method": "verifyS047EditorAliases",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1132,
+        "line": 1150,
         "assertions": "Actual native Copy/Indent/Outdent/Tab/ShiftTab/Undo/Redo/CtrlF/F3/ShiftF3/CtrlG; every native Language option; Wrap/Unwrap actual state; managed Details close.",
         "prepared_additional_labels": [
           "current source selection",
@@ -2454,7 +2454,7 @@
           "Control+G"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -2548,7 +2548,7 @@
       "native_preparation": {
         "method": "verifyS047EditorAndPreferences",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1205,
+        "line": 1227,
         "assertions": "Real InputConnection typing; actual source selection/history attributes; Find options/count/no-match/invalidregex; exact range Replace next and exact Replace all; menu undo/redo+disabled redo; line invalid999/valid2/cancel; every Theme/default mode; font,size/tab validation, wrap checkbox and explicit override retention, scoped reset cancel/success.",
         "prepared_additional_labels": [
           "source text search",
@@ -2596,7 +2596,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -2690,7 +2690,7 @@
       "native_preparation": {
         "method": "verifyS047EditorAndPreferences",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1205,
+        "line": 1227,
         "assertions": "Real InputConnection typing; actual source selection/history attributes; Find options/count/no-match/invalidregex; exact range Replace next and exact Replace all; menu undo/redo+disabled redo; line invalid999/valid2/cancel; every Theme/default mode; font,size/tab validation, wrap checkbox and explicit override retention, scoped reset cancel/success.",
         "prepared_additional_labels": [
           "source text search",
@@ -2738,7 +2738,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -2824,7 +2824,7 @@
       "native_preparation": {
         "method": "verifyS047EditorAliases",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1132,
+        "line": 1150,
         "assertions": "Actual native Copy/Indent/Outdent/Tab/ShiftTab/Undo/Redo/CtrlF/F3/ShiftF3/CtrlG; every native Language option; Wrap/Unwrap actual state; managed Details close.",
         "prepared_additional_labels": [
           "current source selection",
@@ -2851,7 +2851,7 @@
           "Control+G"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -2937,7 +2937,7 @@
       "native_preparation": {
         "method": "verifyS047EditorAliases",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1132,
+        "line": 1150,
         "assertions": "Actual native Copy/Indent/Outdent/Tab/ShiftTab/Undo/Redo/CtrlF/F3/ShiftF3/CtrlG; every native Language option; Wrap/Unwrap actual state; managed Details close.",
         "prepared_additional_labels": [
           "current source selection",
@@ -2964,7 +2964,7 @@
           "Control+G"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -3055,7 +3055,7 @@
       "native_preparation": {
         "method": "verifyS047EditorAliases",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1132,
+        "line": 1150,
         "assertions": "Actual native Copy/Indent/Outdent/Tab/ShiftTab/Undo/Redo/CtrlF/F3/ShiftF3/CtrlG; every native Language option; Wrap/Unwrap actual state; managed Details close.",
         "prepared_additional_labels": [
           "current source selection",
@@ -3082,7 +3082,7 @@
           "Control+G"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -3279,7 +3279,7 @@
       "native_preparation": {
         "method": "s047ImageJourney",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1913,
+        "line": 1947,
         "assertions": "Actual local image/menu/native Ctrl+Plus/Minus and diagram local/menu/keyboard effective scales; shared native viewport tests.",
         "prepared_additional_labels": [
           "menu",
@@ -3290,7 +3290,7 @@
           "Fit-to-custom multiplicative scale"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -3510,7 +3510,7 @@
       "native_preparation": {
         "method": "s047ImageJourney",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1913,
+        "line": 1947,
         "assertions": "Actual local image/menu/native Ctrl+Plus/Minus and diagram local/menu/keyboard effective scales; shared native viewport tests.",
         "prepared_additional_labels": [
           "menu",
@@ -3521,7 +3521,7 @@
           "Fit-to-custom multiplicative scale"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -3677,7 +3677,7 @@
       "native_preparation": {
         "method": "verifyS047MarkdownAndMetadata",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1290,
+        "line": 1324,
         "assertions": "Exact editable/read-only Read/Edit source; actual selection/history retention; rendered/diagram searches; exact heading and footnote focus; HTTP/mail Cancel/Back and one native HTTP handoff; genuine malformed Mermaid/embedded source fallbacks; metadata individual/bulk privacy, sensitive confirmation/cancel focus, expand/collapse and independently computed SHA clipboard.",
         "prepared_additional_labels": [
           "document tools",
@@ -3717,7 +3717,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -3826,7 +3826,7 @@
           "pending write disables cancel"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -3946,7 +3946,7 @@
       "native_preparation": {
         "method": "verifyS047MarkdownAndMetadata",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1290,
+        "line": 1324,
         "assertions": "Exact editable/read-only Read/Edit source; actual selection/history retention; rendered/diagram searches; exact heading and footnote focus; HTTP/mail Cancel/Back and one native HTTP handoff; genuine malformed Mermaid/embedded source fallbacks; metadata individual/bulk privacy, sensitive confirmation/cancel focus, expand/collapse and independently computed SHA clipboard.",
         "prepared_additional_labels": [
           "document tools",
@@ -3986,7 +3986,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -4038,7 +4038,7 @@
       "native_preparation": {
         "method": "verifyS047MarkdownAndMetadata",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1290,
+        "line": 1324,
         "assertions": "Exact editable/read-only Read/Edit source; actual selection/history retention; rendered/diagram searches; exact heading and footnote focus; HTTP/mail Cancel/Back and one native HTTP handoff; genuine malformed Mermaid/embedded source fallbacks; metadata individual/bulk privacy, sensitive confirmation/cancel focus, expand/collapse and independently computed SHA clipboard.",
         "prepared_additional_labels": [
           "document tools",
@@ -4078,7 +4078,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -4126,14 +4126,14 @@
       "native_preparation": {
         "method": "verifyS047MarkdownAndMetadata",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1290,
+        "line": 1324,
         "assertions": "Android Print absent/disabled (no native adapter); local relative link visibly unavailable (no native local capability). Declared page commands are not implemented task providers. No invented adapters.",
         "prepared_additional_labels": [
           "Android absent without native print provider",
           "unavailable local source feedback"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -4185,7 +4185,7 @@
           "pending write disables cancel"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -4232,14 +4232,14 @@
       "native_preparation": {
         "method": "verifyS047MarkdownAndMetadata",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1290,
+        "line": 1324,
         "assertions": "Android Print absent/disabled (no native adapter); local relative link visibly unavailable (no native local capability). Declared page commands are not implemented task providers. No invented adapters.",
         "prepared_additional_labels": [
           "Android absent without native print provider",
           "unavailable local source feedback"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -4286,14 +4286,14 @@
       "native_preparation": {
         "method": "verifyS047MarkdownAndMetadata",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1290,
+        "line": 1324,
         "assertions": "Android Print absent/disabled (no native adapter); local relative link visibly unavailable (no native local capability). Declared page commands are not implemented task providers. No invented adapters.",
         "prepared_additional_labels": [
           "Android absent without native print provider",
           "unavailable local source feedback"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -4409,7 +4409,7 @@
       "native_preparation": {
         "method": "verifyS047EditorAndPreferences",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1205,
+        "line": 1227,
         "assertions": "Real InputConnection typing; actual source selection/history attributes; Find options/count/no-match/invalidregex; exact range Replace next and exact Replace all; menu undo/redo+disabled redo; line invalid999/valid2/cancel; every Theme/default mode; font,size/tab validation, wrap checkbox and explicit override retention, scoped reset cancel/success.",
         "prepared_additional_labels": [
           "source text search",
@@ -4457,7 +4457,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -4539,7 +4539,7 @@
       "native_preparation": {
         "method": "verifyS047EditorAliases",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1132,
+        "line": 1150,
         "assertions": "Actual native Copy/Indent/Outdent/Tab/ShiftTab/Undo/Redo/CtrlF/F3/ShiftF3/CtrlG; every native Language option; Wrap/Unwrap actual state; managed Details close.",
         "prepared_additional_labels": [
           "current source selection",
@@ -4566,7 +4566,7 @@
           "Control+G"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -4804,7 +4804,7 @@
       "native_preparation": {
         "method": "verifyS047EditorAliases",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1132,
+        "line": 1150,
         "assertions": "Actual native Copy/Indent/Outdent/Tab/ShiftTab/Undo/Redo/CtrlF/F3/ShiftF3/CtrlG; every native Language option; Wrap/Unwrap actual state; managed Details close.",
         "prepared_additional_labels": [
           "current source selection",
@@ -4831,7 +4831,7 @@
           "Control+G"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -4960,7 +4960,7 @@
       "native_preparation": {
         "method": "verifyS047EditorAndPreferences",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1205,
+        "line": 1227,
         "assertions": "Real InputConnection typing; actual source selection/history attributes; Find options/count/no-match/invalidregex; exact range Replace next and exact Replace all; menu undo/redo+disabled redo; line invalid999/valid2/cancel; every Theme/default mode; font,size/tab validation, wrap checkbox and explicit override retention, scoped reset cancel/success.",
         "prepared_additional_labels": [
           "source text search",
@@ -5008,7 +5008,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -5074,7 +5074,7 @@
       "native_preparation": {
         "method": "verifyS047EditorAndPreferences",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1205,
+        "line": 1227,
         "assertions": "Real InputConnection typing; actual source selection/history attributes; Find options/count/no-match/invalidregex; exact range Replace next and exact Replace all; menu undo/redo+disabled redo; line invalid999/valid2/cancel; every Theme/default mode; font,size/tab validation, wrap checkbox and explicit override retention, scoped reset cancel/success.",
         "prepared_additional_labels": [
           "source text search",
@@ -5122,7 +5122,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -5206,7 +5206,7 @@
       "native_preparation": {
         "method": "verifyS047EditorAndPreferences",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1205,
+        "line": 1227,
         "assertions": "Real InputConnection typing; actual source selection/history attributes; Find options/count/no-match/invalidregex; exact range Replace next and exact Replace all; menu undo/redo+disabled redo; line invalid999/valid2/cancel; every Theme/default mode; font,size/tab validation, wrap checkbox and explicit override retention, scoped reset cancel/success.",
         "prepared_additional_labels": [
           "source text search",
@@ -5254,7 +5254,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -5354,7 +5354,7 @@
       "native_preparation": {
         "method": "verifyS047EditorAndPreferences",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1205,
+        "line": 1227,
         "assertions": "Real InputConnection typing; actual source selection/history attributes; Find options/count/no-match/invalidregex; exact range Replace next and exact Replace all; menu undo/redo+disabled redo; line invalid999/valid2/cancel; every Theme/default mode; font,size/tab validation, wrap checkbox and explicit override retention, scoped reset cancel/success.",
         "prepared_additional_labels": [
           "source text search",
@@ -5402,7 +5402,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -5486,7 +5486,7 @@
       "native_preparation": {
         "method": "verifyS047EditorAndPreferences",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1205,
+        "line": 1227,
         "assertions": "Real InputConnection typing; actual source selection/history attributes; Find options/count/no-match/invalidregex; exact range Replace next and exact Replace all; menu undo/redo+disabled redo; line invalid999/valid2/cancel; every Theme/default mode; font,size/tab validation, wrap checkbox and explicit override retention, scoped reset cancel/success.",
         "prepared_additional_labels": [
           "source text search",
@@ -5534,7 +5534,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -5623,7 +5623,7 @@
       "native_preparation": {
         "method": "verifyS047EditorAndPreferences",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1205,
+        "line": 1227,
         "assertions": "Real InputConnection typing; actual source selection/history attributes; Find options/count/no-match/invalidregex; exact range Replace next and exact Replace all; menu undo/redo+disabled redo; line invalid999/valid2/cancel; every Theme/default mode; font,size/tab validation, wrap checkbox and explicit override retention, scoped reset cancel/success.",
         "prepared_additional_labels": [
           "source text search",
@@ -5671,7 +5671,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -5760,7 +5760,7 @@
       "native_preparation": {
         "method": "verifyS047EditorAndPreferences",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1205,
+        "line": 1227,
         "assertions": "Real InputConnection typing; actual source selection/history attributes; Find options/count/no-match/invalidregex; exact range Replace next and exact Replace all; menu undo/redo+disabled redo; line invalid999/valid2/cancel; every Theme/default mode; font,size/tab validation, wrap checkbox and explicit override retention, scoped reset cancel/success.",
         "prepared_additional_labels": [
           "source text search",
@@ -5808,7 +5808,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -5897,7 +5897,7 @@
       "native_preparation": {
         "method": "verifyS047EditorAndPreferences",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1205,
+        "line": 1227,
         "assertions": "Real InputConnection typing; actual source selection/history attributes; Find options/count/no-match/invalidregex; exact range Replace next and exact Replace all; menu undo/redo+disabled redo; line invalid999/valid2/cancel; every Theme/default mode; font,size/tab validation, wrap checkbox and explicit override retention, scoped reset cancel/success.",
         "prepared_additional_labels": [
           "source text search",
@@ -5945,7 +5945,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -6058,7 +6058,7 @@
       "native_preparation": {
         "method": "verifyS047EditorAndPreferences",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1205,
+        "line": 1227,
         "assertions": "Real InputConnection typing; actual source selection/history attributes; Find options/count/no-match/invalidregex; exact range Replace next and exact Replace all; menu undo/redo+disabled redo; line invalid999/valid2/cancel; every Theme/default mode; font,size/tab validation, wrap checkbox and explicit override retention, scoped reset cancel/success.",
         "prepared_additional_labels": [
           "source text search",
@@ -6106,7 +6106,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -6209,7 +6209,7 @@
       "native_preparation": {
         "method": "verifyS047EditorAndPreferences",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1205,
+        "line": 1227,
         "assertions": "Real InputConnection typing; actual source selection/history attributes; Find options/count/no-match/invalidregex; exact range Replace next and exact Replace all; menu undo/redo+disabled redo; line invalid999/valid2/cancel; every Theme/default mode; font,size/tab validation, wrap checkbox and explicit override retention, scoped reset cancel/success.",
         "prepared_additional_labels": [
           "source text search",
@@ -6257,7 +6257,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -6389,7 +6389,7 @@
       "native_preparation": {
         "method": "verifyS047MarkdownAndMetadata",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1290,
+        "line": 1324,
         "assertions": "Exact editable/read-only Read/Edit source; actual selection/history retention; rendered/diagram searches; exact heading and footnote focus; HTTP/mail Cancel/Back and one native HTTP handoff; genuine malformed Mermaid/embedded source fallbacks; metadata individual/bulk privacy, sensitive confirmation/cancel focus, expand/collapse and independently computed SHA clipboard.",
         "prepared_additional_labels": [
           "document tools",
@@ -6429,7 +6429,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -6524,7 +6524,7 @@
       "native_preparation": {
         "method": "verifyS047MarkdownAndMetadata",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1290,
+        "line": 1324,
         "assertions": "Exact editable/read-only Read/Edit source; actual selection/history retention; rendered/diagram searches; exact heading and footnote focus; HTTP/mail Cancel/Back and one native HTTP handoff; genuine malformed Mermaid/embedded source fallbacks; metadata individual/bulk privacy, sensitive confirmation/cancel focus, expand/collapse and independently computed SHA clipboard.",
         "prepared_additional_labels": [
           "document tools",
@@ -6564,7 +6564,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -6674,7 +6674,7 @@
       "native_preparation": {
         "method": "verifyS047MarkdownAndMetadata",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1290,
+        "line": 1324,
         "assertions": "Exact editable/read-only Read/Edit source; actual selection/history retention; rendered/diagram searches; exact heading and footnote focus; HTTP/mail Cancel/Back and one native HTTP handoff; genuine malformed Mermaid/embedded source fallbacks; metadata individual/bulk privacy, sensitive confirmation/cancel focus, expand/collapse and independently computed SHA clipboard.",
         "prepared_additional_labels": [
           "document tools",
@@ -6714,7 +6714,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -6844,7 +6844,7 @@
       "native_preparation": {
         "method": "verifyS047MarkdownAndMetadata",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1290,
+        "line": 1324,
         "assertions": "Exact editable/read-only Read/Edit source; actual selection/history retention; rendered/diagram searches; exact heading and footnote focus; HTTP/mail Cancel/Back and one native HTTP handoff; genuine malformed Mermaid/embedded source fallbacks; metadata individual/bulk privacy, sensitive confirmation/cancel focus, expand/collapse and independently computed SHA clipboard.",
         "prepared_additional_labels": [
           "document tools",
@@ -6884,7 +6884,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -6957,14 +6957,14 @@
       "native_preparation": {
         "method": "verifyS047MarkdownAndMetadata",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1290,
+        "line": 1324,
         "assertions": "Android Print absent/disabled (no native adapter); local relative link visibly unavailable (no native local capability). Declared page commands are not implemented task providers. No invented adapters.",
         "prepared_additional_labels": [
           "Android absent without native print provider",
           "unavailable local source feedback"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -7042,7 +7042,7 @@
       "native_preparation": {
         "method": "verifyS047MarkdownAndMetadata",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1290,
+        "line": 1324,
         "assertions": "Exact editable/read-only Read/Edit source; actual selection/history retention; rendered/diagram searches; exact heading and footnote focus; HTTP/mail Cancel/Back and one native HTTP handoff; genuine malformed Mermaid/embedded source fallbacks; metadata individual/bulk privacy, sensitive confirmation/cancel focus, expand/collapse and independently computed SHA clipboard.",
         "prepared_additional_labels": [
           "document tools",
@@ -7082,7 +7082,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -7150,7 +7150,7 @@
       "native_preparation": {
         "method": "verifyS047MarkdownAndMetadata",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1290,
+        "line": 1324,
         "assertions": "Exact editable/read-only Read/Edit source; actual selection/history retention; rendered/diagram searches; exact heading and footnote focus; HTTP/mail Cancel/Back and one native HTTP handoff; genuine malformed Mermaid/embedded source fallbacks; metadata individual/bulk privacy, sensitive confirmation/cancel focus, expand/collapse and independently computed SHA clipboard.",
         "prepared_additional_labels": [
           "document tools",
@@ -7190,7 +7190,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -7311,7 +7311,7 @@
         "assertions": "Fault-probe-only actual worker/parser/projection failures, exact retained source and real Retry path.",
         "prepared_additional_labels": ["contained failure retry"],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -7343,7 +7343,7 @@
           "status": "pending",
           "evidence": [],
           "native_preparation": "primary_current_control_prepared",
-          "supplemental_evidence_refs": [],
+          "supplemental_evidence_refs": ["R1_U_AUTOMATIC_MERMAID_SOURCE"],
           "supplemental_observation": {
             "unit": "not_individually_mapped",
             "browser": "not_individually_asserted",
@@ -7385,7 +7385,7 @@
           "status": "pending",
           "evidence": [],
           "native_preparation": "explicit_assertion_prepared",
-          "supplemental_evidence_refs": [],
+          "supplemental_evidence_refs": ["R1_U_AUTOMATIC_MERMAID_SOURCE"],
           "supplemental_observation": {
             "unit": "not_individually_mapped",
             "browser": "not_individually_asserted",
@@ -7442,8 +7442,8 @@
       "native_preparation": {
         "method": "verifyS047MarkdownAndMetadata",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1290,
-        "assertions": "Exact editable/read-only Read/Edit source; actual selection/history retention; rendered/diagram searches; exact heading and footnote focus; HTTP/mail Cancel/Back and one native HTTP handoff; genuine malformed Mermaid/embedded source fallbacks; metadata individual/bulk privacy, sensitive confirmation/cancel focus, expand/collapse and independently computed SHA clipboard.",
+        "line": 1324,
+        "assertions": "Exact editable/read-only Read/Edit source; actual selection/history retention; rendered/diagram searches; exact heading and footnote focus; HTTP/mail Cancel/Back and one native HTTP handoff; genuine malformed Mermaid/embedded source fallbacks; metadata individual/bulk privacy, sensitive confirmation/cancel focus, expand/collapse and independently computed SHA clipboard. Standalone malformed Mermaid must automatically expose exact read-only source; the embedded fixture still requires its explicit View source action.",
         "prepared_additional_labels": [
           "document tools",
           "query",
@@ -7482,7 +7482,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -7577,7 +7577,7 @@
       "native_preparation": {
         "method": "verifyS047MarkdownAndMetadata",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1290,
+        "line": 1324,
         "assertions": "Exact editable/read-only Read/Edit source; actual selection/history retention; rendered/diagram searches; exact heading and footnote focus; HTTP/mail Cancel/Back and one native HTTP handoff; genuine malformed Mermaid/embedded source fallbacks; metadata individual/bulk privacy, sensitive confirmation/cancel focus, expand/collapse and independently computed SHA clipboard.",
         "prepared_additional_labels": [
           "document tools",
@@ -7617,7 +7617,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -7711,7 +7711,7 @@
       "native_preparation": {
         "method": "verifyS047DiagramRoutes",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1774,
+        "line": 1808,
         "assertions": "Standalone and embedded actual local/menu/keyboard zoom, native drag and arrow pan, directional Pan controls, Actual size1/Reset/Fit with actual effective scales.",
         "prepared_additional_labels": [
           "standalone Fit",
@@ -7723,7 +7723,7 @@
           "Fit-to-pan scale continuity"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -7802,7 +7802,7 @@
       "native_preparation": {
         "method": "verifyS047DiagramRoutes",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1774,
+        "line": 1808,
         "assertions": "Standalone and embedded actual local/menu/keyboard zoom, native drag and arrow pan, directional Pan controls, Actual size1/Reset/Fit with actual effective scales.",
         "prepared_additional_labels": [
           "standalone Fit",
@@ -7814,7 +7814,7 @@
           "Fit-to-pan scale continuity"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -7860,7 +7860,7 @@
       "native_preparation": {
         "method": "verifyS047DiagramRoutes",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1774,
+        "line": 1808,
         "assertions": "Standalone and embedded actual local/menu/keyboard zoom, native drag and arrow pan, directional Pan controls, Actual size1/Reset/Fit with actual effective scales.",
         "prepared_additional_labels": [
           "standalone Fit",
@@ -7872,7 +7872,7 @@
           "Fit-to-pan scale continuity"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -7918,7 +7918,7 @@
       "native_preparation": {
         "method": "verifyS047DiagramRoutes",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1774,
+        "line": 1808,
         "assertions": "Standalone and embedded actual local/menu/keyboard zoom, native drag and arrow pan, directional Pan controls, Actual size1/Reset/Fit with actual effective scales.",
         "prepared_additional_labels": [
           "standalone Fit",
@@ -7930,7 +7930,7 @@
           "Fit-to-pan scale continuity"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -7976,7 +7976,7 @@
       "native_preparation": {
         "method": "verifyS047DiagramRoutes",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1774,
+        "line": 1808,
         "assertions": "Standalone and embedded actual local/menu/keyboard zoom, native drag and arrow pan, directional Pan controls, Actual size1/Reset/Fit with actual effective scales.",
         "prepared_additional_labels": [
           "standalone Fit",
@@ -7988,7 +7988,7 @@
           "Fit-to-pan scale continuity"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -8034,7 +8034,7 @@
       "native_preparation": {
         "method": "verifyS047DiagramRoutes",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1774,
+        "line": 1808,
         "assertions": "Standalone and embedded actual local/menu/keyboard zoom, native drag and arrow pan, directional Pan controls, Actual size1/Reset/Fit with actual effective scales.",
         "prepared_additional_labels": [
           "standalone Fit",
@@ -8046,7 +8046,7 @@
           "Fit-to-pan scale continuity"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -8171,7 +8171,7 @@
       "native_preparation": {
         "method": "verifyS047DiagramRoutes",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1774,
+        "line": 1808,
         "assertions": "Standalone and embedded actual local/menu/keyboard zoom, native drag and arrow pan, directional Pan controls, Actual size1/Reset/Fit with actual effective scales.",
         "prepared_additional_labels": [
           "standalone Fit",
@@ -8183,7 +8183,7 @@
           "Fit-to-pan scale continuity"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -8268,7 +8268,7 @@
       "native_preparation": {
         "method": "s047ImageJourney",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1913,
+        "line": 1947,
         "assertions": "Actual native pixels/provider integrity, exact SVG reason categories, real read-denial retry, image local/menu/native-key/pinch/drag routes, Fit/Actual/Reset and retained scope.",
         "prepared_additional_labels": [
           "Fit image",
@@ -8289,7 +8289,7 @@
           "deterministic refusal no identical retry"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -8346,7 +8346,7 @@
       "native_preparation": {
         "method": "s047ImageJourney",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1913,
+        "line": 1947,
         "assertions": "Actual native pixels/provider integrity, exact SVG reason categories, real read-denial retry, image local/menu/native-key/pinch/drag routes, Fit/Actual/Reset and retained scope.",
         "prepared_additional_labels": [
           "Fit image",
@@ -8367,7 +8367,7 @@
           "deterministic refusal no identical retry"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -8472,7 +8472,7 @@
       "native_preparation": {
         "method": "s047ImageJourney",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1913,
+        "line": 1947,
         "assertions": "Actual native pixels/provider integrity, exact SVG reason categories, real read-denial retry, image local/menu/native-key/pinch/drag routes, Fit/Actual/Reset and retained scope.",
         "prepared_additional_labels": [
           "Fit image",
@@ -8493,7 +8493,7 @@
           "deterministic refusal no identical retry"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -8574,7 +8574,7 @@
       "native_preparation": {
         "method": "s047ImageJourney",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1913,
+        "line": 1947,
         "assertions": "Actual native pixels/provider integrity, exact SVG reason categories, real read-denial retry, image local/menu/native-key/pinch/drag routes, Fit/Actual/Reset and retained scope.",
         "prepared_additional_labels": [
           "Fit image",
@@ -8595,7 +8595,7 @@
           "deterministic refusal no identical retry"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -8741,7 +8741,7 @@
       "native_preparation": {
         "method": "s047ImageJourney",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1913,
+        "line": 1947,
         "assertions": "Actual native pixels/provider integrity, exact SVG reason categories, real read-denial retry, image local/menu/native-key/pinch/drag routes, Fit/Actual/Reset and retained scope.",
         "prepared_additional_labels": [
           "Fit image",
@@ -8762,7 +8762,7 @@
           "deterministic refusal no identical retry"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -8840,7 +8840,7 @@
       "native_preparation": {
         "method": "verifyS047SecondaryImageTasks",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1837,
+        "line": 1871,
         "assertions": "Actual background each choice, previous/next frame and invalid frame drafts, native icon select and Reset scope. Animation receipt explicitly records played_and_paused OR reduced_motion_disabled with unexecuted Play/Pause.",
         "prepared_additional_labels": [
           "valid frame",
@@ -8851,7 +8851,7 @@
           "selection survives tool disclosure"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -8914,7 +8914,7 @@
       "native_preparation": {
         "method": "verifyS047SecondaryImageTasks",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1837,
+        "line": 1871,
         "assertions": "Actual background each choice, previous/next frame and invalid frame drafts, native icon select and Reset scope. Animation receipt explicitly records played_and_paused OR reduced_motion_disabled with unexecuted Play/Pause.",
         "prepared_additional_labels": [
           "valid frame",
@@ -8925,7 +8925,7 @@
           "selection survives tool disclosure"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -8988,7 +8988,7 @@
       "native_preparation": {
         "method": "verifyS047SecondaryImageTasks",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1837,
+        "line": 1871,
         "assertions": "Actual background each choice, previous/next frame and invalid frame drafts, native icon select and Reset scope. Animation receipt explicitly records played_and_paused OR reduced_motion_disabled with unexecuted Play/Pause.",
         "prepared_additional_labels": [
           "valid frame",
@@ -8999,7 +8999,7 @@
           "selection survives tool disclosure"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -9081,7 +9081,7 @@
       "native_preparation": {
         "method": "verifyS047SecondaryImageTasks",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1837,
+        "line": 1871,
         "assertions": "Actual background each choice, previous/next frame and invalid frame drafts, native icon select and Reset scope. Animation receipt explicitly records played_and_paused OR reduced_motion_disabled with unexecuted Play/Pause.",
         "prepared_additional_labels": [
           "valid frame",
@@ -9092,7 +9092,7 @@
           "selection survives tool disclosure"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -9161,7 +9161,7 @@
       "native_preparation": {
         "method": "verifyS047SecondaryImageTasks",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1837,
+        "line": 1871,
         "assertions": "Actual background each choice, previous/next frame and invalid frame drafts, native icon select and Reset scope. Animation receipt explicitly records played_and_paused OR reduced_motion_disabled with unexecuted Play/Pause.",
         "prepared_additional_labels": [
           "valid frame",
@@ -9172,7 +9172,7 @@
           "selection survives tool disclosure"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -9281,7 +9281,7 @@
           "original ICO unchanged"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -9390,7 +9390,7 @@
       "native_preparation": {
         "method": "s047ImageJourney",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1913,
+        "line": 1947,
         "assertions": "Actual native pixels/provider integrity, exact SVG reason categories, real read-denial retry, image local/menu/native-key/pinch/drag routes, Fit/Actual/Reset and retained scope.",
         "prepared_additional_labels": [
           "Fit image",
@@ -9411,7 +9411,7 @@
           "deterministic refusal no identical retry"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -9481,7 +9481,7 @@
       "native_preparation": {
         "method": "verifyS047LargeText",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1480,
+        "line": 1514,
         "assertions": "Real33MiB native source; exact section navigation/clipboard, line0/outside/valid2, real unique Find/no-match; held native read entry/PID/control same process/nonmain; cancellation before release and no late source/position change.",
         "prepared_additional_labels": [
           "Previous section real content/position",
@@ -9495,7 +9495,7 @@
           "exact displayed section clipboard"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -9565,7 +9565,7 @@
       "native_preparation": {
         "method": "verifyS047LargeText",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1480,
+        "line": 1514,
         "assertions": "Real33MiB native source; exact section navigation/clipboard, line0/outside/valid2, real unique Find/no-match; held native read entry/PID/control same process/nonmain; cancellation before release and no late source/position change.",
         "prepared_additional_labels": [
           "Previous section real content/position",
@@ -9579,7 +9579,7 @@
           "exact displayed section clipboard"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -9696,7 +9696,7 @@
       "native_preparation": {
         "method": "verifyS047LargeText",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1480,
+        "line": 1514,
         "assertions": "Real33MiB native source; exact section navigation/clipboard, line0/outside/valid2, real unique Find/no-match; held native read entry/PID/control same process/nonmain; cancellation before release and no late source/position change.",
         "prepared_additional_labels": [
           "Previous section real content/position",
@@ -9710,7 +9710,7 @@
           "exact displayed section clipboard"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -9804,7 +9804,7 @@
       "native_preparation": {
         "method": "verifyS047LargeText",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1480,
+        "line": 1514,
         "assertions": "Real33MiB native source; exact section navigation/clipboard, line0/outside/valid2, real unique Find/no-match; held native read entry/PID/control same process/nonmain; cancellation before release and no late source/position change.",
         "prepared_additional_labels": [
           "Previous section real content/position",
@@ -9818,7 +9818,7 @@
           "exact displayed section clipboard"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -9922,7 +9922,7 @@
       "native_preparation": {
         "method": "verifyS047LargeText",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1480,
+        "line": 1514,
         "assertions": "Real33MiB native source; exact section navigation/clipboard, line0/outside/valid2, real unique Find/no-match; held native read entry/PID/control same process/nonmain; cancellation before release and no late source/position change.",
         "prepared_additional_labels": [
           "Previous section real content/position",
@@ -9936,7 +9936,7 @@
           "exact displayed section clipboard"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -10020,7 +10020,7 @@
       "native_preparation": {
         "method": "verifyS047LargeText",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1480,
+        "line": 1514,
         "assertions": "Real33MiB native source; exact section navigation/clipboard, line0/outside/valid2, real unique Find/no-match; held native read entry/PID/control same process/nonmain; cancellation before release and no late source/position change.",
         "prepared_additional_labels": [
           "Previous section real content/position",
@@ -10034,7 +10034,7 @@
           "exact displayed section clipboard"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -10107,7 +10107,7 @@
       "native_preparation": {
         "method": "verifyS047MarkdownAndMetadata",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1290,
+        "line": 1324,
         "assertions": "Exact editable/read-only Read/Edit source; actual selection/history retention; rendered/diagram searches; exact heading and footnote focus; HTTP/mail Cancel/Back and one native HTTP handoff; genuine malformed Mermaid/embedded source fallbacks; metadata individual/bulk privacy, sensitive confirmation/cancel focus, expand/collapse and independently computed SHA clipboard.",
         "prepared_additional_labels": [
           "document tools",
@@ -10147,7 +10147,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -10247,7 +10247,7 @@
       "native_preparation": {
         "method": "verifyS047MarkdownAndMetadata",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1290,
+        "line": 1324,
         "assertions": "Exact editable/read-only Read/Edit source; actual selection/history retention; rendered/diagram searches; exact heading and footnote focus; HTTP/mail Cancel/Back and one native HTTP handoff; genuine malformed Mermaid/embedded source fallbacks; metadata individual/bulk privacy, sensitive confirmation/cancel focus, expand/collapse and independently computed SHA clipboard.",
         "prepared_additional_labels": [
           "document tools",
@@ -10287,7 +10287,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -10392,7 +10392,7 @@
       "native_preparation": {
         "method": "verifyS047MarkdownAndMetadata",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1290,
+        "line": 1324,
         "assertions": "Exact editable/read-only Read/Edit source; actual selection/history retention; rendered/diagram searches; exact heading and footnote focus; HTTP/mail Cancel/Back and one native HTTP handoff; genuine malformed Mermaid/embedded source fallbacks; metadata individual/bulk privacy, sensitive confirmation/cancel focus, expand/collapse and independently computed SHA clipboard.",
         "prepared_additional_labels": [
           "document tools",
@@ -10432,7 +10432,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -10541,7 +10541,7 @@
       "native_preparation": {
         "method": "verifyS047MarkdownAndMetadata",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1290,
+        "line": 1324,
         "assertions": "Exact editable/read-only Read/Edit source; actual selection/history retention; rendered/diagram searches; exact heading and footnote focus; HTTP/mail Cancel/Back and one native HTTP handoff; genuine malformed Mermaid/embedded source fallbacks; metadata individual/bulk privacy, sensitive confirmation/cancel focus, expand/collapse and independently computed SHA clipboard.",
         "prepared_additional_labels": [
           "document tools",
@@ -10581,7 +10581,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -10659,14 +10659,14 @@
       "native_preparation": {
         "method": "verifyS047EmbeddedMetadata",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1893,
+        "line": 1927,
         "assertions": "Existing actual Exif fixture, each real observation disclosure open/close and source bytes unchanged.",
         "prepared_additional_labels": [
           "expand observation",
           "collapse observation"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -10758,7 +10758,7 @@
       "native_preparation": {
         "method": "verifyS047MarkdownAndMetadata",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1290,
+        "line": 1324,
         "assertions": "Exact editable/read-only Read/Edit source; actual selection/history retention; rendered/diagram searches; exact heading and footnote focus; HTTP/mail Cancel/Back and one native HTTP handoff; genuine malformed Mermaid/embedded source fallbacks; metadata individual/bulk privacy, sensitive confirmation/cancel focus, expand/collapse and independently computed SHA clipboard.",
         "prepared_additional_labels": [
           "document tools",
@@ -10798,7 +10798,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -10882,7 +10882,7 @@
       "native_preparation": {
         "method": "verifyS047MarkdownAndMetadata",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1290,
+        "line": 1324,
         "assertions": "Exact editable/read-only Read/Edit source; actual selection/history retention; rendered/diagram searches; exact heading and footnote focus; HTTP/mail Cancel/Back and one native HTTP handoff; genuine malformed Mermaid/embedded source fallbacks; metadata individual/bulk privacy, sensitive confirmation/cancel focus, expand/collapse and independently computed SHA clipboard.",
         "prepared_additional_labels": [
           "document tools",
@@ -10922,7 +10922,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -11004,7 +11004,7 @@
       "native_preparation": {
         "method": "verifyS047MarkdownAndMetadata",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1290,
+        "line": 1324,
         "assertions": "Exact editable/read-only Read/Edit source; actual selection/history retention; rendered/diagram searches; exact heading and footnote focus; HTTP/mail Cancel/Back and one native HTTP handoff; genuine malformed Mermaid/embedded source fallbacks; metadata individual/bulk privacy, sensitive confirmation/cancel focus, expand/collapse and independently computed SHA clipboard.",
         "prepared_additional_labels": [
           "document tools",
@@ -11044,7 +11044,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -11117,7 +11117,7 @@
       "native_preparation": {
         "method": "verifyS047EditorAndPreferences",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1205,
+        "line": 1227,
         "assertions": "Real InputConnection typing; actual source selection/history attributes; Find options/count/no-match/invalidregex; exact range Replace next and exact Replace all; menu undo/redo+disabled redo; line invalid999/valid2/cancel; every Theme/default mode; font,size/tab validation, wrap checkbox and explicit override retention, scoped reset cancel/success.",
         "prepared_additional_labels": [
           "source text search",
@@ -11165,7 +11165,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -11263,7 +11263,7 @@
       "native_preparation": {
         "method": "verifyS047EditorAndPreferences",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1205,
+        "line": 1227,
         "assertions": "Real InputConnection typing; actual source selection/history attributes; Find options/count/no-match/invalidregex; exact range Replace next and exact Replace all; menu undo/redo+disabled redo; line invalid999/valid2/cancel; every Theme/default mode; font,size/tab validation, wrap checkbox and explicit override retention, scoped reset cancel/success.",
         "prepared_additional_labels": [
           "source text search",
@@ -11311,7 +11311,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -11402,7 +11402,7 @@
       "native_preparation": {
         "method": "verifyS047EditorAndPreferences",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1205,
+        "line": 1227,
         "assertions": "Real InputConnection typing; actual source selection/history attributes; Find options/count/no-match/invalidregex; exact range Replace next and exact Replace all; menu undo/redo+disabled redo; line invalid999/valid2/cancel; every Theme/default mode; font,size/tab validation, wrap checkbox and explicit override retention, scoped reset cancel/success.",
         "prepared_additional_labels": [
           "source text search",
@@ -11450,7 +11450,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -11568,7 +11568,7 @@
       "native_preparation": {
         "method": "verifyS047EditorAndPreferences",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1205,
+        "line": 1227,
         "assertions": "Real InputConnection typing; actual source selection/history attributes; Find options/count/no-match/invalidregex; exact range Replace next and exact Replace all; menu undo/redo+disabled redo; line invalid999/valid2/cancel; every Theme/default mode; font,size/tab validation, wrap checkbox and explicit override retention, scoped reset cancel/success.",
         "prepared_additional_labels": [
           "source text search",
@@ -11616,7 +11616,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -11728,7 +11728,7 @@
       "native_preparation": {
         "method": "verifyS047EditorAndPreferences",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1205,
+        "line": 1227,
         "assertions": "Real InputConnection typing; actual source selection/history attributes; Find options/count/no-match/invalidregex; exact range Replace next and exact Replace all; menu undo/redo+disabled redo; line invalid999/valid2/cancel; every Theme/default mode; font,size/tab validation, wrap checkbox and explicit override retention, scoped reset cancel/success.",
         "prepared_additional_labels": [
           "source text search",
@@ -11776,7 +11776,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -11867,7 +11867,7 @@
       "native_preparation": {
         "method": "verifyS047EditorAndPreferences",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1205,
+        "line": 1227,
         "assertions": "Real InputConnection typing; actual source selection/history attributes; Find options/count/no-match/invalidregex; exact range Replace next and exact Replace all; menu undo/redo+disabled redo; line invalid999/valid2/cancel; every Theme/default mode; font,size/tab validation, wrap checkbox and explicit override retention, scoped reset cancel/success.",
         "prepared_additional_labels": [
           "source text search",
@@ -11915,7 +11915,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -12022,7 +12022,7 @@
       "native_preparation": {
         "method": "verifyS047EditorAndPreferences",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1205,
+        "line": 1227,
         "assertions": "Real InputConnection typing; actual source selection/history attributes; Find options/count/no-match/invalidregex; exact range Replace next and exact Replace all; menu undo/redo+disabled redo; line invalid999/valid2/cancel; every Theme/default mode; font,size/tab validation, wrap checkbox and explicit override retention, scoped reset cancel/success.",
         "prepared_additional_labels": [
           "source text search",
@@ -12070,7 +12070,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -12088,7 +12088,9 @@
           "native_preparation": "primary_current_control_prepared",
           "supplemental_evidence_refs": [
             "US4_UNIT_CTRL-104-1",
-            "US4_BROWSER_CTRL-104-1"
+            "US4_BROWSER_CTRL-104-1",
+            "R1_U_NESTED_TASK_FOCUS",
+            "R1_B_RESET_FOCUS"
           ],
           "supplemental_observation": {
             "unit": "specific_named_unit_assertion",
@@ -12104,7 +12106,9 @@
           "native_preparation": "explicit_assertion_prepared",
           "supplemental_evidence_refs": [
             "US4_UNIT_CTRL-104-case-2",
-            "US4_BROWSER_CTRL-104-case-2"
+            "US4_BROWSER_CTRL-104-case-2",
+            "R1_U_NESTED_TASK_FOCUS",
+            "R1_B_RESET_FOCUS"
           ],
           "supplemental_observation": {
             "unit": "specific_named_unit_assertion",
@@ -12120,7 +12124,9 @@
           "native_preparation": "explicit_assertion_prepared",
           "supplemental_evidence_refs": [
             "US4_UNIT_CTRL-104-case-3",
-            "US4_BROWSER_CTRL-104-case-3"
+            "US4_BROWSER_CTRL-104-case-3",
+            "R1_U_NESTED_TASK_FOCUS",
+            "R1_B_RESET_FOCUS"
           ],
           "supplemental_observation": {
             "unit": "specific_named_unit_assertion",
@@ -12136,7 +12142,9 @@
           "native_preparation": "explicit_assertion_prepared",
           "supplemental_evidence_refs": [
             "US4_UNIT_CTRL-104-case-4",
-            "US4_BROWSER_CTRL-104-case-4"
+            "US4_BROWSER_CTRL-104-case-4",
+            "R1_U_NESTED_TASK_FOCUS",
+            "R1_B_RESET_FOCUS"
           ],
           "supplemental_observation": {
             "unit": "specific_named_unit_assertion",
@@ -12199,8 +12207,8 @@
       "native_preparation": {
         "method": "verifyS047EditorAndPreferences",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1205,
-        "assertions": "Real InputConnection typing; actual source selection/history attributes; Find options/count/no-match/invalidregex; exact range Replace next and exact Replace all; menu undo/redo+disabled redo; line invalid999/valid2/cancel; every Theme/default mode; font,size/tab validation, wrap checkbox and explicit override retention, scoped reset cancel/success.",
+        "line": 1227,
+        "assertions": "Real InputConnection typing; actual source selection/history attributes; Find options/count/no-match/invalidregex; exact range Replace next and exact Replace all; menu undo/redo+disabled redo; line invalid999/valid2/cancel; every Theme/default mode; font,size/tab validation, wrap checkbox and explicit override retention, scoped reset cancel/success. Exact nested Reset opener focus is prepared after native Back, Escape, header Close, Cancel and the actual awaited successful reset.",
         "prepared_additional_labels": [
           "source text search",
           "CodeMirror next",
@@ -12247,7 +12255,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -12341,7 +12349,7 @@
           "pending write disables cancel"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -12408,7 +12416,7 @@
           "pending write disables cancel"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -12474,7 +12482,7 @@
           "pending write disables cancel"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -12517,7 +12525,7 @@
         "assertions": "Ordinary separately seeded and verified actual force-stop process recovery plus probe root recovery, exact editable bytes.",
         "prepared_additional_labels": ["recover persisted exact draft"],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -12556,14 +12564,14 @@
       "native_preparation": {
         "method": "verifyS047RecoveryDecisions",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2308,
+        "line": 2371,
         "assertions": "Fault-probe root exception -> actual Restart -> Not now -> actual reload -> same candidate -> Decline -> reload absence.",
         "prepared_additional_labels": [
           "explicitly decline recovery",
           "decide later retains recovery record"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -12602,14 +12610,14 @@
       "native_preparation": {
         "method": "verifyS047RecoveryDecisions",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2308,
+        "line": 2371,
         "assertions": "Fault-probe root exception -> actual Restart -> Not now -> actual reload -> same candidate -> Decline -> reload absence.",
         "prepared_additional_labels": [
           "explicitly decline recovery",
           "decide later retains recovery record"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -12673,7 +12681,7 @@
           "handoff distinct from delivery"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -12749,7 +12757,7 @@
           "handoff distinct from delivery"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -12815,7 +12823,7 @@
           "handoff distinct from delivery"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -12892,7 +12900,7 @@
           "handoff distinct from delivery"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -12933,11 +12941,11 @@
       "native_preparation": {
         "method": "assertS047Role",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2376,
+        "line": 2439,
         "assertions": "Owner-classified legacy generated CommandBar is not mounted; no native interactive case. Source/actual-app structural checks owned by root.",
         "prepared_additional_labels": [],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     },
     {
@@ -12986,14 +12994,14 @@
       "native_preparation": {
         "method": "verifyS047MarkdownAndMetadata",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 1290,
+        "line": 1324,
         "assertions": "Both actual rendered checkboxes are checked/unchecked as fixture, disabled and readOnly. These are passive display states, excluded from interactive48dp target assertions.",
         "prepared_additional_labels": [
           "Completed task readonly",
           "Incomplete task readonly"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+        "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
       }
     }
   ],
@@ -13271,7 +13279,7 @@
       "kind": "composed_browser_prepared",
       "path": "scripts/check-app-layout.mjs",
       "line": 904,
-      "source_sha256": "9c46b9d1afc1638f22ae9469efec4de4a5b3eb314a12f30af952b3369f3e0ff3",
+      "source_sha256": "7150ce68103810a399683c53e42b65d82008af37e32f0bbfeedc4a76af51a9c7",
       "effect": "The actual App runner is prepared to test decoded standalone and embedded scenes with scoped More Fit/Zoom factors, focus and geometry.",
       "limit": "R39 supplemental full-application matrices pass84/84 modern and84/84 exact Chromium69 against identical assets; synthetic browser gateways do not establish installed candidate task results.",
       "anchor": "await click('More diagram tools', scope + ' button');"
@@ -13279,8 +13287,8 @@
     "R2_N_IMAGE": {
       "kind": "native_prepared_not_executed",
       "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-      "line": 1913,
-      "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2",
+      "line": 1947,
+      "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80",
       "effect": "The native image journey prepares real provider SVG outcomes and source-read Retry, image local/menu/Ctrl zoom aliases, key pan, native gestures, Actual size, Reset and Fit.",
       "limit": "Fresh ordinary/fault candidate receipts for API24/API36 remain required; source and compiled instrumentation are not runtime proof.",
       "anchor": "@Test fun s047ImageJourney() {"
@@ -13288,8 +13296,8 @@
     "R2_N_DIAGRAM": {
       "kind": "native_prepared_not_executed",
       "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-      "line": 1774,
-      "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2",
+      "line": 1808,
+      "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80",
       "effect": "The current native helper explicitly prepares standalone and embedded local plus/minus, standalone global menu plus/minus, header-focused global Ctrl-minus/plus, embedded canvas Ctrl-minus/plus, bare Equals, ArrowLeft, native drag, four signed Pan controls, Actual size, Reset and Fit.",
       "limit": "These are current native source preparations. Only exact installed-candidate receipts establish that these aliases executed. Other owner is compiling the final native source.",
       "anchor": "private fun verifyS047DiagramRoutes(scenario: ActivityScenario<MainActivity>, selector: String, standalone: Boolean) {"
@@ -13297,8 +13305,8 @@
     "R2_N_MORE": {
       "kind": "native_prepared_not_executed",
       "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-      "line": 1735,
-      "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2",
+      "line": 1769,
+      "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80",
       "effect": "The native More helper prepares live measured Fit, Zoom factors1.25and0.8, same document/source, GIF frame3 and Dark retention, and standalone/embedded routes.",
       "limit": "",
       "anchor": "private fun verifyS047MoreViewportActions(scenario:ActivityScenario<MainActivity>,selector:String,kind:String) {"
@@ -13306,8 +13314,8 @@
     "R2_N_SECONDARY": {
       "kind": "native_prepared_not_executed",
       "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-      "line": 1837,
-      "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2",
+      "line": 1871,
+      "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80",
       "effect": "The native secondary helper prepares Checkerboard/Light/Dark selector state, invalid and valid frame drafts, Previous3to2 and Next2to3, conditional Play/Pause receipts, and Reset retention for GIF frame3/Dark and ICO entry1/Light.",
       "limit": "Previous/Next start paused; first/last disabled bounds are not asserted. Background choices assert viewport state, not independent painted-background pixel readback. Playback branch depends on the actual reduced-motion receipt.",
       "anchor": "private fun verifyS047SecondaryImageTasks(scenario: ActivityScenario<MainActivity>): JSONObject {"
@@ -13315,8 +13323,8 @@
     "R2_N_METADATA": {
       "kind": "native_prepared_not_executed",
       "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-      "line": 1893,
-      "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2",
+      "line": 1927,
+      "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80",
       "effect": "More image File information opens actual JPEG Exif observations; individual disclosures open and close and original provider bytes remain unchanged.",
       "limit": "Ready JPEG context only; not failed-preview metadata or retargeting while the inspector remains open.",
       "anchor": "private fun verifyS047EmbeddedMetadata(scenario: ActivityScenario<MainActivity>) {"
@@ -13324,8 +13332,8 @@
     "R2_N_EXPORT": {
       "kind": "native_prepared_not_executed",
       "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-      "line": 3264,
-      "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2",
+      "line": 3335,
+      "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80",
       "effect": "The native helper prepares chooser cancellation, original-destination refusal, selected DIB1 PNG export with independent4x3 pixel readback, nonempty/misreported conflicts and unchanged original ICO.",
       "limit": "No mid-write or partial provider I/O error is injected. Pre-write refusal cannot qualify failed write.",
       "anchor": "private fun verifySelectedIconExport(scenario: ActivityScenario<MainActivity>, original: Uri, before: ByteArray) {"
@@ -13333,8 +13341,8 @@
     "R2_N_FAULT": {
       "kind": "native_prepared_not_executed_fault_role",
       "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-      "line": 2351,
-      "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2",
+      "line": 2414,
+      "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80",
       "effect": "In the compiled fault role, one actual absent native command produces host_transport; Retry then uses the actual native renderer.",
       "limit": "Fault-probe candidate only; ordinary production absence is a separate qualification.",
       "anchor": "injectRecoveryFailure(scenario, \"host\")"
@@ -16174,7 +16182,7 @@
       "anchor": "restores focus to its actual invoking control after controlled closure",
       "effect": "The shared controlled task surface restores the real invoking control.",
       "limit": "Shared task-surface contract; native specific Diagnostics focus remains part of candidate composition.",
-      "line": 28
+      "line": 35
     },
     "ROOT_DIAGNOSTIC_PENDING": {
       "kind": "composed_unit_passed",
@@ -16263,13 +16271,13 @@
         {
           "kind": "native_preparation",
           "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-          "line": 1091,
-          "test_line": 1083,
+          "line": 1157,
+          "test_line": 1150,
           "source_line": "assertEquals(\"Copy keyboard alias must write actual selected source\", original, clipboardText())",
           "assertion": "Ctrl+A then actualCtrl+C copies exact selectedsource; menuCopy independently matches at1011. Selectionisallsource, not a partial range.",
           "scope": "exact_effect",
           "execution": "prepared_not_executed",
-          "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+          "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
         }
       ],
       "limits": [],
@@ -16304,13 +16312,13 @@
         {
           "kind": "native_preparation",
           "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-          "line": 1091,
-          "test_line": 1083,
+          "line": 1157,
+          "test_line": 1150,
           "source_line": "assertEquals(\"Copy keyboard alias must write actual selected source\", original, clipboardText())",
           "assertion": "Ctrl+A then actualCtrl+C copies exact selectedsource; menuCopy independently matches at1011. Selectionisallsource, not a partial range.",
           "scope": "exact_effect",
           "execution": "prepared_not_executed",
-          "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+          "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
         }
       ],
       "limits": [
@@ -16531,13 +16539,13 @@
         {
           "kind": "native_preparation",
           "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-          "line": 1116,
-          "test_line": 1083,
+          "line": 1182,
+          "test_line": 1150,
           "source_line": "waitForCondition(scenario, \"!!document.querySelector('.cm-search input[aria-label=Find]')\", \"Ctrl+F must open actual Find\")",
           "assertion": "ActualCtrl+F must expose actualFindinput before realquerytyping.",
           "scope": "exact_effect",
           "execution": "prepared_not_executed",
-          "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+          "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
         }
       ],
       "limits": [],
@@ -16711,13 +16719,13 @@
         {
           "kind": "native_preparation",
           "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-          "line": 1129,
-          "test_line": 1128,
+          "line": 1199,
+          "test_line": 1192,
           "source_line": "waitForCondition(scenario, selectionAt(previous), \"Shift+F3 must select the exact previous actual occurrence\")",
           "assertion": "Each keyboard, menu and CodeMirror panel Find next/previous route prepares an exact controlled selection assertion; all routes retain source bytes.",
           "scope": "exact_alias_selection_prepared",
           "execution": "prepared_not_executed",
-          "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+          "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
         }
       ],
       "limits": [
@@ -16796,13 +16804,13 @@
         {
           "kind": "native_preparation",
           "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-          "line": 1271,
-          "test_line": 1205,
+          "line": 1354,
+          "test_line": 1324,
           "source_line": "clickControl(scenario, \"Next\"); clickControl(scenario, \"Previous\"); clickControl(scenario, \"Close search\")",
           "assertion": "Renderedcatsquery is1of1 thenNext/Previous/Close areclicked. Thisfixture cannot distinguish movement amongmultiplematches.",
           "scope": "activation_one_match_only",
           "execution": "prepared_not_executed",
-          "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+          "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
         }
       ],
       "limits": [
@@ -16881,13 +16889,13 @@
         {
           "kind": "native_preparation",
           "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-          "line": 1164,
-          "test_line": 1132,
+          "line": 1234,
+          "test_line": 1227,
           "source_line": "clickControl(scenario, \"Next\"); clickControl(scenario, \"Previous\"); clickControl(scenario, \"Select all matches\")",
           "assertion": "NativeCMNext/Previous buttons areactivated before Selectallmatches checks; no independent per-button selectiondelta here.",
           "scope": "activation_only",
           "execution": "prepared_not_executed",
-          "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+          "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
         }
       ],
       "limits": [
@@ -16985,13 +16993,13 @@
         {
           "kind": "native_preparation",
           "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-          "line": 1129,
-          "test_line": 1128,
+          "line": 1199,
+          "test_line": 1192,
           "source_line": "waitForCondition(scenario, selectionAt(previous), \"Shift+F3 must select the exact previous actual occurrence\")",
           "assertion": "Each keyboard, menu and CodeMirror panel Find next/previous route prepares an exact controlled selection assertion; all routes retain source bytes.",
           "scope": "exact_alias_selection_prepared",
           "execution": "prepared_not_executed",
-          "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+          "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
         }
       ],
       "limits": [
@@ -17047,13 +17055,13 @@
         {
           "kind": "native_preparation",
           "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-          "line": 1129,
-          "test_line": 1128,
+          "line": 1199,
+          "test_line": 1192,
           "source_line": "waitForCondition(scenario, selectionAt(previous), \"Shift+F3 must select the exact previous actual occurrence\")",
           "assertion": "Each keyboard, menu and CodeMirror panel Find next/previous route prepares an exact controlled selection assertion; all routes retain source bytes.",
           "scope": "exact_alias_selection_prepared",
           "execution": "prepared_not_executed",
-          "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+          "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
         }
       ],
       "limits": [
@@ -17132,13 +17140,13 @@
         {
           "kind": "native_preparation",
           "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-          "line": 1164,
-          "test_line": 1132,
+          "line": 1234,
+          "test_line": 1227,
           "source_line": "clickControl(scenario, \"Next\"); clickControl(scenario, \"Previous\"); clickControl(scenario, \"Select all matches\")",
           "assertion": "NativeCMNext/Previous buttons areactivated before Selectallmatches checks; no independent per-button selectiondelta here.",
           "scope": "activation_only",
           "execution": "prepared_not_executed",
-          "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+          "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
         }
       ],
       "limits": [
@@ -17217,13 +17225,13 @@
         {
           "kind": "native_preparation",
           "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-          "line": 1271,
-          "test_line": 1205,
+          "line": 1354,
+          "test_line": 1324,
           "source_line": "clickControl(scenario, \"Next\"); clickControl(scenario, \"Previous\"); clickControl(scenario, \"Close search\")",
           "assertion": "Renderedcatsquery is1of1 thenNext/Previous/Close areclicked. Thisfixture cannot distinguish movement amongmultiplematches.",
           "scope": "activation_one_match_only",
           "execution": "prepared_not_executed",
-          "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+          "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
         }
       ],
       "limits": [
@@ -17302,13 +17310,13 @@
         {
           "kind": "native_preparation",
           "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-          "line": 1129,
-          "test_line": 1128,
+          "line": 1199,
+          "test_line": 1192,
           "source_line": "waitForCondition(scenario, selectionAt(previous), \"Shift+F3 must select the exact previous actual occurrence\")",
           "assertion": "Each keyboard, menu and CodeMirror panel Find next/previous route prepares an exact controlled selection assertion; all routes retain source bytes.",
           "scope": "exact_alias_selection_prepared",
           "execution": "prepared_not_executed",
-          "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+          "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
         }
       ],
       "limits": [
@@ -17387,13 +17395,13 @@
         {
           "kind": "native_preparation",
           "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-          "line": 1271,
-          "test_line": 1205,
+          "line": 1354,
+          "test_line": 1324,
           "source_line": "clickControl(scenario, \"Next\"); clickControl(scenario, \"Previous\"); clickControl(scenario, \"Close search\")",
           "assertion": "Renderedcatsquery is1of1 thenNext/Previous/Close areclicked. Thisfixture cannot distinguish movement amongmultiplematches.",
           "scope": "activation_one_match_only",
           "execution": "prepared_not_executed",
-          "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+          "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
         }
       ],
       "limits": [
@@ -17430,24 +17438,24 @@
         {
           "kind": "native_preparation",
           "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-          "line": 1164,
-          "test_line": 1132,
+          "line": 1234,
+          "test_line": 1227,
           "source_line": "clickControl(scenario, \"Next\"); clickControl(scenario, \"Previous\"); clickControl(scenario, \"Select all matches\")",
           "assertion": "NativeCMNext/Previous buttons areactivated before Selectallmatches checks; no independent per-button selectiondelta here.",
           "scope": "activation_only",
           "execution": "prepared_not_executed",
-          "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+          "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
         },
         {
           "kind": "native_preparation",
           "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-          "line": 1129,
-          "test_line": 1128,
+          "line": 1199,
+          "test_line": 1192,
           "source_line": "waitForCondition(scenario, selectionAt(previous), \"Shift+F3 must select the exact previous actual occurrence\")",
           "assertion": "Each keyboard, menu and CodeMirror panel Find next/previous route prepares an exact controlled selection assertion; all routes retain source bytes.",
           "scope": "exact_alias_selection_prepared",
           "execution": "prepared_not_executed",
-          "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+          "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
         }
       ],
       "limits": [
@@ -17484,13 +17492,13 @@
         {
           "kind": "native_preparation",
           "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-          "line": 1129,
-          "test_line": 1128,
+          "line": 1199,
+          "test_line": 1192,
           "source_line": "waitForCondition(scenario, selectionAt(previous), \"Shift+F3 must select the exact previous actual occurrence\")",
           "assertion": "Each keyboard, menu and CodeMirror panel Find next/previous route prepares an exact controlled selection assertion; all routes retain source bytes.",
           "scope": "exact_alias_selection_prepared",
           "execution": "prepared_not_executed",
-          "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+          "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
         }
       ],
       "limits": [
@@ -17527,13 +17535,13 @@
         {
           "kind": "native_preparation",
           "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-          "line": 1129,
-          "test_line": 1128,
+          "line": 1199,
+          "test_line": 1192,
           "source_line": "waitForCondition(scenario, selectionAt(previous), \"Shift+F3 must select the exact previous actual occurrence\")",
           "assertion": "Each keyboard, menu and CodeMirror panel Find next/previous route prepares an exact controlled selection assertion; all routes retain source bytes.",
           "scope": "exact_alias_selection_prepared",
           "execution": "prepared_not_executed",
-          "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+          "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
         }
       ],
       "limits": [
@@ -17570,24 +17578,24 @@
         {
           "kind": "native_preparation",
           "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-          "line": 1164,
-          "test_line": 1132,
+          "line": 1234,
+          "test_line": 1227,
           "source_line": "clickControl(scenario, \"Next\"); clickControl(scenario, \"Previous\"); clickControl(scenario, \"Select all matches\")",
           "assertion": "NativeCMNext/Previous buttons areactivated before Selectallmatches checks; no independent per-button selectiondelta here.",
           "scope": "activation_only",
           "execution": "prepared_not_executed",
-          "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+          "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
         },
         {
           "kind": "native_preparation",
           "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-          "line": 1129,
-          "test_line": 1128,
+          "line": 1199,
+          "test_line": 1192,
           "source_line": "waitForCondition(scenario, selectionAt(previous), \"Shift+F3 must select the exact previous actual occurrence\")",
           "assertion": "Each keyboard, menu and CodeMirror panel Find next/previous route prepares an exact controlled selection assertion; all routes retain source bytes.",
           "scope": "exact_alias_selection_prepared",
           "execution": "prepared_not_executed",
-          "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+          "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
         }
       ],
       "limits": [
@@ -17666,13 +17674,13 @@
         {
           "kind": "native_preparation",
           "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-          "line": 1271,
-          "test_line": 1205,
+          "line": 1354,
+          "test_line": 1324,
           "source_line": "clickControl(scenario, \"Next\"); clickControl(scenario, \"Previous\"); clickControl(scenario, \"Close search\")",
           "assertion": "Renderedcatsquery is1of1 thenNext/Previous/Close areclicked. Thisfixture cannot distinguish movement amongmultiplematches.",
           "scope": "activation_one_match_only",
           "execution": "prepared_not_executed",
-          "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+          "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
         }
       ],
       "limits": [
@@ -17895,13 +17903,13 @@
         {
           "kind": "native_preparation",
           "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-          "line": 1142,
-          "test_line": 1132,
-          "source_line": "waitForCondition(scenario, \"!!document.querySelector('input[aria-label=\\\"Line number\\\"]')\", \"Ctrl+G must open the real validated line task\")",
+          "line": 1212,
+          "test_line": 1192,
+          "source_line": "waitForCondition(scenario, \"!!(\" + taskInputExpression(\"Line number\") + \")\", \"Ctrl+G must open the real validated line task\")",
           "assertion": "ActualCtrl+G opensrealvalidatedlinetask; menuGo route+invalid999/valid2/cancel alsoinEditorAndPreferences.",
           "scope": "exact_effect",
           "execution": "prepared_not_executed",
-          "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+          "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
         }
       ],
       "limits": [],
@@ -17951,13 +17959,13 @@
         {
           "kind": "native_preparation",
           "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-          "line": 1142,
-          "test_line": 1132,
-          "source_line": "waitForCondition(scenario, \"!!document.querySelector('input[aria-label=\\\"Line number\\\"]')\", \"Ctrl+G must open the real validated line task\")",
+          "line": 1212,
+          "test_line": 1192,
+          "source_line": "waitForCondition(scenario, \"!!(\" + taskInputExpression(\"Line number\") + \")\", \"Ctrl+G must open the real validated line task\")",
           "assertion": "ActualCtrl+G opensrealvalidatedlinetask; menuGo route+invalid999/valid2/cancel alsoinEditorAndPreferences.",
           "scope": "exact_effect",
           "execution": "prepared_not_executed",
-          "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+          "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
         }
       ],
       "limits": [],
@@ -18156,13 +18164,13 @@
         {
           "kind": "native_preparation",
           "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-          "line": 544,
-          "test_line": 479,
+          "line": 559,
+          "test_line": 559,
           "source_line": "private fun verifyMarkdownFailures(scenario: ActivityScenario<MainActivity>, corpus: Uri) {",
           "assertion": "Fault-buildonly worker/parser/projection journey opensactualAPKrenderedfallback, exactretainedsource andrealRetry; no normalbuildactivation claim.",
           "scope": "exact_effect",
           "execution": "prepared_not_executed",
-          "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+          "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
         }
       ],
       "limits": [
@@ -18195,13 +18203,13 @@
         {
           "kind": "native_preparation",
           "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-          "line": 544,
-          "test_line": 479,
+          "line": 559,
+          "test_line": 559,
           "source_line": "private fun verifyMarkdownFailures(scenario: ActivityScenario<MainActivity>, corpus: Uri) {",
           "assertion": "Fault-buildonly worker/parser/projection journey opensactualAPKrenderedfallback, exactretainedsource andrealRetry; no normalbuildactivation claim.",
           "scope": "exact_effect",
           "execution": "prepared_not_executed",
-          "source_sha256": "6255f9fd866eb5ae0c4ecab5a6564440688ae4d9bd93eb8ea0dffab37bdbefc2"
+          "source_sha256": "54b1896de11f3299fac42f1f7595a2f4ea8aec9ebe1f84e43cd30de8f6fa5c80"
         }
       ],
       "limits": [
@@ -18327,7 +18335,39 @@
       "source_sha256": "29058cdd10424ef6ac8bf41e1c193d5737b70a23cd50bc5b3897e6c657f2085a",
       "effect": "A recovery generation rerenders the settled current image; a host transport rejection remains visible and blocks viewport success until one Retry uses the normal gateway. Source identity remains unchanged.",
       "limit": "React lifecycle unit with a controlled gateway rejection; actual absent native invocation and installed SVG recovery require final fault-probe receipts."
+    },
+    "R1_U_NESTED_TASK_FOCUS": {
+      "kind": "unit_assertion",
+      "path": "apps/glitchpad/src/components/TaskSurface.test.tsx",
+      "anchor": "returns focus to the nested opener in the remaining parent after %s",
+      "line": 171,
+      "source_sha256": "29233d2f2e0ab3d6758f85dd479760b90a607c2a5e1a6f25beb54c4422735c99",
+      "effect": "Native Back dispatch, Escape, header Close and controlled completion return focus to the connected opener inside the still-open parent task. Separate tests retain the higher modal fence and permit an outside opener when only a nonmodal inspector remains.",
+      "limit": "Component event/focus behavior; installed native and full rebuilt production browser qualification remain separate."
+    },
+    "R1_U_AUTOMATIC_MERMAID_SOURCE": {
+      "kind": "unit_assertion",
+      "path": "apps/glitchpad/src/components/MermaidSurface.test.tsx",
+      "anchor": "automatically exposes exact read-only standalone source after a first malformed preview",
+      "line": 352,
+      "source_sha256": "be0198cc887d78eb8737266415d827d58b2891eb7d95fb8eacabc088eb5d6327",
+      "effect": "A first malformed standalone render automatically exposes the exact read-only source without requiring an absent fallback button.",
+      "limit": "Controlled Mermaid component renderer; actual malformed parser and installed source fallback retain their separate evidence."
+    },
+    "R1_B_RESET_FOCUS": {
+      "kind": "browser_assertion_passed",
+      "path": "scripts/check-app-layout.mjs",
+      "anchor": "const waitForResetOpener = async () =>",
+      "line": 1929,
+      "source_sha256": "7150ce68103810a399683c53e42b65d82008af37e32f0bbfeedc4a76af51a9c7",
+      "effect": "Production Preferences checks actual parent/opener focus after Cancel, trusted Escape, header Close and awaited reset completion in every required browser profile.",
+      "limit": "The rebuilt production bundle passes all four Preferences return-focus routes in modern and exact Chromium 69 profiles. Browser events do not prove Android native Back; fresh installed native execution remains pending.",
+      "execution": "R45modern84_and_exact69_84_passed",
+      "receipts": [
+        ".codex-tmp/s047/us4-modern-matrix-r45.json",
+        ".codex-tmp/s047/us4-legacy-matrix-r45.json"
+      ]
     }
   },
-  "local_candidate_note": "Current Zoom limit behavior is covered by 59 focused renderer tests and the rebuilt R29 application matrix (84 modern and 84 exact Chromium 69 cases). Installed execution remains pending."
+  "local_candidate_note": "Review round 1 corrections are locally prepared. The current 119-row / 459-case ledger retains all installed statuses pending fresh exact-head ordinary and fault-probe qualification on API 24 and API 36. Local source/unit/browser checks and older APK receipts remain separate."
 }

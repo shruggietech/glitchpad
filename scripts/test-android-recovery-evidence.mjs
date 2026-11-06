@@ -598,3 +598,89 @@ test('More alias receipts require actual live Fit, multiplicative Zoom and uncha
       /More|viewport|scope|Fit|Zoom/i,
     );
 });
+
+test('durable instrumentation stream retains early authoring rows after logcat rotation and still requires clean completion', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 's047-durable-stream-'));
+  try {
+    const evidence = fixture('ordinary');
+    const markers = [];
+    for (const id of [4, 5, 7]) {
+      const row = evidence.journeys.find(
+        (candidate) => candidate.journey === id,
+      );
+      const bytes = Buffer.from(JSON.stringify(row));
+      await writeFile(
+        join(directory, 's047-authoring-attempt-1-s047-row-' + id + '.json'),
+        bytes,
+      );
+      markers.push(
+        's047_journey_evidence=' +
+          JSON.stringify({
+            journey: id,
+            file: 's047-row-' + id + '.json',
+            sha256: createHash('sha256').update(bytes).digest('hex'),
+          }),
+      );
+    }
+    const stdout = join(directory, 's047-authoring-attempt-1.txt');
+    const status = join(directory, 's047-authoring-attempt-1-status.txt');
+    await writeFile(stdout, 'OK (1 test)\n');
+    await writeFile(
+      join(directory, 's047-authoring-attempt-1-logcat.txt'),
+      markers[2] + '\n',
+    );
+    await writeFile(
+      status,
+      'adb_exit_status=0\nmarker_present=1\njunit_success=1\ninstrumentation_failure=0\n',
+    );
+    const lost = await collectRecoveryEvidence(
+      directory,
+      'ordinary',
+      36,
+      source,
+      {},
+    );
+    assert.equal(lost.journeys[3].status, 'fail');
+    assert.equal(lost.journeys[4].status, 'fail');
+    assert.equal(lost.journeys[6].status, 'pass');
+    await writeFile(
+      stdout,
+      markers
+        .map(
+          (marker) =>
+            'INSTRUMENTATION_STATUS: stream=' +
+            marker +
+            '\nINSTRUMENTATION_STATUS_CODE: 2',
+        )
+        .join('\n') + '\nOK (1 test)\n',
+    );
+    const durable = await collectRecoveryEvidence(
+      directory,
+      'ordinary',
+      36,
+      source,
+      {},
+    );
+    for (const id of [4, 5, 7]) {
+      const row = durable.journeys[id - 1];
+      assert.equal(row.status, 'pass');
+      assert.equal(row.identity.application_sha256, app);
+    }
+    assert.equal(durable.journeys[0].status, 'not_run');
+    await writeFile(
+      status,
+      'adb_exit_status=0\nmarker_present=1\njunit_success=1\ninstrumentation_failure=1\n',
+    );
+    const failed = await collectRecoveryEvidence(
+      directory,
+      'ordinary',
+      36,
+      source,
+      {},
+    );
+    for (const id of [4, 5, 7])
+      assert.equal(failed.journeys[id - 1].status, 'fail');
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});

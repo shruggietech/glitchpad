@@ -316,10 +316,7 @@ export function PreferencesPanel({
           <button
             type="button"
             disabled={pending}
-            onClick={() => {
-              setConfirmReset(false);
-              requestAnimationFrame(() => resetRef.current?.focus());
-            }}
+            onClick={() => setConfirmReset(false)}
           >
             Cancel reset
           </button>

@@ -428,6 +428,21 @@ export async function captureTaskControl(page, selector, index) {
   return applyTaskControlClipping(measurement);
 }
 
+export function nativeTapTargetScript(nativeSource, name, selector) {
+  const method = nativeSource.slice(
+    nativeSource.indexOf('private fun tapNativeControlOnce('),
+  );
+  const script =
+    /val script = """\s*\n([\s\S]*?)\n\s*"""\.trimIndent\(\)/u.exec(method);
+  assert.ok(
+    script,
+    'Actual native control-target script must remain extractable',
+  );
+  return script[1]
+    .replaceAll('NAME', () => JSON.stringify(name))
+    .replaceAll('SELECTOR', () => JSON.stringify(selector));
+}
+
 export async function checkAppLayout({
   receiptPath = '',
   distDir = join(root, 'apps/glitchpad/dist'),
@@ -525,6 +540,7 @@ export async function checkAppLayout({
     'apps/glitchpad/src/domain/metadata.ts',
     'apps/glitchpad/src/runtime-polyfills.ts',
     'scripts/check-app-layout.mjs',
+    'crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt',
   ];
   const observedSources = await Promise.all(
     sourcePaths.map(async function (path) {
@@ -535,6 +551,13 @@ export async function checkAppLayout({
           .digest('hex'),
       };
     }),
+  );
+  const nativeTapSource = await readFile(
+    join(
+      root,
+      'crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt',
+    ),
+    'utf8',
   );
   const cases = [],
     failures = [];
@@ -1233,7 +1256,19 @@ export async function checkAppLayout({
               );
               await page.keyboard.type('Markdown draft');
               await page.keyboard.press('Enter');
-
+              await page.waitForFunction(function () {
+                return (
+                  Array.from(
+                    document.querySelectorAll(
+                      '.markdown-source-mode:not([hidden]) .cm-content .cm-line',
+                    ),
+                  )
+                    .map(function (node) {
+                      return node.textContent;
+                    })
+                    .join('\n') === 'Markdown draft\n'
+                );
+              });
               await page.keyboard.type('second line');
               const exactSource = await page.$$eval(
                 '.markdown-source-mode:not([hidden]) .cm-content .cm-line',
@@ -1750,6 +1785,43 @@ export async function checkAppLayout({
                   ) <= tolerance,
                 'Outline navigation must keep the outer AppFrame stationary',
               );
+              const nativeLinkTargets = [];
+              for (const destination of [
+                'https://example.com/path',
+                'mailto:fixture@example.com',
+              ]) {
+                const selector =
+                  '.markdown-document button[title=' +
+                  JSON.stringify(destination) +
+                  ']';
+                const name = await page.$eval(selector, function (node) {
+                  return node.textContent.trim();
+                });
+                const target = await page.evaluate(
+                  nativeTapTargetScript(nativeTapSource, name, selector),
+                );
+                assert.equal(
+                  target.found,
+                  true,
+                  'Actual native selector must resolve the full link name: ' +
+                    name,
+                );
+                assert.ok(
+                  target.width >= 48 - tolerance &&
+                    target.height >= 48 - tolerance &&
+                    target.fully_visible &&
+                    target.hit &&
+                    !target.disabled,
+                  'Native selector must retain the real usable control target',
+                );
+                nativeLinkTargets.push({ destination, name, target });
+              }
+              row.outcomes.push({
+                id: 'CTRL-056',
+                native_selector_targets: nativeLinkTargets,
+                scope:
+                  'Actual Kotlin selector against production React markup; no Android touch dispatched',
+              });
               await click(
                 'destination External destination https://example.com/path',
                 '.markdown-document button',

@@ -974,17 +974,22 @@ class AndroidDeliveryInstrumentedTest {
   }
 
   private fun menuAction(scenario: ActivityScenario<MainActivity>, name: String) {
-    clickControl(scenario, if (name in listOf("Preferences", "Diagnostics", "Help and support", "About Glitchpad")) "Menu" else "Document tools")
-    if (name == "Copy") tapNativeControlOnce(scenario, name, "[role=menuitem]")
-    else clickControl(scenario, name, "[role=menuitem]")
+    val application = name in listOf("Preferences", "Diagnostics", "Help and support", "About Glitchpad")
+    val owner = if (application) "[role=menu][aria-label=\"Glitchpad menu\"]" else "[role=menu][aria-label=\"Document tools\"]"
+    val deadline = SystemClock.elapsedRealtime() + 30_000L
+    waitForCondition(scenario, "!document.querySelector(" + JSONObject.quote(owner) + ")", "the preceding owned menu must finish dismissal before its next opener is toggled", deadlineOverride = deadline)
+    clickControl(scenario, if (application) "Menu" else "Document tools", deadlineOverride = deadline)
+    if (name == "Copy") tapNativeControlOnce(scenario, name, "[role=menuitem]", deadlineOverride = deadline)
+    else clickControl(scenario, name, "[role=menuitem]", deadlineOverride = deadline)
+    if (application) waitForCondition(scenario, "!document.querySelector(" + JSONObject.quote(owner) + ")", "application menu dismissal must complete before destination sampling", deadlineOverride = deadline)
   }
 
   private fun clickControl(scenario: ActivityScenario<MainActivity>, name: String, selector: String = "button", deadlineOverride: Long? = null) {
     val nameLiteral = JSONObject.quote(name)
     val selectorLiteral = JSONObject.quote(selector)
     val actionDeadline = deadlineOverride ?: (SystemClock.elapsedRealtime() + 30_000L)
-    waitForCondition(scenario, "Array.from(document.querySelectorAll(" + selectorLiteral + ")).some(b=>!b.disabled&&(b.getAttribute('aria-label')||(b.querySelector('span')?b.querySelector('span').textContent:b.textContent)).trim()===" + nameLiteral + ")", "named actual-app control must be enabled: " + name, deadlineOverride = actionDeadline)
-    assertEquals("actual-app control must be clicked once", "true", evaluate(scenario, "(()=>{const button=Array.from(document.querySelectorAll(" + selectorLiteral + ")).find(b=>!b.disabled&&(b.getAttribute('aria-label')||(b.querySelector('span')?b.querySelector('span').textContent:b.textContent)).trim()===" + nameLiteral + ");if(!button)return false;button.click();return true;})()", deadlineOverride = actionDeadline, actionCallback = true))
+    waitForCondition(scenario, "Array.from(document.querySelectorAll(" + selectorLiteral + ")).some(b=>!b.disabled&&(b.getAttribute('aria-label')||(b.getAttribute('role')==='menuitem'&&b.querySelector('span')?b.querySelector('span').textContent:b.textContent)).trim()===" + nameLiteral + ")", "named actual-app control must be enabled: " + name, deadlineOverride = actionDeadline)
+    assertEquals("actual-app control must be clicked once", "true", evaluate(scenario, "(()=>{const button=Array.from(document.querySelectorAll(" + selectorLiteral + ")).find(b=>!b.disabled&&(b.getAttribute('aria-label')||(b.getAttribute('role')==='menuitem'&&b.querySelector('span')?b.querySelector('span').textContent:b.textContent)).trim()===" + nameLiteral + ");if(!button)return false;button.click();return true;})()", deadlineOverride = actionDeadline, actionCallback = true))
   }
 
   // Read native visible bounds and IME windows before mapping a CSS control to screen input.
@@ -1389,9 +1394,18 @@ class AndroidDeliveryInstrumentedTest {
     clickControl(scenario, "Go")
     waitForCondition(scenario, "(()=>{const n=" + taskInputExpression("Line number") + ";return !!n&&n.getAttribute('aria-invalid')==='true';})()", "out-of-range line must remain visibly invalid")
     setTaskInput(scenario, "Line number", "2")
-    clickControl(scenario, "Go")
-    waitForCondition(scenario, "!(" + taskInputExpression("Line number") + ")", "valid line navigation must close its task")
-    assertEquals(original, browserEditorInputSnapshot(scenario).getString("semantic_text"))
+    val goDeadline = SystemClock.elapsedRealtime() + 30_000L
+    clickControl(scenario, "Go", deadlineOverride = goDeadline)
+    val lineStart = original.indexOf('\n') + 1
+    val goObservations = JSONObject()
+    try {
+      waitForCondition(scenario, "(()=>{const editor=document.querySelector('.cm-content[contenteditable=true]');const owner=editor&&editor.closest('.cm-editor');return !(" + taskInputExpression("Line number") + ")&&!!editor&&document.activeElement===editor&&owner.getAttribute('data-editor-selection-from')==='" + lineStart + "'&&owner.getAttribute('data-editor-selection-to')==='" + lineStart + "';})()", "one valid Go action must complete its task, editor focus handoff and exact caret selection", observations = goObservations, deadlineOverride = goDeadline)
+    } catch (failure: Throwable) {
+      val state = runCatching { JSONObject(evaluate(scenario, "(()=>{const node=document.querySelector('.cm-editor');return {from:node?node.getAttribute('data-editor-selection-from'):null,to:node?node.getAttribute('data-editor-selection-to'):null};})()")) }.getOrElse { JSONObject().put("capture_failed", true) }
+      captureEditorFocusFailure(scenario, "go_to_line_completion", JSONObject().put("expected_selection", lineStart).put("selection_after", state).put("observations", goObservations))
+      throw failure
+    }
+    assertEquals(original, browserEditorInputSnapshot(scenario, deadlineOverride = goDeadline).getString("semantic_text"))
     assertEquals((original.indexOf('\n') + 1).toString(), stringValue(evaluate(scenario, "document.querySelector('.cm-editor').getAttribute('data-editor-selection-from')")))
     verifyS047EditorAliases(scenario, original)
     val documentWrapBeforePreferences=stringValue(evaluate(scenario,"document.querySelector('.cm-editor').getAttribute('data-editor-wrap')"))
@@ -2796,7 +2810,7 @@ class AndroidDeliveryInstrumentedTest {
     val deadline = deadlineOverride ?: (SystemClock.elapsedRealtime() + 30_000L)
     val script = """
       (()=>{
-        const button=Array.from(document.querySelectorAll(SELECTOR)).find(b=>!b.disabled&&b.getBoundingClientRect().width>0&&!b.closest('[aria-hidden=true],[inert]')&&(()=>{const label=(b.getAttribute('aria-label')||(b.labels&&b.labels.length?Array.from(b.labels).map(n=>n.textContent).join(' '):(b.querySelector('span')?b.querySelector('span').textContent:b.textContent))).trim();return SELECTOR==='button'?label===NAME:label.startsWith(NAME);})());
+        const button=Array.from(document.querySelectorAll(SELECTOR)).find(b=>!b.disabled&&b.getBoundingClientRect().width>0&&!b.closest('[aria-hidden=true],[inert]')&&(()=>{const label=(b.getAttribute('aria-label')||(b.labels&&b.labels.length?Array.from(b.labels).map(n=>n.textContent).join(' '):(b.getAttribute('role')==='menuitem'&&b.querySelector('span')?b.querySelector('span').textContent:b.textContent))).trim();return SELECTOR==='button'?label===NAME:label.startsWith(NAME);})());
         if(!button)return {found:false};
         button.scrollIntoView({block:'nearest',inline:'nearest'});
         const rect=button.getBoundingClientRect();

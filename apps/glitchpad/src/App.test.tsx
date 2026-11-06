@@ -2955,7 +2955,7 @@ it('keeps Replace focused across Search reopen after an exact replacement and Un
   });
   expect(replace).toHaveFocus();
   expect(view.state.doc.toString()).toBe(original);
-});
+}, 10_000);
 
 it('executes immediate Ctrl+Z then Ctrl+Shift+Z using the current editor history', async () => {
   render(

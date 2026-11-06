@@ -656,6 +656,20 @@ describe('line task', () => {
     );
     expect(view.state.selection.main.head).toBe(view.state.doc.line(2).from);
     const position = view.state.selection.main.head;
+    const expectCoherentCaret = () => {
+      expect(view.contentDOM).toHaveFocus();
+      const selected = document.getSelection()!;
+      expect(selected.rangeCount).toBeGreaterThan(0);
+      expect(view.contentDOM.contains(selected.anchorNode)).toBe(true);
+      expect(view.contentDOM.contains(selected.focusNode)).toBe(true);
+      expect(view.posAtDOM(selected.anchorNode!, selected.anchorOffset)).toBe(
+        position,
+      );
+      expect(view.posAtDOM(selected.focusNode!, selected.focusOffset)).toBe(
+        position,
+      );
+    };
+    await waitFor(expectCoherentCaret);
     act(() => {
       void ref.current!.invoke('go_to_line');
     });
@@ -669,6 +683,7 @@ describe('line task', () => {
       expect(container.querySelector('.cm-content')).toHaveFocus(),
     );
     expect(view.state.selection.main.head).toBe(position);
+    await waitFor(expectCoherentCaret);
   });
 });
 

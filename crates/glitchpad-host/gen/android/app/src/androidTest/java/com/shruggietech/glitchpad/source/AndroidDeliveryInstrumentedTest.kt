@@ -3047,6 +3047,21 @@ class AndroidDeliveryInstrumentedTest {
     val deadline = SystemClock.elapsedRealtime() + 30_000L
     waitForCondition(scenario, "!!document.querySelector('.cm-content[contenteditable=true]')", "draft must expose the actual editable surface", deadlineOverride = deadline)
     val nativeFocus = focusNativeWebView(scenario, deadlineOverride = deadline)
+    evaluate(scenario, """
+      (()=>{
+        if(window.__s047EditorEvents)return true;
+        const rows=window.__s047EditorEvents=[];
+        const node=n=>n?{tag:n.nodeName,class_name:String(n.className).slice(0,96),label:n.getAttribute?n.getAttribute('aria-label'):null}:null;
+        for(const type of ['touchstart','touchend','touchcancel','pointerdown','pointerup','pointercancel','mousedown','mouseup','click','focusin','focusout'])
+          document.addEventListener(type,e=>{
+            const touch=e.changedTouches&&e.changedTouches[0];
+            const row={type:type,time:performance.now(),trusted:e.isTrusted,target:node(e.target),active:node(document.activeElement),client_x:touch?touch.clientX:e.clientX,client_y:touch?touch.clientY:e.clientY,pointer_type:e.pointerType,pointer_id:e.pointerId,default_prevented:e.defaultPrevented};
+            rows.push(row);if(rows.length>100)rows.shift();
+            Promise.resolve().then(()=>{row.default_prevented=e.defaultPrevented;row.active_after= node(document.activeElement);});
+          },{capture:true,passive:true});
+        return true;
+      })()
+    """.trimIndent(), deadlineOverride = deadline)
     val script = """
       (()=>{
         const editor=document.querySelector('.cm-content[contenteditable=true]');
@@ -3267,6 +3282,8 @@ class AndroidDeliveryInstrumentedTest {
   private fun captureEditorFocusFailure(
     scenario: ActivityScenario<MainActivity>, stage: String, target: JSONObject, mapping: JSONObject = JSONObject()
   ) {
+    val screenshotSaved = runCatching { saveScreenshot("s047-row-8.png") }.getOrDefault(false)
+    val journal = runCatching { JSONArray(evaluate(scenario, "window.__s047EditorEvents||[]")) }.getOrElse { JSONArray() }
     val browser = runCatching {
       browserEditorInputSnapshot(scenario).apply { remove("semantic_text"); remove("editing_text") }
     }.getOrElse { JSONObject().put("capture_failed", true) }
@@ -3283,7 +3300,7 @@ class AndroidDeliveryInstrumentedTest {
     val hit = if (target.has("client_x") && target.has("client_y")) runCatching {
       JSONObject(evaluate(scenario, "(()=>{const node=document.elementFromPoint(" + target.getDouble("client_x") + "," + target.getDouble("client_y") + ");const editor=document.querySelector('.cm-content[contenteditable=true]');return {present:!!node,tag:node?node.nodeName:null,class_name:node?String(node.className).slice(0,128):null,label:node?node.getAttribute('aria-label'):null,in_editor:!!node&&!!editor&&(node===editor||editor.contains(node))};})()"))
     }.getOrElse { JSONObject().put("capture_failed", true) } else JSONObject().put("target_available", false)
-    println("native_editor_focus_failure=" + JSONObject().put("stage", stage).put("api_level", Build.VERSION.SDK_INT)
+    println("native_editor_focus_failure=" + JSONObject().put("stage", stage).put("api_level", Build.VERSION.SDK_INT).put("passive_input_journal", journal).put("failure_screenshot_saved", screenshotSaved)
       .put("before_target", target).put("native_mapping", mapping).put("browser_after", browser)
       .put("native_after", native).put("hit_at_original_client_point", hit))
     System.out.flush()

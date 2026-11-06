@@ -1565,6 +1565,7 @@ button:focus-visible,
   white-space: normal;
 }
 .active-document-identity {
+  color: var(--gl-fg);
   display: flex;
   align-items: center;
   min-width: 0;

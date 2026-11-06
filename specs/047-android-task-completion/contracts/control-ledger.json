@@ -13279,7 +13279,7 @@
       "kind": "composed_browser_prepared",
       "path": "scripts/check-app-layout.mjs",
       "line": 904,
-      "source_sha256": "7150ce68103810a399683c53e42b65d82008af37e32f0bbfeedc4a76af51a9c7",
+      "source_sha256": "384feb5b8001009e98aefcad0931f649e9607803ddbcf83dcd308b7b18b5114c",
       "effect": "The actual App runner is prepared to test decoded standalone and embedded scenes with scoped More Fit/Zoom factors, focus and geometry.",
       "limit": "R39 supplemental full-application matrices pass84/84 modern and84/84 exact Chromium69 against identical assets; synthetic browser gateways do not establish installed candidate task results.",
       "anchor": "await click('More diagram tools', scope + ' button');"
@@ -16236,7 +16236,7 @@
         {
           "kind": "supplemental_browser",
           "path": "scripts/check-app-layout.mjs",
-          "line": 1168,
+          "line": 1199,
           "test_line": null,
           "source_line": "assert.equal(row.draft_copy, 'draft current\\nsecond');",
           "assertion": "MenuCopy writes exact newlytyped full draft current\\nsecond.",
@@ -16250,7 +16250,7 @@
         {
           "kind": "supplemental_browser",
           "path": "scripts/check-app-layout.mjs",
-          "line": 1641,
+          "line": 1672,
           "test_line": null,
           "source_line": "window.__toolsClipboard ===",
           "assertion": "EmbeddedViewsource selects partial multi-line Mermaid fence; menuCopy must equal exact selectedfence, excluding other Markdown.",
@@ -16289,7 +16289,7 @@
         {
           "kind": "supplemental_browser",
           "path": "scripts/check-app-layout.mjs",
-          "line": 1641,
+          "line": 1672,
           "test_line": null,
           "source_line": "window.__toolsClipboard ===",
           "assertion": "EmbeddedViewsource selects partial multi-line Mermaid fence; menuCopy must equal exact selectedfence, excluding other Markdown.",
@@ -16386,7 +16386,7 @@
         {
           "kind": "supplemental_browser",
           "path": "scripts/check-app-layout.mjs",
-          "line": 1168,
+          "line": 1199,
           "test_line": null,
           "source_line": "assert.equal(row.draft_copy, 'draft current\\nsecond');",
           "assertion": "MenuCopy writes exact newlytyped full draft current\\nsecond.",
@@ -16490,7 +16490,7 @@
         {
           "kind": "supplemental_browser",
           "path": "scripts/check-app-layout.mjs",
-          "line": 1269,
+          "line": 1300,
           "test_line": null,
           "source_line": "await command('Search');",
           "assertion": "ActualDocumenttoolsSearch opensinstalledCMpanel; querycat+options assert4/3/2matches and invalidregex inall12editorprofiles.",
@@ -16504,7 +16504,7 @@
         {
           "kind": "supplemental_browser",
           "path": "scripts/check-app-layout.mjs",
-          "line": 1584,
+          "line": 1615,
           "test_line": null,
           "source_line": "await command('Search');",
           "assertion": "MenuSearch uses renderedMarkdownFindbody ratherthansourcepanel; controls/hit/nativebounds audited.",
@@ -16518,7 +16518,7 @@
         {
           "kind": "supplemental_browser",
           "path": "scripts/check-app-layout.mjs",
-          "line": 1741,
+          "line": 1772,
           "test_line": null,
           "source_line": "await command('Search');",
           "assertion": "MenuSearch usesFinddiagramtext; matchinglabelmark mustcontainAlpha, andcontrolsareactualnativeframeaudited.",
@@ -16574,7 +16574,7 @@
         {
           "kind": "supplemental_browser",
           "path": "scripts/check-app-layout.mjs",
-          "line": 1269,
+          "line": 1300,
           "test_line": null,
           "source_line": "await command('Search');",
           "assertion": "ActualDocumenttoolsSearch opensinstalledCMpanel; querycat+options assert4/3/2matches and invalidregex inall12editorprofiles.",
@@ -16612,7 +16612,7 @@
         {
           "kind": "supplemental_browser",
           "path": "scripts/check-app-layout.mjs",
-          "line": 1584,
+          "line": 1615,
           "test_line": null,
           "source_line": "await command('Search');",
           "assertion": "MenuSearch uses renderedMarkdownFindbody ratherthansourcepanel; controls/hit/nativebounds audited.",
@@ -16650,7 +16650,7 @@
         {
           "kind": "supplemental_browser",
           "path": "scripts/check-app-layout.mjs",
-          "line": 1741,
+          "line": 1772,
           "test_line": null,
           "source_line": "await command('Search');",
           "assertion": "MenuSearch usesFinddiagramtext; matchinglabelmark mustcontainAlpha, andcontrolsareactualnativeframeaudited.",
@@ -16781,7 +16781,7 @@
         {
           "kind": "supplemental_browser",
           "path": "scripts/check-app-layout.mjs",
-          "line": 1590,
+          "line": 1621,
           "test_line": null,
           "source_line": "await click('Next', '.markdown-search button');",
           "assertion": "RenderedMarkdownNext realtarget isclicked; no before/after matchindex assertion recorded.",
@@ -16866,7 +16866,7 @@
         {
           "kind": "supplemental_browser",
           "path": "scripts/check-app-layout.mjs",
-          "line": 1396,
+          "line": 1427,
           "test_line": null,
           "source_line": "assert.equal(originalText.slice(range.from, range.to), 'cat');",
           "assertion": "ClickCMNext afterSelectall; actualprimaryrange mustslice cat, then ReplaceNext changes exactlythatrange.",
@@ -17117,7 +17117,7 @@
         {
           "kind": "supplemental_browser",
           "path": "scripts/check-app-layout.mjs",
-          "line": 1396,
+          "line": 1427,
           "test_line": null,
           "source_line": "assert.equal(originalText.slice(range.from, range.to), 'cat');",
           "assertion": "ClickCMNext afterSelectall; actualprimaryrange mustslice cat, then ReplaceNext changes exactlythatrange.",
@@ -17202,7 +17202,7 @@
         {
           "kind": "supplemental_browser",
           "path": "scripts/check-app-layout.mjs",
-          "line": 1590,
+          "line": 1621,
           "test_line": null,
           "source_line": "await click('Next', '.markdown-search button');",
           "assertion": "RenderedMarkdownNext realtarget isclicked; no before/after matchindex assertion recorded.",
@@ -17372,7 +17372,7 @@
         {
           "kind": "supplemental_browser",
           "path": "scripts/check-app-layout.mjs",
-          "line": 1591,
+          "line": 1622,
           "test_line": null,
           "source_line": "await click('Previous', '.markdown-search button');",
           "assertion": "RenderedMarkdownPrevious realtarget isclicked; no before/after matchindex assertion recorded.",
@@ -17651,7 +17651,7 @@
         {
           "kind": "supplemental_browser",
           "path": "scripts/check-app-layout.mjs",
-          "line": 1591,
+          "line": 1622,
           "test_line": null,
           "source_line": "await click('Previous', '.markdown-search button');",
           "assertion": "RenderedMarkdownPrevious realtarget isclicked; no before/after matchindex assertion recorded.",
@@ -17882,7 +17882,7 @@
         {
           "kind": "supplemental_browser",
           "path": "scripts/check-app-layout.mjs",
-          "line": 1419,
+          "line": 1450,
           "test_line": null,
           "source_line": "await command('Go to line');",
           "assertion": "MenuGo-to-line opensmanagedlineinput;999invalid,2moves actualcaretto20, cancel1retains20.",
@@ -17921,7 +17921,7 @@
         {
           "kind": "supplemental_browser",
           "path": "scripts/check-app-layout.mjs",
-          "line": 1419,
+          "line": 1450,
           "test_line": null,
           "source_line": "await command('Go to line');",
           "assertion": "MenuGo-to-line opensmanagedlineinput;999invalid,2moves actualcaretto20, cancel1retains20.",
@@ -18028,7 +18028,7 @@
         {
           "kind": "supplemental_browser",
           "path": "scripts/check-app-layout.mjs",
-          "line": 1419,
+          "line": 1450,
           "test_line": null,
           "source_line": "await command('Go to line');",
           "assertion": "MenuGo-to-line opensmanagedlineinput;999invalid,2moves actualcaretto20, cancel1retains20.",
@@ -18066,7 +18066,7 @@
         {
           "kind": "supplemental_browser",
           "path": "scripts/check-app-layout.mjs",
-          "line": 1419,
+          "line": 1450,
           "test_line": null,
           "source_line": "await command('Go to line');",
           "assertion": "MenuGo-to-line opensmanagedlineinput;999invalid,2moves actualcaretto20, cancel1retains20.",
@@ -18104,7 +18104,7 @@
         {
           "kind": "supplemental_browser",
           "path": "scripts/check-app-layout.mjs",
-          "line": 1419,
+          "line": 1450,
           "test_line": null,
           "source_line": "await command('Go to line');",
           "assertion": "MenuGo-to-line opensmanagedlineinput;999invalid,2moves actualcaretto20, cancel1retains20.",
@@ -18358,8 +18358,8 @@
       "kind": "browser_assertion_passed",
       "path": "scripts/check-app-layout.mjs",
       "anchor": "const waitForResetOpener = async () =>",
-      "line": 1929,
-      "source_sha256": "7150ce68103810a399683c53e42b65d82008af37e32f0bbfeedc4a76af51a9c7",
+      "line": 1960,
+      "source_sha256": "384feb5b8001009e98aefcad0931f649e9607803ddbcf83dcd308b7b18b5114c",
       "effect": "Production Preferences checks actual parent/opener focus after Cancel, trusted Escape, header Close and awaited reset completion in every required browser profile.",
       "limit": "The rebuilt production bundle passes all four Preferences return-focus routes in modern and exact Chromium 69 profiles. Browser events do not prove Android native Back; fresh installed native execution remains pending.",
       "execution": "R45modern84_and_exact69_84_passed",

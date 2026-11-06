@@ -995,6 +995,37 @@ export async function checkAppLayout({
                 });
               });
             });
+            row.identity_color = await page.$eval(
+              '.active-document-identity',
+              function (node) {
+                const style = getComputedStyle(node);
+                let ancestor = node;
+                let background;
+                while (ancestor) {
+                  const painted = getComputedStyle(ancestor).backgroundColor;
+                  if (
+                    painted !== 'rgba(0, 0, 0, 0)' &&
+                    painted !== 'transparent'
+                  ) {
+                    background = painted;
+                    break;
+                  }
+                  ancestor = ancestor.parentElement;
+                }
+                if (!background)
+                  throw Error('Document identity has no painted background');
+                return {
+                  name: 'Document identity',
+                  foreground: style.color,
+                  background,
+                  behind: background,
+                  opacity: Number(style.opacity),
+                  expectedForeground: getComputedStyle(document.documentElement)
+                    .getPropertyValue('--gl-fg')
+                    .trim(),
+                };
+              },
+            );
             row.frame_position_before = await page.$eval(
               '[data-bb-app-frame]',
               function (node) {
@@ -2048,6 +2079,7 @@ export async function checkAppLayout({
     }
     const colors = cases.flatMap(function (row) {
       return row.controls
+        .concat(row.identity_color ? [row.identity_color] : [])
         .filter(function (c) {
           return !c.disabled && !c.passive;
         })
@@ -2071,7 +2103,15 @@ export async function checkAppLayout({
     } catch (error) {
       failures.push({ stage: 'contrast_evaluation', message: error.message });
     }
-    for (const sample of audited)
+    for (const sample of audited) {
+      if (sample.name === 'Document identity' && !sample.canonical_foreground)
+        failures.push({
+          profile: sample.profile,
+          text_scale: sample.text_scale,
+          group: sample.group,
+          stage: 'identity_foreground',
+          name: sample.name,
+        });
       if (!Number.isFinite(sample.contrast) || sample.contrast < 4.5)
         failures.push({
           profile: sample.profile,
@@ -2081,6 +2121,7 @@ export async function checkAppLayout({
           name: sample.name,
           contrast: sample.contrast,
         });
+    }
     for (const row of cases)
       if (
         failures.some(function (failure) {

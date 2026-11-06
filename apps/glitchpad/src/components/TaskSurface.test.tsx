@@ -325,3 +325,38 @@ it('restores an outside opener while a remaining nonmodal inspector stays open',
   ).toHaveAttribute('data-task-modal', 'false');
   opener.remove();
 });
+
+it('keeps explicitly transferred new-document focus after the old task closes', async () => {
+  const host = document.createElement('div');
+  host.id = 'bb-overlay-root';
+  document.body.append(host);
+  const opener = document.createElement('button');
+  opener.textContent = 'Add document';
+  const editor = document.createElement('textarea');
+  editor.setAttribute('aria-label', 'New document editor');
+  const documentSurface = document.createElement('section');
+  documentSurface.className = 'document-surface';
+  documentSurface.append(editor);
+  document.body.append(opener, documentSurface);
+  const task = (open: boolean) => (
+    <TaskSurface
+      open={open}
+      title="New document"
+      opener={opener}
+      onOpenChange={() => undefined}
+    >
+      <button data-task-initial-focus>New Markdown</button>
+    </TaskSurface>
+  );
+  const view = render(task(true));
+  await screen.findByRole('dialog', { name: 'New document' });
+  view.rerender(task(false));
+  editor.focus();
+  expect(editor).toHaveFocus();
+  await act(async () => {
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+  });
+  expect(editor).toHaveFocus();
+  opener.remove();
+  documentSurface.remove();
+});

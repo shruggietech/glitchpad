@@ -2629,7 +2629,7 @@ describe('document foundation shell', () => {
       ).toHaveAttribute('aria-selected', 'true'),
     );
     expect(
-      screen.getByRole('complementary', { name: 'Preferences' }),
+      await screen.findByRole('complementary', { name: 'Preferences' }),
     ).toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: 'Menu' }),
@@ -2779,3 +2779,63 @@ it.each([false, true])(
     );
   },
 );
+
+it('routes rapid editor indent history through Ctrl+Z and shell Ctrl+Shift+Z once', async () => {
+  const original = 'cat Cat scatter cat\nsecond';
+  const indented = '    cat Cat scatter cat\n    second';
+  render(
+    <App
+      sessions={[createDraftSession('text')]}
+      recoveryGateway={null}
+      persistenceGateway={null}
+    />,
+  );
+  const editor = screen.getByRole('textbox', {
+    name: 'Untitled.txt text editor',
+  });
+  const view = EditorView.findFromDOM(editor)!;
+  act(() => {
+    view.dispatch({
+      changes: { from: 0, insert: original },
+      selection: { anchor: 0, head: original.length },
+      userEvent: 'input.type',
+    });
+  });
+  const clock = vi.spyOn(Date, 'now').mockReturnValue(Date.now());
+  try {
+    fireEvent.keyDown(editor, { key: 'Tab', code: 'Tab', keyCode: 9 });
+    expect(view.state.doc.toString()).toBe(indented);
+    fireEvent.keyDown(editor, {
+      key: 'Tab',
+      code: 'Tab',
+      keyCode: 9,
+      shiftKey: true,
+    });
+    expect(view.state.doc.toString()).toBe(original);
+    fireEvent.keyDown(editor, {
+      key: 'z',
+      code: 'KeyZ',
+      keyCode: 90,
+      ctrlKey: true,
+    });
+    await waitFor(() => expect(view.state.doc.toString()).toBe(indented));
+    fireEvent.keyDown(editor, {
+      key: 'Z',
+      code: 'KeyZ',
+      keyCode: 90,
+      ctrlKey: true,
+      shiftKey: true,
+    });
+    await waitFor(() => expect(view.state.doc.toString()).toBe(original));
+    fireEvent.keyDown(editor, {
+      key: 'z',
+      code: 'KeyZ',
+      keyCode: 90,
+      ctrlKey: true,
+    });
+    await waitFor(() => expect(view.state.doc.toString()).toBe(indented));
+    expect(EditorView.findFromDOM(editor)).toBe(view);
+  } finally {
+    clock.mockRestore();
+  }
+});

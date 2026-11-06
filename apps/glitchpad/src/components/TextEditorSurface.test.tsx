@@ -1168,3 +1168,106 @@ describe('editor task focus ownership', () => {
     },
   );
 });
+
+it.each(['menu', 'keyboard'] as const)(
+  'keeps one-step history for rapid %s indent/outdent actions',
+  (route) => {
+    const original = 'cat Cat scatter cat\nsecond';
+    const indented = '    cat Cat scatter cat\n    second';
+    const session = makeSession();
+    session.content = original;
+    session.text_document = createTextDocument({
+      rawText: original,
+      displayName: 'editor.ts',
+    });
+    const ref = createRef<TextEditorHandle>();
+    render(
+      <TextEditorSurface
+        ref={ref}
+        session={session}
+        onDocumentChange={vi.fn()}
+        onLanguageChange={vi.fn()}
+      />,
+    );
+    const editor = screen.getByRole('textbox', {
+      name: 'editor.ts text editor',
+    });
+    const view = EditorView.findFromDOM(editor)!;
+    act(() => {
+      view.dispatch({ selection: { anchor: 0, head: original.length } });
+    });
+    const now = Date.now();
+    const clock = vi.spyOn(Date, 'now').mockReturnValue(now);
+    const action = (command: 'indent' | 'outdent' | 'undo' | 'redo') => {
+      act(() => {
+        const indent = command === 'indent' || command === 'outdent';
+        // The shell uses the public provider for history commands; Tab is editor-owned.
+        if (route === 'menu' || !indent)
+          expect(ref.current!.invoke(command)).toBe(true);
+        else
+          fireEvent.keyDown(editor, {
+            key: 'Tab',
+            code: 'Tab',
+            keyCode: 9,
+            shiftKey: command === 'outdent',
+          });
+      });
+    };
+    try {
+      action('indent');
+      expect(view.state.doc.toString()).toBe(indented);
+      action('outdent');
+      expect(view.state.doc.toString()).toBe(original);
+      action('undo');
+      expect(view.state.doc.toString()).toBe(indented);
+      action('redo');
+      expect(view.state.doc.toString()).toBe(original);
+      action('undo');
+      expect(view.state.doc.toString()).toBe(indented);
+      action('undo');
+      expect(view.state.doc.toString()).toBe(original);
+    } finally {
+      clock.mockRestore();
+    }
+  },
+);
+
+it('keeps consecutive ordinary typing in one undo group', () => {
+  const session = makeSession();
+  const ref = createRef<TextEditorHandle>();
+  render(
+    <TextEditorSurface
+      ref={ref}
+      session={session}
+      onDocumentChange={vi.fn()}
+      onLanguageChange={vi.fn()}
+    />,
+  );
+  const editor = screen.getByRole('textbox', { name: 'editor.ts text editor' });
+  const view = EditorView.findFromDOM(editor)!;
+  const original = view.state.doc.toString();
+  const clock = vi.spyOn(Date, 'now').mockReturnValue(Date.now());
+  try {
+    act(() => {
+      view.dispatch({
+        changes: { from: view.state.doc.length, insert: 'a' },
+        userEvent: 'input.type',
+      });
+      view.dispatch({
+        changes: { from: view.state.doc.length, insert: 'b' },
+        userEvent: 'input.type',
+      });
+    });
+    expect(view.state.doc.toString()).toBe(original + 'ab');
+    act(() => {
+      expect(ref.current!.invoke('undo')).toBe(true);
+    });
+    expect(view.state.doc.toString()).toBe(original);
+    act(() => {
+      expect(ref.current!.invoke('redo')).toBe(true);
+    });
+    expect(view.state.doc.toString()).toBe(original + 'ab');
+  } finally {
+    clock.mockRestore();
+  }
+});

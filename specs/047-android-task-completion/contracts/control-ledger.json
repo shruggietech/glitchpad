@@ -136,7 +136,7 @@
     },
     {
       "id": "CTRL-003",
-      "label": "Open… (menu) / Open file… (empty state) / Open (requested + menu)",
+      "label": "Open\u2026 (menu) / Open file\u2026 (empty state) / Open (requested + menu)",
       "issues": [
         249,
         "S046-integrated-retest"
@@ -146,14 +146,14 @@
       "cases": [
         {
           "id": "CTRL-003-1",
-          "label": "Open… (menu)",
+          "label": "Open\u2026 (menu)",
           "status": "pending",
           "evidence": [],
           "native_preparation": "primary_current_control_prepared"
         },
         {
           "id": "CTRL-003-2",
-          "label": "Open file… (empty state)",
+          "label": "Open file\u2026 (empty state)",
           "status": "pending",
           "evidence": [],
           "native_preparation": "primary_current_control_prepared"
@@ -229,7 +229,7 @@
       ],
       "candidate_status": "pending",
       "inherited_evidence": [],
-      "notes": "The report’s floating+ trigger is the current Add document capability. S047 places its48px named+ trigger in compact chrome to preserve document space; wide Android retains the existing floating trigger. Choices and native delivery authority are unchanged.",
+      "notes": "The report\u2019s floating+ trigger is the current Add document capability. S047 places its48px named+ trigger in compact chrome to preserve document space; wide Android retains the existing floating trigger. Choices and native delivery authority are unchanged.",
       "implementation_evidence": [
         {
           "scope": "shell_implemented_not_native_qualified",
@@ -3213,7 +3213,7 @@
     },
     {
       "id": "CTRL-032",
-      "label": "Zoom out (menu / Ctrl+-) / − (image toolbar) / − (diagram toolbar)",
+      "label": "Zoom out (menu / Ctrl+-) / \u2212 (image toolbar) / \u2212 (diagram toolbar)",
       "issues": [
         253
       ],
@@ -3245,7 +3245,7 @@
         },
         {
           "id": "CTRL-032-2",
-          "label": "− (image toolbar)",
+          "label": "\u2212 (image toolbar)",
           "status": "pending",
           "evidence": [],
           "native_preparation": "primary_current_control_prepared",
@@ -3265,7 +3265,7 @@
         },
         {
           "id": "CTRL-032-3",
-          "label": "− (diagram toolbar)",
+          "label": "\u2212 (diagram toolbar)",
           "status": "pending",
           "evidence": [],
           "native_preparation": "primary_current_control_prepared",
@@ -4020,7 +4020,7 @@
             "R2_N_METADATA"
           ],
           "supplemental_evidence_limits": [
-            "Ready JPEG More→File information is now explicitly prepared. Retargeting and failed-preview facts remain lower-level assertions rather than a direct installed context proof."
+            "Ready JPEG More\u2192File information is now explicitly prepared. Retargeting and failed-preview facts remain lower-level assertions rather than a direct installed context proof."
           ]
         },
         {
@@ -4038,7 +4038,7 @@
             "R2_N_METADATA"
           ],
           "supplemental_evidence_limits": [
-            "Ready JPEG More→File information is now explicitly prepared. Retargeting and failed-preview facts remain lower-level assertions rather than a direct installed context proof."
+            "Ready JPEG More\u2192File information is now explicitly prepared. Retargeting and failed-preview facts remain lower-level assertions rather than a direct installed context proof."
           ]
         },
         {
@@ -4054,7 +4054,7 @@
             "R2_N_METADATA"
           ],
           "supplemental_evidence_limits": [
-            "Ready JPEG More→File information is now explicitly prepared. Retargeting and failed-preview facts remain lower-level assertions rather than a direct installed context proof."
+            "Ready JPEG More\u2192File information is now explicitly prepared. Retargeting and failed-preview facts remain lower-level assertions rather than a direct installed context proof."
           ]
         },
         {
@@ -4072,7 +4072,7 @@
             "R2_N_METADATA"
           ],
           "supplemental_evidence_limits": [
-            "Ready JPEG More→File information is now explicitly prepared. Retargeting and failed-preview facts remain lower-level assertions rather than a direct installed context proof."
+            "Ready JPEG More\u2192File information is now explicitly prepared. Retargeting and failed-preview facts remain lower-level assertions rather than a direct installed context proof."
           ]
         },
         {
@@ -4085,7 +4085,7 @@
             "R2_U_APP_METADATA"
           ],
           "supplemental_evidence_limits": [
-            "Ready JPEG More→File information is now explicitly prepared. Retargeting and failed-preview facts remain lower-level assertions rather than a direct installed context proof."
+            "Ready JPEG More\u2192File information is now explicitly prepared. Retargeting and failed-preview facts remain lower-level assertions rather than a direct installed context proof."
           ]
         },
         {
@@ -8956,7 +8956,7 @@
             "R2_N_SECONDARY"
           ],
           "supplemental_evidence_limits": [
-            "The unit transitions Dark→Light→Checkerboard and asserts actual viewport class/state for each. The native helper chooses Checkerboard first when it is the default, then Light and Dark. No independent painted-background pixel readback is claimed."
+            "The unit transitions Dark\u2192Light\u2192Checkerboard and asserts actual viewport class/state for each. The native helper chooses Checkerboard first when it is the default, then Light and Dark. No independent painted-background pixel readback is claimed."
           ]
         },
         {
@@ -8972,7 +8972,7 @@
             "R2_N_SECONDARY"
           ],
           "supplemental_evidence_limits": [
-            "The unit transitions Dark→Light→Checkerboard and asserts actual viewport class/state for each. The native helper chooses Checkerboard first when it is the default, then Light and Dark. No independent painted-background pixel readback is claimed."
+            "The unit transitions Dark\u2192Light\u2192Checkerboard and asserts actual viewport class/state for each. The native helper chooses Checkerboard first when it is the default, then Light and Dark. No independent painted-background pixel readback is claimed."
           ]
         },
         {
@@ -8988,7 +8988,7 @@
             "R2_N_SECONDARY"
           ],
           "supplemental_evidence_limits": [
-            "The unit transitions Dark→Light→Checkerboard and asserts actual viewport class/state for each. The native helper chooses Checkerboard first when it is the default, then Light and Dark. No independent painted-background pixel readback is claimed."
+            "The unit transitions Dark\u2192Light\u2192Checkerboard and asserts actual viewport class/state for each. The native helper chooses Checkerboard first when it is the default, then Light and Dark. No independent painted-background pixel readback is claimed."
           ]
         },
         {
@@ -9006,7 +9006,7 @@
             "R2_N_SECONDARY"
           ],
           "supplemental_evidence_limits": [
-            "The unit transitions Dark→Light→Checkerboard and asserts actual viewport class/state for each. The native helper chooses Checkerboard first when it is the default, then Light and Dark. No independent painted-background pixel readback is claimed."
+            "The unit transitions Dark\u2192Light\u2192Checkerboard and asserts actual viewport class/state for each. The native helper chooses Checkerboard first when it is the default, then Light and Dark. No independent painted-background pixel readback is claimed."
           ]
         }
       ],
@@ -12160,7 +12160,7 @@
     },
     {
       "id": "CTRL-100",
-      "label": "Editor font size field (8–72)",
+      "label": "Editor font size field (8\u201372)",
       "issues": [
         253
       ],
@@ -12169,7 +12169,7 @@
       "cases": [
         {
           "id": "CTRL-100-1",
-          "label": "Editor font size field (8–72)",
+          "label": "Editor font size field (8\u201372)",
           "status": "pending",
           "evidence": [],
           "native_preparation": "primary_current_control_prepared",
@@ -12332,7 +12332,7 @@
     },
     {
       "id": "CTRL-101",
-      "label": "Tab width field (1–16)",
+      "label": "Tab width field (1\u201316)",
       "issues": [
         253
       ],
@@ -12341,7 +12341,7 @@
       "cases": [
         {
           "id": "CTRL-101-1",
-          "label": "Tab width field (1–16)",
+          "label": "Tab width field (1\u201316)",
           "status": "pending",
           "evidence": [],
           "native_preparation": "primary_current_control_prepared",
@@ -13930,7 +13930,7 @@
       "path": "apps/glitchpad/src/components/ImageSurface.test.tsx",
       "line": 903,
       "source_sha256": "c32cf7bcf2f562ee02180968f55d7f0bb67a882bb8d94109e3d2bad386fb43ed",
-      "effect": "Keyboard plus reaches125percent, repeated ArrowRight clamps pan, zero fits, and actual Dark→Light→Checkerboard transitions change the viewport class and state.",
+      "effect": "Keyboard plus reaches125percent, repeated ArrowRight clamps pan, zero fits, and actual Dark\u2192Light\u2192Checkerboard transitions change the viewport class and state.",
       "limit": "",
       "anchor": "it('renders inert image and supports keyboard zoom, pan recovery, fit, and background', async () => {"
     },
@@ -14019,7 +14019,7 @@
       "kind": "unit_passed_parent_aggregate",
       "path": "apps/glitchpad/src/App.test.tsx",
       "line": 2122,
-      "source_sha256": "6a4a749b0964bf6f73772c0d8dc34241ffe6933ceef1b47b4d6672064224ee80",
+      "source_sha256": "468bce7dd291fb81868b2f8a82388ef3d11e2483862ad4b8657c8aa1f6f7d60f",
       "effect": "The composed App unit inspector retargets with the active tab and restores Document tools focus.",
       "limit": "Mock metadata gateway; not installed native candidate evidence.",
       "anchor": "it('opens one shell-owned inspector, retargets it with the active tab, and restores opener focus', async () => {"
@@ -16693,7 +16693,7 @@
           "test": "it('retains empty numeric drafts and commits only supported integer values', () => {"
         }
       ],
-      "effect": "Editor font size field (8–72)",
+      "effect": "Editor font size field (8\u201372)",
       "limit": "Specific component/unit behavior; installed candidate status remains separate."
     },
     "US4_BROWSER_CTRL-100-1": {
@@ -16702,7 +16702,7 @@
         ".codex-tmp/s047/us4-modern-matrix-r26.json",
         ".codex-tmp/s047/us4-legacy-matrix-r26.json"
       ],
-      "effect": "Editor font size field (8–72)",
+      "effect": "Editor font size field (8\u201372)",
       "limit": "Browser emptyfontdraft/24commit. Components emptydraft/20commit and7/73/12.5invalidretention; exact8/72boundary uses explicit nativepreparation."
     },
     "US4_UNIT_CTRL-100-case-2": {
@@ -16759,7 +16759,7 @@
           "test": "it('retains empty numeric drafts and commits only supported integer values', () => {"
         }
       ],
-      "effect": "Tab width field (1–16)",
+      "effect": "Tab width field (1\u201316)",
       "limit": "Specific component/unit behavior; installed candidate status remains separate."
     },
     "US4_UNIT_CTRL-101-case-2": {
@@ -17495,7 +17495,7 @@
           "line": 240,
           "test_line": 217,
           "source_line": "const find = screen.getByRole('button', { name: 'Find next' });",
-          "assertion": "LargeFindnext advancesactualboundedsource through Match1of2→2of2→1of2.",
+          "assertion": "LargeFindnext advancesactualboundedsource through Match1of2\u21922of2\u21921of2.",
           "scope": "exact_effect",
           "execution": "owned_unit_gate_passed"
         },
@@ -17559,7 +17559,7 @@
       "assertions": [
         {
           "path": "apps/glitchpad/src/components/TextEditorSurface.tsx",
-          "line": 311,
+          "line": 312,
           "source_line": "if (command === 'find_next' || command === 'find_previous') {",
           "description": "CurrentEditorView usesinstalledfindNext/findPrevious.",
           "scope": "source_binding_not_independent_execution"
@@ -17586,7 +17586,7 @@
           "line": 1294,
           "test_line": 1263,
           "source_line": "expect(activeText()).toBe(expected);",
-          "assertion": "Twoactualparagraphmatches: Next2of2/second→wrap1of2/first; Previouswrap2of2/second→1of2/first; providerfind_next/find_previous repeatexactparagraphmovement.",
+          "assertion": "Twoactualparagraphmatches: Next2of2/second\u2192wrap1of2/first; Previouswrap2of2/second\u21921of2/first; providerfind_next/find_previous repeatexactparagraphmovement.",
           "scope": "exact_effect",
           "execution": "owned_unit_gate_passed"
         }
@@ -17644,7 +17644,7 @@
       "assertions": [
         {
           "path": "apps/glitchpad/src/components/TextEditorSurface.tsx",
-          "line": 311,
+          "line": 312,
           "source_line": "if (command === 'find_next' || command === 'find_previous') {",
           "description": "CurrentEditorView usesinstalledfindNext/findPrevious.",
           "scope": "source_binding_not_independent_execution"
@@ -17729,7 +17729,7 @@
       "assertions": [
         {
           "path": "apps/glitchpad/src/components/TextEditorSurface.tsx",
-          "line": 311,
+          "line": 312,
           "source_line": "if (command === 'find_next' || command === 'find_previous') {",
           "description": "CurrentEditorView usesinstalledfindNext/findPrevious.",
           "scope": "source_binding_not_independent_execution"
@@ -17756,7 +17756,7 @@
           "line": 240,
           "test_line": 217,
           "source_line": "const find = screen.getByRole('button', { name: 'Find next' });",
-          "assertion": "LargeFindnext advancesactualboundedsource through Match1of2→2of2→1of2.",
+          "assertion": "LargeFindnext advancesactualboundedsource through Match1of2\u21922of2\u21921of2.",
           "scope": "exact_effect",
           "execution": "owned_unit_gate_passed"
         }
@@ -17771,7 +17771,7 @@
       "assertions": [
         {
           "path": "apps/glitchpad/src/components/TextEditorSurface.tsx",
-          "line": 311,
+          "line": 312,
           "source_line": "if (command === 'find_next' || command === 'find_previous') {",
           "description": "CurrentEditorView usesinstalledfindNext/findPrevious.",
           "scope": "source_binding_not_independent_execution"
@@ -17833,7 +17833,7 @@
       "assertions": [
         {
           "path": "apps/glitchpad/src/components/TextEditorSurface.tsx",
-          "line": 311,
+          "line": 312,
           "source_line": "if (command === 'find_next' || command === 'find_previous') {",
           "description": "CurrentEditorView usesinstalledfindNext/findPrevious.",
           "scope": "source_binding_not_independent_execution"
@@ -17895,7 +17895,7 @@
       "assertions": [
         {
           "path": "apps/glitchpad/src/components/TextEditorSurface.tsx",
-          "line": 311,
+          "line": 312,
           "source_line": "if (command === 'find_next' || command === 'find_previous') {",
           "description": "CurrentEditorView usesinstalledfindNext/findPrevious.",
           "scope": "source_binding_not_independent_execution"
@@ -17980,7 +17980,7 @@
       "assertions": [
         {
           "path": "apps/glitchpad/src/components/TextEditorSurface.tsx",
-          "line": 311,
+          "line": 312,
           "source_line": "if (command === 'find_next' || command === 'find_previous') {",
           "description": "CurrentEditorView usesinstalledfindNext/findPrevious.",
           "scope": "source_binding_not_independent_execution"
@@ -18007,7 +18007,7 @@
           "line": 1294,
           "test_line": 1263,
           "source_line": "expect(activeText()).toBe(expected);",
-          "assertion": "Twoactualparagraphmatches: Next2of2/second→wrap1of2/first; Previouswrap2of2/second→1of2/first; providerfind_next/find_previous repeatexactparagraphmovement.",
+          "assertion": "Twoactualparagraphmatches: Next2of2/second\u2192wrap1of2/first; Previouswrap2of2/second\u21921of2/first; providerfind_next/find_previous repeatexactparagraphmovement.",
           "scope": "exact_effect",
           "execution": "owned_unit_gate_passed"
         }
@@ -18065,7 +18065,7 @@
       "assertions": [
         {
           "path": "apps/glitchpad/src/components/TextEditorSurface.tsx",
-          "line": 311,
+          "line": 312,
           "source_line": "if (command === 'find_next' || command === 'find_previous') {",
           "description": "CurrentEditorView usesinstalledfindNext/findPrevious.",
           "scope": "source_binding_not_independent_execution"
@@ -18092,7 +18092,7 @@
           "line": 240,
           "test_line": 217,
           "source_line": "const find = screen.getByRole('button', { name: 'Find next' });",
-          "assertion": "LargeFindnext advancesactualboundedsource through Match1of2→2of2→1of2.",
+          "assertion": "LargeFindnext advancesactualboundedsource through Match1of2\u21922of2\u21921of2.",
           "scope": "exact_effect",
           "execution": "owned_unit_gate_passed"
         }
@@ -18107,7 +18107,7 @@
       "assertions": [
         {
           "path": "apps/glitchpad/src/components/TextEditorSurface.tsx",
-          "line": 311,
+          "line": 312,
           "source_line": "if (command === 'find_next' || command === 'find_previous') {",
           "description": "CurrentEditorView usesinstalledfindNext/findPrevious.",
           "scope": "source_binding_not_independent_execution"
@@ -18150,7 +18150,7 @@
       "assertions": [
         {
           "path": "apps/glitchpad/src/components/TextEditorSurface.tsx",
-          "line": 311,
+          "line": 312,
           "source_line": "if (command === 'find_next' || command === 'find_previous') {",
           "description": "CurrentEditorView usesinstalledfindNext/findPrevious.",
           "scope": "source_binding_not_independent_execution"
@@ -18177,7 +18177,7 @@
           "line": 1294,
           "test_line": 1263,
           "source_line": "expect(activeText()).toBe(expected);",
-          "assertion": "Twoactualparagraphmatches: Next2of2/second→wrap1of2/first; Previouswrap2of2/second→1of2/first; providerfind_next/find_previous repeatexactparagraphmovement.",
+          "assertion": "Twoactualparagraphmatches: Next2of2/second\u2192wrap1of2/first; Previouswrap2of2/second\u21921of2/first; providerfind_next/find_previous repeatexactparagraphmovement.",
           "scope": "exact_effect",
           "execution": "owned_unit_gate_passed"
         }
@@ -18235,7 +18235,7 @@
       "assertions": [
         {
           "path": "apps/glitchpad/src/components/TextEditorSurface.tsx",
-          "line": 311,
+          "line": 312,
           "source_line": "if (command === 'find_next' || command === 'find_previous') {",
           "description": "CurrentEditorView usesinstalledfindNext/findPrevious.",
           "scope": "source_binding_not_independent_execution"
@@ -18289,7 +18289,7 @@
       "assertions": [
         {
           "path": "apps/glitchpad/src/components/TextEditorSurface.tsx",
-          "line": 311,
+          "line": 312,
           "source_line": "if (command === 'find_next' || command === 'find_previous') {",
           "description": "CurrentEditorView usesinstalledfindNext/findPrevious.",
           "scope": "source_binding_not_independent_execution"
@@ -18332,7 +18332,7 @@
       "assertions": [
         {
           "path": "apps/glitchpad/src/components/TextEditorSurface.tsx",
-          "line": 311,
+          "line": 312,
           "source_line": "if (command === 'find_next' || command === 'find_previous') {",
           "description": "CurrentEditorView usesinstalledfindNext/findPrevious.",
           "scope": "source_binding_not_independent_execution"
@@ -18375,7 +18375,7 @@
       "assertions": [
         {
           "path": "apps/glitchpad/src/components/TextEditorSurface.tsx",
-          "line": 311,
+          "line": 312,
           "source_line": "if (command === 'find_next' || command === 'find_previous') {",
           "description": "CurrentEditorView usesinstalledfindNext/findPrevious.",
           "scope": "source_binding_not_independent_execution"
@@ -18429,7 +18429,7 @@
       "assertions": [
         {
           "path": "apps/glitchpad/src/components/TextEditorSurface.tsx",
-          "line": 311,
+          "line": 312,
           "source_line": "if (command === 'find_next' || command === 'find_previous') {",
           "description": "CurrentEditorView usesinstalledfindNext/findPrevious.",
           "scope": "source_binding_not_independent_execution"
@@ -18456,7 +18456,7 @@
           "line": 1294,
           "test_line": 1263,
           "source_line": "expect(activeText()).toBe(expected);",
-          "assertion": "Twoactualparagraphmatches: Next2of2/second→wrap1of2/first; Previouswrap2of2/second→1of2/first; providerfind_next/find_previous repeatexactparagraphmovement.",
+          "assertion": "Twoactualparagraphmatches: Next2of2/second\u2192wrap1of2/first; Previouswrap2of2/second\u21921of2/first; providerfind_next/find_previous repeatexactparagraphmovement.",
           "scope": "exact_effect",
           "execution": "owned_unit_gate_passed"
         }
@@ -18514,7 +18514,7 @@
       "assertions": [
         {
           "path": "apps/glitchpad/src/components/TextEditorSurface.tsx",
-          "line": 311,
+          "line": 312,
           "source_line": "if (command === 'find_next' || command === 'find_previous') {",
           "description": "CurrentEditorView usesinstalledfindNext/findPrevious.",
           "scope": "source_binding_not_independent_execution"
@@ -18564,7 +18564,7 @@
       "assertions": [
         {
           "path": "apps/glitchpad/src/components/TextEditorSurface.tsx",
-          "line": 316,
+          "line": 317,
           "source_line": "if (command === 'close_search') return closeSearchPanel(view);",
           "description": "InternalaliasusesinstalledcloseSearchPanel; actualCMClosebutton effecttested.",
           "scope": "source_binding_not_independent_execution"
@@ -18602,7 +18602,7 @@
       "assertions": [
         {
           "path": "apps/glitchpad/src/components/TextEditorSurface.tsx",
-          "line": 316,
+          "line": 317,
           "source_line": "if (command === 'close_search') return closeSearchPanel(view);",
           "description": "InternalaliasusesinstalledcloseSearchPanel; actualCMClosebutton effecttested.",
           "scope": "source_binding_not_independent_execution"
@@ -18642,7 +18642,7 @@
       "assertions": [
         {
           "path": "apps/glitchpad/src/components/TextEditorSurface.tsx",
-          "line": 316,
+          "line": 317,
           "source_line": "if (command === 'close_search') return closeSearchPanel(view);",
           "description": "InternalaliasusesinstalledcloseSearchPanel; actualCMClosebutton effecttested.",
           "scope": "source_binding_not_independent_execution"
@@ -19134,7 +19134,7 @@
       "kind": "unit_assertion",
       "path": "apps/glitchpad/src/components/TextEditorSurface.test.tsx",
       "line": 973,
-      "source_sha256": "068dedc9f9c5d39589b93796a1c77d4f29fe95a530e839a5aad56c757b716c63",
+      "source_sha256": "d7ca7a1024b407742f3f6a05323a6bada9e9eb3a03124745eca78af38efafb38",
       "anchor": "inserts one undoable newline with an attached EditContext and keeps the current editor",
       "effect": "One hardware Enter produces one undoable newline with the current attached EditContext. Composition, modifiers and withdrawn-authority cases remain on their existing input route.",
       "limit": "Specific source/unit result only. No installed Android, native InputConnection or Windows UIA result is inferred."
@@ -19162,7 +19162,7 @@
       "path": "apps/glitchpad/src/components/TaskSurface.test.tsx",
       "anchor": "returns focus to the nested opener in the remaining parent after %s",
       "line": 171,
-      "source_sha256": "29233d2f2e0ab3d6758f85dd479760b90a607c2a5e1a6f25beb54c4422735c99",
+      "source_sha256": "fa797bb9b7f5b6c9686d5e5bb65dae6cac4d8bfeda97221ee70350eb0f804005",
       "effect": "Native Back dispatch, Escape, header Close and controlled completion return focus to the connected opener inside the still-open parent task. Separate tests retain the higher modal fence and permit an outside opener when only a nonmodal inspector remains.",
       "limit": "Component event/focus behavior; installed native and full rebuilt production browser qualification remain separate."
     },

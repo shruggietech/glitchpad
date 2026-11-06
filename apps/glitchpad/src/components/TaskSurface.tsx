@@ -202,9 +202,8 @@ export function TaskSurface({
           data-task-modal={modal ? 'true' : 'false'}
           onCloseAutoFocus={(event) => {
             event.preventDefault();
-            const target = opener?.isConnected
-              ? opener
-              : document.getElementById('bb-main');
+            const fallback = document.getElementById('bb-main');
+            const target = opener?.isConnected ? opener : fallback;
             const remainingModal = orderedLayers()
               .map((layer) => layer.element())
               .find(
@@ -213,6 +212,16 @@ export function TaskSurface({
                   node.dataset.taskModal === 'true',
               );
             if (remainingModal && (!target || !remainingModal.contains(target)))
+              return;
+            // Keep a completed document handoff instead of returning to navigation chrome.
+            const active = document.activeElement;
+            if (
+              !remainingModal &&
+              active?.isConnected &&
+              active.closest('.document-surface') &&
+              !active.closest('.task-surface') &&
+              !target?.closest('.document-surface')
+            )
               return;
             target?.focus({ preventScroll: true });
           }}

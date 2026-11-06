@@ -5,6 +5,7 @@ import {
 import { closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete';
 import {
   history,
+  isolateHistory,
   defaultKeymap,
   historyKeymap,
   indentLess,
@@ -408,6 +409,13 @@ export const TextEditorSurface = forwardRef<
           highlightActiveLineGutter(),
           highlightSpecialChars(),
           history(),
+          EditorState.transactionExtender.of((transaction) =>
+            transaction.docChanged &&
+            (transaction.isUserEvent('input.indent') ||
+              transaction.isUserEvent('delete.dedent'))
+              ? { annotations: isolateHistory.of('full') }
+              : null,
+          ),
           drawSelection(),
           bracketMatching(),
           closeBrackets(),

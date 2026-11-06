@@ -308,9 +308,15 @@ function SafeTree({
             aria-label={
               typeof node.properties.ariaLabel === 'string'
                 ? node.properties.ariaLabel
-                : node.properties.dataFootnoteBackref
+                : Object.prototype.hasOwnProperty.call(
+                      node.properties,
+                      'dataFootnoteBackref',
+                    )
                   ? 'Return to footnote reference'
-                  : node.properties.dataFootnoteRef
+                  : Object.prototype.hasOwnProperty.call(
+                        node.properties,
+                        'dataFootnoteRef',
+                      )
                     ? 'Footnote reference'
                     : undefined
             }

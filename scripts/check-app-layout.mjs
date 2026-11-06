@@ -1659,6 +1659,55 @@ export async function checkAppLayout({
                 unknown_fragment_feedback: true,
                 valid_fragment_clears_feedback: true,
               });
+              const footnoteNames = await page.evaluate(function () {
+                return {
+                  reference: document
+                    .querySelector('[data-footnote-ref]')
+                    .getAttribute('aria-label'),
+                  backlink: document
+                    .querySelector('[data-footnote-backref]')
+                    .getAttribute('aria-label'),
+                };
+              });
+              assert.equal(footnoteNames.reference, 'Footnote reference');
+              assert.equal(
+                footnoteNames.backlink,
+                'Return to footnote reference',
+              );
+              await click(
+                footnoteNames.reference,
+                '.markdown-document [role=link]',
+              );
+              assert.equal(
+                await page.evaluate(function () {
+                  return (
+                    document.activeElement.id ===
+                    document
+                      .querySelector('[data-footnote-ref]')
+                      .getAttribute('title')
+                      .slice(1)
+                  );
+                }),
+                true,
+              );
+              await click(
+                footnoteNames.backlink,
+                '.markdown-document [role=link]',
+              );
+              assert.equal(
+                await page.evaluate(function () {
+                  return (
+                    document.activeElement ===
+                    document.querySelector('[data-footnote-ref]')
+                  );
+                }),
+                true,
+              );
+              row.outcomes.push({
+                id: 'CTRL-057',
+                footnote_names: footnoteNames,
+                reference_and_backlink_focus: true,
+              });
               await exerciseDiagramTools('.embedded-mermaid');
               await command('Search');
               await fill('.markdown-search input', 'body');

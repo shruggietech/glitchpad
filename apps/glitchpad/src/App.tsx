@@ -1410,8 +1410,8 @@ export function App({
             '+': 'zoom_in',
             '=': 'zoom_in',
             '-': 'zoom_out',
-          } as const
-        )[key as 's']
+          } as Partial<Record<string, CommandId>>
+        )[key]
       : event.key === 'F3'
         ? event.shiftKey
           ? 'find_previous'
@@ -1421,7 +1421,22 @@ export function App({
           : event.key === 'PageDown'
             ? 'next_page'
             : undefined;
-    const command = commands.find((c) => c.id === id && c.enabled);
+    const advertised = commands.find((command) => command.id === id);
+    const historySession = stateRef.current.sessions.find(
+      (session) => session.id === stateRef.current.activeId,
+    );
+    // CodeMirror updates history synchronously, before React publishes toolbar state.
+    const command =
+      advertised && (id === 'undo' || id === 'redo')
+        ? historySession && !pendingActions.current.has(historySession.id)
+          ? commandSetFor(
+              historySession,
+              editorRef.current?.commandState?.(),
+            ).find((candidate) => candidate.id === id && candidate.enabled)
+          : undefined
+        : advertised?.enabled
+          ? advertised
+          : undefined;
     if (command) {
       event.preventDefault();
       void invoke(command);

@@ -3810,7 +3810,7 @@
           "unit": [
             {
               "path": "apps/glitchpad/src/components/MarkdownSurface.test.tsx",
-              "line": 1012,
+              "line": 1017,
               "assertion": "keeps the same source editor"
             },
             {
@@ -4214,7 +4214,7 @@
             },
             {
               "path": "apps/glitchpad/src/components/MarkdownSurface.test.tsx",
-              "line": 1113,
+              "line": 1118,
               "assertion": "focuses the correct visible heading"
             }
           ],
@@ -6644,12 +6644,12 @@
           "unit": [
             {
               "path": "apps/glitchpad/src/components/MarkdownSurface.test.tsx",
-              "line": 1069,
+              "line": 1074,
               "assertion": "returns rendered Find focus"
             },
             {
               "path": "apps/glitchpad/src/components/MarkdownSurface.test.tsx",
-              "line": 766,
+              "line": 771,
               "assertion": "selects the active rendered match"
             }
           ],
@@ -6946,7 +6946,7 @@
             },
             {
               "path": "apps/glitchpad/src/components/MarkdownSurface.test.tsx",
-              "line": 871,
+              "line": 876,
               "assertion": "reports a bounded gateway failure"
             }
           ],
@@ -7033,12 +7033,13 @@
           "evidence": [],
           "native_preparation": "primary_current_control_prepared",
           "supplemental_evidence_refs": [
-            "US4_UNIT_CTRL-057-2"
+            "US4_UNIT_CTRL-057-2",
+            "ROOT_FOOTNOTE_NAMES_AND_FOCUS"
           ],
           "supplemental_observation": {
             "unit": "specific_named_unit_assertion",
-            "browser": "not_individually_asserted",
-            "limit": "R24browser activates unknownfragment, asserts boundedfeedback and no URLhash navigation, then validfragment clearsfeedback. Component tests scopedfragment and actual footnote forward/back focus; browser footnote controls geometry only."
+            "browser": "explicit_supplemental_browser_assertion",
+            "limit": "Current modern and exact Chromium69 named footnote forward/back focus assertions; native source/runtime qualification remains independent."
           }
         },
         {
@@ -7048,12 +7049,13 @@
           "evidence": [],
           "native_preparation": "primary_current_control_prepared",
           "supplemental_evidence_refs": [
-            "US4_UNIT_CTRL-057-3"
+            "US4_UNIT_CTRL-057-3",
+            "ROOT_FOOTNOTE_NAMES_AND_FOCUS"
           ],
           "supplemental_observation": {
             "unit": "specific_named_unit_assertion",
-            "browser": "not_individually_asserted",
-            "limit": "R24browser activates unknownfragment, asserts boundedfeedback and no URLhash navigation, then validfragment clearsfeedback. Component tests scopedfragment and actual footnote forward/back focus; browser footnote controls geometry only."
+            "browser": "explicit_supplemental_browser_assertion",
+            "limit": "Current modern and exact Chromium69 named footnote forward/back focus assertions; native source/runtime qualification remains independent."
           }
         },
         {
@@ -7078,12 +7080,13 @@
           "evidence": [],
           "native_preparation": "explicit_assertion_prepared",
           "supplemental_evidence_refs": [
-            "US4_UNIT_CTRL-057-case-5"
+            "US4_UNIT_CTRL-057-case-5",
+            "ROOT_FOOTNOTE_NAMES_AND_FOCUS"
           ],
           "supplemental_observation": {
             "unit": "specific_named_unit_assertion",
-            "browser": "not_individually_asserted",
-            "limit": "R24browser activates unknownfragment, asserts boundedfeedback and no URLhash navigation, then validfragment clearsfeedback. Component tests scopedfragment and actual footnote forward/back focus; browser footnote controls geometry only."
+            "browser": "explicit_supplemental_browser_assertion",
+            "limit": "Current modern and exact Chromium69 named footnote forward/back focus assertions; native source/runtime qualification remains independent."
           }
         },
         {
@@ -7093,12 +7096,13 @@
           "evidence": [],
           "native_preparation": "explicit_assertion_prepared",
           "supplemental_evidence_refs": [
-            "US4_UNIT_CTRL-057-case-6"
+            "US4_UNIT_CTRL-057-case-6",
+            "ROOT_FOOTNOTE_NAMES_AND_FOCUS"
           ],
           "supplemental_observation": {
             "unit": "specific_named_unit_assertion",
-            "browser": "not_individually_asserted",
-            "limit": "R24browser activates unknownfragment, asserts boundedfeedback and no URLhash navigation, then validfragment clearsfeedback. Component tests scopedfragment and actual footnote forward/back focus; browser footnote controls geometry only."
+            "browser": "explicit_supplemental_browser_assertion",
+            "limit": "Current modern and exact Chromium69 named footnote forward/back focus assertions; native source/runtime qualification remains independent."
           }
         },
         {
@@ -7127,7 +7131,7 @@
           "unit": [
             {
               "path": "apps/glitchpad/src/components/MarkdownSurface.test.tsx",
-              "line": 1113,
+              "line": 1118,
               "assertion": "focuses the correct visible heading"
             },
             {
@@ -7137,7 +7141,7 @@
             }
           ],
           "browser_assertions": [
-            "Link targets audited; native agent owns explicit forward/back/fragment focus journey."
+            "Actual current Footnote reference and Return to footnote reference accessible names, forward destination focus and exact return-reference focus; unknown-fragment notice and valid-fragment clearing remain asserted."
           ],
           "inner_options": []
         }
@@ -7251,7 +7255,7 @@
           "unit": [
             {
               "path": "apps/glitchpad/src/components/MarkdownSurface.test.tsx",
-              "line": 818,
+              "line": 823,
               "assertion": "uses only an explicitly supplied local-document authority"
             }
           ],
@@ -7614,7 +7618,7 @@
             },
             {
               "path": "apps/glitchpad/src/components/MarkdownSurface.test.tsx",
-              "line": 955,
+              "line": 960,
               "assertion": "contains asynchronous projection"
             }
           ],
@@ -14036,7 +14040,7 @@
       "kind": "unit_passed_parent_aggregate",
       "path": "apps/glitchpad/src/App.test.tsx",
       "line": 2122,
-      "source_sha256": "868e20c9edbae9081a80edc5b6a9051d08c59ca9e84d286a0903574321062ade",
+      "source_sha256": "fe96d7115adbee7dd519de9c9f497d8591941b2ae14f5556aee62b072c123b95",
       "effect": "The composed App unit inspector retargets with the active tab and restores Document tools focus.",
       "limit": "Mock metadata gateway; not installed native candidate evidence.",
       "anchor": "it('opens one shell-owned inspector, retargets it with the active tab, and restores opener focus', async () => {"
@@ -14117,7 +14121,7 @@
       "kind": "composed_browser_prepared",
       "path": "scripts/check-app-layout.mjs",
       "line": 908,
-      "source_sha256": "010c1b72df01aa832a83b6bb035e572d6c777053c57744f546907638d6dec68f",
+      "source_sha256": "eba6b19564ac28f9b6f55607e1d8d71457fba63c0f09a8cfeb0e75d956899fbc",
       "effect": "The actual App runner is prepared to test decoded standalone and embedded scenes with scoped More Fit/Zoom factors, focus and geometry.",
       "limit": "R39 supplemental full-application matrices pass84/84 modern and84/84 exact Chromium69 against identical assets; synthetic browser gateways do not establish installed candidate task results.",
       "anchor": "await click('More diagram tools', scope + ' button');"
@@ -14384,7 +14388,7 @@
       "references": [
         {
           "path": "apps/glitchpad/src/components/MarkdownSurface.test.tsx",
-          "line": 1012,
+          "line": 1017,
           "test": "it('keeps the same source editor, selection and undo history across Read and Edit', async () => {"
         }
       ],
@@ -14459,7 +14463,7 @@
       "references": [
         {
           "path": "apps/glitchpad/src/components/MarkdownSurface.test.tsx",
-          "line": 1012,
+          "line": 1017,
           "test": "it('keeps the same source editor, selection and undo history across Read and Edit', async () => {"
         }
       ],
@@ -15437,7 +15441,7 @@
       "references": [
         {
           "path": "apps/glitchpad/src/components/MarkdownSurface.test.tsx",
-          "line": 1069,
+          "line": 1074,
           "test": "it('returns rendered Find focus to the document without discarding the query', async () => {"
         }
       ],
@@ -15458,7 +15462,7 @@
       "references": [
         {
           "path": "apps/glitchpad/src/components/MarkdownSurface.test.tsx",
-          "line": 1069,
+          "line": 1074,
           "test": "it('returns rendered Find focus to the document without discarding the query', async () => {"
         }
       ],
@@ -15500,7 +15504,7 @@
       "references": [
         {
           "path": "apps/glitchpad/src/components/MarkdownSurface.test.tsx",
-          "line": 1233,
+          "line": 1238,
           "test": "it('announces a rendered query with no matches and disables navigation without changing source', async () => {"
         }
       ],
@@ -15512,7 +15516,7 @@
       "references": [
         {
           "path": "apps/glitchpad/src/components/MarkdownSurface.test.tsx",
-          "line": 1069,
+          "line": 1074,
           "test": "it('returns rendered Find focus to the document without discarding the query', async () => {"
         }
       ],
@@ -15533,7 +15537,7 @@
       "references": [
         {
           "path": "apps/glitchpad/src/components/MarkdownSurface.test.tsx",
-          "line": 1069,
+          "line": 1074,
           "test": "it('returns rendered Find focus to the document without discarding the query', async () => {"
         }
       ],
@@ -15554,7 +15558,7 @@
       "references": [
         {
           "path": "apps/glitchpad/src/components/MarkdownSurface.test.tsx",
-          "line": 1113,
+          "line": 1118,
           "test": "it('focuses the correct visible heading and footnote destinations across mode changes', async () => {"
         }
       ],
@@ -15575,7 +15579,7 @@
       "references": [
         {
           "path": "apps/glitchpad/src/components/MarkdownSurface.test.tsx",
-          "line": 1113,
+          "line": 1118,
           "test": "it('focuses the correct visible heading and footnote destinations across mode changes', async () => {"
         }
       ],
@@ -15596,7 +15600,7 @@
       "references": [
         {
           "path": "apps/glitchpad/src/components/MarkdownSurface.test.tsx",
-          "line": 1113,
+          "line": 1118,
           "test": "it('focuses the correct visible heading and footnote destinations across mode changes', async () => {"
         }
       ],
@@ -15698,7 +15702,7 @@
       "references": [
         {
           "path": "apps/glitchpad/src/components/MarkdownSurface.test.tsx",
-          "line": 1168,
+          "line": 1173,
           "test": "it('scrolls only the current article and focuses a fragment without scrolling outer chrome', async () => {"
         }
       ],
@@ -15710,7 +15714,7 @@
       "references": [
         {
           "path": "apps/glitchpad/src/components/MarkdownSurface.test.tsx",
-          "line": 1113,
+          "line": 1118,
           "test": "it('focuses the correct visible heading and footnote destinations across mode changes', async () => {"
         }
       ],
@@ -15722,7 +15726,7 @@
       "references": [
         {
           "path": "apps/glitchpad/src/components/MarkdownSurface.test.tsx",
-          "line": 1113,
+          "line": 1118,
           "test": "it('focuses the correct visible heading and footnote destinations across mode changes', async () => {"
         }
       ],
@@ -15734,7 +15738,7 @@
       "references": [
         {
           "path": "apps/glitchpad/src/components/MarkdownSurface.test.tsx",
-          "line": 1168,
+          "line": 1173,
           "test": "it('scrolls only the current article and focuses a fragment without scrolling outer chrome', async () => {"
         }
       ],
@@ -15746,7 +15750,7 @@
       "references": [
         {
           "path": "apps/glitchpad/src/components/MarkdownSurface.test.tsx",
-          "line": 1113,
+          "line": 1118,
           "test": "it('focuses the correct visible heading and footnote destinations across mode changes', async () => {"
         }
       ],
@@ -15758,7 +15762,7 @@
       "references": [
         {
           "path": "apps/glitchpad/src/components/MarkdownSurface.test.tsx",
-          "line": 1113,
+          "line": 1118,
           "test": "it('focuses the correct visible heading and footnote destinations across mode changes', async () => {"
         }
       ],
@@ -15770,7 +15774,7 @@
       "references": [
         {
           "path": "apps/glitchpad/src/components/MarkdownSurface.test.tsx",
-          "line": 1192,
+          "line": 1197,
           "test": "it('announces an unknown fragment without moving focus or changing source', async () => {"
         }
       ],
@@ -15782,7 +15786,7 @@
       "references": [
         {
           "path": "apps/glitchpad/src/components/MarkdownSurface.test.tsx",
-          "line": 818,
+          "line": 823,
           "test": "it('uses only an explicitly supplied local-document authority', async () => {"
         }
       ],
@@ -15794,7 +15798,7 @@
       "references": [
         {
           "path": "apps/glitchpad/src/components/MarkdownSurface.test.tsx",
-          "line": 818,
+          "line": 823,
           "test": "it('uses only an explicitly supplied local-document authority', async () => {"
         }
       ],
@@ -15830,7 +15834,7 @@
       "references": [
         {
           "path": "apps/glitchpad/src/components/MarkdownSurface.test.tsx",
-          "line": 871,
+          "line": 876,
           "test": "it('reports a bounded gateway failure without leaving the document', async () => {"
         }
       ],
@@ -15863,7 +15867,7 @@
       "references": [
         {
           "path": "apps/glitchpad/src/components/MarkdownSurface.test.tsx",
-          "line": 955,
+          "line": 960,
           "test": "it('contains asynchronous projection callback failure and exposes source without leaking the exception', async () => {"
         }
       ],
@@ -15896,7 +15900,7 @@
       "references": [
         {
           "path": "apps/glitchpad/src/components/MarkdownSurface.test.tsx",
-          "line": 955,
+          "line": 960,
           "test": "it('contains asynchronous projection callback failure and exposes source without leaking the exception', async () => {"
         }
       ],
@@ -17088,7 +17092,7 @@
         {
           "kind": "supplemental_browser",
           "path": "scripts/check-app-layout.mjs",
-          "line": 1720,
+          "line": 1769,
           "test_line": null,
           "source_line": "window.__toolsClipboard ===",
           "assertion": "EmbeddedViewsource selects partial multi-line Mermaid fence; menuCopy must equal exact selectedfence, excluding other Markdown.",
@@ -17127,7 +17131,7 @@
         {
           "kind": "supplemental_browser",
           "path": "scripts/check-app-layout.mjs",
-          "line": 1720,
+          "line": 1769,
           "test_line": null,
           "source_line": "window.__toolsClipboard ===",
           "assertion": "EmbeddedViewsource selects partial multi-line Mermaid fence; menuCopy must equal exact selectedfence, excluding other Markdown.",
@@ -17342,7 +17346,7 @@
         {
           "kind": "supplemental_browser",
           "path": "scripts/check-app-layout.mjs",
-          "line": 1663,
+          "line": 1712,
           "test_line": null,
           "source_line": "await command('Search');",
           "assertion": "MenuSearch uses renderedMarkdownFindbody ratherthansourcepanel; controls/hit/nativebounds audited.",
@@ -17356,7 +17360,7 @@
         {
           "kind": "supplemental_browser",
           "path": "scripts/check-app-layout.mjs",
-          "line": 1820,
+          "line": 1869,
           "test_line": null,
           "source_line": "await command('Search');",
           "assertion": "MenuSearch usesFinddiagramtext; matchinglabelmark mustcontainAlpha, andcontrolsareactualnativeframeaudited.",
@@ -17450,7 +17454,7 @@
         {
           "kind": "supplemental_browser",
           "path": "scripts/check-app-layout.mjs",
-          "line": 1663,
+          "line": 1712,
           "test_line": null,
           "source_line": "await command('Search');",
           "assertion": "MenuSearch uses renderedMarkdownFindbody ratherthansourcepanel; controls/hit/nativebounds audited.",
@@ -17488,7 +17492,7 @@
         {
           "kind": "supplemental_browser",
           "path": "scripts/check-app-layout.mjs",
-          "line": 1820,
+          "line": 1869,
           "test_line": null,
           "source_line": "await command('Search');",
           "assertion": "MenuSearch usesFinddiagramtext; matchinglabelmark mustcontainAlpha, andcontrolsareactualnativeframeaudited.",
@@ -17583,7 +17587,7 @@
         },
         {
           "path": "apps/glitchpad/src/components/MarkdownSurface.tsx",
-          "line": 855,
+          "line": 861,
           "source_line": "if (command === 'find_next') return moveMatch(1);",
           "description": "find_next andfind_previous callmoveMatch(+1/-1), bothnowexplicitlytested.",
           "scope": "source_binding_not_independent_execution"
@@ -17600,8 +17604,8 @@
         {
           "kind": "unit",
           "path": "apps/glitchpad/src/components/MarkdownSurface.test.tsx",
-          "line": 1294,
-          "test_line": 1263,
+          "line": 1299,
+          "test_line": 1268,
           "source_line": "expect(activeText()).toBe(expected);",
           "assertion": "Twoactualparagraphmatches: Next2of2/second→wrap1of2/first; Previouswrap2of2/second→1of2/first; providerfind_next/find_previous repeatexactparagraphmovement.",
           "scope": "exact_effect",
@@ -17619,7 +17623,7 @@
         {
           "kind": "supplemental_browser",
           "path": "scripts/check-app-layout.mjs",
-          "line": 1669,
+          "line": 1718,
           "test_line": null,
           "source_line": "await click('Next', '.markdown-search button');",
           "assertion": "RenderedMarkdownNext realtarget isclicked; no before/after matchindex assertion recorded.",
@@ -17668,7 +17672,7 @@
         },
         {
           "path": "apps/glitchpad/src/components/MarkdownSurface.tsx",
-          "line": 855,
+          "line": 861,
           "source_line": "if (command === 'find_next') return moveMatch(1);",
           "description": "find_next andfind_previous callmoveMatch(+1/-1), bothnowexplicitlytested.",
           "scope": "source_binding_not_independent_execution"
@@ -17753,7 +17757,7 @@
         },
         {
           "path": "apps/glitchpad/src/components/MarkdownSurface.tsx",
-          "line": 855,
+          "line": 861,
           "source_line": "if (command === 'find_next') return moveMatch(1);",
           "description": "find_next andfind_previous callmoveMatch(+1/-1), bothnowexplicitlytested.",
           "scope": "source_binding_not_independent_execution"
@@ -17795,7 +17799,7 @@
         },
         {
           "path": "apps/glitchpad/src/components/MarkdownSurface.tsx",
-          "line": 855,
+          "line": 861,
           "source_line": "if (command === 'find_next') return moveMatch(1);",
           "description": "find_next andfind_previous callmoveMatch(+1/-1), bothnowexplicitlytested.",
           "scope": "source_binding_not_independent_execution"
@@ -17857,7 +17861,7 @@
         },
         {
           "path": "apps/glitchpad/src/components/MarkdownSurface.tsx",
-          "line": 855,
+          "line": 861,
           "source_line": "if (command === 'find_next') return moveMatch(1);",
           "description": "find_next andfind_previous callmoveMatch(+1/-1), bothnowexplicitlytested.",
           "scope": "source_binding_not_independent_execution"
@@ -17919,7 +17923,7 @@
         },
         {
           "path": "apps/glitchpad/src/components/MarkdownSurface.tsx",
-          "line": 855,
+          "line": 861,
           "source_line": "if (command === 'find_next') return moveMatch(1);",
           "description": "find_next andfind_previous callmoveMatch(+1/-1), bothnowexplicitlytested.",
           "scope": "source_binding_not_independent_execution"
@@ -18004,7 +18008,7 @@
         },
         {
           "path": "apps/glitchpad/src/components/MarkdownSurface.tsx",
-          "line": 855,
+          "line": 861,
           "source_line": "if (command === 'find_next') return moveMatch(1);",
           "description": "find_next andfind_previous callmoveMatch(+1/-1), bothnowexplicitlytested.",
           "scope": "source_binding_not_independent_execution"
@@ -18021,8 +18025,8 @@
         {
           "kind": "unit",
           "path": "apps/glitchpad/src/components/MarkdownSurface.test.tsx",
-          "line": 1294,
-          "test_line": 1263,
+          "line": 1299,
+          "test_line": 1268,
           "source_line": "expect(activeText()).toBe(expected);",
           "assertion": "Twoactualparagraphmatches: Next2of2/second→wrap1of2/first; Previouswrap2of2/second→1of2/first; providerfind_next/find_previous repeatexactparagraphmovement.",
           "scope": "exact_effect",
@@ -18040,7 +18044,7 @@
         {
           "kind": "supplemental_browser",
           "path": "scripts/check-app-layout.mjs",
-          "line": 1669,
+          "line": 1718,
           "test_line": null,
           "source_line": "await click('Next', '.markdown-search button');",
           "assertion": "RenderedMarkdownNext realtarget isclicked; no before/after matchindex assertion recorded.",
@@ -18089,7 +18093,7 @@
         },
         {
           "path": "apps/glitchpad/src/components/MarkdownSurface.tsx",
-          "line": 855,
+          "line": 861,
           "source_line": "if (command === 'find_next') return moveMatch(1);",
           "description": "find_next andfind_previous callmoveMatch(+1/-1), bothnowexplicitlytested.",
           "scope": "source_binding_not_independent_execution"
@@ -18131,7 +18135,7 @@
         },
         {
           "path": "apps/glitchpad/src/components/MarkdownSurface.tsx",
-          "line": 855,
+          "line": 861,
           "source_line": "if (command === 'find_next') return moveMatch(1);",
           "description": "find_next andfind_previous callmoveMatch(+1/-1), bothnowexplicitlytested.",
           "scope": "source_binding_not_independent_execution"
@@ -18174,7 +18178,7 @@
         },
         {
           "path": "apps/glitchpad/src/components/MarkdownSurface.tsx",
-          "line": 855,
+          "line": 861,
           "source_line": "if (command === 'find_next') return moveMatch(1);",
           "description": "find_next andfind_previous callmoveMatch(+1/-1), bothnowexplicitlytested.",
           "scope": "source_binding_not_independent_execution"
@@ -18191,8 +18195,8 @@
         {
           "kind": "unit",
           "path": "apps/glitchpad/src/components/MarkdownSurface.test.tsx",
-          "line": 1294,
-          "test_line": 1263,
+          "line": 1299,
+          "test_line": 1268,
           "source_line": "expect(activeText()).toBe(expected);",
           "assertion": "Twoactualparagraphmatches: Next2of2/second→wrap1of2/first; Previouswrap2of2/second→1of2/first; providerfind_next/find_previous repeatexactparagraphmovement.",
           "scope": "exact_effect",
@@ -18210,7 +18214,7 @@
         {
           "kind": "supplemental_browser",
           "path": "scripts/check-app-layout.mjs",
-          "line": 1670,
+          "line": 1719,
           "test_line": null,
           "source_line": "await click('Previous', '.markdown-search button');",
           "assertion": "RenderedMarkdownPrevious realtarget isclicked; no before/after matchindex assertion recorded.",
@@ -18259,7 +18263,7 @@
         },
         {
           "path": "apps/glitchpad/src/components/MarkdownSurface.tsx",
-          "line": 855,
+          "line": 861,
           "source_line": "if (command === 'find_next') return moveMatch(1);",
           "description": "find_next andfind_previous callmoveMatch(+1/-1), bothnowexplicitlytested.",
           "scope": "source_binding_not_independent_execution"
@@ -18313,7 +18317,7 @@
         },
         {
           "path": "apps/glitchpad/src/components/MarkdownSurface.tsx",
-          "line": 855,
+          "line": 861,
           "source_line": "if (command === 'find_next') return moveMatch(1);",
           "description": "find_next andfind_previous callmoveMatch(+1/-1), bothnowexplicitlytested.",
           "scope": "source_binding_not_independent_execution"
@@ -18356,7 +18360,7 @@
         },
         {
           "path": "apps/glitchpad/src/components/MarkdownSurface.tsx",
-          "line": 855,
+          "line": 861,
           "source_line": "if (command === 'find_next') return moveMatch(1);",
           "description": "find_next andfind_previous callmoveMatch(+1/-1), bothnowexplicitlytested.",
           "scope": "source_binding_not_independent_execution"
@@ -18399,7 +18403,7 @@
         },
         {
           "path": "apps/glitchpad/src/components/MarkdownSurface.tsx",
-          "line": 855,
+          "line": 861,
           "source_line": "if (command === 'find_next') return moveMatch(1);",
           "description": "find_next andfind_previous callmoveMatch(+1/-1), bothnowexplicitlytested.",
           "scope": "source_binding_not_independent_execution"
@@ -18453,7 +18457,7 @@
         },
         {
           "path": "apps/glitchpad/src/components/MarkdownSurface.tsx",
-          "line": 855,
+          "line": 861,
           "source_line": "if (command === 'find_next') return moveMatch(1);",
           "description": "find_next andfind_previous callmoveMatch(+1/-1), bothnowexplicitlytested.",
           "scope": "source_binding_not_independent_execution"
@@ -18470,8 +18474,8 @@
         {
           "kind": "unit",
           "path": "apps/glitchpad/src/components/MarkdownSurface.test.tsx",
-          "line": 1294,
-          "test_line": 1263,
+          "line": 1299,
+          "test_line": 1268,
           "source_line": "expect(activeText()).toBe(expected);",
           "assertion": "Twoactualparagraphmatches: Next2of2/second→wrap1of2/first; Previouswrap2of2/second→1of2/first; providerfind_next/find_previous repeatexactparagraphmovement.",
           "scope": "exact_effect",
@@ -18489,7 +18493,7 @@
         {
           "kind": "supplemental_browser",
           "path": "scripts/check-app-layout.mjs",
-          "line": 1670,
+          "line": 1719,
           "test_line": null,
           "source_line": "await click('Previous', '.markdown-search button');",
           "assertion": "RenderedMarkdownPrevious realtarget isclicked; no before/after matchindex assertion recorded.",
@@ -18538,7 +18542,7 @@
         },
         {
           "path": "apps/glitchpad/src/components/MarkdownSurface.tsx",
-          "line": 855,
+          "line": 861,
           "source_line": "if (command === 'find_next') return moveMatch(1);",
           "description": "find_next andfind_previous callmoveMatch(+1/-1), bothnowexplicitlytested.",
           "scope": "source_binding_not_independent_execution"
@@ -18555,8 +18559,8 @@
         {
           "kind": "unit",
           "path": "apps/glitchpad/src/components/MarkdownSurface.test.tsx",
-          "line": 1095,
-          "test_line": 1069,
+          "line": 1100,
+          "test_line": 1074,
           "source_line": "fireEvent.click(screen.getByRole('button', { name: 'Close search' }));",
           "assertion": "ActualCloseSearch removes managedFind and restoresarticlefocus at1101; reopeningretainsbodyquery at1108.",
           "scope": "exact_effect",
@@ -18588,7 +18592,7 @@
         },
         {
           "path": "apps/glitchpad/src/components/MarkdownSurface.tsx",
-          "line": 857,
+          "line": 863,
           "source_line": "if (command === 'close_search') {",
           "description": "InternalaliasusesactualcloseSearch helper, nowdirectlytested.",
           "scope": "source_binding_not_independent_execution"
@@ -18626,7 +18630,7 @@
         },
         {
           "path": "apps/glitchpad/src/components/MarkdownSurface.tsx",
-          "line": 857,
+          "line": 863,
           "source_line": "if (command === 'close_search') {",
           "description": "InternalaliasusesactualcloseSearch helper, nowdirectlytested.",
           "scope": "source_binding_not_independent_execution"
@@ -18641,8 +18645,8 @@
         {
           "kind": "unit",
           "path": "apps/glitchpad/src/components/MarkdownSurface.test.tsx",
-          "line": 1297,
-          "test_line": 1263,
+          "line": 1302,
+          "test_line": 1268,
           "source_line": "expect(handle.current!.invoke('close_search')).toBe(true);",
           "assertion": "Directinternalclose_search returnstrue, articlefocusrestores; providersearch reopenretainsquery/current1of2.",
           "scope": "exact_internal_provider_effect_not_new_exposed_control",
@@ -18666,7 +18670,7 @@
         },
         {
           "path": "apps/glitchpad/src/components/MarkdownSurface.tsx",
-          "line": 857,
+          "line": 863,
           "source_line": "if (command === 'close_search') {",
           "description": "InternalaliasusesactualcloseSearch helper, nowdirectlytested.",
           "scope": "source_binding_not_independent_execution"
@@ -19132,8 +19136,8 @@
     "R39_U_MD_FAILED_SOURCE": {
       "kind": "unit_assertion",
       "path": "apps/glitchpad/src/components/MarkdownSurface.test.tsx",
-      "line": 1321,
-      "source_sha256": "c27141cadaa1f977765ec2ee3875f55e81148a90779f4f638c1664346c265b6c",
+      "line": 1326,
+      "source_sha256": "fbf479398b46b9f2c83295712fd7b1784fb046ef80eb3fb965adefaa015e9617",
       "anchor": "keeps the current suppressed source editor and history without reevaluating the failed rendered subtree",
       "effect": "Unmocked Markdown failure suppression exposes the current source editor without evaluating the failed projection again; source history is retained.",
       "limit": "Specific source/unit result only. No installed Android, native InputConnection or Windows UIA result is inferred."
@@ -19141,8 +19145,8 @@
     "R39_U_MD_RENDERED_POSITION": {
       "kind": "unit_assertion",
       "path": "apps/glitchpad/src/components/MarkdownSurface.test.tsx",
-      "line": 1358,
-      "source_sha256": "c27141cadaa1f977765ec2ee3875f55e81148a90779f4f638c1664346c265b6c",
+      "line": 1363,
+      "source_sha256": "fbf479398b46b9f2c83295712fd7b1784fb046ef80eb3fb965adefaa015e9617",
       "anchor": "retains the same rendered article position and focus through normal Read and Edit",
       "effect": "Normal mode changes retain the rendered article identity, scroll and usable focus.",
       "limit": "Specific source/unit result only. No installed Android, native InputConnection or Windows UIA result is inferred."
@@ -19196,8 +19200,8 @@
       "kind": "browser_assertion_passed",
       "path": "scripts/check-app-layout.mjs",
       "anchor": "const waitForResetOpener = async () =>",
-      "line": 2008,
-      "source_sha256": "010c1b72df01aa832a83b6bb035e572d6c777053c57744f546907638d6dec68f",
+      "line": 2057,
+      "source_sha256": "eba6b19564ac28f9b6f55607e1d8d71457fba63c0f09a8cfeb0e75d956899fbc",
       "effect": "Production Preferences checks actual parent/opener focus after Cancel, trusted Escape, header Close and awaited reset completion in every required browser profile.",
       "limit": "The rebuilt production bundle passes all four Preferences return-focus routes in modern and exact Chromium 69 profiles. Browser events do not prove Android native Back; fresh installed native execution remains pending.",
       "execution": "R45modern84_and_exact69_84_passed",
@@ -19260,8 +19264,8 @@
       "kind": "composed_unit_passed",
       "path": "apps/glitchpad/src/App.test.tsx",
       "anchor": "returns a remembered HTML language override to Automatic without changing source",
-      "line": 2885,
-      "source_sha256": "868e20c9edbae9081a80edc5b6a9051d08c59ca9e84d286a0903574321062ade",
+      "line": 2883,
+      "source_sha256": "fe96d7115adbee7dd519de9c9f497d8591941b2ae14f5556aee62b072c123b95",
       "effect": "HTML to Automatic remains Automatic after the real App preference synchronization, task close/reopen and exact source/editor-identity checks.",
       "limit": "Composed unit execution; actual native popup/IME remains separately required."
     },
@@ -19270,7 +19274,7 @@
       "path": "apps/glitchpad/src/App.test.tsx",
       "anchor": "persists Automatic for the selected extension while retaining other language choices",
       "line": 2699,
-      "source_sha256": "868e20c9edbae9081a80edc5b6a9051d08c59ca9e84d286a0903574321062ade",
+      "source_sha256": "fe96d7115adbee7dd519de9c9f497d8591941b2ae14f5556aee62b072c123b95",
       "effect": "Loaded HTML override returns to Automatic, persistence removes only the selected extension override, retains the independent Rust choice and preserves source/editor identity.",
       "limit": "Persistence boundary is a substituted unit gateway, not native storage readback."
     },
@@ -19278,8 +19282,8 @@
       "kind": "composed_unit_passed",
       "path": "apps/glitchpad/src/App.test.tsx",
       "anchor": "keeps Replace focused across Search reopen after an exact replacement and Undo",
-      "line": 2922,
-      "source_sha256": "868e20c9edbae9081a80edc5b6a9051d08c59ca9e84d286a0903574321062ade",
+      "line": 2920,
+      "source_sha256": "fe96d7115adbee7dd519de9c9f497d8591941b2ae14f5556aee62b072c123b95",
       "effect": "Replace remains focused after exact replacement, Search close, Undo and reopen through actual App/CodeMirror/TaskSurface.",
       "limit": "Explicit browser focus in the unit environment; does not reproduce or qualify the retained API24 one-tap/IME focus failure."
     },
@@ -19288,10 +19292,19 @@
       "path": "scripts/check-app-layout.mjs",
       "anchor": "Language selection must retain its actual value after effects settle",
       "line": 1327,
-      "source_sha256": "010c1b72df01aa832a83b6bb035e572d6c777053c57744f546907638d6dec68f",
+      "source_sha256": "eba6b19564ac28f9b6f55607e1d8d71457fba63c0f09a8cfeb0e75d956899fbc",
       "effect": "Every real select value, final HTML-to-Automatic roundtrip and exact source are asserted after two actual animation frames.",
       "limit": "84 modern and84 exact Chromium69 composed cases pass against identical221-file assets and16 matching current source hashes. Source_commit is null for these precommit captures; native boundaries are substituted and actual Android qualification remains separate."
+    },
+    "ROOT_FOOTNOTE_NAMES_AND_FOCUS": {
+      "kind": "headless_composed_browser_passed",
+      "receipts": [
+        ".codex-tmp/s047/r20-composed-modern.json",
+        ".codex-tmp/s047/r20-composed-legacy-confirm.json"
+      ],
+      "effect": "Footnote reference and return have explicit accessible names; activation focuses the actual public destination and then the originating reference.",
+      "limit": "Current identical production assets, synthetic native gateways. This establishes browser behavior, not installed Android execution."
     }
   },
-  "local_candidate_note": "The preceding exact01bfb80 APK passes9/10 API24 ordinary journeys, with separate Search Replace focus and Automatic override rollback failures retained. The Automatic correction now passes580 frontend tests and84 modern plus84 exact Chromium69 composition cases, with current source/assets independently verified. All459 installed statuses remain pending fresh exact candidate ordinary/fault-probe qualification and scoped outcome reconciliation."
+  "local_candidate_note": "Current correction passes582 frontend tests,133 App/Markdown tests and84 modern plus84 exact Chromium69 composed cases with identical221-file assets/16source hashes. One earlier minimum-browser draft typing failure remains retained with cause unestablished;16instrumented focused cases and the unchanged full confirmation pass without a speculative typing/focus change. All459 installed statuses remain pending fresh exact-candidate four-way Android qualification and scoped outcome reconciliation."
 }

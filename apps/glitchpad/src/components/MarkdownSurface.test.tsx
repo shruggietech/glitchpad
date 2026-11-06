@@ -761,6 +761,11 @@ describe('Markdown surface', () => {
     );
     expect(reference?.id).toMatch(/^user-content-fnref-/u);
     expect(backReference).toHaveAttribute('title', `#${reference!.id}`);
+    expect(reference).toHaveAccessibleName('Footnote reference');
+    expect(backReference).toHaveAccessibleName('Return to footnote reference');
+    expect(
+      screen.getByRole('link', { name: 'Return to footnote reference' }),
+    ).toBe(backReference);
   });
 
   it('selects the active rendered match when entering source mode', async () => {

@@ -2702,13 +2702,11 @@ describe('document foundation shell', () => {
       language_overrides: { txt: 'html', rs: 'rust' },
     };
     const gateway = persistenceGateway({
-      loadPreferences: vi
-        .fn()
-        .mockResolvedValue({
-          status: 'loaded',
-          value: preferences,
-          warning_code: null,
-        }),
+      loadPreferences: vi.fn().mockResolvedValue({
+        status: 'loaded',
+        value: preferences,
+        warning_code: null,
+      }),
     });
     render(
       <App
@@ -2957,4 +2955,135 @@ it('keeps Replace focused across Search reopen after an exact replacement and Un
   });
   expect(replace).toHaveFocus();
   expect(view.state.doc.toString()).toBe(original);
+});
+
+it('executes immediate Ctrl+Z then Ctrl+Shift+Z using the current editor history', async () => {
+  render(
+    <App
+      sessions={[createDraftSession('text')]}
+      recoveryGateway={null}
+      persistenceGateway={null}
+    />,
+  );
+  const editor = screen.getByRole('textbox', {
+    name: 'Untitled.txt text editor',
+  });
+  const view = EditorView.findFromDOM(editor)!;
+  const original = 'cat Cat scatter cat\nsecond';
+  const indented = '    cat Cat scatter cat\n    second';
+  act(() => {
+    view.dispatch({
+      changes: { from: 0, insert: original },
+      selection: { anchor: 0, head: original.length },
+      userEvent: 'input.type',
+    });
+    editor.focus();
+  });
+  fireEvent.keyDown(editor, { key: 'Tab', code: 'Tab', keyCode: 9 });
+  fireEvent.keyDown(editor, {
+    key: 'Tab',
+    code: 'Tab',
+    keyCode: 9,
+    shiftKey: true,
+  });
+  expect(view.state.doc.toString()).toBe(original);
+  act(() => {
+    editor.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'z',
+        code: 'KeyZ',
+        keyCode: 90,
+        ctrlKey: true,
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+    expect(view.state.doc.toString()).toBe(indented);
+    editor.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Z',
+        code: 'KeyZ',
+        keyCode: 90,
+        ctrlKey: true,
+        shiftKey: true,
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+  });
+  await waitFor(() => expect(view.state.doc.toString()).toBe(original));
+  expect(EditorView.findFromDOM(editor)).toBe(view);
+});
+
+it('keeps shell Redo blocked during a native Save, including before React publishes the pending state', async () => {
+  let finish: ((receipt: AndroidDestinationReceipt | null) => void) | undefined;
+  const saveAs = vi.fn(
+    () =>
+      new Promise<AndroidDestinationReceipt | null>((resolve) => {
+        finish = resolve;
+      }),
+  );
+  render(
+    <App
+      sessions={[createDraftSession('text')]}
+      androidDeliveryGateway={authoringDelivery()}
+      androidAuthoringGateway={{ saveAs }}
+      recoveryGateway={null}
+      persistenceGateway={null}
+    />,
+  );
+  const editor = screen.getByRole('textbox', {
+    name: 'Untitled.txt text editor',
+  });
+  const view = EditorView.findFromDOM(editor)!;
+  act(() => {
+    view.dispatch({
+      changes: { from: 0, insert: 'Draft' },
+      userEvent: 'input.type',
+    });
+  });
+  fireEvent.keyDown(editor, {
+    key: 'z',
+    code: 'KeyZ',
+    keyCode: 90,
+    ctrlKey: true,
+  });
+  expect(view.state.doc.toString()).toBe('');
+  const redo = () =>
+    getApplicationShell().dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Z',
+        code: 'KeyZ',
+        keyCode: 90,
+        ctrlKey: true,
+        shiftKey: true,
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+  act(() => {
+    getApplicationShell().dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 's',
+        ctrlKey: true,
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+    redo();
+    expect(view.state.doc.toString()).toBe('');
+  });
+  await waitFor(() => expect(saveAs).toHaveBeenCalledOnce());
+  act(() => {
+    redo();
+  });
+  expect(view.state.doc.toString()).toBe('');
+  await act(async () => {
+    finish?.(null);
+    await Promise.resolve();
+  });
+  act(() => {
+    redo();
+  });
+  await waitFor(() => expect(view.state.doc.toString()).toBe('Draft'));
 });

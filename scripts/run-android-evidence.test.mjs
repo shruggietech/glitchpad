@@ -31,10 +31,12 @@ async function fixture() {
 set -eu
 printf '%s\n' "$*" >> "$RUNNER_TEMP/adb-events.txt"
 if [[ "$1" = install ]]; then
+  if [[ "\${MOCK_SETUP_HANG:-}" = install ]]; then exec /bin/sleep 2; fi
   if [[ "\${MOCK_INSTALL_FAILURE:-0}" = 1 ]]; then exit 1; fi
   built="\${@: -1}"
   if [[ "$built" = *app-universal-debug.apk ]]; then touch "$RUNNER_TEMP/application-installed"; elif [[ "$built" = *app-universal-debug-androidTest.apk ]]; then touch "$RUNNER_TEMP/instrumentation-installed"; else exit 1; fi
 elif [[ "$1" = shell && "$2" = pm && "$3" = path ]]; then
+  if [[ "\${MOCK_SETUP_HANG:-}" = package_path ]]; then exec /bin/sleep 2; fi
   if [[ "$4" = com.shruggietech.glitchpad ]]; then [[ -f "$RUNNER_TEMP/application-installed" ]]; echo "package:$FIXTURE_APPLICATION"; else [[ -f "$RUNNER_TEMP/instrumentation-installed" ]]; echo "package:$FIXTURE_INSTRUMENTATION"; fi
   if [[ "\${MOCK_SPLIT:-0}" = 1 ]]; then echo 'package:split.apk'; fi
 elif [[ "$1" = pull ]]; then
@@ -266,6 +268,29 @@ for (const [outcome, expected] of [['marker_only', 1], ['marker_crash', 1], ['ma
         if (outcome.startsWith('marker_assertion')) assert.match(text, /FAILURES!!!/u);
         if (outcome.endsWith('after_ok')) { assert.match(diagnostic, /junit_success=1/u); assert.match(diagnostic, /instrumentation_failure=1/u); }
       }
+    } finally { await state.dispose(); }
+  });
+}
+
+for (const phase of ['install', 'package_path']) {
+  test('bounds a blocked installed-candidate ' + phase + ' command and retains the exact failed phase', posix, async () => {
+    const state = await fixture();
+    try {
+      const preload = join(state.directory, 'bounded-fixture-timeout.cjs');
+      await writeFile(preload, "const cp = require('node:child_process'); const real = cp.execFileSync; cp.execFileSync = (file, args, options) => real(file, args, { ...options, ...(Number.isFinite(options?.timeout) ? { timeout: Math.min(options.timeout, 100) } : {}) }); require('node:module').syncBuiltinESMExports();\n", 'utf8');
+      const result = run('run-android-connected-tests.sh', state, [], { MOCK_SETUP_HANG: phase, NODE_OPTIONS: '--require=' + preload });
+      assert.equal(result.status, 1, result.stdout + result.stderr);
+      const directory = join(state.evidence, 'android-tested-candidate');
+      const diagnostic = JSON.parse(await readFile(join(directory, 'candidate-setup.json'), 'utf8'));
+      assert.equal(diagnostic.state, 'failed');
+      assert.equal(diagnostic.current_phase, phase);
+      const failure = diagnostic.commands.at(-1);
+      assert.equal(failure.phase, phase);
+      assert.equal(failure.package, 'com.shruggietech.glitchpad');
+      assert.equal(failure.code, 'ETIMEDOUT');
+      assert.equal(failure.cause, 'unknown');
+      assert.equal(failure.status, null);
+      await assert.rejects(access(join(directory, 'tested-apk-receipt.json')));
     } finally { await state.dispose(); }
   });
 }

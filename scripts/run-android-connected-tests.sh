@@ -32,9 +32,6 @@ const variants = [
 ];
 // Connected Gradle tests remove their packages during cleanup. Install the built
 // candidate again for byte-verified capture and the governed UI journeys in CI.
-for (const [, , builtPath] of variants) {
-  execFileSync('adb', ['install', '-r', '-t', builtPath], { stdio: 'pipe', windowsHide: true });
-}
 const failedCapture = (method, error) => ({
   method,
   status: Number.isInteger(error.status) ? error.status : null,
@@ -42,12 +39,34 @@ const failedCapture = (method, error) => ({
   signal: error.signal ?? null,
   stderr: String(error.stderr ?? '').slice(0, 8192),
   stderr_truncated: (error.stderr?.length ?? 0) > 8192,
-  stdout_byte_count: error.stdout?.length ?? 0,
+  stdout_byte_count: Buffer.isBuffer(error.stdout) ? error.stdout.length : Buffer.byteLength(String(error.stdout ?? '')),
   cause: 'unknown',
 });
+const setup = { schema_version: 1, timeout_ms: 60_000, current_phase: null, state: 'pending', commands: [] };
+const setupPath = join(directory, 'candidate-setup.json');
+const setupCommand = async (phase, packageName, args) => {
+  setup.current_phase = phase;
+  setup.state = 'running';
+  await writeFile(setupPath, JSON.stringify(setup, null, 2) + '\n', 'utf8');
+  try {
+    const output = execFileSync('adb', args, { encoding: 'utf8', stdio: 'pipe', timeout: 60_000, maxBuffer: 64 * 1024, windowsHide: true });
+    setup.commands.push({ phase, package: packageName, status: 0, stdout_byte_count: Buffer.byteLength(output) });
+    setup.state = 'completed';
+    return output;
+  } catch (error) {
+    setup.commands.push({ phase, package: packageName, ...failedCapture('adb_' + phase, error) });
+    setup.state = 'failed';
+    throw new Error('Installed candidate setup failed during ' + phase + ' for ' + packageName, { cause: error });
+  } finally {
+    await writeFile(setupPath, JSON.stringify(setup, null, 2) + '\n', 'utf8');
+  }
+};
+for (const [, packageName, builtPath] of variants) {
+  await setupCommand('install', packageName, ['install', '-r', '-t', builtPath]);
+}
 const artifacts = [];
 for (const [kind, packageName, builtPath] of variants) {
-  const paths = execFileSync('adb', ['shell', 'pm', 'path', packageName], { encoding: 'utf8', windowsHide: true }).trim().split(/\r?\n/).filter(Boolean);
+  const paths = (await setupCommand('package_path', packageName, ['shell', 'pm', 'path', packageName])).trim().split(/\r?\n/).filter(Boolean);
   if (paths.length !== 1 || !paths[0].startsWith('package:')) throw new Error('Expected one installed universal APK for ' + kind);
   const remotePath = paths[0].slice('package:'.length);
   if (remotePath.length > 4096 || !/^\/[a-zA-Z0-9_./+=~:@%-]+$/u.test(remotePath)) throw new Error('Invalid installed APK path for ' + kind);
@@ -105,7 +124,7 @@ for (const [kind, packageName, builtPath] of variants) {
 const product = JSON.parse(await readFile('apps/glitchpad/package.json', 'utf8'));
 const source = process.env.GITHUB_SHA || process.env.GLITCHPAD_BUILD_COMMIT || null;
 if (!source || !/^[0-9a-f]{40}$/u.test(source)) throw new Error('A full source commit is required for tested APK evidence');
-const receipt = { schema_version: 1, evidence_class: 'hosted_debug_instrumentation', capture_boundary: 'post_connected_suite_reinstall', signed_release_bytes_tested: false, recovery_probe_variant: process.env.GLITCHPAD_RECOVERY_PROBE_VARIANT || 'none', candidate_build_variant: process.env.GLITCHPAD_CANDIDATE_ROLE || 'ordinary', source_commit: source, product_version: product.version, api_level: Number(execFileSync('adb', ['shell', 'getprop', 'ro.build.version.sdk'], { encoding: 'utf8', windowsHide: true }).trim()), android_version: execFileSync('adb', ['shell', 'getprop', 'ro.build.version.release'], { encoding: 'utf8', windowsHide: true }).trim(), artifacts };
+const receipt = { schema_version: 1, evidence_class: 'hosted_debug_instrumentation', capture_boundary: 'post_connected_suite_reinstall', signed_release_bytes_tested: false, recovery_probe_variant: process.env.GLITCHPAD_RECOVERY_PROBE_VARIANT || 'none', candidate_build_variant: process.env.GLITCHPAD_CANDIDATE_ROLE || 'ordinary', source_commit: source, product_version: product.version, api_level: Number(execFileSync('adb', ['shell', 'getprop', 'ro.build.version.sdk'], { encoding: 'utf8', timeout: 30_000, maxBuffer: 64 * 1024, windowsHide: true }).trim()), android_version: execFileSync('adb', ['shell', 'getprop', 'ro.build.version.release'], { encoding: 'utf8', timeout: 30_000, maxBuffer: 64 * 1024, windowsHide: true }).trim(), artifacts };
 await writeFile(join(directory, 'tested-apk-receipt.json'), JSON.stringify(receipt, null, 2) + '\n', 'utf8');
 console.log('tested_apk_evidence=' + JSON.stringify(receipt));
 NODE

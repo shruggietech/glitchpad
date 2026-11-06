@@ -1700,13 +1700,16 @@ export function App({
                 const normalized = extension
                   ? normalizeExtension(extension)
                   : null;
-                if (normalized && language.origin === 'session_override') {
+                if (normalized) {
+                  const languageOverrides = {
+                    ...persistence.preferences.language_overrides,
+                  };
+                  if (language.origin === 'session_override')
+                    languageOverrides[normalized] = language.language;
+                  else delete languageOverrides[normalized];
                   persistence.updatePreferences({
                     ...persistence.preferences,
-                    language_overrides: {
-                      ...persistence.preferences.language_overrides,
-                      [normalized]: language.language,
-                    },
+                    language_overrides: languageOverrides,
                   });
                 }
               }}

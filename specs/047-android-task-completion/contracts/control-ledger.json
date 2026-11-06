@@ -136,7 +136,7 @@
     },
     {
       "id": "CTRL-003",
-      "label": "Open\u2026 (menu) / Open file\u2026 (empty state) / Open (requested + menu)",
+      "label": "Open… (menu) / Open file… (empty state) / Open (requested + menu)",
       "issues": [
         249,
         "S046-integrated-retest"
@@ -146,14 +146,14 @@
       "cases": [
         {
           "id": "CTRL-003-1",
-          "label": "Open\u2026 (menu)",
+          "label": "Open… (menu)",
           "status": "pending",
           "evidence": [],
           "native_preparation": "primary_current_control_prepared"
         },
         {
           "id": "CTRL-003-2",
-          "label": "Open file\u2026 (empty state)",
+          "label": "Open file… (empty state)",
           "status": "pending",
           "evidence": [],
           "native_preparation": "primary_current_control_prepared"
@@ -229,7 +229,7 @@
       ],
       "candidate_status": "pending",
       "inherited_evidence": [],
-      "notes": "The report\u2019s floating+ trigger is the current Add document capability. S047 places its48px named+ trigger in compact chrome to preserve document space; wide Android retains the existing floating trigger. Choices and native delivery authority are unchanged.",
+      "notes": "The report’s floating+ trigger is the current Add document capability. S047 places its48px named+ trigger in compact chrome to preserve document space; wide Android retains the existing floating trigger. Choices and native delivery authority are unchanged.",
       "implementation_evidence": [
         {
           "scope": "shell_implemented_not_native_qualified",
@@ -3213,7 +3213,7 @@
     },
     {
       "id": "CTRL-032",
-      "label": "Zoom out (menu / Ctrl+-) / \u2212 (image toolbar) / \u2212 (diagram toolbar)",
+      "label": "Zoom out (menu / Ctrl+-) / − (image toolbar) / − (diagram toolbar)",
       "issues": [
         253
       ],
@@ -3245,7 +3245,7 @@
         },
         {
           "id": "CTRL-032-2",
-          "label": "\u2212 (image toolbar)",
+          "label": "− (image toolbar)",
           "status": "pending",
           "evidence": [],
           "native_preparation": "primary_current_control_prepared",
@@ -3265,7 +3265,7 @@
         },
         {
           "id": "CTRL-032-3",
-          "label": "\u2212 (diagram toolbar)",
+          "label": "− (diagram toolbar)",
           "status": "pending",
           "evidence": [],
           "native_preparation": "primary_current_control_prepared",
@@ -4020,7 +4020,7 @@
             "R2_N_METADATA"
           ],
           "supplemental_evidence_limits": [
-            "Ready JPEG More\u2192File information is now explicitly prepared. Retargeting and failed-preview facts remain lower-level assertions rather than a direct installed context proof."
+            "Ready JPEG More→File information is now explicitly prepared. Retargeting and failed-preview facts remain lower-level assertions rather than a direct installed context proof."
           ]
         },
         {
@@ -4038,7 +4038,7 @@
             "R2_N_METADATA"
           ],
           "supplemental_evidence_limits": [
-            "Ready JPEG More\u2192File information is now explicitly prepared. Retargeting and failed-preview facts remain lower-level assertions rather than a direct installed context proof."
+            "Ready JPEG More→File information is now explicitly prepared. Retargeting and failed-preview facts remain lower-level assertions rather than a direct installed context proof."
           ]
         },
         {
@@ -4054,7 +4054,7 @@
             "R2_N_METADATA"
           ],
           "supplemental_evidence_limits": [
-            "Ready JPEG More\u2192File information is now explicitly prepared. Retargeting and failed-preview facts remain lower-level assertions rather than a direct installed context proof."
+            "Ready JPEG More→File information is now explicitly prepared. Retargeting and failed-preview facts remain lower-level assertions rather than a direct installed context proof."
           ]
         },
         {
@@ -4072,7 +4072,7 @@
             "R2_N_METADATA"
           ],
           "supplemental_evidence_limits": [
-            "Ready JPEG More\u2192File information is now explicitly prepared. Retargeting and failed-preview facts remain lower-level assertions rather than a direct installed context proof."
+            "Ready JPEG More→File information is now explicitly prepared. Retargeting and failed-preview facts remain lower-level assertions rather than a direct installed context proof."
           ]
         },
         {
@@ -4085,7 +4085,7 @@
             "R2_U_APP_METADATA"
           ],
           "supplemental_evidence_limits": [
-            "Ready JPEG More\u2192File information is now explicitly prepared. Retargeting and failed-preview facts remain lower-level assertions rather than a direct installed context proof."
+            "Ready JPEG More→File information is now explicitly prepared. Retargeting and failed-preview facts remain lower-level assertions rather than a direct installed context proof."
           ]
         },
         {
@@ -4798,7 +4798,10 @@
           "native_preparation": "primary_current_control_prepared",
           "supplemental_evidence_refs": [
             "US4_UNIT_CTRL-043-1",
-            "US4_BROWSER_CTRL-043-1"
+            "US4_BROWSER_CTRL-043-1",
+            "ROOT_LANGUAGE_BROWSER_VALUE",
+            "ROOT_AUTOMATIC_LANGUAGE_APP",
+            "ROOT_AUTOMATIC_LANGUAGE_PERSIST"
           ],
           "supplemental_observation": {
             "unit": "specific_named_unit_assertion",
@@ -4814,7 +4817,10 @@
           "native_preparation": "explicit_assertion_prepared",
           "supplemental_evidence_refs": [
             "US4_UNIT_CTRL-043-case-2",
-            "US4_BROWSER_CTRL-043-case-2"
+            "US4_BROWSER_CTRL-043-case-2",
+            "ROOT_LANGUAGE_BROWSER_VALUE",
+            "ROOT_AUTOMATIC_LANGUAGE_APP",
+            "ROOT_AUTOMATIC_LANGUAGE_PERSIST"
           ],
           "supplemental_observation": {
             "unit": "specific_named_unit_assertion",
@@ -4830,7 +4836,8 @@
           "native_preparation": "explicit_assertion_prepared",
           "supplemental_evidence_refs": [
             "US4_UNIT_CTRL-043-case-3",
-            "US4_BROWSER_CTRL-043-case-3"
+            "US4_BROWSER_CTRL-043-case-3",
+            "ROOT_LANGUAGE_BROWSER_VALUE"
           ],
           "supplemental_observation": {
             "unit": "specific_named_unit_assertion",
@@ -4846,7 +4853,8 @@
           "native_preparation": "explicit_assertion_prepared",
           "supplemental_evidence_refs": [
             "US4_UNIT_CTRL-043-case-4",
-            "US4_BROWSER_CTRL-043-case-4"
+            "US4_BROWSER_CTRL-043-case-4",
+            "ROOT_LANGUAGE_BROWSER_VALUE"
           ],
           "supplemental_observation": {
             "unit": "specific_named_unit_assertion",
@@ -4862,7 +4870,8 @@
           "native_preparation": "explicit_assertion_prepared",
           "supplemental_evidence_refs": [
             "US4_UNIT_CTRL-043-case-5",
-            "US4_BROWSER_CTRL-043-case-5"
+            "US4_BROWSER_CTRL-043-case-5",
+            "ROOT_LANGUAGE_BROWSER_VALUE"
           ],
           "supplemental_observation": {
             "unit": "specific_named_unit_assertion",
@@ -4878,7 +4887,8 @@
           "native_preparation": "explicit_assertion_prepared",
           "supplemental_evidence_refs": [
             "US4_UNIT_CTRL-043-case-6",
-            "US4_BROWSER_CTRL-043-case-6"
+            "US4_BROWSER_CTRL-043-case-6",
+            "ROOT_LANGUAGE_BROWSER_VALUE"
           ],
           "supplemental_observation": {
             "unit": "specific_named_unit_assertion",
@@ -4894,7 +4904,8 @@
           "native_preparation": "explicit_assertion_prepared",
           "supplemental_evidence_refs": [
             "US4_UNIT_CTRL-043-case-7",
-            "US4_BROWSER_CTRL-043-case-7"
+            "US4_BROWSER_CTRL-043-case-7",
+            "ROOT_LANGUAGE_BROWSER_VALUE"
           ],
           "supplemental_observation": {
             "unit": "specific_named_unit_assertion",
@@ -4910,7 +4921,8 @@
           "native_preparation": "explicit_assertion_prepared",
           "supplemental_evidence_refs": [
             "US4_UNIT_CTRL-043-case-8",
-            "US4_BROWSER_CTRL-043-case-8"
+            "US4_BROWSER_CTRL-043-case-8",
+            "ROOT_LANGUAGE_BROWSER_VALUE"
           ],
           "supplemental_observation": {
             "unit": "specific_named_unit_assertion",
@@ -4926,7 +4938,8 @@
           "native_preparation": "explicit_assertion_prepared",
           "supplemental_evidence_refs": [
             "US4_UNIT_CTRL-043-case-9",
-            "US4_BROWSER_CTRL-043-case-9"
+            "US4_BROWSER_CTRL-043-case-9",
+            "ROOT_LANGUAGE_BROWSER_VALUE"
           ],
           "supplemental_observation": {
             "unit": "specific_named_unit_assertion",
@@ -4942,7 +4955,8 @@
           "native_preparation": "explicit_assertion_prepared",
           "supplemental_evidence_refs": [
             "US4_UNIT_CTRL-043-case-10",
-            "US4_BROWSER_CTRL-043-case-10"
+            "US4_BROWSER_CTRL-043-case-10",
+            "ROOT_LANGUAGE_BROWSER_VALUE"
           ],
           "supplemental_observation": {
             "unit": "specific_named_unit_assertion",
@@ -4958,7 +4972,8 @@
           "native_preparation": "explicit_assertion_prepared",
           "supplemental_evidence_refs": [
             "US4_UNIT_CTRL-043-case-11",
-            "US4_BROWSER_CTRL-043-case-11"
+            "US4_BROWSER_CTRL-043-case-11",
+            "ROOT_LANGUAGE_BROWSER_VALUE"
           ],
           "supplemental_observation": {
             "unit": "specific_named_unit_assertion",
@@ -4974,7 +4989,8 @@
           "native_preparation": "explicit_assertion_prepared",
           "supplemental_evidence_refs": [
             "US4_UNIT_CTRL-043-case-12",
-            "US4_BROWSER_CTRL-043-case-12"
+            "US4_BROWSER_CTRL-043-case-12",
+            "ROOT_LANGUAGE_BROWSER_VALUE"
           ],
           "supplemental_observation": {
             "unit": "specific_named_unit_assertion",
@@ -5786,7 +5802,8 @@
           "native_preparation": "primary_current_control_prepared",
           "supplemental_evidence_refs": [
             "US4_UNIT_CTRL-049-1",
-            "US4_BROWSER_CTRL-049-1"
+            "US4_BROWSER_CTRL-049-1",
+            "ROOT_SEARCH_REOPEN_APP"
           ],
           "supplemental_observation": {
             "unit": "specific_named_unit_assertion",
@@ -8956,7 +8973,7 @@
             "R2_N_SECONDARY"
           ],
           "supplemental_evidence_limits": [
-            "The unit transitions Dark\u2192Light\u2192Checkerboard and asserts actual viewport class/state for each. The native helper chooses Checkerboard first when it is the default, then Light and Dark. No independent painted-background pixel readback is claimed."
+            "The unit transitions Dark→Light→Checkerboard and asserts actual viewport class/state for each. The native helper chooses Checkerboard first when it is the default, then Light and Dark. No independent painted-background pixel readback is claimed."
           ]
         },
         {
@@ -8972,7 +8989,7 @@
             "R2_N_SECONDARY"
           ],
           "supplemental_evidence_limits": [
-            "The unit transitions Dark\u2192Light\u2192Checkerboard and asserts actual viewport class/state for each. The native helper chooses Checkerboard first when it is the default, then Light and Dark. No independent painted-background pixel readback is claimed."
+            "The unit transitions Dark→Light→Checkerboard and asserts actual viewport class/state for each. The native helper chooses Checkerboard first when it is the default, then Light and Dark. No independent painted-background pixel readback is claimed."
           ]
         },
         {
@@ -8988,7 +9005,7 @@
             "R2_N_SECONDARY"
           ],
           "supplemental_evidence_limits": [
-            "The unit transitions Dark\u2192Light\u2192Checkerboard and asserts actual viewport class/state for each. The native helper chooses Checkerboard first when it is the default, then Light and Dark. No independent painted-background pixel readback is claimed."
+            "The unit transitions Dark→Light→Checkerboard and asserts actual viewport class/state for each. The native helper chooses Checkerboard first when it is the default, then Light and Dark. No independent painted-background pixel readback is claimed."
           ]
         },
         {
@@ -9006,7 +9023,7 @@
             "R2_N_SECONDARY"
           ],
           "supplemental_evidence_limits": [
-            "The unit transitions Dark\u2192Light\u2192Checkerboard and asserts actual viewport class/state for each. The native helper chooses Checkerboard first when it is the default, then Light and Dark. No independent painted-background pixel readback is claimed."
+            "The unit transitions Dark→Light→Checkerboard and asserts actual viewport class/state for each. The native helper chooses Checkerboard first when it is the default, then Light and Dark. No independent painted-background pixel readback is claimed."
           ]
         }
       ],
@@ -12160,7 +12177,7 @@
     },
     {
       "id": "CTRL-100",
-      "label": "Editor font size field (8\u201372)",
+      "label": "Editor font size field (8–72)",
       "issues": [
         253
       ],
@@ -12169,7 +12186,7 @@
       "cases": [
         {
           "id": "CTRL-100-1",
-          "label": "Editor font size field (8\u201372)",
+          "label": "Editor font size field (8–72)",
           "status": "pending",
           "evidence": [],
           "native_preparation": "primary_current_control_prepared",
@@ -12332,7 +12349,7 @@
     },
     {
       "id": "CTRL-101",
-      "label": "Tab width field (1\u201316)",
+      "label": "Tab width field (1–16)",
       "issues": [
         253
       ],
@@ -12341,7 +12358,7 @@
       "cases": [
         {
           "id": "CTRL-101-1",
-          "label": "Tab width field (1\u201316)",
+          "label": "Tab width field (1–16)",
           "status": "pending",
           "evidence": [],
           "native_preparation": "primary_current_control_prepared",
@@ -13930,7 +13947,7 @@
       "path": "apps/glitchpad/src/components/ImageSurface.test.tsx",
       "line": 903,
       "source_sha256": "c32cf7bcf2f562ee02180968f55d7f0bb67a882bb8d94109e3d2bad386fb43ed",
-      "effect": "Keyboard plus reaches125percent, repeated ArrowRight clamps pan, zero fits, and actual Dark\u2192Light\u2192Checkerboard transitions change the viewport class and state.",
+      "effect": "Keyboard plus reaches125percent, repeated ArrowRight clamps pan, zero fits, and actual Dark→Light→Checkerboard transitions change the viewport class and state.",
       "limit": "",
       "anchor": "it('renders inert image and supports keyboard zoom, pan recovery, fit, and background', async () => {"
     },
@@ -14019,7 +14036,7 @@
       "kind": "unit_passed_parent_aggregate",
       "path": "apps/glitchpad/src/App.test.tsx",
       "line": 2122,
-      "source_sha256": "468bce7dd291fb81868b2f8a82388ef3d11e2483862ad4b8657c8aa1f6f7d60f",
+      "source_sha256": "868e20c9edbae9081a80edc5b6a9051d08c59ca9e84d286a0903574321062ade",
       "effect": "The composed App unit inspector retargets with the active tab and restores Document tools focus.",
       "limit": "Mock metadata gateway; not installed native candidate evidence.",
       "anchor": "it('opens one shell-owned inspector, retargets it with the active tab, and restores opener focus', async () => {"
@@ -14100,7 +14117,7 @@
       "kind": "composed_browser_prepared",
       "path": "scripts/check-app-layout.mjs",
       "line": 908,
-      "source_sha256": "6db67aeca982f8bda2494f2e44b644fd9ffefefecdf61f879ca5ab2a7fddadf6",
+      "source_sha256": "010c1b72df01aa832a83b6bb035e572d6c777053c57744f546907638d6dec68f",
       "effect": "The actual App runner is prepared to test decoded standalone and embedded scenes with scoped More Fit/Zoom factors, focus and geometry.",
       "limit": "R39 supplemental full-application matrices pass84/84 modern and84/84 exact Chromium69 against identical assets; synthetic browser gateways do not establish installed candidate task results.",
       "anchor": "await click('More diagram tools', scope + ' button');"
@@ -16693,7 +16710,7 @@
           "test": "it('retains empty numeric drafts and commits only supported integer values', () => {"
         }
       ],
-      "effect": "Editor font size field (8\u201372)",
+      "effect": "Editor font size field (8–72)",
       "limit": "Specific component/unit behavior; installed candidate status remains separate."
     },
     "US4_BROWSER_CTRL-100-1": {
@@ -16702,7 +16719,7 @@
         ".codex-tmp/s047/us4-modern-matrix-r26.json",
         ".codex-tmp/s047/us4-legacy-matrix-r26.json"
       ],
-      "effect": "Editor font size field (8\u201372)",
+      "effect": "Editor font size field (8–72)",
       "limit": "Browser emptyfontdraft/24commit. Components emptydraft/20commit and7/73/12.5invalidretention; exact8/72boundary uses explicit nativepreparation."
     },
     "US4_UNIT_CTRL-100-case-2": {
@@ -16759,7 +16776,7 @@
           "test": "it('retains empty numeric drafts and commits only supported integer values', () => {"
         }
       ],
-      "effect": "Tab width field (1\u201316)",
+      "effect": "Tab width field (1–16)",
       "limit": "Specific component/unit behavior; installed candidate status remains separate."
     },
     "US4_UNIT_CTRL-101-case-2": {
@@ -17071,7 +17088,7 @@
         {
           "kind": "supplemental_browser",
           "path": "scripts/check-app-layout.mjs",
-          "line": 1676,
+          "line": 1720,
           "test_line": null,
           "source_line": "window.__toolsClipboard ===",
           "assertion": "EmbeddedViewsource selects partial multi-line Mermaid fence; menuCopy must equal exact selectedfence, excluding other Markdown.",
@@ -17110,7 +17127,7 @@
         {
           "kind": "supplemental_browser",
           "path": "scripts/check-app-layout.mjs",
-          "line": 1676,
+          "line": 1720,
           "test_line": null,
           "source_line": "window.__toolsClipboard ===",
           "assertion": "EmbeddedViewsource selects partial multi-line Mermaid fence; menuCopy must equal exact selectedfence, excluding other Markdown.",
@@ -17311,7 +17328,7 @@
         {
           "kind": "supplemental_browser",
           "path": "scripts/check-app-layout.mjs",
-          "line": 1304,
+          "line": 1348,
           "test_line": null,
           "source_line": "await command('Search');",
           "assertion": "ActualDocumenttoolsSearch opensinstalledCMpanel; querycat+options assert4/3/2matches and invalidregex inall12editorprofiles.",
@@ -17325,7 +17342,7 @@
         {
           "kind": "supplemental_browser",
           "path": "scripts/check-app-layout.mjs",
-          "line": 1619,
+          "line": 1663,
           "test_line": null,
           "source_line": "await command('Search');",
           "assertion": "MenuSearch uses renderedMarkdownFindbody ratherthansourcepanel; controls/hit/nativebounds audited.",
@@ -17339,7 +17356,7 @@
         {
           "kind": "supplemental_browser",
           "path": "scripts/check-app-layout.mjs",
-          "line": 1776,
+          "line": 1820,
           "test_line": null,
           "source_line": "await command('Search');",
           "assertion": "MenuSearch usesFinddiagramtext; matchinglabelmark mustcontainAlpha, andcontrolsareactualnativeframeaudited.",
@@ -17395,7 +17412,7 @@
         {
           "kind": "supplemental_browser",
           "path": "scripts/check-app-layout.mjs",
-          "line": 1304,
+          "line": 1348,
           "test_line": null,
           "source_line": "await command('Search');",
           "assertion": "ActualDocumenttoolsSearch opensinstalledCMpanel; querycat+options assert4/3/2matches and invalidregex inall12editorprofiles.",
@@ -17433,7 +17450,7 @@
         {
           "kind": "supplemental_browser",
           "path": "scripts/check-app-layout.mjs",
-          "line": 1619,
+          "line": 1663,
           "test_line": null,
           "source_line": "await command('Search');",
           "assertion": "MenuSearch uses renderedMarkdownFindbody ratherthansourcepanel; controls/hit/nativebounds audited.",
@@ -17471,7 +17488,7 @@
         {
           "kind": "supplemental_browser",
           "path": "scripts/check-app-layout.mjs",
-          "line": 1776,
+          "line": 1820,
           "test_line": null,
           "source_line": "await command('Search');",
           "assertion": "MenuSearch usesFinddiagramtext; matchinglabelmark mustcontainAlpha, andcontrolsareactualnativeframeaudited.",
@@ -17495,7 +17512,7 @@
           "line": 240,
           "test_line": 217,
           "source_line": "const find = screen.getByRole('button', { name: 'Find next' });",
-          "assertion": "LargeFindnext advancesactualboundedsource through Match1of2\u21922of2\u21921of2.",
+          "assertion": "LargeFindnext advancesactualboundedsource through Match1of2→2of2→1of2.",
           "scope": "exact_effect",
           "execution": "owned_unit_gate_passed"
         },
@@ -17586,7 +17603,7 @@
           "line": 1294,
           "test_line": 1263,
           "source_line": "expect(activeText()).toBe(expected);",
-          "assertion": "Twoactualparagraphmatches: Next2of2/second\u2192wrap1of2/first; Previouswrap2of2/second\u21921of2/first; providerfind_next/find_previous repeatexactparagraphmovement.",
+          "assertion": "Twoactualparagraphmatches: Next2of2/second→wrap1of2/first; Previouswrap2of2/second→1of2/first; providerfind_next/find_previous repeatexactparagraphmovement.",
           "scope": "exact_effect",
           "execution": "owned_unit_gate_passed"
         }
@@ -17602,7 +17619,7 @@
         {
           "kind": "supplemental_browser",
           "path": "scripts/check-app-layout.mjs",
-          "line": 1625,
+          "line": 1669,
           "test_line": null,
           "source_line": "await click('Next', '.markdown-search button');",
           "assertion": "RenderedMarkdownNext realtarget isclicked; no before/after matchindex assertion recorded.",
@@ -17687,7 +17704,7 @@
         {
           "kind": "supplemental_browser",
           "path": "scripts/check-app-layout.mjs",
-          "line": 1431,
+          "line": 1475,
           "test_line": null,
           "source_line": "assert.equal(originalText.slice(range.from, range.to), 'cat');",
           "assertion": "ClickCMNext afterSelectall; actualprimaryrange mustslice cat, then ReplaceNext changes exactlythatrange.",
@@ -17756,7 +17773,7 @@
           "line": 240,
           "test_line": 217,
           "source_line": "const find = screen.getByRole('button', { name: 'Find next' });",
-          "assertion": "LargeFindnext advancesactualboundedsource through Match1of2\u21922of2\u21921of2.",
+          "assertion": "LargeFindnext advancesactualboundedsource through Match1of2→2of2→1of2.",
           "scope": "exact_effect",
           "execution": "owned_unit_gate_passed"
         }
@@ -17938,7 +17955,7 @@
         {
           "kind": "supplemental_browser",
           "path": "scripts/check-app-layout.mjs",
-          "line": 1431,
+          "line": 1475,
           "test_line": null,
           "source_line": "assert.equal(originalText.slice(range.from, range.to), 'cat');",
           "assertion": "ClickCMNext afterSelectall; actualprimaryrange mustslice cat, then ReplaceNext changes exactlythatrange.",
@@ -18007,7 +18024,7 @@
           "line": 1294,
           "test_line": 1263,
           "source_line": "expect(activeText()).toBe(expected);",
-          "assertion": "Twoactualparagraphmatches: Next2of2/second\u2192wrap1of2/first; Previouswrap2of2/second\u21921of2/first; providerfind_next/find_previous repeatexactparagraphmovement.",
+          "assertion": "Twoactualparagraphmatches: Next2of2/second→wrap1of2/first; Previouswrap2of2/second→1of2/first; providerfind_next/find_previous repeatexactparagraphmovement.",
           "scope": "exact_effect",
           "execution": "owned_unit_gate_passed"
         }
@@ -18023,7 +18040,7 @@
         {
           "kind": "supplemental_browser",
           "path": "scripts/check-app-layout.mjs",
-          "line": 1625,
+          "line": 1669,
           "test_line": null,
           "source_line": "await click('Next', '.markdown-search button');",
           "assertion": "RenderedMarkdownNext realtarget isclicked; no before/after matchindex assertion recorded.",
@@ -18092,7 +18109,7 @@
           "line": 240,
           "test_line": 217,
           "source_line": "const find = screen.getByRole('button', { name: 'Find next' });",
-          "assertion": "LargeFindnext advancesactualboundedsource through Match1of2\u21922of2\u21921of2.",
+          "assertion": "LargeFindnext advancesactualboundedsource through Match1of2→2of2→1of2.",
           "scope": "exact_effect",
           "execution": "owned_unit_gate_passed"
         }
@@ -18177,7 +18194,7 @@
           "line": 1294,
           "test_line": 1263,
           "source_line": "expect(activeText()).toBe(expected);",
-          "assertion": "Twoactualparagraphmatches: Next2of2/second\u2192wrap1of2/first; Previouswrap2of2/second\u21921of2/first; providerfind_next/find_previous repeatexactparagraphmovement.",
+          "assertion": "Twoactualparagraphmatches: Next2of2/second→wrap1of2/first; Previouswrap2of2/second→1of2/first; providerfind_next/find_previous repeatexactparagraphmovement.",
           "scope": "exact_effect",
           "execution": "owned_unit_gate_passed"
         }
@@ -18193,7 +18210,7 @@
         {
           "kind": "supplemental_browser",
           "path": "scripts/check-app-layout.mjs",
-          "line": 1626,
+          "line": 1670,
           "test_line": null,
           "source_line": "await click('Previous', '.markdown-search button');",
           "assertion": "RenderedMarkdownPrevious realtarget isclicked; no before/after matchindex assertion recorded.",
@@ -18456,7 +18473,7 @@
           "line": 1294,
           "test_line": 1263,
           "source_line": "expect(activeText()).toBe(expected);",
-          "assertion": "Twoactualparagraphmatches: Next2of2/second\u2192wrap1of2/first; Previouswrap2of2/second\u21921of2/first; providerfind_next/find_previous repeatexactparagraphmovement.",
+          "assertion": "Twoactualparagraphmatches: Next2of2/second→wrap1of2/first; Previouswrap2of2/second→1of2/first; providerfind_next/find_previous repeatexactparagraphmovement.",
           "scope": "exact_effect",
           "execution": "owned_unit_gate_passed"
         }
@@ -18472,7 +18489,7 @@
         {
           "kind": "supplemental_browser",
           "path": "scripts/check-app-layout.mjs",
-          "line": 1626,
+          "line": 1670,
           "test_line": null,
           "source_line": "await click('Previous', '.markdown-search button');",
           "assertion": "RenderedMarkdownPrevious realtarget isclicked; no before/after matchindex assertion recorded.",
@@ -18703,7 +18720,7 @@
         {
           "kind": "supplemental_browser",
           "path": "scripts/check-app-layout.mjs",
-          "line": 1454,
+          "line": 1498,
           "test_line": null,
           "source_line": "await command('Go to line');",
           "assertion": "MenuGo-to-line opensmanagedlineinput;999invalid,2moves actualcaretto20, cancel1retains20.",
@@ -18742,7 +18759,7 @@
         {
           "kind": "supplemental_browser",
           "path": "scripts/check-app-layout.mjs",
-          "line": 1454,
+          "line": 1498,
           "test_line": null,
           "source_line": "await command('Go to line');",
           "assertion": "MenuGo-to-line opensmanagedlineinput;999invalid,2moves actualcaretto20, cancel1retains20.",
@@ -18849,7 +18866,7 @@
         {
           "kind": "supplemental_browser",
           "path": "scripts/check-app-layout.mjs",
-          "line": 1454,
+          "line": 1498,
           "test_line": null,
           "source_line": "await command('Go to line');",
           "assertion": "MenuGo-to-line opensmanagedlineinput;999invalid,2moves actualcaretto20, cancel1retains20.",
@@ -18887,7 +18904,7 @@
         {
           "kind": "supplemental_browser",
           "path": "scripts/check-app-layout.mjs",
-          "line": 1454,
+          "line": 1498,
           "test_line": null,
           "source_line": "await command('Go to line');",
           "assertion": "MenuGo-to-line opensmanagedlineinput;999invalid,2moves actualcaretto20, cancel1retains20.",
@@ -18925,7 +18942,7 @@
         {
           "kind": "supplemental_browser",
           "path": "scripts/check-app-layout.mjs",
-          "line": 1454,
+          "line": 1498,
           "test_line": null,
           "source_line": "await command('Go to line');",
           "assertion": "MenuGo-to-line opensmanagedlineinput;999invalid,2moves actualcaretto20, cancel1retains20.",
@@ -19179,8 +19196,8 @@
       "kind": "browser_assertion_passed",
       "path": "scripts/check-app-layout.mjs",
       "anchor": "const waitForResetOpener = async () =>",
-      "line": 1964,
-      "source_sha256": "6db67aeca982f8bda2494f2e44b644fd9ffefefecdf61f879ca5ab2a7fddadf6",
+      "line": 2008,
+      "source_sha256": "010c1b72df01aa832a83b6bb035e572d6c777053c57744f546907638d6dec68f",
       "effect": "Production Preferences checks actual parent/opener focus after Cancel, trusted Escape, header Close and awaited reset completion in every required browser profile.",
       "limit": "The rebuilt production bundle passes all four Preferences return-focus routes in modern and exact Chromium 69 profiles. Browser events do not prove Android native Back; fresh installed native execution remains pending.",
       "execution": "R45modern84_and_exact69_84_passed",
@@ -19238,7 +19255,43 @@
       "effect": "The real AndroidX fallback exception propagates while the original source callback enabled state is restored and its next committed Back is handled once.",
       "execution": "s047-r12-fallback-sdk:30_native_unit_tests_passed",
       "limit": "JVM dispatcher contract; native bootstrap-without-listener exit is not individually exercised by this unit."
+    },
+    "ROOT_AUTOMATIC_LANGUAGE_APP": {
+      "kind": "composed_unit_passed",
+      "path": "apps/glitchpad/src/App.test.tsx",
+      "anchor": "returns a remembered HTML language override to Automatic without changing source",
+      "line": 2885,
+      "source_sha256": "868e20c9edbae9081a80edc5b6a9051d08c59ca9e84d286a0903574321062ade",
+      "effect": "HTML to Automatic remains Automatic after the real App preference synchronization, task close/reopen and exact source/editor-identity checks.",
+      "limit": "Composed unit execution; actual native popup/IME remains separately required."
+    },
+    "ROOT_AUTOMATIC_LANGUAGE_PERSIST": {
+      "kind": "composed_unit_passed",
+      "path": "apps/glitchpad/src/App.test.tsx",
+      "anchor": "persists Automatic for the selected extension while retaining other language choices",
+      "line": 2699,
+      "source_sha256": "868e20c9edbae9081a80edc5b6a9051d08c59ca9e84d286a0903574321062ade",
+      "effect": "Loaded HTML override returns to Automatic, persistence removes only the selected extension override, retains the independent Rust choice and preserves source/editor identity.",
+      "limit": "Persistence boundary is a substituted unit gateway, not native storage readback."
+    },
+    "ROOT_SEARCH_REOPEN_APP": {
+      "kind": "composed_unit_passed",
+      "path": "apps/glitchpad/src/App.test.tsx",
+      "anchor": "keeps Replace focused across Search reopen after an exact replacement and Undo",
+      "line": 2922,
+      "source_sha256": "868e20c9edbae9081a80edc5b6a9051d08c59ca9e84d286a0903574321062ade",
+      "effect": "Replace remains focused after exact replacement, Search close, Undo and reopen through actual App/CodeMirror/TaskSurface.",
+      "limit": "Explicit browser focus in the unit environment; does not reproduce or qualify the retained API24 one-tap/IME focus failure."
+    },
+    "ROOT_LANGUAGE_BROWSER_VALUE": {
+      "kind": "composed_browser_passed",
+      "path": "scripts/check-app-layout.mjs",
+      "anchor": "Language selection must retain its actual value after effects settle",
+      "line": 1327,
+      "source_sha256": "010c1b72df01aa832a83b6bb035e572d6c777053c57744f546907638d6dec68f",
+      "effect": "Every real select value, final HTML-to-Automatic roundtrip and exact source are asserted after two actual animation frames.",
+      "limit": "84 modern and84 exact Chromium69 composed cases pass against identical221-file assets and16 matching current source hashes. Source_commit is null for these precommit captures; native boundaries are substituted and actual Android qualification remains separate."
     }
   },
-  "local_candidate_note": "Review round 1 corrections are locally prepared. The current 119-row / 459-case ledger retains all installed statuses pending fresh exact-head ordinary and fault-probe qualification on API 24 and API 36. Local source/unit/browser checks and older APK receipts remain separate."
+  "local_candidate_note": "The preceding exact01bfb80 APK passes9/10 API24 ordinary journeys, with separate Search Replace focus and Automatic override rollback failures retained. The Automatic correction now passes580 frontend tests and84 modern plus84 exact Chromium69 composition cases, with current source/assets independently verified. All459 installed statuses remain pending fresh exact candidate ordinary/fault-probe qualification and scoped outcome reconciliation."
 }

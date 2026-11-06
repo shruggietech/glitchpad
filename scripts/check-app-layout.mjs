@@ -1297,9 +1297,53 @@ export async function checkAppLayout({
                 },
               );
               assert.equal(languages.length, 11);
-              for (const language of languages)
+              const sourceBeforeLanguage = await page.$$eval(
+                '.cm-content .cm-line',
+                function (nodes) {
+                  return Array.from(nodes)
+                    .map(function (node) {
+                      return node.textContent;
+                    })
+                    .join('\n');
+                },
+              );
+              for (const language of [...languages, 'automatic']) {
                 await page.select('[aria-label="Language mode"]', language);
-              row.outcomes.push({ id: 'CTRL-043', choices: languages });
+                await page.evaluate(function () {
+                  return new Promise(function (resolve) {
+                    requestAnimationFrame(function () {
+                      requestAnimationFrame(resolve);
+                    });
+                  });
+                });
+                assert.equal(
+                  await page.$eval(
+                    '[aria-label="Language mode"]',
+                    function (node) {
+                      return node.value;
+                    },
+                  ),
+                  language,
+                  'Language selection must retain its actual value after effects settle',
+                );
+              }
+              assert.equal(
+                await page.$$eval('.cm-content .cm-line', function (nodes) {
+                  return Array.from(nodes)
+                    .map(function (node) {
+                      return node.textContent;
+                    })
+                    .join('\n');
+                }),
+                sourceBeforeLanguage,
+                'Language changes must retain exact current source',
+              );
+              row.outcomes.push({
+                id: 'CTRL-043',
+                choices: languages,
+                automatic_restored: true,
+                source_unchanged: true,
+              });
               await click('Close Document details');
               await command('Search');
               await page.waitForSelector('.cm-search');

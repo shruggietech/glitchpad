@@ -2695,6 +2695,48 @@ describe('document foundation shell', () => {
     expect(screen.getByRole('status')).toHaveTextContent('No document is open');
     expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
   });
+
+  it('persists Automatic for the selected extension while retaining other language choices', async () => {
+    const preferences = {
+      ...defaultPreferences(),
+      language_overrides: { txt: 'html', rs: 'rust' },
+    };
+    const gateway = persistenceGateway({
+      loadPreferences: vi
+        .fn()
+        .mockResolvedValue({
+          status: 'loaded',
+          value: preferences,
+          warning_code: null,
+        }),
+    });
+    render(
+      <App
+        sessions={[createDraftSession('text')]}
+        recoveryGateway={null}
+        persistenceGateway={gateway}
+      />,
+    );
+    const editor = screen.getByRole('textbox', {
+      name: 'Untitled.txt text editor',
+    });
+    const view = EditorView.findFromDOM(editor)!;
+    const original = view.state.doc.toString();
+    invokeMenu('Document details');
+    const language = await screen.findByRole('combobox', {
+      name: 'Language mode',
+    });
+    await waitFor(() => expect(language).toHaveValue('html'));
+    fireEvent.change(language, { target: { value: 'automatic' } });
+    await waitFor(() => expect(language).toHaveValue('automatic'));
+    await waitFor(() =>
+      expect(gateway.persistPreferences).toHaveBeenLastCalledWith(
+        expect.objectContaining({ language_overrides: { rs: 'rust' } }),
+      ),
+    );
+    expect(view.state.doc.toString()).toBe(original);
+    expect(EditorView.findFromDOM(editor)).toBe(view);
+  });
 });
 
 it('does not advertise JavaScript-only Print in the Android host without a native print provider', async () => {
@@ -2838,4 +2880,81 @@ it('routes rapid editor indent history through Ctrl+Z and shell Ctrl+Shift+Z onc
   } finally {
     clock.mockRestore();
   }
+});
+
+it('returns a remembered HTML language override to Automatic without changing source', async () => {
+  render(
+    <App
+      sessions={[createDraftSession('text')]}
+      recoveryGateway={null}
+      persistenceGateway={null}
+    />,
+  );
+  const editor = screen.getByRole('textbox', {
+    name: 'Untitled.txt text editor',
+  });
+  const view = EditorView.findFromDOM(editor)!;
+  act(() =>
+    view.dispatch({
+      changes: { from: 0, insert: 'cat Cat scatter cat\nsecond' },
+    }),
+  );
+  const original = view.state.doc.toString();
+  invokeMenu('Document details');
+  const language = await screen.findByRole('combobox', {
+    name: 'Language mode',
+  });
+  fireEvent.change(language, { target: { value: 'html' } });
+  await waitFor(() => expect(language).toHaveValue('html'));
+  fireEvent.change(language, { target: { value: 'automatic' } });
+  await waitFor(() => expect(language).toHaveValue('automatic'));
+  expect(view.state.doc.toString()).toBe(original);
+  expect(EditorView.findFromDOM(editor)).toBe(view);
+  fireEvent.click(
+    screen.getByRole('button', { name: 'Close Document details' }),
+  );
+  invokeMenu('Document details');
+  expect(
+    await screen.findByRole('combobox', { name: 'Language mode' }),
+  ).toHaveValue('automatic');
+});
+
+it('keeps Replace focused across Search reopen after an exact replacement and Undo', async () => {
+  render(
+    <App
+      sessions={[createDraftSession('text')]}
+      recoveryGateway={null}
+      persistenceGateway={null}
+    />,
+  );
+  const editor = screen.getByRole('textbox', {
+    name: 'Untitled.txt text editor',
+  });
+  const view = EditorView.findFromDOM(editor)!;
+  const original = 'cat Cat scatter cat\nsecond';
+  act(() => view.dispatch({ changes: { from: 0, insert: original } }));
+  invokeMenu('Search');
+  const find = await screen.findByRole('textbox', { name: 'Find' });
+  fireEvent.change(find, { target: { value: 'cat' } });
+  fireEvent.change(screen.getByRole('textbox', { name: 'Replace' }), {
+    target: { value: 'dog' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Replace next' }));
+  await waitFor(() => expect(view.state.doc.toString()).not.toBe(original));
+  fireEvent.click(screen.getByRole('button', { name: 'Close search' }));
+  invokeMenu('Undo');
+  await waitFor(() => expect(view.state.doc.toString()).toBe(original));
+  invokeMenu('Search');
+  const replace = await screen.findByRole('textbox', { name: 'Replace' });
+  await waitFor(() =>
+    expect(screen.getByRole('textbox', { name: 'Find' })).toHaveFocus(),
+  );
+  act(() => replace.focus());
+  expect(replace).toHaveFocus();
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  });
+  expect(replace).toHaveFocus();
+  expect(view.state.doc.toString()).toBe(original);
 });

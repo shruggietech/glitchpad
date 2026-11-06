@@ -754,6 +754,22 @@ export async function checkAppLayout({
               await click('Document tools');
               await page.waitForSelector('.document-tools-menu');
               await click(label, '.document-tools-menu button');
+              await page.waitForSelector('.document-tools-menu', {
+                hidden: true,
+              });
+              if (['Undo', 'Redo'].includes(label)) {
+                await page.waitForFunction(function () {
+                  return (
+                    document.activeElement ===
+                    document.querySelector('.document-tools-trigger')
+                  );
+                });
+                row.outcomes.push({
+                  id: label === 'Undo' ? 'CTRL-027' : 'CTRL-028',
+                  route: 'menu',
+                  opener_focus: true,
+                });
+              }
             };
             const assertMarkdownSource = async function (stage) {
               await page.waitForSelector(
@@ -1827,17 +1843,69 @@ export async function checkAppLayout({
                 scope:
                   'Actual Kotlin selector against production React markup; no Android touch dispatched',
               });
-              await click(
-                'destination External destination https://example.com/path',
-                '.markdown-document button',
+              const linkDocumentId = await page.$eval(
+                '.document-surface',
+                (n) => n.id,
               );
-              await audit('.task-surface button', 'external-link');
-              await click('Cancel', '.task-surface button');
-              await click(
-                'email External destination mailto:fixture@example.com',
-                '.markdown-document button',
-              );
-              await click('Cancel', '.task-surface button');
+              for (const link of [
+                {
+                  name: 'destination External destination https://example.com/path',
+                  destination: 'https://example.com/path',
+                },
+                {
+                  name: 'email External destination mailto:fixture@example.com',
+                  destination: 'mailto:fixture@example.com',
+                },
+              ]) {
+                for (const route of ['Cancel', 'Escape']) {
+                  await click(link.name, '.markdown-document button');
+                  await page.waitForFunction(
+                    function (destination) {
+                      const dialog = document.querySelector(
+                        '.markdown-link-task[data-state="open"]',
+                      );
+                      return (
+                        !!dialog &&
+                        dialog.querySelector('.markdown-link-destination')
+                          .textContent === destination
+                      );
+                    },
+                    {},
+                    link.destination,
+                  );
+                  if (route === 'Cancel')
+                    await audit('.task-surface button', 'external-link');
+                  if (route === 'Cancel')
+                    await click('Cancel', '.task-surface button');
+                  else await page.keyboard.press('Escape');
+                  await page.waitForFunction(
+                    function (name, documentId) {
+                      const opener = Array.from(
+                        document.querySelectorAll('.markdown-document button'),
+                      ).find((n) => n.textContent.trim() === name);
+                      return (
+                        !document.querySelector('.markdown-link-task') &&
+                        !!opener &&
+                        document.activeElement === opener &&
+                        document.querySelector('.document-surface').id ===
+                          documentId
+                      );
+                    },
+                    {},
+                    link.name,
+                    linkDocumentId,
+                  );
+                  row.outcomes.push({
+                    id: 'CTRL-060',
+                    route,
+                    destination: link.destination,
+                    opener_focus: true,
+                    document_identity_retained: true,
+                    limit:
+                      'Real browser Cancel/Escape lifecycle; native Back qualification is separate.',
+                  });
+                }
+              }
               await click('View source', '.embedded-mermaid button');
               await assertMarkdownSource('embedded-view-source');
               await command('Copy');

@@ -1,6 +1,6 @@
 # S047 owner handoff
 
-Delivery remains in progress. The corrected local source passes affected frontend, policy, SDK and both complete browser matrices. Fresh installed Android qualification, Intel Mac runtime proof, scoped reconciliation, Spec-Kit convergence and matching final-head checks remain blocking. This is not a completed handoff.
+Delivery remains in progress. R25 fixture corrections pass SDK and affected checks; the preceding fbbf4ea campaigns retain ordinary Android failures. Fresh corrected-candidate installed Android qualification, matching final-head platform checks, scoped reconciliation and Spec-Kit convergence remain blocking. This is not a completed handoff.
 
 ## Scope and behavior
 
@@ -10,11 +10,11 @@ The latest correction keeps Mermaid copies as independently editable Mermaid doc
 
 ## Current evidence
 
-Two new copy regressions are RED before repair and GREEN afterward. The affected frontend lint/type/test/build gate passes 584 tests; focused copy/editor/ownership suites pass 137/137. Affected native SDK/unit assembly passes 113 tasks. Node policies 98, Android Python policies 25, layout policies 14 and canonical brand checks pass.
+The unchanged product source passes the complete fbbf4ea local aggregate, including584 frontend tests and both84-case browser matrices. R25 fixture compilation/unit assembly passes113 tasks; affected source/policy checks pass. The strengthened browser history/confirmation checks also pass84/84 on both engines before final native-only and report-annotation refinements. Final current-head aggregate/browser and installed qualification remain required.
 
-Both complete production-browser gates pass 84/84, including actual visible Mermaid-source typing, a new rendered label, exact source/editor/history across Read/Edit and unchanged original bytes. The two engines share 221-file assets and 18 source fingerprints independently checked against current files. Index SHA-256 is 4fa3d03ad42c1472732f8dd7b531b4f01edb65bef6fd00fe1b06192f7dca7586. These precommit captures have source_commit null and synthetic native boundaries.
+Exact fbbf4ea ordinary API24/API36 campaigns each retain9/10 with layout failed. API24 records an unobserved external-confirmation/Back transition and a native editor-focus failure after Redo. API36 records ClipboardOverlay interception and a separate broad post-Go observation timeout. Both fault campaigns qualify their actual installed bytes. Windows, four Linux clean profiles, signed Android assembly and macOS universal/ARM/Intel readbacks pass. Hosted ARM startup P95 is2662ms with a retained reference-failure label; Intel is1684ms with a warning label. These hosted labels are separate from waived reference-hardware qualification. The transient documentation-link HTTP502 passes one isolated retry, with its failed log retained. Historical results do not qualify changed candidate bytes.
 
-The preceding exact 7d74333 ordinary API24/API36 campaigns each fail layout after 9 passing journeys. API24 exposes the Mermaid-copy format loss and a premature sensitive-confirmation baseline; API36 retains a later 20-to-0 Go caret failure and a separate editor-alias observation timeout. Both fault roles pass independent installed-byte validation and official replay. Windows, Linux four clean profiles, signed Android assembly and macOS universal/ARM receipts pass actual-byte/source readbacks. Mac source CI recovers a metadata collection timeout with one isolated retry; Intel native qualification stops at that source test before runtime receipts. All negative observations and actual attempt archives remain retained. These historical results do not qualify the changed source.
+The current fixture observes actual menu/confirmation completion and native touch-window ownership, preserves all deadlines/single-action/retry gates, and uses focused exact-source readbacks for routine text assertions. Full input/DOM/EditContext and failure diagnostics remain available. No product focus or clipboard behavior changes in this correction.
 
 ## Review and owner boundary
 

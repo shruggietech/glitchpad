@@ -327,7 +327,7 @@ class AndroidDeliveryInstrumentedTest {
       val refused = destination(type, "s046-write-refused")
       chooseNative(scenario, Intent.ACTION_CREATE_DOCUMENT, chosen(refused), { menuAction(scenario, "Save") }, "Save did not complete. Try again or choose another destination. Your edits remain open.")
       assertEquals("failed native write must not change its empty destination", 0, readBytes(refused).size)
-      assertEquals("write refusal must retain every edited source character", text, browserEditorInputSnapshot(scenario).getString("semantic_text"))
+      assertEquals("write refusal must retain every edited source character", text, editableSourceText(scenario))
       val saved = destination(type, "s046-draft")
       chooseNative(scenario, Intent.ACTION_CREATE_DOCUMENT, chosen(saved), { if (choice == "New text file") keyboardSave(scenario) else menuAction(scenario, "Save") }, "Saved after native verification.")
       waitForCondition(scenario, "(()=>{const n=document.querySelector('[data-draft-identity]');return !!n&&n.textContent.includes('Saved')&&!n.textContent.includes('Unsaved changes');})()", "dirty state must clear after actual native save receipt")
@@ -612,7 +612,7 @@ class AndroidDeliveryInstrumentedTest {
           !!identity&&identity.textContent.includes('Untitled.txt')&&identity.textContent.includes('Unsaved changes')&&rect.width>0&&rect.height>0;
       })()
     """.trimIndent(), "cancelled native Save must dismiss the close decision and retain the visible editable unsaved draft")
-    assertEquals("cancelled native Save must retain every draft character", "S046_DIRTY_CLOSE_BYTES\n", browserEditorInputSnapshot(scenario).getString("semantic_text"))
+    assertEquals("cancelled native Save must retain every draft character", "S046_DIRTY_CLOSE_BYTES\n", editableSourceText(scenario))
     assertEquals("the controlled destination must remain empty before the held native write", 0, readBytes(destination).size)
 
     // Observe pending choices while real native I/O is held in the fixture provider.
@@ -642,7 +642,7 @@ class AndroidDeliveryInstrumentedTest {
       }
       assertEquals("one native create result must own the held write", 1, heldMonitor.hits)
       assertEquals("true", evaluate(scenario, "(()=>{const discard=Array.from(document.querySelectorAll('.resolution-dialog button')).find(b=>b.textContent.trim()==='Discard');if(!discard||!discard.disabled)return false;discard.click();return !!document.querySelector('.cm-content');})()"))
-      assertEquals("blocked Discard during real native I/O must retain every draft character", "S046_DIRTY_CLOSE_BYTES\n", browserEditorInputSnapshot(scenario).getString("semantic_text"))
+      assertEquals("blocked Discard during real native I/O must retain every draft character", "S046_DIRTY_CLOSE_BYTES\n", editableSourceText(scenario))
     } catch (failure: Throwable) {
       originalFailure = failure
       pendingObservations.put("held_provider_at_failure", runCatching { heldFixtureWriteState("held_write_status", destination) }
@@ -665,7 +665,7 @@ class AndroidDeliveryInstrumentedTest {
     assertTrue("the controlled write must finish only after explicit barrier release", refused.getBoolean("released") && refused.getBoolean("finished") && !refused.getBoolean("timed_out"))
     assertEquals("the held writer must enter exactly once", 1, refused.getInt("entered_count"))
     assertEquals("refusal before descriptor open must preserve the empty destination", 0, readBytes(destination).size)
-    assertEquals("refused held Save and blocked Discard must retain every draft character", "S046_DIRTY_CLOSE_BYTES\n", browserEditorInputSnapshot(scenario).getString("semantic_text"))
+    assertEquals("refused held Save and blocked Discard must retain every draft character", "S046_DIRTY_CLOSE_BYTES\n", editableSourceText(scenario))
     println("native_held_write_evidence=" + refused.put("pending_choices_disabled", true).put("disabled_discard_retained_source", true).put("empty_destination_preserved", true))
     System.out.flush()
     chooseNative(scenario, Intent.ACTION_CREATE_DOCUMENT, chosen(destination), { menuAction(scenario, "Save") }, "Saved after native verification.")
@@ -981,7 +981,8 @@ class AndroidDeliveryInstrumentedTest {
     clickControl(scenario, if (application) "Menu" else "Document tools", deadlineOverride = deadline)
     if (name == "Copy") tapNativeControlOnce(scenario, name, "[role=menuitem]", deadlineOverride = deadline)
     else clickControl(scenario, name, "[role=menuitem]", deadlineOverride = deadline)
-    if (application) waitForCondition(scenario, "!document.querySelector(" + JSONObject.quote(owner) + ")", "application menu dismissal must complete before destination sampling", deadlineOverride = deadline)
+    waitForCondition(scenario, "!document.querySelector(" + JSONObject.quote(owner) + ")", "the owned menu must finish dismissal before subsequent task sampling", deadlineOverride = deadline)
+    if (name in listOf("Undo", "Redo")) waitForCondition(scenario, "document.activeElement===document.querySelector('.document-tools-trigger')", "history menu completion must restore its real opener before subsequent native input setup", deadlineOverride = deadline)
   }
 
   private fun clickControl(scenario: ActivityScenario<MainActivity>, name: String, selector: String = "button", deadlineOverride: Long? = null) {
@@ -1270,16 +1271,16 @@ class AndroidDeliveryInstrumentedTest {
     while(clipboardText()!=original&&SystemClock.elapsedRealtime()<menuClipboardDeadline)SystemClock.sleep(100L)
     assertEquals("Copy menu must share the exact selected source",original,clipboardText())
     menuAction(scenario, "Indent")
-    val indented = browserEditorInputSnapshot(scenario).getString("semantic_text")
+    val indented = editableSourceText(scenario)
     assertTrue("Indent must insert actual leading whitespace on each selected line", indented != original && indented.lines().zip(original.lines()).all { (a,b) -> a.trimStart(' ', '\t') == b && a.length > b.length })
     menuAction(scenario, "Outdent")
-    assertEquals(original, browserEditorInputSnapshot(scenario).getString("semantic_text"))
+    assertEquals(original, editableSourceText(scenario))
     fun keyWithExactSource(code: Int, meta: Int, expected: String) {
       val deadline = SystemClock.elapsedRealtime() + 10_000L
       taskKey(code, meta)
       val source = "Array.from(document.querySelector('.cm-content').querySelectorAll(':scope > .cm-line')).map(n=>n.textContent).join('\\n')"
       waitForCondition(scenario, source + "===" + JSONObject.quote(expected), "one native keyboard action must publish its exact source inside the original observation budget", deadlineOverride = deadline)
-      assertEquals(expected, browserEditorInputSnapshot(scenario, deadlineOverride = deadline).getString("semantic_text"))
+      assertEquals(expected, editableSourceText(scenario, deadlineOverride = deadline))
     }
     focusTaskEditor(scenario)
     val selectionDeadline = SystemClock.elapsedRealtime() + 10_000L
@@ -1323,7 +1324,7 @@ class AndroidDeliveryInstrumentedTest {
     clickControl(scenario, "Previous")
     waitForCondition(scenario, selectionAt(previous), "CodeMirror Previous must select the exact previous current source match")
     clickControl(scenario, "Close search")
-    assertEquals("all Find aliases must preserve every source character", original, browserEditorInputSnapshot(scenario).getString("semantic_text"))
+    assertEquals("all Find aliases must preserve every source character", original, editableSourceText(scenario))
     focusTaskEditor(scenario); taskKey(KeyEvent.KEYCODE_G, ctrl)
     waitForCondition(scenario, "!!(" + taskInputExpression("Line number") + ")", "Ctrl+G must open the real validated line task")
     clickControl(scenario, "Cancel")
@@ -1331,13 +1332,13 @@ class AndroidDeliveryInstrumentedTest {
     waitForCondition(scenario, "!!document.querySelector('[role=dialog] [aria-label=\"Language mode\"]')", "Document details must disclose current source facts")
     for ((index, language) in listOf("automatic", "plain_text", "rust", "typescript", "javascript", "python", "json", "toml", "yaml", "css", "html").withIndex()) {
       chooseTaskOption(scenario, "Language mode", index, language)
-      assertEquals("language override must preserve exact source", original, browserEditorInputSnapshot(scenario).getString("semantic_text"))
+      assertEquals("language override must preserve exact source", original, editableSourceText(scenario))
     }
     chooseTaskOption(scenario, "Language mode", 0, "automatic")
     observeVisibleTaskControls(scenario, "document_details")
     clickControl(scenario, "Close Document details")
     waitForCondition(scenario,"!document.querySelector('[role=dialog] [aria-label=\"Language mode\"]')","closing Document details must synchronize its disclosure")
-    assertEquals(original, browserEditorInputSnapshot(scenario).getString("semantic_text"))
+    assertEquals(original, editableSourceText(scenario))
   }
 
   private fun verifyS047EditorAndPreferences(scenario: ActivityScenario<MainActivity>) {
@@ -1349,7 +1350,7 @@ class AndroidDeliveryInstrumentedTest {
     waitForCondition(scenario, "document.querySelector('[aria-label=\"Find results\"]').textContent.includes('4')", "actual search must count four case-insensitive matches")
     clickControl(scenario, "Next"); clickControl(scenario, "Previous"); clickControl(scenario, "Select all matches")
     waitForCondition(scenario, "Number(document.querySelector('.cm-editor').getAttribute('data-editor-selection-count'))>1", "Select all matches must create actual multiple editor selections")
-    assertEquals(original, browserEditorInputSnapshot(scenario).getString("semantic_text"))
+    assertEquals(original, editableSourceText(scenario))
     setTaskInput(scenario, "Find", "S047_NO_MATCH")
     waitForBodyText(scenario, "No matches")
     setTaskInput(scenario, "Find", "cat")
@@ -1362,7 +1363,7 @@ class AndroidDeliveryInstrumentedTest {
     setSearchOption(scenario, "Regular expression", true)
     setTaskInput(scenario, "Find", "[")
     waitForBodyText(scenario, "Invalid regular expression")
-    assertEquals(original, browserEditorInputSnapshot(scenario).getString("semantic_text"))
+    assertEquals(original, editableSourceText(scenario))
     setTaskInput(scenario, "Find", "cat")
     setSearchOption(scenario, "Regular expression", false)
     setTaskInput(scenario, "Replace", "dog")
@@ -1374,7 +1375,7 @@ class AndroidDeliveryInstrumentedTest {
     waitForCondition(scenario, "Array.from(document.querySelectorAll('.cm-line')).map(n=>n.textContent).join('\\n')===" + JSONObject.quote(once), "Replace next must change exactly the selected source range once")
     clickControl(scenario,"Close search")
     menuAction(scenario, "Undo")
-    assertEquals(original, browserEditorInputSnapshot(scenario).getString("semantic_text"))
+    assertEquals(original, editableSourceText(scenario))
     menuAction(scenario,"Search")
     setTaskInput(scenario, "Replace", "dog")
     clickControl(scenario, "Replace all")
@@ -1382,9 +1383,9 @@ class AndroidDeliveryInstrumentedTest {
     waitForCondition(scenario, "Array.from(document.querySelectorAll('.cm-line')).map(n=>n.textContent).join('\\n')===" + JSONObject.quote(replaced), "Replace all must change exactly whole-word case-sensitive source")
     clickControl(scenario, "Close search")
     menuAction(scenario, "Undo")
-    assertEquals(original, browserEditorInputSnapshot(scenario).getString("semantic_text"))
+    assertEquals(original, editableSourceText(scenario))
     menuAction(scenario, "Redo")
-    assertEquals(replaced, browserEditorInputSnapshot(scenario).getString("semantic_text"))
+    assertEquals(replaced, editableSourceText(scenario))
     replaceEditorText(scenario, original)
     clickControl(scenario, "Document tools")
     assertEquals("true", evaluate(scenario, "Array.from(document.querySelectorAll('[role=menuitem]')).filter(b=>b.querySelector('span')&&b.querySelector('span').textContent==='Redo').every(b=>b.disabled)"))
@@ -1405,8 +1406,12 @@ class AndroidDeliveryInstrumentedTest {
       captureEditorFocusFailure(scenario, "go_to_line_completion", JSONObject().put("expected_selection", lineStart).put("selection_after", state).put("observations", goObservations))
       throw failure
     }
-    assertEquals(original, browserEditorInputSnapshot(scenario, deadlineOverride = goDeadline).getString("semantic_text"))
-    assertEquals((original.indexOf('\n') + 1).toString(), stringValue(evaluate(scenario, "document.querySelector('.cm-editor').getAttribute('data-editor-selection-from')")))
+    val completedGo = JSONObject(evaluate(scenario, "(()=>{const editor=document.querySelector('.cm-content[contenteditable=true]');const owner=editor&&editor.closest('.cm-editor');return {text:editor?Array.from(editor.querySelectorAll(':scope > .cm-line')).map(n=>n.textContent).join('\\n'):null,from:owner?owner.getAttribute('data-editor-selection-from'):null,to:owner?owner.getAttribute('data-editor-selection-to'):null,focused:!!editor&&document.hasFocus()&&document.activeElement===editor,closed:!(" + taskInputExpression("Line number") + ")};})()", deadlineOverride = goDeadline))
+    println("s047_go_result=" + completedGo); System.out.flush()
+    assertEquals(original, completedGo.getString("text"))
+    assertEquals(lineStart.toString(), completedGo.getString("from"))
+    assertEquals(lineStart.toString(), completedGo.getString("to"))
+    assertTrue("the completed Go must retain actual editor focus and close its task", completedGo.getBoolean("focused") && completedGo.getBoolean("closed"))
     verifyS047EditorAliases(scenario, original)
     val documentWrapBeforePreferences=stringValue(evaluate(scenario,"document.querySelector('.cm-editor').getAttribute('data-editor-wrap')"))
     menuAction(scenario, "Preferences")
@@ -1442,7 +1447,7 @@ class AndroidDeliveryInstrumentedTest {
     waitForBodyText(scenario, "Preferences reset. Your files are unchanged.")
     waitForCondition(scenario, resetFocus, "completed Reset must restore its opener after the actual awaited reset")
     clickControl(scenario, "Close Preferences")
-    assertEquals("preference actions must not change current file", original, browserEditorInputSnapshot(scenario).getString("semantic_text"))
+    assertEquals("preference actions must not change current file", original, editableSourceText(scenario))
     assertEquals("explicit document wrap must survive unrelated/default preference changes",documentWrapBeforePreferences,stringValue(evaluate(scenario,"document.querySelector('.cm-editor').getAttribute('data-editor-wrap')")))
   }
   private fun sourceEditorText(scenario: ActivityScenario<MainActivity>): String = stringValue(evaluate(scenario, "Array.from(document.querySelectorAll('.cm-content > .cm-line')).map(n=>n.textContent).join('\\n')"))
@@ -1455,7 +1460,7 @@ class AndroidDeliveryInstrumentedTest {
     waitForCondition(scenario, "!!document.querySelector('.markdown-document h1')", "Read must render the actual editable Markdown")
     menuAction(scenario, "Edit")
     waitForCondition(scenario, "!!document.querySelector('.cm-content[contenteditable=true]')", "Edit must restore the actual editable source")
-    assertEquals(draft, browserEditorInputSnapshot(scenario).getString("semantic_text"))
+    assertEquals(draft, editableSourceText(scenario))
     assertEquals("Markdown Read/Edit must retain actual selection and history",sourceStateBefore,stringValue(evaluate(scenario,"(()=>{const n=document.querySelector('.cm-editor');return JSON.stringify({from:n.getAttribute('data-editor-selection-from'),to:n.getAttribute('data-editor-selection-to'),undo:n.getAttribute('data-editor-undo-depth'),redo:n.getAttribute('data-editor-redo-depth')});})()")))
     val original = grant(documentUri("s047-controls.md")); val bytes = readBytes(original)
     openFromAddDocument(scenario, original)
@@ -1491,14 +1496,21 @@ class AndroidDeliveryInstrumentedTest {
     waitForCondition(scenario, "document.activeElement===document.querySelector('.markdown-document [data-footnote-ref]')", "footnote backlink must return to the originating reference")
     for (target in listOf("https://example.invalid/s047", "mailto:s047@example.invalid")) {
       val selector = ".markdown-document button[title=" + JSONObject.quote(target) + "]"
-      val name = stringValue(evaluate(scenario, "document.querySelector(" + JSONObject.quote(selector) + ").textContent.trim()"))
-      tapNativeControlOnce(scenario, name, selector)
-      waitForBodyText(scenario, "Open external destination?", target)
-      clickControl(scenario, "Cancel")
-      waitForCondition(scenario, "document.activeElement===document.querySelector(" + JSONObject.quote(selector) + ")", "external destination Cancel must restore its exact opener")
-      tapNativeControlOnce(scenario, name, selector)
+      val cancelDeadline = SystemClock.elapsedRealtime() + 30_000L
+      waitForCondition(scenario, "!!document.querySelector(" + JSONObject.quote(selector) + ")", "the next external destination must remain in the actual rendered document", deadlineOverride = cancelDeadline)
+      val name = stringValue(evaluate(scenario, "document.querySelector(" + JSONObject.quote(selector) + ").textContent.trim()", deadlineOverride = cancelDeadline))
+      val documentId = stringValue(evaluate(scenario, "document.querySelector('.document-surface').id", deadlineOverride = cancelDeadline))
+      val returned = "!document.querySelector('[role=dialog]')&&document.querySelector('.document-surface').id===" + JSONObject.quote(documentId) + "&&document.activeElement===document.querySelector(" + JSONObject.quote(selector) + ")"
+      val opened = "(()=>{const task=document.querySelector('.markdown-link-task[data-state=open]');return !!task&&task.contains(document.activeElement)&&task.querySelector('.markdown-link-destination').textContent===" + JSONObject.quote(target) + ";})()"
+      tapNativeControlOnce(scenario, name, selector, deadlineOverride = cancelDeadline)
+      waitForCondition(scenario, opened, "the actual destination confirmation must own focus before Cancel", deadlineOverride = cancelDeadline)
+      clickControl(scenario, "Cancel", deadlineOverride = cancelDeadline)
+      waitForCondition(scenario, returned, "external destination Cancel must retain the actual document and restore its exact opener", deadlineOverride = cancelDeadline)
+      val backDeadline = SystemClock.elapsedRealtime() + 30_000L
+      tapNativeControlOnce(scenario, name, selector, deadlineOverride = backDeadline)
+      waitForCondition(scenario, opened, "the actual destination confirmation must own focus before native Back", deadlineOverride = backDeadline)
       instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
-      waitForCondition(scenario, "!document.querySelector('[role=dialog]')", "one native Back must cancel one external confirmation")
+      waitForCondition(scenario, returned, "one native Back must cancel the observed external confirmation and restore the same document/opener", deadlineOverride = backDeadline)
     }
 
     val target = "https://example.invalid/s047"
@@ -1571,7 +1583,7 @@ class AndroidDeliveryInstrumentedTest {
     waitForCondition(scenario,"!!document.querySelector('.mermaid-surface [data-preview-ready=true]')","edited Mermaid must render a real current preview")
     menuAction(scenario,"Edit")
     waitForCondition(scenario,"!!document.querySelector('.cm-content[contenteditable=true]')","Mermaid Edit must restore the editable source")
-    assertEquals(mermaidEdit,browserEditorInputSnapshot(scenario).getString("semantic_text"))
+    assertEquals(mermaidEdit,editableSourceText(scenario))
     assertEquals("Mermaid Read/Edit must retain actual selection and history",mermaidHistory,stringValue(evaluate(scenario,"(()=>{const n=document.querySelector('.cm-editor');return JSON.stringify({from:n.getAttribute('data-editor-selection-from'),to:n.getAttribute('data-editor-selection-to'),undo:n.getAttribute('data-editor-undo-depth'),redo:n.getAttribute('data-editor-redo-depth')});})()")))
     assertEquals("Mermaid copy editing must preserve original",mermaidSource,String(readBytes(documentUri("s047-controls.mmd")),Charsets.UTF_8))
     for(name in listOf("s047-invalid.mmd","s047-invalid-diagram.md")){
@@ -2320,7 +2332,7 @@ class AndroidDeliveryInstrumentedTest {
     resolver.call(FixtureGrantProvider.COMMAND_URI, "arm_read_failure", uri.toString(), android.os.Bundle().apply { putInt("successful_reads", 0) })
     try {
       chooseNative(scenario, Intent.ACTION_OPEN_DOCUMENT, chosen(uri), { clickControl(scenario, "Add document"); clickControl(scenario, "Open file") }, "This file could not be opened. Check access or choose it again.")
-      assertEquals("native read failure must retain the existing editable draft", text, browserEditorInputSnapshot(scenario).getString("semantic_text"))
+      assertEquals("native read failure must retain the existing editable draft", text, editableSourceText(scenario))
     } finally { resolver.call(FixtureGrantProvider.COMMAND_URI, "clear_read_failure", uri.toString(), null) }
     assertTrue("native read failure must not modify source", before.contentEquals(readBytes(uri)))
   }
@@ -2396,10 +2408,10 @@ class AndroidDeliveryInstrumentedTest {
     assertTrue("the modal must block background Add", background.getBoolean("disabled") || background.getBoolean("hidden"))
     instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
     waitForCondition(scenario, "!document.querySelector('[role=dialog]')", "one button Back must dismiss one phone layer")
-    assertEquals(text, browserEditorInputSnapshot(scenario).getString("semantic_text"))
+    assertEquals(text, editableSourceText(scenario))
     scenario.onActivity { it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE }
     waitForCondition(scenario, "innerWidth>innerHeight", "actual landscape must be observed")
-    assertEquals(text, browserEditorInputSnapshot(scenario).getString("semantic_text"))
+    assertEquals(text, editableSourceText(scenario))
     scenario.onActivity { it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT }
     waitForCondition(scenario, "innerHeight>innerWidth", "actual portrait must be restored")
     val root = grant(documentUri("fixture-root"))
@@ -2489,7 +2501,7 @@ class AndroidDeliveryInstrumentedTest {
 
 
   private fun verifyS047RecoveryDecisions(scenario: ActivityScenario<MainActivity>) {
-    val source=browserEditorInputSnapshot(scenario).getString("semantic_text")
+    val source=editableSourceText(scenario)
     assertTrue(source.contains("S046_ROOT_DRAFT_RETAINED"))
     injectRecoveryFailure(scenario,"root")
     waitForBodyText(scenario,"Glitchpad could not continue","Restart Glitchpad")
@@ -2741,12 +2753,28 @@ class AndroidDeliveryInstrumentedTest {
     .filter { it.type == android.view.accessibility.AccessibilityWindowInfo.TYPE_INPUT_METHOD }.take(4)
     .map { android.graphics.Rect().also { bounds -> it.getBoundsInScreen(bounds) } }.filter { !it.isEmpty }
 
+  private data class NativeTouchWindow(
+    val id: Int, val layer: Int, val type: Int, val title: String?, val ownedByApp: Boolean, val region: android.graphics.Region
+  )
+
+  private fun nativeTouchWindows(windows: List<android.view.accessibility.AccessibilityWindowInfo>): List<NativeTouchWindow> {
+    if (Build.VERSION.SDK_INT < 30) return emptyList()
+    return windows.map { window ->
+      val region = android.graphics.Region()
+      window.getRegionInScreen(region)
+      NativeTouchWindow(window.id, window.layer, window.type, window.title?.toString()?.take(80), window.root?.packageName?.toString() == TARGET_PACKAGE, region)
+    }
+  }
+
   private fun nativeRectBounds(rect: android.graphics.Rect): JSONObject = JSONObject()
     .put("left", rect.left).put("top", rect.top).put("right", rect.right).put("bottom", rect.bottom)
 
   private fun nativeControlGeometry(scenario: ActivityScenario<MainActivity>, target: JSONObject?): JSONObject {
     val observed = JSONObject().put("scenario_state", scenario.state.name)
-    val imeWindows = visibleNativeImeBounds()
+    val windows = instrumentation.uiAutomation.windows
+    val imeWindows = visibleNativeImeBounds(windows)
+    val touchWindows = nativeTouchWindows(windows)
+    observed.put("native_touch_region_observed", Build.VERSION.SDK_INT >= 30)
     scenario.onActivity { activity ->
       val view = requireNotNull(findWebView(activity.window.decorView))
       val location = IntArray(2)
@@ -2769,6 +2797,9 @@ class AndroidDeliveryInstrumentedTest {
         .put("ime_reported_visible", insets?.isVisible(androidx.core.view.WindowInsetsCompat.Type.ime()) == true)
         .put("ime_bottom", imeBottom).put("system_bars_bottom", barsBottom).put("input_method_active", input.isActive(view))
         .put("ime_window_bounds", JSONArray(imeWindows.map { nativeRectBounds(it) }))
+        .put("tappable_element_bottom", insets?.getInsets(androidx.core.view.WindowInsetsCompat.Type.tappableElement())?.bottom ?: 0)
+        .put("system_gesture_bottom", insets?.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemGestures())?.bottom ?: 0)
+        .put("mandatory_system_gesture_bottom", insets?.getInsets(androidx.core.view.WindowInsetsCompat.Type.mandatorySystemGestures())?.bottom ?: 0)
       if (target?.optBoolean("found") == true && target.optDouble("viewport_width") > 0) {
         // CSS coordinates use one physical scale, including when only height is occluded.
         val scale = view.width / target.getDouble("viewport_width")
@@ -2779,6 +2810,11 @@ class AndroidDeliveryInstrumentedTest {
         val screenX = location[0] + target.getDouble("x") * scale
         val screenY = location[1] + target.getDouble("y") * scale
         val tolerance = 0.6 * scale
+        if (Build.VERSION.SDK_INT >= 30) {
+          val owner = touchWindows.filter { it.region.contains(screenX.toInt(), screenY.toInt()) }.maxByOrNull { it.layer }
+          observed.put("native_touch_owned_by_app", owner?.ownedByApp == true)
+            .put("native_touch_owner", owner?.let { JSONObject().put("window_id", it.id).put("layer", it.layer).put("type", it.type).put("title", it.title).put("region_bounds", nativeRectBounds(it.region.bounds)).put("target_package", it.ownedByApp) } ?: JSONObject.NULL)
+        }
         val imeWindowCovers = imeWindows.any { it.left < right - tolerance && it.right > left + tolerance && it.top < bottom - tolerance && it.bottom > top + tolerance }
         val wholeVisible = !visible.isEmpty && !imeWindowCovers && left >= visible.left - tolerance && top >= visible.top - tolerance &&
           right <= visible.right + tolerance && bottom <= visible.bottom + tolerance &&
@@ -2802,7 +2838,8 @@ class AndroidDeliveryInstrumentedTest {
       a.has(key) && b.has(key) && a.optDouble(key).isFinite() && b.optDouble(key).isFinite() && kotlin.math.abs(a.getDouble(key) - b.getDouble(key)) <= 0.6
     }
     return before.optBoolean("found") && after.optBoolean("found") && close(before, after, cssKeys) && close(beforeNative, afterNative, nativeKeys) &&
-      before.optString("surface_id") == after.optString("surface_id") && before.optString("editor_label") == after.optString("editor_label")
+      before.optString("surface_id") == after.optString("surface_id") && before.optString("editor_label") == after.optString("editor_label") &&
+      beforeNative.optBoolean("native_touch_owned_by_app", true) && afterNative.optBoolean("native_touch_owned_by_app", true)
   }
 
   private fun nativeTapForeground(mapping: JSONObject): Boolean = mapping.optString("scenario_state") == Lifecycle.State.RESUMED.name &&
@@ -2842,8 +2879,7 @@ class AndroidDeliveryInstrumentedTest {
         target = runCatching { JSONObject(evaluate(scenario, script, deadlineOverride = deadline)) }
           .getOrElse { JSONObject().put("capture_failed", true).put("failure_type", it.javaClass.simpleName) }
         mapping = nativeControlGeometry(scenario, target)
-        val foreground = mapping.getString("scenario_state") == androidx.lifecycle.Lifecycle.State.RESUMED.name &&
-          mapping.optBoolean("activity_window_focus") && mapping.optBoolean("webview_window_focus") && mapping.optBoolean("shown")
+        val foreground = nativeTapForeground(mapping)
         if (foreground && mapping.optBoolean("ime_occludes_control") && !imeDismissRequested) {
           imeDismissRequested = true
           phase = "ime_dismiss"
@@ -3176,6 +3212,12 @@ class AndroidDeliveryInstrumentedTest {
       JSONObject().put("phase", "postcommit_browser_coherence").put("expected_semantic_length", expected.length)
         .put("expected_selection_start", expected.length).put("expected_selection_end", expected.length)
         .put("expected_surface_id", surfaceId).put("expected_editor_label", editorLabel).put("browser_edit", latest))
+  }
+
+  private fun editableSourceText(scenario: ActivityScenario<MainActivity>, deadlineOverride: Long? = null): String {
+    val value = JSONObject(evaluate(scenario, "(()=>{const editor=document.querySelector('.cm-content[contenteditable=true]');return {present:!!editor,text:editor?Array.from(editor.querySelectorAll(':scope > .cm-line')).map(n=>n.textContent).join('\\n'):null};})()", deadlineOverride = deadlineOverride))
+    assertTrue("exact editable source readback requires the actual current editor", value.getBoolean("present"))
+    return value.getString("text")
   }
 
   private fun browserEditorInputSnapshot(scenario: ActivityScenario<MainActivity>, deadlineOverride: Long? = null): JSONObject = JSONObject(evaluate(scenario, """

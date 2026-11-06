@@ -369,7 +369,7 @@ jobs:
             set -e; for package in com.google.android.gms com.google.android.googlequicksearchbox; do if adb shell pm list packages "$package" | grep -Fq "package:$package"; then adb shell pm disable-user --user 0 "$package"; fi; done
             # The API 36 system Bluetooth service can crash and leave its error dialog above
             # the AppFrame activity, stealing input focus from the WebView under test.
-            s047_main_keys=$(adb shell getprop qemu.hw.mainkeys | tr -d '\r'); printf 's047_hw_mainkeys=%s\n' "$s047_main_keys"; [ "$s047_main_keys" = '0' ]
+            node scripts/capture-android-navigation.mjs "$RUNNER_TEMP/s047-navigation-environment.json"
             adb shell svc power stayon true
             adb shell input keyevent 224
             if [ "${{ matrix.api-level }}" = "36" ]; then adb shell svc bluetooth disable; fi

@@ -33,11 +33,11 @@ namespace PortableMenuTest {
  public class ScrollItemPattern { public static object Pattern = new object(); public System.Action Scroll; public void ScrollIntoView() { Scroll(); } }
  public class TreeWalker { public static TreeWalker ControlViewWalker = new TreeWalker(); public System.Func<object,object> Parent; public object GetParent(object element) { return Parent(element); } }
  public class TreeScope { public static object Descendants = new object(); }
- public class NativeInput { public static bool SetForegroundWindow(System.IntPtr value) { return true; } }
+ public class NativeInput { public static System.IntPtr Foreground; public static int Activations; public static bool CanActivate = true; public static System.IntPtr GetForegroundWindow() { return Foreground; } public static bool SetForegroundWindow(System.IntPtr value) { Activations++; if (CanActivate) Foreground = value; return CanActivate; } }
  public class SendKeys { public static bool Escaped; public static void SendWait(string value) { if(value != "{ESC}") throw new System.Exception("Unexpected key"); Escaped = true; } }
 }
 '@
-foreach ($name in @('Assert-MenuGeometry', 'Invoke-DocumentCommand')) {
+foreach ($name in @('Assert-MenuGeometry', 'Wait-ApplicationForeground', 'Invoke-DocumentCommand')) {
     $function = $ast.Find({ param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq $name }, $true)
     if (-not $function) { continue }
     $source = $function.Extent.Text.Replace('System.Windows.Automation.', 'PortableMenuTest.').Replace('[GlitchpadNativeInput]', '[PortableMenuTest.NativeInput]').Replace('[System.Windows.Forms.SendKeys]', '[PortableMenuTest.SendKeys]')
@@ -51,6 +51,9 @@ function Element($name, $bounds) {
     return $element
 }
 function Reset-Case {
+    [PortableMenuTest.NativeInput]::Foreground = [IntPtr]::Zero
+    [PortableMenuTest.NativeInput]::Activations = 0
+    [PortableMenuTest.NativeInput]::CanActivate = $true
     $script:open = $false
     $script:route = ''
     $script:clickCount = 0
@@ -101,7 +104,10 @@ function Find-NamedElement($Window, $Name) {
     if ($script:open -and $Name -eq 'Glitchpad menu') { return $script:menu }
     return $null
 }
-function Invoke-NamedButton($Process, $Name) { $script:open = $true; $script:route = $Name }
+function Invoke-NamedButton($Process, $Name) {
+    if ($Name -eq 'Document tools' -and [PortableMenuTest.NativeInput]::GetForegroundWindow() -ne $Process.MainWindowHandle) { throw 'Document menu opened before native foreground ownership.' }
+    $script:open = $true; $script:route = $Name
+}
 function Wait-ActionableNamedElement($Process, $Name, $Shortcut) {
     if ($script:route -ne 'Document tools') { throw 'Document action used the application destinations menu.' }
     return Element $Name (Rect 220 180 100 48)
@@ -117,6 +123,7 @@ function Must-Fail($configure, $expectedMessage) {
     if (-not $failed) { throw "Expected geometry rejection: $expectedMessage" }
 }
 $script:testProcess = [Diagnostics.Process]::GetCurrentProcess()
+$script:testProcess | Add-Member NoteProperty MainWindowHandle ([IntPtr]1) -Force
 Reset-Case
 Assert-MenuGeometry $script:testProcess 'document.md'
 if ($script:open -or -not [PortableMenuTest.SendKeys]::Escaped) { throw 'Modal did not close through real Escape boundary.' }
@@ -131,7 +138,20 @@ foreach ($name in @('Edit', 'Save', 'Read')) {
     Invoke-DocumentCommand $script:testProcess $name
     if ($script:clicked -cne $name -or $script:open -or $script:clickCount -ne 1) { throw 'Document command did not complete.' }
 }
+Reset-Case
+[PortableMenuTest.NativeInput]::Foreground = $script:testProcess.MainWindowHandle
+Wait-ApplicationForeground $script:testProcess
+if ([PortableMenuTest.NativeInput]::Activations -ne 0) { throw 'A foreground window was activated again.' }
+Reset-Case
+[PortableMenuTest.NativeInput]::CanActivate = $false
+$foregroundRejected = $false
+try { Wait-ApplicationForeground $script:testProcess -Seconds 0 } catch {
+    if ($_.Exception.Message -cne 'portable_foreground_window_timeout') { throw }
+    $foregroundRejected = $true
+}
+if (-not $foregroundRejected -or $script:clickCount -ne 0 -or $script:open) { throw 'Missing native foreground ownership dispatched product input.' }
 Write-Output 'Portable modal coordinator and document route fixtures passed (simulated UIA boundary).'
+Write-Output 'Portable foreground ownership fixtures passed (simulated native input boundary).'
 
 # Active-menu resolution must never accept the duplicate background primary Save.
 foreach ($name in @('Find-DocumentToolsMenu', 'Wait-ActionableNamedElement')) {

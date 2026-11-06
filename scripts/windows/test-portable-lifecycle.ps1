@@ -345,7 +345,32 @@ function Wait-ActionableNamedElement([Diagnostics.Process] $Process, [string] $N
     throw "Portable UI did not expose actionable element '$Name'."
 }
 
+function Wait-ApplicationForeground([Diagnostics.Process] $Process, [int] $Seconds = 10) {
+    $script:readinessWaitKind = 'foreground'
+    $script:readinessWaitCallerLine = $MyInvocation.ScriptLineNumber
+    $script:readinessStage = 'foreground_wait'
+    $Process.Refresh()
+    $handle = $Process.MainWindowHandle
+    if ($handle -eq [IntPtr]::Zero) { throw 'portable_foreground_window_missing' }
+    if ([GlitchpadNativeInput]::GetForegroundWindow() -ne $handle) {
+        [GlitchpadNativeInput]::SetForegroundWindow($handle) | Out-Null
+    }
+    $deadline = [DateTimeOffset]::UtcNow.AddSeconds($Seconds)
+    do {
+        if ([GlitchpadNativeInput]::GetForegroundWindow() -eq $handle) {
+            $script:readinessStage = 'foreground_ready'
+            $script:readinessWaitKind = 'none'
+            $script:readinessWaitCallerLine = 0
+            return
+        }
+        Start-Sleep -Milliseconds 50
+    } while ([DateTimeOffset]::UtcNow -lt $deadline)
+    throw 'portable_foreground_window_timeout'
+}
+
 function Click-AutomationElement([Diagnostics.Process] $Process, [System.Windows.Automation.AutomationElement] $Element, [string] $Description) {
+    # Foreground activation can change modal ownership and screen geometry.
+    Wait-ApplicationForeground $Process
     if ($Element.Current.IsOffscreen) { throw "Portable UI element '$Description' is offscreen and cannot be clicked." }
     try {
         $point = $Element.GetClickablePoint()
@@ -360,9 +385,11 @@ function Click-AutomationElement([Diagnostics.Process] $Process, [System.Windows
     }
     $previousCursor = [System.Windows.Forms.Cursor]::Position
     try {
-        [GlitchpadNativeInput]::SetForegroundWindow($Process.MainWindowHandle) | Out-Null
         [GlitchpadNativeInput]::SetCursorPos([Math]::Round($clickX), [Math]::Round($clickY)) | Out-Null
         Start-Sleep -Milliseconds 50
+        $foreground = [GlitchpadNativeInput]::GetForegroundWindow() -eq $Process.MainWindowHandle
+        if ($script:documentActionObservation) { $script:documentActionObservation['foreground_at_click'] = $foreground }
+        if (-not $foreground) { throw 'portable_foreground_lost_before_click' }
         [GlitchpadNativeInput]::mouse_event(0x0002, 0, 0, 0, [UIntPtr]::Zero)
         [GlitchpadNativeInput]::mouse_event(0x0004, 0, 0, 0, [UIntPtr]::Zero)
     }
@@ -389,7 +416,9 @@ function Invoke-NamedButton([Diagnostics.Process] $Process, [string] $Name) {
 }
 
 function Invoke-DocumentCommand([Diagnostics.Process] $Process, [string] $Name, [string] $Shortcut = '') {
-    $script:documentActionObservation = @{ phase = 'menu_wait'; menu_available = $false; candidate_available = $false; menu_owned = $false; enabled = $null; visible = $null; scroll_requested = $false; click_dispatched = $false; resolver_error = $false; resolver_method_missing = $false }
+    $script:documentActionObservation = @{ phase = 'menu_wait'; foreground_before_menu = $false; foreground_at_click = $null; menu_available = $false; candidate_available = $false; menu_owned = $false; enabled = $null; visible = $null; scroll_requested = $false; click_dispatched = $false; resolver_error = $false; resolver_method_missing = $false }
+    Wait-ApplicationForeground $Process
+    $script:documentActionObservation['foreground_before_menu'] = $true
     Invoke-NamedButton $Process 'Document tools'
     $item = Wait-ActionableNamedElement $Process $Name $Shortcut
     Click-AutomationElement $Process $item $Name
@@ -562,6 +591,9 @@ public static class GlitchpadNativeInput
 {
     [DllImport("user32.dll")]
     public static extern bool SetForegroundWindow(IntPtr window);
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetForegroundWindow();
 
     [DllImport("user32.dll")]
     public static extern bool IsWindowVisible(IntPtr window);

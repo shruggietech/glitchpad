@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Disposable API24 AVD setup. The app still proves actual default-network-none.
+# Disposable API24/API36 AVD setup. The app still proves actual default-network-none.
 set -uo pipefail
 if [[ "$#" != 3 || ( "$1" != setup && "$1" != restore ) || -z "$2" || ! "$3" =~ ^[0-9a-f]{40}$ ]]; then
   echo 'Usage: android-offline-mode.sh setup|restore EVIDENCE_PREFIX SOURCE_SHA' >&2; exit 2
@@ -61,8 +61,9 @@ await_settings() {
 }
 setup_offline() {
   [[ ! -e "$prefix-before-state.txt" && ! -e "$prefix-restore-required.txt" ]] || return 1
-  local uid baseline airplane wifi data
-  [[ "$(read_value before-api shell getprop ro.build.version.sdk)" == 24 ]] || return 1
+  local uid baseline airplane wifi data api
+  api=$(read_value before-api shell getprop ro.build.version.sdk) || return 1
+  [[ "$api" == 24 || "$api" == 36 ]] || return 1
   [[ "$(read_value before-emulator shell getprop ro.kernel.qemu)" == 1 ]] || return 1
   uid=$(read_value before-uid shell id -u) || return 1
   [[ "$uid" == 0 || "$uid" == 2000 ]] || return 1

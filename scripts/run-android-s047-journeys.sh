@@ -45,17 +45,16 @@ restore_offline() {
   fi
 }
 run_about_task() {
-  if [[ "$api" == 24 ]]; then
-    offline_restore_pending=true
-    if bash "$offline" setup "$RUNNER_TEMP/s047-offline" "$source"; then
-      run_task about s047AboutJourney -e offlineSetup hosted_controller
-    else
-      echo "S047 hosted API24 offline setup failed." >&2
-      failures=$((failures+1))
-    fi
-    restore_offline
-  else run_task about s047AboutJourney; fi
+  offline_restore_pending=true
+  if bash "$offline" setup "$RUNNER_TEMP/s047-offline" "$source"; then
+    run_task about s047AboutJourney -e offlineSetup hosted_controller
+  else
+    echo "S047 hosted API$api offline setup failed." >&2
+    failures=$((failures+1))
+  fi
+  restore_offline
 }
+
 cleanup() {
   local status=$?
   trap - EXIT

@@ -1269,14 +1269,21 @@ class AndroidDeliveryInstrumentedTest {
     assertTrue("Indent must insert actual leading whitespace on each selected line", indented != original && indented.lines().zip(original.lines()).all { (a,b) -> a.trimStart(' ', '\t') == b && a.length > b.length })
     menuAction(scenario, "Outdent")
     assertEquals(original, browserEditorInputSnapshot(scenario).getString("semantic_text"))
-    focusTaskEditor(scenario); taskKey(KeyEvent.KEYCODE_A, ctrl); taskKey(KeyEvent.KEYCODE_TAB)
-    assertEquals(indented, browserEditorInputSnapshot(scenario).getString("semantic_text"))
-    taskKey(KeyEvent.KEYCODE_TAB, shift)
-    assertEquals(original, browserEditorInputSnapshot(scenario).getString("semantic_text"))
-    taskKey(KeyEvent.KEYCODE_Z, ctrl)
-    assertEquals(indented, browserEditorInputSnapshot(scenario).getString("semantic_text"))
-    taskKey(KeyEvent.KEYCODE_Z, ctrl or shift)
-    assertEquals(original, browserEditorInputSnapshot(scenario).getString("semantic_text"))
+    fun keyWithExactSource(code: Int, meta: Int, expected: String) {
+      val deadline = SystemClock.elapsedRealtime() + 10_000L
+      taskKey(code, meta)
+      val source = "Array.from(document.querySelector('.cm-content').querySelectorAll(':scope > .cm-line')).map(n=>n.textContent).join('\\n')"
+      waitForCondition(scenario, source + "===" + JSONObject.quote(expected), "one native keyboard action must publish its exact source inside the original observation budget", deadlineOverride = deadline)
+      assertEquals(expected, browserEditorInputSnapshot(scenario, deadlineOverride = deadline).getString("semantic_text"))
+    }
+    focusTaskEditor(scenario)
+    val selectionDeadline = SystemClock.elapsedRealtime() + 10_000L
+    taskKey(KeyEvent.KEYCODE_A, ctrl)
+    waitForCondition(scenario, "(()=>{const n=document.querySelector('.cm-editor');return Number(n.getAttribute('data-editor-selection-from'))===0&&Number(n.getAttribute('data-editor-selection-to'))===" + original.length + ";})()", "one native Select all must publish the actual selection before indentation", deadlineOverride = selectionDeadline)
+    keyWithExactSource(KeyEvent.KEYCODE_TAB, 0, indented)
+    keyWithExactSource(KeyEvent.KEYCODE_TAB, shift, original)
+    keyWithExactSource(KeyEvent.KEYCODE_Z, ctrl, indented)
+    keyWithExactSource(KeyEvent.KEYCODE_Z, ctrl or shift, original)
     val beforeWrap = stringValue(evaluate(scenario, "document.querySelector('.cm-editor').getAttribute('data-editor-wrap')"))
     menuAction(scenario, if (beforeWrap == "true") "Unwrap lines" else "Wrap lines")
     waitForCondition(scenario, "document.querySelector('.cm-editor').getAttribute('data-editor-wrap')!==" + JSONObject.quote(beforeWrap), "document wrap must change actual editor configuration")
@@ -2418,58 +2425,25 @@ class AndroidDeliveryInstrumentedTest {
     return output.substringBeforeLast("\nS047_SHELL_EXIT=").trim()
   }
   private fun verifyOfflineNotices(scenario: ActivityScenario<MainActivity>): JSONObject {
-    val hostedOffline = Build.VERSION.SDK_INT == 24
-    if (hostedOffline) assertEquals("API24 offline setup must come from the isolated hosted controller", "hosted_controller", InstrumentationRegistry.getArguments().getString("offlineSetup"))
-    val original = listOf("airplane_mode_on", "wifi_on", "mobile_data").associateWith { checkedShell("settings get global " + it) }
-    assertTrue("network settings must have recognized reversible states", original.values.all { it == "0" || it == "1" })
+    assertEquals("offline setup must come from the isolated source-bound hosted controller", "hosted_controller", InstrumentationRegistry.getArguments().getString("offlineSetup"))
     val deadline = SystemClock.elapsedRealtime() + 30_000L
-    var originalFailure: Throwable? = null
-    fun awaitSettings(wanted: Map<String,String>, until: Long, phase: String) {
-      var actual = emptyMap<String,String>()
-      while(SystemClock.elapsedRealtime() < until) {
-        actual = wanted.keys.associateWith { checkedShell("settings get global " + it) }
-        if(actual == wanted) return
-        SystemClock.sleep(100L)
-      }
-      throw AssertionError("hosted network settings must settle within their original phase deadline: " + phase + ",wanted=" + wanted + ",actual=" + actual)
+    val settings = listOf("airplane_mode_on", "wifi_on", "mobile_data").associateWith { checkedShell("settings get global " + it) }
+    assertTrue("network settings must have recognized reversible states", settings.values.all { it == "0" || it == "1" })
+    assertEquals("the hosted controller must disable actual Wi-Fi", "0", settings["wifi_on"])
+    assertEquals("the hosted controller must disable actual mobile data", "0", settings["mobile_data"])
+    var offline = false
+    while (SystemClock.elapsedRealtime() < deadline) {
+      val remainingSeconds = maxOf(1L, (deadline - SystemClock.elapsedRealtime()) / 1_000L)
+      val dump = checkedShell("dumpsys -t " + minOf(5L, remainingSeconds) + " connectivity")
+      assertTrue("complete connectivity observation must retain the original phase deadline", SystemClock.elapsedRealtime() < deadline)
+      if (Regex("(?m)^\\s*Active default network:\\s*none\\s*$").containsMatchIn(dump)) { offline = true; break }
+      SystemClock.sleep(100L)
     }
-    val airplaneSupported = Build.VERSION.SDK_INT >= 30
-    val offlineAirplane = if (airplaneSupported) "1" else requireNotNull(original["airplane_mode_on"])
-    fun wifi(value: String) { checkedShell("svc wifi " + if (value == "1") "enable" else "disable") }
-    fun airplane(value: String) {
-      assertTrue("airplane shell command requires API30+", airplaneSupported)
-      checkedShell("cmd connectivity airplane-mode " + if (value == "1") "enable" else "disable")
-    }
-    try {
-      if (!hostedOffline) {
-        if (airplaneSupported) airplane("1")
-        wifi("0"); checkedShell("svc data disable")
-      }
-      awaitSettings(mapOf("airplane_mode_on" to offlineAirplane, "wifi_on" to "0", "mobile_data" to "0"),deadline,"offline")
-      var offline = false
-      while (SystemClock.elapsedRealtime() < deadline) {
-        val remainingSeconds = maxOf(1L, (deadline - SystemClock.elapsedRealtime()) / 1_000L)
-        val dump = checkedShell("dumpsys -t " + minOf(5L, remainingSeconds) + " connectivity")
-        assertTrue("complete connectivity observation must retain the original phase deadline", SystemClock.elapsedRealtime() < deadline)
-        if (Regex("(?m)^\\s*Active default network:\\s*none\\s*$").containsMatchIn(dump)) { offline = true; break }
-        SystemClock.sleep(100L)
-      }
-      assertTrue("only recognized actual default-network-none state establishes offline", offline)
-      clickControl(scenario, "Offline licenses and notices")
-      waitForCondition(scenario, "(()=>{const n=document.querySelector('.application-notices');return !!n&&n.textContent.length>10000&&n.textContent.includes('Apache')&&n.textContent.includes('MIT');})()", "complete native notices must work with no actual default network", deadlineOverride = deadline)
-      assertTrue("offline notices must complete within the original action budget", SystemClock.elapsedRealtime() < deadline)
-      return JSONObject().put("default_network_none", true).put("shell_exit_status", 0).put("offline_setup_authority", if (hostedOffline) "hosted_controller_fixture" else "automation_shell").put("native_local_notices", true)
-    } catch (failure: Throwable) { originalFailure = failure; throw failure }
-    finally {
-      val restored = runCatching {
-        if (hostedOffline) return@runCatching // Host campaign owns and verifies exact radio/adbd restoration.
-        if (airplaneSupported) airplane(requireNotNull(original["airplane_mode_on"]))
-        wifi(requireNotNull(original["wifi_on"]))
-        checkedShell("svc data " + if (original["mobile_data"] == "1") "enable" else "disable")
-        awaitSettings(original,SystemClock.elapsedRealtime()+30_000L,"restore")
-      }
-      if (restored.isFailure) { println("s047_network_restore_failed=true"); System.out.flush(); if (originalFailure == null) throw AssertionError("hosted network restoration failed", restored.exceptionOrNull()) }
-    }
+    assertTrue("only recognized actual default-network-none state establishes offline", offline)
+    clickControl(scenario, "Offline licenses and notices", deadlineOverride = deadline)
+    waitForCondition(scenario, "(()=>{const n=document.querySelector('.application-notices');return !!n&&n.textContent.length>10000&&n.textContent.includes('Apache')&&n.textContent.includes('MIT');})()", "complete native notices must work with no actual default network", deadlineOverride = deadline)
+    assertTrue("offline notices must complete within the original action budget", SystemClock.elapsedRealtime() < deadline)
+    return JSONObject().put("default_network_none", true).put("shell_exit_status", 0).put("offline_setup_authority", "hosted_controller_fixture").put("native_local_notices", true)
   }
 
   @Test fun s047AboutJourney() {
@@ -3088,6 +3062,22 @@ class AndroidDeliveryInstrumentedTest {
       captureEditorFocusFailure(scenario, "after_native_touch", target, nativeMapping)
       throw failure
     }
+    // A touch starts the IME asynchronously. Do not retain a pre-IME connection across its restart.
+    var servedIme = false
+    var imeObservation = JSONObject()
+    while (SystemClock.elapsedRealtime() < deadline) {
+      var active = false
+      scenario.onActivity { activity ->
+        val view = requireNotNull(findWebView(activity.window.decorView))
+        val manager = activity.getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+        active = manager.isActive(view) && manager.isAcceptingText
+      }
+      val visible = visibleNativeImeBounds().isNotEmpty()
+      imeObservation = JSONObject().put("served_editor", active).put("ime_window_visible", visible)
+      if (active && visible) { servedIme = true; break }
+      SystemClock.sleep(50L)
+    }
+    assertTrue("the actual served editor IME must be ready before creating its input connection inside the original input deadline: " + imeObservation, servedIme)
     val browserBefore = browserEditorInputSnapshot(scenario, deadlineOverride = deadline)
     val beforeInputText = browserBefore.getString("editing_text")
     val beforeSemanticText = browserBefore.getString("semantic_text")
@@ -3132,7 +3122,9 @@ class AndroidDeliveryInstrumentedTest {
       .put("browser_edit_after", browserAfter))
     System.out.flush()
     val committedState = try {
-      waitForNativeEditorState(connection, handler, afterInputText, "committed", text.length, text.length, deadlineOverride = deadline)
+      val (currentConnection, currentHandler) = waitForFocusedInputConnection(scenario,
+        "document.hasFocus()&&document.activeElement===document.querySelector('.cm-content[contenteditable=true]')&&document.querySelector('.document-surface').id===" + JSONObject.quote(target.getString("surface_id")), deadline, afterInputText)
+      waitForNativeEditorState(currentConnection, currentHandler, afterInputText, "committed", text.length, text.length, deadlineOverride = deadline)
     } catch (failure: AssertionError) {
       captureEditorFocusFailure(scenario, "native_committed_state", target, nativeMapping)
       throw failure

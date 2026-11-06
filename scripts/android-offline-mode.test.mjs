@@ -239,7 +239,7 @@ test(
   'wrong API or non-emulator target is rejected before root or radio mutation',
   { skip },
   async () => {
-    for (const initial of [{ api: 36 }, { qemu: 0 }]) {
+    for (const initial of [{ api: 35 }, { qemu: 0 }]) {
       const f = await fixture(initial);
       try {
         assert.equal(f.run('setup').status, 1);
@@ -274,6 +274,48 @@ test(
       assert.deepEqual(
         [state.uid, state.wifi_on, state.mobile_data],
         [2000, 1, 1],
+      );
+    } finally {
+      await f.cleanup();
+    }
+  },
+);
+
+test(
+  'API36 offline setup uses host root and restores the exact source-bound radios and original adbd identity',
+  { skip },
+  async () => {
+    const f = await fixture({ api: 36 });
+    try {
+      assert.equal(f.run('setup').status, 0);
+      const offline = await f.state();
+      assert.deepEqual(
+        [
+          offline.uid,
+          offline.airplane_mode_on,
+          offline.wifi_on,
+          offline.mobile_data,
+        ],
+        [0, 0, 0, 0],
+      );
+      assert.match(
+        await readFile(f.prefix + '-before-state.txt', 'utf8'),
+        new RegExp('^' + source + ' 2000 0 1 1'),
+      );
+      assert.equal(f.run('restore').status, 0);
+      const restored = await f.state();
+      assert.deepEqual(
+        [
+          restored.uid,
+          restored.airplane_mode_on,
+          restored.wifi_on,
+          restored.mobile_data,
+        ],
+        [2000, 0, 1, 1],
+      );
+      assert.match(
+        await readFile(f.prefix + '-restore-status.txt', 'utf8'),
+        /^restored_verified:/,
       );
     } finally {
       await f.cleanup();

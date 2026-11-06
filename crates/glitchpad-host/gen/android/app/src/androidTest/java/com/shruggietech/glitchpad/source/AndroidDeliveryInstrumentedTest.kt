@@ -1119,13 +1119,17 @@ class AndroidDeliveryInstrumentedTest {
     val wanted = option.getString("label").replace(Regex("\\s+"), " ")
     enableNativeWindowObservation()
     val priorWindow = instrumentation.uiAutomation.rootInActiveWindow?.windowId
+    val initialIndex = evaluate(scenario, "(" + field + ").selectedIndex", deadlineOverride = deadline).toInt()
     tapNativeControlOnce(scenario, label, "select", deadlineOverride = deadline)
     var target: AccessibilityNodeInfo? = null
     var seenWindow = -1
     var observedCount = 0
     var positionRequested = false
     var lastScroll = 0L
-    val initialIndex = evaluate(scenario, "(" + field + ").selectedIndex", deadlineOverride = deadline).toInt()
+    var previousBounds: android.graphics.Rect? = null
+    var previousOptionWindow: Int? = null
+    var previousSeenAt = 0L
+    var targetBounds: android.graphics.Rect? = null
     val inventory = JSONArray()
     while (SystemClock.elapsedRealtime() < deadline) {
       val root = instrumentation.uiAutomation.rootInActiveWindow
@@ -1134,17 +1138,34 @@ class AndroidDeliveryInstrumentedTest {
         val candidates = mutableListOf<AccessibilityNodeInfo>()
         for (node in root.findAccessibilityNodeInfosByText(wanted)) {
           if (node.text?.toString()?.trim()?.replace(Regex("\\s+"), " ") != wanted || node.windowId != root.windowId) continue
-          var clickable: AccessibilityNodeInfo? = node
-          var depth = 0
-          while (clickable != null && !clickable.isClickable && depth++ < 4) clickable = clickable.parent
-          val selected = clickable ?: continue
+          val selected = node // Touch the exact labelled option, not a potentially broad clickable ancestor.
           if (selected.windowId != root.windowId || selected.packageName?.toString() != TARGET_PACKAGE || !selected.isVisibleToUser || !selected.isEnabled) continue
           val bounds = android.graphics.Rect().also { selected.getBoundsInScreen(it) }
-          if (!bounds.isEmpty) candidates.add(selected)
+          val visible = android.graphics.Rect(bounds)
+          var parent = selected.parent
+          var ancestors = 0
+          while (parent != null && parent.windowId == root.windowId && ancestors++ < 12) {
+            val parentBounds = android.graphics.Rect().also { parent.getBoundsInScreen(it) }
+            if (!parentBounds.isEmpty && !visible.intersect(parentBounds)) { visible.setEmpty(); break }
+            parent = parent.parent
+          }
+          if (!bounds.isEmpty && visible == bounds) candidates.add(selected)
         }
         val unique = candidates.distinctBy { it.hashCode() }
         observedCount = unique.size
-        if (unique.size == 1) { target = unique.single(); break }
+        if (unique.size == 1) {
+          val candidate = unique.single()
+          val bounds = android.graphics.Rect().also { candidate.getBoundsInScreen(it) }
+          val now = SystemClock.elapsedRealtime()
+          if (previousOptionWindow == root.windowId && previousBounds == bounds && now - previousSeenAt >= 100L && now - lastScroll >= 400L) {
+            target = candidate
+            targetBounds = bounds
+            break
+          }
+          if (previousOptionWindow != root.windowId || previousBounds != bounds) { previousOptionWindow = root.windowId; previousBounds = bounds; previousSeenAt = now }
+          SystemClock.sleep(100L)
+          continue
+        } else { previousBounds = null; previousOptionWindow = null }
         var visited = 0
         fun scrollable(node: AccessibilityNodeInfo, depth: Int): AccessibilityNodeInfo? {
           if (++visited > 128 || depth > 12) return null
@@ -1172,8 +1193,36 @@ class AndroidDeliveryInstrumentedTest {
     }
     if (target == null) { println("s047_native_option_failure=" + JSONObject().put("control", label).put("wanted", wanted).put("index", index).put("window", seenWindow).put("matches", observedCount).put("visible_children", inventory)); System.out.flush() }
     assertTrue("one actual native option popup must own the exact enabled setting within the original action deadline: window=" + seenWindow + ",matches=" + observedCount, target != null && SystemClock.elapsedRealtime() < deadline)
-    assertTrue("the observed native option must receive exactly one accessibility activation", requireNotNull(target).performAction(AccessibilityNodeInfo.ACTION_CLICK))
-    waitForCondition(scenario, "(()=>{const n=" + field + ";return !!n&&n.value===" + JSONObject.quote(expected) + ";})()", "actual native option selection must update the intended setting", deadlineOverride = deadline)
+    val selected = requireNotNull(target)
+    val bounds = requireNotNull(targetBounds)
+    val currentRoot = instrumentation.uiAutomation.rootInActiveWindow
+    assertTrue("the single option touch must retain the same active popup owner", currentRoot?.refresh() == true && currentRoot.windowId == seenWindow && currentRoot.packageName?.toString() == TARGET_PACKAGE)
+    assertTrue("the observed option must remain fresh, enabled and visible before its single touch", selected.refresh() && selected.isEnabled && selected.isVisibleToUser)
+    assertEquals("the refreshed native row must retain the exact intended option label", wanted, selected.text?.toString()?.trim()?.replace(Regex("\\s+"), " "))
+    val freshBounds = android.graphics.Rect().also { selected.getBoundsInScreen(it) }
+    assertEquals("the native option must retain its observed stable screen bounds", bounds, freshBounds)
+    val downTime = SystemClock.uptimeMillis()
+    val down = MotionEvent.obtain(downTime, downTime, MotionEvent.ACTION_DOWN, bounds.exactCenterX(), bounds.exactCenterY(), 0)
+    val up = MotionEvent.obtain(downTime, SystemClock.uptimeMillis(), MotionEvent.ACTION_UP, bounds.exactCenterX(), bounds.exactCenterY(), 0)
+    try {
+      down.source = InputDevice.SOURCE_TOUCHSCREEN
+      up.source = InputDevice.SOURCE_TOUCHSCREEN
+      assertTrue("the option touch must begin inside the original action deadline", SystemClock.elapsedRealtime() < deadline)
+      assertTrue("the native popup must accept exactly one option DOWN", instrumentation.uiAutomation.injectInputEvent(down, true))
+      assertTrue("the option UP must retain the original action deadline", SystemClock.elapsedRealtime() < deadline)
+      assertTrue("the native popup must accept exactly one option UP", instrumentation.uiAutomation.injectInputEvent(up, true))
+    } finally { down.recycle(); up.recycle() }
+    try {
+      waitForCondition(scenario, "(()=>{const n=" + field + ";return !!n&&n.value===" + JSONObject.quote(expected) + ";})()", "actual native option selection must update the intended setting", deadlineOverride = deadline)
+    } catch (failure: Throwable) {
+      val actual = runCatching { evaluate(scenario, "(()=>{const n=" + field + ";return {found:!!n,value:n?n.value:null,index:n?n.selectedIndex:null};})()") }.getOrElse { "observation_failed:" + it.javaClass.simpleName }
+      val nativeRoot = instrumentation.uiAutomation.rootInActiveWindow
+      println("s047_native_option_selection_failure=" + JSONObject().put("control", label).put("wanted", wanted).put("index", index)
+        .put("expected", expected).put("actual", actual).put("option_class", selected.className?.toString()).put("bounds", nativeRectBounds(bounds))
+        .put("popup_window", seenWindow).put("active_window", nativeRoot?.windowId).put("active_package", nativeRoot?.packageName?.toString()))
+      System.out.flush()
+      throw failure
+    }
   }
   private fun clipboardText(): String? {
     val observed = AtomicReference<String?>(null)

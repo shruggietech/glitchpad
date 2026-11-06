@@ -426,6 +426,49 @@ function Invoke-DocumentCommand([Diagnostics.Process] $Process, [string] $Name, 
     $script:documentActionObservation['phase'] = 'click_dispatched'
 }
 
+function Wait-EditorNativeFocus([Diagnostics.Process] $Process, [string] $EditorName) {
+    $deadline = [DateTimeOffset]::UtcNow.AddSeconds(10)
+    $focusRequested = $false
+    $consecutiveFocused = 0
+    $script:readinessStage = 'editor_focus_wait'
+    $script:readinessWaitKind = 'editor_focus'
+    $script:readinessWaitCallerLine = $MyInvocation.ScriptLineNumber
+    do {
+        $window = Get-WindowRoot $Process
+        $menu = if ($window) { Find-DocumentToolsMenu $window } else { $null }
+        $menuClosed = -not $menu -or $menu.Current.IsOffscreen
+        $script:documentActionObservation['editor_menu_closed'] = $menuClosed
+        if ($window -and $menuClosed) {
+            $editor = Find-NamedElement $window $EditorName
+            if ($editor -and $editor.Current.IsEnabled -and -not $editor.Current.IsOffscreen) {
+                if (-not $focusRequested) {
+                    $editor.SetFocus()
+                    $focusRequested = $true
+                    $script:documentActionObservation['editor_focus_requested'] = $true
+                }
+                $focused = [System.Windows.Automation.AutomationElement]::FocusedElement
+                $ownsFocus = $false
+                for ($depth = 0; $focused -and $depth -lt 16; $depth++) {
+                    if ([System.Windows.Automation.Automation]::Compare($focused, $editor)) { $ownsFocus = $true; break }
+                    $focused = [System.Windows.Automation.TreeWalker]::ControlViewWalker.GetParent($focused)
+                }
+                $foreground = [GlitchpadNativeInput]::GetForegroundWindow() -eq $Process.MainWindowHandle
+                $script:documentActionObservation['editor_focus_observed'] = $ownsFocus
+                $script:documentActionObservation['editor_foreground'] = $foreground
+                if ($ownsFocus -and $foreground) { $consecutiveFocused++ } else { $consecutiveFocused = 0 }
+                if ($consecutiveFocused -ge 2) {
+                    $script:readinessStage = 'editor_focus_ready'
+                    $script:readinessWaitKind = 'none'
+                    $script:readinessWaitCallerLine = 0
+                    return $editor
+                }
+            }
+        } else { $consecutiveFocused = 0 }
+        Start-Sleep -Milliseconds 50
+    } while ([DateTimeOffset]::UtcNow -lt $deadline)
+    throw 'portable_editor_native_focus_timeout'
+}
+
 function Exercise-MarkdownEditSavePreview([Diagnostics.Process] $Process, [string] $Path) {
     $name = [IO.Path]::GetFileName($Path)
     $initialText = 'S038 Editable Markdown 1A2B'
@@ -433,7 +476,7 @@ function Exercise-MarkdownEditSavePreview([Diagnostics.Process] $Process, [strin
     Wait-NamedElement $Process $initialText | Out-Null
     Invoke-DocumentCommand $Process 'Edit'
     $editor = Wait-NamedElement $Process ("{0} text editor" -f $name)
-    $editor.SetFocus()
+    $editor = Wait-EditorNativeFocus $Process ("{0} text editor" -f $name)
     [System.Windows.Forms.SendKeys]::SendWait('^a')
     [System.Windows.Forms.SendKeys]::SendWait($savedText)
     Wait-WindowText $Process $savedText

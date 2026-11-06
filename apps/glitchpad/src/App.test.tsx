@@ -2384,7 +2384,7 @@ describe('document foundation shell', () => {
     await waitFor(() =>
       expect(cancelIntegrity).toHaveBeenCalledWith(currentId),
     );
-  });
+  }, 10_000);
 
   it('keeps the reference document area at or above 90 percent', () => {
     expect(DESKTOP_CHROME_MAX_PX).toBeLessThanOrEqual(

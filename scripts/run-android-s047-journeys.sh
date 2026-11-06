@@ -11,7 +11,9 @@ if [[ "$diagnostic" != false && "$diagnostic" != true ]] || [[ "$diagnostic" == 
 fi
 runner="${BASH_SOURCE[0]%/*}/run-android-instrumentation.sh"
 navigation="${BASH_SOURCE[0]%/*}/android-navigation-mode.sh"
+offline="${BASH_SOURCE[0]%/*}/android-offline-mode.sh"
 navigation_restore_pending=false
+offline_restore_pending=false
 failures=0
 run_task() {
   local name="$1" method="$2" marker="s047_journey_evidence="
@@ -36,10 +38,29 @@ run_back_task() {
     restore_navigation
   else run_task back s047BackJourney; fi
 }
+restore_offline() {
+  if [[ "$offline_restore_pending" == true ]]; then
+    offline_restore_pending=false
+    bash "$offline" restore "$RUNNER_TEMP/s047-offline" "$source" || failures=$((failures+1))
+  fi
+}
+run_about_task() {
+  if [[ "$api" == 24 ]]; then
+    offline_restore_pending=true
+    if bash "$offline" setup "$RUNNER_TEMP/s047-offline" "$source"; then
+      run_task about s047AboutJourney -e offlineSetup hosted_controller
+    else
+      echo "S047 hosted API24 offline setup failed." >&2
+      failures=$((failures+1))
+    fi
+    restore_offline
+  else run_task about s047AboutJourney; fi
+}
 cleanup() {
   local status=$?
   trap - EXIT
   restore_navigation
+  restore_offline
   adb shell settings put system font_scale 1.0 || failures=$((failures+1))
   adb shell wm size reset || failures=$((failures+1))
   if (( status != 0 || failures != 0 )); then exit 1; fi
@@ -59,7 +80,7 @@ if [[ "$role" == ordinary ]]; then
   run_task images s047ImageJourney
   run_task layout s047LayoutJourney
   run_back_task
-  run_task about s047AboutJourney
+  run_about_task
   if ANDROID_INSTRUMENTATION_RESET_APP_DATA=true bash "$runner" "$RUNNER_TEMP/s047-draft-seed.txt" 'draft_recovery_seed=pass' -e waitForActivitiesToComplete false -e expectedSource "$source" -e expectedRole "$role" -e class com.shruggietech.glitchpad.source.AndroidDeliveryInstrumentedTest#draftRecoveryAcrossProcessBoundary -e recoveryPhase seed; then
     ANDROID_INSTRUMENTATION_RESET_APP_DATA=false bash "$runner" "$RUNNER_TEMP/s047-draft-verify.txt" 'draft_recovery_verify=pass' -e waitForActivitiesToComplete false -e expectedSource "$source" -e expectedRole "$role" -e class com.shruggietech.glitchpad.source.AndroidDeliveryInstrumentedTest#draftRecoveryAcrossProcessBoundary -e recoveryPhase verify || failures=$((failures+1))
   else failures=$((failures+1)); fi

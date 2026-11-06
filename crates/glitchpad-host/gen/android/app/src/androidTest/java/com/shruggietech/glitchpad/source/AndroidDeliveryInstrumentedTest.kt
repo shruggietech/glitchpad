@@ -1087,19 +1087,28 @@ class AndroidDeliveryInstrumentedTest {
 
   private fun setTaskInput(scenario: ActivityScenario<MainActivity>, label: String, text: String, deadlineOverride: Long? = null) {
     val deadline = deadlineOverride ?: (SystemClock.elapsedRealtime() + 30_000L)
-    focusNativeWebView(scenario, deadlineOverride = deadline)
-    tapNativeControlOnce(scenario, label, "input,textarea", deadlineOverride = deadline)
-    val focusScript = "(()=>{const field=" + taskInputExpression(label) + ";return document.hasFocus()&&!!field&&document.activeElement===field;})()"
-    waitForCondition(scenario, focusScript, "the exact requested task input must own actual browser focus after the one native tap", deadlineOverride = deadline)
-    val before = stringValue(evaluate(scenario, "document.activeElement.value", deadlineOverride = deadline))
-    val (current, dispatch) = waitForFocusedInputConnection(scenario, focusScript, deadline, before)
-    waitForNativeEditorState(current, dispatch, before, "task_input_before", deadlineOverride = deadline)
-    assertTrue(onEditorInputThread(current, dispatch, deadlineOverride = deadline) { it.finishComposingText() })
-    assertTrue(onEditorInputThread(current, dispatch, deadlineOverride = deadline) { it.setSelection(0, before.length) })
-    waitForNativeEditorState(current, dispatch, before, "task_input_selected", 0, before.length, deadlineOverride = deadline)
-    assertTrue(onEditorInputThread(current, dispatch, deadlineOverride = deadline) { it.commitText(text, 1) })
-    waitForCondition(scenario, focusScript + "&&document.activeElement.value===" + JSONObject.quote(text), "native public input must update only the focused real task field", deadlineOverride = deadline)
-    waitForNativeEditorState(current, dispatch, text, "task_input_committed", text.length, text.length, deadlineOverride = deadline)
+    try {
+      focusNativeWebView(scenario, deadlineOverride = deadline)
+      val focusScript = "(()=>{const field=" + taskInputExpression(label) + ";return document.hasFocus()&&!!field&&document.activeElement===field;})()"
+      assertEquals("public task focus preparation must target the intended field without changing its value", "true", evaluate(scenario, "(()=>{const field=" + taskInputExpression(label) + ";if(!field||field.disabled)return false;field.focus();return document.activeElement===field;})()", deadlineOverride = deadline))
+      val before = stringValue(evaluate(scenario, "(" + taskInputExpression(label) + ").value", deadlineOverride = deadline))
+      waitForFocusedInputConnection(scenario, focusScript, deadline, before)
+      tapNativeControlOnce(scenario, label, "input,textarea", deadlineOverride = deadline)
+      waitForCondition(scenario, focusScript, "the exact requested task input must own actual browser focus after the one native tap", deadlineOverride = deadline)
+      assertEquals("focus preparation and the actual tap must preserve the field value", before, stringValue(evaluate(scenario, "document.activeElement.value", deadlineOverride = deadline)))
+      val (current, dispatch) = waitForFocusedInputConnection(scenario, focusScript, deadline, before)
+      waitForNativeEditorState(current, dispatch, before, "task_input_before", deadlineOverride = deadline)
+      assertTrue(onEditorInputThread(current, dispatch, deadlineOverride = deadline) { it.finishComposingText() })
+      assertTrue(onEditorInputThread(current, dispatch, deadlineOverride = deadline) { it.setSelection(0, before.length) })
+      waitForNativeEditorState(current, dispatch, before, "task_input_selected", 0, before.length, deadlineOverride = deadline)
+      assertTrue(onEditorInputThread(current, dispatch, deadlineOverride = deadline) { it.commitText(text, 1) })
+      waitForCondition(scenario, focusScript + "&&document.activeElement.value===" + JSONObject.quote(text), "native public input must update only the focused real task field", deadlineOverride = deadline)
+      waitForNativeEditorState(current, dispatch, text, "task_input_committed", text.length, text.length, deadlineOverride = deadline)
+    } catch (failure: Throwable) {
+      val observed = runCatching { evaluate(scenario, "(()=>{const field=" + taskInputExpression(label) + ";const active=document.activeElement;const r=field&&field.getBoundingClientRect();return {document_focus:document.hasFocus(),target_present:!!field,target_focused:!!field&&active===field,target_enabled:!!field&&!field.disabled,target_value_length:field?field.value.length:null,active_tag:active?active.nodeName:null,active_role:active?active.getAttribute('role'):null,active_label:active?active.getAttribute('aria-label'):null,active_class:active?String(active.className).slice(0,96):null,dialog_count:document.querySelectorAll('[role=dialog]').length,target_top:r?r.top:null,target_bottom:r?r.bottom:null,viewport_height:innerHeight};})()") }.getOrElse { "observation_failed:" + it.javaClass.simpleName }
+      println("s047_task_input_failure=" + JSONObject().put("control", label).put("observation", observed)); System.out.flush()
+      throw failure
+    }
   }
   private fun chooseTaskOption(scenario: ActivityScenario<MainActivity>, label: String, index: Int, expected: String) {
     val deadline = SystemClock.elapsedRealtime() + 30_000L
@@ -1192,8 +1201,12 @@ class AndroidDeliveryInstrumentedTest {
     taskKey(KeyEvent.KEYCODE_A, ctrl)
     waitForCondition(scenario, "(()=>{const n=document.querySelector('.cm-editor');return Number(n.getAttribute('data-editor-selection-from'))===0&&Number(n.getAttribute('data-editor-selection-to'))===" + original.length + ";})()", "native Select all must select the entire actual source before Copy")
     val copySelectionDeadline = SystemClock.elapsedRealtime() + 30_000L
-    val (copyConnection, copyHandler) = waitForFocusedInputConnection(scenario, "document.activeElement===document.querySelector('.cm-content')", copySelectionDeadline, original)
-    waitForNativeEditorState(copyConnection, copyHandler, original, "copy_selection", 0, original.length, copySelectionDeadline)
+    val copySnapshot = browserEditorInputSnapshot(scenario, deadlineOverride = copySelectionDeadline)
+    assertEquals("Copy preparation must retain the exact semantic source", original, copySnapshot.getString("semantic_text"))
+    val copyEditingText = copySnapshot.getString("editing_text")
+    assertTrue("Copy must exclude only the public editing representation's paragraph markers", copyEditingText.startsWith(original))
+    val (copyConnection, copyHandler) = waitForFocusedInputConnection(scenario, "document.activeElement===document.querySelector('.cm-content')", copySelectionDeadline, copyEditingText)
+    waitForNativeEditorState(copyConnection, copyHandler, copyEditingText, "copy_selection", 0, original.length, copySelectionDeadline)
     taskKey(KeyEvent.KEYCODE_C, ctrl)
     val clipboardDeadline = SystemClock.elapsedRealtime() + 30_000L
     while (clipboardText() != original && SystemClock.elapsedRealtime() < clipboardDeadline) SystemClock.sleep(100L)
@@ -2357,6 +2370,8 @@ class AndroidDeliveryInstrumentedTest {
     return output.substringBeforeLast("\nS047_SHELL_EXIT=").trim()
   }
   private fun verifyOfflineNotices(scenario: ActivityScenario<MainActivity>): JSONObject {
+    val hostedOffline = Build.VERSION.SDK_INT == 24
+    if (hostedOffline) assertEquals("API24 offline setup must come from the isolated hosted controller", "hosted_controller", InstrumentationRegistry.getArguments().getString("offlineSetup"))
     val original = listOf("airplane_mode_on", "wifi_on", "mobile_data").associateWith { checkedShell("settings get global " + it) }
     assertTrue("network settings must have recognized reversible states", original.values.all { it == "0" || it == "1" })
     val deadline = SystemClock.elapsedRealtime() + 30_000L
@@ -2372,19 +2387,16 @@ class AndroidDeliveryInstrumentedTest {
     }
     val airplaneSupported = Build.VERSION.SDK_INT >= 30
     val offlineAirplane = if (airplaneSupported) "1" else requireNotNull(original["airplane_mode_on"])
-    // Android7 Shell omits CHANGE_WIFI_STATE. Root is confined to this disposable hosted AVD fixture.
-    val wifiSetupPrefix = if (Build.VERSION.SDK_INT == 24) {
-      assertEquals("API24 Wi-Fi setup requires the actual hosted root identity", "0", checkedShell("su 0 id -u"))
-      "su 0 "
-    } else ""
-    fun wifi(value: String) { checkedShell(wifiSetupPrefix + "svc wifi " + if (value == "1") "enable" else "disable") }
+    fun wifi(value: String) { checkedShell("svc wifi " + if (value == "1") "enable" else "disable") }
     fun airplane(value: String) {
       assertTrue("airplane shell command requires API30+", airplaneSupported)
       checkedShell("cmd connectivity airplane-mode " + if (value == "1") "enable" else "disable")
     }
     try {
-      if (airplaneSupported) airplane("1")
-      wifi("0"); checkedShell("svc data disable")
+      if (!hostedOffline) {
+        if (airplaneSupported) airplane("1")
+        wifi("0"); checkedShell("svc data disable")
+      }
       awaitSettings(mapOf("airplane_mode_on" to offlineAirplane, "wifi_on" to "0", "mobile_data" to "0"),deadline,"offline")
       var offline = false
       while (SystemClock.elapsedRealtime() < deadline) {
@@ -2398,10 +2410,11 @@ class AndroidDeliveryInstrumentedTest {
       clickControl(scenario, "Offline licenses and notices")
       waitForCondition(scenario, "(()=>{const n=document.querySelector('.application-notices');return !!n&&n.textContent.length>10000&&n.textContent.includes('Apache')&&n.textContent.includes('MIT');})()", "complete native notices must work with no actual default network", deadlineOverride = deadline)
       assertTrue("offline notices must complete within the original action budget", SystemClock.elapsedRealtime() < deadline)
-      return JSONObject().put("default_network_none", true).put("shell_exit_status", 0).put("wifi_setup_identity", if (Build.VERSION.SDK_INT == 24) "hosted_root" else "shell").put("native_local_notices", true)
+      return JSONObject().put("default_network_none", true).put("shell_exit_status", 0).put("offline_setup_authority", if (hostedOffline) "hosted_controller_fixture" else "automation_shell").put("native_local_notices", true)
     } catch (failure: Throwable) { originalFailure = failure; throw failure }
     finally {
       val restored = runCatching {
+        if (hostedOffline) return@runCatching // Host campaign owns and verifies exact radio/adbd restoration.
         if (airplaneSupported) airplane(requireNotNull(original["airplane_mode_on"]))
         wifi(requireNotNull(original["wifi_on"]))
         checkedShell("svc data " + if (original["mobile_data"] == "1") "enable" else "disable")

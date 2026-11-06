@@ -60,6 +60,11 @@ class AndroidNavigationSetup(unittest.TestCase):
             shutil.copyfile(SCRIPTS/'run-android-s047-journeys.sh',directory/'run-android-s047-journeys.sh')
             helper=SCRIPTS/'android-navigation-mode.sh'
             if helper.exists():shutil.copyfile(helper,directory/helper.name)
+            # Offline controller has dedicated behavior/orchestration tests.
+            (directory/'android-offline-mode.sh').write_text('''#!/usr/bin/env bash
+set -eu
+echo "offline $1" >> "$CALLS"
+''',encoding='utf-8')
             runner=directory/'run-android-instrumentation.sh'
             runner.write_text('''#!/usr/bin/env bash
 set -eu

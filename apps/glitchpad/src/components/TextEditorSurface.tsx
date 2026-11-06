@@ -254,7 +254,6 @@ export const TextEditorSurface = forwardRef<
     const view = viewRef.current;
     if (view) closeSearchPanel(view);
     setSearchOpen(false);
-    requestAnimationFrame(() => viewRef.current?.focus());
   };
   const openLine = () => {
     const view = viewRef.current;
@@ -268,7 +267,6 @@ export const TextEditorSurface = forwardRef<
   };
   const closeLine = () => {
     setLineOpen(false);
-    requestAnimationFrame(() => viewRef.current?.focus());
   };
   const goToLine = () => {
     const view = viewRef.current;

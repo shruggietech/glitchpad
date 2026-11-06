@@ -10,12 +10,19 @@ import tempfile
 import unittest
 
 CAMPAIGN = Path(__file__).resolve().parents[1] / 'run-android-s047-journeys.sh'
+HIDDEN = getattr(subprocess,'CREATE_NO_WINDOW',0) if os.name=='nt' else 0
 class JourneyCampaign(unittest.TestCase):
-    def run_case(self, role='ordinary', api=24, fail='', navigation='explicit', diagnostic=False):
+    def run_case(self, role='ordinary', api=24, fail='', navigation='explicit', diagnostic=False, offline_fail=''):
         with tempfile.TemporaryDirectory(prefix='s047-campaign-') as directory:
             root=Path(directory); binary=root/'bin'; binary.mkdir()
             shutil.copyfile(CAMPAIGN,root/'run-android-s047-journeys.sh')
             shutil.copyfile(CAMPAIGN.parent/'android-navigation-mode.sh',root/'android-navigation-mode.sh')
+            # Controller behavior has its own real-script tests; this fixture observes orchestration.
+            (root/'android-offline-mode.sh').write_text('''#!/usr/bin/env bash
+set -eu
+echo "offline $1" >> "$CALLS"
+[[ "$OFFLINE_FAIL" != "$1" ]]
+''',encoding='utf-8')
             (root/'run-android-instrumentation.sh').write_text('''#!/usr/bin/env bash
 set -eu
 echo "$*" >> "$CALLS"
@@ -46,8 +53,8 @@ set -eu
 echo "$*" >> "$VALIDATION"
 '''} .items():
                 path=binary/name;path.write_text(script,encoding='utf-8');path.chmod(0o755)
-            env={**os.environ,'ANDROID_S047_BACK_DIAGNOSTIC':'true' if diagnostic else 'false','PATH':str(binary)+':'+os.environ['PATH'],'RUNNER_TEMP':str(root),'CALLS':str(root/'calls'),'NATIVE':str(root/'native'),'VALIDATION':str(root/'validation'),'FAIL':fail,'NAV_STATE':str(root/'navigation-state'),'NAV_INITIAL':'threebutton' if navigation=='explicit' else ''}
-            result=subprocess.run(['bash',str(root/'run-android-s047-journeys.sh'),str(api),'a'*40,role],env=env,capture_output=True,text=True,check=False)
+            env={**os.environ,'ANDROID_S047_BACK_DIAGNOSTIC':'true' if diagnostic else 'false','PATH':str(binary)+':'+os.environ['PATH'],'RUNNER_TEMP':str(root),'CALLS':str(root/'calls'),'NATIVE':str(root/'native'),'VALIDATION':str(root/'validation'),'FAIL':fail,'OFFLINE_FAIL':offline_fail,'NAV_STATE':str(root/'navigation-state'),'NAV_INITIAL':'threebutton' if navigation=='explicit' else ''}
+            result=subprocess.run(['bash',str(root/'run-android-s047-journeys.sh'),str(api),'a'*40,role],env=env,capture_output=True,text=True,check=False,stdin=subprocess.DEVNULL,creationflags=HIDDEN)
             read=lambda name:(root/name).read_text(encoding='utf-8') if (root/name).exists() else ''
             result.diagnostic_receipt=json.loads(read('s047-back-diagnostic.json')) if read('s047-back-diagnostic.json') else None
             return result,read('calls'),read('native')+'\nFINAL_NAV='+read('navigation-state').strip(),read('validation')
@@ -80,6 +87,23 @@ echo "$*" >> "$VALIDATION"
         self.assertNotIn('#s047FaultJourney',calls)
         self.assertIn('settings put system font_scale 1.0',native);self.assertIn('wm size reset',native)
         self.assertIn('--role ordinary --api 24',validation)
+    def test_api24_offline_setup_precedes_about_and_native_failure_still_restores(self):
+        for fail in ('','s047AboutJourney'):
+            result,calls,native,validation=self.run_case(fail=fail)
+            self.assertEqual(result.returncode,1 if fail else 0,result.stdout+result.stderr)
+            self.assertLess(calls.index('offline setup'),calls.index('#s047AboutJourney'))
+            self.assertLess(calls.index('#s047AboutJourney'),calls.index('offline restore'))
+            self.assertEqual(calls.count('offline restore'),1)
+            self.assertIn('-e offlineSetup hosted_controller',calls)
+    def test_api24_offline_setup_or_restore_failure_blocks_the_campaign(self):
+        for phase in ('setup','restore'):
+            result,calls,native,validation=self.run_case(offline_fail=phase)
+            self.assertEqual(result.returncode,1,result.stdout+result.stderr)
+            self.assertEqual(calls.count('offline setup'),1)
+            self.assertEqual(calls.count('offline restore'),1)
+            self.assertEqual(calls.count('#s047AboutJourney'),0 if phase=='setup' else 1)
+            self.assertIn('#draftRecoveryAcrossProcessBoundary',calls)
+            self.assertIn('wm size reset',native)
     def test_failure_does_not_skip_independent_tasks_and_seed_failure_blocks_only_dependent_verify(self):
         result,calls,native,validation=self.run_case(fail='s047ColdAddJourney')
         self.assertEqual(result.returncode,1);self.assertIn('#s047AboutJourney',calls);self.assertIn('--role ordinary',validation)
@@ -185,7 +209,7 @@ class RuntimeArgvProof {
         # through the actual JVM too; this common policy suite needs no JDK dependency.
         rows=[]
         for command,_,_ in cases:
-            result=subprocess.run(command.split(),capture_output=True,timeout=30,check=False)
+            result=subprocess.run(command.split(),capture_output=True,timeout=30,check=False,stdin=subprocess.DEVNULL,creationflags=HIDDEN)
             rows.append((str(result.returncode),result.stdout.decode('utf-8'),str(bool(result.stderr)).lower()))
         receipt=os.environ.get('S047_SHELL_JVM_RECEIPT')
         if receipt:

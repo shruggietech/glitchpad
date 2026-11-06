@@ -1090,12 +1090,11 @@ class AndroidDeliveryInstrumentedTest {
     try {
       focusNativeWebView(scenario, deadlineOverride = deadline)
       val focusScript = "(()=>{const field=" + taskInputExpression(label) + ";return document.hasFocus()&&!!field&&document.activeElement===field;})()"
-      assertEquals("public task focus preparation must target the intended field without changing its value", "true", evaluate(scenario, "(()=>{const field=" + taskInputExpression(label) + ";if(!field||field.disabled)return false;field.focus();return document.activeElement===field;})()", deadlineOverride = deadline))
-      val before = stringValue(evaluate(scenario, "(" + taskInputExpression(label) + ").value", deadlineOverride = deadline))
-      waitForFocusedInputConnection(scenario, focusScript, deadline, before)
+      val ownerReady = "(()=>{const field=" + taskInputExpression(label) + ";if(!field||field.disabled||!document.hasFocus())return false;const owner=field.closest('.task-surface[role=dialog]');return owner?owner.getAttribute('data-state')==='open'&&owner.contains(document.activeElement):!field.closest('.cm-search')&&!document.querySelector('.task-surface[role=dialog][data-state=open]');})()"
+      waitForCondition(scenario, ownerReady, "the real task must complete its own focus handoff before one native field tap", deadlineOverride = deadline)
       tapNativeControlOnce(scenario, label, "input,textarea", deadlineOverride = deadline)
       waitForCondition(scenario, focusScript, "the exact requested task input must own actual browser focus after the one native tap", deadlineOverride = deadline)
-      assertEquals("focus preparation and the actual tap must preserve the field value", before, stringValue(evaluate(scenario, "document.activeElement.value", deadlineOverride = deadline)))
+      val before = stringValue(evaluate(scenario, "document.activeElement.value", deadlineOverride = deadline))
       val (current, dispatch) = waitForFocusedInputConnection(scenario, focusScript, deadline, before)
       waitForNativeEditorState(current, dispatch, before, "task_input_before", deadlineOverride = deadline)
       assertTrue(onEditorInputThread(current, dispatch, deadlineOverride = deadline) { it.finishComposingText() })

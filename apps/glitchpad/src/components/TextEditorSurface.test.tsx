@@ -1098,3 +1098,73 @@ describe('EditContext hardware Enter ownership', () => {
     expect(EditorView.findFromDOM(input)).toBe(view);
   });
 });
+
+describe('editor task focus ownership', () => {
+  it.each([
+    { command: 'search' as const, title: 'Find and replace' },
+    { command: 'go_to_line' as const, title: 'Go to line' },
+  ])(
+    'closing $title cannot focus the background after a new task owns input',
+    async ({ command, title }) => {
+      const ref = createRef<TextEditorHandle>();
+      render(
+        <TextEditorSurface
+          ref={ref}
+          session={makeSession()}
+          onDocumentChange={vi.fn()}
+          onLanguageChange={vi.fn()}
+        />,
+      );
+      const editor = screen.getByRole('textbox', {
+        name: 'editor.ts text editor',
+      });
+      await waitFor(() =>
+        expect(editor.closest('.text-editor')).toHaveAttribute(
+          'data-performance-ready',
+          'true',
+        ),
+      );
+      act(() => {
+        expect(ref.current!.invoke(command)).toBe(true);
+      });
+      await screen.findByRole('dialog', { name: title });
+      const pending: FrameRequestCallback[] = [];
+      const frames = vi
+        .spyOn(globalThis, 'requestAnimationFrame')
+        .mockImplementation((callback) => {
+          pending.push(callback);
+          return pending.length;
+        });
+      const backgroundFocus = vi.fn();
+      try {
+        fireEvent.click(screen.getByRole('button', { name: 'Close ' + title }));
+        await waitFor(() =>
+          expect(
+            screen.queryByRole('dialog', { name: title }),
+          ).not.toBeInTheDocument(),
+        );
+        act(() => {
+          expect(ref.current!.invoke('search')).toBe(true);
+        });
+        const replace = await screen.findByRole('textbox', { name: 'Replace' });
+        await waitFor(() =>
+          expect(screen.getByRole('textbox', { name: 'Find' })).toHaveFocus(),
+        );
+        act(() => replace.focus());
+        expect(replace).toHaveFocus();
+        editor.addEventListener('focus', backgroundFocus);
+        act(() => {
+          for (const callback of pending.splice(0)) callback(performance.now());
+        });
+        expect(backgroundFocus).not.toHaveBeenCalled();
+        expect(replace).toHaveFocus();
+        expect(EditorView.findFromDOM(editor)!.state.doc.toString()).toBe(
+          'const value = 1;\n',
+        );
+      } finally {
+        editor.removeEventListener('focus', backgroundFocus);
+        frames.mockRestore();
+      }
+    },
+  );
+});

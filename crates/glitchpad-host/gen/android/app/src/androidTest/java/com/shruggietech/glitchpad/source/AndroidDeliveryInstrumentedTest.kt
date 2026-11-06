@@ -2655,7 +2655,11 @@ class AndroidDeliveryInstrumentedTest {
         val event = gestureEvent(MotionEvent.ACTION_CANCEL, startX)
         try { runCatching { instrumentation.uiAutomation.injectInputEvent(event, false) } } finally { event.recycle() }
       }
-      println("s047_predictive_input_timing=" + JSONObject().put("diagnostic_only", true).put("events", inputTiming)); System.out.flush()
+      val timingSummary = JSONObject().put("diagnostic_only", true).put("event_count", inputTiming.length())
+        .put("max_inject_ms", (0 until inputTiming.length()).maxOfOrNull { inputTiming.getJSONObject(it).getLong("inject_ms") } ?: 0L)
+        .put("first", JSONArray((0 until minOf(16, inputTiming.length())).map { inputTiming.getJSONObject(it) }))
+        .put("last", JSONArray((maxOf(16, inputTiming.length() - 4) until inputTiming.length()).map { inputTiming.getJSONObject(it) }))
+      println("s047_predictive_input_timing=" + timingSummary); System.out.flush()
       if (!completedGesture) {
         val systemUi = runCatching { checkedShell("dumpsys -t 3 activity service com.android.systemui/.SystemUIService TaskbarDelegate") }.getOrElse { "capture_unavailable:" + it.javaClass.simpleName }
         println("s047_predictive_system_ui=" + JSONObject().put("diagnostic_only", true).put("text", systemUi.take(65536))); System.out.flush()

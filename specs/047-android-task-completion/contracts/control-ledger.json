@@ -62,7 +62,7 @@
           "Alt+Shift+ArrowRight reorder"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -131,12 +131,12 @@
           "Alt+Shift+ArrowRight reorder"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
       "id": "CTRL-003",
-      "label": "Open\u2026 (menu) / Open file\u2026 (empty state) / Open (requested + menu)",
+      "label": "Open… (menu) / Open file… (empty state) / Open (requested + menu)",
       "issues": [
         249,
         "S046-integrated-retest"
@@ -146,14 +146,14 @@
       "cases": [
         {
           "id": "CTRL-003-1",
-          "label": "Open\u2026 (menu)",
+          "label": "Open… (menu)",
           "status": "pending",
           "evidence": [],
           "native_preparation": "primary_current_control_prepared"
         },
         {
           "id": "CTRL-003-2",
-          "label": "Open file\u2026 (empty state)",
+          "label": "Open file… (empty state)",
           "status": "pending",
           "evidence": [],
           "native_preparation": "primary_current_control_prepared"
@@ -206,7 +206,7 @@
           "Open (requested + menu)"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -229,7 +229,7 @@
       ],
       "candidate_status": "pending",
       "inherited_evidence": [],
-      "notes": "The report\u2019s floating+ trigger is the current Add document capability. S047 places its48px named+ trigger in compact chrome to preserve document space; wide Android retains the existing floating trigger. Choices and native delivery authority are unchanged.",
+      "notes": "The report’s floating+ trigger is the current Add document capability. S047 places its48px named+ trigger in compact chrome to preserve document space; wide Android retains the existing floating trigger. Choices and native delivery authority are unchanged.",
       "implementation_evidence": [
         {
           "scope": "shell_implemented_not_native_qualified",
@@ -267,7 +267,7 @@
           "Open (requested + menu)"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -331,7 +331,7 @@
           "Open (requested + menu)"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -392,7 +392,7 @@
           "Open (requested + menu)"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -453,7 +453,7 @@
           "Open (requested + menu)"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -508,7 +508,7 @@
           "no automatic attachments or upload"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -555,7 +555,7 @@
         "assertions": "Actual Menu destinations plus profile-specific Preferences/metadata tasks, and ordinary diagnostics native export/Share.",
         "prepared_additional_labels": [],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -602,7 +602,7 @@
         "assertions": "Actual Menu destinations plus profile-specific Preferences/metadata tasks, and ordinary diagnostics native export/Share.",
         "prepared_additional_labels": [],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -678,7 +678,7 @@
           "Alt+Shift+ArrowRight reorder"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -695,7 +695,11 @@
           "label": "Android Back",
           "status": "pending",
           "evidence": [],
-          "native_preparation": "primary_current_control_prepared"
+          "native_preparation": "primary_current_control_prepared",
+          "supplemental_evidence_refs": [
+            "ROOT_ANDROID_BACK_LIFECYCLE",
+            "ROOT_ANDROID_BACK_RESUME"
+          ]
         }
       ],
       "candidate_status": "pending",
@@ -725,7 +729,7 @@
         "assertions": "Actual IME and button Back, modal background inert, rotation preservation, real picker cancel/dirty guards; API36 positive actual native callback start/progress/cancel/commit deltas.",
         "prepared_additional_labels": [],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -780,7 +784,7 @@
           "no automatic attachments or upload"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -835,7 +839,7 @@
           "no automatic attachments or upload"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -904,7 +908,7 @@
           "no automatic attachments or upload"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -1009,7 +1013,7 @@
           "no automatic attachments or upload"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -1078,7 +1082,7 @@
           "no automatic attachments or upload"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -1171,7 +1175,7 @@
           "Alt+Shift+ArrowRight reorder"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -1284,7 +1288,7 @@
           "Alt+Shift+ArrowRight reorder"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -1346,7 +1350,7 @@
           "Alt+Shift+ArrowRight reorder"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -1464,7 +1468,7 @@
           "Alt+Shift+ArrowRight reorder"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -1540,7 +1544,7 @@
           "Alt+Shift+ArrowRight reorder"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -1682,7 +1686,7 @@
           "Control+G"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -1831,7 +1835,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -2067,7 +2071,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -2268,7 +2272,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -2391,7 +2395,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -2553,7 +2557,7 @@
           "Control+G"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -2701,7 +2705,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -2847,7 +2851,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -2964,7 +2968,7 @@
           "Control+G"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -3081,7 +3085,7 @@
           "Control+G"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -3203,12 +3207,12 @@
           "Control+G"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
       "id": "CTRL-032",
-      "label": "Zoom out (menu / Ctrl+-) / \u2212 (image toolbar) / \u2212 (diagram toolbar)",
+      "label": "Zoom out (menu / Ctrl+-) / − (image toolbar) / − (diagram toolbar)",
       "issues": [
         253
       ],
@@ -3240,7 +3244,7 @@
         },
         {
           "id": "CTRL-032-2",
-          "label": "\u2212 (image toolbar)",
+          "label": "− (image toolbar)",
           "status": "pending",
           "evidence": [],
           "native_preparation": "primary_current_control_prepared",
@@ -3260,7 +3264,7 @@
         },
         {
           "id": "CTRL-032-3",
-          "label": "\u2212 (diagram toolbar)",
+          "label": "− (diagram toolbar)",
           "status": "pending",
           "evidence": [],
           "native_preparation": "primary_current_control_prepared",
@@ -3421,7 +3425,7 @@
           "Fit-to-custom multiplicative scale"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -3666,7 +3670,7 @@
           "Fit-to-custom multiplicative scale"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -3872,7 +3876,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -3990,7 +3994,7 @@
           "pending write disables cancel"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -4015,7 +4019,7 @@
             "R2_N_METADATA"
           ],
           "supplemental_evidence_limits": [
-            "Ready JPEG More\u2192File information is now explicitly prepared. Retargeting and failed-preview facts remain lower-level assertions rather than a direct installed context proof."
+            "Ready JPEG More→File information is now explicitly prepared. Retargeting and failed-preview facts remain lower-level assertions rather than a direct installed context proof."
           ]
         },
         {
@@ -4033,7 +4037,7 @@
             "R2_N_METADATA"
           ],
           "supplemental_evidence_limits": [
-            "Ready JPEG More\u2192File information is now explicitly prepared. Retargeting and failed-preview facts remain lower-level assertions rather than a direct installed context proof."
+            "Ready JPEG More→File information is now explicitly prepared. Retargeting and failed-preview facts remain lower-level assertions rather than a direct installed context proof."
           ]
         },
         {
@@ -4049,7 +4053,7 @@
             "R2_N_METADATA"
           ],
           "supplemental_evidence_limits": [
-            "Ready JPEG More\u2192File information is now explicitly prepared. Retargeting and failed-preview facts remain lower-level assertions rather than a direct installed context proof."
+            "Ready JPEG More→File information is now explicitly prepared. Retargeting and failed-preview facts remain lower-level assertions rather than a direct installed context proof."
           ]
         },
         {
@@ -4067,7 +4071,7 @@
             "R2_N_METADATA"
           ],
           "supplemental_evidence_limits": [
-            "Ready JPEG More\u2192File information is now explicitly prepared. Retargeting and failed-preview facts remain lower-level assertions rather than a direct installed context proof."
+            "Ready JPEG More→File information is now explicitly prepared. Retargeting and failed-preview facts remain lower-level assertions rather than a direct installed context proof."
           ]
         },
         {
@@ -4080,7 +4084,7 @@
             "R2_U_APP_METADATA"
           ],
           "supplemental_evidence_limits": [
-            "Ready JPEG More\u2192File information is now explicitly prepared. Retargeting and failed-preview facts remain lower-level assertions rather than a direct installed context proof."
+            "Ready JPEG More→File information is now explicitly prepared. Retargeting and failed-preview facts remain lower-level assertions rather than a direct installed context proof."
           ]
         },
         {
@@ -4166,7 +4170,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -4262,7 +4266,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -4321,7 +4325,7 @@
           "unavailable local source feedback"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -4380,7 +4384,7 @@
           "pending write disables cancel"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -4436,7 +4440,7 @@
           "unavailable local source feedback"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -4492,7 +4496,7 @@
           "unavailable local source feedback"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -4662,7 +4666,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -4773,7 +4777,7 @@
           "Control+G"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -5040,7 +5044,7 @@
           "Control+G"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -5221,7 +5225,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -5337,7 +5341,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -5473,7 +5477,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -5625,7 +5629,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -5761,7 +5765,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -5902,7 +5906,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -6043,7 +6047,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -6184,7 +6188,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -6351,7 +6355,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -6504,7 +6508,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -6680,7 +6684,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -6819,7 +6823,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -6977,7 +6981,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -7163,7 +7167,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -7249,7 +7253,7 @@
           "unavailable local source feedback"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -7375,7 +7379,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -7485,7 +7489,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -7611,7 +7615,7 @@
           "contained failure retry"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -7791,7 +7795,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -7930,7 +7934,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -8050,7 +8054,7 @@
           "Fit-to-pan scale continuity"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -8150,7 +8154,7 @@
           "Fit-to-pan scale continuity"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -8215,7 +8219,7 @@
           "Fit-to-pan scale continuity"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -8281,7 +8285,7 @@
           "Fit-to-pan scale continuity"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -8346,7 +8350,7 @@
           "Fit-to-pan scale continuity"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -8411,7 +8415,7 @@
           "Fit-to-pan scale continuity"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -8563,7 +8567,7 @@
           "Fit-to-pan scale continuity"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -8686,7 +8690,7 @@
           "deterministic refusal no identical retry"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -8776,7 +8780,7 @@
           "deterministic refusal no identical retry"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -8925,7 +8929,7 @@
           "deterministic refusal no identical retry"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -8951,7 +8955,7 @@
             "R2_N_SECONDARY"
           ],
           "supplemental_evidence_limits": [
-            "The unit transitions Dark\u2192Light\u2192Checkerboard and asserts actual viewport class/state for each. The native helper chooses Checkerboard first when it is the default, then Light and Dark. No independent painted-background pixel readback is claimed."
+            "The unit transitions Dark→Light→Checkerboard and asserts actual viewport class/state for each. The native helper chooses Checkerboard first when it is the default, then Light and Dark. No independent painted-background pixel readback is claimed."
           ]
         },
         {
@@ -8967,7 +8971,7 @@
             "R2_N_SECONDARY"
           ],
           "supplemental_evidence_limits": [
-            "The unit transitions Dark\u2192Light\u2192Checkerboard and asserts actual viewport class/state for each. The native helper chooses Checkerboard first when it is the default, then Light and Dark. No independent painted-background pixel readback is claimed."
+            "The unit transitions Dark→Light→Checkerboard and asserts actual viewport class/state for each. The native helper chooses Checkerboard first when it is the default, then Light and Dark. No independent painted-background pixel readback is claimed."
           ]
         },
         {
@@ -8983,7 +8987,7 @@
             "R2_N_SECONDARY"
           ],
           "supplemental_evidence_limits": [
-            "The unit transitions Dark\u2192Light\u2192Checkerboard and asserts actual viewport class/state for each. The native helper chooses Checkerboard first when it is the default, then Light and Dark. No independent painted-background pixel readback is claimed."
+            "The unit transitions Dark→Light→Checkerboard and asserts actual viewport class/state for each. The native helper chooses Checkerboard first when it is the default, then Light and Dark. No independent painted-background pixel readback is claimed."
           ]
         },
         {
@@ -9001,7 +9005,7 @@
             "R2_N_SECONDARY"
           ],
           "supplemental_evidence_limits": [
-            "The unit transitions Dark\u2192Light\u2192Checkerboard and asserts actual viewport class/state for each. The native helper chooses Checkerboard first when it is the default, then Light and Dark. No independent painted-background pixel readback is claimed."
+            "The unit transitions Dark→Light→Checkerboard and asserts actual viewport class/state for each. The native helper chooses Checkerboard first when it is the default, then Light and Dark. No independent painted-background pixel readback is claimed."
           ]
         }
       ],
@@ -9047,7 +9051,7 @@
           "deterministic refusal no identical retry"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -9236,7 +9240,7 @@
           "deterministic refusal no identical retry"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -9348,7 +9352,7 @@
           "selection survives tool disclosure"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -9436,7 +9440,7 @@
           "selection survives tool disclosure"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -9524,7 +9528,7 @@
           "selection survives tool disclosure"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -9641,7 +9645,7 @@
           "selection survives tool disclosure"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -9742,7 +9746,7 @@
           "selection survives tool disclosure"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -9867,7 +9871,7 @@
           "original ICO unchanged"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -10013,7 +10017,7 @@
           "deterministic refusal no identical retry"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -10103,7 +10107,7 @@
           "exact displayed section clipboard"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -10193,7 +10197,7 @@
           "exact displayed section clipboard"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -10334,7 +10338,7 @@
           "exact displayed section clipboard"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -10448,7 +10452,7 @@
           "exact displayed section clipboard"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -10574,7 +10578,7 @@
           "exact displayed section clipboard"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -10676,7 +10680,7 @@
           "exact displayed section clipboard"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -10795,7 +10799,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -10939,7 +10943,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -11092,7 +11096,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -11247,7 +11251,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -11334,7 +11338,7 @@
           "collapse observation"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -11472,7 +11476,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -11600,7 +11604,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -11724,7 +11728,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -11849,7 +11853,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -12001,7 +12005,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -12150,12 +12154,12 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
       "id": "CTRL-100",
-      "label": "Editor font size field (8\u201372)",
+      "label": "Editor font size field (8–72)",
       "issues": [
         253
       ],
@@ -12164,7 +12168,7 @@
       "cases": [
         {
           "id": "CTRL-100-1",
-          "label": "Editor font size field (8\u201372)",
+          "label": "Editor font size field (8–72)",
           "status": "pending",
           "evidence": [],
           "native_preparation": "primary_current_control_prepared",
@@ -12322,12 +12326,12 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
       "id": "CTRL-101",
-      "label": "Tab width field (1\u201316)",
+      "label": "Tab width field (1–16)",
       "issues": [
         253
       ],
@@ -12336,7 +12340,7 @@
       "cases": [
         {
           "id": "CTRL-101-1",
-          "label": "Tab width field (1\u201316)",
+          "label": "Tab width field (1–16)",
           "status": "pending",
           "evidence": [],
           "native_preparation": "primary_current_control_prepared",
@@ -12492,7 +12496,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -12635,7 +12639,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -12801,7 +12805,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -12992,7 +12996,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -13093,7 +13097,7 @@
           "pending write disables cancel"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -13169,7 +13173,7 @@
           "pending write disables cancel"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -13242,7 +13246,7 @@
           "pending write disables cancel"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -13294,7 +13298,7 @@
           "recover persisted exact draft"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -13347,7 +13351,7 @@
           "decide later retains recovery record"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -13400,7 +13404,7 @@
           "decide later retains recovery record"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -13473,7 +13477,7 @@
           "handoff distinct from delivery"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -13554,7 +13558,7 @@
           "handoff distinct from delivery"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -13625,7 +13629,7 @@
           "handoff distinct from delivery"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -13709,7 +13713,7 @@
           "handoff distinct from delivery"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -13756,7 +13760,7 @@
         "assertions": "Owner-classified legacy generated CommandBar is not mounted; no native interactive case. Source/actual-app structural checks owned by root.",
         "prepared_additional_labels": [],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     },
     {
@@ -13816,7 +13820,7 @@
           "Incomplete task readonly"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+        "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
       }
     }
   ],
@@ -13924,7 +13928,7 @@
       "path": "apps/glitchpad/src/components/ImageSurface.test.tsx",
       "line": 903,
       "source_sha256": "c32cf7bcf2f562ee02180968f55d7f0bb67a882bb8d94109e3d2bad386fb43ed",
-      "effect": "Keyboard plus reaches125percent, repeated ArrowRight clamps pan, zero fits, and actual Dark\u2192Light\u2192Checkerboard transitions change the viewport class and state.",
+      "effect": "Keyboard plus reaches125percent, repeated ArrowRight clamps pan, zero fits, and actual Dark→Light→Checkerboard transitions change the viewport class and state.",
       "limit": "",
       "anchor": "it('renders inert image and supports keyboard zoom, pan recovery, fit, and background', async () => {"
     },
@@ -14103,7 +14107,7 @@
       "kind": "native_prepared_not_executed",
       "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
       "line": 1985,
-      "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1",
+      "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6",
       "effect": "The native image journey prepares real provider SVG outcomes and source-read Retry, image local/menu/Ctrl zoom aliases, key pan, native gestures, Actual size, Reset and Fit.",
       "limit": "Fresh ordinary/fault candidate receipts for API24/API36 remain required; source and compiled instrumentation are not runtime proof.",
       "anchor": "@Test fun s047ImageJourney() {"
@@ -14112,7 +14116,7 @@
       "kind": "native_prepared_not_executed",
       "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
       "line": 1844,
-      "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1",
+      "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6",
       "effect": "The current native helper explicitly prepares standalone and embedded local plus/minus, standalone global menu plus/minus, header-focused global Ctrl-minus/plus, embedded canvas Ctrl-minus/plus, bare Equals, ArrowLeft, native drag, four signed Pan controls, Actual size, Reset and Fit.",
       "limit": "These are current native source preparations. Only exact installed-candidate receipts establish that these aliases executed. Other owner is compiling the final native source.",
       "anchor": "private fun verifyS047DiagramRoutes(scenario: ActivityScenario<MainActivity>, selector: String, standalone: Boolean) {"
@@ -14121,7 +14125,7 @@
       "kind": "native_prepared_not_executed",
       "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
       "line": 1805,
-      "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1",
+      "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6",
       "effect": "The native More helper prepares live measured Fit, Zoom factors1.25and0.8, same document/source, GIF frame3 and Dark retention, and standalone/embedded routes.",
       "limit": "",
       "anchor": "private fun verifyS047MoreViewportActions(scenario:ActivityScenario<MainActivity>,selector:String,kind:String) {"
@@ -14130,7 +14134,7 @@
       "kind": "native_prepared_not_executed",
       "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
       "line": 1907,
-      "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1",
+      "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6",
       "effect": "The native secondary helper prepares Checkerboard/Light/Dark selector state, invalid and valid frame drafts, Previous3to2 and Next2to3, conditional Play/Pause receipts, and Reset retention for GIF frame3/Dark and ICO entry1/Light.",
       "limit": "Previous/Next start paused; first/last disabled bounds are not asserted. Background choices assert viewport state, not independent painted-background pixel readback. Playback branch depends on the actual reduced-motion receipt.",
       "anchor": "private fun verifyS047SecondaryImageTasks(scenario: ActivityScenario<MainActivity>): JSONObject {"
@@ -14139,7 +14143,7 @@
       "kind": "native_prepared_not_executed",
       "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
       "line": 1965,
-      "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1",
+      "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6",
       "effect": "More image File information opens actual JPEG Exif observations; individual disclosures open and close and original provider bytes remain unchanged.",
       "limit": "Ready JPEG context only; not failed-preview metadata or retargeting while the inspector remains open.",
       "anchor": "private fun verifyS047EmbeddedMetadata(scenario: ActivityScenario<MainActivity>) {"
@@ -14147,8 +14151,8 @@
     "R2_N_EXPORT": {
       "kind": "native_prepared_not_executed",
       "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-      "line": 3437,
-      "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1",
+      "line": 3441,
+      "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6",
       "effect": "The native helper prepares chooser cancellation, original-destination refusal, selected DIB1 PNG export with independent4x3 pixel readback, nonempty/misreported conflicts and unchanged original ICO.",
       "limit": "No mid-write or partial provider I/O error is injected. Pre-write refusal cannot qualify failed write.",
       "anchor": "private fun verifySelectedIconExport(scenario: ActivityScenario<MainActivity>, original: Uri, before: ByteArray) {"
@@ -14157,7 +14161,7 @@
       "kind": "native_prepared_not_executed_fault_role",
       "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
       "line": 2466,
-      "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1",
+      "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6",
       "effect": "In the compiled fault role, one actual absent native command produces host_transport; Retry then uses the actual native renderer.",
       "limit": "Fault-probe candidate only; ordinary production absence is a separate qualification.",
       "anchor": "injectRecoveryFailure(scenario, \"host\")"
@@ -16687,7 +16691,7 @@
           "test": "it('retains empty numeric drafts and commits only supported integer values', () => {"
         }
       ],
-      "effect": "Editor font size field (8\u201372)",
+      "effect": "Editor font size field (8–72)",
       "limit": "Specific component/unit behavior; installed candidate status remains separate."
     },
     "US4_BROWSER_CTRL-100-1": {
@@ -16696,7 +16700,7 @@
         ".codex-tmp/s047/us4-modern-matrix-r26.json",
         ".codex-tmp/s047/us4-legacy-matrix-r26.json"
       ],
-      "effect": "Editor font size field (8\u201372)",
+      "effect": "Editor font size field (8–72)",
       "limit": "Browser emptyfontdraft/24commit. Components emptydraft/20commit and7/73/12.5invalidretention; exact8/72boundary uses explicit nativepreparation."
     },
     "US4_UNIT_CTRL-100-case-2": {
@@ -16753,7 +16757,7 @@
           "test": "it('retains empty numeric drafts and commits only supported integer values', () => {"
         }
       ],
-      "effect": "Tab width field (1\u201316)",
+      "effect": "Tab width field (1–16)",
       "limit": "Specific component/unit behavior; installed candidate status remains separate."
     },
     "US4_UNIT_CTRL-101-case-2": {
@@ -17092,7 +17096,7 @@
           "assertion": "Ctrl+A then actualCtrl+C copies exact selectedsource; menuCopy independently matches at1011. Selectionisallsource, not a partial range.",
           "scope": "exact_effect",
           "execution": "prepared_not_executed",
-          "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+          "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
         }
       ],
       "limits": [],
@@ -17133,7 +17137,7 @@
           "assertion": "Ctrl+A then actualCtrl+C copies exact selectedsource; menuCopy independently matches at1011. Selectionisallsource, not a partial range.",
           "scope": "exact_effect",
           "execution": "prepared_not_executed",
-          "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+          "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
         }
       ],
       "limits": [
@@ -17360,7 +17364,7 @@
           "assertion": "ActualCtrl+F must expose actualFindinput before realquerytyping.",
           "scope": "exact_effect",
           "execution": "prepared_not_executed",
-          "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+          "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
         }
       ],
       "limits": [],
@@ -17489,7 +17493,7 @@
           "line": 240,
           "test_line": 217,
           "source_line": "const find = screen.getByRole('button', { name: 'Find next' });",
-          "assertion": "LargeFindnext advancesactualboundedsource through Match1of2\u21922of2\u21921of2.",
+          "assertion": "LargeFindnext advancesactualboundedsource through Match1of2→2of2→1of2.",
           "scope": "exact_effect",
           "execution": "owned_unit_gate_passed"
         },
@@ -17540,7 +17544,7 @@
           "assertion": "Each keyboard, menu and CodeMirror panel Find next/previous route prepares an exact controlled selection assertion; all routes retain source bytes.",
           "scope": "exact_alias_selection_prepared",
           "execution": "prepared_not_executed",
-          "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+          "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
         }
       ],
       "limits": [
@@ -17580,7 +17584,7 @@
           "line": 1294,
           "test_line": 1263,
           "source_line": "expect(activeText()).toBe(expected);",
-          "assertion": "Twoactualparagraphmatches: Next2of2/second\u2192wrap1of2/first; Previouswrap2of2/second\u21921of2/first; providerfind_next/find_previous repeatexactparagraphmovement.",
+          "assertion": "Twoactualparagraphmatches: Next2of2/second→wrap1of2/first; Previouswrap2of2/second→1of2/first; providerfind_next/find_previous repeatexactparagraphmovement.",
           "scope": "exact_effect",
           "execution": "owned_unit_gate_passed"
         }
@@ -17625,7 +17629,7 @@
           "assertion": "Renderedcatsquery is1of1 thenNext/Previous/Close areclicked. Thisfixture cannot distinguish movement amongmultiplematches.",
           "scope": "activation_one_match_only",
           "execution": "prepared_not_executed",
-          "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+          "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
         }
       ],
       "limits": [
@@ -17710,7 +17714,7 @@
           "assertion": "NativeCMNext/Previous buttons areactivated before Selectallmatches checks; no independent per-button selectiondelta here.",
           "scope": "activation_only",
           "execution": "prepared_not_executed",
-          "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+          "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
         }
       ],
       "limits": [
@@ -17750,7 +17754,7 @@
           "line": 240,
           "test_line": 217,
           "source_line": "const find = screen.getByRole('button', { name: 'Find next' });",
-          "assertion": "LargeFindnext advancesactualboundedsource through Match1of2\u21922of2\u21921of2.",
+          "assertion": "LargeFindnext advancesactualboundedsource through Match1of2→2of2→1of2.",
           "scope": "exact_effect",
           "execution": "owned_unit_gate_passed"
         }
@@ -17814,7 +17818,7 @@
           "assertion": "Each keyboard, menu and CodeMirror panel Find next/previous route prepares an exact controlled selection assertion; all routes retain source bytes.",
           "scope": "exact_alias_selection_prepared",
           "execution": "prepared_not_executed",
-          "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+          "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
         }
       ],
       "limits": [
@@ -17876,7 +17880,7 @@
           "assertion": "Each keyboard, menu and CodeMirror panel Find next/previous route prepares an exact controlled selection assertion; all routes retain source bytes.",
           "scope": "exact_alias_selection_prepared",
           "execution": "prepared_not_executed",
-          "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+          "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
         }
       ],
       "limits": [
@@ -17961,7 +17965,7 @@
           "assertion": "NativeCMNext/Previous buttons areactivated before Selectallmatches checks; no independent per-button selectiondelta here.",
           "scope": "activation_only",
           "execution": "prepared_not_executed",
-          "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+          "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
         }
       ],
       "limits": [
@@ -18001,7 +18005,7 @@
           "line": 1294,
           "test_line": 1263,
           "source_line": "expect(activeText()).toBe(expected);",
-          "assertion": "Twoactualparagraphmatches: Next2of2/second\u2192wrap1of2/first; Previouswrap2of2/second\u21921of2/first; providerfind_next/find_previous repeatexactparagraphmovement.",
+          "assertion": "Twoactualparagraphmatches: Next2of2/second→wrap1of2/first; Previouswrap2of2/second→1of2/first; providerfind_next/find_previous repeatexactparagraphmovement.",
           "scope": "exact_effect",
           "execution": "owned_unit_gate_passed"
         }
@@ -18046,7 +18050,7 @@
           "assertion": "Renderedcatsquery is1of1 thenNext/Previous/Close areclicked. Thisfixture cannot distinguish movement amongmultiplematches.",
           "scope": "activation_one_match_only",
           "execution": "prepared_not_executed",
-          "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+          "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
         }
       ],
       "limits": [
@@ -18086,7 +18090,7 @@
           "line": 240,
           "test_line": 217,
           "source_line": "const find = screen.getByRole('button', { name: 'Find next' });",
-          "assertion": "LargeFindnext advancesactualboundedsource through Match1of2\u21922of2\u21921of2.",
+          "assertion": "LargeFindnext advancesactualboundedsource through Match1of2→2of2→1of2.",
           "scope": "exact_effect",
           "execution": "owned_unit_gate_passed"
         }
@@ -18131,7 +18135,7 @@
           "assertion": "Each keyboard, menu and CodeMirror panel Find next/previous route prepares an exact controlled selection assertion; all routes retain source bytes.",
           "scope": "exact_alias_selection_prepared",
           "execution": "prepared_not_executed",
-          "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+          "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
         }
       ],
       "limits": [
@@ -18171,7 +18175,7 @@
           "line": 1294,
           "test_line": 1263,
           "source_line": "expect(activeText()).toBe(expected);",
-          "assertion": "Twoactualparagraphmatches: Next2of2/second\u2192wrap1of2/first; Previouswrap2of2/second\u21921of2/first; providerfind_next/find_previous repeatexactparagraphmovement.",
+          "assertion": "Twoactualparagraphmatches: Next2of2/second→wrap1of2/first; Previouswrap2of2/second→1of2/first; providerfind_next/find_previous repeatexactparagraphmovement.",
           "scope": "exact_effect",
           "execution": "owned_unit_gate_passed"
         }
@@ -18216,7 +18220,7 @@
           "assertion": "Renderedcatsquery is1of1 thenNext/Previous/Close areclicked. Thisfixture cannot distinguish movement amongmultiplematches.",
           "scope": "activation_one_match_only",
           "execution": "prepared_not_executed",
-          "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+          "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
         }
       ],
       "limits": [
@@ -18259,7 +18263,7 @@
           "assertion": "NativeCMNext/Previous buttons areactivated before Selectallmatches checks; no independent per-button selectiondelta here.",
           "scope": "activation_only",
           "execution": "prepared_not_executed",
-          "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+          "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
         },
         {
           "kind": "native_preparation",
@@ -18270,7 +18274,7 @@
           "assertion": "Each keyboard, menu and CodeMirror panel Find next/previous route prepares an exact controlled selection assertion; all routes retain source bytes.",
           "scope": "exact_alias_selection_prepared",
           "execution": "prepared_not_executed",
-          "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+          "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
         }
       ],
       "limits": [
@@ -18313,7 +18317,7 @@
           "assertion": "Each keyboard, menu and CodeMirror panel Find next/previous route prepares an exact controlled selection assertion; all routes retain source bytes.",
           "scope": "exact_alias_selection_prepared",
           "execution": "prepared_not_executed",
-          "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+          "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
         }
       ],
       "limits": [
@@ -18356,7 +18360,7 @@
           "assertion": "Each keyboard, menu and CodeMirror panel Find next/previous route prepares an exact controlled selection assertion; all routes retain source bytes.",
           "scope": "exact_alias_selection_prepared",
           "execution": "prepared_not_executed",
-          "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+          "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
         }
       ],
       "limits": [
@@ -18399,7 +18403,7 @@
           "assertion": "NativeCMNext/Previous buttons areactivated before Selectallmatches checks; no independent per-button selectiondelta here.",
           "scope": "activation_only",
           "execution": "prepared_not_executed",
-          "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+          "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
         },
         {
           "kind": "native_preparation",
@@ -18410,7 +18414,7 @@
           "assertion": "Each keyboard, menu and CodeMirror panel Find next/previous route prepares an exact controlled selection assertion; all routes retain source bytes.",
           "scope": "exact_alias_selection_prepared",
           "execution": "prepared_not_executed",
-          "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+          "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
         }
       ],
       "limits": [
@@ -18450,7 +18454,7 @@
           "line": 1294,
           "test_line": 1263,
           "source_line": "expect(activeText()).toBe(expected);",
-          "assertion": "Twoactualparagraphmatches: Next2of2/second\u2192wrap1of2/first; Previouswrap2of2/second\u21921of2/first; providerfind_next/find_previous repeatexactparagraphmovement.",
+          "assertion": "Twoactualparagraphmatches: Next2of2/second→wrap1of2/first; Previouswrap2of2/second→1of2/first; providerfind_next/find_previous repeatexactparagraphmovement.",
           "scope": "exact_effect",
           "execution": "owned_unit_gate_passed"
         }
@@ -18495,7 +18499,7 @@
           "assertion": "Renderedcatsquery is1of1 thenNext/Previous/Close areclicked. Thisfixture cannot distinguish movement amongmultiplematches.",
           "scope": "activation_one_match_only",
           "execution": "prepared_not_executed",
-          "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+          "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
         }
       ],
       "limits": [
@@ -18724,7 +18728,7 @@
           "assertion": "ActualCtrl+G opensrealvalidatedlinetask; menuGo route+invalid999/valid2/cancel alsoinEditorAndPreferences.",
           "scope": "exact_effect",
           "execution": "prepared_not_executed",
-          "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+          "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
         }
       ],
       "limits": [],
@@ -18780,7 +18784,7 @@
           "assertion": "ActualCtrl+G opensrealvalidatedlinetask; menuGo route+invalid999/valid2/cancel alsoinEditorAndPreferences.",
           "scope": "exact_effect",
           "execution": "prepared_not_executed",
-          "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+          "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
         }
       ],
       "limits": [],
@@ -18985,7 +18989,7 @@
           "assertion": "Fault-buildonly worker/parser/projection journey opensactualAPKrenderedfallback, exactretainedsource andrealRetry; no normalbuildactivation claim.",
           "scope": "exact_effect",
           "execution": "prepared_not_executed",
-          "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+          "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
         }
       ],
       "limits": [
@@ -19024,7 +19028,7 @@
           "assertion": "Fault-buildonly worker/parser/projection journey opensactualAPKrenderedfallback, exactretainedsource andrealRetry; no normalbuildactivation claim.",
           "scope": "exact_effect",
           "execution": "prepared_not_executed",
-          "source_sha256": "95d94c479fb31e268720c085e352f82cba8bce8438bdc983ebbb607e7e7e33a1"
+          "source_sha256": "6a84a78ded5cdf2fa069dbd9b1490fd2301a48c9767381e30d1abd50693ccbd6"
         }
       ],
       "limits": [
@@ -19202,6 +19206,26 @@
       "effect": "An unloaded frame cannot advance playback; its unchanged duration starts only after its actual image load.",
       "execution": "s047-pause-display-green:34tests_passed",
       "limit": "Controlled React decoder/timer evidence; fresh installed candidate confirmation remains required."
+    },
+    "ROOT_ANDROID_BACK_LIFECYCLE": {
+      "kind": "androidx_lifecycle_unit_passed",
+      "path": "crates/glitchpad-android-source/android/src/test/java/com/shruggietech/glitchpad/source/AndroidBackOwnershipTest.kt",
+      "line": 32,
+      "anchor": "fun sourceOwnsPredictiveCallbacksAfterFrameworkLifecycleActivation()",
+      "source_sha256": "0453fb4554d1785f203f7063bd1d886fa7cafdb3bf328b6e52bb600d7542715e",
+      "effect": "Pinned AndroidX lifecycle activation preserves the existing source callback as the recipient of predictive start, progress, cancellation and one committed event.",
+      "execution": "s047-r10-lifecycle-green-sdk:29_native_unit_tests_passed",
+      "limit": "Real pinned AndroidX dispatcher/LifecycleRegistry JVM contract. Installed gesture and application state preservation still require their actual candidate receipts."
+    },
+    "ROOT_ANDROID_BACK_RESUME": {
+      "kind": "androidx_lifecycle_unit_passed",
+      "path": "crates/glitchpad-android-source/android/src/test/java/com/shruggietech/glitchpad/source/AndroidBackOwnershipTest.kt",
+      "line": 43,
+      "anchor": "fun stopResumeAndDestroyPreserveOneOwnedRouteAndFallback()",
+      "source_sha256": "0453fb4554d1785f203f7063bd1d886fa7cafdb3bf328b6e52bb600d7542715e",
+      "effect": "The existing route is inactive after stop, regains priority on resume, delegates when explicitly disabled and is removed on destroy.",
+      "execution": "s047-r10-lifecycle-green-sdk:29_native_unit_tests_passed",
+      "limit": "Real pinned AndroidX dispatcher/LifecycleRegistry JVM contract. Installed gesture and application state preservation still require their actual candidate receipts."
     }
   },
   "local_candidate_note": "Review round 1 corrections are locally prepared. The current 119-row / 459-case ledger retains all installed statuses pending fresh exact-head ordinary and fault-probe qualification on API 24 and API 36. Local source/unit/browser checks and older APK receipts remain separate."

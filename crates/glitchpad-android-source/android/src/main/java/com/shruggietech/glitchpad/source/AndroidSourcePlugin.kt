@@ -525,7 +525,7 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
       }
     }
     backCallback = callback
-    owner.onBackPressedDispatcher.addCallback(callback)
+    registerAndroidBackCallback(owner, callback)
   }
 
   @Command

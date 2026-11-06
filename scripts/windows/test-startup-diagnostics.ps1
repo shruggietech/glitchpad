@@ -93,3 +93,38 @@ $receipt = New-PortableStartupDiagnostic -Observation $observation -Scenario edi
 if (-not $receipt.document_action.foreground_before_menu -or $receipt.document_action.foreground_at_click -or $null -eq $receipt.document_action.foreground_at_click) { throw 'Observed foreground ownership was not retained.' }
 if (($receipt | ConvertTo-Json -Depth 4 -Compress) -match 'private_handle|private-native-handle') { throw 'Foreground observation exposed non-allowlisted input.' }
 Write-Output 'Production readiness and foreground diagnostic contract tests passed.'
+
+$action = @{ phase = 'click_dispatched'; editor_menu_closed = $true; editor_focus_requested = $true; editor_focus_observed = $false; editor_has_keyboard_focus = $false; editor_foreground = $true; editor_observation_stale = $true; focused_name = 'private-document'; private_handle = 'private-handle' }
+foreach ($focusStage in @('editor_focus_wait', 'editor_focus_ready')) {
+    $receipt = New-PortableStartupDiagnostic -Observation $observation -Scenario editable -Stage $focusStage -SourceCommit ('a' * 40) -ManifestDigest ('b' * 64) -Succeeded $false -ElapsedMilliseconds 10000 -WaitKind editor_focus -WaitCallerLine 480 -DocumentAction $action
+    if ($receipt.readiness_wait.function -cne 'Wait-EditorNativeFocus' -or $receipt.readiness_wait.caller_line -ne 480) { throw 'Editor focus caller observation is missing.' }
+    if (-not $receipt.document_action.editor_menu_closed -or -not $receipt.document_action.editor_focus_requested -or $null -eq $receipt.document_action.editor_focus_observed -or $receipt.document_action.editor_focus_observed -or $receipt.document_action.editor_has_keyboard_focus -or -not $receipt.document_action.editor_foreground -or -not $receipt.document_action.editor_observation_stale) { throw 'Editor focus true/false observations changed.' }
+    if (($receipt | ConvertTo-Json -Depth 5 -Compress) -match 'private-document|private-handle|focused_name|private_handle') { throw 'Editor focus diagnostics exposed content.' }
+}
+Write-Output 'Native editor focus diagnostic contract tests passed.'
+
+# Failure diagnostics must preserve the original action exception.
+$saveDefinition = $driverAst.Find({ param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq 'Save-StartupDiagnostic' }, $true)
+. ([scriptblock]::Create($saveDefinition.Extent.Text))
+$originalDiagnostic = (Get-Item Function:New-PortableStartupDiagnostic).ScriptBlock
+$manifestSourceCommit = 'a' * 40; $manifestDigest = 'b' * 64
+$startupDiagnostics = [Collections.Generic.List[object]]::new()
+$script:readinessStage = 'editor_focus_wait'; $script:readinessWaitKind = 'editor_focus'; $script:readinessWaitCallerLine = 480
+$script:documentActionObservation = $action; $script:recoveryObservation = $null
+try {
+    Set-Item Function:New-PortableStartupDiagnostic -Value { throw 'synthetic_diagnostic_failure' }
+    $originalPreserved = $false
+    try {
+        try { throw 'synthetic_action_failure' }
+        finally { Save-StartupDiagnostic ([Diagnostics.Process]::GetCurrentProcess()) editable ([Diagnostics.Stopwatch]::StartNew()) $false }
+    } catch {
+        if ($_.Exception.Message -cne 'synthetic_action_failure') { throw }
+        $originalPreserved = $true
+    }
+    if (-not $originalPreserved) { throw 'Original action failure was swallowed.' }
+    $successDiagnosticFailed = $false
+    try { Save-StartupDiagnostic ([Diagnostics.Process]::GetCurrentProcess()) editable ([Diagnostics.Stopwatch]::StartNew()) $true }
+    catch { if ($_.Exception.Message -cne 'synthetic_diagnostic_failure') { throw }; $successDiagnosticFailed = $true }
+    if (-not $successDiagnosticFailed) { throw 'A successful scenario hid a diagnostic failure.' }
+} finally { Set-Item Function:New-PortableStartupDiagnostic -Value $originalDiagnostic }
+Write-Output 'Original action failure preservation tests passed.'

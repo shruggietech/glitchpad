@@ -45,7 +45,7 @@
     "check:android-package": "node --test scripts/check-android-package.test.mjs scripts/android/assemble-package.test.mjs && node scripts/check-android-package.mjs --source-manifest crates/glitchpad-host/gen/android/app/src/main/AndroidManifest.xml",
     "check:linux-package": "node --test scripts/lib/package-document-workflow.test.mjs scripts/check-linux-package.test.mjs scripts/linux/assemble-package.test.mjs scripts/linux/test-package-lifecycle.test.mjs scripts/linux/thin-appimage.test.mjs && node scripts/check-linux-package.mjs",
     "check:macos-package": "node --test scripts/lib/package-document-workflow.test.mjs scripts/check-macos-package.test.mjs scripts/macos/assemble-package.test.mjs scripts/macos/test-package-lifecycle.test.mjs scripts/macos/startup-sampler.test.mjs scripts/macos/compare-startup.test.mjs && node scripts/check-macos-package.mjs",
-    "check:windows-package": "node --test scripts/check-windows-package.test.mjs && node scripts/check-windows-package.mjs",
+    "check:windows-package": "node --test scripts/check-windows-package.test.mjs && pwsh -NoLogo -NoProfile -NonInteractive -File scripts/windows/test-startup-diagnostics.ps1 && node scripts/check-windows-package.mjs",
     "check:community-release": "node --test scripts/check-community-release.test.mjs scripts/assemble-community-release.test.mjs scripts/promote-community-package.test.mjs && node scripts/check-community-release.mjs",
     "check:frontend": "pnpm --filter @shruggietech/glitchpad check",
     "check:site": "pnpm --filter @shruggietech/glitchpad-site check",

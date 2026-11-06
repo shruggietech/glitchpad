@@ -82,7 +82,13 @@ function Save-StartupDiagnostic([Diagnostics.Process] $Process, [string] $Scenar
         }
         $observation.process_state_available = $true
     } catch { }
+    try {
     $record = New-PortableStartupDiagnostic -Observation $observation -Scenario $Scenario -Stage $script:readinessStage -SourceCommit $manifestSourceCommit -ManifestDigest $manifestDigest -Succeeded $Succeeded -ElapsedMilliseconds $Clock.ElapsedMilliseconds -WaitKind $script:readinessWaitKind -WaitCallerLine $script:readinessWaitCallerLine -DocumentAction $(if ($Scenario -eq 'editable') { $script:documentActionObservation } else { $null }) -RecoveryObservation $(if ($Scenario -eq 'recovery') { $script:recoveryObservation } else { $null })
+    } catch {
+        if ($Succeeded) { throw }
+        Write-Warning 'portable_startup_diagnostic_capture_failed'
+        return
+    }
     $startupDiagnostics.Add($record)
     [IO.File]::WriteAllText([IO.Path]::GetFullPath("$Receipt.startup.json"), (ConvertTo-Json -InputObject @($startupDiagnostics.ToArray()) -Depth 5) + [Environment]::NewLine, [Text.UTF8Encoding]::new($false))
 }
@@ -429,41 +435,58 @@ function Invoke-DocumentCommand([Diagnostics.Process] $Process, [string] $Name, 
 function Wait-EditorNativeFocus([Diagnostics.Process] $Process, [string] $EditorName) {
     $deadline = [DateTimeOffset]::UtcNow.AddSeconds(10)
     $focusRequested = $false
+    $readyEditor = $null
+    $readySamples = 0
     $consecutiveFocused = 0
     $script:readinessStage = 'editor_focus_wait'
     $script:readinessWaitKind = 'editor_focus'
     $script:readinessWaitCallerLine = $MyInvocation.ScriptLineNumber
     do {
-        $window = Get-WindowRoot $Process
-        $menu = if ($window) { Find-DocumentToolsMenu $window } else { $null }
-        $menuClosed = -not $menu -or $menu.Current.IsOffscreen
-        $script:documentActionObservation['editor_menu_closed'] = $menuClosed
-        if ($window -and $menuClosed) {
-            $editor = Find-NamedElement $window $EditorName
-            if ($editor -and $editor.Current.IsEnabled -and -not $editor.Current.IsOffscreen) {
-                if (-not $focusRequested) {
-                    $editor.SetFocus()
-                    $focusRequested = $true
-                    $script:documentActionObservation['editor_focus_requested'] = $true
+        try {
+            $window = Get-WindowRoot $Process
+            $menu = if ($window) { Find-DocumentToolsMenu $window } else { $null }
+            $menuClosed = -not $menu -or $menu.Current.IsOffscreen
+            $script:documentActionObservation['editor_menu_closed'] = $menuClosed
+            if ($window -and $menuClosed) {
+                $editor = Find-NamedElement $window $EditorName
+                if ($editor -and $editor.Current.IsEnabled -and -not $editor.Current.IsOffscreen) {
+                    if (-not $focusRequested) {
+                        if ($readyEditor -and [System.Windows.Automation.Automation]::Compare($readyEditor, $editor)) { $readySamples++ } else { $readySamples = 1 }
+                        $readyEditor = $editor
+                        if ($readySamples -ge 2) {
+                            $editor.SetFocus()
+                            $focusRequested = $true
+                            $script:documentActionObservation['editor_focus_requested'] = $true
+                        }
+                    }
+                    if ($focusRequested) {
+                        $reportedFocus = $editor.Current.HasKeyboardFocus
+                        $focused = [System.Windows.Automation.AutomationElement]::FocusedElement
+                        $ownsFocus = $reportedFocus
+                        for ($depth = 0; -not $ownsFocus -and $focused -and $depth -lt 16; $depth++) {
+                            if ([System.Windows.Automation.Automation]::Compare($focused, $editor)) { $ownsFocus = $true; break }
+                            $focused = [System.Windows.Automation.TreeWalker]::ControlViewWalker.GetParent($focused)
+                        }
+                        $foreground = [GlitchpadNativeInput]::GetForegroundWindow() -eq $Process.MainWindowHandle
+                        $script:documentActionObservation['editor_focus_observed'] = $ownsFocus
+                        $script:documentActionObservation['editor_has_keyboard_focus'] = $reportedFocus
+                        $script:documentActionObservation['editor_foreground'] = $foreground
+                        if ($ownsFocus -and $foreground) { $consecutiveFocused++ } else { $consecutiveFocused = 0 }
+                        if ($consecutiveFocused -ge 2) {
+                            $script:readinessStage = 'editor_focus_ready'
+                            $script:readinessWaitKind = 'none'
+                            $script:readinessWaitCallerLine = 0
+                            return $editor
+                        }
+                    }
                 }
-                $focused = [System.Windows.Automation.AutomationElement]::FocusedElement
-                $ownsFocus = $false
-                for ($depth = 0; $focused -and $depth -lt 16; $depth++) {
-                    if ([System.Windows.Automation.Automation]::Compare($focused, $editor)) { $ownsFocus = $true; break }
-                    $focused = [System.Windows.Automation.TreeWalker]::ControlViewWalker.GetParent($focused)
-                }
-                $foreground = [GlitchpadNativeInput]::GetForegroundWindow() -eq $Process.MainWindowHandle
-                $script:documentActionObservation['editor_focus_observed'] = $ownsFocus
-                $script:documentActionObservation['editor_foreground'] = $foreground
-                if ($ownsFocus -and $foreground) { $consecutiveFocused++ } else { $consecutiveFocused = 0 }
-                if ($consecutiveFocused -ge 2) {
-                    $script:readinessStage = 'editor_focus_ready'
-                    $script:readinessWaitKind = 'none'
-                    $script:readinessWaitCallerLine = 0
-                    return $editor
-                }
-            }
-        } else { $consecutiveFocused = 0 }
+            } else { $consecutiveFocused = 0; $readySamples = 0; $readyEditor = $null }
+        } catch [System.Windows.Automation.ElementNotAvailableException] {
+            $consecutiveFocused = 0
+            $readySamples = 0
+            $readyEditor = $null
+            $script:documentActionObservation['editor_observation_stale'] = $true
+        }
         Start-Sleep -Milliseconds 50
     } while ([DateTimeOffset]::UtcNow -lt $deadline)
     throw 'portable_editor_native_focus_timeout'

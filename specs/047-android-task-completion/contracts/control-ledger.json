@@ -14236,7 +14236,7 @@
       "kind": "composed_browser_passed",
       "path": "scripts/check-image-layout.mjs",
       "line": 164,
-      "source_sha256": "cac2b9ec6dbc44230853fcae5ee3cf862c21c6fde0bb75792b51d416033dd81d",
+      "source_sha256": "d8a20975a1bc7a82410c38c19842455336714ddb27919d8ca888e732a3eb7711",
       "effect": "80cases pass in modern Chromium156 and exact Chromium69.0.3497.0, with29fixture digest checks. The matrix covers five families, four frames, fine/coarse and1x/2x text, measured Fit, first local Zoom factor1.25, pan scale, keyboard plus, Actual size1, Reset, Dark background, GIF frame1/ICO entry1 retention, focus and48px targets.",
       "limit": "Deterministic synthetic gateway, not native pixels or export. hasTouch alone is not gesture proof. Each viewport loads a fresh page and does not itself prove live resize. All primary controls remain exposed in this isolated harness.",
       "anchor": "for (const frame of ["
@@ -14245,7 +14245,7 @@
       "kind": "composed_browser_passed",
       "path": "scripts/check-image-layout.mjs",
       "line": 344,
-      "source_sha256": "cac2b9ec6dbc44230853fcae5ee3cf862c21c6fde0bb75792b51d416033dd81d",
+      "source_sha256": "d8a20975a1bc7a82410c38c19842455336714ddb27919d8ca888e732a3eb7711",
       "effect": "Every80case per engine clicks scoped More Fit, Zoom in1.25, Zoom out0.8 and Fit. Disclosed controls retain48px size and complete clipping/hit-testing after scrolling.",
       "limit": "Actual compact App deferral requires the separate App/native evidence. The synthetic scene is a single DiagramViewport, not a Markdown embedded diagram.",
       "anchor": "const disclosedFit = await measure();"
@@ -19316,7 +19316,7 @@
       "path": "apps/glitchpad/src/components/TaskSurface.test.tsx",
       "anchor": "returns focus to the nested opener in the remaining parent after %s",
       "line": 171,
-      "source_sha256": "98af55a09808a5ef5692b220c7acbf3bd998e9e20906735f800327f5a1c0247a",
+      "source_sha256": "fd8d3521695f36687018392bddd8d6798d3bab271362a578ee11441c3543fb11",
       "effect": "Native Back dispatch, Escape, header Close and controlled completion return focus to the connected opener inside the still-open parent task. Separate tests retain the higher modal fence and permit an outside opener when only a nonmodal inspector remains.",
       "limit": "Component event/focus behavior; installed native and full rebuilt production browser qualification remain separate."
     },
@@ -19549,7 +19549,7 @@
       "path": "apps/glitchpad/src/components/TaskSurface.test.tsx",
       "line": 367,
       "anchor": "keeps a completed Add document trigger handoff when an older task closes late",
-      "source_sha256": "98af55a09808a5ef5692b220c7acbf3bd998e9e20906735f800327f5a1c0247a",
+      "source_sha256": "fd8d3521695f36687018392bddd8d6798d3bab271362a578ee11441c3543fb11",
       "effect": "Preserve the completed Add-trigger focus handoff through actual delayed Radix cleanup.",
       "execution": "prepared_not_executed",
       "limit": "Requires current source test execution; does not qualify the installed candidate."

@@ -77,12 +77,15 @@ export const LargeTextSurface = forwardRef<
   const lineInput = useRef<HTMLInputElement>(null);
   const contentRef = useRef<HTMLPreElement>(null);
   const generation = useRef(0);
+  const focusAfterOperation = useRef<HTMLElement | null>(null);
+  const [completedOperation, setCompletedOperation] = useState(0);
   const byteLength =
     session.source.byte_length ?? session.text_document?.source_bytes ?? 0;
 
   useEffect(() => {
     const expected = ++generation.current;
     previousOffsets.current = [];
+    focusAfterOperation.current = null;
     setSection(null);
     setSearchCursor(null);
     setQuery('');
@@ -123,6 +126,20 @@ export const LargeTextSurface = forwardRef<
     };
   }, [reader, session.id]);
 
+  useEffect(() => {
+    if (pending) return;
+    const target = focusAfterOperation.current;
+    focusAfterOperation.current = null;
+    // Disabled fields cannot receive focus until the async result has committed.
+    if (
+      target?.isConnected &&
+      !target.matches(':disabled') &&
+      owner.current.lifecycle === 'active' &&
+      Boolean(target.closest('.large-text-task')) === toolsOpen
+    )
+      target.focus({ preventScroll: true });
+  }, [pending, toolsOpen, completedOperation]);
+
   const run = async (
     loading: string,
     failed: string,
@@ -130,6 +147,13 @@ export const LargeTextSurface = forwardRef<
   ): Promise<boolean> => {
     if (!reader || busy.current) return false;
     const expected = ++generation.current;
+    const active = document.activeElement;
+    focusAfterOperation.current =
+      toolsOpenRef.current &&
+      active instanceof HTMLElement &&
+      active.closest('.large-text-task')
+        ? active
+        : null;
     busy.current = true;
     setPending(true);
     setStatus(loading);
@@ -148,6 +172,7 @@ export const LargeTextSurface = forwardRef<
       if (current()) {
         busy.current = false;
         setPending(false);
+        setCompletedOperation((value) => value + 1);
       }
     }
   };
@@ -261,7 +286,9 @@ export const LargeTextSurface = forwardRef<
           setStatus(
             'Line ' + line + ' is at the start of the visible section.',
           );
-          contentRef.current?.focus();
+          focusAfterOperation.current = toolsOpenRef.current
+            ? lineInput.current
+            : contentRef.current;
         }
         return moved;
       },
@@ -286,6 +313,7 @@ export const LargeTextSurface = forwardRef<
   };
   const cancel = () => {
     generation.current += 1;
+    focusAfterOperation.current = null;
     reader?.cancel();
     busy.current = false;
     setPending(false);

@@ -1832,6 +1832,7 @@ class AndroidDeliveryInstrumentedTest {
       var settled = false
       while (SystemClock.elapsedRealtime() < actionDeadline) {
         val (nextMeasurement, nextNative) = readControl(false)
+        if (!nextNative.optBoolean("native_touch_owned_by_app") && dismissSelectionToolbarForProbe(scenario, actionDeadline)) continue
         val sameControl = listOf("label", "tag", "role").all { key -> expectedControl.optString(key) == nextMeasurement.optString(key) }
         val beforeFrame = native.getJSONObject("effective_visible_screen")
         val afterFrame = nextNative.getJSONObject("effective_visible_screen")
@@ -2005,6 +2006,63 @@ class AndroidDeliveryInstrumentedTest {
     observe("preferences","Editor font family",family)
     tapNativeControlOnce(scenario,"Close Preferences")
     hideIme(SystemClock.elapsedRealtime()+30_000L)
+  }
+
+  @Test fun s047SelectionToolbarProbe() {
+    val scenario = launchS047()
+    enableNativeWindowObservation()
+    verifyS047EditorAndPreferences(scenario)
+    verifyS047MarkdownAndMetadata(scenario)
+    verifyS047LargeText(scenario)
+    verifyS047TaskGeometry(scenario, "portrait-1.0", false)
+    assertTrue("the isolated run must actually exercise a native text-toolbar Back", selectionToolbarProbeBacks > 0)
+    println("s047_handoff_probe=pass"); System.out.flush()
+  }
+
+  private var selectionToolbarProbeBacks = 0
+  private fun dismissSelectionToolbarForProbe(scenario: ActivityScenario<MainActivity>, deadline: Long): Boolean {
+    if (InstrumentationRegistry.getArguments().getString("selectionToolbarProbe") != "true") return false
+    fun popup(windows: org.json.JSONArray): Boolean = (0 until windows.length()).any {
+      val window = windows.getJSONObject(it)
+      window.optString("title") == "Popup Window" && window.getJSONArray("labels").toString().contains("Paste")
+    }
+    var windows = selectionToolbarWindows()
+    if (!popup(windows)) return false
+    val state = "JSON.stringify({document:document.querySelector('.document-surface')?.id||null,title:document.querySelector('.task-surface[data-state=open] h2')?.textContent||null,fields:Array.from(document.querySelectorAll('.task-surface[data-state=open] input')).map(n=>n.value)})"
+    val before = stringValue(evaluate(scenario, state, deadlineOverride=deadline))
+    println("s047_selection_toolbar_before=" + JSONObject().put("windows", windows).put("context", before)); System.out.flush()
+    assertTrue("the one real system Back must dispatch", instrumentation.uiAutomation.performGlobalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK))
+    var after = before
+    while (SystemClock.elapsedRealtime() < deadline) {
+      SystemClock.sleep(100L)
+      windows = selectionToolbarWindows()
+      after = stringValue(evaluate(scenario, state, deadlineOverride=deadline))
+      if (after != before || !popup(windows)) break
+    }
+    println("s047_selection_toolbar_after=" + JSONObject().put("windows", windows).put("context", after)); System.out.flush()
+    captureEditorFocusFailure(scenario, "selection_toolbar_after", JSONObject().put("before", before).put("after", after).put("windows", windows))
+    assertEquals("one actual system Back must not close the task or change its document/field state", before, after)
+    assertFalse("one actual system Back must dismiss the native text toolbar", popup(windows))
+    selectionToolbarProbeBacks += 1
+    return true
+  }
+
+  private fun selectionToolbarWindows(): org.json.JSONArray {
+    val rows = org.json.JSONArray()
+    for (window in instrumentation.uiAutomation.windows) {
+      val labels = org.json.JSONArray()
+      val nodes = java.util.ArrayDeque<AccessibilityNodeInfo>()
+      window.root?.let { nodes.add(it) }
+      var count = 0
+      while (nodes.isNotEmpty() && count++ < 256) {
+        val node = nodes.removeFirst()
+        val label = node.text?.toString() ?: node.contentDescription?.toString()
+        if (label != null) labels.put(label.take(160))
+        for (index in 0 until node.childCount) node.getChild(index)?.let { nodes.add(it) }
+      }
+      rows.put(JSONObject().put("title", window.title?.toString()).put("type", window.type).put("layer", window.layer).put("labels", labels))
+    }
+    return rows
   }
 
   @Test fun s047LayoutJourney() {
@@ -3157,6 +3215,7 @@ class AndroidDeliveryInstrumentedTest {
         target = runCatching { JSONObject(evaluate(scenario, script, deadlineOverride = deadline)) }
           .getOrElse { JSONObject().put("capture_failed", true).put("failure_type", it.javaClass.simpleName) }
         mapping = nativeControlGeometry(scenario, target)
+        if (!mapping.optBoolean("native_touch_owned_by_app") && dismissSelectionToolbarForProbe(scenario, deadline)) continue
         val foreground = nativeTapForeground(mapping)
         if (foreground && mapping.optBoolean("ime_occludes_control") && !imeDismissRequested) {
           imeDismissRequested = true

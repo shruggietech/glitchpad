@@ -26,7 +26,7 @@ Ten unique journey IDs with per-variant pass/fail/not_run/N/A (reason required f
 
 ## PredictiveBackObservation
 
-Private fixed saturating counters for started/progressed/cancelled/committed/requested/completed/delegated plus pending/enabled snapshot. Same callback/plugin/UI thread; no new consuming callback or JS activation. Cancel requires positive OS callbacks with zero commit/request/delegation and unchanged document/draft/layer. Commit consumes one layer. API24 progress N/A is explicit.
+Private fixed saturating counters for started/progressed/cancelled/committed/requested/completed/delegated plus pending/enabled snapshot and native_edit_dismissed/native_edit_active. The Activity owns its current native text-edit ActionMode; the same Source Back route finishes that mode after a positively hidden IME and returns without a JS task request. The native platform may consume that input layer before the app callback. Same callback/plugin/UI thread; no new consuming callback or JS activation. Cancel requires positive OS callbacks with zero commit/request/delegation and unchanged document/draft/layer. Commit consumes one layer. API24 progress N/A is explicit.
 
 ## 2026-11-07 05:18 UTC Android range transport
 

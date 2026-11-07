@@ -1972,6 +1972,42 @@ class AndroidDeliveryInstrumentedTest {
     hideIme(SystemClock.elapsedRealtime()+30_000L)
   }
 
+
+  private fun beginHandoffObservation(scenario: ActivityScenario<MainActivity>) {
+    evaluate(scenario, "(()=>{window.__s047FocusTrace=[];document.addEventListener('focusin',e=>{const n=e.target;window.__s047FocusTrace.push({at:performance.now(),label:n.getAttribute('aria-label')||n.textContent.slice(0,48),tag:n.tagName,cls:n.className});if(window.__s047FocusTrace.length>30)window.__s047FocusTrace.shift();},true);return true;})()")
+  }
+  private fun retainHandoffObservation(scenario: ActivityScenario<MainActivity>, stage: String) {
+    val state=JSONObject(evaluate(scenario, "(()=>{const info=n=>{const r=n.getBoundingClientRect();return {tag:n.tagName,cls:n.className,label:n.getAttribute('aria-label'),hidden:(n.closest('[aria-hidden=true],[inert]')||{outerHTML:''}).outerHTML.slice(0,140),width:r.width,height:r.height};};return {active:info(document.activeElement),focus:window.__s047FocusTrace,more:Array.from(document.querySelectorAll('[aria-label=\"More diagram tools\"]')).map(info),surfaces:Array.from(document.querySelectorAll('.document-surface,.mermaid-surface,[role=dialog]')).map(info),source:Array.from(document.querySelectorAll('.mermaid-surface .cm-content')).map(n=>n.textContent.slice(0,200))};})()"))
+    captureEditorFocusFailure(scenario,stage,state,nativeControlGeometry(scenario,null))
+  }
+  @Test fun s047DraftFocusProbe() {
+    val scenario=launchS047()
+    enableNativeWindowObservation()
+    beginHandoffObservation(scenario)
+    try {
+      verifyS047EditorAndPreferences(scenario)
+      createNewDraftForInput(scenario,"New Markdown","Untitled.md")
+    } finally { retainHandoffObservation(scenario,"draft_focus_probe") }
+    println("s047_handoff_probe=pass");System.out.flush()
+  }
+  @Test fun s047SearchCloseProbe() {
+    val scenario=launchS047()
+    enableNativeWindowObservation()
+    beginHandoffObservation(scenario)
+    applyObservedFontScale(scenario,if(Build.VERSION.SDK_INT>=34)2f else 1.3f)
+    openFromAddDocument(scenario,grant(documentUri("s047-controls.mmd")))
+    if(evaluate(scenario,"!!document.querySelector('.document-surface .mermaid-source-mode')")=="true")menuAction(scenario,"Read",nativeActivation=true)
+    waitForCondition(scenario,"!!document.querySelector('.document-surface .mermaid-rendered-mode [data-preview-ready=true]')","probe must use the actual ready Mermaid view")
+    menuAction(scenario,"Search",nativeActivation=true)
+    setTaskInput(scenario,"Find diagram text","Cats")
+    observeVisibleTaskControls(scenario,"probe-max-ime",expectedImeVisible=true)
+    tapNativeControlOnce(scenario,"Close search")
+    retainHandoffObservation(scenario,"after_real_search_close")
+    try { tapNativeControlOnce(scenario,"More diagram tools") }
+    finally { retainHandoffObservation(scenario,"after_more_tools") }
+    println("s047_handoff_probe=pass");System.out.flush()
+  }
+
   @Test fun s047LayoutJourney() {
     val scenario = launchS047()
     enableNativeWindowObservation()

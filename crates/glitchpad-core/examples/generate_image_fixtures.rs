@@ -28,7 +28,8 @@ fn families(root: &Path) {
         let mut gif = Vec::new();
         {
             let mut encoder =
-                gif::Encoder::new(&mut gif, 4, 3, &[255, 0, 0, 0, 0, 255, 0, 255, 0, 0, 0, 0]).unwrap();
+                gif::Encoder::new(&mut gif, 4, 3, &[255, 0, 0, 0, 0, 255, 0, 255, 0, 0, 0, 0])
+                    .unwrap();
             encoder.set_repeat(repeat).unwrap();
             for (left, top, width, height, pixels, dispose) in [
                 (0, 0, 4, 3, vec![0; 12], gif::DisposalMethod::Keep),

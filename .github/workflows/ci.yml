@@ -471,7 +471,7 @@ jobs:
           git fetch --no-tags --depth=1 origin 1f4b05170567fa19b97f4e4dc92e8730822b0441
           git show 1f4b05170567fa19b97f4e4dc92e8730822b0441:apps/glitchpad/src/components/TaskSurface.tsx > apps/glitchpad/src/components/TaskSurface.tsx
           set +e
-          pnpm --dir apps/glitchpad exec vitest run src/components/TaskSurface.test.tsx --testNamePattern='defers pointer focus until button activation' --reporter=json --outputFile="$RUNNER_TEMP/s047-recovery-preflight/touch-red.json" > "$RUNNER_TEMP/s047-recovery-preflight/touch-red.log" 2>&1
+          pnpm --dir apps/glitchpad exec vitest run src/components/TaskSurface.test.tsx --testNamePattern='defers touch focus until button activation|settles rounded CSSOM measurements' --reporter=json --outputFile="$RUNNER_TEMP/s047-recovery-preflight/touch-red.json" > "$RUNNER_TEMP/s047-recovery-preflight/touch-red.log" 2>&1
           red_exit=$?
           set -e
           cp "$RUNNER_TEMP/s047-fixed-task-surface.tsx" apps/glitchpad/src/components/TaskSurface.tsx
@@ -480,8 +480,8 @@ jobs:
           import assert from 'node:assert/strict';
           import {readFileSync} from 'node:fs';
           const r=JSON.parse(readFileSync(process.env.RUNNER_TEMP+'/s047-recovery-preflight/touch-red.json','utf8'));
-          assert.equal(r.numFailedTests,1);
-          assert.ok(r.testResults.flatMap(t=>t.assertionResults).some(a=>a.status==='failed'&&a.fullName.includes('(touch)')));
+          assert.equal(r.numFailedTests,3);
+          assert.ok(r.testResults.flatMap(t=>t.assertionResults).some(a=>a.status==='failed'&&a.fullName.includes('rounded CSSOM')));
           NODE
 
       - name: Reproduce enlarged recovery overflow with the previous CSS

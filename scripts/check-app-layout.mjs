@@ -54,7 +54,7 @@ export function assertTaskControlMeasurement(row) {
 
 // Only native storage/source/clipboard boundaries are supplied. React, CodeMirror,
 // parsing, actions and task surfaces are the actual production bundle.
-export function installDocumentToolsSeams() {
+export function installDocumentToolsSeams(mode = 'system') {
   const original = window.__TAURI_INTERNALS__.invoke;
   const sources = new Map();
   let serial = 0;
@@ -62,6 +62,15 @@ export function installDocumentToolsSeams() {
   window.__toolsReadOnly = false;
   window.__toolsLastSourceId = null;
   window.__toolsClipboard = null;
+  window.__toolsRecoveryCalls = [];
+  const recoveryEntry = {
+    record_id: 's047-layout-recovery',
+    display_hint: 'Untitled.txt',
+    updated_unix_ms: Date.now(),
+    expires_unix_ms: Date.now() + 86400000,
+    committed_bytes: 12,
+    status: 'available',
+  };
   const text = 'cat Cat scatter cat\nsecond line\n';
   const markdown =
     '# Heading\n\nFind body body. [destination](https://example.com/path) [email](mailto:fixture@example.com) [fragment](#heading) [unknown fragment](#missing-section)\n\n- [x] done\n- [ ] todo\n\nFootnote[^one].\n\n[^one]: Footnote text.\n\n~~~mermaid\nflowchart TB\n  Alpha --> Beta\n~~~\n';
@@ -150,6 +159,11 @@ export function installDocumentToolsSeams() {
   });
   window.__TAURI_INTERNALS__.invoke = async function (command, args) {
     args = args || {};
+    if (mode === 'recovery' && command.endsWith('_recovery')) {
+      window.__toolsRecoveryCalls.push(command);
+      if (command === 'inventory_recovery') return [[recoveryEntry], 0, 0];
+      if (command === 'remove_recovery') return true;
+    }
     if (command === 'write_android_clipboard') {
       window.__toolsClipboard = args.text;
       return;
@@ -539,6 +553,7 @@ export async function checkAppLayout({
     'apps/glitchpad/src/styles.css',
     'apps/glitchpad/src/components/TaskSurface.tsx',
     'apps/glitchpad/src/components/TaskSurface.css',
+    'apps/glitchpad/src/components/RecoveryResolution.tsx',
     'apps/glitchpad/src/components/AppFrameHostBridge.tsx',
     'apps/glitchpad/src/components/TextEditorSurface.tsx',
     'apps/glitchpad/src/components/MarkdownSurface.tsx',
@@ -605,6 +620,7 @@ export async function checkAppLayout({
     'large',
     'metadata',
     'preferences',
+    'recovery',
   ];
   try {
     for (const profile of profiles) {
@@ -666,7 +682,11 @@ export async function checkAppLayout({
               installNativeSeams,
               scale === 1 ? 'dark' : 'light',
             );
-            await install(page, installDocumentToolsSeams);
+            await install(
+              page,
+              installDocumentToolsSeams,
+              group === 'recovery' ? 'recovery' : 'system',
+            );
             await page.goto(origin, { waitUntil: 'load' });
             await page.waitForSelector('.add-document-trigger');
             await page.evaluate(
@@ -1020,6 +1040,79 @@ export async function checkAppLayout({
                 return n && n.matches('[id^="panel-android-"]');
               });
             };
+            if (group === 'recovery') {
+              await page.waitForSelector(
+                '.resolution-dialog[data-state="open"]',
+              );
+              await audit('.resolution-dialog button', 'recovery-decision');
+              row.recovery_surface = await page.$eval(
+                '.resolution-dialog',
+                function (node) {
+                  const r = node.getBoundingClientRect();
+                  return {
+                    left: r.left,
+                    top: r.top,
+                    right: r.right,
+                    bottom: r.bottom,
+                    max_height: getComputedStyle(node).maxHeight,
+                    visible: window.__toolsVisible,
+                  };
+                },
+              );
+              const recoverySurface = row.recovery_surface;
+              assert.ok(
+                recoverySurface.left >=
+                  recoverySurface.visible.left - tolerance &&
+                  recoverySurface.top >=
+                    recoverySurface.visible.top - tolerance &&
+                  recoverySurface.right <=
+                    recoverySurface.visible.right + tolerance &&
+                  recoverySurface.bottom <=
+                    recoverySurface.visible.bottom + tolerance,
+                'Recovery task must fit the actual modeled native visible frame',
+              );
+
+              const labels = await page.$$eval(
+                '.resolution-dialog button',
+                function (nodes) {
+                  return Array.from(nodes).map(function (node) {
+                    return node.textContent.trim();
+                  });
+                },
+              );
+              assert.deepEqual(labels, [
+                'Recover',
+                'Decline recovery',
+                'Not now',
+              ]);
+              await click('Not now', '.resolution-dialog button');
+              await page.waitForSelector('.resolution-dialog', {
+                hidden: true,
+              });
+              const calls = await page.evaluate(function () {
+                return window.__toolsRecoveryCalls;
+              });
+              assert.ok(calls.includes('inventory_recovery'));
+              assert.equal(
+                calls.includes('remove_recovery'),
+                false,
+                'Not now must retain the recovery record',
+              );
+              assert.equal(
+                calls.includes('load_recovery'),
+                false,
+                'Not now must defer opening the record',
+              );
+              row.outcomes.push({
+                recovery_actions: labels,
+                not_now_dismissed: true,
+                record_retained: true,
+                native_boundary: 'synthetic_recovery_inventory',
+              });
+              assert.deepEqual(row.errors, []);
+              row.status = 'passed';
+              continue;
+            }
             if (group === 'draft') {
               await click('Add document');
               await page.waitForSelector('.add-document-menu');

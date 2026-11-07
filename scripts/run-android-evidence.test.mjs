@@ -72,6 +72,13 @@ async function fixture() {
     `#!/usr/bin/env bash
 set -eu
 printf '%s\n' "$*" >> "$RUNNER_TEMP/adb-events.txt"
+emit_apk() {
+  if [[ "\${MOCK_RUN_AS_FAILURE:-0}" = 1 ]]; then echo "run-as: installed APK read refused" >&2; return 1; fi
+  original="$1"
+  if [[ "\${MOCK_RUN_AS_MISMATCH:-0}" = 1 ]]; then original="$FIXTURE_WRONG"; fi
+  cat "$original"
+  if [[ "\${MOCK_RUN_AS_OVERSIZE:-0}" = 1 ]]; then head -c 4096 /dev/zero; fi
+}
 if [[ "$1" = install ]]; then
   if [[ "\${MOCK_SETUP_HANG:-}" = install ]]; then exec /bin/sleep 2; fi
   if [[ "\${MOCK_INSTALL_FAILURE:-0}" = 1 ]]; then exit 1; fi
@@ -110,13 +117,15 @@ elif [[ "$1" = shell && "$2" = am && "$3" = instrument ]]; then
 elif [[ "$1" = shell && "$2" = run-as && "$4" = rm && "$5" = -f ]]; then
   rm -f "$RUNNER_TEMP/remote-\${6#files/}"
 elif [[ "$1" = logcat && "\${2:-}" != -c ]]; then echo 'synthetic bounded logcat'; if [[ "\${MOCK_INSTRUMENT_OUTCOME:-}" = logcat_marker_* ]]; then echo 'journey_marker=pass'; fi
+elif [[ "$1" = features ]]; then
+  printf '%s\\n' "\${MOCK_ADB_FEATURES:-cmd,shell_v2}" | tr ',' '\\n'
+elif [[ "$1" = shell && "$2" = -T && "$3" = -n && "$4" = run-as && "$6" = cat ]]; then
+  emit_apk "$7"
+  if [[ "\${MOCK_RUN_AS_FAILURE_AFTER_BYTES:-0}" = 1 ]]; then exit 7; fi
 elif [[ "$1" = exec-out && "$2" = run-as && "$4" = cat ]]; then
   if [[ "$5" = files/*.png ]]; then if [[ "\${MOCK_SCREENSHOT_MISSING_SUCCESS:-0}" = 1 ]]; then echo "cat: $5: No such file or directory"; exit 0; fi; cat "$RUNNER_TEMP/remote-\${5#files/}"; exit 0; fi
-  if [[ "\${MOCK_RUN_AS_FAILURE:-0}" = 1 ]]; then echo "run-as: installed APK read refused" >&2; exit 1; fi
-  original="$5"
-  if [[ "\${MOCK_RUN_AS_MISMATCH:-0}" = 1 ]]; then original="$FIXTURE_WRONG"; fi
-  cat "$original"
-  if [[ "\${MOCK_RUN_AS_OVERSIZE:-0}" = 1 ]]; then head -c 4096 /dev/zero; fi
+  emit_apk "$5"
+  if [[ "\${MOCK_RUN_AS_FAILURE_AFTER_BYTES:-0}" = 1 ]]; then exit 0; fi
 elif [[ "$1" = exec-out ]]; then exit 1
 fi
 `,
@@ -238,6 +247,12 @@ test(
   async () => {
     const state = await fixture();
     try {
+      await writeFile(
+        state.application,
+        Buffer.from(
+          Array.from({ length: 1024 * 1024 }, (_, index) => index % 256),
+        ),
+      );
       const result = run('run-android-connected-tests.sh', state, [], {
         MOCK_PULL_FAILURE: '1',
       });
@@ -248,7 +263,7 @@ test(
       );
       assert.deepEqual(
         receipt.artifacts.map((artifact) => artifact.capture_method),
-        ['adb_exec_out_run_as_cat', 'adb_exec_out_run_as_cat'],
+        ['adb_shell_v2_run_as_cat', 'adb_shell_v2_run_as_cat'],
       );
       for (const [index, built] of [
         state.application,
@@ -278,12 +293,13 @@ test(
       );
       assert.ok(
         events.includes(
-          'exec-out run-as com.shruggietech.glitchpad cat ' + state.application,
+          'shell -T -n run-as com.shruggietech.glitchpad cat ' +
+            state.application,
         ),
       );
       assert.ok(
         events.includes(
-          'exec-out run-as com.shruggietech.glitchpad.test cat ' +
+          'shell -T -n run-as com.shruggietech.glitchpad.test cat ' +
             state.instrumentation,
         ),
       );
@@ -296,6 +312,7 @@ test(
 for (const [name, variable] of [
   ['wrong bytes', 'MOCK_RUN_AS_MISMATCH'],
   ['remote read failure', 'MOCK_RUN_AS_FAILURE'],
+  ['remote error after matching output', 'MOCK_RUN_AS_FAILURE_AFTER_BYTES'],
   ['oversized read', 'MOCK_RUN_AS_OVERSIZE'],
 ]) {
   test(
@@ -334,6 +351,13 @@ for (const [name, variable] of [
           );
           assert.equal(diagnostic.observed_byte_count, mismatched.length);
           assert.equal(diagnostic.first_different_byte, 0);
+        }
+        if (variable === 'MOCK_RUN_AS_FAILURE_AFTER_BYTES') {
+          assert.equal(diagnostic.attempts[1].status, 7);
+          assert.equal(
+            diagnostic.attempts[1].stdout_byte_count,
+            (await readFile(state.application)).length,
+          );
         }
         if (variable === 'MOCK_RUN_AS_FAILURE')
           assert.match(diagnostic.attempts[1].stderr, /read refused/u);
@@ -855,6 +879,12 @@ test(
         0,
         events.join('\n'),
       );
+      assert.equal(
+        events.filter((event) => event.startsWith('install --no-streaming '))
+          .length,
+        2,
+        events.join('\n'),
+      );
       assert.equal(events.includes('gradle-cleanup'), false);
       const directory = join(state.evidence, 'android-tested-candidate');
       const receipt = JSON.parse(
@@ -879,6 +909,33 @@ test(
           'utf8',
         ),
         /OK \(9 tests\)/u,
+      );
+    } finally {
+      await state.dispose();
+    }
+  },
+);
+
+test(
+  'refuses installed binary capture without the connected shell_v2 feature',
+  posix,
+  async () => {
+    const state = await fixture();
+    try {
+      const result = run('run-android-connected-tests.sh', state, [], {
+        MOCK_PULL_FAILURE: '1',
+        MOCK_ADB_FEATURES: 'cmd',
+      });
+      assert.equal(result.status, 1, result.stdout + result.stderr);
+      const directory = join(state.evidence, 'android-tested-candidate');
+      await assert.rejects(access(join(directory, 'tested-apk-receipt.json')));
+      await assert.rejects(access(join(directory, 'application.apk')));
+      const diagnostic = JSON.parse(
+        await readFile(join(directory, 'application-capture.json'), 'utf8'),
+      );
+      assert.equal(
+        diagnostic.validation,
+        'required_shell_protocol_unavailable',
       );
     } finally {
       await state.dispose();

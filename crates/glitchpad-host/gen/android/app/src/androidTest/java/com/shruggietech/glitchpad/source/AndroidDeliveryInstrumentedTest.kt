@@ -443,7 +443,25 @@ class AndroidDeliveryInstrumentedTest {
     } else {
       assertEquals("verify", phase)
       waitForBodyText(scenario, "Recover Untitled.md?")
-      clickControl(scenario, "Recover")
+      if (isS047Evidence()) {
+        enableNativeWindowObservation()
+        val originalFont = clientContext.resources.configuration.fontScale
+        try {
+          for (font in if (Build.VERSION.SDK_INT >= 34) listOf(1f, 2f) else listOf(1f, 1.3f)) {
+            applyObservedFontScale(scenario, font)
+            scenario.onActivity { it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT }
+            waitForCondition(scenario, "innerHeight>innerWidth", "recovery portrait must be observed")
+            observeVisibleTaskControls(scenario, "recovery-portrait-" + font, expectedImeVisible=false)
+            scenario.onActivity { it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE }
+            waitForCondition(scenario, "innerWidth>innerHeight", "recovery landscape must be observed")
+            observeVisibleTaskControls(scenario, "recovery-landscape-" + font, expectedImeVisible=false)
+          }
+        } finally {
+          applyObservedFontScale(scenario, originalFont)
+          scenario.onActivity { it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT }
+        }
+        tapNativeControlOnce(scenario, "Recover")
+      } else clickControl(scenario, "Recover")
       waitForBodyText(scenario, "S046_PROCESS_RECOVERY_Ω")
       waitForCondition(scenario, "!!document.querySelector('.cm-content[contenteditable=true]')", "recovered Markdown draft must remain editable without provider authority")
       println("draft_recovery_verify=pass,api:" + Build.VERSION.SDK_INT)
@@ -974,13 +992,14 @@ class AndroidDeliveryInstrumentedTest {
     waitForCondition(scenario, "!document.querySelector('.resolution-dialog') && document.querySelector('.document-surface').id!==" + JSONObject.quote(current), "saved document must close before native reopen")
   }
 
-  private fun menuAction(scenario: ActivityScenario<MainActivity>, name: String) {
+  private fun menuAction(scenario: ActivityScenario<MainActivity>, name: String, nativeActivation: Boolean = false) {
     val application = name in listOf("Preferences", "Diagnostics", "Help and support", "About Glitchpad")
     val owner = if (application) "[role=menu][aria-label=\"Glitchpad menu\"]" else "[role=menu][aria-label=\"Document tools\"]"
     val deadline = SystemClock.elapsedRealtime() + 30_000L
     waitForCondition(scenario, "!document.querySelector(" + JSONObject.quote(owner) + ")", "the preceding owned menu must finish dismissal before its next opener is toggled", deadlineOverride = deadline)
-    clickControl(scenario, if (application) "Menu" else "Document tools", deadlineOverride = deadline)
-    if (name == "Copy") tapNativeControlOnce(scenario, name, "[role=menuitem]", deadlineOverride = deadline)
+    if (nativeActivation) tapNativeControlOnce(scenario, if (application) "Menu" else "Document tools", deadlineOverride = deadline)
+    else clickControl(scenario, if (application) "Menu" else "Document tools", deadlineOverride = deadline)
+    if (nativeActivation || name == "Copy") tapNativeControlOnce(scenario, name, "[role=menuitem]", deadlineOverride = deadline)
     else clickControl(scenario, name, "[role=menuitem]", deadlineOverride = deadline)
     waitForCondition(scenario, "!document.querySelector(" + JSONObject.quote(owner) + ")", "the owned menu must finish dismissal before subsequent task sampling", deadlineOverride = deadline)
     if (name in listOf("Undo", "Redo")) waitForCondition(scenario, "document.activeElement===document.querySelector('.document-tools-trigger')", "history menu completion must restore its real opener before subsequent native input setup", deadlineOverride = deadline)
@@ -990,8 +1009,9 @@ class AndroidDeliveryInstrumentedTest {
     val nameLiteral = JSONObject.quote(name)
     val selectorLiteral = JSONObject.quote(selector)
     val actionDeadline = deadlineOverride ?: (SystemClock.elapsedRealtime() + 30_000L)
-    waitForCondition(scenario, "Array.from(document.querySelectorAll(" + selectorLiteral + ")).some(b=>!b.disabled&&(b.getAttribute('aria-label')||(b.getAttribute('role')==='menuitem'&&b.querySelector('span')?b.querySelector('span').textContent:b.textContent)).trim()===" + nameLiteral + ")", "named actual-app control must be enabled: " + name, deadlineOverride = actionDeadline)
-    assertEquals("actual-app control must be clicked once", "true", evaluate(scenario, "(()=>{const button=Array.from(document.querySelectorAll(" + selectorLiteral + ")).find(b=>!b.disabled&&(b.getAttribute('aria-label')||(b.getAttribute('role')==='menuitem'&&b.querySelector('span')?b.querySelector('span').textContent:b.textContent)).trim()===" + nameLiteral + ");if(!button)return false;button.click();return true;})()", deadlineOverride = actionDeadline, actionCallback = true))
+    val findButton = "Array.from(document.querySelectorAll(" + selectorLiteral + ")).find(b=>!b.disabled&&!b.closest('[aria-hidden=true],[inert]')&&b.getBoundingClientRect().width>0&&b.getBoundingClientRect().height>0&&getComputedStyle(b).visibility==='visible'&&(b.getAttribute('aria-label')||(b.getAttribute('role')==='menuitem'&&b.querySelector('span')?b.querySelector('span').textContent:b.textContent)).trim()===" + nameLiteral + ")"
+    waitForCondition(scenario, "!!(" + findButton + ")", "named actual-app control must be enabled and visible: " + name, deadlineOverride = actionDeadline)
+    assertEquals("actual-app control must be clicked once", "true", evaluate(scenario, "(()=>{const button=" + findButton + ";if(!button)return false;button.click();return true;})()", deadlineOverride = actionDeadline, actionCallback = true))
     if (name == "Close Preferences") waitForCondition(scenario, "!Array.from(document.querySelectorAll('[role=dialog]')).some(n=>n.querySelector('h2')&&n.querySelector('h2').textContent==='Preferences')&&document.activeElement===document.querySelector('.application-menu-trigger')", "Preferences dismissal must restore its real opener before the following task starts", deadlineOverride = actionDeadline)
   }
 
@@ -1743,10 +1763,27 @@ class AndroidDeliveryInstrumentedTest {
   private fun observeVisibleTaskControls(scenario: ActivityScenario<MainActivity>, profile: String, deadlineOverride: Long? = null, expectedImeVisible: Boolean? = null): JSONObject {
     val actionDeadline = deadlineOverride ?: (SystemClock.elapsedRealtime() + 30_000L)
     assertTrue(SystemClock.elapsedRealtime() < actionDeadline)
-    val count = evaluate(scenario, "Array.from(document.querySelectorAll('button,input,select,textarea,summary,[role=button],[role=menuitem],[role=link]')).filter(n=>!n.closest('[aria-hidden=true],[inert]')&&!n.matches('.markdown-document input[type=checkbox][disabled]')&&n.getBoundingClientRect().width>0&&n.getBoundingClientRect().height>0).length").toInt()
+    val nativeViewportReady = """
+      (()=>{
+        const surfaces=Array.from(document.querySelectorAll('.task-surface[data-state=open]')).filter(n=>!n.closest('[aria-hidden=true],[inert]'));
+        const add=document.querySelector('.add-document');
+        if(!surfaces.length&&add)surfaces.push(add);
+        return document.readyState==='complete'&&surfaces.every(n=>n.getAttribute('data-native-viewport')==='true'&&Number(n.getAttribute('data-native-viewport-width'))===innerWidth&&Number(n.getAttribute('data-native-viewport-height'))===innerHeight);
+      })()
+    """.trimIndent()
+    waitForCondition(scenario,nativeViewportReady,"actual task viewport bounds must be applied before control inventory and the single scroll",deadlineOverride=actionDeadline)
+    var count = 0
+    while (SystemClock.elapsedRealtime() < actionDeadline) {
+      count = evaluate(scenario, "Array.from(document.querySelectorAll('button,input,select,textarea,summary,[role=button],[role=menuitem],[role=link]')).filter(n=>!n.closest('[aria-hidden=true],[inert]')&&!n.matches('.markdown-document input[type=checkbox][disabled]')&&n.getBoundingClientRect().width>0&&n.getBoundingClientRect().height>0).length").toInt()
+      if (count in 1..200) break
+      val remaining = actionDeadline - SystemClock.elapsedRealtime()
+      if (remaining > 0) SystemClock.sleep(minOf(100L, remaining))
+    }
+    if (count !in 1..200) captureEditorFocusFailure(scenario,"control_inventory",JSONObject().put("profile",profile).put("count",count),nativeControlGeometry(scenario,null))
     assertTrue("the composed task must expose bounded real controls", count in 1..200)
     val controls = JSONArray()
     for (index in 0 until count) {
+      waitForCondition(scenario,nativeViewportReady,"the current task must retain applied native viewport bounds before scrolling its next control",deadlineOverride=actionDeadline)
       assertTrue("native control observation must retain the original action deadline", SystemClock.elapsedRealtime() < actionDeadline)
       val controlScript = """
         (()=>{
@@ -1773,7 +1810,7 @@ class AndroidDeliveryInstrumentedTest {
         return measured to nativeControlGeometry(scenario, measured)
       }
       var (measurement, native) = readControl(true)
-      val expectedControl = measurement
+      val expectedControl = JSONObject(measurement.toString())
       var settled = false
       while (SystemClock.elapsedRealtime() < actionDeadline) {
         val (nextMeasurement, nextNative) = readControl(false)
@@ -1794,7 +1831,7 @@ class AndroidDeliveryInstrumentedTest {
         val remaining = actionDeadline - SystemClock.elapsedRealtime()
         if (remaining > 0) SystemClock.sleep(minOf(100L, remaining))
       }
-      if (!settled) captureEditorFocusFailure(scenario, "control_geometry", measurement.put("profile", profile).put("control_index", index).put("ime_expected", expectedImeVisible ?: JSONObject.NULL), native)
+      if (!settled) captureEditorFocusFailure(scenario, "control_geometry", measurement.put("profile", profile).put("control_index", index).put("initial_control", expectedControl).put("ime_expected", expectedImeVisible ?: JSONObject.NULL), native)
       assertTrue("CSS/native control geometry must settle within the original action deadline: profile=" + profile + ",control=" + measurement + ",native=" + native, settled)
       assertTrue("each live control must remain measurable: " + profile, measurement.getBoolean("found"))
       assertTrue("each action needs a meaningful accessible name", measurement.getString("label").isNotBlank())
@@ -1820,10 +1857,27 @@ class AndroidDeliveryInstrumentedTest {
     return JSONObject().put("profile", profile).put("control_count", count).put("css", css).put("font_scale", clientContext.resources.configuration.fontScale)
   }
   private fun shellOutput(command: String): String = instrumentation.uiAutomation.executeShellCommand(command).use { descriptor -> android.os.ParcelFileDescriptor.AutoCloseInputStream(descriptor).bufferedReader().use { it.readText() } }
-  private fun awaitFontScale(value: Float) {
-    val deadline = SystemClock.elapsedRealtime() + 30_000L
+  private fun awaitFontScale(value: Float, deadlineOverride: Long? = null) {
+    val deadline = deadlineOverride ?: (SystemClock.elapsedRealtime() + 30_000L)
     while (SystemClock.elapsedRealtime() < deadline && kotlin.math.abs(clientContext.resources.configuration.fontScale - value) > 0.01f) SystemClock.sleep(100L)
     assertEquals("actual Android font configuration must change", value.toDouble(), clientContext.resources.configuration.fontScale.toDouble(), 0.01)
+  }
+
+  private fun applyObservedFontScale(scenario: ActivityScenario<MainActivity>, font: Float) {
+    val fontDeadline = SystemClock.elapsedRealtime() + 30_000L
+    val priorActivity = AtomicReference<MainActivity>()
+    scenario.onActivity { priorActivity.set(it) }
+    val changingFont = kotlin.math.abs(priorActivity.get().resources.configuration.fontScale - font) > 0.01f
+    shellOutput("settings put system font_scale " + font)
+    awaitFontScale(font, deadlineOverride=fontDeadline)
+    if (changingFont) {
+      waitForCondition(scenario, "document.readyState==='complete'", "font configuration must update the existing activity without losing its native task binding", deadlineOverride=fontDeadline) {
+        var updated = false
+        scenario.onActivity { updated = it === priorActivity.get() && kotlin.math.abs(it.resources.configuration.fontScale - font) <= 0.01f }
+        updated
+      }
+    }
+    waitForCondition(scenario, "Math.abs(parseFloat(getComputedStyle(document.documentElement).fontSize)-16*" + font + ")<0.1", "the actual WebView text must use the requested system font scale", deadlineOverride=fontDeadline)
   }
 
   private fun verifyS047TaskGeometry(scenario: ActivityScenario<MainActivity>, profile: String, ime: Boolean) {
@@ -1842,9 +1896,8 @@ class AndroidDeliveryInstrumentedTest {
         (()=>{
           const dialog=document.querySelector('[role=dialog][data-state=open]');
           if(!dialog)return false;
-          const preferred=dialog.querySelector('[data-task-initial-focus]:not(:disabled),[role=menuitem]:not([disabled])');
           const active=document.activeElement;
-          return !!active&&dialog.contains(active)&&(!preferred||preferred===active||preferred.contains(active));
+          return !!active&&dialog.contains(active)&&!active.disabled&&!dialog.querySelector('[aria-busy=true]');
         })()
       """.trimIndent()
       try {
@@ -1870,52 +1923,52 @@ class AndroidDeliveryInstrumentedTest {
       recorded.put("ime_applicable",inputLabel!=null)
     }
     createNewDraftForInput(scenario,"New text file","Untitled.txt")
-    menuAction(scenario,"Search")
+    menuAction(scenario, "Search", nativeActivation=true)
     observe("editor_search","Find")
-    clickControl(scenario,"Close search")
-    menuAction(scenario,"Document details")
+    tapNativeControlOnce(scenario,"Close search")
+    menuAction(scenario, "Document details", nativeActivation=true)
     observe("document_details")
-    clickControl(scenario,"Close Document details")
+    tapNativeControlOnce(scenario,"Close Document details")
     openFromAddDocument(scenario,grant(documentUri("s047-controls.md")))
-    if(evaluate(scenario,"!!document.querySelector('.document-surface .markdown-source-mode:not([hidden])')")=="true")menuAction(scenario,"Read")
+    if(evaluate(scenario,"!!document.querySelector('.document-surface .markdown-source-mode:not([hidden])')")=="true")menuAction(scenario, "Read", nativeActivation=true)
     waitForCondition(scenario,"!!document.querySelector('.document-surface .markdown-rendered-mode:not([hidden]) .markdown-document h2')","profile must use actual rendered Markdown")
-    menuAction(scenario,"Search")
+    menuAction(scenario, "Search", nativeActivation=true)
     observe("markdown_search","Find rendered text")
-    clickControl(scenario,"Close search")
-    menuAction(scenario,"Outline")
+    tapNativeControlOnce(scenario,"Close search")
+    menuAction(scenario, "Outline", nativeActivation=true)
     observe("outline")
-    clickControl(scenario,"Close Document outline")
-    menuAction(scenario,"File information")
+    tapNativeControlOnce(scenario,"Close Document outline")
+    menuAction(scenario, "File information", nativeActivation=true)
     observe("metadata")
-    clickControl(scenario,"Close File information")
+    tapNativeControlOnce(scenario,"Close File information")
     openFromAddDocument(scenario,grant(documentUri("s047-controls.mmd")))
-    if(evaluate(scenario,"!!document.querySelector('.document-surface .mermaid-source-mode')")=="true")menuAction(scenario,"Read")
+    if(evaluate(scenario,"!!document.querySelector('.document-surface .mermaid-source-mode')")=="true")menuAction(scenario, "Read", nativeActivation=true)
     waitForCondition(scenario,"!!document.querySelector('.document-surface .mermaid-rendered-mode [data-preview-ready=true]')","profile must use an actual ready Mermaid viewport")
-    menuAction(scenario,"Search")
+    menuAction(scenario, "Search", nativeActivation=true)
     observe("mermaid_search","Find diagram text","Cats")
-    clickControl(scenario,"Close search")
-    clickControl(scenario,"More diagram tools")
+    tapNativeControlOnce(scenario,"Close search")
+    tapNativeControlOnce(scenario,"More diagram tools")
     observe("diagram_tools")
-    clickControl(scenario,"Close Diagram tools")
+    tapNativeControlOnce(scenario,"Close Diagram tools")
     openFromAddDocument(scenario,grant(documentUri("original.gif")))
     waitForImagePixels(scenario,"original.gif")
-    clickControl(scenario,"More image tools")
+    tapNativeControlOnce(scenario,"More image tools")
     observe("image_tools","Animation frame","2")
-    clickControl(scenario,"Close Image tools")
+    tapNativeControlOnce(scenario,"Close Image tools")
     openFromAddDocument(scenario,grant(documentUri("entries.ico")))
     waitForImagePixels(scenario,"entries.ico")
-    clickControl(scenario,"More image tools")
+    tapNativeControlOnce(scenario,"More image tools")
     observe("icon_tools")
-    clickControl(scenario,"Close Image tools")
+    tapNativeControlOnce(scenario,"Close Image tools")
     openFromAddDocument(scenario,grant(documentUri("s047-large.txt")))
-    waitForCondition(scenario,"!!document.querySelector('.large-text pre')","profile must retain actual bounded large text")
-    menuAction(scenario,"Large text tools")
+    waitForCondition(scenario,"(()=>{const n=document.querySelector('.large-text pre');return !!n&&n.textContent.length>0;})()","profile must retain actual nonempty bounded large text")
+    menuAction(scenario, "Large text tools", nativeActivation=true)
     observe("large_tools","Find","S047_LARGE_FIRST")
-    clickControl(scenario,"Close Large text tools")
-    menuAction(scenario,"Preferences")
+    tapNativeControlOnce(scenario,"Close Large text tools")
+    menuAction(scenario, "Preferences", nativeActivation=true)
     val family=stringValue(evaluate(scenario,"Array.from(document.querySelectorAll('input')).find(n=>n.labels&&Array.from(n.labels).some(l=>l.textContent.trim().startsWith('Editor font family'))).value"))
     observe("preferences","Editor font family",family)
-    clickControl(scenario,"Close Preferences")
+    tapNativeControlOnce(scenario,"Close Preferences")
     hideIme(SystemClock.elapsedRealtime()+30_000L)
   }
 
@@ -1929,11 +1982,16 @@ class AndroidDeliveryInstrumentedTest {
     verifyS047LargeText(scenario)
     try {
       for (font in if (Build.VERSION.SDK_INT >= 34) listOf(1f, 2f) else listOf(1f, 1.3f)) {
-        shellOutput("settings put system font_scale " + font)
-        awaitFontScale(font)
+        applyObservedFontScale(scenario, font)
         scenario.onActivity { it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT }
         waitForCondition(scenario, "innerHeight>innerWidth", "actual portrait must be observed")
         observations.put("portrait-" + font, observeVisibleTaskControls(scenario, "portrait", expectedImeVisible=false))
+        if (evaluate(scenario, "(()=>{const n=document.querySelector('.resolution-dialog h2');return !!n&&n.textContent.startsWith('Recover ')&&n.textContent.endsWith('?');})()") == "true") {
+          tapNativeControlOnce(scenario, "Not now")
+          waitForCondition(scenario, "!document.querySelector('.resolution-dialog')", "geometry must defer the observed recovery candidate through its actual Not now action")
+          observations.put("recovery-deferred-" + font, JSONObject().put("action", "Not now").put("decision", "defer"))
+          observeVisibleTaskControls(scenario, "portrait-after-recovery", expectedImeVisible=false)
+        }
         verifyS047TaskGeometry(scenario,"portrait-"+font,false)
         verifyAddDocumentChoices(scenario)
         for ((destination, close) in listOf("Preferences" to "Close Preferences", "Diagnostics" to "Close Diagnostics", "About Glitchpad" to "Close About Glitchpad")) {
@@ -2960,7 +3018,8 @@ class AndroidDeliveryInstrumentedTest {
         val wholeVisible = !visible.isEmpty && !imeWindowCovers && left >= visible.left - tolerance && top >= visible.top - tolerance &&
           right <= visible.right + tolerance && bottom <= visible.bottom + tolerance &&
           screenX >= visible.left && screenX < visible.right && screenY >= visible.top && screenY < visible.bottom
-        val bottomOccluded = bottom > window.bottom + tolerance
+        // An IME can shrink the native View below the window frame; its visible intersection is authoritative.
+        val bottomOccluded = bottom > visible.bottom + tolerance
         val nonBarBottomGap = location[1] + view.height - window.bottom - barsBottom
         val imeOccludes = imeWindowCovers || (bottomOccluded && (imeBottom > 0 || observed.getBoolean("ime_reported_visible") ||
           (input.isActive(view) && nonBarBottomGap > tolerance)))
@@ -3430,6 +3489,10 @@ class AndroidDeliveryInstrumentedTest {
         inner_width:window.innerWidth,inner_height:window.innerHeight,device_pixel_ratio:window.devicePixelRatio,window_scroll_x:window.scrollX,window_scroll_y:window.scrollY,
         scroller:scroller?{rect:rect(scroller),scroll_top:scroller.scrollTop,scroll_left:scroller.scrollLeft,scroll_height:scroller.scrollHeight,client_height:scroller.clientHeight}:null,
         add_menu_present:!!document.querySelector('.add-document-menu'),scrim_present:!!document.querySelector('.add-document-scrim'),dialog_count:document.querySelectorAll('[role=dialog]').length,
+        task_surfaces:Array.from(document.querySelectorAll('.task-surface[data-state=open]')).slice(0,4).map(node=>{
+          const title=node.querySelector('h2'),style=getComputedStyle(node),body=node.querySelector('.task-surface-body'),bodyStyle=body&&getComputedStyle(body);
+          return {title:title?title.textContent:null,rect:rect(node),native_applied:node.getAttribute('data-native-viewport'),native_width:node.getAttribute('data-native-viewport-width'),native_height:node.getAttribute('data-native-viewport-height'),native_block_size:style.getPropertyValue('--gl-task-native-block-size'),native_inline_size:style.getPropertyValue('--gl-task-native-inline-size'),max_height:style.maxHeight,max_width:style.maxWidth,overflow:style.overflow,body:body?{rect:rect(body),client_height:body.clientHeight,scroll_height:body.scrollHeight,scroll_top:body.scrollTop,min_height:bodyStyle.minHeight,overflow:bodyStyle.overflow}:null};
+        }),
         insert_supported:document.queryCommandSupported('insertText'),insert_enabled:document.queryCommandEnabled('insertText'),
         user_activation:navigator.userActivation?navigator.userActivation.isActive:null,
         edit_context_attached:!!context,editing_representation:context?'edit_context_text':'contenteditable_inner_text',

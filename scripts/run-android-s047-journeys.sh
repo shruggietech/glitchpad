@@ -80,8 +80,8 @@ if [[ "$role" == ordinary ]]; then
   run_task layout s047LayoutJourney
   run_back_task
   run_about_task
-  if ANDROID_INSTRUMENTATION_RESET_APP_DATA=true bash "$runner" "$RUNNER_TEMP/s047-draft-seed.txt" 'draft_recovery_seed=pass' -e waitForActivitiesToComplete false -e expectedSource "$source" -e expectedRole "$role" -e class com.shruggietech.glitchpad.source.AndroidDeliveryInstrumentedTest#draftRecoveryAcrossProcessBoundary -e recoveryPhase seed; then
-    ANDROID_INSTRUMENTATION_RESET_APP_DATA=false bash "$runner" "$RUNNER_TEMP/s047-draft-verify.txt" 'draft_recovery_verify=pass' -e waitForActivitiesToComplete false -e expectedSource "$source" -e expectedRole "$role" -e class com.shruggietech.glitchpad.source.AndroidDeliveryInstrumentedTest#draftRecoveryAcrossProcessBoundary -e recoveryPhase verify || failures=$((failures+1))
+  if ANDROID_INSTRUMENTATION_RESET_APP_DATA=true bash "$runner" "$RUNNER_TEMP/s047-draft-seed.txt" 'draft_recovery_seed=pass' -e s047 true -e waitForActivitiesToComplete false -e expectedSource "$source" -e expectedRole "$role" -e class com.shruggietech.glitchpad.source.AndroidDeliveryInstrumentedTest#draftRecoveryAcrossProcessBoundary -e recoveryPhase seed; then
+    ANDROID_INSTRUMENTATION_RESET_APP_DATA=false bash "$runner" "$RUNNER_TEMP/s047-draft-verify.txt" 'draft_recovery_verify=pass' -e s047 true -e waitForActivitiesToComplete false -e expectedSource "$source" -e expectedRole "$role" -e class com.shruggietech.glitchpad.source.AndroidDeliveryInstrumentedTest#draftRecoveryAcrossProcessBoundary -e recoveryPhase verify || failures=$((failures+1))
   else failures=$((failures+1)); fi
 else run_task faults s047FaultJourney; fi
 node scripts/validate-android-recovery-evidence.mjs --directory "$RUNNER_TEMP" --source "$source" --role "$role" --api "$api" --output "$RUNNER_TEMP/s047-recovery-evidence.json" || failures=$((failures+1))

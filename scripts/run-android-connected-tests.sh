@@ -27,7 +27,10 @@ retain_tested_candidate() {
   node --input-type=module <<'NODE'
 import { mkdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
-import { execFileSync } from 'node:child_process';
+import { createWriteStream } from 'node:fs';
+import { Transform } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
+import { execFileSync, spawn } from 'node:child_process';
 import { join } from 'node:path';
 const directory = process.env.GLITCHPAD_TESTED_CANDIDATE_DIR;
 const boundary = process.env.GLITCHPAD_TESTED_CAPTURE_BOUNDARY;
@@ -47,7 +50,8 @@ const failedCapture = (method, error) => ({
   signal: error.signal ?? null,
   stderr: String(error.stderr ?? '').slice(0, 8192),
   stderr_truncated: (error.stderr?.length ?? 0) > 8192,
-  stdout_byte_count: Buffer.isBuffer(error.stdout) ? error.stdout.length : Buffer.byteLength(String(error.stdout ?? '')),
+  stdout_byte_count: error.stdout_byte_count ?? (Buffer.isBuffer(error.stdout) ? error.stdout.length : Buffer.byteLength(String(error.stdout ?? ''))),
+  error_message: String(error.message ?? '').slice(0, 1024),
   cause: 'unknown',
 });
 const setup = { schema_version: 1, timeout_ms: 60_000, current_phase: null, state: 'pending', commands: [] };
@@ -74,7 +78,39 @@ if (boundary === 'post_connected_suite_reinstall') {
     await setupCommand('install', packageName, ['install', '-r', '-t', builtPath]);
   }
 }
+const captureFramedApk = async (args, path, byteLimit) => {
+  let byteCount = 0;
+  let stderr = Buffer.alloc(0);
+  let failure;
+  const child = spawn('adb', args, { stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });
+  const stopped = new Promise((resolve, reject) => {
+    child.once('error', reject);
+    child.once('close', (status, signal) => resolve({ status, signal }));
+  });
+  const stop = (error) => { failure ??= error; child.kill('SIGKILL'); };
+  const timeout = setTimeout(() => stop(Object.assign(new Error('Installed APK capture timed out'), { code: 'ETIMEDOUT' })), 60_000);
+  child.stderr.on('data', (chunk) => {
+    const remaining = 64 * 1024 - stderr.length;
+    stderr = Buffer.concat([stderr, chunk.subarray(0, Math.max(0, remaining))]);
+    if (chunk.length > remaining) stop(Object.assign(new Error('Installed APK stderr exceeds its bound'), { code: 'ENOBUFS' }));
+  });
+  const bounded = new Transform({ transform(chunk, encoding, callback) {
+    byteCount += chunk.length;
+    if (byteCount > byteLimit) {
+      const error = Object.assign(new Error('Installed APK output exceeds its bound'), { code: 'ENOBUFS' });
+      stop(error);
+      callback(error);
+    } else callback(null, chunk);
+  } });
+  const copied = pipeline(child.stdout, bounded, createWriteStream(path, { flags: 'wx' })).catch(stop);
+  try {
+    const [, result] = await Promise.all([copied, stopped]);
+    if (failure || result.status !== 0) throw Object.assign(failure ?? new Error('Installed APK remote read failed'), { status: result.status, signal: result.signal, stderr, stdout_byte_count: byteCount });
+    return byteCount;
+  } finally { clearTimeout(timeout); }
+};
 const artifacts = [];
+let shellV2Verified = false;
 for (const [kind, packageName, builtPath] of variants) {
   const paths = (await setupCommand('package_path', packageName, ['shell', 'pm', 'path', packageName])).trim().split(/\r?\n/).filter(Boolean);
   if (paths.length !== 1 || !paths[0].startsWith('package:')) throw new Error('Expected one installed universal APK for ' + kind);
@@ -97,12 +133,21 @@ for (const [kind, packageName, builtPath] of variants) {
       capture.attempts.push(failure);
       console.warn('installed_apk_capture_attempt=' + JSON.stringify({ kind, ...failure }));
       await rm(installedPath, { force: true });
-      method = 'adb_exec_out_run_as_cat';
-      // Read the same PM-reported installed path as the debuggable application.
+      method = 'adb_shell_v2_run_as_cat';
+      // Read the same PM-reported path without a PTY and preserve remote errors.
       // Never substitute build output when the installed file cannot be read.
       try {
-        installed = execFileSync('adb', ['exec-out', 'run-as', packageName, 'cat', remotePath], { stdio: 'pipe', timeout: 60_000, maxBuffer: built.length + 1, windowsHide: true });
-        capture.attempts.push({ method, status: 0, byte_count: installed.length });
+        if (!shellV2Verified) {
+          const features = (await setupCommand('shell_features', packageName, ['features'])).trim().split(/[\s,]+/u).filter(Boolean);
+          capture.shell_features = features;
+          if (!features.includes('shell_v2')) {
+            capture.validation = 'required_shell_protocol_unavailable';
+            throw new Error('Installed capture requires the connected shell_v2 feature');
+          }
+          shellV2Verified = true;
+        }
+        const byteCount = await captureFramedApk(['shell', '-T', '-n', 'run-as', packageName, 'cat', remotePath], installedPath, built.length + 1);
+        capture.attempts.push({ method, status: 0, byte_count: byteCount });
       } catch (error) {
         const failure = failedCapture(method, error);
         capture.attempts.push(failure);
@@ -112,7 +157,7 @@ for (const [kind, packageName, builtPath] of variants) {
     }
     if (!installed) {
       const information = await stat(installedPath);
-      if (information.size !== built.length) {
+      if (information.size > built.length + 1) {
         capture.validation = 'installed_length_differs';
         capture.observed_byte_count = information.size;
         capture.mismatch_filename = kind + '-capture-mismatch.apk';
@@ -131,7 +176,6 @@ for (const [kind, packageName, builtPath] of variants) {
       await writeFile(join(directory, capture.mismatch_filename), installed, { flag: 'wx' });
       throw new Error('Installed APK differs from built candidate for ' + kind);
     }
-    if (method === 'adb_exec_out_run_as_cat') await writeFile(installedPath, installed);
     capture.validation = 'matched_built_candidate';
     matched = true;
     artifacts.push({ kind, package: packageName, filename: kind + '.apk', sha256: createHash('sha256').update(installed).digest('hex'), byte_count: installed.length, capture_method: method, capture_diagnostics: diagnosticFilename });
@@ -156,8 +200,8 @@ api_level=$(adb shell getprop ro.build.version.sdk | tr -d '\r') || exit 1
 if [[ "$api_level" == "24" ]]; then
   app_apk="crates/glitchpad-host/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk"
   test_apk="crates/glitchpad-host/gen/android/app/build/outputs/apk/androidTest/universal/debug/app-universal-debug-androidTest.apk"
-  adb install -r -t "$app_apk" || exit 1
-  adb install -r -t "$test_apk" || exit 1
+  adb install --no-streaming -r -t "$app_apk" || exit 1
+  adb install --no-streaming -r -t "$test_apk" || exit 1
   connected_output="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/connected-suite-api24.txt"
   ANDROID_INSTRUMENTATION_RESET_APP_DATA=true bash scripts/run-android-instrumentation.sh "$connected_output" "OK (9 tests)" \
     -e notClass com.shruggietech.glitchpad.performance.PerformanceInstrumentedTest,com.shruggietech.glitchpad.source.AndroidDeliveryInstrumentedTest,com.shruggietech.glitchpad.shell.BrandBuilderAppFrameInstrumentedTest || exit 1

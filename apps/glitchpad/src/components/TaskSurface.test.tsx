@@ -421,3 +421,40 @@ it('falls back to enabled dialog focus while the preferred field is disabled', a
   );
   expect(close).toHaveFocus();
 });
+
+it('keeps focus inside an open Add document menu when an older task closes late', async () => {
+  const host = document.createElement('div');
+  host.id = 'bb-overlay-root';
+  document.body.append(host);
+  const opener = document.createElement('button');
+  opener.textContent = 'Menu';
+  const menu = document.createElement('div');
+  menu.className = 'add-document-menu';
+  menu.setAttribute('role', 'menu');
+  const choice = document.createElement('button');
+  choice.setAttribute('role', 'menuitem');
+  choice.textContent = 'New text file';
+  menu.append(choice);
+  document.body.append(opener, menu);
+  const task = (open: boolean) => (
+    <TaskSurface
+      open={open}
+      title="About"
+      opener={opener}
+      onOpenChange={() => undefined}
+    >
+      <button data-task-initial-focus>About action</button>
+    </TaskSurface>
+  );
+  const view = render(task(true));
+  await screen.findByRole('dialog', { name: 'About' });
+  view.rerender(task(false));
+  choice.focus();
+  expect(choice).toHaveFocus();
+  await act(async () => {
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+  });
+  expect(choice).toHaveFocus();
+  opener.remove();
+  menu.remove();
+});

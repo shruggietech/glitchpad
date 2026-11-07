@@ -2003,32 +2003,47 @@ class AndroidDeliveryInstrumentedTest {
   private fun imageViewState(scenario: ActivityScenario<MainActivity>): JSONObject = JSONObject(evaluate(scenario, "(()=>{const n=document.querySelector('.image-pane');return {ready:n&&n.getAttribute('data-preview-ready')==='true',mode:n&&n.getAttribute('data-viewport-mode'),scale:n?Number(n.getAttribute('data-viewport-scale')):0,x:n?Number(n.getAttribute('data-viewport-pan-x')):0,y:n?Number(n.getAttribute('data-viewport-pan-y')):0,background:n&&n.getAttribute('data-viewport-background'),selection:n&&n.getAttribute('data-image-selection')};})()"))
   private fun nativeImageGesture(scenario: ActivityScenario<MainActivity>, pinch: Boolean, selector: String = ".image-pane") {
     val target = JSONObject(evaluate(scenario, "(()=>{const n=document.querySelector(" + JSONObject.quote(selector) + ");n.scrollIntoView({block:'center'});const r=n.getBoundingClientRect();return {found:true,left:r.left,top:r.top,right:r.right,bottom:r.bottom,x:(r.left+r.right)/2,y:(r.top+r.bottom)/2,viewport_width:innerWidth};})()"))
-    val gestureDeadline = SystemClock.elapsedRealtime() + 30_000L
-    awaitDiagnosticVisualState(scenario, gestureDeadline)
     val geometry = nativeControlGeometry(scenario, target)
     assertTrue("image gesture must start wholly inside the actual visible native pane", geometry.getBoolean("whole_control_visible"))
     val x = geometry.getDouble("screen_x").toFloat(); val y = geometry.getDouble("screen_y").toFloat(); val scale = geometry.getDouble("css_to_native_scale").toFloat()
     val downTime = SystemClock.uptimeMillis()
-    fun inject(action: Int, count: Int, spread: Float, dx: Float) {
+    var fingers = 0
+    var spread = 0f
+    var dx = 0f
+    var eventCount = 0
+    fun inject(action: Int, count: Int, nextSpread: Float, nextDx: Float) {
+      val masked = action and MotionEvent.ACTION_MASK
+      val released = if (masked == MotionEvent.ACTION_POINTER_UP) action shr MotionEvent.ACTION_POINTER_INDEX_SHIFT else -1
       val props = Array(count) { index -> MotionEvent.PointerProperties().apply { id = index; toolType = MotionEvent.TOOL_TYPE_FINGER } }
-      val coordinates = Array(count) { index -> MotionEvent.PointerCoords().apply { this.x = x + dx + if (count == 2) (if (index == 0) -spread else spread) else 0f; this.y = y; pressure = 1f; size = 1f } }
+      val coordinates = Array(count) { index -> MotionEvent.PointerCoords().apply { this.x = x + nextDx + if (count == 2) (if (index == 0) -nextSpread else nextSpread) else 0f; this.y = y; pressure = if (masked == MotionEvent.ACTION_UP || masked == MotionEvent.ACTION_CANCEL || index == released) 0f else 1f; size = 1f } }
       val event = MotionEvent.obtain(downTime, SystemClock.uptimeMillis(), action, count, props, coordinates, 0, 0, 1f, 1f, 0, 0, InputDevice.SOURCE_TOUCHSCREEN, 0)
-      try { assertTrue("actual native image pointer input must be accepted", instrumentation.uiAutomation.injectInputEvent(event, true)) } finally { event.recycle() }
+      try { assertTrue("actual native image pointer input must be accepted", instrumentation.uiAutomation.injectInputEvent(event, true)); eventCount++ } finally { event.recycle() }
+      fingers = if (masked == MotionEvent.ACTION_UP || masked == MotionEvent.ACTION_CANCEL) 0 else if (masked == MotionEvent.ACTION_POINTER_UP) count - 1 else count
+      spread = nextSpread; dx = nextDx
     }
-    if (pinch) {
-      inject(MotionEvent.ACTION_DOWN, 1, 0f, -20f * scale)
-      inject(MotionEvent.ACTION_POINTER_DOWN or (1 shl MotionEvent.ACTION_POINTER_INDEX_SHIFT), 2, 20f * scale, 0f)
-      inject(MotionEvent.ACTION_MOVE, 2, 35f * scale, 0f)
-      inject(MotionEvent.ACTION_POINTER_UP or (1 shl MotionEvent.ACTION_POINTER_INDEX_SHIFT), 2, 35f * scale, 0f)
-      inject(MotionEvent.ACTION_UP, 1, 0f, -35f * scale)
-    } else {
-      inject(MotionEvent.ACTION_DOWN, 1, 0f, 0f)
-      inject(MotionEvent.ACTION_MOVE, 1, 0f, -32f * scale)
-      inject(MotionEvent.ACTION_UP, 1, 0f, -32f * scale)
+    try {
+      inject(MotionEvent.ACTION_DOWN, 1, 0f, if (pinch) -20f * scale else 0f)
+      SystemClock.sleep(android.view.ViewConfiguration.getTapTimeout() / 2L)
+      if (pinch) inject(MotionEvent.ACTION_POINTER_DOWN or (1 shl MotionEvent.ACTION_POINTER_INDEX_SHIFT), 2, 20f * scale, 0f)
+      // A real 200 ms motion has ordered samples, rather than a same-timestamp teleport.
+      for (step in 1..10) {
+        SystemClock.sleep(20L)
+        if (pinch) inject(MotionEvent.ACTION_MOVE, 2, (20f + 15f * step / 10f) * scale, 0f)
+        else inject(MotionEvent.ACTION_MOVE, 1, 0f, -32f * scale * step / 10f)
+      }
+      SystemClock.sleep(20L)
+      if (pinch) {
+        inject(MotionEvent.ACTION_POINTER_UP or (1 shl MotionEvent.ACTION_POINTER_INDEX_SHIFT), 2, 35f * scale, 0f)
+        SystemClock.sleep(20L)
+        inject(MotionEvent.ACTION_UP, 1, 0f, -35f * scale)
+      } else inject(MotionEvent.ACTION_UP, 1, 0f, -32f * scale)
+    } finally {
+      if (fingers > 0) runCatching { inject(MotionEvent.ACTION_CANCEL, fingers, spread, dx) }
     }
-    awaitDiagnosticVisualState(scenario, gestureDeadline)
+    instrumentation.waitForIdleSync()
+    println("native_image_gesture=" + JSONObject().put("selector", selector).put("pinch", pinch).put("down_time", downTime).put("up_time", SystemClock.uptimeMillis()).put("event_count", eventCount))
+    System.out.flush()
   }
-
 
 
   private fun viewportStateScript(selector:String,image:Boolean):String {

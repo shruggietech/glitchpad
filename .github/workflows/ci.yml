@@ -36,13 +36,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        api: ${{ fromJSON(inputs.stage == 'clipboard_observer' && '[24]' || (inputs.stage == 'tap_observer' || inputs.stage == 'metadata_observer') && '[36]' || '[24,36]') }}
+        api: ${{ fromJSON(inputs.stage == 'clipboard_observer' && '[24,36]' || (inputs.stage == 'tap_observer' || inputs.stage == 'metadata_observer') && '[36]' || '[24,36]') }}
     env:
       GLITCHPAD_BUILD_COMMIT: ${{ inputs.stage == 'clipboard_observer' && '3c40eedeabd87955d4170e462aeda8553b44843d' || 'f572e0fbbd1d2978b6e4064a31817201834c8965' }}
       S047_PRODUCT_SOURCE: ${{ inputs.stage == 'clipboard_observer' && '3c40eedeabd87955d4170e462aeda8553b44843d' || 'f572e0fbbd1d2978b6e4064a31817201834c8965' }}
       S047_ORIGINAL_APK_SHA256: ${{ inputs.stage == 'clipboard_observer' && '53b8827869d59f8b68c5e6a2dc2947fda42a352f72acdc9df295fbee96624b59' || '939eee7b4ee3d211fb5bf82da140690248b3b5c12e6b07f40a76f91f6c9dc266' }}
       S047_ORIGINAL_APK_BYTES: ${{ inputs.stage == 'clipboard_observer' && '230722006' || '230309962' }}
       S047_ORIGINAL_ARTIFACT: ${{ inputs.stage == 'clipboard_observer' && '13559868075' || '13555731908' }}
+      S047_REBUILD_JVM: ${{ inputs.stage == 'clipboard_observer' && 'true' || 'false' }}
       DIAGNOSTIC_API: ${{ matrix.api }}
     steps:
       - uses: actions/checkout@v7
@@ -72,8 +73,9 @@ jobs:
           path: ${{ runner.temp }}/original
       - name: Verify existing APK and prepare pinned JVM dependencies
         run: python3 .github/scripts/s047-observer-prepare.py
-      - name: Compile only the changed instrumentation
+      - name: Compile changed JVM and instrumentation sources
         run: |
+          if [ "$S047_REBUILD_JVM" = true ]; then ./crates/glitchpad-host/gen/android/gradlew --project-dir crates/glitchpad-host/gen/android :app:assembleUniversalDebug -PabiList=x86_64 -ParchList=x86_64 -PtargetList=x86_64 -x :app:rustBuildUniversalDebug -x :app:rustBuildX86_64Debug --no-daemon; fi
           ./crates/glitchpad-host/gen/android/gradlew --project-dir crates/glitchpad-host/gen/android :app:assembleUniversalDebugAndroidTest -PabiList=x86_64 -ParchList=x86_64 -PtargetList=x86_64 -x :app:rustBuildUniversalDebug -x :app:rustBuildX86_64Debug --no-daemon
           mkdir -p "$RUNNER_TEMP/s047-observer-diagnostic"
           cp crates/glitchpad-host/gen/android/app/build/outputs/apk/androidTest/universal/debug/app-universal-debug-androidTest.apk "$RUNNER_TEMP/s047-observer-diagnostic/instrumentation.apk"

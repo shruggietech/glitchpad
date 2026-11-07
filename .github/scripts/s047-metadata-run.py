@@ -19,7 +19,7 @@ if api==36:
  command(['adb','shell','settings','put','global','hide_error_dialogs','1'])
  command(['adb','shell','am','broadcast','-a','android.intent.action.CLOSE_SYSTEM_DIALOGS'])
 command(['adb','shell','settings','put','secure','show_ime_with_hard_keyboard','1'])
-methods=[('without-native-pan','s047MetadataMarkdownOnlyDiagnostic',360,'skip_pan'),('visual-fence','s047MetadataMarkdownOnlyDiagnostic',360,'visual')]
+methods=[('timed-native-pan','s047MetadataMarkdownOnlyDiagnostic',360,'timed')]
 for name,method,seconds,placement in methods:
  env=os.environ.copy(); env['ANDROID_INSTRUMENTATION_RESET_APP_DATA']='true'
  args=['bash','scripts/run-android-instrumentation.sh',str(out/(name+'.txt')),'s047_metadata_copy_diagnostic=','-e','waitForActivitiesToComplete','false','-e','s047','true','-e','expectedSource','f572e0fbbd1d2978b6e4064a31817201834c8965','-e','expectedRole','ordinary','-e','s047ObservationTrace','true','-e','s047InputTrace','true','-e','s047TapPlacement','nearest','-e','s047SkipNativePan','true' if placement=='skip_pan' else 'false','-e','s047VisualFence','true' if placement=='visual' else 'false','-e','class','com.shruggietech.glitchpad.source.AndroidDeliveryInstrumentedTest#'+method]

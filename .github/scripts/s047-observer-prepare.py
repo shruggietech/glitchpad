@@ -1,4 +1,4 @@
-import hashlib, io, json, os, shutil, tarfile, tomllib, urllib.request
+import hashlib, io, json, os, shutil, tarfile, tomllib, urllib.request, zipfile
 from pathlib import Path, PurePosixPath
 root=Path(os.environ['GITHUB_WORKSPACE']); temp=Path(os.environ['RUNNER_TEMP'])
 out=temp/'s047-observer-diagnostic'; out.mkdir(exist_ok=True)
@@ -43,3 +43,15 @@ manifest={'generated_sdk_inputs':generated,'diagnostic_only':True,'candidate_qua
 (out/'source-manifest.json').write_text(json.dumps(manifest,indent=2)+'\n',encoding='utf-8')
 with open(os.environ['GITHUB_ENV'],'a',encoding='utf-8') as env: env.write('S047_ORIGINAL_APK='+str(app)+'\n')
 print(json.dumps(manifest))
+
+if os.environ.get('S047_REBUILD_JVM') == 'true':
+ with zipfile.ZipFile(app) as archive:
+  for info in archive.infolist():
+   if info.is_dir() or not info.filename.startswith(('assets/', 'lib/')): continue
+   relative=PurePosixPath(info.filename)
+   if '..' in relative.parts or relative.is_absolute(): raise RuntimeError('invalid retained payload path')
+   destination=project/'app/src/main'/('jniLibs' if relative.parts[0]=='lib' else 'assets')
+   destination=destination.joinpath(*relative.parts[1:]); destination.parent.mkdir(parents=True,exist_ok=True)
+   with archive.open(info) as source, destination.open('wb') as target: shutil.copyfileobj(source,target)
+ manifest.update({'identity_boundary':'changed_android_jvm_diagnostic_with_retained_original_native_and_frontend_payload','android_jvm_source':os.environ['GITHUB_SHA']})
+ (out/'source-manifest.json').write_text(json.dumps(manifest,indent=2)+'\n',encoding='utf-8')

@@ -28,19 +28,19 @@ async function connect(){
 let session;
 const timeline=[];
 async function checkpoint(stage){
-  const result=await session.call('Runtime.evaluate',{expression:"(()=>{const a=document.activeElement;return {ready:document.readyState,rootFont:getComputedStyle(document.documentElement).fontSize,width:innerWidth,height:innerHeight,active:a&&(a.getAttribute('aria-label')||a.textContent.slice(0,80)),dialogs:Array.from(document.querySelectorAll('[role=dialog]')).map(n=>({state:n.getAttribute('data-state'),title:n.querySelector('h2')&&n.querySelector('h2').textContent,style:n.getAttribute('style')})),body:document.body.innerText.slice(0,1000)};})()",returnByValue:true},3000);
+  const result=await session.call('Runtime.evaluate',{expression:"(()=>{const a=document.activeElement;return {events:window.__s047LegacyEvents,ready:document.readyState,rootFont:getComputedStyle(document.documentElement).fontSize,width:innerWidth,height:innerHeight,active:a&&(a.getAttribute('aria-label')||a.textContent.slice(0,80)),dialogs:Array.from(document.querySelectorAll('[role=dialog]')).map(n=>({state:n.getAttribute('data-state'),title:n.querySelector('h2')&&n.querySelector('h2').textContent,style:n.getAttribute('style')})),body:document.body.innerText.slice(0,1000)};})()",returnByValue:true},3000);
   timeline.push({stage,at:new Date().toISOString(),result});
   await writeFile(join(out,'timeline.json'),JSON.stringify(timeline,null,2)+'\n');
   return result.result.value;
 }
 async function tap(name,selector='button'){
-  const expression="(()=>{const n=Array.from(document.querySelectorAll("+JSON.stringify(selector)+")).find(b=>!b.disabled&&!b.closest('[aria-hidden=true],[inert]')&&b.getBoundingClientRect().width>0&&(b.getAttribute('aria-label')||(b.getAttribute('role')==='menuitem'&&b.querySelector('span')?b.querySelector('span').textContent:b.textContent)).trim()==="+JSON.stringify(name)+");if(!n)return {found:false};n.scrollIntoView({block:'nearest',inline:'nearest'});const r=n.getBoundingClientRect();return {found:true,x:(r.left+r.right)/2*devicePixelRatio,y:(r.top+r.bottom)/2*devicePixelRatio,left:r.left,top:r.top,right:r.right,bottom:r.bottom,dpr:devicePixelRatio};})()";
+  const expression="(()=>{const n=Array.from(document.querySelectorAll("+JSON.stringify(selector)+")).find(b=>!b.disabled&&!b.closest('[aria-hidden=true],[inert]')&&b.getBoundingClientRect().width>0&&(b.getAttribute('aria-label')||(b.labels&&b.labels.length?Array.from(b.labels).map(l=>l.textContent).join(' '):(b.getAttribute('role')==='menuitem'&&b.querySelector('span')?b.querySelector('span').textContent:b.textContent))).trim()==="+JSON.stringify(name)+");if(!n)return {found:false};n.scrollIntoView({block:'nearest',inline:'nearest'});const r=n.getBoundingClientRect();return {found:true,x:(r.left+r.right)/2*devicePixelRatio,y:(r.top+r.bottom)/2*devicePixelRatio,left:r.left,top:r.top,right:r.right,bottom:r.bottom,dpr:devicePixelRatio};})()";
   const result=await session.call('Runtime.evaluate',{expression,returnByValue:true},3000);
   const point=result.result.value;
   assert.equal(point.found,true,'Actual visible control must exist: '+name);
   timeline.push({stage:'tap:'+name,point});
   await writeFile(join(out,'timeline.json'),JSON.stringify(timeline,null,2)+'\n');
-  await adb(['shell','input','tap',String(Math.round(point.x)),String(Math.round(point.y))]);
+  await adb(['shell','input','swipe',String(Math.round(point.x)),String(Math.round(point.y)),String(Math.round(point.x)),String(Math.round(point.y)),'50']);
   await pause(400);
 }
 async function pauseAndCapture(error){
@@ -85,17 +85,21 @@ try{
   await adb(['shell','settings','put','system','font_scale','1.3']);
   const uri='content://com.shruggietech.glitchpad.fixture.documents/document/s047-controls.mmd';
   await adb(['shell','content','call','--uri','content://com.shruggietech.glitchpad.fixture.grants','--method','grant','--arg',uri]);
-  await adb(['shell','run-as',app,'am','start','--user','0','-W','-n',app+'/.MainActivity','-a','android.intent.action.VIEW','-d',uri,'-t','text/vnd.mermaid','--grant-read-uri-permission']);
+  await adb(['shell','run-as',app,'am','start','--user','0','-W','-n',app+'/.MainActivity','-a','android.intent.action.VIEW','-d',uri,'-t','text/vnd.mermaid','--grant-read-uri-permission','--grant-write-uri-permission']);
   session=await connect();await session.call('Debugger.enable');
+  await session.call('Runtime.evaluate',{expression:"(()=>{window.__s047LegacyEvents=[];for(const kind of ['pointerdown','pointerup','touchstart','touchend','mousedown','mouseup','click','focusin'])document.addEventListener(kind,e=>{const n=e.target;window.__s047LegacyEvents.push({kind,at:performance.now(),label:n.getAttribute&&n.getAttribute('aria-label')||n.textContent.slice(0,50),pointer:e.pointerType,touch:e.sourceCapabilities&&e.sourceCapabilities.firesTouchEvents,x:e.clientX,y:e.clientY});if(window.__s047LegacyEvents.length>50)window.__s047LegacyEvents.shift();},true);return true;})()",returnByValue:true});
   for(let i=0;i<30;i++){
     const state=await checkpoint('ready-'+i);
-    if(state.body.includes('s047-controls.mmd'))break;
+    if(state.body.includes('s047-controls.mmd')){const component=await session.call('Runtime.evaluate',{expression:"!!document.querySelector('.document-surface .mermaid-surface')",returnByValue:true},3000);if(component.result.value)break;}
     await pause(200);
   }
   const mode=await session.call('Runtime.evaluate',{expression:"!!document.querySelector('.document-surface .mermaid-source-mode')",returnByValue:true},3000);
   if(mode.result.value){await tap('Document tools');await checkpoint('source-menu-open');await tap('Read','[role=menuitem]');await checkpoint('rendered');}
+  for(let i=0;i<100;i++){const ready=await session.call('Runtime.evaluate',{expression:"!!document.querySelector('.document-surface .mermaid-rendered-mode [data-preview-ready=true]')",returnByValue:true},3000);if(ready.result.value)break;await pause(200);}
   await tap('Document tools');await checkpoint('tools-open');
   await tap('Search','[role=menuitem]');await checkpoint('after-search-touch');
+  await tap('Find diagram text','input');await adb(['shell','input','text','Cats']);await checkpoint('actual-ime-input');
+  await tap('Close search');await checkpoint('after-search-close');
   console.log('legacy_cdp_diagnostic=responsive_after_search');
 }catch(error){
   if(session)await pauseAndCapture(error);

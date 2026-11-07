@@ -1,0 +1,47 @@
+[
+  {
+    "path": "crates/glitchpad-host/gen/android/app/src/main/java/com/shruggietech/glitchpad/generated/Ipc.kt",
+    "sha256": "e51670673652a78b6b0b2def3b030bc9e04d63824951fbb7be176ba653dd6e86",
+    "bytes": 759
+  },
+  {
+    "path": "crates/glitchpad-host/gen/android/app/src/main/java/com/shruggietech/glitchpad/generated/Logger.kt",
+    "sha256": "6b69dd2b5cd3e37a516f32899c3838dc152989a8db2ad0911b323c96b8ac5e09",
+    "bytes": 1988
+  },
+  {
+    "path": "crates/glitchpad-host/gen/android/app/src/main/java/com/shruggietech/glitchpad/generated/PermissionHelper.kt",
+    "sha256": "c8ec3e1683ff5de4f9c3872134832f4480809a859b81dece4a2c5e1271190116",
+    "bytes": 4249
+  },
+  {
+    "path": "crates/glitchpad-host/gen/android/app/src/main/java/com/shruggietech/glitchpad/generated/Rust.kt",
+    "sha256": "7622ea02ae35ea10420138b0541dc1c94d5de04c23417aa182cd472186a78e08",
+    "bytes": 1948
+  },
+  {
+    "path": "crates/glitchpad-host/gen/android/app/src/main/java/com/shruggietech/glitchpad/generated/RustWebChromeClient.kt",
+    "sha256": "88094b5fafa3e930b39252bf1ffbff40c1ae4b56e6896aa01e3ae1f863d49cd5",
+    "bytes": 16223
+  },
+  {
+    "path": "crates/glitchpad-host/gen/android/app/src/main/java/com/shruggietech/glitchpad/generated/RustWebView.kt",
+    "sha256": "30ab3f8fbf0cbe4f3fc4d2c3ef6ab0f9fcbf1e432a357ce04486893ec8931dd2",
+    "bytes": 2816
+  },
+  {
+    "path": "crates/glitchpad-host/gen/android/app/src/main/java/com/shruggietech/glitchpad/generated/RustWebViewClient.kt",
+    "sha256": "90b490128d9e9ac48d2e7c56c2a07831374da2253ed32ffbfc7c1e2ee73d593b",
+    "bytes": 3733
+  },
+  {
+    "path": "crates/glitchpad-host/gen/android/app/src/main/java/com/shruggietech/glitchpad/generated/TauriActivity.kt",
+    "sha256": "e154ba38bae121a1e0eec19dad7cf6086acdb0201e8ba7f2cb9a3e83f8d9bf01",
+    "bytes": 1687
+  },
+  {
+    "path": "crates/glitchpad-host/gen/android/app/src/main/java/com/shruggietech/glitchpad/generated/WryActivity.kt",
+    "sha256": "af2775de5a4988fa4036476c665cdd4a79863333264a842d6bd1ea74e7c8917e",
+    "bytes": 5419
+  }
+]

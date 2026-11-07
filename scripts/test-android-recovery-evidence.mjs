@@ -182,6 +182,7 @@ function fixture(role = 'ordinary', api = 36) {
         marker_present: 1,
         junit_success: 1,
         instrumentation_failure: 0,
+        logcat_exit_status: 0,
       },
       readbacks:
         i === 6
@@ -360,6 +361,8 @@ test('marker or callback never replaces clean JUnit, adb completion, or exact de
     (e) => (e.journeys[0].completion.junit_success = 0),
     (e) => (e.journeys[0].completion.adb_exit_status = 1),
     (e) => (e.journeys[0].completion.instrumentation_failure = 1),
+    (e) => (e.journeys[0].completion.logcat_exit_status = 124),
+    (e) => delete e.journeys[0].completion.logcat_exit_status,
     (e) => (e.journeys[3].readbacks[0].actual_sha256 = 'd'.repeat(64)),
   ])
     await assert.rejects(check(fixture(), mutate), /completion|readback/i);
@@ -470,7 +473,7 @@ test('collector verifies complete native JSON bytes instead of trusting a small 
     );
     await writeFile(
       join(directory, 'task-attempt-1-status.txt'),
-      'adb_exit_status=0\nmarker_present=1\njunit_success=1\ninstrumentation_failure=0\n',
+      'adb_exit_status=0\nmarker_present=1\njunit_success=1\ninstrumentation_failure=0\nlogcat_exit_status=0\n',
     );
     const collected = await collectRecoveryEvidence(
       directory,
@@ -654,7 +657,7 @@ test('durable instrumentation stream retains early authoring rows after logcat r
     );
     await writeFile(
       status,
-      'adb_exit_status=0\nmarker_present=1\njunit_success=1\ninstrumentation_failure=0\n',
+      'adb_exit_status=0\nmarker_present=1\njunit_success=1\ninstrumentation_failure=0\nlogcat_exit_status=0\n',
     );
     const lost = await collectRecoveryEvidence(
       directory,

@@ -5,7 +5,20 @@ permissions:
   contents: read
   actions: read
 jobs:
+  supporting-driver-policy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+      - name: Check real disconnected-child and receipt regressions
+        run: node --test scripts/run-android-evidence.test.mjs scripts/test-android-recovery-evidence.mjs
+      - name: Check Android runner policies
+        run: python3 -m unittest discover -s scripts/tests -p 'test_android*.py'
   observer-diagnostic:
+    needs: supporting-driver-policy
     name: Existing APK observer diagnostic (${{ matrix.api }})
     runs-on: ubuntu-latest
     timeout-minutes: 60

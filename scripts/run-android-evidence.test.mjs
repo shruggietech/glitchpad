@@ -295,3 +295,24 @@ for (const phase of ['install', 'package_path']) {
     } finally { await state.dispose(); }
   });
 }
+
+
+test('supporting ADB transport stops an actual disconnected-device wait and retains its output', { timeout: 10000 }, async () => {
+  const { runBoundedAdb } = await import('./bounded-android-adb.mjs');
+  const start = performance.now();
+  const result = runBoundedAdb(['-e', "process.stdout.write('- waiting for device -\\n');setInterval(()=>{},1000)"], { executable: process.execPath, timeoutMs: 1000 });
+  assert.equal(result.status, 124);
+  assert.equal(result.error.code, 'ETIMEDOUT');
+  assert.match(result.stdout.toString(), /waiting for device/u);
+  assert.ok(performance.now() - start < 5000, 'the disconnected command must return instead of holding the evidence phase');
+  assert.throws(() => process.kill(result.pid, 0), { code: 'ESRCH' });
+});
+
+test('supporting ADB transport preserves binary capture bytes, stderr and the actual failure exit', async () => {
+  const { runBoundedAdb } = await import('./bounded-android-adb.mjs');
+  const expected = Buffer.from([0, 255, 137, 80, 78, 71, 13, 10, 0]);
+  const result = runBoundedAdb(['-e', "process.stdout.write(Buffer.from([0,255,137,80,78,71,13,10,0]));process.stderr.write('capture failed');process.exitCode=7"], { executable: process.execPath });
+  assert.equal(result.status, 7);
+  assert.deepEqual(result.stdout, expected);
+  assert.equal(result.stderr.toString(), 'capture failed');
+});

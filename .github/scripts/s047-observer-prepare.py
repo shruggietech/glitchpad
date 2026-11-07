@@ -36,7 +36,10 @@ project=root/'crates/glitchpad-host/gen/android'
 (project/'tauri.settings.gradle').write_text('\n'.join(settings)+'\n',encoding='utf-8')
 (project/'app/tauri.properties').write_text('tauri.android.versionName=0.2.0\ntauri.android.versionCode=2000\n',encoding='utf-8')
 (project/'app/tauri.build.gradle.kts').write_text('// Diagnostic settings from the pinned Tauri generated dependency contract.\nval implementation by configurations\ndependencies {\n  implementation("androidx.lifecycle:lifecycle-process:2.10.0")\n  implementation(project(":glitchpad-android-source"))\n  implementation(project(":tauri-android"))\n  implementation(project(":tauri-plugin-opener"))\n}\n',encoding='utf-8')
-manifest={'diagnostic_only':True,'candidate_qualified':False,'product_source':'f572e0fbbd1d2978b6e4064a31817201834c8965','product_sha256':expected,'product_bytes':app.stat().st_size,'original_artifact':13555731908,'fixture_source':os.environ['GITHUB_SHA'],'native_fixture_sha256':digest(root/'crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt')}
+generated=json.loads((root/'.github/scripts/s047-generated-sdk-inputs.json').read_text(encoding='utf-8'))
+for item in generated:
+ if digest(root/item['path'])!=item['sha256']: raise RuntimeError('generated SDK source mismatch')
+manifest={'generated_sdk_inputs':generated,'diagnostic_only':True,'candidate_qualified':False,'product_source':'f572e0fbbd1d2978b6e4064a31817201834c8965','product_sha256':expected,'product_bytes':app.stat().st_size,'original_artifact':13555731908,'fixture_source':os.environ['GITHUB_SHA'],'native_fixture_sha256':digest(root/'crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt')}
 (out/'source-manifest.json').write_text(json.dumps(manifest,indent=2)+'\n',encoding='utf-8')
 with open(os.environ['GITHUB_ENV'],'a',encoding='utf-8') as env: env.write('S047_ORIGINAL_APK='+str(app)+'\n')
 print(json.dumps(manifest))

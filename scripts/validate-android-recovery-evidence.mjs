@@ -159,7 +159,8 @@ function clean(completion) {
     completion?.adb_exit_status === 0 &&
       completion.marker_present === 1 &&
       completion.junit_success === 1 &&
-      completion.instrumentation_failure === 0,
+      completion.instrumentation_failure === 0 &&
+      completion.logcat_exit_status === 0,
     'clean instrumentation completion required',
   );
 }
@@ -702,7 +703,8 @@ export async function collectRecoveryEvidence(
         o.status.adb_exit_status === 0 &&
         o.status.marker_present === 1 &&
         o.status.junit_success === 1 &&
-        o.status.instrumentation_failure === 0,
+        o.status.instrumentation_failure === 0 &&
+        o.status.logcat_exit_status === 0,
     );
     assert(passing.length <= 1, 'conflicting clean attempts for journey ' + id);
     if (!passing.length) {

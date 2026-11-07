@@ -81,13 +81,15 @@ elif [[ "$1" = shell && "$2" = pm && "$3" = path ]]; then
   if [[ "\${MOCK_SETUP_HANG:-}" = package_path ]]; then exec /bin/sleep 2; fi
   if [[ "$4" = com.shruggietech.glitchpad ]]; then [[ -f "$RUNNER_TEMP/application-installed" ]]; echo "package:$FIXTURE_APPLICATION"; else [[ -f "$RUNNER_TEMP/instrumentation-installed" ]]; echo "package:$FIXTURE_INSTRUMENTATION"; fi
   if [[ "\${MOCK_SPLIT:-0}" = 1 ]]; then echo 'package:split.apk'; fi
+elif [[ "$1" = shell && "$2" = pm && "$3" = clear ]]; then
+  echo Success
 elif [[ "$1" = pull ]]; then
   if [[ "\${MOCK_PULL_FAILURE:-0}" = 1 ]]; then echo "adb: error: remote object '$2' does not exist" >&2; exit 1; fi
   original="$2"
   if [[ "\${MOCK_MISMATCH:-0}" = 1 && "$2" = "$FIXTURE_APPLICATION" ]]; then original="$FIXTURE_WRONG"; fi
   cp "$original" "$3"
 elif [[ "$1" = shell && "$2" = getprop ]]; then
-  if [[ "$3" = ro.build.version.sdk ]]; then echo "\${MOCK_SDK_LEVEL:-36}"; else echo 16; fi
+  if [[ "$3" = ro.build.version.sdk ]]; then echo "\${MOCK_SDK_LEVEL:-36}"; elif [[ "$3" = sys.boot_completed ]]; then echo 1; else echo 16; fi
 elif [[ "$1" = shell && "$2" = am && "$3" = instrument ]]; then
   count=0; if [[ -f "$RUNNER_TEMP/instrument-count" ]]; then count=$(cat "$RUNNER_TEMP/instrument-count"); fi
   count=$((count+1)); echo "$count" > "$RUNNER_TEMP/instrument-count"
@@ -808,6 +810,10 @@ test('supporting ADB transport preserves binary capture bytes, stderr and the ac
 test('API24 captures the directly tested binary APKs without uninstalling or reinstalling them', posix, async () => {
   const state = await fixture();
   try {
+    await mkdir(join(state.directory, 'scripts'));
+    for (const helper of ['run-android-instrumentation.sh', 'bounded-android-adb.mjs', 'prepare-android-instrumentation.mjs']) {
+      await writeFile(join(state.directory, 'scripts', helper), await readFile(join(repository, 'scripts', helper)));
+    }
     const bytes = Buffer.from([0, 255, 137, 80, 78, 71, 13, 10, 0, 65, 13, 255]);
     await writeFile(state.application, bytes);
     const result = run('run-android-connected-tests.sh', state, [], { MOCK_SDK_LEVEL: '24' });

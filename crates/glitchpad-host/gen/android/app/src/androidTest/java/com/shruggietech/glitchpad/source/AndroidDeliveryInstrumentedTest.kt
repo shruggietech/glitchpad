@@ -1832,7 +1832,7 @@ class AndroidDeliveryInstrumentedTest {
       var settled = false
       while (SystemClock.elapsedRealtime() < actionDeadline) {
         val (nextMeasurement, nextNative) = readControl(false)
-        if (!nextNative.optBoolean("native_touch_owned_by_app") && dismissSelectionToolbarForProbe(scenario, actionDeadline)) continue
+        if (!nextNative.optBoolean("native_touch_owned_by_app") && prepareNativeEditModeForTask(scenario, nextNative, actionDeadline)) continue
         val sameControl = listOf("label", "tag", "role").all { key -> expectedControl.optString(key) == nextMeasurement.optString(key) }
         val beforeFrame = native.getJSONObject("effective_visible_screen")
         val afterFrame = nextNative.getJSONObject("effective_visible_screen")
@@ -2006,97 +2006,6 @@ class AndroidDeliveryInstrumentedTest {
     observe("preferences","Editor font family",family)
     tapNativeControlOnce(scenario,"Close Preferences")
     hideIme(SystemClock.elapsedRealtime()+30_000L)
-  }
-
-  @Test fun s047SelectionToolbarProbe() {
-    val scenario = launchS047()
-    enableNativeWindowObservation()
-    openFromAddDocument(scenario, grant(documentUri("s047-controls.mmd")))
-    waitForCondition(scenario, "!!document.querySelector('.mermaid-rendered-mode [data-preview-ready=true]')", "the real diagram must render before opening its search task")
-    menuAction(scenario, "Search", nativeActivation=true)
-    waitForBodyText(scenario, "Find in diagram")
-    val deadline = SystemClock.elapsedRealtime() + 30_000L
-    fun hideKeyboard() {
-      scenario.onActivity { activity ->
-        val view = requireNotNull(findWebView(activity.window.decorView))
-        (activity.getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager).hideSoftInputFromWindow(view.windowToken, 0)
-      }
-      while (visibleNativeImeBounds().isNotEmpty() && SystemClock.elapsedRealtime() < deadline) SystemClock.sleep(100L)
-      assertTrue("the controlled text-toolbar test must establish its actual non-IME frame", visibleNativeImeBounds().isEmpty())
-    }
-    hideKeyboard()
-    observeVisibleTaskControls(scenario, "text-toolbar-before-long-press", deadlineOverride=deadline, expectedImeVisible=false)
-    instrumentation.runOnMainSync {
-      (clientContext.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager).setPrimaryClip(android.content.ClipData.newPlainText("controlled fixture", "S047_NATIVE_TEXT_TOOLBAR"))
-    }
-    val rect = JSONObject(evaluate(scenario, "(()=>{const n=" + taskInputExpression("Find diagram text") + ";const r=n.getBoundingClientRect();return {found:true,x:(r.left+r.right)/2,y:(r.top+r.bottom)/2,left:r.left,top:r.top,right:r.right,bottom:r.bottom,viewport_width:innerWidth,viewport_height:innerHeight};})()", deadlineOverride=deadline))
-    val native = nativeControlGeometry(scenario, rect)
-    assertTrue("the long-press field must belong wholly to the foreground app", nativeTapForeground(native) && native.getBoolean("whole_control_visible"))
-    val x = kotlin.math.round(native.getDouble("screen_x")).toInt()
-    val y = kotlin.math.round(native.getDouble("screen_y")).toInt()
-    val hold = android.view.ViewConfiguration.getLongPressTimeout() + 200
-    checkedShell("input swipe " + x + " " + y + " " + x + " " + y + " " + hold)
-    hideKeyboard()
-    var windows = selectionToolbarWindows(deadline)
-    fun hasPopup(): Boolean = (0 until windows.length()).any { windows.getJSONObject(it).optString("title") == "Popup Window" && windows.getJSONObject(it).getJSONArray("labels").toString().contains("Paste") }
-    while (!hasPopup() && SystemClock.elapsedRealtime() < deadline) { SystemClock.sleep(100L); windows = selectionToolbarWindows(deadline) }
-    println("s047_forced_text_toolbar=" + windows); System.out.flush()
-    assertTrue("the actual native long press must expose the text-toolbar Paste action", hasPopup())
-    val countBefore = selectionToolbarProbeBacks
-    assertTrue(dismissSelectionToolbarForProbe(scenario, deadline))
-    assertEquals("one native text toolbar must consume exactly one real Back", countBefore + 1, selectionToolbarProbeBacks)
-    observeVisibleTaskControls(scenario, "text-toolbar-after-one-back", deadlineOverride=deadline, expectedImeVisible=false)
-    tapNativeControlOnce(scenario, "Close search", deadlineOverride=deadline)
-    waitForCondition(scenario, "!document.querySelector('.task-surface[role=dialog][data-state=open]')", "the actual Close search action must complete after text-toolbar dismissal", deadlineOverride=deadline)
-    println("s047_handoff_probe=pass"); System.out.flush()
-  }
-
-  private var selectionToolbarProbeBacks = 0
-  private fun dismissSelectionToolbarForProbe(scenario: ActivityScenario<MainActivity>, deadline: Long): Boolean {
-    if (InstrumentationRegistry.getArguments().getString("selectionToolbarProbe") != "true") return false
-    fun popup(windows: org.json.JSONArray): Boolean = (0 until windows.length()).any {
-      val window = windows.getJSONObject(it)
-      window.optString("title") == "Popup Window" && window.getJSONArray("labels").toString().contains("Paste")
-    }
-    var windows = selectionToolbarWindows(deadline)
-    if (!popup(windows)) return false
-    val state = "JSON.stringify({document:document.querySelector('.document-surface')?.id||null,title:document.querySelector('.task-surface[data-state=open] h2')?.textContent||null,fields:Array.from(document.querySelectorAll('.task-surface[data-state=open] input')).map(n=>n.value)})"
-    val before = stringValue(evaluate(scenario, state, deadlineOverride=deadline))
-    val nativeEdit = java.util.concurrent.atomic.AtomicReference<JSONObject>()
-    scenario.onActivity { activity -> nativeEdit.set(JSONObject().put("active", activity.androidNativeEditModeActive).put("ime", androidx.core.view.ViewCompat.getRootWindowInsets(activity.window.decorView)?.isVisible(androidx.core.view.WindowInsetsCompat.Type.ime()))) }
-    println("s047_selection_toolbar_before=" + JSONObject().put("windows", windows).put("context", before).put("native_edit", nativeEdit.get())); System.out.flush()
-    assertTrue("the one real system Back must dispatch", instrumentation.uiAutomation.performGlobalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK))
-    var after = before
-    while (SystemClock.elapsedRealtime() < deadline) {
-      SystemClock.sleep(100L)
-      windows = selectionToolbarWindows(deadline)
-      after = stringValue(evaluate(scenario, state, deadlineOverride=deadline))
-      if (after != before || !popup(windows)) break
-    }
-    println("s047_selection_toolbar_after=" + JSONObject().put("windows", windows).put("context", after)); System.out.flush()
-    captureEditorFocusFailure(scenario, "selection_toolbar_after", JSONObject().put("before", before).put("after", after).put("windows", windows))
-    assertEquals("one actual system Back must not close the task or change its document/field state", before, after)
-    assertFalse("one actual system Back must dismiss the native text toolbar", popup(windows))
-    selectionToolbarProbeBacks += 1
-    return true
-  }
-
-  private fun selectionToolbarWindows(deadline: Long): org.json.JSONArray {
-    val rows = org.json.JSONArray()
-    for (window in instrumentation.uiAutomation.windows) {
-      val labels = org.json.JSONArray()
-      val nodes = java.util.ArrayDeque<AccessibilityNodeInfo>()
-      if (window.title?.toString() == "Popup Window") window.root?.let { nodes.add(it) }
-      var count = 0
-      while (nodes.isNotEmpty() && count++ < 32 && SystemClock.elapsedRealtime() < deadline) {
-        val node = nodes.removeFirst()
-        val label = node.text?.toString() ?: node.contentDescription?.toString()
-        if (label != null) labels.put(label.take(160))
-        for (index in 0 until node.childCount) node.getChild(index)?.let { nodes.add(it) }
-      }
-      rows.put(JSONObject().put("title", window.title?.toString()).put("type", window.type).put("layer", window.layer).put("labels", labels))
-    }
-    return rows
   }
 
   @Test fun s047LayoutJourney() {
@@ -2696,6 +2605,98 @@ class AndroidDeliveryInstrumentedTest {
     }
   }
 
+  private fun taskContextSnapshot(scenario: ActivityScenario<MainActivity>, deadline: Long): String = stringValue(evaluate(scenario,
+    "JSON.stringify({document:(document.querySelector('.document-surface')||{}).id||null,tasks:Array.from(document.querySelectorAll('.task-surface[data-state=open]')).filter(d=>!d.closest('[aria-hidden=true],[inert]')).map(d=>({title:(d.querySelector('h2')||{}).textContent||null,fields:Array.from(d.querySelectorAll('input,textarea')).map(n=>n.value)}))})", deadlineOverride=deadline))
+
+  private fun prepareNativeEditModeForTask(scenario: ActivityScenario<MainActivity>, mapping: JSONObject, deadline: Long): Boolean {
+    if (!isS047Evidence() || !mapping.optBoolean("activity_window_focus") || !mapping.optBoolean("webview_window_focus") ||
+      mapping.optJSONObject("native_touch_owner")?.optString("title") != "Popup Window") return false
+    var active = false
+    scenario.onActivity { active = it.androidNativeEditModeActive }
+    if (!active) return false
+    val before = taskContextSnapshot(scenario, deadline)
+    val imeBefore = visibleNativeImeBounds().isNotEmpty()
+    var finished = false
+    scenario.onActivity { finished = it.dismissAndroidNativeEditMode() }
+    assertTrue("the observed native text-edit layer must finish through its real activity owner", finished)
+    waitForCondition(scenario, "true", "native text-edit preparation must preserve the task and actual keyboard profile", deadlineOverride=deadline) {
+      var stillActive = false
+      scenario.onActivity { stillActive = it.androidNativeEditModeActive }
+      !stillActive && visibleNativeImeBounds().isNotEmpty() == imeBefore
+    }
+    assertEquals("native input-layer preparation must not change the document, task or fields", before, taskContextSnapshot(scenario, deadline))
+    println("s047_native_edit_preparation=" + JSONObject().put("native_action_mode_finished", true).put("ime_visible", imeBefore).put("task_context_unchanged", true)); System.out.flush()
+    return true
+  }
+
+  private fun nativeTextPopupPresent(appWindowId: Int, deadline: Long): Boolean {
+    for (window in instrumentation.uiAutomation.windows) {
+      if (window.type != android.view.accessibility.AccessibilityWindowInfo.TYPE_APPLICATION || window.id == appWindowId) continue
+      val nodes = java.util.ArrayDeque<AccessibilityNodeInfo>()
+      window.root?.let { nodes.add(it) }
+      var count = 0
+      while (nodes.isNotEmpty() && count++ < 32 && SystemClock.elapsedRealtime() < deadline) {
+        val node = nodes.removeFirst()
+        val label = node.text?.toString() ?: node.contentDescription?.toString()
+        if (label?.contains("Paste", ignoreCase=true) == true) return true
+        for (index in 0 until node.childCount) node.getChild(index)?.let { nodes.add(it) }
+      }
+    }
+    return false
+  }
+
+  private fun verifyS047NativeTextToolbarBack(scenario: ActivityScenario<MainActivity>): JSONObject {
+    openFromAddDocument(scenario, grant(documentUri("s047-controls.mmd")))
+    waitForCondition(scenario, "!!document.querySelector('.mermaid-rendered-mode [data-preview-ready=true]')", "a real diagram must render before native text-toolbar Back")
+    menuAction(scenario, "Search", nativeActivation=true)
+    waitForBodyText(scenario, "Find in diagram")
+    val deadline = SystemClock.elapsedRealtime() + 30_000L
+    fun hideKeyboard() {
+      scenario.onActivity { activity ->
+        val view = requireNotNull(findWebView(activity.window.decorView))
+        (activity.getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager).hideSoftInputFromWindow(view.windowToken, 0)
+      }
+      while (visibleNativeImeBounds().isNotEmpty() && SystemClock.elapsedRealtime() < deadline) SystemClock.sleep(100L)
+      assertTrue("native text-toolbar Back must use the actual non-IME input layer", visibleNativeImeBounds().isEmpty())
+    }
+    hideKeyboard()
+    observeVisibleTaskControls(scenario, "native-text-edit-before", deadlineOverride=deadline, expectedImeVisible=false)
+    instrumentation.runOnMainSync {
+      (clientContext.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager).setPrimaryClip(android.content.ClipData.newPlainText("controlled fixture", "S047_NATIVE_TEXT_TOOLBAR"))
+    }
+    val rect = JSONObject(evaluate(scenario, "(()=>{const n=" + taskInputExpression("Find diagram text") + ";const r=n.getBoundingClientRect();return {found:true,x:(r.left+r.right)/2,y:(r.top+r.bottom)/2,left:r.left,top:r.top,right:r.right,bottom:r.bottom,viewport_width:innerWidth,viewport_height:innerHeight};})()", deadlineOverride=deadline))
+    val native = nativeControlGeometry(scenario, rect)
+    assertTrue("the long-press field must belong wholly to the foreground app", nativeTapForeground(native) && native.getBoolean("whole_control_visible"))
+    val x = kotlin.math.round(native.getDouble("screen_x")).toInt()
+    val y = kotlin.math.round(native.getDouble("screen_y")).toInt()
+    checkedShell("input swipe " + x + " " + y + " " + x + " " + y + " " + (android.view.ViewConfiguration.getLongPressTimeout() + 200))
+    hideKeyboard()
+    var before = nativeBackObservation(scenario)
+    while (SystemClock.elapsedRealtime() < deadline && (!before.optBoolean("native_edit_active") || !nativeTextPopupPresent(native.getInt("app_window_id"), deadline))) {
+      SystemClock.sleep(100L); before = nativeBackObservation(scenario)
+    }
+    assertTrue("the actual long press must open the native text-edit action mode", before.getBoolean("native_edit_active"))
+    assertTrue("the actual native popup must expose its Paste action", nativeTextPopupPresent(native.getInt("app_window_id"), deadline))
+    assertFalse("native text-toolbar Back must begin without a pending JS task request", before.getBoolean("pending"))
+    val context = taskContextSnapshot(scenario, deadline)
+    assertTrue("the system must accept the one native text-edit Back", instrumentation.uiAutomation.performGlobalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK))
+    var after = nativeBackObservation(scenario)
+    while (SystemClock.elapsedRealtime() < deadline) {
+      assertEquals("native text-edit Back must retain the underlying task and all field values", context, taskContextSnapshot(scenario, deadline))
+      after = nativeBackObservation(scenario)
+      if (!after.getBoolean("native_edit_active") && after.getInt("native_edit_dismissed") == before.getInt("native_edit_dismissed") + 1) break
+      SystemClock.sleep(100L)
+    }
+    val delta = deltaBack(before, after).put("native_edit_dismissed", after.getInt("native_edit_dismissed") - before.getInt("native_edit_dismissed"))
+    assertEquals(1, delta.getInt("committed")); assertEquals(1, delta.getInt("native_edit_dismissed"))
+    assertEquals(0, delta.getInt("requested")); assertEquals(0, delta.getInt("completed")); assertEquals(0, delta.getInt("delegated"))
+    assertFalse(after.getBoolean("native_edit_active"))
+    observeVisibleTaskControls(scenario, "native-text-edit-after", deadlineOverride=deadline, expectedImeVisible=false)
+    tapNativeControlOnce(scenario, "Close search", deadlineOverride=deadline)
+    waitForCondition(scenario, "!document.querySelector('.task-surface[role=dialog][data-state=open]')", "Close search must complete after native text editing ends", deadlineOverride=deadline)
+    return JSONObject().put("native_mode_observed", true).put("popup_observed", true).put("task_retained", true).put("fields_unchanged", true).put("close_completed", true).put("callback_delta", delta)
+  }
+
   @Test fun s047BackJourney() {
     val scenario = launchS047()
     createNewDraftForInput(scenario, "New text file", "Untitled.txt")
@@ -2735,6 +2736,7 @@ class AndroidDeliveryInstrumentedTest {
       waitForCondition(scenario, "!document.querySelector('[role=dialog]')", "one committed gesture must dismiss only the menu")
       variants.addAll(listOf("predictive_cancel", "predictive_commit"))
     }
+    details.put("native_edit_back", verifyS047NativeTextToolbarBack(scenario))
     emitS047Journey(scenario, 9, variants, details)
   }
 
@@ -3249,7 +3251,7 @@ class AndroidDeliveryInstrumentedTest {
         target = runCatching { JSONObject(evaluate(scenario, script, deadlineOverride = deadline)) }
           .getOrElse { JSONObject().put("capture_failed", true).put("failure_type", it.javaClass.simpleName) }
         mapping = nativeControlGeometry(scenario, target)
-        if (!mapping.optBoolean("native_touch_owned_by_app") && dismissSelectionToolbarForProbe(scenario, deadline)) continue
+        if (!mapping.optBoolean("native_touch_owned_by_app") && prepareNativeEditModeForTask(scenario, mapping, deadline)) continue
         val foreground = nativeTapForeground(mapping)
         if (foreground && mapping.optBoolean("ime_occludes_control") && !imeDismissRequested) {
           imeDismissRequested = true

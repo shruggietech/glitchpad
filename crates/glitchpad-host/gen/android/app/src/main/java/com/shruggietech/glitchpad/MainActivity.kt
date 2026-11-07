@@ -30,6 +30,7 @@ class MainActivity : TauriActivity(), AndroidNativeEditOwner {
 
   override fun dismissAndroidNativeEditMode(): Boolean {
     val mode = nativeEditMode ?: return false
+    nativeEditMode = null
     mode.finish()
     return true
   }

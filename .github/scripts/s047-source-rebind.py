@@ -2,10 +2,12 @@ import difflib, hashlib, json, subprocess
 from pathlib import Path
 root=Path.cwd(); private=root/'.codex-tmp/s047'; private.mkdir(parents=True,exist_ok=True)
 ledger_path=root/'specs/047-android-task-completion/contracts/control-ledger.json'
-targets={p:None for p in ['crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt','scripts/run-android-instrumentation.sh','scripts/run-android-evidence.test.mjs','scripts/validate-android-recovery-evidence.mjs','scripts/test-android-recovery-evidence.mjs','scripts/check-android-package.mjs','scripts/check-android-package.test.mjs','packaging/android/package-contract.json','packaging/android/intent-map.json','crates/glitchpad-android-source/android/src/main/java/com/shruggietech/glitchpad/source/AndroidSourcePlugin.kt','crates/glitchpad-android-source/android/src/main/java/com/shruggietech/glitchpad/source/ClipboardTextStore.kt','crates/glitchpad-android-source/android/src/test/java/com/shruggietech/glitchpad/source/ClipboardTextStoreTest.kt','crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/ClipboardPasteReceiverActivity.java']}
+targets={p:None for p in ["crates/glitchpad-android-source/android/src/main/java/com/shruggietech/glitchpad/source/LegacyClipboardTextProvider.kt","crates/glitchpad-android-source/android/src/main/java/com/shruggietech/glitchpad/source/SharedFileProvider.kt","crates/glitchpad-host/src/lib.rs","scripts/run-android-connected-tests.sh",'crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt','scripts/run-android-instrumentation.sh','scripts/run-android-evidence.test.mjs','scripts/validate-android-recovery-evidence.mjs','scripts/test-android-recovery-evidence.mjs','scripts/check-android-package.mjs','scripts/check-android-package.test.mjs','packaging/android/package-contract.json','packaging/android/intent-map.json','crates/glitchpad-android-source/android/src/main/java/com/shruggietech/glitchpad/source/AndroidSourcePlugin.kt','crates/glitchpad-android-source/android/src/main/java/com/shruggietech/glitchpad/source/ClipboardTextStore.kt','crates/glitchpad-android-source/android/src/test/java/com/shruggietech/glitchpad/source/ClipboardTextStoreTest.kt','crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/ClipboardPasteReceiverActivity.java']}
 sources={}
 for path,before in targets.items():
- old=subprocess.run(['git','show','f572e0fbbd1d2978b6e4064a31817201834c8965:'+path],cwd=root,check=True,capture_output=True,text=True).stdout; new=(root/path).read_text(encoding='utf-8')
+ baseline=subprocess.run(['git','show','f572e0fbbd1d2978b6e4064a31817201834c8965:'+path],cwd=root,check=False,capture_output=True,text=True)
+ if baseline.returncode and path not in ["crates/glitchpad-android-source/android/src/main/java/com/shruggietech/glitchpad/source/LegacyClipboardTextProvider.kt","crates/glitchpad-android-source/android/src/main/java/com/shruggietech/glitchpad/source/SharedFileProvider.kt"]: raise RuntimeError('baseline source unavailable: '+path)
+ old=baseline.stdout if baseline.returncode==0 else ''; new=(root/path).read_text(encoding='utf-8')
  mapping={}
  for block in difflib.SequenceMatcher(None,old.splitlines(),new.splitlines(),autojunk=False).get_matching_blocks():
   mapping.update({block.a+i+1:block.b+i+1 for i in range(block.size)})
@@ -41,6 +43,6 @@ report={'changes':changes,'unresolved':unresolved,'source_hashes':{p:s[3] for p,
 (private/'r28-hosted-source-rebind.json').write_text(json.dumps(report,indent=2)+'\n',encoding='utf-8')
 if unresolved:
  print(json.dumps({'changes':len(changes),'unresolved':unresolved}));raise SystemExit(1)
-ledger['local_candidate_note']='R30 source references only. All459 cases remain pending current-candidate installed reconciliation.'
+ledger['local_candidate_note']='R34 source references only. All459 cases remain pending current-candidate installed reconciliation.'
 ledger_path.write_text(json.dumps(ledger,indent=2,ensure_ascii=False)+'\n',encoding='utf-8')
 print(json.dumps({'changes':len(changes),'unresolved':0,'source_hashes':{p:s[3] for p,s in sources.items()}}))

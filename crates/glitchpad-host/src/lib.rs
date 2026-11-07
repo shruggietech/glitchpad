@@ -557,14 +557,18 @@ async fn open_android_document(
 
 #[cfg(target_os = "android")]
 #[tauri::command]
-fn read_android_range(
-    host: tauri::State<'_, android_source::AndroidSourceHost>,
+async fn read_android_range(
+    app: tauri::AppHandle,
     source_id: glitchpad_core::source::SourceId,
     offset: u64,
     length: u64,
     operation_budget: u64,
 ) -> Result<glitchpad_core::source::ReadRangeResult, glitchpad_core::contracts::CoreError> {
-    host.read_range(&source_id, offset, length, operation_budget)
+    android_interactive::run(move || {
+        app.state::<android_source::AndroidSourceHost>()
+            .read_range(&source_id, offset, length, operation_budget)
+    })
+    .await
 }
 
 #[cfg(target_os = "android")]

@@ -156,8 +156,8 @@ api_level=$(adb shell getprop ro.build.version.sdk | tr -d '\r') || exit 1
 if [[ "$api_level" == "24" ]]; then
   app_apk="crates/glitchpad-host/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk"
   test_apk="crates/glitchpad-host/gen/android/app/build/outputs/apk/androidTest/universal/debug/app-universal-debug-androidTest.apk"
-  adb install -r -t "$app_apk" || exit 1
-  adb install -r -t "$test_apk" || exit 1
+  adb install --no-streaming -r -t "$app_apk" || exit 1
+  adb install --no-streaming -r -t "$test_apk" || exit 1
   connected_output="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/connected-suite-api24.txt"
   ANDROID_INSTRUMENTATION_RESET_APP_DATA=true bash scripts/run-android-instrumentation.sh "$connected_output" "OK (9 tests)" \
     -e notClass com.shruggietech.glitchpad.performance.PerformanceInstrumentedTest,com.shruggietech.glitchpad.source.AndroidDeliveryInstrumentedTest,com.shruggietech.glitchpad.shell.BrandBuilderAppFrameInstrumentedTest || exit 1

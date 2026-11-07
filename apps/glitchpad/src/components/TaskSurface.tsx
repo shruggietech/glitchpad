@@ -221,7 +221,8 @@ export function TaskSurface({
               !remainingModal &&
               active?.isConnected &&
               !active.closest('.task-surface') &&
-              (active.matches('.add-document-trigger[aria-expanded="false"]') ||
+              (active.matches('.add-document-trigger') ||
+                active.closest('.add-document-menu') ||
                 (active.closest('.document-surface') &&
                   !target?.closest('.document-surface')))
             )

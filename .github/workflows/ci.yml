@@ -123,7 +123,7 @@ jobs:
           node-version-file: .node-version
       - name: Read the exact source baseline and rebind current references
         run: |
-          git fetch --no-tags --depth=1 origin da96b0a4f96f3bcbaf9af3127ad96c064a371767
+          git fetch --no-tags --depth=1 origin 8eef5f589cab9a17c15ca1937fc0c65223cfabe0
           python3 .github/scripts/s047-source-rebind.py
           node --input-type=module <<'NODE'
           import {readFileSync,writeFileSync} from 'node:fs';
@@ -341,18 +341,18 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/s047-source-preflight"
           cp apps/glitchpad/src/components/TaskSurface.tsx "$RUNNER_TEMP/s047-fixed-task-focus.tsx"
-          git fetch --no-tags --depth=1 origin 307b9eeb11fe5ad0de8c1a53930f19d3d7e62b92
-          git show 307b9eeb11fe5ad0de8c1a53930f19d3d7e62b92:apps/glitchpad/src/components/TaskSurface.tsx > apps/glitchpad/src/components/TaskSurface.tsx
+          git fetch --no-tags --depth=1 origin 8eef5f589cab9a17c15ca1937fc0c65223cfabe0
+          git show 8eef5f589cab9a17c15ca1937fc0c65223cfabe0:apps/glitchpad/src/components/TaskSurface.tsx > apps/glitchpad/src/components/TaskSurface.tsx
           set +e
-          pnpm --filter @shruggietech/glitchpad exec vitest run --maxWorkers=2 src/components/TaskSurface.test.tsx -t 'falls back to enabled dialog focus' > "$RUNNER_TEMP/s047-source-preflight/disabled-focus-red.log" 2>&1
+          pnpm --filter @shruggietech/glitchpad exec vitest run --maxWorkers=2 src/components/TaskSurface.test.tsx -t 'keeps focus inside an open Add document menu' > "$RUNNER_TEMP/s047-source-preflight/disabled-focus-red.log" 2>&1
           red_exit=$?
           set -e
           cp "$RUNNER_TEMP/s047-fixed-task-focus.tsx" apps/glitchpad/src/components/TaskSurface.tsx
           test "$red_exit" -ne 0
-          grep -F 'falls back to enabled dialog focus' "$RUNNER_TEMP/s047-source-preflight/disabled-focus-red.log"
+          grep -F 'keeps focus inside an open Add document menu' "$RUNNER_TEMP/s047-source-preflight/disabled-focus-red.log"
           grep -F 'Expected element with focus' "$RUNNER_TEMP/s047-source-preflight/disabled-focus-red.log"
       - name: Format affected focus regression with repository pin
-        run: pnpm exec prettier --write apps/glitchpad/src/components/TaskSurface.tsx apps/glitchpad/src/components/TaskSurface.test.tsx
+        run: pnpm exec prettier --write apps/glitchpad/src/components/TaskSurface.tsx apps/glitchpad/src/components/TaskSurface.test.tsx scripts/run-android-evidence.test.mjs
       - name: Check complete frontend with unmasked failure exits
         run: |
           mkdir -p "$RUNNER_TEMP/s047-source-preflight"
@@ -360,7 +360,7 @@ jobs:
           pnpm run check:frontend 2>&1 | tee "$RUNNER_TEMP/s047-source-preflight/frontend-green.log"
       - name: Rebind and audit exact current source references
         run: |
-          git fetch --no-tags --depth=1 origin da96b0a4f96f3bcbaf9af3127ad96c064a371767
+          git fetch --no-tags --depth=1 origin 8eef5f589cab9a17c15ca1937fc0c65223cfabe0
           python3 .github/scripts/s047-source-rebind.py
           node .github/scripts/s047-source-audit.mjs
       - name: Retain exact frontend source validation
@@ -373,6 +373,7 @@ jobs:
             apps/glitchpad/src/domain/large-text-gateway.test.ts
             apps/glitchpad/src/components/TaskSurface.tsx
             apps/glitchpad/src/components/TaskSurface.test.tsx
+            scripts/run-android-evidence.test.mjs
             .codex-tmp/s047/r28-hosted-source-rebind.json
             .codex-tmp/s047/current-control-reference-audit.json
             specs/047-android-task-completion/contracts/control-ledger.json

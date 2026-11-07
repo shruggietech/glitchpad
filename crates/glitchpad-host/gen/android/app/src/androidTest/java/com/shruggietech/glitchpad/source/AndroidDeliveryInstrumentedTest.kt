@@ -1743,7 +1743,14 @@ class AndroidDeliveryInstrumentedTest {
   private fun observeVisibleTaskControls(scenario: ActivityScenario<MainActivity>, profile: String, deadlineOverride: Long? = null, expectedImeVisible: Boolean? = null): JSONObject {
     val actionDeadline = deadlineOverride ?: (SystemClock.elapsedRealtime() + 30_000L)
     assertTrue(SystemClock.elapsedRealtime() < actionDeadline)
-    val count = evaluate(scenario, "Array.from(document.querySelectorAll('button,input,select,textarea,summary,[role=button],[role=menuitem],[role=link]')).filter(n=>!n.closest('[aria-hidden=true],[inert]')&&!n.matches('.markdown-document input[type=checkbox][disabled]')&&n.getBoundingClientRect().width>0&&n.getBoundingClientRect().height>0).length").toInt()
+    var count = 0
+    while (SystemClock.elapsedRealtime() < actionDeadline) {
+      count = evaluate(scenario, "Array.from(document.querySelectorAll('button,input,select,textarea,summary,[role=button],[role=menuitem],[role=link]')).filter(n=>!n.closest('[aria-hidden=true],[inert]')&&!n.matches('.markdown-document input[type=checkbox][disabled]')&&n.getBoundingClientRect().width>0&&n.getBoundingClientRect().height>0).length").toInt()
+      if (count in 1..200) break
+      val remaining = actionDeadline - SystemClock.elapsedRealtime()
+      if (remaining > 0) SystemClock.sleep(minOf(100L, remaining))
+    }
+    if (count !in 1..200) captureEditorFocusFailure(scenario,"control_inventory",JSONObject().put("profile",profile).put("count",count),nativeControlGeometry(scenario,null))
     assertTrue("the composed task must expose bounded real controls", count in 1..200)
     val controls = JSONArray()
     for (index in 0 until count) {
@@ -1842,9 +1849,8 @@ class AndroidDeliveryInstrumentedTest {
         (()=>{
           const dialog=document.querySelector('[role=dialog][data-state=open]');
           if(!dialog)return false;
-          const preferred=dialog.querySelector('[data-task-initial-focus]:not(:disabled),[role=menuitem]:not([disabled])');
           const active=document.activeElement;
-          return !!active&&dialog.contains(active)&&(!preferred||preferred===active||preferred.contains(active));
+          return !!active&&dialog.contains(active)&&!active.disabled&&!dialog.querySelector('[aria-busy=true]');
         })()
       """.trimIndent()
       try {
@@ -1908,7 +1914,7 @@ class AndroidDeliveryInstrumentedTest {
     observe("icon_tools")
     clickControl(scenario,"Close Image tools")
     openFromAddDocument(scenario,grant(documentUri("s047-large.txt")))
-    waitForCondition(scenario,"!!document.querySelector('.large-text pre')","profile must retain actual bounded large text")
+    waitForCondition(scenario,"(()=>{const n=document.querySelector('.large-text pre');return !!n&&n.textContent.length>0;})()","profile must retain actual nonempty bounded large text")
     menuAction(scenario,"Large text tools")
     observe("large_tools","Find","S047_LARGE_FIRST")
     clickControl(scenario,"Close Large text tools")

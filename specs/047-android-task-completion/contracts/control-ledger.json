@@ -43,7 +43,7 @@
       "native_preparation": {
         "method": "verifyS047ShellAliases",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2290,
+        "line": 2298,
         "assertions": "Actual Menu Escape/outside, Skip target focus, compact switcher close, wide inline/overflow activate+close, CtrlTab/ShiftCtrlTab, Home/End/arrows, AltShift reorder, CtrlW; source count/active surface assertions.",
         "prepared_additional_labels": [
           "keyboard focus reveals skip link",
@@ -62,7 +62,7 @@
           "Alt+Shift+ArrowRight reorder"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -112,7 +112,7 @@
       "native_preparation": {
         "method": "verifyS047ShellAliases",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2290,
+        "line": 2298,
         "assertions": "Actual Menu Escape/outside, Skip target focus, compact switcher close, wide inline/overflow activate+close, CtrlTab/ShiftCtrlTab, Home/End/arrows, AltShift reorder, CtrlW; source count/active surface assertions.",
         "prepared_additional_labels": [
           "keyboard focus reveals skip link",
@@ -131,7 +131,7 @@
           "Alt+Shift+ArrowRight reorder"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -200,13 +200,13 @@
       "native_preparation": {
         "method": "s047ColdAddJourney",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2400,
+        "line": 2408,
         "assertions": "Actual Add choices, close/outside/Back and native Open one chooser/cancel; canonical current Add/Open replaces legacy labels.",
         "prepared_additional_labels": [
           "Open (requested + menu)"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -261,13 +261,13 @@
       "native_preparation": {
         "method": "s047ColdAddJourney",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2400,
+        "line": 2408,
         "assertions": "Actual Add choices, close/outside/Back and native Open one chooser/cancel; canonical current Add/Open replaces legacy labels.",
         "prepared_additional_labels": [
           "Open (requested + menu)"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -326,13 +326,13 @@
       "native_preparation": {
         "method": "s047ColdAddJourney",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2400,
+        "line": 2408,
         "assertions": "Actual Add choices, close/outside/Back and native Open one chooser/cancel; canonical current Add/Open replaces legacy labels.",
         "prepared_additional_labels": [
           "Open (requested + menu)"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -390,13 +390,13 @@
       "native_preparation": {
         "method": "s047ColdAddJourney",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2400,
+        "line": 2408,
         "assertions": "Actual Add choices, close/outside/Back and native Open one chooser/cancel; canonical current Add/Open replaces legacy labels.",
         "prepared_additional_labels": [
           "Open (requested + menu)"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -451,13 +451,13 @@
       "native_preparation": {
         "method": "s047ColdAddJourney",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2400,
+        "line": 2408,
         "assertions": "Actual Add choices, close/outside/Back and native Open one chooser/cancel; canonical current Add/Open replaces legacy labels.",
         "prepared_additional_labels": [
           "Open (requested + menu)"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -505,14 +505,14 @@
       "native_preparation": {
         "method": "s047AboutJourney",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2586,
+        "line": 2594,
         "assertions": "Actual PackageManager facts, four exact allowlisted ACTION_VIEW dispatches with one-per-action count/no attached content, actual hosted network-none offline notice view with restoration, actual Help destination.",
         "prepared_additional_labels": [
           "explicit report destination",
           "no automatic attachments or upload"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -559,7 +559,7 @@
         "assertions": "Actual Menu destinations plus profile-specific Preferences/metadata tasks, and ordinary diagnostics native export/Share.",
         "prepared_additional_labels": [],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -606,7 +606,7 @@
         "assertions": "Actual Menu destinations plus profile-specific Preferences/metadata tasks, and ordinary diagnostics native export/Share.",
         "prepared_additional_labels": [],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -663,7 +663,7 @@
       "native_preparation": {
         "method": "verifyS047ShellAliases",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2290,
+        "line": 2298,
         "assertions": "Actual Menu Escape/outside, Skip target focus, compact switcher close, wide inline/overflow activate+close, CtrlTab/ShiftCtrlTab, Home/End/arrows, AltShift reorder, CtrlW; source count/active surface assertions.",
         "prepared_additional_labels": [
           "keyboard focus reveals skip link",
@@ -682,7 +682,7 @@
           "Alt+Shift+ArrowRight reorder"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -730,11 +730,11 @@
       "native_preparation": {
         "method": "s047BackJourney",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2506,
+        "line": 2514,
         "assertions": "Actual IME and button Back, modal background inert, rotation preservation, real picker cancel/dirty guards; API36 positive actual native callback start/progress/cancel/commit deltas.",
         "prepared_additional_labels": [],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -782,14 +782,14 @@
       "native_preparation": {
         "method": "s047AboutJourney",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2586,
+        "line": 2594,
         "assertions": "Actual PackageManager facts, four exact allowlisted ACTION_VIEW dispatches with one-per-action count/no attached content, actual hosted network-none offline notice view with restoration, actual Help destination.",
         "prepared_additional_labels": [
           "explicit report destination",
           "no automatic attachments or upload"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -837,14 +837,14 @@
       "native_preparation": {
         "method": "s047AboutJourney",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2586,
+        "line": 2594,
         "assertions": "Actual PackageManager facts, four exact allowlisted ACTION_VIEW dispatches with one-per-action count/no attached content, actual hosted network-none offline notice view with restoration, actual Help destination.",
         "prepared_additional_labels": [
           "explicit report destination",
           "no automatic attachments or upload"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -906,14 +906,14 @@
       "native_preparation": {
         "method": "s047AboutJourney",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2586,
+        "line": 2594,
         "assertions": "Actual PackageManager facts, four exact allowlisted ACTION_VIEW dispatches with one-per-action count/no attached content, actual hosted network-none offline notice view with restoration, actual Help destination.",
         "prepared_additional_labels": [
           "explicit report destination",
           "no automatic attachments or upload"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -1011,14 +1011,14 @@
       "native_preparation": {
         "method": "s047AboutJourney",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2586,
+        "line": 2594,
         "assertions": "Actual PackageManager facts, four exact allowlisted ACTION_VIEW dispatches with one-per-action count/no attached content, actual hosted network-none offline notice view with restoration, actual Help destination.",
         "prepared_additional_labels": [
           "explicit report destination",
           "no automatic attachments or upload"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -1080,14 +1080,14 @@
       "native_preparation": {
         "method": "s047AboutJourney",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2586,
+        "line": 2594,
         "assertions": "Actual PackageManager facts, four exact allowlisted ACTION_VIEW dispatches with one-per-action count/no attached content, actual hosted network-none offline notice view with restoration, actual Help destination.",
         "prepared_additional_labels": [
           "explicit report destination",
           "no automatic attachments or upload"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -1161,7 +1161,7 @@
       "native_preparation": {
         "method": "verifyS047ShellAliases",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2290,
+        "line": 2298,
         "assertions": "Actual Menu Escape/outside, Skip target focus, compact switcher close, wide inline/overflow activate+close, CtrlTab/ShiftCtrlTab, Home/End/arrows, AltShift reorder, CtrlW; source count/active surface assertions.",
         "prepared_additional_labels": [
           "keyboard focus reveals skip link",
@@ -1180,7 +1180,7 @@
           "Alt+Shift+ArrowRight reorder"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -1274,7 +1274,7 @@
       "native_preparation": {
         "method": "verifyS047ShellAliases",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2290,
+        "line": 2298,
         "assertions": "Actual Menu Escape/outside, Skip target focus, compact switcher close, wide inline/overflow activate+close, CtrlTab/ShiftCtrlTab, Home/End/arrows, AltShift reorder, CtrlW; source count/active surface assertions.",
         "prepared_additional_labels": [
           "keyboard focus reveals skip link",
@@ -1293,7 +1293,7 @@
           "Alt+Shift+ArrowRight reorder"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -1336,7 +1336,7 @@
       "native_preparation": {
         "method": "verifyS047ShellAliases",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2290,
+        "line": 2298,
         "assertions": "Actual Menu Escape/outside, Skip target focus, compact switcher close, wide inline/overflow activate+close, CtrlTab/ShiftCtrlTab, Home/End/arrows, AltShift reorder, CtrlW; source count/active surface assertions.",
         "prepared_additional_labels": [
           "keyboard focus reveals skip link",
@@ -1355,7 +1355,7 @@
           "Alt+Shift+ArrowRight reorder"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -1454,7 +1454,7 @@
       "native_preparation": {
         "method": "verifyS047ShellAliases",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2290,
+        "line": 2298,
         "assertions": "Actual Menu Escape/outside, Skip target focus, compact switcher close, wide inline/overflow activate+close, CtrlTab/ShiftCtrlTab, Home/End/arrows, AltShift reorder, CtrlW; source count/active surface assertions.",
         "prepared_additional_labels": [
           "keyboard focus reveals skip link",
@@ -1473,7 +1473,7 @@
           "Alt+Shift+ArrowRight reorder"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -1530,7 +1530,7 @@
       "native_preparation": {
         "method": "verifyS047ShellAliases",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2290,
+        "line": 2298,
         "assertions": "Actual Menu Escape/outside, Skip target focus, compact switcher close, wide inline/overflow activate+close, CtrlTab/ShiftCtrlTab, Home/End/arrows, AltShift reorder, CtrlW; source count/active surface assertions.",
         "prepared_additional_labels": [
           "keyboard focus reveals skip link",
@@ -1549,7 +1549,7 @@
           "Alt+Shift+ArrowRight reorder"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -1699,7 +1699,7 @@
           "Control+G"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -1848,7 +1848,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -2084,7 +2084,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -2285,7 +2285,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -2408,7 +2408,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -2570,7 +2570,7 @@
           "Control+G"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -2721,7 +2721,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -2870,7 +2870,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -2987,7 +2987,7 @@
           "Control+G"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -3104,7 +3104,7 @@
           "Control+G"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -3226,7 +3226,7 @@
           "Control+G"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -3433,7 +3433,7 @@
       "native_preparation": {
         "method": "s047ImageJourney",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2205,
+        "line": 2213,
         "assertions": "Actual local image/menu/native Ctrl+Plus/Minus and diagram local/menu/keyboard effective scales; shared native viewport tests.",
         "prepared_additional_labels": [
           "menu",
@@ -3444,7 +3444,7 @@
           "Fit-to-custom multiplicative scale"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -3678,7 +3678,7 @@
       "native_preparation": {
         "method": "s047ImageJourney",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2205,
+        "line": 2213,
         "assertions": "Actual local image/menu/native Ctrl+Plus/Minus and diagram local/menu/keyboard effective scales; shared native viewport tests.",
         "prepared_additional_labels": [
           "menu",
@@ -3689,7 +3689,7 @@
           "Fit-to-custom multiplicative scale"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -3898,7 +3898,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -4016,7 +4016,7 @@
           "pending write disables cancel"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -4192,7 +4192,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -4288,7 +4288,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -4347,7 +4347,7 @@
           "unavailable local source feedback"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -4414,7 +4414,7 @@
           "pending write disables cancel"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -4470,7 +4470,7 @@
           "unavailable local source feedback"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -4526,7 +4526,7 @@
           "unavailable local source feedback"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -4696,7 +4696,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -4807,7 +4807,7 @@
           "Control+G"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -5090,7 +5090,7 @@
           "Control+G"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -5271,7 +5271,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -5387,7 +5387,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -5523,7 +5523,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -5675,7 +5675,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -5811,7 +5811,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -5953,7 +5953,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -6094,7 +6094,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -6235,7 +6235,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -6402,7 +6402,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -6555,7 +6555,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -6731,7 +6731,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -6870,7 +6870,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -7028,7 +7028,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -7218,7 +7218,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -7304,7 +7304,7 @@
           "unavailable local source feedback"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -7430,7 +7430,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -7543,7 +7543,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -7669,7 +7669,7 @@
           "contained failure retry"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -7849,7 +7849,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -7988,7 +7988,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -8096,7 +8096,7 @@
       "native_preparation": {
         "method": "verifyS047DiagramRoutes",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2064,
+        "line": 2072,
         "assertions": "Standalone and embedded actual local/menu/keyboard zoom, native drag and arrow pan, directional Pan controls, Actual size1/Reset/Fit with actual effective scales.",
         "prepared_additional_labels": [
           "standalone Fit",
@@ -8108,7 +8108,7 @@
           "Fit-to-pan scale continuity"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -8196,7 +8196,7 @@
       "native_preparation": {
         "method": "verifyS047DiagramRoutes",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2064,
+        "line": 2072,
         "assertions": "Standalone and embedded actual local/menu/keyboard zoom, native drag and arrow pan, directional Pan controls, Actual size1/Reset/Fit with actual effective scales.",
         "prepared_additional_labels": [
           "standalone Fit",
@@ -8208,7 +8208,7 @@
           "Fit-to-pan scale continuity"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -8261,7 +8261,7 @@
       "native_preparation": {
         "method": "verifyS047DiagramRoutes",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2064,
+        "line": 2072,
         "assertions": "Standalone and embedded actual local/menu/keyboard zoom, native drag and arrow pan, directional Pan controls, Actual size1/Reset/Fit with actual effective scales.",
         "prepared_additional_labels": [
           "standalone Fit",
@@ -8273,7 +8273,7 @@
           "Fit-to-pan scale continuity"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -8327,7 +8327,7 @@
       "native_preparation": {
         "method": "verifyS047DiagramRoutes",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2064,
+        "line": 2072,
         "assertions": "Standalone and embedded actual local/menu/keyboard zoom, native drag and arrow pan, directional Pan controls, Actual size1/Reset/Fit with actual effective scales.",
         "prepared_additional_labels": [
           "standalone Fit",
@@ -8339,7 +8339,7 @@
           "Fit-to-pan scale continuity"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -8392,7 +8392,7 @@
       "native_preparation": {
         "method": "verifyS047DiagramRoutes",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2064,
+        "line": 2072,
         "assertions": "Standalone and embedded actual local/menu/keyboard zoom, native drag and arrow pan, directional Pan controls, Actual size1/Reset/Fit with actual effective scales.",
         "prepared_additional_labels": [
           "standalone Fit",
@@ -8404,7 +8404,7 @@
           "Fit-to-pan scale continuity"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -8457,7 +8457,7 @@
       "native_preparation": {
         "method": "verifyS047DiagramRoutes",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2064,
+        "line": 2072,
         "assertions": "Standalone and embedded actual local/menu/keyboard zoom, native drag and arrow pan, directional Pan controls, Actual size1/Reset/Fit with actual effective scales.",
         "prepared_additional_labels": [
           "standalone Fit",
@@ -8469,7 +8469,7 @@
           "Fit-to-pan scale continuity"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -8609,7 +8609,7 @@
       "native_preparation": {
         "method": "verifyS047DiagramRoutes",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2064,
+        "line": 2072,
         "assertions": "Standalone and embedded actual local/menu/keyboard zoom, native drag and arrow pan, directional Pan controls, Actual size1/Reset/Fit with actual effective scales.",
         "prepared_additional_labels": [
           "standalone Fit",
@@ -8621,7 +8621,7 @@
           "Fit-to-pan scale continuity"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -8723,7 +8723,7 @@
       "native_preparation": {
         "method": "s047ImageJourney",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2205,
+        "line": 2213,
         "assertions": "Actual native pixels/provider integrity, exact SVG reason categories, real read-denial retry, image local/menu/native-key/pinch/drag routes, Fit/Actual/Reset and retained scope.",
         "prepared_additional_labels": [
           "Fit image",
@@ -8744,7 +8744,7 @@
           "deterministic refusal no identical retry"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -8813,7 +8813,7 @@
       "native_preparation": {
         "method": "s047ImageJourney",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2205,
+        "line": 2213,
         "assertions": "Actual native pixels/provider integrity, exact SVG reason categories, real read-denial retry, image local/menu/native-key/pinch/drag routes, Fit/Actual/Reset and retained scope.",
         "prepared_additional_labels": [
           "Fit image",
@@ -8834,7 +8834,7 @@
           "deterministic refusal no identical retry"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -8962,7 +8962,7 @@
       "native_preparation": {
         "method": "s047ImageJourney",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2205,
+        "line": 2213,
         "assertions": "Actual native pixels/provider integrity, exact SVG reason categories, real read-denial retry, image local/menu/native-key/pinch/drag routes, Fit/Actual/Reset and retained scope.",
         "prepared_additional_labels": [
           "Fit image",
@@ -8983,7 +8983,7 @@
           "deterministic refusal no identical retry"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -9084,7 +9084,7 @@
       "native_preparation": {
         "method": "s047ImageJourney",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2205,
+        "line": 2213,
         "assertions": "Actual native pixels/provider integrity, exact SVG reason categories, real read-denial retry, image local/menu/native-key/pinch/drag routes, Fit/Actual/Reset and retained scope.",
         "prepared_additional_labels": [
           "Fit image",
@@ -9105,7 +9105,7 @@
           "deterministic refusal no identical retry"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -9273,7 +9273,7 @@
       "native_preparation": {
         "method": "s047ImageJourney",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2205,
+        "line": 2213,
         "assertions": "Actual native pixels/provider integrity, exact SVG reason categories, real read-denial retry, image local/menu/native-key/pinch/drag routes, Fit/Actual/Reset and retained scope.",
         "prepared_additional_labels": [
           "Fit image",
@@ -9294,7 +9294,7 @@
           "deterministic refusal no identical retry"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -9395,7 +9395,7 @@
       "native_preparation": {
         "method": "verifyS047SecondaryImageTasks",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2127,
+        "line": 2135,
         "assertions": "Actual background each choice, previous/next frame and invalid frame drafts, native icon select and Reset scope. Animation receipt explicitly records played_and_paused OR reduced_motion_disabled with unexecuted Play/Pause.",
         "prepared_additional_labels": [
           "valid frame",
@@ -9406,7 +9406,7 @@
           "selection survives tool disclosure"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -9483,7 +9483,7 @@
       "native_preparation": {
         "method": "verifyS047SecondaryImageTasks",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2127,
+        "line": 2135,
         "assertions": "Actual background each choice, previous/next frame and invalid frame drafts, native icon select and Reset scope. Animation receipt explicitly records played_and_paused OR reduced_motion_disabled with unexecuted Play/Pause.",
         "prepared_additional_labels": [
           "valid frame",
@@ -9494,7 +9494,7 @@
           "selection survives tool disclosure"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -9571,7 +9571,7 @@
       "native_preparation": {
         "method": "verifyS047SecondaryImageTasks",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2127,
+        "line": 2135,
         "assertions": "Actual background each choice, previous/next frame and invalid frame drafts, native icon select and Reset scope. Animation receipt explicitly records played_and_paused OR reduced_motion_disabled with unexecuted Play/Pause.",
         "prepared_additional_labels": [
           "valid frame",
@@ -9582,7 +9582,7 @@
           "selection survives tool disclosure"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -9688,7 +9688,7 @@
       "native_preparation": {
         "method": "verifyS047SecondaryImageTasks",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2127,
+        "line": 2135,
         "assertions": "Actual background each choice, previous/next frame and invalid frame drafts, native icon select and Reset scope. Animation receipt explicitly records played_and_paused OR reduced_motion_disabled with unexecuted Play/Pause.",
         "prepared_additional_labels": [
           "valid frame",
@@ -9699,7 +9699,7 @@
           "selection survives tool disclosure"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -9789,7 +9789,7 @@
       "native_preparation": {
         "method": "verifyS047SecondaryImageTasks",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2127,
+        "line": 2135,
         "assertions": "Actual background each choice, previous/next frame and invalid frame drafts, native icon select and Reset scope. Animation receipt explicitly records played_and_paused OR reduced_motion_disabled with unexecuted Play/Pause.",
         "prepared_additional_labels": [
           "valid frame",
@@ -9800,7 +9800,7 @@
           "selection survives tool disclosure"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -9925,7 +9925,7 @@
           "original ICO unchanged"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -10050,7 +10050,7 @@
       "native_preparation": {
         "method": "s047ImageJourney",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2205,
+        "line": 2213,
         "assertions": "Actual native pixels/provider integrity, exact SVG reason categories, real read-denial retry, image local/menu/native-key/pinch/drag routes, Fit/Actual/Reset and retained scope.",
         "prepared_additional_labels": [
           "Fit image",
@@ -10071,7 +10071,7 @@
           "deterministic refusal no identical retry"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -10169,7 +10169,7 @@
           "exact displayed section clipboard"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -10267,7 +10267,7 @@
           "exact displayed section clipboard"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -10434,7 +10434,7 @@
           "exact displayed section clipboard"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -10565,7 +10565,7 @@
           "exact displayed section clipboard"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -10713,7 +10713,7 @@
           "exact displayed section clipboard"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -10835,7 +10835,7 @@
           "exact displayed section clipboard"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -10954,7 +10954,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -11098,7 +11098,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -11251,7 +11251,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -11406,7 +11406,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -11486,14 +11486,14 @@
       "native_preparation": {
         "method": "verifyS047EmbeddedMetadata",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2185,
+        "line": 2193,
         "assertions": "Existing actual Exif fixture, each real observation disclosure open/close and source bytes unchanged.",
         "prepared_additional_labels": [
           "expand observation",
           "collapse observation"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -11631,7 +11631,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -11759,7 +11759,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -11883,7 +11883,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -12008,7 +12008,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -12160,7 +12160,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -12309,7 +12309,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -12481,7 +12481,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -12651,7 +12651,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -12794,7 +12794,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -12960,7 +12960,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -13151,7 +13151,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -13252,7 +13252,7 @@
           "pending write disables cancel"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -13328,7 +13328,7 @@
           "pending write disables cancel"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -13401,7 +13401,7 @@
           "pending write disables cancel"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -13453,7 +13453,7 @@
           "recover persisted exact draft"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -13499,14 +13499,14 @@
       "native_preparation": {
         "method": "verifyS047RecoveryDecisions",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2612,
+        "line": 2620,
         "assertions": "Fault-probe root exception -> actual Restart -> Not now -> actual reload -> same candidate -> Decline -> reload absence.",
         "prepared_additional_labels": [
           "explicitly decline recovery",
           "decide later retains recovery record"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -13552,14 +13552,14 @@
       "native_preparation": {
         "method": "verifyS047RecoveryDecisions",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2612,
+        "line": 2620,
         "assertions": "Fault-probe root exception -> actual Restart -> Not now -> actual reload -> same candidate -> Decline -> reload absence.",
         "prepared_additional_labels": [
           "explicitly decline recovery",
           "decide later retains recovery record"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -13632,7 +13632,7 @@
           "handoff distinct from delivery"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -13713,7 +13713,7 @@
           "handoff distinct from delivery"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -13784,7 +13784,7 @@
           "handoff distinct from delivery"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -13868,7 +13868,7 @@
           "handoff distinct from delivery"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     },
     {
@@ -13976,7 +13976,7 @@
           "Incomplete task readonly"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+        "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
       }
     }
   ],
@@ -14262,8 +14262,8 @@
     "R2_N_IMAGE": {
       "kind": "native_prepared_not_executed",
       "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-      "line": 2205,
-      "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68",
+      "line": 2213,
+      "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523",
       "effect": "The native image journey prepares real provider SVG outcomes and source-read Retry, image local/menu/Ctrl zoom aliases, key pan, native gestures, Actual size, Reset and Fit.",
       "limit": "Fresh ordinary/fault candidate receipts for API24/API36 remain required; source and compiled instrumentation are not runtime proof.",
       "anchor": "@Test fun s047ImageJourney() {"
@@ -14271,8 +14271,8 @@
     "R2_N_DIAGRAM": {
       "kind": "native_prepared_not_executed",
       "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-      "line": 2064,
-      "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68",
+      "line": 2072,
+      "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523",
       "effect": "The current native helper explicitly prepares standalone and embedded local plus/minus, standalone global menu plus/minus, header-focused global Ctrl-minus/plus, embedded canvas Ctrl-minus/plus, bare Equals, ArrowLeft, native drag, four signed Pan controls, Actual size, Reset and Fit.",
       "limit": "These are current native source preparations. Only exact installed-candidate receipts establish that these aliases executed. Other owner is compiling the final native source.",
       "anchor": "private fun verifyS047DiagramRoutes(scenario: ActivityScenario<MainActivity>, selector: String, standalone: Boolean) {"
@@ -14280,8 +14280,8 @@
     "R2_N_MORE": {
       "kind": "native_prepared_not_executed",
       "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-      "line": 2025,
-      "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68",
+      "line": 2033,
+      "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523",
       "effect": "The native More helper prepares live measured Fit, Zoom factors1.25and0.8, same document/source, GIF frame3 and Dark retention, and standalone/embedded routes.",
       "limit": "",
       "anchor": "private fun verifyS047MoreViewportActions(scenario:ActivityScenario<MainActivity>,selector:String,kind:String) {"
@@ -14289,8 +14289,8 @@
     "R2_N_SECONDARY": {
       "kind": "native_prepared_not_executed",
       "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-      "line": 2127,
-      "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68",
+      "line": 2135,
+      "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523",
       "effect": "The native secondary helper prepares Checkerboard/Light/Dark selector state, invalid and valid frame drafts, Previous3to2 and Next2to3, conditional Play/Pause receipts, and Reset retention for GIF frame3/Dark and ICO entry1/Light.",
       "limit": "Previous/Next start paused; first/last disabled bounds are not asserted. Background choices assert viewport state, not independent painted-background pixel readback. Playback branch depends on the actual reduced-motion receipt.",
       "anchor": "private fun verifyS047SecondaryImageTasks(scenario: ActivityScenario<MainActivity>): JSONObject {"
@@ -14298,8 +14298,8 @@
     "R2_N_METADATA": {
       "kind": "native_prepared_not_executed",
       "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-      "line": 2185,
-      "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68",
+      "line": 2193,
+      "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523",
       "effect": "More image File information opens actual JPEG Exif observations; individual disclosures open and close and original provider bytes remain unchanged.",
       "limit": "Ready JPEG context only; not failed-preview metadata or retargeting while the inspector remains open.",
       "anchor": "private fun verifyS047EmbeddedMetadata(scenario: ActivityScenario<MainActivity>) {"
@@ -14307,8 +14307,8 @@
     "R2_N_EXPORT": {
       "kind": "native_prepared_not_executed",
       "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-      "line": 3771,
-      "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68",
+      "line": 3779,
+      "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523",
       "effect": "The native helper prepares chooser cancellation, original-destination refusal, selected DIB1 PNG export with independent4x3 pixel readback, nonempty/misreported conflicts and unchanged original ICO.",
       "limit": "No mid-write or partial provider I/O error is injected. Pre-write refusal cannot qualify failed write.",
       "anchor": "private fun verifySelectedIconExport(scenario: ActivityScenario<MainActivity>, original: Uri, before: ByteArray) {"
@@ -14316,8 +14316,8 @@
     "R2_N_FAULT": {
       "kind": "native_prepared_not_executed_fault_role",
       "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-      "line": 2655,
-      "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68",
+      "line": 2663,
+      "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523",
       "effect": "In the compiled fault role, one actual absent native command produces host_transport; Retry then uses the actual native renderer.",
       "limit": "Fault-probe candidate only; ordinary production absence is a separate qualification.",
       "anchor": "injectRecoveryFailure(scenario, \"host\")"
@@ -17252,7 +17252,7 @@
           "assertion": "Ctrl+A then actualCtrl+C copies exact selectedsource; menuCopy independently matches at1011. Selectionisallsource, not a partial range.",
           "scope": "exact_effect",
           "execution": "prepared_not_executed",
-          "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+          "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
         }
       ],
       "limits": [],
@@ -17293,7 +17293,7 @@
           "assertion": "Ctrl+A then actualCtrl+C copies exact selectedsource; menuCopy independently matches at1011. Selectionisallsource, not a partial range.",
           "scope": "exact_effect",
           "execution": "prepared_not_executed",
-          "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+          "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
         }
       ],
       "limits": [
@@ -17520,7 +17520,7 @@
           "assertion": "ActualCtrl+F must expose actualFindinput before realquerytyping.",
           "scope": "exact_effect",
           "execution": "prepared_not_executed",
-          "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+          "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
         }
       ],
       "limits": [],
@@ -17700,7 +17700,7 @@
           "assertion": "Each keyboard, menu and CodeMirror panel Find next/previous route prepares an exact controlled selection assertion; all routes retain source bytes.",
           "scope": "exact_alias_selection_prepared",
           "execution": "prepared_not_executed",
-          "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+          "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
         }
       ],
       "limits": [
@@ -17785,7 +17785,7 @@
           "assertion": "The real fixture has paragraph and embedded-diagram cats matches; Next requires exactly2of2 and Previous requires exactly1of2 after actual activations.",
           "scope": "exact_two_match_direction_prepared",
           "execution": "prepared_not_executed",
-          "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+          "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
         }
       ],
       "limits": [
@@ -17870,7 +17870,7 @@
           "assertion": "NativeCMNext/Previous buttons areactivated before Selectallmatches checks; no independent per-button selectiondelta here.",
           "scope": "activation_only",
           "execution": "prepared_not_executed",
-          "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+          "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
         }
       ],
       "limits": [
@@ -17974,7 +17974,7 @@
           "assertion": "Each keyboard, menu and CodeMirror panel Find next/previous route prepares an exact controlled selection assertion; all routes retain source bytes.",
           "scope": "exact_alias_selection_prepared",
           "execution": "prepared_not_executed",
-          "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+          "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
         }
       ],
       "limits": [
@@ -18036,7 +18036,7 @@
           "assertion": "Each keyboard, menu and CodeMirror panel Find next/previous route prepares an exact controlled selection assertion; all routes retain source bytes.",
           "scope": "exact_alias_selection_prepared",
           "execution": "prepared_not_executed",
-          "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+          "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
         }
       ],
       "limits": [
@@ -18121,7 +18121,7 @@
           "assertion": "NativeCMNext/Previous buttons areactivated before Selectallmatches checks; no independent per-button selectiondelta here.",
           "scope": "activation_only",
           "execution": "prepared_not_executed",
-          "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+          "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
         }
       ],
       "limits": [
@@ -18206,7 +18206,7 @@
           "assertion": "The real fixture has paragraph and embedded-diagram cats matches; Next requires exactly2of2 and Previous requires exactly1of2 after actual activations.",
           "scope": "exact_two_match_direction_prepared",
           "execution": "prepared_not_executed",
-          "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+          "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
         }
       ],
       "limits": [
@@ -18291,7 +18291,7 @@
           "assertion": "Each keyboard, menu and CodeMirror panel Find next/previous route prepares an exact controlled selection assertion; all routes retain source bytes.",
           "scope": "exact_alias_selection_prepared",
           "execution": "prepared_not_executed",
-          "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+          "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
         }
       ],
       "limits": [
@@ -18376,7 +18376,7 @@
           "assertion": "The real fixture has paragraph and embedded-diagram cats matches; Next requires exactly2of2 and Previous requires exactly1of2 after actual activations.",
           "scope": "exact_two_match_direction_prepared",
           "execution": "prepared_not_executed",
-          "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+          "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
         }
       ],
       "limits": [
@@ -18419,7 +18419,7 @@
           "assertion": "NativeCMNext/Previous buttons areactivated before Selectallmatches checks; no independent per-button selectiondelta here.",
           "scope": "activation_only",
           "execution": "prepared_not_executed",
-          "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+          "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
         },
         {
           "kind": "native_preparation",
@@ -18430,7 +18430,7 @@
           "assertion": "Each keyboard, menu and CodeMirror panel Find next/previous route prepares an exact controlled selection assertion; all routes retain source bytes.",
           "scope": "exact_alias_selection_prepared",
           "execution": "prepared_not_executed",
-          "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+          "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
         }
       ],
       "limits": [
@@ -18473,7 +18473,7 @@
           "assertion": "Each keyboard, menu and CodeMirror panel Find next/previous route prepares an exact controlled selection assertion; all routes retain source bytes.",
           "scope": "exact_alias_selection_prepared",
           "execution": "prepared_not_executed",
-          "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+          "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
         }
       ],
       "limits": [
@@ -18516,7 +18516,7 @@
           "assertion": "Each keyboard, menu and CodeMirror panel Find next/previous route prepares an exact controlled selection assertion; all routes retain source bytes.",
           "scope": "exact_alias_selection_prepared",
           "execution": "prepared_not_executed",
-          "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+          "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
         }
       ],
       "limits": [
@@ -18559,7 +18559,7 @@
           "assertion": "NativeCMNext/Previous buttons areactivated before Selectallmatches checks; no independent per-button selectiondelta here.",
           "scope": "activation_only",
           "execution": "prepared_not_executed",
-          "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+          "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
         },
         {
           "kind": "native_preparation",
@@ -18570,7 +18570,7 @@
           "assertion": "Each keyboard, menu and CodeMirror panel Find next/previous route prepares an exact controlled selection assertion; all routes retain source bytes.",
           "scope": "exact_alias_selection_prepared",
           "execution": "prepared_not_executed",
-          "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+          "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
         }
       ],
       "limits": [
@@ -18655,7 +18655,7 @@
           "assertion": "The real fixture has paragraph and embedded-diagram cats matches; Next requires exactly2of2 and Previous requires exactly1of2 after actual activations.",
           "scope": "exact_two_match_direction_prepared",
           "execution": "prepared_not_executed",
-          "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+          "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
         }
       ],
       "limits": [
@@ -18884,7 +18884,7 @@
           "assertion": "ActualCtrl+G opensrealvalidatedlinetask; menuGo route+invalid999/valid2/cancel alsoinEditorAndPreferences.",
           "scope": "exact_effect",
           "execution": "prepared_not_executed",
-          "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+          "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
         }
       ],
       "limits": [],
@@ -18940,7 +18940,7 @@
           "assertion": "ActualCtrl+G opensrealvalidatedlinetask; menuGo route+invalid999/valid2/cancel alsoinEditorAndPreferences.",
           "scope": "exact_effect",
           "execution": "prepared_not_executed",
-          "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+          "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
         }
       ],
       "limits": [],
@@ -19145,7 +19145,7 @@
           "assertion": "Fault-buildonly worker/parser/projection journey opensactualAPKrenderedfallback, exactretainedsource andrealRetry; no normalbuildactivation claim.",
           "scope": "exact_effect",
           "execution": "prepared_not_executed",
-          "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+          "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
         }
       ],
       "limits": [
@@ -19184,7 +19184,7 @@
           "assertion": "Fault-buildonly worker/parser/projection journey opensactualAPKrenderedfallback, exactretainedsource andrealRetry; no normalbuildactivation claim.",
           "scope": "exact_effect",
           "execution": "prepared_not_executed",
-          "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68"
+          "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523"
         }
       ],
       "limits": [
@@ -19316,7 +19316,7 @@
       "path": "apps/glitchpad/src/components/TaskSurface.test.tsx",
       "anchor": "returns focus to the nested opener in the remaining parent after %s",
       "line": 171,
-      "source_sha256": "7a0a635e168a4cac10cfedf4d75ae2c73676b14fe4428b87045e842566ea8e1c",
+      "source_sha256": "f72923ee9e5970a21dab2a00e57dd0cab51588c34c0434a860d042b87ca6e2bf",
       "effect": "Native Back dispatch, Escape, header Close and controlled completion return focus to the connected opener inside the still-open parent task. Separate tests retain the higher modal fence and permit an outside opener when only a nonmodal inspector remains.",
       "limit": "Component event/focus behavior; installed native and full rebuilt production browser qualification remain separate."
     },
@@ -19472,7 +19472,7 @@
       "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
       "line": 1497,
       "anchor": "private fun verifyS047MarkdownAndMetadata(scenario: ActivityScenario<MainActivity>) {",
-      "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68",
+      "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523",
       "kind": "native_prepared_not_executed",
       "method": "verifyS047MarkdownAndMetadata",
       "effect": "The layout helper requires Mermaid Edit a copy, exact native source replacement, real Read/Edit preview, stable selection/history and unchanged original bytes.",
@@ -19512,7 +19512,7 @@
       "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
       "line": 1238,
       "anchor": "private fun verifyClipboardPasteReceiver(",
-      "source_sha256": "cf934b093a6e0a8a86220764ee5d7bbbdb727769d07fa52f6092d2a9325d2f68",
+      "source_sha256": "19ef3df87c60e4c74553662d8ae39cabf866aaaeb9da5c0280c051f5cc51d523",
       "kind": "native_prepared_not_executed",
       "effect": "Independent foreground EditText must paste inline and oversized full text exactly; URI stream bytes/digest must match and writes/enumeration/unknown/traversal reads must be denied. Modern Android requires a clipboard-service read grant; API24-27 uses an explicit copied-text token.",
       "limit": "Requires both fresh ordinary API campaigns; no installed pass inferred from this preparation."
@@ -19549,7 +19549,7 @@
       "path": "apps/glitchpad/src/components/TaskSurface.test.tsx",
       "line": 367,
       "anchor": "keeps a completed Add document trigger handoff when an older task closes late",
-      "source_sha256": "7a0a635e168a4cac10cfedf4d75ae2c73676b14fe4428b87045e842566ea8e1c",
+      "source_sha256": "f72923ee9e5970a21dab2a00e57dd0cab51588c34c0434a860d042b87ca6e2bf",
       "effect": "Preserve the completed Add-trigger focus handoff through actual delayed Radix cleanup.",
       "execution": "prepared_not_executed",
       "limit": "Requires current source test execution; does not qualify the installed candidate."

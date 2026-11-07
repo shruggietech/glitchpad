@@ -855,6 +855,11 @@ test(
         0,
         events.join('\n'),
       );
+      assert.equal(
+        events.filter((event) => event.startsWith('install --no-streaming ')).length,
+        2,
+        events.join('\n'),
+      );
       assert.equal(events.includes('gradle-cleanup'), false);
       const directory = join(state.evidence, 'android-tested-candidate');
       const receipt = JSON.parse(

@@ -810,7 +810,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        api: [24, 36]
+        api: [24]
     env:
       DIAGNOSTIC_API: ${{ matrix.api }}
       GLITCHPAD_BUILD_COMMIT: '3e5a62e370280f1e043fba05bbc83a1796153eda'

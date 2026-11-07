@@ -85,7 +85,7 @@ try{
   await adb(['shell','settings','put','system','font_scale','1.3']);
   const uri='content://com.shruggietech.glitchpad.fixture.documents/document/s047-controls.mmd';
   await adb(['shell','content','call','--uri','content://com.shruggietech.glitchpad.fixture.grants','--method','grant','--arg',uri]);
-  await adb(['shell','am','start','-W','-n',app+'/.MainActivity','-a','android.intent.action.VIEW','-d',uri,'-t','text/vnd.mermaid','--grant-read-uri-permission']);
+  await adb(['shell','run-as',app,'am','start','-W','-n',app+'/.MainActivity','-a','android.intent.action.VIEW','-d',uri,'-t','text/vnd.mermaid','--grant-read-uri-permission']);
   session=await connect();await session.call('Debugger.enable');
   for(let i=0;i<30;i++){
     const state=await checkpoint('ready-'+i);
@@ -99,6 +99,6 @@ try{
   console.log('legacy_cdp_diagnostic=responsive_after_search');
 }catch(error){
   if(session)await pauseAndCapture(error);
-  else await writeFile(join(out,'setup-error.json'),JSON.stringify({error:String(error),stack:String(error.stack)},null,2)+'\n');
+  else {await writeFile(join(out,'setup-error.json'),JSON.stringify({error:String(error),stack:String(error.stack)},null,2)+'\n');process.exitCode=1;}
   console.log('legacy_cdp_diagnostic=retained_not_qualified');
 }finally{if(session)session.close();}

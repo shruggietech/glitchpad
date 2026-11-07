@@ -482,6 +482,7 @@ class AndroidDeliveryInstrumentedTest {
       } else clickControl(scenario, "Recover")
       waitForBodyText(scenario, "S046_PROCESS_RECOVERY_Ω")
       waitForCondition(scenario, "!!document.querySelector('.cm-content[contenteditable=true]')", "recovered Markdown draft must remain editable without provider authority")
+      assertEquals("process recovery must retain every exact draft character", text, editableSourceText(scenario))
       println("draft_recovery_verify=pass,api:" + Build.VERSION.SDK_INT)
     }
     System.out.flush()

@@ -867,7 +867,7 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
-      - name: Verify actual API24 native text-toolbar Back
+      - name: Verify exact draft across a native process restart
         uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
         with:
           api-level: ${{ matrix.api }}
@@ -879,7 +879,7 @@ jobs:
           emulator-options: -no-window -no-audio -no-snapshot -no-boot-anim -gpu swiftshader -feature -Vulkan
           pre-emulator-launch-script: node scripts/configure-android-task-avd.mjs "$ANDROID_AVD_HOME/test.avd/config.ini"
           script: node .github/scripts/s047-handoff-runner.mjs
-      - name: Retain API24 Back fixture diagnostic
+      - name: Retain exact draft recovery fixture diagnostic
         if: always()
         uses: actions/upload-artifact@v7
         with:

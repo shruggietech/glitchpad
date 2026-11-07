@@ -1940,6 +1940,12 @@ class AndroidDeliveryInstrumentedTest {
         scenario.onActivity { it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT }
         waitForCondition(scenario, "innerHeight>innerWidth", "actual portrait must be observed")
         observations.put("portrait-" + font, observeVisibleTaskControls(scenario, "portrait", expectedImeVisible=false))
+        if (evaluate(scenario, "(()=>{const n=document.querySelector('.resolution-dialog h2');return !!n&&n.textContent.startsWith('Recover ')&&n.textContent.endsWith('?');})()") == "true") {
+          clickControl(scenario, "Not now")
+          waitForCondition(scenario, "!document.querySelector('.resolution-dialog')", "geometry must defer the observed recovery candidate through its actual Not now action")
+          observations.put("recovery-deferred-" + font, JSONObject().put("action", "Not now").put("decision", "defer"))
+          observeVisibleTaskControls(scenario, "portrait-after-recovery", expectedImeVisible=false)
+        }
         verifyS047TaskGeometry(scenario,"portrait-"+font,false)
         verifyAddDocumentChoices(scenario)
         for ((destination, close) in listOf("Preferences" to "Close Preferences", "Diagnostics" to "Close Diagnostics", "About Glitchpad" to "Close About Glitchpad")) {

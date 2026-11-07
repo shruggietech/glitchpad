@@ -831,7 +831,7 @@ jobs:
       S047_ORIGINAL_APK_SHA256: '9be3b27f483ae804d520d74fd3a8652bfaaf34097e5a27418d5c3a738b06b928'
       S047_ORIGINAL_APK_BYTES: '231141554'
       S047_ORIGINAL_ARTIFACT: '13572699797'
-      S047_REBUILD_JVM: 'false'
+      S047_REBUILD_JVM: 'true'
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
@@ -855,7 +855,8 @@ jobs:
       - run: python3 .github/scripts/s047-observer-prepare.py
       - name: Rebuild changed manifest and JVM with verified original native and frontend payload
         run: |
-          ./crates/glitchpad-host/gen/android/gradlew --project-dir crates/glitchpad-host/gen/android :app:assembleUniversalDebugAndroidTest -PabiList=x86_64 -ParchList=x86_64 -PtargetList=x86_64 -x :app:rustBuildUniversalDebug -x :app:rustBuildX86_64Debug --no-daemon
+          ./crates/glitchpad-host/gen/android/gradlew --project-dir crates/glitchpad-host/gen/android :app:assembleUniversalDebug :app:assembleUniversalDebugAndroidTest -PabiList=x86_64 -ParchList=x86_64 -PtargetList=x86_64 -x :app:rustBuildUniversalDebug -x :app:rustBuildX86_64Debug --no-daemon
+          ./crates/glitchpad-host/gen/android/gradlew --project-dir crates/glitchpad-host/gen/android :glitchpad-android-source:testDebugUnitTest --no-daemon
           python3 .github/scripts/s047-observer-sign.py
       - name: Enable isolated emulator acceleration
         run: |

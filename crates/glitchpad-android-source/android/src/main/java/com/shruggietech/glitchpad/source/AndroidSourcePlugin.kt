@@ -10,6 +10,8 @@ import androidx.activity.BackEventCompat
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.OnBackPressedDispatcherOwner
 import androidx.core.content.FileProvider
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
@@ -53,7 +55,7 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
   private val initialIntentConsumed = AtomicBoolean(false)
   private var backCallback: OnBackPressedCallback? = null
   private var pendingBack: String? = null
-  private val backObservation = IntArray(7)
+  private val backObservation = IntArray(8)
   private val shareJobs = ConcurrentHashMap<Invoke, DiagnosticShareJob>()
   private val sharePending = AtomicBoolean(false)
   private val mainHandler = Handler(Looper.getMainLooper())
@@ -506,6 +508,7 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
     .put("committed", backObservation[3]).put("requested", backObservation[4])
     .put("completed", backObservation[5]).put("delegated", backObservation[6])
     .put("pending", pendingBack != null).put("enabled", backCallback?.isEnabled == true)
+    .put("native_edit_dismissed", backObservation[7]).put("native_edit_active", (activity as? AndroidNativeEditOwner)?.androidNativeEditModeActive == true)
 
   private fun installBackCallback() {
     if (backCallback != null) return
@@ -516,6 +519,13 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
       override fun handleOnBackCancelled() { observeBack(2) }
       override fun handleOnBackPressed() {
         observeBack(3)
+        val insets = ViewCompat.getRootWindowInsets(activity.window.decorView)
+        // Preserve IME-first ordering, then consume native text editing before JS tasks.
+        if (insets != null && !insets.isVisible(WindowInsetsCompat.Type.ime()) &&
+          (activity as? AndroidNativeEditOwner)?.dismissAndroidNativeEditMode() == true) {
+          observeBack(7)
+          return
+        }
         if (!hasListener("androidBackRequested")) {
           pendingBack = null
           observeBack(6)

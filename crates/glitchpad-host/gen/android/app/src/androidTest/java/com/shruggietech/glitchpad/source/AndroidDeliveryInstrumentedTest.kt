@@ -2062,7 +2062,9 @@ class AndroidDeliveryInstrumentedTest {
     if (!popup(windows)) return false
     val state = "JSON.stringify({document:document.querySelector('.document-surface')?.id||null,title:document.querySelector('.task-surface[data-state=open] h2')?.textContent||null,fields:Array.from(document.querySelectorAll('.task-surface[data-state=open] input')).map(n=>n.value)})"
     val before = stringValue(evaluate(scenario, state, deadlineOverride=deadline))
-    println("s047_selection_toolbar_before=" + JSONObject().put("windows", windows).put("context", before)); System.out.flush()
+    val nativeEdit = java.util.concurrent.atomic.AtomicReference<JSONObject>()
+    scenario.onActivity { activity -> nativeEdit.set(JSONObject().put("active", activity.androidNativeEditModeActive).put("ime", androidx.core.view.ViewCompat.getRootWindowInsets(activity.window.decorView)?.isVisible(androidx.core.view.WindowInsetsCompat.Type.ime()))) }
+    println("s047_selection_toolbar_before=" + JSONObject().put("windows", windows).put("context", before).put("native_edit", nativeEdit.get())); System.out.flush()
     assertTrue("the one real system Back must dispatch", instrumentation.uiAutomation.performGlobalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK))
     var after = before
     while (SystemClock.elapsedRealtime() < deadline) {

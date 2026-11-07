@@ -120,7 +120,7 @@ jobs:
           node-version-file: .node-version
       - name: Read the exact source baseline and rebind current references
         run: |
-          git fetch --no-tags --depth=1 origin f572e0fbbd1d2978b6e4064a31817201834c8965
+          git fetch --no-tags --depth=1 origin c18df272c9f3a66bdc327432baf146072a78d5a2
           python3 .github/scripts/s047-source-rebind.py
           node --input-type=module <<'NODE'
           import {readFileSync,writeFileSync} from 'node:fs';
@@ -178,7 +178,7 @@ jobs:
         run: ./crates/glitchpad-host/gen/android/gradlew --project-dir crates/glitchpad-host/gen/android :glitchpad-android-source:testDebugUnitTest :app:assembleUniversalDebugAndroidTest -PabiList=x86_64 -ParchList=x86_64 -PtargetList=x86_64 -x :app:rustBuildUniversalDebug -x :app:rustBuildX86_64Debug --no-daemon
       - name: Rebind and audit source-only references
         run: |
-          git fetch --no-tags --depth=1 origin f572e0fbbd1d2978b6e4064a31817201834c8965
+          git fetch --no-tags --depth=1 origin c18df272c9f3a66bdc327432baf146072a78d5a2
           python3 .github/scripts/s047-source-rebind.py
           node .github/scripts/s047-source-audit.mjs
       - name: Retain source-only validation

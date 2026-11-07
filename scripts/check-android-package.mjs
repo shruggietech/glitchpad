@@ -98,7 +98,8 @@ export function parseManifestXml(xml) {
     .map((match) => match[1])
     .find(
       (attributes) =>
-        value(attributes, 'name') === 'com.shruggietech.glitchpad.source.SharedFileProvider',
+        value(attributes, 'name') ===
+        'com.shruggietech.glitchpad.source.SharedFileProvider',
     );
   const clipboardAttributes = [...xml.matchAll(/<provider\b([^>]*)>/gu)]
     .map((match) => match[1])

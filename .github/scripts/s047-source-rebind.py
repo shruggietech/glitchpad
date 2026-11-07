@@ -5,7 +5,7 @@ ledger_path=root/'specs/047-android-task-completion/contracts/control-ledger.jso
 targets={p:None for p in ["crates/glitchpad-android-source/android/src/main/java/com/shruggietech/glitchpad/source/LegacyClipboardTextProvider.kt","crates/glitchpad-android-source/android/src/main/java/com/shruggietech/glitchpad/source/SharedFileProvider.kt","crates/glitchpad-host/src/lib.rs","scripts/run-android-connected-tests.sh",'crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt','scripts/run-android-instrumentation.sh','scripts/run-android-evidence.test.mjs','scripts/validate-android-recovery-evidence.mjs','scripts/test-android-recovery-evidence.mjs','scripts/check-android-package.mjs','scripts/check-android-package.test.mjs','packaging/android/package-contract.json','packaging/android/intent-map.json','crates/glitchpad-android-source/android/src/main/java/com/shruggietech/glitchpad/source/AndroidSourcePlugin.kt','crates/glitchpad-android-source/android/src/main/java/com/shruggietech/glitchpad/source/ClipboardTextStore.kt','crates/glitchpad-android-source/android/src/test/java/com/shruggietech/glitchpad/source/ClipboardTextStoreTest.kt','crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/ClipboardPasteReceiverActivity.java']}
 sources={}
 for path,before in targets.items():
- baseline=subprocess.run(['git','show','f572e0fbbd1d2978b6e4064a31817201834c8965:'+path],cwd=root,check=False,capture_output=True,text=True)
+ baseline=subprocess.run(['git','show','c18df272c9f3a66bdc327432baf146072a78d5a2:'+path],cwd=root,check=False,capture_output=True,text=True)
  if baseline.returncode and path not in ["crates/glitchpad-android-source/android/src/main/java/com/shruggietech/glitchpad/source/LegacyClipboardTextProvider.kt","crates/glitchpad-android-source/android/src/main/java/com/shruggietech/glitchpad/source/SharedFileProvider.kt"]: raise RuntimeError('baseline source unavailable: '+path)
  old=baseline.stdout if baseline.returncode==0 else ''; new=(root/path).read_text(encoding='utf-8')
  mapping={}
@@ -23,13 +23,14 @@ def walk(node,pointer):
   path=node.get('path',node.get('source'))
   if path in sources:
    old,new,mapping,digest=sources[path]
+   already_current=node.get('source_sha256')==digest
    if 'source_sha256' in node and node['source_sha256']!=digest:
     changes.append({'pointer':pointer,'field':'source_sha256','before':node['source_sha256'],'after':digest});node['source_sha256']=digest
    anchor=node.get('anchor') or (node.get('source_line') if isinstance(node.get('source_line'),str) else None) or ('fun '+node['method']+'(' if node.get('method') else None)
    for field in ['line','source_line','test_line']:
     value=node.get(field)
     if not isinstance(value,int):continue
-    next_line=mapping.get(value)
+    next_line=value if already_current else mapping.get(value)
     if field!='test_line' and anchor:
      positions=hits(new,anchor)
      if next_line not in positions:next_line=positions[0] if len(positions)==1 else None

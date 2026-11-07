@@ -397,7 +397,11 @@ function validateObservedDetails(row, role, api) {
             true,
             'clipboard recipient access boundary missing: ' + key,
           );
-        assert.equal(receiver.text_stream_advertised, true, 'platform styled paste must discover the actual text stream');
+        assert.equal(
+          receiver.text_stream_advertised,
+          true,
+          'platform styled paste must discover the actual text stream',
+        );
         assert(
           !Object.hasOwn(receiver, 'uri_stream_error'),
           'clipboard URI stream must be readable by the recipient',

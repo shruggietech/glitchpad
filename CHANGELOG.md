@@ -8,7 +8,7 @@ All notable changes to Glitchpad are documented in this file. The format follows
 
 ### Fixed
 
-- S047 makes Android document tools and search usable in bounded task surfaces, adds installed About/offline notices, accepts the documented inert SVG profile, and corrects image/diagram viewport actions. Qualification uses separate ordinary/probe APKs and per-journey evidence. Closing Search or Go to line no longer allows a delayed callback to focus the background editor after a newer task opens.
+- S047 makes Android document tools and search usable in bounded task surfaces, adds installed About/offline notices, accepts the documented inert SVG profile, and corrects image/diagram viewport actions. Large text copies preserve complete UTF-8 text through Android content-URI clipboard items, avoiding the Binder transaction limit while retaining ordinary inline copies. Qualification uses separate ordinary/probe APKs and per-journey evidence. Closing Search or Go to line no longer allows a delayed callback to focus the background editor after a newer task opens.
 
 - S046 restores Android standalone New/Open/edit/save/copy/recovery flows, verified diagnostic Save/Share, visible Markdown/root recovery and actual command outcomes; qualification remains bound to the tested candidate artifact.
 

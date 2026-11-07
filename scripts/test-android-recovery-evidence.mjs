@@ -101,6 +101,29 @@ function fixture(role = 'ordinary', api = 36) {
                   ]),
                 ),
               ),
+              clipboard_paste_readbacks: ['inline', 'uri'].map((transport) => ({
+                transport,
+                request_nonce: 'clipboard-' + transport,
+                app_uid: 10000,
+                expected_sha256: app,
+                expected_utf8_bytes: transport === 'uri' ? 524288 : 26,
+                expected_code_units: transport === 'uri' ? 524288 : 26,
+                returned_to_document: true,
+                receiver: {
+                  nonce: 'clipboard-' + transport,
+                  receiver_package: identity.instrumentation_package,
+                  receiver_uid: 10001,
+                  plain_text_mime: true,
+                  paste_accepted: true,
+                  has_uri: transport === 'uri',
+                  uri_read_granted: transport === 'uri',
+                  uri_write_granted: false,
+                  intent_uri_grant: false,
+                  utf8_bytes: transport === 'uri' ? 524288 : 26,
+                  code_units: transport === 'uri' ? 524288 : 26,
+                  sha256: app,
+                },
+              })),
               control_measurements: ['Find next', 'Go to line']
                 .map((operation) => ({
                   pending_read: {
@@ -683,4 +706,31 @@ test('durable instrumentation stream retains early authoring rows after logcat r
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
+});
+
+test('independent clipboard paste requires fresh recipient bytes and real URI grants', async () => {
+  for (const mutate of [
+    (e) => delete e.journeys[7].observations.clipboard_paste_readbacks,
+    (e) => { e.journeys[7].observations.clipboard_paste_readbacks[1] = structuredClone(e.journeys[7].observations.clipboard_paste_readbacks[0]); },
+    (e) => { e.journeys[7].observations.clipboard_paste_readbacks[1].receiver.receiver_uid = 10000; },
+    (e) => { e.journeys[7].observations.clipboard_paste_readbacks[1].receiver.receiver_package = 'unrelated.app'; },
+    (e) => { e.journeys[7].observations.clipboard_paste_readbacks[1].receiver.nonce = 'old'; },
+    (e) => { e.journeys[7].observations.clipboard_paste_readbacks[1].receiver.plain_text_mime = false; },
+    (e) => { e.journeys[7].observations.clipboard_paste_readbacks[1].receiver.paste_accepted = false; },
+    (e) => { e.journeys[7].observations.clipboard_paste_readbacks[1].receiver.uri_read_granted = false; },
+    (e) => { e.journeys[7].observations.clipboard_paste_readbacks[1].receiver.intent_uri_grant = true; },
+    (e) => { e.journeys[7].observations.clipboard_paste_readbacks[1].receiver.uri_write_granted = true; },
+    (e) => { e.journeys[7].observations.clipboard_paste_readbacks[1].receiver.sha256 = 'd'.repeat(64); },
+    (e) => { e.journeys[7].observations.clipboard_paste_readbacks[1].receiver.utf8_bytes -= 1; },
+    (e) => { e.journeys[7].observations.clipboard_paste_readbacks[1].receiver.code_units -= 1; },
+    (e) => { e.journeys[7].observations.clipboard_paste_readbacks[1].returned_to_document = false; },
+    (e) => { e.journeys[7].observations.clipboard_paste_readbacks[1].receiver.error = 'failed'; },
+  ]) await assert.rejects(check(fixture(), mutate), /clipboard|paste|recipient/i);
+});
+
+test('streamed clipboard witness must cover the actual oversized Binder regression', async () => {
+  await assert.rejects(check(fixture(), (e) => {
+    const p = e.journeys[7].observations.clipboard_paste_readbacks[1];
+    p.expected_utf8_bytes = p.expected_code_units = p.receiver.utf8_bytes = p.receiver.code_units = 100;
+  }), /clipboard|paste|Binder|oversized/i);
 });

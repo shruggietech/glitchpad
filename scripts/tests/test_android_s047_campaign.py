@@ -166,8 +166,15 @@ echo "$*" >> "$VALIDATION"
         self.assertIn('target.optBoolean("hit_is_editor")',editor)
         self.assertIn('nativeTapObservationsAgree(',editor)
         self.assertIn('deadlineOverride = deadline',editor)
-        self.assertEqual(editor.count('MotionEvent.ACTION_DOWN'),1)
-        self.assertEqual(editor.count('MotionEvent.ACTION_UP'),1)
+        self.assertEqual(editor.count('dispatchNativeTapOnce('),1)
+        tap=delivery.split('  private fun dispatchNativeTapOnce(',1)[1].split('  private fun tapNativeControlOnce(',1)[0]
+        self.assertEqual(tap.count('event(MotionEvent.ACTION_DOWN)'),1)
+        self.assertEqual(tap.count('event(MotionEvent.ACTION_UP)'),1)
+        self.assertLess(tap.index('inject(down)'),tap.index('event(MotionEvent.ACTION_UP)'))
+        self.assertIn('MotionEvent.TOOL_TYPE_FINGER',tap)
+        self.assertIn('SystemClock.elapsedRealtime() < deadline',tap)
+        self.assertIn('if (downRequested && !upCompleted)',tap)
+        self.assertNotIn('while (',tap)
         self.assertNotIn('.focus()',task)
         self.assertNotRegex(task,r'\.value\s*=(?!=)')
     def test_checked_shell_preserves_exact_source_whitespace_tokenized_runtime_argv(self):

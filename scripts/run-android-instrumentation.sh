@@ -49,6 +49,7 @@ for attempt in 1 2; do
     adb shell run-as com.shruggietech.glitchpad rm -f "files/${screenshot}.png" >/dev/null 2>&1 || true
   fi
   if [[ " $* " == *" -e s047 true "* ]]; then for row in {1..10}; do adb shell run-as com.shruggietech.glitchpad rm -f "files/s047-row-$row.png" "files/s047-row-$row.json" >/dev/null 2>&1 || true; done; fi
+  adb shell run-as com.shruggietech.glitchpad rm -f files/s047-editor-input-failure.png files/s047-editor-input-failure.json >/dev/null 2>&1 || true
   adb logcat -c || true
   attempt_output="${output%.txt}-attempt-${attempt}.txt"
   adb_exit_status=0
@@ -63,6 +64,10 @@ for attempt in 1 2; do
       capture_png "s047-row-$row" "${output%.txt}-attempt-${attempt}-s047-row-$row.png"
       adb exec-out run-as com.shruggietech.glitchpad cat "files/s047-row-$row.json" > "${output%.txt}-attempt-${attempt}-s047-row-$row.json" 2> "${output%.txt}-attempt-${attempt}-s047-row-$row-json-capture-error.txt" || true
     done
+  fi
+  if grep -Fq 'native_editor_focus_failure=' "$logcat_output"; then
+    capture_png "s047-editor-input-failure" "${output%.txt}-attempt-${attempt}-s047-editor-input-failure.png"
+    adb exec-out run-as com.shruggietech.glitchpad cat files/s047-editor-input-failure.json > "${output%.txt}-attempt-${attempt}-s047-editor-input-failure.json" 2> "${output%.txt}-attempt-${attempt}-s047-editor-input-failure-json-capture-error.txt" || true
   fi
   # A functional marker before teardown cannot replace a clean runner result.
   marker_present=0

@@ -40,6 +40,7 @@ import org.json.JSONObject
 import org.junit.After
 import org.junit.Before
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -1196,7 +1197,12 @@ class AndroidDeliveryInstrumentedTest {
       }
       SystemClock.sleep(100L)
     }
-    if (target == null) { println("s047_native_option_failure=" + JSONObject().put("control", label).put("wanted", wanted).put("index", index).put("window", seenWindow).put("matches", observedCount).put("visible_children", inventory)); System.out.flush() }
+    if (target == null) {
+      val failure = JSONObject().put("control", label).put("wanted", wanted).put("index", index).put("window", seenWindow).put("matches", observedCount).put("visible_children", inventory)
+      println("s047_native_option_failure=" + failure)
+      captureEditorFocusFailure(scenario, "native_option_popup_timeout", failure)
+      System.out.flush()
+    }
     assertTrue("one actual native option popup must own the exact enabled setting within the original action deadline: window=" + seenWindow + ",matches=" + observedCount, target != null && SystemClock.elapsedRealtime() < deadline)
     val selected = requireNotNull(target)
     val bounds = requireNotNull(targetBounds)
@@ -1206,17 +1212,7 @@ class AndroidDeliveryInstrumentedTest {
     assertEquals("the refreshed native row must retain the exact intended option label", wanted, selected.text?.toString()?.trim()?.replace(Regex("\\s+"), " "))
     val freshBounds = android.graphics.Rect().also { selected.getBoundsInScreen(it) }
     assertEquals("the native option must retain its observed stable screen bounds", bounds, freshBounds)
-    val downTime = SystemClock.uptimeMillis()
-    val down = MotionEvent.obtain(downTime, downTime, MotionEvent.ACTION_DOWN, bounds.exactCenterX(), bounds.exactCenterY(), 0)
-    val up = MotionEvent.obtain(downTime, SystemClock.uptimeMillis(), MotionEvent.ACTION_UP, bounds.exactCenterX(), bounds.exactCenterY(), 0)
-    try {
-      down.source = InputDevice.SOURCE_TOUCHSCREEN
-      up.source = InputDevice.SOURCE_TOUCHSCREEN
-      assertTrue("the option touch must begin inside the original action deadline", SystemClock.elapsedRealtime() < deadline)
-      assertTrue("the native popup must accept exactly one option DOWN", instrumentation.uiAutomation.injectInputEvent(down, true))
-      assertTrue("the option UP must retain the original action deadline", SystemClock.elapsedRealtime() < deadline)
-      assertTrue("the native popup must accept exactly one option UP", instrumentation.uiAutomation.injectInputEvent(up, true))
-    } finally { down.recycle(); up.recycle() }
+    dispatchNativeTapOnce(bounds.exactCenterX(), bounds.exactCenterY(), deadline) { event -> instrumentation.uiAutomation.injectInputEvent(event, true) }
     try {
       waitForCondition(scenario, "(()=>{const n=" + field + ";return !!n&&n.value===" + JSONObject.quote(expected) + ";})()", "actual native option selection must update the intended setting", deadlineOverride = deadline)
     } catch (failure: Throwable) {
@@ -1236,6 +1232,43 @@ class AndroidDeliveryInstrumentedTest {
       observed.set(clipboard.primaryClip?.let { if (it.itemCount > 0) it.getItemAt(0).coerceToText(clientContext).toString() else null })
     }
     return observed.get()
+  }
+
+  private fun verifyClipboardPasteReceiver(scenario: ActivityScenario<MainActivity>, expected: String, uriBacked: Boolean) {
+    val deadline = SystemClock.elapsedRealtime() + 30_000L
+    val nonce = UUID.randomUUID().toString()
+    val documentId = stringValue(evaluate(scenario, "document.querySelector('.document-surface').id", deadlineOverride = deadline))
+    resolver.call(FixtureGrantProvider.COMMAND_URI, "clear_clipboard_result", null, null)
+    // Only a nonce is supplied. The recipient must obtain its own clipboard grant and paste the bytes itself.
+    scenario.onActivity { activity -> activity.startActivity(Intent().setClassName(instrumentation.context.packageName, "com.shruggietech.glitchpad.source.ClipboardPasteReceiverActivity").putExtra("nonce", nonce)) }
+    var actual: JSONObject? = null
+    while (SystemClock.elapsedRealtime() < deadline) {
+      val json = resolver.call(FixtureGrantProvider.COMMAND_URI, "clipboard_result", null, null)?.getString("json")
+      if (json != null) {
+        val candidate = JSONObject(json)
+        if (candidate.optString("nonce") == nonce) { actual = candidate; break }
+      }
+      SystemClock.sleep(100L)
+    }
+    val observed = requireNotNull(actual) { "the independent foreground recipient must report its own clipboard paste inside the original deadline" }
+    assertFalse("independent clipboard recipient must complete without a transport error: " + observed, observed.has("error"))
+    assertEquals(instrumentation.context.packageName, observed.getString("receiver_package"))
+    assertTrue("clipboard paste must execute in a different application UID", observed.getInt("receiver_uid") != clientContext.applicationInfo.uid)
+    assertTrue("the platform paste must accept plain text", observed.getBoolean("plain_text_mime") && observed.getBoolean("paste_accepted"))
+    assertEquals("the actual clipboard transport must match the payload size", uriBacked, observed.getBoolean("has_uri"))
+    assertFalse("the recipient must not receive an explicit Intent URI grant", observed.getBoolean("intent_uri_grant"))
+    if (uriBacked) {
+      assertTrue("the clipboard service must grant independent recipient read access", observed.getBoolean("uri_read_granted"))
+      assertFalse("clipboard paste must not gain write authority over the payload", observed.getBoolean("uri_write_granted"))
+    }
+    val bytes = expected.toByteArray(Charsets.UTF_8)
+    assertEquals("independent paste must preserve every UTF-8 byte", bytes.size, observed.getInt("utf8_bytes"))
+    assertEquals("independent paste must preserve every code unit", expected.length, observed.getInt("code_units"))
+    assertEquals("independent paste digest must match the actual source text", sha256(bytes), observed.getString("sha256"))
+    waitForCondition(scenario, "document.hasFocus()&&document.querySelector('.document-surface').id===" + JSONObject.quote(documentId), "return from independent clipboard paste must retain the same actual document", deadlineOverride = deadline)
+    clipboardPasteReadbacks.put(JSONObject().put("transport", if (uriBacked) "uri" else "inline").put("request_nonce", nonce).put("app_uid", clientContext.applicationInfo.uid)
+      .put("expected_sha256", sha256(bytes)).put("expected_utf8_bytes", bytes.size).put("expected_code_units", expected.length)
+      .put("returned_to_document", true).put("receiver", observed))
   }
 
   private fun taskKey(code: Int, meta: Int = 0) {
@@ -1338,6 +1371,7 @@ class AndroidDeliveryInstrumentedTest {
     observeVisibleTaskControls(scenario, "document_details")
     clickControl(scenario, "Close Document details")
     waitForCondition(scenario,"!document.querySelector('[role=dialog] [aria-label=\"Language mode\"]')","closing Document details must synchronize its disclosure")
+    verifyClipboardPasteReceiver(scenario, original, false)
     assertEquals(original, editableSourceText(scenario))
   }
 
@@ -1674,6 +1708,7 @@ class AndroidDeliveryInstrumentedTest {
     tapNativeControlOnce(scenario, "Copy visible section")
     waitForBodyText(scenario, "Visible section copied")
     assertEquals("clipboard must equal the actual visible bounded section", visible, clipboardText())
+    verifyClipboardPasteReceiver(scenario, visible, true)
     observeVisibleTaskControls(scenario, "large_text")
 
     val beforeOutside=stringValue(evaluate(scenario,"document.querySelector('.large-text pre').textContent"))
@@ -1864,7 +1899,7 @@ class AndroidDeliveryInstrumentedTest {
       waitForCondition(scenario, "(()=>{const n=document.activeElement;if(!n||n===document.body)return false;const r=n.getBoundingClientRect(),s=getComputedStyle(n);return r.width>0&&r.height>0&&(parseFloat(s.outlineWidth)>0||s.boxShadow!=='none');})()", "real keyboard focus must be visible")
       val variants = mutableListOf("portrait", "landscape", "short", "ime", "default_font", "font_max", "targets", "semantics", "focus", "keyboard", "contrast", "editor_search_history", "markdown_mermaid", "large_text", "large_pending_cancel", "metadata_copy", "preferences_validation", "editor_aliases", "details_language", "metadata_sha", "preferences_wrap", "diagram_controls", "external_intent")
       if (Build.VERSION.SDK_INT >= 34) variants.add("font_200")
-      val details = JSONObject().put("profiles", observations).put("control_measurements", taskControlMeasurements)
+      val details = JSONObject().put("profiles", observations).put("control_measurements", taskControlMeasurements).put("clipboard_paste_readbacks", clipboardPasteReadbacks)
       emitS047Journey(scenario, 8, variants, details)
     } finally { checkedShell("settings put system font_scale "+originalFont); checkedShell("wm size reset"); scenario.onActivity { it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT };awaitFontScale(originalFont) }
   }
@@ -2215,11 +2250,7 @@ class AndroidDeliveryInstrumentedTest {
       SystemClock.sleep(100L)
     }
     assertTrue("the actual scrim must own one stable native-visible outside dismissal point: " + outsideTarget + ",native=" + geometry,outsideReady)
-    val down = SystemClock.uptimeMillis()
-    for (action in listOf(MotionEvent.ACTION_DOWN, MotionEvent.ACTION_UP)) {
-      val event = MotionEvent.obtain(down,SystemClock.uptimeMillis(),action,geometry.getDouble("screen_x").toFloat(),geometry.getDouble("screen_y").toFloat(),0).apply { source=InputDevice.SOURCE_TOUCHSCREEN }
-      try { instrumentation.sendPointerSync(event) } finally { event.recycle() }
-    }
+    dispatchNativeTapOnce(geometry.getDouble("screen_x").toFloat(), geometry.getDouble("screen_y").toFloat(), outsideDeadline)
     println("s047_outside_dismiss=" + JSONObject().put("target",outsideTarget).put("native",geometry)); System.out.flush()
     waitForCondition(scenario, "!document.querySelector('[role=dialog]')", "one actual outside tap must close the application menu",deadlineOverride=outsideDeadline)
     for (i in 1..6) createNewDraftForInput(scenario,"New text file","Untitled.txt")
@@ -2560,6 +2591,7 @@ class AndroidDeliveryInstrumentedTest {
   private val moreViewportActions=JSONArray()
   private val journeyReadbacks = mutableMapOf<Int, JSONArray>()
   private val taskControlMeasurements = JSONArray()
+  private val clipboardPasteReadbacks = JSONArray()
   private fun isS047Evidence(): Boolean = InstrumentationRegistry.getArguments().getString("s047") == "true"
   private fun expectedBuildVariant(): String = InstrumentationRegistry.getArguments().getString("expectedRole") ?: "fault_probe"
   private fun sha256(bytes: ByteArray): String = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it.toInt() and 255) }
@@ -2754,7 +2786,7 @@ class AndroidDeliveryInstrumentedTest {
     .map { android.graphics.Rect().also { bounds -> it.getBoundsInScreen(bounds) } }.filter { !it.isEmpty }
 
   private data class NativeTouchWindow(
-    val id: Int, val layer: Int, val type: Int, val title: String?, val ownedByApp: Boolean, val region: android.graphics.Region
+    val id: Int, val layer: Int, val type: Int, val title: String?, val region: android.graphics.Region
   )
 
   private fun nativeTouchWindows(windows: List<android.view.accessibility.AccessibilityWindowInfo>): List<NativeTouchWindow> {
@@ -2762,7 +2794,7 @@ class AndroidDeliveryInstrumentedTest {
     return windows.map { window ->
       val region = android.graphics.Region()
       window.getRegionInScreen(region)
-      NativeTouchWindow(window.id, window.layer, window.type, window.title?.toString()?.take(80), window.root?.packageName?.toString() == TARGET_PACKAGE, region)
+      NativeTouchWindow(window.id, window.layer, window.type, window.title?.toString()?.take(80), region)
     }
   }
 
@@ -2811,9 +2843,12 @@ class AndroidDeliveryInstrumentedTest {
         val screenY = location[1] + target.getDouble("y") * scale
         val tolerance = 0.6 * scale
         if (Build.VERSION.SDK_INT >= 30) {
+          // setSource reads this attached native View's window identity without requesting a WebView accessibility tree.
+          val appWindowId = android.view.accessibility.AccessibilityNodeInfo().apply { setSource(view) }.windowId
           val owner = touchWindows.filter { it.region.contains(screenX.toInt(), screenY.toInt()) }.maxByOrNull { it.layer }
-          observed.put("native_touch_owned_by_app", owner?.ownedByApp == true)
-            .put("native_touch_owner", owner?.let { JSONObject().put("window_id", it.id).put("layer", it.layer).put("type", it.type).put("title", it.title).put("region_bounds", nativeRectBounds(it.region.bounds)).put("target_package", it.ownedByApp) } ?: JSONObject.NULL)
+          val owned = appWindowId != -1 && owner?.id == appWindowId
+          observed.put("app_window_id", appWindowId).put("native_touch_owned_by_app", owned)
+            .put("native_touch_owner", owner?.let { JSONObject().put("window_id", it.id).put("layer", it.layer).put("type", it.type).put("title", it.title).put("region_bounds", nativeRectBounds(it.region.bounds)).put("matches_app_window", owned) } ?: JSONObject.NULL)
         }
         val imeWindowCovers = imeWindows.any { it.left < right - tolerance && it.right > left + tolerance && it.top < bottom - tolerance && it.bottom > top + tolerance }
         val wholeVisible = !visible.isEmpty && !imeWindowCovers && left >= visible.left - tolerance && top >= visible.top - tolerance &&
@@ -2844,6 +2879,44 @@ class AndroidDeliveryInstrumentedTest {
 
   private fun nativeTapForeground(mapping: JSONObject): Boolean = mapping.optString("scenario_state") == Lifecycle.State.RESUMED.name &&
     mapping.optBoolean("activity_window_focus") && mapping.optBoolean("webview_window_focus") && mapping.optBoolean("shown")
+
+  private fun dispatchNativeTapOnce(
+    screenX: Float, screenY: Float, deadline: Long,
+    inject: (MotionEvent) -> Boolean = { event -> instrumentation.sendPointerSync(event); true }
+  ) {
+    val settle = android.view.ViewConfiguration.getTapTimeout() * 3L / 2L
+    assertTrue("a single native tap and its processing must fit the original action deadline", SystemClock.elapsedRealtime() + settle < deadline)
+    val downTime = SystemClock.uptimeMillis()
+    val pointer = MotionEvent.PointerProperties().apply { id = 0; toolType = MotionEvent.TOOL_TYPE_FINGER }
+    var downRequested = false
+    var upCompleted = false
+    var upTime = downTime
+    fun event(action: Int): MotionEvent {
+      val coordinates = MotionEvent.PointerCoords().apply { x = screenX; y = screenY; pressure = if (action == MotionEvent.ACTION_DOWN) 1f else 0f; size = 1f }
+      return MotionEvent.obtain(downTime, SystemClock.uptimeMillis(), action, 1, arrayOf(pointer), arrayOf(coordinates), 0, 0, 1f, 1f, 0, 0, InputDevice.SOURCE_TOUCHSCREEN, 0)
+    }
+    try {
+      val down = event(MotionEvent.ACTION_DOWN)
+      downRequested = true
+      try { assertTrue("the sole native DOWN must be accepted", inject(down)) } finally { down.recycle() }
+      assertTrue("the sole native release must begin inside the original action deadline", SystemClock.elapsedRealtime() < deadline)
+      // Create UP after DOWN was dispatched, preserving actual monotonic event chronology.
+      val up = event(MotionEvent.ACTION_UP)
+      upTime = up.eventTime
+      try { assertTrue("the sole native UP must be accepted", inject(up)); upCompleted = true } finally { up.recycle() }
+    } finally {
+      if (downRequested && !upCompleted) {
+        val cancel = event(MotionEvent.ACTION_CANCEL)
+        try { runCatching { inject(cancel) } } finally { cancel.recycle() }
+      }
+    }
+    // AndroidX SINGLE also allows 1.5 tap timeouts for main-thread processing after the gesture.
+    val remaining = deadline - SystemClock.elapsedRealtime()
+    assertTrue("native tap processing must retain its original action deadline", remaining >= settle)
+    SystemClock.sleep(settle)
+    println("native_tap_event_pair=" + JSONObject().put("screen_x", screenX).put("screen_y", screenY).put("down_time", downTime).put("up_time", upTime).put("tool_type", "finger").put("event_count", 2))
+    System.out.flush()
+  }
 
   private fun tapNativeControlOnce(scenario: ActivityScenario<MainActivity>, name: String, selector: String = "button", deadlineOverride: Long? = null) {
     val deadline = deadlineOverride ?: (SystemClock.elapsedRealtime() + 30_000L)
@@ -2907,17 +2980,8 @@ class AndroidDeliveryInstrumentedTest {
       }
       assertTrue("the native control must be enabled and whole inside the actual visible app window before a single tap", ready)
       if (deadlineOverride != null) assertTrue("native control activation must retain the original action deadline", SystemClock.elapsedRealtime() < deadlineOverride)
-      val downTime = SystemClock.uptimeMillis()
-      val down = MotionEvent.obtain(downTime, downTime, MotionEvent.ACTION_DOWN, mapping.getDouble("screen_x").toFloat(), mapping.getDouble("screen_y").toFloat(), 0)
-      val up = MotionEvent.obtain(downTime, SystemClock.uptimeMillis(), MotionEvent.ACTION_UP, mapping.getDouble("screen_x").toFloat(), mapping.getDouble("screen_y").toFloat(), 0)
-      try {
-        down.source = InputDevice.SOURCE_TOUCHSCREEN
-        up.source = InputDevice.SOURCE_TOUCHSCREEN
-        phase = "down"
-        instrumentation.sendPointerSync(down)
-        phase = "up"
-        instrumentation.sendPointerSync(up)
-      } finally { down.recycle(); up.recycle() }
+      phase = "tap"
+      dispatchNativeTapOnce(mapping.getDouble("screen_x").toFloat(), mapping.getDouble("screen_y").toFloat(), deadline)
       println("native_control_activation=" + JSONObject().put("control", name).put("phase", "event_pair_dispatched")
         .put("target", target).put("mapping", mapping).put("ime_dismiss_requested", imeDismissRequested)
         .put("ime_dismiss_accepted", imeDismissAccepted ?: JSONObject.NULL))
@@ -3047,6 +3111,23 @@ class AndroidDeliveryInstrumentedTest {
     val deadline = SystemClock.elapsedRealtime() + 30_000L
     waitForCondition(scenario, "!!document.querySelector('.cm-content[contenteditable=true]')", "draft must expose the actual editable surface", deadlineOverride = deadline)
     val nativeFocus = focusNativeWebView(scenario, deadlineOverride = deadline)
+    if (InstrumentationRegistry.getArguments().getString("s047InputTrace") == "true") {
+      evaluate(scenario, """
+        (()=>{
+          if(window.__s047EditorEvents)return true;
+          const rows=window.__s047EditorEvents=[];
+          const node=n=>n?{tag:n.nodeName,class_name:String(n.className).slice(0,96),label:n.getAttribute?(n.getAttribute('aria-label')||'').slice(0,128):null}:null;
+          for(const type of ['touchstart','touchend','touchcancel','pointerdown','pointerup','pointercancel','mousedown','mouseup','click','focusin','focusout'])
+            document.addEventListener(type,e=>{
+              const touch=e.changedTouches&&e.changedTouches[0];
+              const row={type:type,time:performance.now(),trusted:e.isTrusted,target:node(e.target),active:node(document.activeElement),client_x:touch?touch.clientX:e.clientX,client_y:touch?touch.clientY:e.clientY,pointer_type:e.pointerType,pointer_id:e.pointerId,default_prevented:e.defaultPrevented};
+              rows.push(row);if(rows.length>100)rows.shift();
+              Promise.resolve().then(()=>{row.default_prevented=e.defaultPrevented;row.active_after= node(document.activeElement);});
+            },{capture:true,passive:true});
+          return true;
+        })()
+      """.trimIndent(), deadlineOverride = deadline)
+    }
     val script = """
       (()=>{
         const editor=document.querySelector('.cm-content[contenteditable=true]');
@@ -3080,6 +3161,8 @@ class AndroidDeliveryInstrumentedTest {
         nativeMapping = nativeControlGeometry(scenario, target)
         if (target.optBoolean("hit_is_editor") && target.optDouble("visible_width") > 0 && target.optDouble("visible_height") > 0 &&
           nativeTapForeground(nativeMapping) && nativeMapping.optBoolean("whole_control_visible")) {
+          // Match control readiness: observe geometry across a real frame interval.
+          SystemClock.sleep(100L)
           val confirmed = JSONObject(evaluate(scenario, script.replace("editor.scrollIntoView({block:'nearest',inline:'nearest'});", ""), deadlineOverride = deadline))
           val confirmedMapping = nativeControlGeometry(scenario, confirmed)
           if (nativeTapObservationsAgree(target, nativeMapping, confirmed, confirmedMapping) && confirmed.optBoolean("hit_is_editor") &&
@@ -3098,15 +3181,7 @@ class AndroidDeliveryInstrumentedTest {
       throw failure
     }
     val point = floatArrayOf(nativeMapping.getDouble("screen_x").toFloat(), nativeMapping.getDouble("screen_y").toFloat())
-    val downTime = SystemClock.uptimeMillis()
-    val down = MotionEvent.obtain(downTime, downTime, MotionEvent.ACTION_DOWN, point[0], point[1], 0)
-    val up = MotionEvent.obtain(downTime, SystemClock.uptimeMillis(), MotionEvent.ACTION_UP, point[0], point[1], 0)
-    try {
-      down.source = InputDevice.SOURCE_TOUCHSCREEN
-      up.source = InputDevice.SOURCE_TOUCHSCREEN
-      instrumentation.sendPointerSync(down)
-      instrumentation.sendPointerSync(up)
-    } finally { down.recycle(); up.recycle() }
+    dispatchNativeTapOnce(point[0], point[1], deadline)
     instrumentation.waitForIdleSync()
     try {
       waitForCondition(scenario, "document.hasFocus() && document.activeElement===document.querySelector('.cm-content[contenteditable=true]')", "the actual editor must own browser focus after a native touch before editing", deadlineOverride = deadline)
@@ -3267,6 +3342,8 @@ class AndroidDeliveryInstrumentedTest {
   private fun captureEditorFocusFailure(
     scenario: ActivityScenario<MainActivity>, stage: String, target: JSONObject, mapping: JSONObject = JSONObject()
   ) {
+    val screenshotSaved = runCatching { saveScreenshot("s047-editor-input-failure.png") }.getOrDefault(false)
+    val journal = runCatching { JSONArray(evaluate(scenario, "window.__s047EditorEvents||[]")) }.getOrElse { JSONArray() }
     val browser = runCatching {
       browserEditorInputSnapshot(scenario).apply { remove("semantic_text"); remove("editing_text") }
     }.getOrElse { JSONObject().put("capture_failed", true) }
@@ -3283,9 +3360,22 @@ class AndroidDeliveryInstrumentedTest {
     val hit = if (target.has("client_x") && target.has("client_y")) runCatching {
       JSONObject(evaluate(scenario, "(()=>{const node=document.elementFromPoint(" + target.getDouble("client_x") + "," + target.getDouble("client_y") + ");const editor=document.querySelector('.cm-content[contenteditable=true]');return {present:!!node,tag:node?node.nodeName:null,class_name:node?String(node.className).slice(0,128):null,label:node?node.getAttribute('aria-label'):null,in_editor:!!node&&!!editor&&(node===editor||editor.contains(node))};})()"))
     }.getOrElse { JSONObject().put("capture_failed", true) } else JSONObject().put("target_available", false)
-    println("native_editor_focus_failure=" + JSONObject().put("stage", stage).put("api_level", Build.VERSION.SDK_INT)
+    val taskState = runCatching {
+      JSONObject(evaluate(scenario, "(()=>{const shown=n=>{const r=n.getBoundingClientRect();return r.width>0&&r.height>0&&!n.closest('[aria-hidden=true],[inert]');};return {statuses:Array.from(document.querySelectorAll('[role=status],[role=alert],#large-text-status')).filter(shown).slice(0,12).map(n=>(n.textContent||'').slice(0,256)),fields:Array.from(document.querySelectorAll('input,select')).filter(shown).slice(0,12).map(n=>({tag:n.nodeName,label:(n.getAttribute('aria-label')||'').slice(0,128),value:String(n.value).slice(0,128),disabled:n.disabled}))};})()"))
+    }.getOrElse { JSONObject().put("capture_failed", true) }
+    val observation = JSONObject().put("stage", stage).put("api_level", Build.VERSION.SDK_INT)
+      .put("expected_source_commit", InstrumentationRegistry.getArguments().getString("expectedSource") ?: JSONObject.NULL)
+      .put("input_trace_requested", InstrumentationRegistry.getArguments().getString("s047InputTrace") == "true")
       .put("before_target", target).put("native_mapping", mapping).put("browser_after", browser)
-      .put("native_after", native).put("hit_at_original_client_point", hit))
+      .put("native_after", native).put("hit_at_original_client_point", hit)
+      .put("screenshot_saved", screenshotSaved).put("input_events", journal).put("task_state", taskState)
+    val metadataSaved = runCatching {
+      clientContext.openFileOutput("s047-editor-input-failure.json", 0).use { it.write(observation.toString(2).toByteArray(Charsets.UTF_8)) }
+      true
+    }.getOrDefault(false)
+    observation.remove("input_events")
+    println("native_editor_focus_failure=" + observation.put("diagnostic_json_saved", metadataSaved))
+    for (index in 0 until journal.length()) println("native_editor_input_event=" + journal.getJSONObject(index))
     System.out.flush()
   }
 
@@ -3629,31 +3719,32 @@ class AndroidDeliveryInstrumentedTest {
   }
 
   private fun waitForBodyText(scenario: ActivityScenario<MainActivity>, vararg expected: String, deadlineOverride: Long? = null) {
-    // API 36 hosted emulators can remain CPU-bound while Google services settle.
-    // Preserve the strict marker assertion while allowing WebView startup to finish.
+    // Keep startup tolerance and exact markers without transporting the whole large document on every poll.
     val deadline = minOf(SystemClock.elapsedRealtime() + 60_000L, deadlineOverride ?: Long.MAX_VALUE)
-    var latest = ""
+    val markers = JSONArray(expected.toList()).toString()
+    var latest = JSONObject().put("length", 0).put("matched", false)
     while (SystemClock.elapsedRealtime() < deadline) {
       val webView = AtomicReference<WebView?>()
       scenario.onActivity { activity -> webView.set(findWebView(activity.window.decorView)) }
-      webView.get()?.let { view -> bodyText(view, deadlineOverride = deadlineOverride)?.let { text -> latest = text } }
-      if (expected.all(latest::contains)) return
-      SystemClock.sleep(100L)
-    }
-    throw AssertionError("document surface did not expose expected synthetic evidence; observed length=${latest.length}")
-  }
-
-  private fun bodyText(webView: WebView, deadlineOverride: Long? = null): String? {
-    val result = AtomicReference("")
-    val latch = CountDownLatch(1)
-    instrumentation.runOnMainSync {
-      webView.evaluateJavascript("document.body ? document.body.innerText : ''") { value ->
-        result.set(value ?: "")
-        latch.countDown()
+      webView.get()?.let { view ->
+        val result = AtomicReference("null")
+        val latch = CountDownLatch(1)
+        instrumentation.runOnMainSync {
+          view.evaluateJavascript("(()=>{const text=document.body?document.body.innerText:'';return {matched:" + markers + ".every(marker=>text.includes(marker)),length:text.length};})()") { value ->
+            result.set(value ?: "null")
+            latch.countDown()
+          }
+        }
+        val remaining = minOf(2_000L, deadline - SystemClock.elapsedRealtime())
+        if (remaining > 0 && latch.await(remaining, TimeUnit.MILLISECONDS)) {
+          runCatching { JSONObject(result.get()) }.getOrNull()?.let { latest = it }
+        }
       }
+      if (latest.optBoolean("matched")) return
+      SystemClock.sleep(minOf(100L, maxOf(0L, deadline - SystemClock.elapsedRealtime())))
     }
-    val remaining = minOf(2_000L, (deadlineOverride ?: Long.MAX_VALUE) - SystemClock.elapsedRealtime())
-    return if (remaining > 0 && latch.await(remaining, TimeUnit.MILLISECONDS)) runCatching { stringValue(result.get()) }.getOrNull() else null
+    captureEditorFocusFailure(scenario, "body_marker_timeout", JSONObject().put("markers", JSONArray(expected.map { it.take(128) })).put("observation", latest))
+    throw AssertionError("document surface did not expose expected synthetic evidence; observed length=" + latest.optInt("length"))
   }
 
   private fun evaluate(scenario: ActivityScenario<MainActivity>, script: String, deadlineOverride: Long? = null, actionCallback: Boolean = false): String {

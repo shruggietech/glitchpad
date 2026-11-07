@@ -21,6 +21,7 @@ site/test-results/
 # Tauri and Android generated output
 crates/glitchpad-android-source/android/.tauri/
 crates/glitchpad-host/gen/android/.gradle/
+crates/glitchpad-host/gen/android/.kotlin/
 crates/glitchpad-host/gen/android/**/build/
 crates/glitchpad-host/gen/android/local.properties
 crates/glitchpad-host/gen/android/keystore.properties

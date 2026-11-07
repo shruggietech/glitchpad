@@ -43,6 +43,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 @TauriPlugin
 class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
   private val ioExecutor = Executors.newSingleThreadExecutor()
+  private val clipboardTextStore = ClipboardTextStore(File(activity.filesDir, "clipboard"))
   private val pending = ArrayBlockingQueue<DeliveryCandidate>(MAX_PENDING_DELIVERIES)
   private val rejections = ArrayBlockingQueue<String>(MAX_PENDING_REJECTIONS)
   private val sources = ConcurrentHashMap<String, NativeSource>()
@@ -555,13 +556,30 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
   @Command
   fun writeClipboard(invoke: Invoke) {
     val args = invoke.parseArgs(ClipboardTextArgs::class.java)
-    activity.runOnUiThread {
-      try {
-        val clipboard = activity.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-        clipboard.setPrimaryClip(ClipData.newPlainText("Glitchpad", args.text))
-        invoke.resolve()
+    // One IO queue preserves request order for both inline and file-backed copies.
+    ioExecutor.execute {
+      val payload = try { clipboardTextStore.prepare(args.text) }
+      catch (_: Exception) { invoke.reject("Clipboard copy could not complete"); return@execute }
+      val clip = try {
+        val file = payload.file
+        if (file == null) ClipData.newPlainText("Glitchpad", payload.inlineText)
+        else ClipData.newUri(activity.contentResolver, "Glitchpad", FileProvider.getUriForFile(activity, activity.packageName + ".fileprovider", file))
       } catch (_: Exception) {
+        clipboardTextStore.discardUncommitted(payload)
         invoke.reject("Clipboard copy could not complete")
+        return@execute
+      }
+      activity.runOnUiThread {
+        try {
+          val clipboard = activity.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+          clipboard.setPrimaryClip(clip)
+        } catch (_: Exception) {
+          ioExecutor.execute { clipboardTextStore.discardUncommitted(payload) }
+          invoke.reject("Clipboard copy could not complete")
+          return@runOnUiThread
+        }
+        ioExecutor.execute { clipboardTextStore.retirePrevious(payload) }
+        invoke.resolve()
       }
     }
   }

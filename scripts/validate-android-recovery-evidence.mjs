@@ -309,6 +309,31 @@ function validateObservedDetails(row, role, api) {
           'maximum font requires actual Android configuration',
         );
       }
+    const pastes = row.observations?.clipboard_paste_readbacks;
+    assert(Array.isArray(pastes) && pastes.length === 2, 'clipboard requires both independent paste readbacks');
+    for (const transport of ['inline', 'uri']) {
+      const matches = pastes.filter((paste) => paste.transport === transport);
+      assert.equal(matches.length, 1, 'clipboard paste transports must be unique');
+      const paste = matches[0];
+      const receiver = paste.receiver;
+      assert(receiver && !Object.hasOwn(receiver, 'error'), 'clipboard recipient must complete without an error');
+      assert(typeof paste.request_nonce === 'string' && paste.request_nonce.length > 0 && receiver.nonce === paste.request_nonce, 'clipboard paste requires the current request nonce');
+      assert(Number.isInteger(paste.app_uid) && paste.app_uid > 0 && Number.isInteger(receiver.receiver_uid) && receiver.receiver_uid > 0 && receiver.receiver_uid !== paste.app_uid, 'clipboard paste must execute in an independent application UID');
+      assert.equal(receiver.receiver_package, row.identity.instrumentation_package, 'clipboard recipient package must match the installed instrumentation');
+      assert(receiver.plain_text_mime === true && receiver.paste_accepted === true && paste.returned_to_document === true, 'clipboard paste must preserve plain text and return to its document');
+      assert.equal(receiver.has_uri, transport === 'uri', 'clipboard transport must match the actual pasted item');
+      assert.equal(receiver.intent_uri_grant, false, 'clipboard recipient must obtain access without an Intent URI grant');
+      if (transport === 'uri') {
+        assert(receiver.uri_read_granted === true && receiver.uri_write_granted === false, 'clipboard service must grant the recipient read-only text access');
+        assert(paste.expected_code_units >= 512 * 1024, 'clipboard URI paste must cover the oversized Binder regression');
+      }
+      assert(Number.isSafeInteger(paste.expected_utf8_bytes) && paste.expected_utf8_bytes > 0 && Number.isSafeInteger(paste.expected_code_units) && paste.expected_code_units > 0, 'clipboard expected paste sizes must be observed');
+      assert.equal(receiver.utf8_bytes, paste.expected_utf8_bytes, 'clipboard paste must preserve every UTF-8 byte');
+      assert.equal(receiver.code_units, paste.expected_code_units, 'clipboard paste must preserve every code unit');
+      assert(digest.test(paste.expected_sha256) && receiver.sha256 === paste.expected_sha256, 'clipboard paste digest must match the actual copied source');
+    }
+    assert.notEqual(pastes[0].request_nonce, pastes[1].request_nonce, 'clipboard readbacks must have distinct fresh nonces');
+
     const measurements = row.observations?.control_measurements;
     assert(
       Array.isArray(measurements) && measurements.length > 0,

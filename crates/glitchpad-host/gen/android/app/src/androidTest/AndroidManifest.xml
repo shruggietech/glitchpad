@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application>
+        <activity android:name="com.shruggietech.glitchpad.source.ClipboardPasteReceiverActivity" android:exported="true" android:label="Glitchpad clipboard fixture" />
         <activity android:name="com.shruggietech.glitchpad.source.DiagnosticShareReceiverActivity" android:exported="true" android:label="Glitchpad diagnostic fixture">
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />

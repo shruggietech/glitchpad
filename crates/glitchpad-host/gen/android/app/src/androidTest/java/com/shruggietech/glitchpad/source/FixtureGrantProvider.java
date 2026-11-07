@@ -27,6 +27,15 @@ public final class FixtureGrantProvider extends ContentProvider {
 
   @Override
   public Bundle call(String method, String argument, Bundle extras) {
+    if ("clipboard_result".equals(method)) {
+      Bundle result = new Bundle();
+      result.putString("json", getContext().getSharedPreferences("s047-clipboard", 0).getString("json", null));
+      return result;
+    }
+    if ("clear_clipboard_result".equals(method)) {
+      getContext().getSharedPreferences("s047-clipboard", 0).edit().clear().commit();
+      return new Bundle();
+    }
     if ("share_result".equals(method)) {
       Bundle result = new Bundle();
       result.putString("json", getContext().getSharedPreferences("s046-share", 0).getString("json", null));

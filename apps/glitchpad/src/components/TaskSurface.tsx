@@ -19,8 +19,12 @@ import './TaskSurface.css';
 
 function preserveTouchButtonFocus(event: SyntheticEvent<HTMLDivElement>) {
   const active = document.activeElement;
-  if (!active || !event.currentTarget.contains(active) ||
-      !active.matches('input,textarea,[contenteditable="true"]')) return;
+  if (
+    !active ||
+    !event.currentTarget.contains(active) ||
+    !active.matches('input,textarea,[contenteditable="true"]')
+  )
+    return;
   const button =
     event.target instanceof Element
       ? event.target.closest<HTMLButtonElement>('button')

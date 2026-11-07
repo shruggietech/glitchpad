@@ -131,9 +131,12 @@ export const LargeTextSurface = forwardRef<
     const target = focusAfterOperation.current;
     focusAfterOperation.current = null;
     // Disabled fields cannot receive focus until the async result has committed.
-    if (target?.isConnected && !target.matches(':disabled') &&
-        owner.current.lifecycle === 'active' &&
-        Boolean(target.closest('.large-text-task')) === toolsOpen)
+    if (
+      target?.isConnected &&
+      !target.matches(':disabled') &&
+      owner.current.lifecycle === 'active' &&
+      Boolean(target.closest('.large-text-task')) === toolsOpen
+    )
       target.focus({ preventScroll: true });
   }, [pending, toolsOpen, completedOperation]);
 
@@ -145,8 +148,12 @@ export const LargeTextSurface = forwardRef<
     if (!reader || busy.current) return false;
     const expected = ++generation.current;
     const active = document.activeElement;
-    focusAfterOperation.current = toolsOpenRef.current &&
-      active instanceof HTMLElement && active.closest('.large-text-task') ? active : null;
+    focusAfterOperation.current =
+      toolsOpenRef.current &&
+      active instanceof HTMLElement &&
+      active.closest('.large-text-task')
+        ? active
+        : null;
     busy.current = true;
     setPending(true);
     setStatus(loading);
@@ -279,7 +286,9 @@ export const LargeTextSurface = forwardRef<
           setStatus(
             'Line ' + line + ' is at the start of the visible section.',
           );
-          focusAfterOperation.current = toolsOpenRef.current ? lineInput.current : contentRef.current;
+          focusAfterOperation.current = toolsOpenRef.current
+            ? lineInput.current
+            : contentRef.current;
         }
         return moved;
       },

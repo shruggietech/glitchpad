@@ -604,10 +604,22 @@ it('settles rounded CSSOM measurements and still updates real geometry changes',
 });
 
 it('keeps normal touch-button focus when no editable field owns focus', async () => {
-  const host = document.createElement('div'); host.id = 'bb-overlay-root'; document.body.append(host);
-  render(<TaskSurface open title="Actions" onOpenChange={() => undefined}><button>First action</button><button>Second action</button></TaskSurface>);
-  const first = await screen.findByRole('button', { name: 'First action' }); first.focus();
-  const pointer = new MouseEvent('pointerdown', { bubbles: true, cancelable: true, button: 0 });
+  const host = document.createElement('div');
+  host.id = 'bb-overlay-root';
+  document.body.append(host);
+  render(
+    <TaskSurface open title="Actions" onOpenChange={() => undefined}>
+      <button>First action</button>
+      <button>Second action</button>
+    </TaskSurface>,
+  );
+  const first = await screen.findByRole('button', { name: 'First action' });
+  first.focus();
+  const pointer = new MouseEvent('pointerdown', {
+    bubbles: true,
+    cancelable: true,
+    button: 0,
+  });
   Object.defineProperty(pointer, 'pointerType', { value: 'touch' });
   fireEvent(screen.getByRole('button', { name: 'Second action' }), pointer);
   expect(pointer.defaultPrevented).toBe(false);

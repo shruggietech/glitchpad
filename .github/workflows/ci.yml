@@ -510,6 +510,7 @@ jobs:
           node scripts/check-app-layout.mjs --legacy --group recovery --receipt "$RUNNER_TEMP/s047-recovery-preflight/recovery-chromium69.json" 2>&1 | tee "$RUNNER_TEMP/s047-recovery-preflight/chromium69.log"
       - name: Bind exact current source references
         run: |
+          git fetch --no-tags --depth=1 origin 8eef5f589cab9a17c15ca1937fc0c65223cfabe0
           python3 .github/scripts/s047-source-rebind.py
           node .github/scripts/s047-source-audit.mjs
       - name: Retain actual production recovery measurements

@@ -4,7 +4,7 @@ on:
     inputs:
       stage:
         type: choice
-        options: [observers, source_binding, sdk_source, tap_observer, metadata_observer, clipboard_observer, aggregate, working_candidate, converge_context, geometry_candidate, recovery_preflight, legacy_capture, bootstrap_viewport, font_configuration, handoff_probe, touch_preflight, fixture_preflight, legacy_cdp]
+        options: [observers, source_binding, sdk_source, tap_observer, metadata_observer, clipboard_observer, aggregate, working_candidate, converge_context, geometry_candidate, recovery_preflight, legacy_capture, bootstrap_viewport, font_configuration, handoff_probe, touch_preflight, fixture_preflight, legacy_cdp, final_records]
         default: observers
       candidate_source:
         description: Exact public candidate SHA for aggregate only
@@ -831,11 +831,11 @@ jobs:
         api: [24]
     env:
       DIAGNOSTIC_API: ${{ matrix.api }}
-      GLITCHPAD_BUILD_COMMIT: 'bd04f6e78f31426b86ddb7dc4e8728b7172425e9'
-      S047_PRODUCT_SOURCE: 'bd04f6e78f31426b86ddb7dc4e8728b7172425e9'
-      S047_ORIGINAL_APK_SHA256: 'b27c8a4eccfa09a97c42f03cee2c2ff102de049823b9b39a9272a17f58448396'
-      S047_ORIGINAL_APK_BYTES: '231141410'
-      S047_ORIGINAL_ARTIFACT: '13576819369'
+      GLITCHPAD_BUILD_COMMIT: '3e5a62e370280f1e043fba05bbc83a1796153eda'
+      S047_PRODUCT_SOURCE: '3e5a62e370280f1e043fba05bbc83a1796153eda'
+      S047_ORIGINAL_APK_SHA256: 'c5c0ec8dbd24d9114467cc5cb95cfad3918a6b331bb34ee3fd4e4fa990e17441'
+      S047_ORIGINAL_APK_BYTES: '231141154'
+      S047_ORIGINAL_ARTIFACT: '13570373597'
       S047_REBUILD_JVM: 'false'
     steps:
       - uses: actions/checkout@v7
@@ -853,8 +853,8 @@ jobs:
       - run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
       - uses: actions/download-artifact@v8
         with:
-          name: android-task-journeys-ordinary-api-24
-          run-id: 42378848842
+          name: working-layout-api-36
+          run-id: 42362402460
           github-token: ${{ github.token }}
           path: ${{ runner.temp }}/original
       - run: python3 .github/scripts/s047-observer-prepare.py
@@ -867,7 +867,7 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
-      - name: Verify exact draft across a native process restart
+      - name: Verify actual recovery viewport across live font update
         uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
         with:
           api-level: ${{ matrix.api }}
@@ -879,7 +879,7 @@ jobs:
           emulator-options: -no-window -no-audio -no-snapshot -no-boot-anim -gpu swiftshader -feature -Vulkan
           pre-emulator-launch-script: node scripts/configure-android-task-avd.mjs "$ANDROID_AVD_HOME/test.avd/config.ini"
           script: node .github/scripts/s047-handoff-runner.mjs
-      - name: Retain exact draft recovery fixture diagnostic
+      - name: Retain bounded font configuration proof
         if: always()
         uses: actions/upload-artifact@v7
         with:
@@ -990,4 +990,40 @@ jobs:
         with:
           name: s047-legacy-cdp-diagnostic-api-24
           path: ${{ runner.temp }}/s047-legacy-cdp/**
+          retention-days: 7
+
+  final-records:
+    if: inputs.stage == 'final_records'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SPECIFY_FEATURE: 047-android-task-completion
+      SPECIFY_FEATURE_DIRECTORY: ${{ github.workspace }}/specs/047-android-task-completion
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+      - name: Format final records with the repository pin
+        run: npx --yes --ignore-scripts prettier@3.9.9 --write specs/047-android-task-completion/validation.md specs/047-android-task-completion/handoff.md specs/047-android-task-completion/data-model.md specs/047-android-task-completion/tasks.md specs/047-android-task-completion/contracts/issue-acceptance-map.md specs/047-android-task-completion/contracts/control-ledger.json specs/047-android-task-completion/contracts/candidate-evidence.json
+      - name: Audit every current control reference without rebinding
+        run: |
+          mkdir -p .codex-tmp/s047
+          node .github/scripts/s047-source-audit.mjs
+      - name: Initialize formal convergence context once
+        run: pwsh -NoLogo -NoProfile -NonInteractive -File .specify/scripts/powershell/check-prerequisites.ps1 -Json -RequireTasks -IncludeTasks > "$RUNNER_TEMP/s047-converge-prerequisites.json"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: s047-final-records
+          path: |
+            specs/047-android-task-completion/validation.md
+            specs/047-android-task-completion/handoff.md
+            specs/047-android-task-completion/data-model.md
+            specs/047-android-task-completion/tasks.md
+            specs/047-android-task-completion/contracts/issue-acceptance-map.md
+            specs/047-android-task-completion/contracts/control-ledger.json
+            specs/047-android-task-completion/contracts/candidate-evidence.json
+            .codex-tmp/s047/current-control-reference-audit.json
+            ${{ runner.temp }}/s047-converge-prerequisites.json
           retention-days: 7

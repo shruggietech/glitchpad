@@ -69,14 +69,14 @@
 - [x] T033 [US5] Extend ordinary full tasks and probe variants with positive actual API36 cancel/commit, rotation/IME/200%/short-frame semantics and About in AndroidDeliveryInstrumentedTest.kt (FR-001-006/015/022-028, SC-002/003/006/007).
 - [x] T034 [US5] Implement ten-row source/APK/instrument/runtime/profile/attempt receipts and strict aggregator in scripts/run-android-connected-tests.sh, run-android-instrumentation.sh and validate-android-recovery-evidence.mjs, preserving all limits/gates (FR-022-025/028).
 - [x] T035 [US5] Expand .github/workflows/ci.yml to API24/API36 × ordinary/fault_probe isolated jobs with exact role/artifact identity and ordinary guard absence checks (FR-022/023/025).
-- [ ] T036 [US5] Compile affected native source/instrumentation and prove actual hosted full matrix, destination/receiver readbacks and all ten rows against final candidate bytes; record in specs/047-android-task-completion/validation.md (FR-022-028, SC-003/006/008).
+- [x] T036 [US5] Compile affected native source/instrumentation and prove actual hosted full matrix, destination/receiver readbacks and all ten rows against final candidate bytes; record in specs/047-android-task-completion/validation.md (FR-022-028, SC-003/006/008).
 
 ## Phase 8: Integrated validation and owner handoff
 
-- [ ] T037 Run aggregate cargo xtask check, policy/brand/glyph/generated-manifest/notice/encoding checks and affected platform/package gates; resolve failures and retain exact exits in specs/047-android-task-completion/validation.md (all FR/SC).
-- [ ] T038 Publish branch and PR automatically with concrete behavior/validation and issue-level traceability, then monitor exact final-head applicable CI/package jobs; retain all failed attempts in specs/047-android-task-completion/validation.md (SC-008).
-- [ ] T039 Complete at most two external review rounds, resolve actionable findings, requalify changed final bytes and run installed speckit-converge; record review count/evidence in specs/047-android-task-completion/handoff.md (all FR/SC).
-- [ ] T040 Reconcile119control records/27criteria, terminal exact-head checks, tested artifact digests and limitations; hand off unmerged PR with auto-merge off in specs/047-android-task-completion/handoff.md (SC-001-008).
+- [x] T037 Run aggregate cargo xtask check, policy/brand/glyph/generated-manifest/notice/encoding checks and affected platform/package gates; resolve failures and retain exact exits in specs/047-android-task-completion/validation.md (all FR/SC).
+- [x] T038 Publish branch and PR automatically with concrete behavior/validation and issue-level traceability, then monitor exact final-head applicable CI/package jobs; retain all failed attempts in specs/047-android-task-completion/validation.md (SC-008).
+- [x] T039 Complete at most two external review rounds, resolve actionable findings, requalify changed final bytes and run installed speckit-converge; record review count/evidence in specs/047-android-task-completion/handoff.md (all FR/SC).
+- [x] T040 Reconcile119control records/27criteria, terminal exact-head checks, tested artifact digests and limitations; hand off unmerged PR with auto-merge off in specs/047-android-task-completion/handoff.md (SC-001-008).
 
 ## Dependencies and parallel execution
 
@@ -90,4 +90,4 @@ Validate each story independently as an intermediate checkpoint, then complete a
 
 ## Phase 9: Convergence
 
-- [ ] T041 Resolve current-source actual task-control geometry failures in AndroidDeliveryInstrumentedTest.kt and the affected task layout: retain exact failing CSS/native bounds, distinguish transient frame movement from persistent clipping inside the existing action budget, preserve every visibility/48dp/contrast/semantic gate, and rerun the complete required API24/API36 profiles per FR-015/023, SC-002 and US5/AC1/3 (partial).
+- [x] T041 Resolve current-source actual task-control geometry failures in AndroidDeliveryInstrumentedTest.kt and the affected task layout: retain exact failing CSS/native bounds, distinguish transient frame movement from persistent clipping inside the existing action budget, preserve every visibility/48dp/contrast/semantic gate, and rerun the complete required API24/API36 profiles per FR-015/023, SC-002 and US5/AC1/3 (partial).

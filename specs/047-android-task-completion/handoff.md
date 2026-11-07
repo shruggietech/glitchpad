@@ -1,31 +1,46 @@
-# S047 owner handoff (incomplete)
+# S047 owner handoff
 
-S047 remains in installed qualification. [PR #258](https://github.com/shruggietech/glitchpad/pull/258) is open and unmerged with auto-merge off. Issues #249, #250, #251, #253 and #254 remain open and In Progress. Final owner review is not requested yet.
+[PR #258](https://github.com/shruggietech/glitchpad/pull/258) delivers #249, #250, #251, #253 and #254. This committed record preserves the implementation qualification checkpoint `7cb7788dfe96fc0860d07c15d16659e260fec32c`. The PR body records the exact final handoff head, terminal checks and its tested APK identities after record publication. Different APK bytes require their own qualification. Stop unmerged with auto-merge off for owner review and merge.
 
 ## Changed behavior
 
-The slice adds compact Android document navigation, managed task surfaces with Back/IME ownership, installed About and complete offline notices, inert SVG handling, shared image/diagram actions, and editor, Markdown, Mermaid, large-text, metadata and preference tasks. Android range reads use bounded binary responses on the existing blocking-worker boundary. Dialog cleanup preserves completed document/Add focus handoffs. Exact installed-APK capture uses bounded framed shell-v2 output and retains failed or mismatched observations.
+Android retains compact document identity, Add and app destinations while tools use bounded managed task surfaces. Back consumes the visible IME, native text-edit action mode and app task layers in order; predictive cancellation preserves state. Delayed Menu focus no longer steals a completed Add handoff. Live font changes preserve the Activity/WebView, legacy fractional CSSOM measurements do not loop, touch activation keeps its target stable, and async large-text tasks retain their enabled control focus.
 
-Live font changes retain the existing activity/WebView and update actual text scale. Recovery uses the existing TaskSurface native bounds. Touch deferral applies while an editable field inside the task owns focus, including confirmed touch-generated compatibility mouse events. Numeric measurement comparisons avoid the legacy WebView fractional CSSOM observer loop. Large-text async completion restores the enabled task control; successful Go to line keeps focus inside its open modal. Native Pause uses a separate generated infinite GIF, preserving all29 original fixture bytes and finite-animation behavior.
+SVG inside the documented inert profile renders with distinct refusal/read/transport outcomes and source/metadata alternatives. Shared image/diagram Fit, multiplicative Zoom, pan and Reset preserve document/frame/icon/background state. Editor/search/history, Markdown/Mermaid, large-text, metadata and scoped preference tasks report actual results. About verifies native package/build facts and explicit destinations and renders complete offline notices. A separate infinite GIF exercises Play/Pause while all 29 original fixtures remain unchanged.
 
-Native text-edit ActionMode is now tracked by the Activity and consumed through the existing Source Back callback after the IME layer. The focused API36 long-press/Back regression passes against the retained previous frontend/native payload; the search task and field values survive, and Close then completes. App no longer schedules a duplicate delayed Menu focus after TaskSurface restoration. The canonical campaign includes a real native text-toolbar Back regression and records separate programmatic input-layer preparation for layout checks. Full combined candidate qualification remains pending.
+## Verified checkpoint
 
-## Verified checkpoints
+All four isolated API24/API36 ordinary/fault-probe jobs pass in [full CI](https://github.com/shruggietech/glitchpad/actions/runs/42380870423). Both ordinary builds complete all ten journeys. Fault roles pass their applicable containment/diagnostic rows and explicitly mark ordinary-only rows not applicable. All eight retained installed application/instrumentation APK hashes independently match their receipts. Text saves/reopens, selected ICO PNG pixels/original integrity, frozen Diagnostics Save/Share receiver content, clipboard readbacks and process recovery are observed independently of callbacks.
 
-Focused source run42369493937 passes all609 frontend tests across68 files, lint/types/build,80 actual React/AppFrame image/diagram cases,12 modern and12 actual Chrome69 recovery profiles, and pinned brand/glyph checks. Old source reproduces the touch, compatibility mouse, rounded measurement and large-text background-focus defects. The job subsequently fails only in reference bookkeeping. Dedicated run42369937156 then passes all38 current hashes and353 reference updates with0 unresolved/drift; all38 hashes independently match. Fixture run42365494410 reproduces all30 image identities and passes109 core tests. These checkpoints do not qualify final installed Android.
+Actual portrait/landscape/short/IME profiles pass at default and maximum font scale (API24 1.3, API36 2.0). The real native text-toolbar Back test passes on both APIs with one native-mode dismissal, zero JS task requests, retained document/task/fields and a successful subsequent Close. API24 actually plays, advances and pauses animation; API36 observes the reduced-motion-disabled explanation and records Play/Pause as unexecuted.
 
-Focused native run42368257481 retains four failed layout attempts at84839f2bf341fb7626a71b3294f66220027ec393. All four APK digests independently match their receipts. Its open large-text modal has focus behind it after Go to line and clipboard return, before the full font/profile sweep. The new focus correction has source regression coverage and awaits fresh native qualification. Public789ad693bc1d72dfcbbe74a4aad24ba30ce337c5 passes both fault-probe roles and shared/desktop checks; ordinary jobs fail at the same modal-focus assertion, and API36 process recovery separately lacks expected synthetic body evidence. Its image fixture guard failure is corrected in the next candidate. Chronological validation.md retains the failures, corrections, archive identities and cancelled obsolete aggregate.
+[Exact branch-head CI](https://github.com/shruggietech/glitchpad/actions/runs/42380900478) and the [Linux aggregate](https://github.com/shruggietech/glitchpad/actions/runs/42380901998) pass. The aggregate completes cargo xtask check and 96 modern plus 96 actual Chrome69 composed profiles with zero failures. All 19 observed browser source hashes independently match remote Git blobs. Source/frontend checks include 610 tests, composed image/diagram/authoring/shell geometry, pinned brand/glyph, policy, bounded fuzz, notices, encoding and affected platform/package gates. Workflow and archive identities are in [candidate-evidence.json](contracts/candidate-evidence.json).
 
-The later App focus regression passes all610 frontend tests,80 composed image cases and12 modern plus12 Chrome69 recovery profiles. Integrated Back receipt/driver/policy run42377152046 passes; all42 current source fingerprints independently match with0 reference drift. Public2b44940 qualifies the complete API24 S047 campaign and both fault-probe roles, but fails API36 layout and the later separate API24 AppFrame probe. Those results do not qualify the new combined candidate.
+The final record update also strengthens process recovery from marker/editability to a complete exact-text comparison. Its separately identified API24 seed/force-stop/verify diagnostic passes against the verified retained product payload. That diagnostic is not final different-APK qualification; both final-head ordinary campaigns must run the stronger assertion before owner handoff. Current-head confirmation and fresh artifact digests are reported in the PR body.
 
-## Remaining gates
+## Control and issue reconciliation
 
-T036-T041 remain open: full final four-role/API Android campaigns and ten journeys; actual process-restart and geometry profiles; exact APK/destination/receiver readbacks; current aggregate/browser/platform checks; formal Spec-Kit convergence; and119-control/459-case/27-criterion reconciliation. Every case status remains pending until the exact required assertion and candidate receipt are reconciled.
+The [control ledger](contracts/control-ledger.json) preserves all 119 literal CTRL IDs and 459 expanded cases, and the [acceptance map](contracts/issue-acceptance-map.md) names evidence for all 27 issue criteria. The report-declared 150 variants and 154 literal slash chunks remain attributed metadata rather than passing counts.
 
-## Review boundary
+| Case disposition | Count |
+| --- | ---: |
+| Installed assertions | 345 |
+| Named supplemental source/unit/browser assertions, not individually native | 98 |
+| Installed absent/disabled action assertions | 2 |
+| Native non-applicability | 4 |
+| Installed unavailable feedback | 2 |
+| Conditional animation profiles | 3 |
+| Unmounted source inventory, no native interactive claim | 2 |
+| Installed passive read-only state | 3 |
 
-Both authorized external review rounds are used. Round1's two findings are fixed and resolved. Round2 at988818c57efba8c611074c193d6ec5c560987cae returns no findings. Later corrections have no additional external review. No third request is made. Stop unmerged for final owner review; no merge, release, tag or deployment is performed.
+CTRL-114 remains source inventory only; CTRL-115 remains passive. Unsupported page commands remain absent without a meaningful provider. Case-level references and limitations prevent supplemental-only variants from inflating native passes.
 
-## Traceability and unverified behavior
+## Review and owner boundary
 
-Source/unit/browser observations, installed debug behavior, signed assembly, publication and physical-device evidence remain distinct. Conditional animation outcomes, unavailable capabilities, unmounted CTRL-114 and passive CTRL-115 are reported individually and cannot inflate native action passes. Original incident bytes, APK hash and trace are unavailable. Physical-device, manual-screen-reader and reference-hardware prerequisites are waived; manual macOS/Linux GUI and VoiceOver checks are unrun. Release reconciliation #244/#255 remains separate.
+Both authorized external review rounds are used. Round1's two findings are fixed/resolved. [Round2](https://github.com/shruggietech/glitchpad/pull/258#issuecomment-6674776119) at `988818c57efba8c611074c193d6ec5c560987cae` returns no findings; later corrections have automated qualification without an additional external round. Final review-thread, Spec-Kit convergence and exact-head state are reported in the PR handoff. Issues remain open until merge, with project Stage PR review and Status In Progress at handoff.
+
+## Limits and retained failures
+
+The chronological [validation record](validation.md) retains failed attempts, fixture mistakes, their corrections, archive digests and successful reruns. The Windows portable Edit timeout is retained separately from its same-head passing repeat. Source/unit/browser evidence, installed debug behavior, signed assembly, publication and physical-device evidence remain distinct.
+
+Original incident bytes/hash/trace are unavailable and were not replayed. Physical-device/manual-screen-reader/reference-hardware prerequisites remain waived. Manual macOS/Linux GUI and VoiceOver checks are unrun. No merge, release, tag or deployment is performed. Release reconciliation #244/#255 remains separate.

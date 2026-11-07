@@ -2605,6 +2605,12 @@ class AndroidDeliveryInstrumentedTest {
     }
   }
 
+  @Suppress("DEPRECATION")
+  private fun attachedNativeWindowId(view: android.view.View): Int {
+    val node = if (Build.VERSION.SDK_INT >= 30) AccessibilityNodeInfo(view) else AccessibilityNodeInfo.obtain(view)
+    return try { node.windowId } finally { node.recycle() }
+  }
+
   private fun taskContextSnapshot(scenario: ActivityScenario<MainActivity>, deadline: Long): String = stringValue(evaluate(scenario,
     "JSON.stringify({document:(document.querySelector('.document-surface')||{}).id||null,tasks:Array.from(document.querySelectorAll('.task-surface[data-state=open]')).filter(d=>!d.closest('[aria-hidden=true],[inert]')).map(d=>({title:(d.querySelector('h2')||{}).textContent||null,fields:Array.from(d.querySelectorAll('input,textarea')).map(n=>n.value)}))})", deadlineOverride=deadline))
 
@@ -2669,7 +2675,7 @@ class AndroidDeliveryInstrumentedTest {
     var appWindowId = -1
     scenario.onActivity { activity ->
       val view = requireNotNull(findWebView(activity.window.decorView))
-      appWindowId = android.view.accessibility.AccessibilityNodeInfo().apply { setSource(view) }.windowId
+      appWindowId = attachedNativeWindowId(view)
     }
     assertTrue("the attached WebView must expose its actual native window identity", appWindowId >= 0)
     assertTrue("the long-press field must belong wholly to the foreground app", nativeTapForeground(native) && native.getBoolean("whole_control_visible"))
@@ -3144,7 +3150,7 @@ class AndroidDeliveryInstrumentedTest {
         val tolerance = 0.6 * scale
         if (Build.VERSION.SDK_INT >= 30) {
           // setSource reads this attached native View's window identity without requesting a WebView accessibility tree.
-          val appWindowId = android.view.accessibility.AccessibilityNodeInfo().apply { setSource(view) }.windowId
+          val appWindowId = attachedNativeWindowId(view)
           val owner = touchWindows.filter { it.region.contains(screenX.toInt(), screenY.toInt()) }.maxByOrNull { it.layer }
           val owned = appWindowId != -1 && owner?.id == appWindowId
           observed.put("app_window_id", appWindowId).put("native_touch_owned_by_app", owned)

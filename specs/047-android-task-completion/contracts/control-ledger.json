@@ -62,7 +62,7 @@
           "Alt+Shift+ArrowRight reorder"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -131,7 +131,7 @@
           "Alt+Shift+ArrowRight reorder"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -206,7 +206,7 @@
           "Open (requested + menu)"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -267,7 +267,7 @@
           "Open (requested + menu)"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -332,7 +332,7 @@
           "Open (requested + menu)"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -396,7 +396,7 @@
           "Open (requested + menu)"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -457,7 +457,7 @@
           "Open (requested + menu)"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -505,14 +505,14 @@
       "native_preparation": {
         "method": "s047AboutJourney",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2788,
+        "line": 2794,
         "assertions": "Actual PackageManager facts, four exact allowlisted ACTION_VIEW dispatches with one-per-action count/no attached content, actual hosted network-none offline notice view with restoration, actual Help destination.",
         "prepared_additional_labels": [
           "explicit report destination",
           "no automatic attachments or upload"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -559,7 +559,7 @@
         "assertions": "Actual Menu destinations plus profile-specific Preferences/metadata tasks, and ordinary diagnostics native export/Share.",
         "prepared_additional_labels": [],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -606,7 +606,7 @@
         "assertions": "Actual Menu destinations plus profile-specific Preferences/metadata tasks, and ordinary diagnostics native export/Share.",
         "prepared_additional_labels": [],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -682,7 +682,7 @@
           "Alt+Shift+ArrowRight reorder"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -730,11 +730,11 @@
       "native_preparation": {
         "method": "s047BackJourney",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2707,
+        "line": 2713,
         "assertions": "Actual IME and button Back, modal background inert, rotation preservation, real picker cancel/dirty guards; API36 positive actual native callback start/progress/cancel/commit deltas.",
         "prepared_additional_labels": [],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -782,14 +782,14 @@
       "native_preparation": {
         "method": "s047AboutJourney",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2788,
+        "line": 2794,
         "assertions": "Actual PackageManager facts, four exact allowlisted ACTION_VIEW dispatches with one-per-action count/no attached content, actual hosted network-none offline notice view with restoration, actual Help destination.",
         "prepared_additional_labels": [
           "explicit report destination",
           "no automatic attachments or upload"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -837,14 +837,14 @@
       "native_preparation": {
         "method": "s047AboutJourney",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2788,
+        "line": 2794,
         "assertions": "Actual PackageManager facts, four exact allowlisted ACTION_VIEW dispatches with one-per-action count/no attached content, actual hosted network-none offline notice view with restoration, actual Help destination.",
         "prepared_additional_labels": [
           "explicit report destination",
           "no automatic attachments or upload"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -906,14 +906,14 @@
       "native_preparation": {
         "method": "s047AboutJourney",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2788,
+        "line": 2794,
         "assertions": "Actual PackageManager facts, four exact allowlisted ACTION_VIEW dispatches with one-per-action count/no attached content, actual hosted network-none offline notice view with restoration, actual Help destination.",
         "prepared_additional_labels": [
           "explicit report destination",
           "no automatic attachments or upload"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -1011,14 +1011,14 @@
       "native_preparation": {
         "method": "s047AboutJourney",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2788,
+        "line": 2794,
         "assertions": "Actual PackageManager facts, four exact allowlisted ACTION_VIEW dispatches with one-per-action count/no attached content, actual hosted network-none offline notice view with restoration, actual Help destination.",
         "prepared_additional_labels": [
           "explicit report destination",
           "no automatic attachments or upload"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -1080,14 +1080,14 @@
       "native_preparation": {
         "method": "s047AboutJourney",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2788,
+        "line": 2794,
         "assertions": "Actual PackageManager facts, four exact allowlisted ACTION_VIEW dispatches with one-per-action count/no attached content, actual hosted network-none offline notice view with restoration, actual Help destination.",
         "prepared_additional_labels": [
           "explicit report destination",
           "no automatic attachments or upload"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -1180,7 +1180,7 @@
           "Alt+Shift+ArrowRight reorder"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -1293,7 +1293,7 @@
           "Alt+Shift+ArrowRight reorder"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -1355,7 +1355,7 @@
           "Alt+Shift+ArrowRight reorder"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -1473,7 +1473,7 @@
           "Alt+Shift+ArrowRight reorder"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -1549,7 +1549,7 @@
           "Alt+Shift+ArrowRight reorder"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -1699,7 +1699,7 @@
           "Control+G"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -1848,7 +1848,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -2084,7 +2084,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -2285,7 +2285,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -2408,7 +2408,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -2570,7 +2570,7 @@
           "Control+G"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -2721,7 +2721,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -2870,7 +2870,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -2987,7 +2987,7 @@
           "Control+G"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -3104,7 +3104,7 @@
           "Control+G"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -3226,7 +3226,7 @@
           "Control+G"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -3444,7 +3444,7 @@
           "Fit-to-custom multiplicative scale"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -3689,7 +3689,7 @@
           "Fit-to-custom multiplicative scale"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -3898,7 +3898,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -4016,7 +4016,7 @@
           "pending write disables cancel"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -4192,7 +4192,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -4288,7 +4288,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -4347,7 +4347,7 @@
           "unavailable local source feedback"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -4414,7 +4414,7 @@
           "pending write disables cancel"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -4470,7 +4470,7 @@
           "unavailable local source feedback"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -4526,7 +4526,7 @@
           "unavailable local source feedback"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -4696,7 +4696,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -4807,7 +4807,7 @@
           "Control+G"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -5090,7 +5090,7 @@
           "Control+G"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -5271,7 +5271,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -5387,7 +5387,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -5523,7 +5523,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -5675,7 +5675,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -5811,7 +5811,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -5953,7 +5953,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -6094,7 +6094,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -6235,7 +6235,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -6402,7 +6402,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -6555,7 +6555,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -6731,7 +6731,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -6870,7 +6870,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -7028,7 +7028,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -7218,7 +7218,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -7304,7 +7304,7 @@
           "unavailable local source feedback"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -7430,7 +7430,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -7543,7 +7543,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -7669,7 +7669,7 @@
           "contained failure retry"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -7849,7 +7849,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -7988,7 +7988,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -8108,7 +8108,7 @@
           "Fit-to-pan scale continuity"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -8208,7 +8208,7 @@
           "Fit-to-pan scale continuity"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -8273,7 +8273,7 @@
           "Fit-to-pan scale continuity"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -8339,7 +8339,7 @@
           "Fit-to-pan scale continuity"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -8404,7 +8404,7 @@
           "Fit-to-pan scale continuity"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -8469,7 +8469,7 @@
           "Fit-to-pan scale continuity"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -8621,7 +8621,7 @@
           "Fit-to-pan scale continuity"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -8744,7 +8744,7 @@
           "deterministic refusal no identical retry"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -8834,7 +8834,7 @@
           "deterministic refusal no identical retry"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -8983,7 +8983,7 @@
           "deterministic refusal no identical retry"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -9105,7 +9105,7 @@
           "deterministic refusal no identical retry"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -9294,7 +9294,7 @@
           "deterministic refusal no identical retry"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -9406,7 +9406,7 @@
           "selection survives tool disclosure"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -9494,7 +9494,7 @@
           "selection survives tool disclosure"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -9582,7 +9582,7 @@
           "selection survives tool disclosure"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -9699,7 +9699,7 @@
           "selection survives tool disclosure"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -9800,7 +9800,7 @@
           "selection survives tool disclosure"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -9925,7 +9925,7 @@
           "original ICO unchanged"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -10071,7 +10071,7 @@
           "deterministic refusal no identical retry"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -10169,7 +10169,7 @@
           "exact displayed section clipboard"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -10267,7 +10267,7 @@
           "exact displayed section clipboard"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -10434,7 +10434,7 @@
           "exact displayed section clipboard"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -10565,7 +10565,7 @@
           "exact displayed section clipboard"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -10713,7 +10713,7 @@
           "exact displayed section clipboard"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -10835,7 +10835,7 @@
           "exact displayed section clipboard"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -10954,7 +10954,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -11098,7 +11098,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -11251,7 +11251,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -11406,7 +11406,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -11493,7 +11493,7 @@
           "collapse observation"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -11631,7 +11631,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -11759,7 +11759,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -11883,7 +11883,7 @@
           "read-only field absent"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -12008,7 +12008,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -12160,7 +12160,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -12309,7 +12309,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -12481,7 +12481,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -12651,7 +12651,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -12794,7 +12794,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -12960,7 +12960,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -13151,7 +13151,7 @@
           "nonempty redo exact text"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -13252,7 +13252,7 @@
           "pending write disables cancel"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -13328,7 +13328,7 @@
           "pending write disables cancel"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -13401,7 +13401,7 @@
           "pending write disables cancel"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -13453,7 +13453,7 @@
           "recover persisted exact draft"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -13499,14 +13499,14 @@
       "native_preparation": {
         "method": "verifyS047RecoveryDecisions",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2814,
+        "line": 2820,
         "assertions": "Fault-probe root exception -> actual Restart -> Not now -> actual reload -> same candidate -> Decline -> reload absence.",
         "prepared_additional_labels": [
           "explicitly decline recovery",
           "decide later retains recovery record"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -13552,14 +13552,14 @@
       "native_preparation": {
         "method": "verifyS047RecoveryDecisions",
         "source": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-        "line": 2814,
+        "line": 2820,
         "assertions": "Fault-probe root exception -> actual Restart -> Not now -> actual reload -> same candidate -> Decline -> reload absence.",
         "prepared_additional_labels": [
           "explicitly decline recovery",
           "decide later retains recovery record"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -13632,7 +13632,7 @@
           "handoff distinct from delivery"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -13713,7 +13713,7 @@
           "handoff distinct from delivery"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -13784,7 +13784,7 @@
           "handoff distinct from delivery"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -13868,7 +13868,7 @@
           "handoff distinct from delivery"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     },
     {
@@ -13976,7 +13976,7 @@
           "Incomplete task readonly"
         ],
         "evidence_status": "prepared_not_executed",
-        "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+        "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
       }
     }
   ],
@@ -14263,7 +14263,7 @@
       "kind": "native_prepared_not_executed",
       "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
       "line": 2307,
-      "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698",
+      "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07",
       "effect": "The native image journey prepares real provider SVG outcomes and source-read Retry, image local/menu/Ctrl zoom aliases, key pan, native gestures, Actual size, Reset and Fit.",
       "limit": "Fresh ordinary/fault candidate receipts for API24/API36 remain required; source and compiled instrumentation are not runtime proof.",
       "anchor": "@Test fun s047ImageJourney() {"
@@ -14272,7 +14272,7 @@
       "kind": "native_prepared_not_executed",
       "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
       "line": 2166,
-      "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698",
+      "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07",
       "effect": "The current native helper explicitly prepares standalone and embedded local plus/minus, standalone global menu plus/minus, header-focused global Ctrl-minus/plus, embedded canvas Ctrl-minus/plus, bare Equals, ArrowLeft, native drag, four signed Pan controls, Actual size, Reset and Fit.",
       "limit": "These are current native source preparations. Only exact installed-candidate receipts establish that these aliases executed. Other owner is compiling the final native source.",
       "anchor": "private fun verifyS047DiagramRoutes(scenario: ActivityScenario<MainActivity>, selector: String, standalone: Boolean) {"
@@ -14281,7 +14281,7 @@
       "kind": "native_prepared_not_executed",
       "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
       "line": 2127,
-      "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698",
+      "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07",
       "effect": "The native More helper prepares live measured Fit, Zoom factors1.25and0.8, same document/source, GIF frame3 and Dark retention, and standalone/embedded routes.",
       "limit": "",
       "anchor": "private fun verifyS047MoreViewportActions(scenario:ActivityScenario<MainActivity>,selector:String,kind:String) {"
@@ -14290,7 +14290,7 @@
       "kind": "native_prepared_not_executed",
       "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
       "line": 2229,
-      "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698",
+      "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07",
       "effect": "The native secondary helper prepares Checkerboard/Light/Dark selector state, invalid and valid frame drafts, Previous3to2 and Next2to3, conditional Play/Pause receipts, and Reset retention for GIF frame3/Dark and ICO entry1/Light.",
       "limit": "Previous/Next start paused; first/last disabled bounds are not asserted. Background choices assert viewport state, not independent painted-background pixel readback. Playback branch depends on the actual reduced-motion receipt.",
       "anchor": "private fun verifyS047SecondaryImageTasks(scenario: ActivityScenario<MainActivity>): JSONObject {"
@@ -14299,7 +14299,7 @@
       "kind": "native_prepared_not_executed",
       "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
       "line": 2287,
-      "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698",
+      "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07",
       "effect": "More image File information opens actual JPEG Exif observations; individual disclosures open and close and original provider bytes remain unchanged.",
       "limit": "Ready JPEG context only; not failed-preview metadata or retargeting while the inspector remains open.",
       "anchor": "private fun verifyS047EmbeddedMetadata(scenario: ActivityScenario<MainActivity>) {"
@@ -14307,8 +14307,8 @@
     "R2_N_EXPORT": {
       "kind": "native_prepared_not_executed",
       "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-      "line": 3979,
-      "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698",
+      "line": 3985,
+      "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07",
       "effect": "The native helper prepares chooser cancellation, original-destination refusal, selected DIB1 PNG export with independent4x3 pixel readback, nonempty/misreported conflicts and unchanged original ICO.",
       "limit": "No mid-write or partial provider I/O error is injected. Pre-write refusal cannot qualify failed write.",
       "anchor": "private fun verifySelectedIconExport(scenario: ActivityScenario<MainActivity>, original: Uri, before: ByteArray) {"
@@ -14316,8 +14316,8 @@
     "R2_N_FAULT": {
       "kind": "native_prepared_not_executed_fault_role",
       "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
-      "line": 2857,
-      "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698",
+      "line": 2863,
+      "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07",
       "effect": "In the compiled fault role, one actual absent native command produces host_transport; Retry then uses the actual native renderer.",
       "limit": "Fault-probe candidate only; ordinary production absence is a separate qualification.",
       "anchor": "injectRecoveryFailure(scenario, \"host\")"
@@ -17252,7 +17252,7 @@
           "assertion": "Ctrl+A then actualCtrl+C copies exact selectedsource; menuCopy independently matches at1011. Selectionisallsource, not a partial range.",
           "scope": "exact_effect",
           "execution": "prepared_not_executed",
-          "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+          "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
         }
       ],
       "limits": [],
@@ -17293,7 +17293,7 @@
           "assertion": "Ctrl+A then actualCtrl+C copies exact selectedsource; menuCopy independently matches at1011. Selectionisallsource, not a partial range.",
           "scope": "exact_effect",
           "execution": "prepared_not_executed",
-          "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+          "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
         }
       ],
       "limits": [
@@ -17520,7 +17520,7 @@
           "assertion": "ActualCtrl+F must expose actualFindinput before realquerytyping.",
           "scope": "exact_effect",
           "execution": "prepared_not_executed",
-          "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+          "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
         }
       ],
       "limits": [],
@@ -17700,7 +17700,7 @@
           "assertion": "Each keyboard, menu and CodeMirror panel Find next/previous route prepares an exact controlled selection assertion; all routes retain source bytes.",
           "scope": "exact_alias_selection_prepared",
           "execution": "prepared_not_executed",
-          "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+          "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
         }
       ],
       "limits": [
@@ -17785,7 +17785,7 @@
           "assertion": "The real fixture has paragraph and embedded-diagram cats matches; Next requires exactly2of2 and Previous requires exactly1of2 after actual activations.",
           "scope": "exact_two_match_direction_prepared",
           "execution": "prepared_not_executed",
-          "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+          "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
         }
       ],
       "limits": [
@@ -17870,7 +17870,7 @@
           "assertion": "NativeCMNext/Previous buttons areactivated before Selectallmatches checks; no independent per-button selectiondelta here.",
           "scope": "activation_only",
           "execution": "prepared_not_executed",
-          "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+          "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
         }
       ],
       "limits": [
@@ -17974,7 +17974,7 @@
           "assertion": "Each keyboard, menu and CodeMirror panel Find next/previous route prepares an exact controlled selection assertion; all routes retain source bytes.",
           "scope": "exact_alias_selection_prepared",
           "execution": "prepared_not_executed",
-          "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+          "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
         }
       ],
       "limits": [
@@ -18036,7 +18036,7 @@
           "assertion": "Each keyboard, menu and CodeMirror panel Find next/previous route prepares an exact controlled selection assertion; all routes retain source bytes.",
           "scope": "exact_alias_selection_prepared",
           "execution": "prepared_not_executed",
-          "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+          "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
         }
       ],
       "limits": [
@@ -18121,7 +18121,7 @@
           "assertion": "NativeCMNext/Previous buttons areactivated before Selectallmatches checks; no independent per-button selectiondelta here.",
           "scope": "activation_only",
           "execution": "prepared_not_executed",
-          "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+          "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
         }
       ],
       "limits": [
@@ -18206,7 +18206,7 @@
           "assertion": "The real fixture has paragraph and embedded-diagram cats matches; Next requires exactly2of2 and Previous requires exactly1of2 after actual activations.",
           "scope": "exact_two_match_direction_prepared",
           "execution": "prepared_not_executed",
-          "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+          "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
         }
       ],
       "limits": [
@@ -18291,7 +18291,7 @@
           "assertion": "Each keyboard, menu and CodeMirror panel Find next/previous route prepares an exact controlled selection assertion; all routes retain source bytes.",
           "scope": "exact_alias_selection_prepared",
           "execution": "prepared_not_executed",
-          "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+          "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
         }
       ],
       "limits": [
@@ -18376,7 +18376,7 @@
           "assertion": "The real fixture has paragraph and embedded-diagram cats matches; Next requires exactly2of2 and Previous requires exactly1of2 after actual activations.",
           "scope": "exact_two_match_direction_prepared",
           "execution": "prepared_not_executed",
-          "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+          "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
         }
       ],
       "limits": [
@@ -18419,7 +18419,7 @@
           "assertion": "NativeCMNext/Previous buttons areactivated before Selectallmatches checks; no independent per-button selectiondelta here.",
           "scope": "activation_only",
           "execution": "prepared_not_executed",
-          "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+          "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
         },
         {
           "kind": "native_preparation",
@@ -18430,7 +18430,7 @@
           "assertion": "Each keyboard, menu and CodeMirror panel Find next/previous route prepares an exact controlled selection assertion; all routes retain source bytes.",
           "scope": "exact_alias_selection_prepared",
           "execution": "prepared_not_executed",
-          "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+          "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
         }
       ],
       "limits": [
@@ -18473,7 +18473,7 @@
           "assertion": "Each keyboard, menu and CodeMirror panel Find next/previous route prepares an exact controlled selection assertion; all routes retain source bytes.",
           "scope": "exact_alias_selection_prepared",
           "execution": "prepared_not_executed",
-          "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+          "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
         }
       ],
       "limits": [
@@ -18516,7 +18516,7 @@
           "assertion": "Each keyboard, menu and CodeMirror panel Find next/previous route prepares an exact controlled selection assertion; all routes retain source bytes.",
           "scope": "exact_alias_selection_prepared",
           "execution": "prepared_not_executed",
-          "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+          "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
         }
       ],
       "limits": [
@@ -18559,7 +18559,7 @@
           "assertion": "NativeCMNext/Previous buttons areactivated before Selectallmatches checks; no independent per-button selectiondelta here.",
           "scope": "activation_only",
           "execution": "prepared_not_executed",
-          "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+          "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
         },
         {
           "kind": "native_preparation",
@@ -18570,7 +18570,7 @@
           "assertion": "Each keyboard, menu and CodeMirror panel Find next/previous route prepares an exact controlled selection assertion; all routes retain source bytes.",
           "scope": "exact_alias_selection_prepared",
           "execution": "prepared_not_executed",
-          "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+          "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
         }
       ],
       "limits": [
@@ -18655,7 +18655,7 @@
           "assertion": "The real fixture has paragraph and embedded-diagram cats matches; Next requires exactly2of2 and Previous requires exactly1of2 after actual activations.",
           "scope": "exact_two_match_direction_prepared",
           "execution": "prepared_not_executed",
-          "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+          "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
         }
       ],
       "limits": [
@@ -18884,7 +18884,7 @@
           "assertion": "ActualCtrl+G opensrealvalidatedlinetask; menuGo route+invalid999/valid2/cancel alsoinEditorAndPreferences.",
           "scope": "exact_effect",
           "execution": "prepared_not_executed",
-          "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+          "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
         }
       ],
       "limits": [],
@@ -18940,7 +18940,7 @@
           "assertion": "ActualCtrl+G opensrealvalidatedlinetask; menuGo route+invalid999/valid2/cancel alsoinEditorAndPreferences.",
           "scope": "exact_effect",
           "execution": "prepared_not_executed",
-          "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+          "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
         }
       ],
       "limits": [],
@@ -19145,7 +19145,7 @@
           "assertion": "Fault-buildonly worker/parser/projection journey opensactualAPKrenderedfallback, exactretainedsource andrealRetry; no normalbuildactivation claim.",
           "scope": "exact_effect",
           "execution": "prepared_not_executed",
-          "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+          "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
         }
       ],
       "limits": [
@@ -19184,7 +19184,7 @@
           "assertion": "Fault-buildonly worker/parser/projection journey opensactualAPKrenderedfallback, exactretainedsource andrealRetry; no normalbuildactivation claim.",
           "scope": "exact_effect",
           "execution": "prepared_not_executed",
-          "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698"
+          "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07"
         }
       ],
       "limits": [
@@ -19472,7 +19472,7 @@
       "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
       "line": 1535,
       "anchor": "private fun verifyS047MarkdownAndMetadata(scenario: ActivityScenario<MainActivity>) {",
-      "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698",
+      "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07",
       "kind": "native_prepared_not_executed",
       "method": "verifyS047MarkdownAndMetadata",
       "effect": "The layout helper requires Mermaid Edit a copy, exact native source replacement, real Read/Edit preview, stable selection/history and unchanged original bytes.",
@@ -19512,7 +19512,7 @@
       "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
       "line": 1276,
       "anchor": "private fun verifyClipboardPasteReceiver(",
-      "source_sha256": "3d3bbae277123551782e9f73746774a9e2b91eb5736ff19967c529f70521b698",
+      "source_sha256": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07",
       "kind": "native_prepared_not_executed",
       "effect": "Independent foreground EditText must paste inline and oversized full text exactly; URI stream bytes/digest must match and writes/enumeration/unknown/traversal reads must be denied. Modern Android requires a clipboard-service read grant; API24-27 uses an explicit copied-text token.",
       "limit": "Requires both fresh ordinary API campaigns; no installed pass inferred from this preparation."

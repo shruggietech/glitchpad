@@ -18,7 +18,7 @@ defaults:
     shell: bash
 jobs:
   supporting-driver-policy:
-    if: inputs.stage != 'source_binding' && inputs.stage != 'converge_context'
+    if: inputs.stage != 'converge_context'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -26,10 +26,35 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
+      - name: Prove raw capture misses a remote error after valid bytes
+        run: |
+          mkdir -p "$RUNNER_TEMP/s047-capture-v2"
+          cp scripts/run-android-connected-tests.sh "$RUNNER_TEMP/s047-fixed-capture-v2.sh"
+          git fetch --no-tags --depth=1 origin 8eef5f589cab9a17c15ca1937fc0c65223cfabe0
+          git show 8eef5f589cab9a17c15ca1937fc0c65223cfabe0:scripts/run-android-connected-tests.sh > scripts/run-android-connected-tests.sh
+          set +e
+          node --test --test-name-pattern='refuses run-as fallback remote error after matching output' scripts/run-android-evidence.test.mjs > "$RUNNER_TEMP/s047-capture-v2/remote-error-red.log" 2>&1
+          red_exit=$?
+          set -e
+          cp "$RUNNER_TEMP/s047-fixed-capture-v2.sh" scripts/run-android-connected-tests.sh
+          test "$red_exit" -ne 0
+          grep -F '0 !== 1' "$RUNNER_TEMP/s047-capture-v2/remote-error-red.log"
+      - name: Format capture regression with repository pin
+        run: npx --yes --ignore-scripts prettier@3.9.9 --write scripts/run-android-evidence.test.mjs
       - name: Check real disconnected-child and receipt regressions
-        run: node --test scripts/run-android-evidence.test.mjs scripts/test-android-recovery-evidence.mjs scripts/check-android-package.test.mjs
+        run: node --test scripts/run-android-evidence.test.mjs scripts/test-android-recovery-evidence.mjs scripts/check-android-package.test.mjs 2>&1 | tee "$RUNNER_TEMP/s047-capture-v2/green.log"
       - name: Check Android runner policies
         run: python3 -m unittest discover -s scripts/tests -p 'test_android*.py'
+      - name: Retain capture protocol source verification
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: s047-capture-v2-source-preflight
+          path: |
+            scripts/run-android-connected-tests.sh
+            scripts/run-android-evidence.test.mjs
+            ${{ runner.temp }}/s047-capture-v2/**
+          retention-days: 7
   observer-diagnostic:
     if: inputs.stage == 'observers' || inputs.stage == 'tap_observer' || inputs.stage == 'metadata_observer' || inputs.stage == 'clipboard_observer'
     needs: supporting-driver-policy
@@ -121,6 +146,8 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
+      - name: Format capture source before hashing
+        run: npx --yes --ignore-scripts prettier@3.9.9 --write scripts/run-android-evidence.test.mjs
       - name: Read the exact source baseline and rebind current references
         run: |
           git fetch --no-tags --depth=1 origin 8eef5f589cab9a17c15ca1937fc0c65223cfabe0
@@ -140,6 +167,8 @@ jobs:
             .codex-tmp/s047/r28-hosted-source-rebind.json
             .codex-tmp/s047/current-control-reference-audit.json
             specs/047-android-task-completion/contracts/control-ledger.json
+            scripts/run-android-evidence.test.mjs
+            scripts/run-android-connected-tests.sh
           retention-days: 7
 
   sdk-source:

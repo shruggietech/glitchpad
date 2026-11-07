@@ -437,7 +437,12 @@ it('keeps focus inside an open Add document menu when an older task closes late'
   menu.append(choice);
   document.body.append(opener, menu);
   const task = (open: boolean) => (
-    <TaskSurface open={open} title="About" opener={opener} onOpenChange={() => undefined}>
+    <TaskSurface
+      open={open}
+      title="About"
+      opener={opener}
+      onOpenChange={() => undefined}
+    >
       <button data-task-initial-focus>About action</button>
     </TaskSurface>
   );

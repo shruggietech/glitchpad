@@ -91,7 +91,8 @@ impl<R: Runtime> AndroidSource<R> {
         offset: u64,
         length: u64,
     ) -> Result<ReadResponse, String> {
-        let encoded: crate::models::EncodedReadResponse = self.0
+        let encoded: crate::models::EncodedReadResponse = self
+            .0
             .run_mobile_plugin(
                 "readRange",
                 ReadRequest {

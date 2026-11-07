@@ -74,7 +74,10 @@ impl EncodedReadResponse {
     pub(crate) fn decode(self, maximum: u64) -> Result<ReadResponse, &'static str> {
         use base64::Engine as _;
         let maximum = usize::try_from(maximum).map_err(|_| "invalid_range_reply")?;
-        let encoded_maximum = maximum.div_ceil(3).checked_mul(4).ok_or("invalid_range_reply")?;
+        let encoded_maximum = maximum
+            .div_ceil(3)
+            .checked_mul(4)
+            .ok_or("invalid_range_reply")?;
         if self.bytes_base64.len() > encoded_maximum {
             return Err("invalid_range_reply");
         }
@@ -84,7 +87,10 @@ impl EncodedReadResponse {
         if bytes.len() > maximum || (!self.end_of_source && bytes.len() != maximum) {
             return Err("invalid_range_reply");
         }
-        Ok(ReadResponse { bytes, end_of_source: self.end_of_source })
+        Ok(ReadResponse {
+            bytes,
+            end_of_source: self.end_of_source,
+        })
     }
 }
 
@@ -251,7 +257,14 @@ mod range_transport_tests {
 
     #[test]
     fn malformed_oversized_or_nonterminal_short_replies_are_rejected() {
-        assert!(EncodedReadResponse { bytes_base64: "invalid$".into(), end_of_source: true }.decode(256).is_err());
+        assert!(
+            EncodedReadResponse {
+                bytes_base64: "invalid$".into(),
+                end_of_source: true
+            }
+            .decode(256)
+            .is_err()
+        );
         assert!(reply(&[0; 33], true).decode(32).is_err());
         assert!(reply(&[0; 128], true).decode(1).is_err());
         assert!(reply(&[], false).decode(256).is_err());

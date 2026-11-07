@@ -376,7 +376,12 @@ it('keeps a completed Add document trigger handoff when an older task closes lat
   add.setAttribute('aria-expanded', 'false');
   document.body.append(opener, add);
   const task = (open: boolean) => (
-    <TaskSurface open={open} title="Preferences" opener={opener} onOpenChange={() => undefined}>
+    <TaskSurface
+      open={open}
+      title="Preferences"
+      opener={opener}
+      onOpenChange={() => undefined}
+    >
       <button data-task-initial-focus>Preference action</button>
     </TaskSurface>
   );
@@ -385,7 +390,9 @@ it('keeps a completed Add document trigger handoff when an older task closes lat
   view.rerender(task(false));
   add.focus();
   expect(add).toHaveFocus();
-  await act(async () => { await new Promise<void>((resolve) => setTimeout(resolve, 0)); });
+  await act(async () => {
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+  });
   expect(add).toHaveFocus();
   opener.remove();
   add.remove();

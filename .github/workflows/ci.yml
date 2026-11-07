@@ -4,7 +4,7 @@ on:
     inputs:
       stage:
         type: choice
-        options: [observers, source_binding, sdk_source, tap_observer, metadata_observer, clipboard_observer, aggregate]
+        options: [observers, source_binding, sdk_source, tap_observer, metadata_observer, clipboard_observer, aggregate, working_candidate]
         default: observers
       candidate_source:
         description: Exact public candidate SHA for aggregate only
@@ -120,7 +120,7 @@ jobs:
           node-version-file: .node-version
       - name: Read the exact source baseline and rebind current references
         run: |
-          git fetch --no-tags --depth=1 origin c18df272c9f3a66bdc327432baf146072a78d5a2
+          git fetch --no-tags --depth=1 origin 89bff4ddfaad77da028deb1c927058711a83937c
           python3 .github/scripts/s047-source-rebind.py
           node --input-type=module <<'NODE'
           import {readFileSync,writeFileSync} from 'node:fs';
@@ -142,7 +142,7 @@ jobs:
   sdk-source:
     if: inputs.stage == 'sdk_source'
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
@@ -170,22 +170,61 @@ jobs:
           path: ${{ runner.temp }}/original
       - name: Prepare pinned generated SDK inputs
         run: python3 .github/scripts/s047-observer-prepare.py
-      - name: Format source-only receipt changes
+      - name: Install Linux libraries for bounded source checks
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes libwebkit2gtk-4.1-dev libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+      - name: Cache source validation Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: desktop-ubuntu-latest
+          cache-on-failure: true
+      - name: Format current working sources
         run: |
           pnpm install --frozen-lockfile
-          pnpm exec prettier --write scripts/bounded-android-adb.mjs scripts/run-android-evidence.test.mjs scripts/validate-android-recovery-evidence.mjs scripts/test-android-recovery-evidence.mjs scripts/check-android-package.mjs scripts/check-android-package.test.mjs packaging/android/package-contract.json packaging/android/intent-map.json
+          pnpm exec prettier --write scripts/bounded-android-adb.mjs scripts/run-android-evidence.test.mjs scripts/validate-android-recovery-evidence.mjs scripts/test-android-recovery-evidence.mjs scripts/check-android-package.mjs scripts/check-android-package.test.mjs packaging/android/package-contract.json packaging/android/intent-map.json apps/glitchpad/src/components/TaskSurface.tsx apps/glitchpad/src/components/TaskSurface.test.tsx apps/glitchpad/src/domain/large-text-gateway.ts apps/glitchpad/src/domain/large-text-gateway.test.ts scripts/check-app-layout.mjs
+          cargo fmt --all
+      - name: Reproduce late Add focus before the guard correction
+        run: |
+          mkdir -p "$RUNNER_TEMP/s047-source-preflight"
+          cp apps/glitchpad/src/components/TaskSurface.tsx "$RUNNER_TEMP/s047-fixed-task-surface.tsx"
+          git fetch --no-tags --depth=1 origin 89bff4ddfaad77da028deb1c927058711a83937c
+          git show 89bff4ddfaad77da028deb1c927058711a83937c:apps/glitchpad/src/components/TaskSurface.tsx > apps/glitchpad/src/components/TaskSurface.tsx
+          set +e
+          pnpm --filter @shruggietech/glitchpad exec vitest run --maxWorkers=2 src/components/TaskSurface.test.tsx -t 'keeps a completed Add document trigger handoff when an older task closes late' > "$RUNNER_TEMP/s047-source-preflight/focus-red.log" 2>&1
+          red_exit=$?
+          set -e
+          cp "$RUNNER_TEMP/s047-fixed-task-surface.tsx" apps/glitchpad/src/components/TaskSurface.tsx
+          test "$red_exit" -ne 0
+          grep -F 'keeps a completed Add document trigger handoff' "$RUNNER_TEMP/s047-source-preflight/focus-red.log"
+          grep -F 'Expected element with focus' "$RUNNER_TEMP/s047-source-preflight/focus-red.log"
+      - name: Check full current frontend source and compatibility callers
+        run: pnpm run check:frontend 2>&1 | tee "$RUNNER_TEMP/s047-source-preflight/frontend-green.log"
+      - name: Check bounded codec, wire compatibility and IME conformance
+        run: |
+          cp .github/workflows/ci.yml "$RUNNER_TEMP/s047-private-workflow.yml"
+          trap 'cp "$RUNNER_TEMP/s047-private-workflow.yml" .github/workflows/ci.yml' EXIT
+          cp .github/scripts/s047-public-ci.yml .github/workflows/ci.yml
+          bash -n scripts/run-android-connected-tests.sh scripts/run-android-instrumentation.sh
+          cargo fmt --all -- --check
+          cargo test -p glitchpad-android-source --locked --lib range_transport_tests
+          cargo test -p glitchpad-host --locked --lib android_range_response::tests
+          cargo test -p glitchpad-host --locked --test performance_conformance
+          cargo clippy -p glitchpad-android-source -p glitchpad-host --all-targets --all-features --locked -- -D warnings
+          rustup target add x86_64-linux-android
+          cargo check -p glitchpad-android-source --target x86_64-linux-android --locked
       - name: Compile actual Android sources and run clipboard store tests
         run: ./crates/glitchpad-host/gen/android/gradlew --project-dir crates/glitchpad-host/gen/android :glitchpad-android-source:testDebugUnitTest :app:assembleUniversalDebugAndroidTest -PabiList=x86_64 -ParchList=x86_64 -PtargetList=x86_64 -x :app:rustBuildUniversalDebug -x :app:rustBuildX86_64Debug --no-daemon
       - name: Rebind and audit source-only references
         run: |
-          git fetch --no-tags --depth=1 origin c18df272c9f3a66bdc327432baf146072a78d5a2
+          git fetch --no-tags --depth=1 origin 89bff4ddfaad77da028deb1c927058711a83937c
           python3 .github/scripts/s047-source-rebind.py
           node .github/scripts/s047-source-audit.mjs
       - name: Retain source-only validation
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: s047-legacy-clipboard-source-validation
+          name: s047-current-source-preflight
           path: |
             crates/glitchpad-android-source/android/build/test-results/testDebugUnitTest/**
             scripts/bounded-android-adb.mjs
@@ -196,6 +235,23 @@ jobs:
             scripts/check-android-package.test.mjs
             packaging/android/package-contract.json
             packaging/android/intent-map.json
+            Cargo.toml
+            Cargo.lock
+            crates/glitchpad-android-source/Cargo.toml
+            crates/glitchpad-android-source/src/models.rs
+            crates/glitchpad-android-source/src/mobile.rs
+            crates/glitchpad-host/src/lib.rs
+            crates/glitchpad-host/src/android_range_response.rs
+            crates/glitchpad-host/tests/performance_conformance.rs
+            crates/glitchpad-android-source/android/src/main/java/com/shruggietech/glitchpad/source/AndroidSourcePlugin.kt
+            crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt
+            scripts/run-android-connected-tests.sh
+            apps/glitchpad/src/components/TaskSurface.tsx
+            apps/glitchpad/src/components/TaskSurface.test.tsx
+            apps/glitchpad/src/domain/large-text-gateway.ts
+            apps/glitchpad/src/domain/large-text-gateway.test.ts
+            scripts/check-app-layout.mjs
+            ${{ runner.temp }}/s047-source-preflight/**
             .codex-tmp/s047/r28-hosted-source-rebind.json
             .codex-tmp/s047/current-control-reference-audit.json
             specs/047-android-task-completion/contracts/control-ledger.json
@@ -241,3 +297,150 @@ jobs:
           name: s047-exact-source-aggregate
           path: ${{ runner.temp }}/s047-aggregate/**
           retention-days: 7
+
+  working-candidate:
+    if: inputs.stage == 'working_candidate'
+    needs: supporting-driver-policy
+    env:
+      ANDROID_S047_BACK_DIAGNOSTIC: 'false'
+      GLITCHPAD_BUILD_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+      VITE_GLITCHPAD_BUILD_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+    name: Focused current-source layout (API ${{ matrix.api-level }})
+    # Explicit KVM access keeps the guest Android versions and test budgets unchanged.
+    # Focused API 24/API 36 diagnostics completed on this accelerated Linux host.
+    runs-on: ubuntu-latest
+    # Retain the full composed campaign after the observed build/emulator setup cost.
+    # Per-action and per-process attempt limits remain enforced by their runners.
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        api-level: [24, 36]
+        role: [ordinary]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: platform-tools
+
+      - name: Install Android platform and NDK
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0" "ndk;28.2.13676358"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.28.2
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - name: Verify hosted offline controller before the APK build
+        if: matrix.api-level == 24 && matrix.role == 'ordinary'
+        run: node --test scripts/android-offline-mode.test.mjs
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Add Rust Android emulator target
+        run: rustup target add x86_64-linux-android
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: android-x86_64-api-${{ matrix.api-level }}
+          cache-on-failure: true
+
+      - name: Build emulator APK and provider unit tests
+        env:
+          VITE_GLITCHPAD_RECOVERY_PROBES: ${{ matrix.role == 'fault_probe' && '1' || '0' }}
+        run: |
+          export NDK_HOME="${ANDROID_SDK_ROOT}/ndk/28.2.13676358"
+          pnpm tauri android build --debug --apk --target x86_64 --ci
+          node scripts/check-android-build-role.mjs "${{ matrix.role }}"
+          node --test scripts/configure-android-task-avd.test.mjs
+          ./crates/glitchpad-host/gen/android/gradlew --project-dir crates/glitchpad-host/gen/android :glitchpad-android-source:testDebugUnitTest --no-daemon
+          ./crates/glitchpad-host/gen/android/gradlew --project-dir crates/glitchpad-host/gen/android :app:assembleUniversalDebugAndroidTest -PabiList=x86_64 -ParchList=x86_64 -PtargetList=x86_64 -x :app:rustBuildUniversalDebug -x :app:rustBuildX86_64Debug --no-daemon
+
+      - name: Enable emulator KVM access
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run provider, resolver, delivery, and restoration evidence
+        env:
+          GLITCHPAD_RECOVERY_PROBE_VARIANT: ${{ matrix.role == 'fault_probe' && 'compiled_test_only' || 'none' }}
+          GLITCHPAD_CANDIDATE_ROLE: ${{ matrix.role }}
+        uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2
+        with:
+          api-level: ${{ matrix.api-level }}
+          arch: x86_64
+          # Keep API 24's older Chrome coverage. API 36 uses the official AOSP image
+          # to exercise offline framework behavior without Google first-boot work.
+          target: ${{ matrix.api-level == 36 && 'default' || 'google_apis' }}
+          cores: 4
+          emulator-boot-timeout: 900
+          disable-animations: true
+          # The deprecated indirect renderer crashed during WebView teardown on both
+          # governed API levels. Use Android's supported software renderer and keep
+          # Vulkan disabled for this headless GLES test workload.
+          emulator-options: -no-window -no-audio -no-snapshot -no-boot-anim -gpu swiftshader -feature -Vulkan
+          # Set hardware before boot; emulator-generated properties override -prop.
+          pre-emulator-launch-script: node scripts/configure-android-task-avd.mjs "$ANDROID_AVD_HOME/test.avd/config.ini"
+          script: |
+            # These offline tests do not need Google services. Avoid their first-boot
+            # work starving instrumentation on the disposable hosted emulator.
+            set -e; for package in com.google.android.gms com.google.android.googlequicksearchbox; do if node scripts/bounded-android-adb.mjs shell pm list packages "$package" | grep -Fq "package:$package"; then node scripts/bounded-android-adb.mjs shell pm disable-user --user 0 "$package"; fi; done
+            # The API 36 system Bluetooth service can crash and leave its error dialog above
+            # the AppFrame activity, stealing input focus from the WebView under test.
+            node scripts/capture-android-navigation.mjs "$RUNNER_TEMP/s047-navigation-environment.json"
+            node scripts/bounded-android-adb.mjs shell svc power stayon true
+            node scripts/bounded-android-adb.mjs shell input keyevent 224
+            if [ "${{ matrix.api-level }}" = "36" ]; then node scripts/bounded-android-adb.mjs shell svc bluetooth disable; fi
+            # Follow AOSP CTS input-test setup: suppress later system crash/ANR dialogs and
+            # close any dialog already present before testing the foreground WebView.
+            if [ "${{ matrix.api-level }}" = "36" ]; then node scripts/bounded-android-adb.mjs shell settings put global hide_error_dialogs 1 && node scripts/bounded-android-adb.mjs shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS; fi
+            bash scripts/run-android-connected-tests.sh
+            apkanalyzer manifest print "$RUNNER_TEMP/android-tested-candidate/application.apk" > "$RUNNER_TEMP/s047-application-manifest.xml"
+            grep -Eq 'android:enableOnBackInvokedCallback="true"' "$RUNNER_TEMP/s047-application-manifest.xml"
+            node scripts/bounded-android-adb.mjs shell settings put secure show_ime_with_hard_keyboard 1
+            if [ "${{ matrix.api-level }}" = "36" ]; then node scripts/bounded-android-adb.mjs shell cmd overlay list | grep -F 'com.android.internal.display.cutout.emulation.corner' && node scripts/bounded-android-adb.mjs shell cmd overlay enable --user 0 com.android.internal.display.cutout.emulation.corner && node scripts/bounded-android-adb.mjs shell cmd overlay list | grep -F '[x] com.android.internal.display.cutout.emulation.corner'; fi
+            # Exercise API 36 AppFrame on a fresh emulator, before long provider suites.
+            if [ "${{ matrix.api-level }}" = "36" ]; then node scripts/bounded-android-adb.mjs shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS && node scripts/bounded-android-adb.mjs shell input keyevent KEYCODE_WAKEUP && node scripts/bounded-android-adb.mjs shell wm dismiss-keyguard; fi
+            if [ "${{ matrix.api-level }}" = "36" ]; then ime_id='com.shruggietech.glitchpad.test/com.shruggietech.glitchpad.shell.FixtureInputMethodService'; for attempt in $(seq 1 30); do if node scripts/bounded-android-adb.mjs shell ime list -s -a | grep -Fq "$ime_id"; then break; fi; sleep 1; done; node scripts/bounded-android-adb.mjs shell ime list -s -a | grep -Fq "$ime_id" && node scripts/bounded-android-adb.mjs shell ime enable "$ime_id" && node scripts/bounded-android-adb.mjs shell ime set "$ime_id" && node scripts/bounded-android-adb.mjs shell settings get secure default_input_method | grep -Fqx "$ime_id"; fi
+            if [ "${{ matrix.api-level }}" = "36" ]; then ANDROID_INSTRUMENTATION_PRESERVE_TEST_INPUT_METHOD=true bash scripts/run-android-instrumentation.sh "$RUNNER_TEMP/appframe-evidence.txt" 'appframe_evidence=' -e waitForActivitiesToComplete false -e class com.shruggietech.glitchpad.shell.BrandBuilderAppFrameInstrumentedTest; fi
+            if [ "${{ matrix.api-level }}" = "36" ]; then node scripts/bounded-android-adb.mjs shell ime reset; fi
+            ANDROID_INSTRUMENTATION_RESET_APP_DATA=true bash scripts/run-android-instrumentation.sh "$RUNNER_TEMP/s047-layout.txt" 's047_journey_evidence=' -e waitForActivitiesToComplete false -e s047 true -e expectedSource "$GLITCHPAD_BUILD_COMMIT" -e expectedRole ordinary -e class com.shruggietech.glitchpad.source.AndroidDeliveryInstrumentedTest#s047LayoutJourney
+
+      - name: Upload Android instrumentation reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: working-layout-api-${{ matrix.api-level }}
+          path: |
+            crates/glitchpad-host/gen/android/app/build/reports/androidTests/**
+            crates/glitchpad-host/gen/android/app/build/outputs/androidTest-results/**
+            ${{ runner.temp }}/*.txt
+            ${{ runner.temp }}/*.png
+            ${{ runner.temp }}/*.json
+            ${{ runner.temp }}/*.xml
+            ${{ runner.temp }}/android-tested-candidate/**
+          if-no-files-found: warn
+          retention-days: 7
+

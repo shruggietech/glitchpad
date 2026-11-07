@@ -1725,7 +1725,12 @@ class AndroidDeliveryInstrumentedTest {
     waitForBodyText(scenario,"Line is outside the source")
     assertEquals("outside-source navigation must retain current section",beforeOutside,stringValue(evaluate(scenario,"document.querySelector('.large-text pre').textContent")))
     setTaskInput(scenario,"Find","S047_LARGE_FIRST");clickControl(scenario,"Find next")
-    waitForCondition(scenario,"document.querySelector('#large-text-status').textContent.startsWith('Match 1 of 1')","actual large-source search must find the unique controlled prefix")
+    try {
+      waitForCondition(scenario,"document.querySelector('#large-text-status').textContent.startsWith('Match 1 of 1')","actual large-source search must find the unique controlled prefix")
+    } catch (failure: AssertionError) {
+      captureEditorFocusFailure(scenario, "large_search_result", JSONObject().put("expected", "Match 1 of 1").put("range_bytes", 262144))
+      throw failure
+    }
     setTaskInput(scenario,"Find","S047_ABSENT_LARGE_QUERY");clickControl(scenario,"Find next")
     waitForBodyText(scenario,"No match")
     setTaskInput(scenario, "Find", "S047_LARGE_BODY")

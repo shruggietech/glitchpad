@@ -27,3 +27,9 @@ Ten unique journey IDs with per-variant pass/fail/not_run/N/A (reason required f
 ## PredictiveBackObservation
 
 Private fixed saturating counters for started/progressed/cancelled/committed/requested/completed/delegated plus pending/enabled snapshot. Same callback/plugin/UI thread; no new consuming callback or JS activation. Cancel requires positive OS callbacks with zero commit/request/delegation and unchanged document/draft/layer. Commit consumes one layer. API24 progress N/A is explicit.
+
+## 2026-11-07 05:18 UTC Android range transport
+
+The existing provider-backed range operation retains opaque source identity, requested offset/length and operation budget. Its private Kotlin reply encodes bounded bytes as Base64 instead of individual JSON numbers; Rust validates and decodes it into the unchanged domain ReadRangeResult. Renderer callers may request binary mode on read_android_range: the raw reply is one end-of-source flag byte (0 or1), then the exact range bytes, including empty EOF payloads. Default callers retain the JSON domain result. The renderer validates the header, requested maximum and unchanged source/offset ownership before returning a Uint8Array. Abort/generation checks still reject late completions. This encoding changes transport cost, with no new content limit, source authority, network route or deadline.
+
+Pinned Tauri2.11.6 may deliver its raw-response frame as a number array when custom-protocol response delivery is unavailable. The Android decoder accepts that framework fallback only after the same header, integer-byte and requested-length validation; it requests raw mode in both cases. No retry, larger read, alternate source or deadline extension is introduced.

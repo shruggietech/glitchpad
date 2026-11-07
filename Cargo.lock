@@ -1358,6 +1358,7 @@ dependencies = [
 name = "glitchpad-android-source"
 version = "0.2.0"
 dependencies = [
+ "base64 0.22.1",
  "serde",
  "tauri",
  "tauri-plugin",

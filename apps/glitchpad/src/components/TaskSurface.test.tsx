@@ -363,3 +363,30 @@ it('keeps explicitly transferred new-document focus after the old task closes', 
   opener.remove();
   documentSurface.remove();
 });
+
+it('keeps a completed Add document trigger handoff when an older task closes late', async () => {
+  const host = document.createElement('div');
+  host.id = 'bb-overlay-root';
+  document.body.append(host);
+  const opener = document.createElement('button');
+  opener.textContent = 'Menu';
+  const add = document.createElement('button');
+  add.className = 'add-document-trigger';
+  add.setAttribute('aria-label', 'Add document');
+  add.setAttribute('aria-expanded', 'false');
+  document.body.append(opener, add);
+  const task = (open: boolean) => (
+    <TaskSurface open={open} title="Preferences" opener={opener} onOpenChange={() => undefined}>
+      <button data-task-initial-focus>Preference action</button>
+    </TaskSurface>
+  );
+  const view = render(task(true));
+  await screen.findByRole('dialog', { name: 'Preferences' });
+  view.rerender(task(false));
+  add.focus();
+  expect(add).toHaveFocus();
+  await act(async () => { await new Promise<void>((resolve) => setTimeout(resolve, 0)); });
+  expect(add).toHaveFocus();
+  opener.remove();
+  add.remove();
+});

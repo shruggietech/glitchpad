@@ -174,6 +174,13 @@ export function installDocumentToolsSeams() {
       const value = sources.get(args.sourceId);
       if (!value) throw Error('fixture_source_missing');
       const end = Math.min(value.bytes.length, args.offset + args.length);
+      if (args.binary) {
+        const payload = value.bytes.slice(args.offset, end);
+        const frame = new Uint8Array(payload.length + 1);
+        frame[0] = end >= value.bytes.length ? 1 : 0;
+        frame.set(payload, 1);
+        return frame.buffer;
+      }
       return {
         source_id: args.sourceId,
         offset: args.offset,

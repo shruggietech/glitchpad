@@ -213,17 +213,17 @@ fn assert_android_fixture_ime(workspace: &std::path::Path, workflow: &str) {
     );
 
     let fixture_ime_selection = workflow
-        .find("adb shell ime set 'com.shruggietech.glitchpad.test/com.shruggietech.glitchpad.shell.FixtureInputMethodService'")
+        .find("node scripts/bounded-android-adb.mjs shell ime set 'com.shruggietech.glitchpad.test/com.shruggietech.glitchpad.shell.FixtureInputMethodService'")
         .expect("CI must select the deterministic test input method");
     let appframe_evidence = workflow
         .rfind("com.shruggietech.glitchpad.shell.BrandBuilderAppFrameInstrumentedTest")
         .expect("AppFrame evidence invocation should be present");
     assert!(
         workflow.contains(
-            "adb shell ime enable 'com.shruggietech.glitchpad.test/com.shruggietech.glitchpad.shell.FixtureInputMethodService'",
+            "node scripts/bounded-android-adb.mjs shell ime enable 'com.shruggietech.glitchpad.test/com.shruggietech.glitchpad.shell.FixtureInputMethodService'",
         )
             && workflow.contains(
-                "adb shell settings get secure default_input_method | grep -Fqx 'com.shruggietech.glitchpad.test/com.shruggietech.glitchpad.shell.FixtureInputMethodService'",
+                "node scripts/bounded-android-adb.mjs shell settings get secure default_input_method | grep -Fqx 'com.shruggietech.glitchpad.test/com.shruggietech.glitchpad.shell.FixtureInputMethodService'",
             )
             && fixture_ime_selection < appframe_evidence,
         "CI must enable, select, and verify the fixture IME immediately before AppFrame evidence"

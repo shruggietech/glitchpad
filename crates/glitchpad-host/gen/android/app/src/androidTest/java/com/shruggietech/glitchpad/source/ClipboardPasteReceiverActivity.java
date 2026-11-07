@@ -59,6 +59,8 @@ public final class ClipboardPasteReceiverActivity extends Activity {
 
   private void recordUriAccess(JSONObject result, Uri uri) throws Exception {
     result.put("uri_authority", uri.getAuthority());
+    String[] streamTypes = getContentResolver().getStreamTypes(uri, "text/*");
+    result.put("text_stream_advertised", streamTypes != null && java.util.Arrays.asList(streamTypes).contains("text/plain"));
     try (InputStream stream = getContentResolver().openInputStream(uri); ByteArrayOutputStream bytes = new ByteArrayOutputStream()) {
       if (stream == null) throw new IllegalStateException("clipboard_stream_missing");
       byte[] buffer = new byte[8192];

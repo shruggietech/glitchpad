@@ -1266,6 +1266,7 @@ class AndroidDeliveryInstrumentedTest {
       if (!legacy) assertTrue("the clipboard service must grant independent recipient read access", observed.getBoolean("uri_read_granted"))
       assertFalse("clipboard paste must not gain write authority over the payload", observed.getBoolean("uri_write_granted"))
       assertTrue("the actual recipient must be unable to write, enumerate, guess, or traverse clipboard payloads", listOf("uri_write_denied", "uri_directory_denied", "uri_unknown_denied", "uri_traversal_denied").all { observed.getBoolean(it) })
+      assertTrue("platform styled paste must discover the actual text stream", observed.getBoolean("text_stream_advertised"))
       assertFalse("the actual recipient must read the URI stream without an error", observed.has("uri_stream_error"))
       assertEquals("the recipient URI stream must contain every copied byte", bytes.size, observed.getInt("uri_stream_utf8_bytes"))
       assertEquals("the recipient URI stream digest must match the source", sha256(bytes), observed.getString("uri_stream_sha256"))
@@ -2657,7 +2658,7 @@ class AndroidDeliveryInstrumentedTest {
     val manager = clientContext.packageManager
     val authority = clientContext.packageName + ".clipboard"
     val legacy = manager.getProviderInfo(android.content.ComponentName(clientContext.packageName, LegacyClipboardTextProvider::class.java.name), android.content.pm.PackageManager.MATCH_DISABLED_COMPONENTS)
-    val fileProvider = manager.getProviderInfo(android.content.ComponentName(clientContext.packageName, "androidx.core.content.FileProvider"), 0)
+    val fileProvider = manager.getProviderInfo(android.content.ComponentName(clientContext.packageName, "com.shruggietech.glitchpad.source.SharedFileProvider"), 0)
     val expectedEnabled = Build.VERSION.SDK_INT < 28
     val resolvable = manager.resolveContentProvider(authority, 0) != null
     assertEquals("the installed clipboard provider must retain its exact authority", authority, legacy.authority)

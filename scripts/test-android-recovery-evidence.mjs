@@ -22,7 +22,14 @@ function fixture(role = 'ordinary', api = 36) {
     instrumentation_sha256: instrument,
     package_identifier: 'com.shruggietech.glitchpad',
     instrumentation_package: 'com.shruggietech.glitchpad.test',
-    clipboard_provider: { legacy_authority: 'com.shruggietech.glitchpad.clipboard', legacy_declared_exported: true, legacy_enabled: api < 28, legacy_resolvable: api < 28, legacy_grant_uri_permissions: false, file_provider_private: true },
+    clipboard_provider: {
+      legacy_authority: 'com.shruggietech.glitchpad.clipboard',
+      legacy_declared_exported: true,
+      legacy_enabled: api < 28,
+      legacy_resolvable: api < 28,
+      legacy_grant_uri_permissions: false,
+      file_provider_private: true,
+    },
     version: '0.2.0',
     channel: 'debug',
     build_variant: role,
@@ -125,6 +132,7 @@ function fixture(role = 'ordinary', api = 36) {
                   uri_directory_denied: true,
                   uri_unknown_denied: true,
                   uri_traversal_denied: true,
+                  text_stream_advertised: true,
                   uri_stream_utf8_bytes: transport === 'uri' ? 524288 : 26,
                   uri_stream_sha256: app,
                   uri_write_granted: false,
@@ -812,6 +820,9 @@ test('legacy clipboard token access still requires exact stream bytes, denied wr
       p.receiver.uri_traversal_denied = false;
     },
     (p) => {
+      p.receiver.text_stream_advertised = false;
+    },
+    (p) => {
       p.receiver.uri_stream_error = 'SecurityException';
     },
     (p) => {
@@ -836,12 +847,34 @@ test('installed clipboard provider state must match the actual API and every jou
   for (const api of [24, 36]) {
     await check(fixture('ordinary', api));
     for (const change of [
-      (e) => { delete e.identity.clipboard_provider; },
-      (e) => { e.identity.clipboard_provider.legacy_enabled = api >= 28; },
-      (e) => { e.identity.clipboard_provider.legacy_resolvable = api >= 28; },
-      (e) => { e.identity.clipboard_provider.file_provider_private = false; },
-      (e) => { e.identity.clipboard_provider.legacy_grant_uri_permissions = true; },
-      (e) => { e.journeys[0].identity = { ...e.identity, clipboard_provider: { ...e.identity.clipboard_provider, legacy_authority: 'unrelated.clipboard' } }; },
-    ]) await assert.rejects(check(fixture('ordinary', api), change), /clipboard|identity/i);
+      (e) => {
+        delete e.identity.clipboard_provider;
+      },
+      (e) => {
+        e.identity.clipboard_provider.legacy_enabled = api >= 28;
+      },
+      (e) => {
+        e.identity.clipboard_provider.legacy_resolvable = api >= 28;
+      },
+      (e) => {
+        e.identity.clipboard_provider.file_provider_private = false;
+      },
+      (e) => {
+        e.identity.clipboard_provider.legacy_grant_uri_permissions = true;
+      },
+      (e) => {
+        e.journeys[0].identity = {
+          ...e.identity,
+          clipboard_provider: {
+            ...e.identity.clipboard_provider,
+            legacy_authority: 'unrelated.clipboard',
+          },
+        };
+      },
+    ])
+      await assert.rejects(
+        check(fixture('ordinary', api), change),
+        /clipboard|identity/i,
+      );
   }
 });

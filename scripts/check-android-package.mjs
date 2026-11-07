@@ -83,8 +83,11 @@ export function parseManifestXml(xml) {
   )) {
     const attributes = match[2];
     // A provider remains public when either read or write access is unprotected.
-    const isPermissionProtected = Boolean(value(attributes, 'permission')) ||
-      (match[1] === 'provider' && Boolean(value(attributes, 'readPermission')) && Boolean(value(attributes, 'writePermission')));
+    const isPermissionProtected =
+      Boolean(value(attributes, 'permission')) ||
+      (match[1] === 'provider' &&
+        Boolean(value(attributes, 'readPermission')) &&
+        Boolean(value(attributes, 'writePermission')));
     if (value(attributes, 'exported') === 'true' && !isPermissionProtected) {
       exportedComponents.push(value(attributes, 'name') ?? '<unnamed>');
       publicComponentXml.push(match[0]);
@@ -95,10 +98,15 @@ export function parseManifestXml(xml) {
     .map((match) => match[1])
     .find(
       (attributes) =>
-        value(attributes, 'name') === 'androidx.core.content.FileProvider',
+        value(attributes, 'name') === 'com.shruggietech.glitchpad.source.SharedFileProvider',
     );
   const clipboardAttributes = [...xml.matchAll(/<provider\b([^>]*)>/gu)]
-    .map((match) => match[1]).find((attributes) => value(attributes, 'name') === 'com.shruggietech.glitchpad.source.LegacyClipboardTextProvider');
+    .map((match) => match[1])
+    .find(
+      (attributes) =>
+        value(attributes, 'name') ===
+        'com.shruggietech.glitchpad.source.LegacyClipboardTextProvider',
+    );
   return {
     application_id: value(manifest, 'package'),
     version_code: Number(value(manifest, 'versionCode')),
@@ -135,15 +143,20 @@ export function parseManifestXml(xml) {
             value(fileProviderAttributes, 'grantUriPermissions') === 'true',
         }
       : null,
-    legacy_clipboard_provider: clipboardAttributes ? {
-      name: value(clipboardAttributes, 'name'), authority: value(clipboardAttributes, 'authorities'),
-      exported: value(clipboardAttributes, 'exported') === 'true',
-      enabled: value(clipboardAttributes, 'enabled'),
-      grant_uri_permissions: value(clipboardAttributes, 'grantUriPermissions') === 'true',
-      permission: value(clipboardAttributes, 'permission') ?? null,
-      read_permission: value(clipboardAttributes, 'readPermission') ?? null,
-      write_permission: value(clipboardAttributes, 'writePermission') ?? null,
-    } : null,
+    legacy_clipboard_provider: clipboardAttributes
+      ? {
+          name: value(clipboardAttributes, 'name'),
+          authority: value(clipboardAttributes, 'authorities'),
+          exported: value(clipboardAttributes, 'exported') === 'true',
+          enabled: value(clipboardAttributes, 'enabled'),
+          grant_uri_permissions:
+            value(clipboardAttributes, 'grantUriPermissions') === 'true',
+          permission: value(clipboardAttributes, 'permission') ?? null,
+          read_permission: value(clipboardAttributes, 'readPermission') ?? null,
+          write_permission:
+            value(clipboardAttributes, 'writePermission') ?? null,
+        }
+      : null,
     debuggable: value(application, 'debuggable') === 'true',
     cleartext_traffic: value(application, 'usesCleartextTraffic') === 'true',
   };
@@ -181,13 +194,29 @@ export function validateReleasePosture(inventory, contract) {
   }
   const clipboard = inventory.legacy_clipboard_provider;
   const expectedClipboard = posture.legacy_clipboard_provider;
-  if (!expectedClipboard) throw new Error("Android contract has no legacy clipboard provider posture");
+  if (!expectedClipboard)
+    throw new Error(
+      'Android contract has no legacy clipboard provider posture',
+    );
   if (inventory.application_id || clipboard) {
-    const authorities = inventory.application_id ? [expectedClipboard.authority] : [expectedClipboard.authority, '${applicationId}.clipboard'];
-    const compiledEnabled = inventory.application_id && /^@ref\/0x[0-9a-f]+$/u.test(clipboard?.enabled ?? '');
-    if (!clipboard || clipboard.name !== expectedClipboard.name || !authorities.includes(clipboard.authority) ||
-      !clipboard.exported || clipboard.grant_uri_permissions || clipboard.permission || clipboard.read_permission || clipboard.write_permission ||
-      (clipboard.enabled !== expectedClipboard.enabled_resource && !compiledEnabled))
+    const authorities = inventory.application_id
+      ? [expectedClipboard.authority]
+      : [expectedClipboard.authority, '${applicationId}.clipboard'];
+    const compiledEnabled =
+      inventory.application_id &&
+      /^@ref\/0x[0-9a-f]+$/u.test(clipboard?.enabled ?? '');
+    if (
+      !clipboard ||
+      clipboard.name !== expectedClipboard.name ||
+      !authorities.includes(clipboard.authority) ||
+      !clipboard.exported ||
+      clipboard.grant_uri_permissions ||
+      clipboard.permission ||
+      clipboard.read_permission ||
+      clipboard.write_permission ||
+      (clipboard.enabled !== expectedClipboard.enabled_resource &&
+        !compiledEnabled)
+    )
       throw new Error('Android legacy clipboard provider posture mismatch');
   }
 }
@@ -203,7 +232,11 @@ export function validateContract(contract) {
       'Android contract must bind the official certificate fingerprint',
     );
   const clipboard = contract.manifest_posture?.legacy_clipboard_provider;
-  if (!clipboard?.name || clipboard.authority !== contract.application_id + '.clipboard' || clipboard.enabled_resource !== '@bool/glitchpad_legacy_clipboard_enabled')
+  if (
+    !clipboard?.name ||
+    clipboard.authority !== contract.application_id + '.clipboard' ||
+    clipboard.enabled_resource !== '@bool/glitchpad_legacy_clipboard_enabled'
+  )
     throw new Error('Android contract must bind the legacy clipboard provider');
   const roles = contract.artifacts?.map(({ role }) => role).sort();
   if (
@@ -234,7 +267,9 @@ export function validateIntentSurface(inventory, intentMap) {
       'reject_without_exact_supported_type' ||
     JSON.stringify(sortedUnique(intentMap.generic_media_types ?? [])) !==
       JSON.stringify(['application/octet-stream']) ||
-    !Array.isArray(intentMap.intent_filters) || !Array.isArray(intentMap.exported_components) || !Array.isArray(intentMap.source_exported_components)
+    !Array.isArray(intentMap.intent_filters) ||
+    !Array.isArray(intentMap.exported_components) ||
+    !Array.isArray(intentMap.source_exported_components)
   )
     throw new Error('invalid Android resolver policy contract');
   for (const permission of intentMap.forbidden_permissions)
@@ -299,7 +334,9 @@ export function validateIntentSurface(inventory, intentMap) {
         ? 'com.shruggietech.glitchpad.MainActivity'
         : name,
     ),
-    inventory.application_id ? intentMap.exported_components : intentMap.source_exported_components,
+    inventory.application_id
+      ? intentMap.exported_components
+      : intentMap.source_exported_components,
     'Android exported component',
   );
 }

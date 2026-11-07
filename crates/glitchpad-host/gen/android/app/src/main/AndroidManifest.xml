@@ -76,7 +76,7 @@
         </activity>
 
         <provider
-          android:name="androidx.core.content.FileProvider"
+          android:name="com.shruggietech.glitchpad.source.SharedFileProvider"
           android:authorities="${applicationId}.fileprovider"
           android:exported="false"
           android:grantUriPermissions="true">

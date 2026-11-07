@@ -33,7 +33,7 @@ const contract = {
     launcher_icon: '@mipmap/ic_launcher',
     data_extraction_rules: '@xml/backup_rules',
     full_backup_content: '@xml/backup_rules_legacy',
-    file_provider: 'androidx.core.content.FileProvider',
+    file_provider: 'com.shruggietech.glitchpad.source.SharedFileProvider',
     file_provider_authority: 'com.shruggietech.glitchpad.fileprovider',
     legacy_clipboard_provider: {
       name: 'com.shruggietech.glitchpad.source.LegacyClipboardTextProvider',
@@ -90,7 +90,10 @@ const contract = {
 const intentMap = {
   schema_version: 2,
   source_exported_components: ['com.shruggietech.glitchpad.MainActivity'],
-  exported_components: ['com.shruggietech.glitchpad.MainActivity', 'com.shruggietech.glitchpad.source.LegacyClipboardTextProvider'],
+  exported_components: [
+    'com.shruggietech.glitchpad.MainActivity',
+    'com.shruggietech.glitchpad.source.LegacyClipboardTextProvider',
+  ],
   actions: [
     'android.intent.action.MAIN',
     'android.intent.action.SEND',
@@ -151,7 +154,7 @@ function inventory(role, kind, abis) {
     data_extraction_rules: '@xml/backup_rules',
     full_backup_content: '@xml/backup_rules_legacy',
     file_provider: {
-      name: 'androidx.core.content.FileProvider',
+      name: 'com.shruggietech.glitchpad.source.SharedFileProvider',
       authority: 'com.shruggietech.glitchpad.fileprovider',
       exported: false,
       grant_uri_permissions: true,
@@ -159,8 +162,13 @@ function inventory(role, kind, abis) {
     legacy_clipboard_provider: {
       name: contract.manifest_posture.legacy_clipboard_provider.name,
       authority: contract.manifest_posture.legacy_clipboard_provider.authority,
-      enabled: contract.manifest_posture.legacy_clipboard_provider.enabled_resource,
-      exported: true, grant_uri_permissions: false, permission: null, read_permission: null, write_permission: null,
+      enabled:
+        contract.manifest_posture.legacy_clipboard_provider.enabled_resource,
+      exported: true,
+      grant_uri_permissions: false,
+      permission: null,
+      read_permission: null,
+      write_permission: null,
     },
     debuggable: false,
     cleartext_traffic: false,
@@ -620,7 +628,9 @@ test('Android SBOM includes Cargo, npm, and Maven runtime components determinist
 });
 
 test('a provider with only read or write permission still has a public operation', () => {
-  const parsed = parseManifestXml('<manifest><application><provider android:name="ReadPublic" android:exported="true" android:writePermission="app.signature"/><provider android:name="WritePublic" android:exported="true" android:readPermission="app.signature"/><provider android:name="BothProtected" android:exported="true" android:readPermission="app.signature" android:writePermission="app.signature"/></application></manifest>');
+  const parsed = parseManifestXml(
+    '<manifest><application><provider android:name="ReadPublic" android:exported="true" android:writePermission="app.signature"/><provider android:name="WritePublic" android:exported="true" android:readPermission="app.signature"/><provider android:name="BothProtected" android:exported="true" android:readPermission="app.signature" android:writePermission="app.signature"/></application></manifest>',
+  );
   assert.deepEqual(parsed.exported_components, ['ReadPublic', 'WritePublic']);
 });
 
@@ -629,13 +639,52 @@ test('legacy clipboard export is explicit and retains its separate private file 
   assert.doesNotThrow(() => validateIntentSurface(valid, intentMap));
   assert.doesNotThrow(() => validateReleasePosture(valid, contract));
   for (const change of [
-    (v) => { v.legacy_clipboard_provider = null; },
-    (v) => { v.legacy_clipboard_provider.authority = 'unrelated.clipboard'; },
-    (v) => { v.legacy_clipboard_provider.enabled = 'true'; },
-    (v) => { v.legacy_clipboard_provider.grant_uri_permissions = true; },
-    (v) => { v.legacy_clipboard_provider.exported = false; },
-    (v) => { v.legacy_clipboard_provider.read_permission = 'unrequested.permission'; },
-  ]) { const value = structuredClone(valid); change(value); assert.throws(() => validateReleasePosture(value, contract), /clipboard provider posture/u); }
-  assert.throws(() => validateIntentSurface({ ...valid, exported_components: [...valid.exported_components, 'UnexpectedProvider'] }, intentMap), /exported component/u);
-  assert.throws(() => validateReleasePosture({ ...valid, file_provider: { ...valid.file_provider, exported: true } }, contract), /file provider posture/u);
+    (v) => {
+      v.legacy_clipboard_provider = null;
+    },
+    (v) => {
+      v.legacy_clipboard_provider.authority = 'unrelated.clipboard';
+    },
+    (v) => {
+      v.legacy_clipboard_provider.enabled = 'true';
+    },
+    (v) => {
+      v.legacy_clipboard_provider.grant_uri_permissions = true;
+    },
+    (v) => {
+      v.legacy_clipboard_provider.exported = false;
+    },
+    (v) => {
+      v.legacy_clipboard_provider.read_permission = 'unrequested.permission';
+    },
+  ]) {
+    const value = structuredClone(valid);
+    change(value);
+    assert.throws(
+      () => validateReleasePosture(value, contract),
+      /clipboard provider posture/u,
+    );
+  }
+  assert.throws(
+    () =>
+      validateIntentSurface(
+        {
+          ...valid,
+          exported_components: [
+            ...valid.exported_components,
+            'UnexpectedProvider',
+          ],
+        },
+        intentMap,
+      ),
+    /exported component/u,
+  );
+  assert.throws(
+    () =>
+      validateReleasePosture(
+        { ...valid, file_provider: { ...valid.file_provider, exported: true } },
+        contract,
+      ),
+    /file provider posture/u,
+  );
 });

@@ -463,7 +463,7 @@ jobs:
           PY
           python scripts/verify-brandbuilder.py 2>&1 | tee "$RUNNER_TEMP/s047-recovery-preflight/brand-contract.log"
       - name: Format affected sources with the repository pin
-        run: pnpm exec prettier --write scripts/check-app-layout.mjs scripts/run-android-evidence.test.mjs apps/glitchpad/src/styles.css apps/glitchpad/src/components/TaskSurface.tsx apps/glitchpad/src/components/TaskSurface.test.tsx apps/glitchpad/src/components/LargeTextSurface.tsx apps/glitchpad/src/components/LargeTextSurface.test.tsx scripts/check-image-layout.mjs
+        run: pnpm exec prettier --write scripts/check-app-layout.mjs scripts/run-android-evidence.test.mjs apps/glitchpad/src/styles.css apps/glitchpad/src/components/TaskSurface.tsx apps/glitchpad/src/components/TaskSurface.test.tsx apps/glitchpad/src/components/LargeTextSurface.tsx apps/glitchpad/src/components/LargeTextSurface.test.tsx scripts/check-image-layout.mjs apps/glitchpad/src/App.tsx apps/glitchpad/src/S047-shell.test.tsx
       - name: Reproduce pointer focus movement with the previous TaskSurface
         if: inputs.stage == 'touch_preflight'
         run: |
@@ -496,6 +496,18 @@ jobs:
           cp "$RUNNER_TEMP/s047-fixed-large-text.tsx" apps/glitchpad/src/components/LargeTextSurface.tsx
           test "$red_exit" -ne 0
           grep -F 'keeps successful line-navigation focus' "$RUNNER_TEMP/s047-recovery-preflight/large-text-red.log"
+      - name: Reproduce duplicate application-panel focus restoration
+        run: |
+          cp apps/glitchpad/src/App.tsx "$RUNNER_TEMP/s047-fixed-app-focus.tsx"
+          git fetch --no-tags --depth=1 origin 2b44940ae4b3c6f81f4d663d4d8e104b2675a239
+          git show 2b44940ae4b3c6f81f4d663d4d8e104b2675a239:apps/glitchpad/src/App.tsx > apps/glitchpad/src/App.tsx
+          set +e
+          pnpm --dir apps/glitchpad exec vitest run src/S047-shell.test.tsx --testNamePattern='keeps the completed Add handoff when an earlier application-panel frame runs late' > "$RUNNER_TEMP/s047-recovery-preflight/app-focus-red.log" 2>&1
+          red_exit=$?
+          set -e
+          cp "$RUNNER_TEMP/s047-fixed-app-focus.tsx" apps/glitchpad/src/App.tsx
+          test "$red_exit" -ne 0
+          grep -F 'keeps the completed Add handoff when an earlier application-panel frame runs late' "$RUNNER_TEMP/s047-recovery-preflight/app-focus-red.log"
       - name: Validate complete frontend and corrected production recovery profiles
         run: |
           pnpm run check:frontend 2>&1 | tee "$RUNNER_TEMP/s047-recovery-preflight/frontend-green.log"
@@ -525,6 +537,8 @@ jobs:
             apps/glitchpad/src/components/TaskSurface.test.tsx
             apps/glitchpad/src/components/LargeTextSurface.tsx
             apps/glitchpad/src/components/LargeTextSurface.test.tsx
+            apps/glitchpad/src/App.tsx
+            apps/glitchpad/src/S047-shell.test.tsx
             scripts/check-image-layout.mjs
             scripts/check-app-layout.mjs
             scripts/run-android-evidence.test.mjs
@@ -809,14 +823,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        api: [24, 36]
+        api: [24]
     env:
       DIAGNOSTIC_API: ${{ matrix.api }}
-      GLITCHPAD_BUILD_COMMIT: '2b44940ae4b3c6f81f4d663d4d8e104b2675a239'
-      S047_PRODUCT_SOURCE: '2b44940ae4b3c6f81f4d663d4d8e104b2675a239'
-      S047_ORIGINAL_APK_SHA256: '9be3b27f483ae804d520d74fd3a8652bfaaf34097e5a27418d5c3a738b06b928'
-      S047_ORIGINAL_APK_BYTES: '231141554'
-      S047_ORIGINAL_ARTIFACT: '13572699797'
+      GLITCHPAD_BUILD_COMMIT: '3e5a62e370280f1e043fba05bbc83a1796153eda'
+      S047_PRODUCT_SOURCE: '3e5a62e370280f1e043fba05bbc83a1796153eda'
+      S047_ORIGINAL_APK_SHA256: 'c5c0ec8dbd24d9114467cc5cb95cfad3918a6b331bb34ee3fd4e4fa990e17441'
+      S047_ORIGINAL_APK_BYTES: '231141154'
+      S047_ORIGINAL_ARTIFACT: '13570373597'
       S047_REBUILD_JVM: 'false'
     steps:
       - uses: actions/checkout@v7
@@ -834,8 +848,8 @@ jobs:
       - run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
       - uses: actions/download-artifact@v8
         with:
-          name: android-task-journeys-ordinary-api-36
-          run-id: 42370103017
+          name: working-layout-api-36
+          run-id: 42362402460
           github-token: ${{ github.token }}
           path: ${{ runner.temp }}/original
       - run: python3 .github/scripts/s047-observer-prepare.py
@@ -868,7 +882,6 @@ jobs:
           path: |
             ${{ runner.temp }}/s047-handoff-probe/**
             ${{ runner.temp }}/s047-observer-diagnostic/*.json
-            ${{ runner.temp }}/s047-observer-diagnostic/*.apk
           retention-days: 7
 
 

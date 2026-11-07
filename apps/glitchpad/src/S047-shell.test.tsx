@@ -1,4 +1,5 @@
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -253,4 +254,23 @@ it('keeps Read and Edit completion contextual without reserving document space',
   );
   expect(EditorView.findFromDOM(editor)).toBe(view);
   expect(view.state.doc.toString()).toBe(source);
+});
+
+it('keeps the completed Add handoff when an earlier application-panel frame runs late', async () => {
+  render(<App sessions={[initialSessions[0]]} persistenceGateway={null} recoveryGateway={null} androidDeliveryGateway={{ choose: vi.fn().mockResolvedValue(null), close: vi.fn().mockResolvedValue(undefined), drain: vi.fn().mockResolvedValue({ sources: [], rejections: [] }), materialize: vi.fn(), subscribe: vi.fn().mockResolvedValue(() => undefined) }} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
+  fireEvent.click(within(await screen.findByRole('menu', { name: 'Glitchpad menu' })).getByRole('menuitem', { name: 'Preferences' }));
+  const panel = await screen.findByRole('dialog', { name: 'Preferences' });
+  const close = within(panel).getByRole('button', { name: 'Close Preferences', exact: true });
+  await waitFor(() => expect(close).toBeEnabled());
+  const late: FrameRequestCallback[] = [];
+  const frames = vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => { late.push(callback); return 100000 + late.length; });
+  try { fireEvent.click(close); } finally { frames.mockRestore(); }
+  const add = screen.getByRole('button', { name: 'Add document' });
+  fireEvent.click(add);
+  fireEvent.click(within(await screen.findByRole('menu', { name: 'Add document choices' })).getByRole('menuitem', { name: 'New text file' }));
+  await waitFor(() => expect(screen.getByTestId('active-document-identity')).toHaveTextContent('Untitled.txt'));
+  await waitFor(() => expect(add).toHaveFocus());
+  act(() => { late.forEach((callback) => callback(performance.now())); });
+  expect(add).toHaveFocus();
 });

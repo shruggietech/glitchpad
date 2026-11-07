@@ -26,7 +26,7 @@ async function walk(node,pointer){
 await walk(ledger,'ledger');
 assert.equal(ledger.rows.length,119);const cases=ledger.rows.flatMap(r=>r.cases);assert.equal(cases.length,459);assert.equal(new Set(cases.map(c=>c.id)).size,459);assert.deepEqual(missing,[]);
 for(const row of ledger.rows){assert.ok(row.issues.length&&row.source_owner&&row.disposition);for(const c of row.cases)statuses[c.status]=(statuses[c.status]||0)+1}
-const map=await readFile(resolve(root,feature,'contracts/issue-acceptance-map.md'),'utf8');const criteria=[...map.matchAll(/^\| #(249|250|251|253|254) AC(\d+) \|/gm)];assert.equal(criteria.length,27);
+const map=await readFile(resolve(root,feature,'contracts/issue-acceptance-map.md'),'utf8');const criteria=[...map.matchAll(/^\|[ \t]*#(249|250|251|253|254)[ \t]+AC(\d+)[ \t]*\|/gm)];assert.equal(criteria.length,27);const expectedCriteria=Object.entries({'249':6,'250':4,'251':5,'253':6,'254':6}).flatMap(([id,count])=>Array.from({length:count},(_,i)=>id+'/'+(i+1))).sort();assert.deepEqual(criteria.map(c=>c[1]+'/'+c[2]).sort(),expectedCriteria);
 const counts={};for(const c of criteria)counts[c[1]]=(counts[c[1]]||0)+1;
 const report={at:new Date().toISOString(),rows:ledger.rows.length,unique_cases:cases.length,catalog_entries:Object.keys(catalog).length,source_references:sources.length,fingerprinted_references:sources.filter(r=>r.fingerprinted).length,other_unit_line_pointers:sources.filter(r=>!r.fingerprinted).length,hash_anchor_line_drift:0,catalog_refs:refs.length,missing_catalog_refs:missing,criteria:criteria.length,criterion_counts:counts,case_statuses:statuses};
 await writeFile(resolve(root,'.codex-tmp/s047/current-control-reference-audit.json'),JSON.stringify(report,null,2)+'\n','utf8');console.log(JSON.stringify(report));

@@ -501,14 +501,14 @@ it.each([
   },
 );
 
-it('settles rounded CSSOM measurements and still updates real geometry changes', async () => {
+it('settles rounded CSSOM measurements and still updates real geometry changes', () => {
   const host = document.createElement('div');
   host.id = 'bb-overlay-root';
   document.body.append(host);
   const observed: { target: Node; callback: MutationCallback; observer: MutationObserver }[] = [];
   class ControlledMutationObserver {
     constructor(private callback: MutationCallback) {}
-    observe(target: Node, options?: MutationObserverInit) { if (options?.attributeFilter?.includes('style')) observed.push({ target, callback: this.callback, observer: this as unknown as MutationObserver }); }
+    observe(target: Node, options?: MutationObserverInit) { if (options?.attributeFilter?.includes('style')) observed.push({ target, callback: this.callback, observer: this }); }
     disconnect() {}
     takeRecords() { return []; }
   }
@@ -518,6 +518,8 @@ it('settles rounded CSSOM measurements and still updates real geometry changes',
   rect.mockImplementation(function (this: HTMLElement) {
     return { x: 0, y: 0, left: 0, top: 0, width: 320, height: this.classList.contains('task-surface-heading') ? height : 640, right: 320, bottom: height, toJSON: () => ({}) };
   });
+  // The original method is called with its original receiver below.
+  // eslint-disable-next-line @typescript-eslint/unbound-method
   const read = CSSStyleDeclaration.prototype.getPropertyValue;
   const cssom = vi.spyOn(CSSStyleDeclaration.prototype, 'getPropertyValue').mockImplementation(function (this: CSSStyleDeclaration, name: string) {
     const value = read.call(this, name);

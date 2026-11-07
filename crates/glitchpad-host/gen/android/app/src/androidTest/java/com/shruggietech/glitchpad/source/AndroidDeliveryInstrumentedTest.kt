@@ -443,7 +443,25 @@ class AndroidDeliveryInstrumentedTest {
     } else {
       assertEquals("verify", phase)
       waitForBodyText(scenario, "Recover Untitled.md?")
-      clickControl(scenario, "Recover")
+      if (isS047Evidence()) {
+        enableNativeWindowObservation()
+        val originalFont = clientContext.resources.configuration.fontScale
+        try {
+          for (font in if (Build.VERSION.SDK_INT >= 34) listOf(1f, 2f) else listOf(1f, 1.3f)) {
+            applyObservedFontScale(scenario, font)
+            scenario.onActivity { it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT }
+            waitForCondition(scenario, "innerHeight>innerWidth", "recovery portrait must be observed")
+            observeVisibleTaskControls(scenario, "recovery-portrait-" + font, expectedImeVisible=false)
+            scenario.onActivity { it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE }
+            waitForCondition(scenario, "innerWidth>innerHeight", "recovery landscape must be observed")
+            observeVisibleTaskControls(scenario, "recovery-landscape-" + font, expectedImeVisible=false)
+          }
+        } finally {
+          applyObservedFontScale(scenario, originalFont)
+          scenario.onActivity { it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT }
+        }
+        tapNativeControlOnce(scenario, "Recover")
+      } else clickControl(scenario, "Recover")
       waitForBodyText(scenario, "S046_PROCESS_RECOVERY_Ω")
       waitForCondition(scenario, "!!document.querySelector('.cm-content[contenteditable=true]')", "recovered Markdown draft must remain editable without provider authority")
       println("draft_recovery_verify=pass,api:" + Build.VERSION.SDK_INT)
@@ -1845,6 +1863,23 @@ class AndroidDeliveryInstrumentedTest {
     assertEquals("actual Android font configuration must change", value.toDouble(), clientContext.resources.configuration.fontScale.toDouble(), 0.01)
   }
 
+  private fun applyObservedFontScale(scenario: ActivityScenario<MainActivity>, font: Float) {
+    val fontDeadline = SystemClock.elapsedRealtime() + 30_000L
+    val priorActivity = AtomicReference<MainActivity>()
+    scenario.onActivity { priorActivity.set(it) }
+    val changingFont = kotlin.math.abs(priorActivity.get().resources.configuration.fontScale - font) > 0.01f
+    shellOutput("settings put system font_scale " + font)
+    awaitFontScale(font, deadlineOverride=fontDeadline)
+    if (changingFont) {
+      waitForCondition(scenario, "document.readyState==='complete'", "font configuration must update the existing activity without losing its native task binding", deadlineOverride=fontDeadline) {
+        var updated = false
+        scenario.onActivity { updated = it === priorActivity.get() && kotlin.math.abs(it.resources.configuration.fontScale - font) <= 0.01f }
+        updated
+      }
+    }
+    waitForCondition(scenario, "Math.abs(parseFloat(getComputedStyle(document.documentElement).fontSize)-16*" + font + ")<0.1", "the actual WebView text must use the requested system font scale", deadlineOverride=fontDeadline)
+  }
+
   private fun verifyS047TaskGeometry(scenario: ActivityScenario<MainActivity>, profile: String, ime: Boolean) {
     fun hideIme(deadline:Long) {
       scenario.onActivity { activity->
@@ -1947,19 +1982,7 @@ class AndroidDeliveryInstrumentedTest {
     verifyS047LargeText(scenario)
     try {
       for (font in if (Build.VERSION.SDK_INT >= 34) listOf(1f, 2f) else listOf(1f, 1.3f)) {
-        val fontDeadline = SystemClock.elapsedRealtime() + 30_000L
-        val priorActivity = AtomicReference<MainActivity>()
-        scenario.onActivity { priorActivity.set(it) }
-        val changingFont = kotlin.math.abs(priorActivity.get().resources.configuration.fontScale - font) > 0.01f
-        shellOutput("settings put system font_scale " + font)
-        awaitFontScale(font, deadlineOverride=fontDeadline)
-        if (changingFont) {
-          waitForCondition(scenario, "(()=>{const n=document.querySelector('.resolution-dialog h2');return document.readyState==='complete'&&!!n&&n.textContent.startsWith('Recover ')&&n.textContent.endsWith('?');})()", "font configuration must recreate the real activity and offer the existing unsaved recovery candidate before sampling controls", deadlineOverride=fontDeadline) {
-            var recreated = false
-            scenario.onActivity { recreated = it !== priorActivity.get() && kotlin.math.abs(it.resources.configuration.fontScale - font) <= 0.01f }
-            recreated
-          }
-        }
+        applyObservedFontScale(scenario, font)
         scenario.onActivity { it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT }
         waitForCondition(scenario, "innerHeight>innerWidth", "actual portrait must be observed")
         observations.put("portrait-" + font, observeVisibleTaskControls(scenario, "portrait", expectedImeVisible=false))

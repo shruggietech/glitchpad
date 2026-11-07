@@ -4,8 +4,12 @@ on:
     inputs:
       stage:
         type: choice
-        options: [observers, source_binding, sdk_source, tap_observer]
+        options: [observers, source_binding, sdk_source, tap_observer, aggregate]
         default: observers
+      candidate_source:
+        description: Exact public candidate SHA for aggregate only
+        type: string
+        required: false
 permissions:
   contents: read
   actions: read
@@ -182,4 +186,45 @@ jobs:
             .codex-tmp/s047/r28-hosted-source-rebind.json
             .codex-tmp/s047/current-control-reference-audit.json
             specs/047-android-task-completion/contracts/control-ledger.json
+          retention-days: 7
+
+  exact-source-aggregate:
+    if: inputs.stage == 'aggregate'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      S047_SOURCE: ${{ inputs.candidate_source }}
+    steps:
+      - name: Require an exact candidate source
+        run: '[[ "$S047_SOURCE" =~ ^[0-9a-f]{40}$ ]]'
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.candidate_source }}
+      - name: Record checked out candidate
+        run: |
+          test "$(git rev-parse HEAD)" = "$S047_SOURCE"
+          mkdir -p "$RUNNER_TEMP/s047-aggregate"
+          printf '%s\n' "$S047_SOURCE" > "$RUNNER_TEMP/s047-aggregate/source.txt"
+      - name: Build repository qualification environment once
+        run: |
+          set -o pipefail
+          docker build --target qualification -t glitchpad-s047-validation -f scripts/docker/validation.Dockerfile . 2>&1 | tee "$RUNNER_TEMP/s047-aggregate/image-build.log"
+          docker image inspect glitchpad-s047-validation --format '{{.Id}}' > "$RUNNER_TEMP/s047-aggregate/image-id.txt"
+      - name: Run complete exact-source aggregate
+        run: |
+          set +e
+          docker run --rm -v "$GITHUB_WORKSPACE:/workspace" -w /workspace -e CI=true -e GLITCHPAD_BUILD_COMMIT="$S047_SOURCE" -e VITE_GLITCHPAD_BUILD_COMMIT="$S047_SOURCE" glitchpad-s047-validation bash -lc 'pnpm install --frozen-lockfile && cargo xtask check' 2>&1 | tee "$RUNNER_TEMP/s047-aggregate/check.log"
+          checked_exit=${PIPESTATUS[0]}
+          printf '{"source_commit":"%s","aggregate_exit":%s,"scope":"exact_source_linux_container_not_installed_android"}\n' "$S047_SOURCE" "$checked_exit" > "$RUNNER_TEMP/s047-aggregate/result.json"
+          exit "$checked_exit"
+      - name: Run fresh production modern and Chromium69 matrices
+        run: |
+          set -o pipefail
+          docker run --rm -v "$GITHUB_WORKSPACE:/workspace" -w /workspace -v "$RUNNER_TEMP/s047-aggregate:/evidence" -e CI=true -e GLITCHPAD_BUILD_COMMIT="$S047_SOURCE" -e VITE_GLITCHPAD_BUILD_COMMIT="$S047_SOURCE" glitchpad-s047-validation bash -lc 'set -e; pnpm run build; node scripts/check-app-layout.mjs --receipt /evidence/modern.json --source-commit "$GLITCHPAD_BUILD_COMMIT"; mkdir -p /tmp/glitchpad-browser-compat/client; npm install --prefix /tmp/glitchpad-browser-compat/client --ignore-scripts --no-audit --no-fund puppeteer-core@1.9.0; curl -fsSLo /tmp/glitchpad-chromium69.zip https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/576753/chrome-linux.zip; sha256sum /tmp/glitchpad-chromium69.zip > /evidence/chromium69-archive.sha256; python3 -m zipfile -e /tmp/glitchpad-chromium69.zip /tmp/glitchpad-browser-compat/chromium/linux-576753; chmod +x /tmp/glitchpad-browser-compat/chromium/linux-576753/chrome-linux/chrome; node scripts/check-app-layout.mjs --legacy --receipt /evidence/chromium69.json --source-commit "$GLITCHPAD_BUILD_COMMIT"' 2>&1 | tee "$RUNNER_TEMP/s047-aggregate/browser.log"
+      - name: Retain aggregate and browser receipts
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: s047-exact-source-aggregate
+          path: ${{ runner.temp }}/s047-aggregate/**
           retention-days: 7

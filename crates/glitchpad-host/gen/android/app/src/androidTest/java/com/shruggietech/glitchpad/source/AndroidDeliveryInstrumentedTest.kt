@@ -992,6 +992,7 @@ class AndroidDeliveryInstrumentedTest {
     val actionDeadline = deadlineOverride ?: (SystemClock.elapsedRealtime() + 30_000L)
     waitForCondition(scenario, "Array.from(document.querySelectorAll(" + selectorLiteral + ")).some(b=>!b.disabled&&(b.getAttribute('aria-label')||(b.getAttribute('role')==='menuitem'&&b.querySelector('span')?b.querySelector('span').textContent:b.textContent)).trim()===" + nameLiteral + ")", "named actual-app control must be enabled: " + name, deadlineOverride = actionDeadline)
     assertEquals("actual-app control must be clicked once", "true", evaluate(scenario, "(()=>{const button=Array.from(document.querySelectorAll(" + selectorLiteral + ")).find(b=>!b.disabled&&(b.getAttribute('aria-label')||(b.getAttribute('role')==='menuitem'&&b.querySelector('span')?b.querySelector('span').textContent:b.textContent)).trim()===" + nameLiteral + ");if(!button)return false;button.click();return true;})()", deadlineOverride = actionDeadline, actionCallback = true))
+    if (name == "Close Preferences") waitForCondition(scenario, "!Array.from(document.querySelectorAll('[role=dialog]')).some(n=>n.querySelector('h2')&&n.querySelector('h2').textContent==='Preferences')&&document.activeElement===document.querySelector('.application-menu-trigger')", "Preferences dismissal must restore its real opener before the following task starts", deadlineOverride = actionDeadline)
   }
 
   // Read native visible bounds and IME windows before mapping a CSS control to screen input.

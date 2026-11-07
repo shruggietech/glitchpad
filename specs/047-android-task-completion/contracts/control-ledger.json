@@ -1568,7 +1568,10 @@
           ],
           "supplemental_evidence_refs": [
             "ROOT_ALIAS_unit_assertions_CTRL-021-1",
-            "ROOT_ALIAS_supplemental_browser_assertions_CTRL-021-1"
+            "ROOT_ALIAS_supplemental_browser_assertions_CTRL-021-1",
+            "R27_U_CLIPBOARD_STORE",
+            "R27_N_CLIPBOARD_PASTE",
+            "R29_SOURCE_LEGACY_CLIPBOARD"
           ],
           "alias_evidence_limits": []
         },
@@ -1582,7 +1585,10 @@
             "ROOT_ALIAS_native_preparations_CTRL-021-case-2"
           ],
           "supplemental_evidence_refs": [
-            "ROOT_ALIAS_supplemental_browser_assertions_CTRL-021-case-2"
+            "ROOT_ALIAS_supplemental_browser_assertions_CTRL-021-case-2",
+            "R27_U_CLIPBOARD_STORE",
+            "R27_N_CLIPBOARD_PASTE",
+            "R29_SOURCE_LEGACY_CLIPBOARD"
           ],
           "alias_evidence_limits": [
             "Native Copy selectsallsource; partialsource selection independentlyprovedbyR26exactembeddedfenceCopy."
@@ -2576,7 +2582,9 @@
           "status": "pending",
           "evidence": [],
           "native_preparation": "primary_current_control_prepared",
-          "supplemental_evidence_refs": [],
+          "supplemental_evidence_refs": [
+            "R25_B_HISTORY_MENU_FOCUS"
+          ],
           "supplemental_observation": {
             "unit": "not_individually_mapped",
             "browser": "partial_route_or_activation_only",
@@ -2591,7 +2599,8 @@
           "native_preparation": "explicit_assertion_prepared",
           "supplemental_evidence_refs": [
             "US4_UNIT_CTRL-027-case-2",
-            "US4_BROWSER_CTRL-027-case-2"
+            "US4_BROWSER_CTRL-027-case-2",
+            "R25_B_HISTORY_MENU_FOCUS"
           ],
           "supplemental_observation": {
             "unit": "specific_named_unit_assertion",
@@ -2724,7 +2733,9 @@
           "status": "pending",
           "evidence": [],
           "native_preparation": "primary_current_control_prepared",
-          "supplemental_evidence_refs": [],
+          "supplemental_evidence_refs": [
+            "R25_B_HISTORY_MENU_FOCUS"
+          ],
           "supplemental_observation": {
             "unit": "not_individually_mapped",
             "browser": "partial_route_or_activation_only",
@@ -2739,7 +2750,8 @@
           "native_preparation": "explicit_assertion_prepared",
           "supplemental_evidence_refs": [
             "US4_UNIT_CTRL-028-case-2",
-            "US4_BROWSER_CTRL-028-case-2"
+            "US4_BROWSER_CTRL-028-case-2",
+            "R25_B_HISTORY_MENU_FOCUS"
           ],
           "supplemental_observation": {
             "unit": "specific_named_unit_assertion",
@@ -7432,7 +7444,8 @@
           "native_preparation": "primary_current_control_prepared",
           "supplemental_evidence_refs": [
             "US4_UNIT_CTRL-060-1",
-            "US4_BROWSER_CTRL-060-1"
+            "US4_BROWSER_CTRL-060-1",
+            "R25_B_CANCEL_ESCAPE_FOCUS_IDENTITY"
           ],
           "supplemental_observation": {
             "unit": "specific_named_unit_assertion",
@@ -7446,7 +7459,9 @@
           "status": "pending",
           "evidence": [],
           "native_preparation": "explicit_assertion_prepared",
-          "supplemental_evidence_refs": [],
+          "supplemental_evidence_refs": [
+            "R25_B_CANCEL_ESCAPE_FOCUS_IDENTITY"
+          ],
           "supplemental_observation": {
             "unit": "not_individually_mapped",
             "browser": "not_individually_asserted",
@@ -10631,7 +10646,10 @@
           "native_preparation": "primary_current_control_prepared",
           "supplemental_evidence_refs": [
             "US4_UNIT_CTRL-088-1",
-            "US4_BROWSER_CTRL-088-1"
+            "US4_BROWSER_CTRL-088-1",
+            "R27_U_CLIPBOARD_STORE",
+            "R27_N_CLIPBOARD_PASTE",
+            "R29_SOURCE_LEGACY_CLIPBOARD"
           ],
           "supplemental_observation": {
             "unit": "specific_named_unit_assertion",
@@ -10647,7 +10665,10 @@
           "native_preparation": "explicit_assertion_prepared",
           "supplemental_evidence_refs": [
             "US4_UNIT_CTRL-088-case-2",
-            "US4_BROWSER_CTRL-088-case-2"
+            "US4_BROWSER_CTRL-088-case-2",
+            "R27_U_CLIPBOARD_STORE",
+            "R27_N_CLIPBOARD_PASTE",
+            "R29_SOURCE_LEGACY_CLIPBOARD"
           ],
           "supplemental_observation": {
             "unit": "specific_named_unit_assertion",
@@ -19355,7 +19376,55 @@
       "method": "verifyS047MarkdownAndMetadata",
       "effect": "The layout helper requires Mermaid Edit a copy, exact native source replacement, real Read/Edit preview, stable selection/history and unchanged original bytes.",
       "limit": "Current source preparation only. Require both fresh ordinary API campaigns; a helper declaration or historical failed prefix is not qualification."
+    },
+    "R25_B_HISTORY_MENU_FOCUS": {
+      "path": "scripts/check-app-layout.mjs",
+      "line": 760,
+      "anchor": "if (['Undo', 'Redo'].includes(label)) {",
+      "source_sha256": "aa8fe5bed4b5d828c9dff0ae62f1af7bf773102f9ff06d3938352a0a06c06a10",
+      "kind": "composed_browser_passed",
+      "effect": "Actual menu Undo/Redo finishes dismissal and returns focus to its real Document tools opener before subsequent input setup.",
+      "execution": "Both f572e0f production-bundle browser matrices pass84/84;221 delivered assets/18 source fingerprints independently matched in f572e0f-browser-integrity.json. This source is unchanged in the pending native correction.",
+      "limit": "Browser menu focus and exact-history checks; native task execution remains separate."
+    },
+    "R25_B_CANCEL_ESCAPE_FOCUS_IDENTITY": {
+      "path": "scripts/check-app-layout.mjs",
+      "line": 1905,
+      "anchor": "Real browser Cancel/Escape lifecycle; native Back qualification is separate.",
+      "source_sha256": "aa8fe5bed4b5d828c9dff0ae62f1af7bf773102f9ff06d3938352a0a06c06a10",
+      "kind": "composed_browser_passed",
+      "effect": "Both HTTP/mail destinations close by Cancel and Escape, preserving the actual document ID and restoring the exact invoking link.",
+      "execution": "Both f572e0f production-bundle browser matrices pass84/84;221 delivered assets/18 source fingerprints independently matched in f572e0f-browser-integrity.json. This source is unchanged in the pending native correction.",
+      "limit": "Browser focus/document-ID assertion. No separate per-Cancel source-byte readback or native Back claim."
+    },
+    "R27_U_CLIPBOARD_STORE": {
+      "path": "crates/glitchpad-android-source/android/src/test/java/com/shruggietech/glitchpad/source/ClipboardTextStoreTest.kt",
+      "line": 12,
+      "anchor": "class ClipboardTextStoreTest",
+      "source_sha256": "2d211c8a54676e31a0b4d90053a56af745fed45d021ea7aa706a19603edf7ed0",
+      "kind": "jvm_unit",
+      "effect": "Eleven JVM tests preserve exact Unicode/threshold bytes, failed and overlapping replacements, token uniqueness, unknown/traversal/unrelated-file/link denial and old-token retirement.",
+      "limit": "Storage behavior only; not installed clipboard qualification.",
+      "execution": "Hosted run42334030091 atd87041b:11 tests,0 failures/errors/skips; current storage/test source bytes unchanged."
+    },
+    "R27_N_CLIPBOARD_PASTE": {
+      "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
+      "line": 1238,
+      "anchor": "private fun verifyClipboardPasteReceiver(",
+      "source_sha256": "ec135b2a8731e6fe23bd3d7692098b00fc5f167b965c8276319d4427c1a4ba21",
+      "kind": "native_prepared_not_executed",
+      "effect": "Independent foreground EditText must paste inline and oversized full text exactly; URI stream bytes/digest must match and writes/enumeration/unknown/traversal reads must be denied. Modern Android requires a clipboard-service read grant; API24-27 uses an explicit copied-text token.",
+      "limit": "Requires both fresh ordinary API campaigns; no installed pass inferred from this preparation."
+    },
+    "R29_SOURCE_LEGACY_CLIPBOARD": {
+      "path": "crates/glitchpad-android-source/android/src/main/java/com/shruggietech/glitchpad/source/LegacyClipboardTextProvider.kt",
+      "line": 15,
+      "anchor": "class LegacyClipboardTextProvider : ContentProvider() {",
+      "source_sha256": "d32288c04c6bbfbca1777427806f183059b907e3454fb043bc5c3b84df805801",
+      "kind": "source_only",
+      "effect": "API24-27 read-only copied-text provider accepts one UUIDv4 token; it rejects writes, enumeration, missing/traversal/out-of-store paths. It is disabled on API28+; the normal FileProvider stays private.",
+      "limit": "Source implementation only; actual cross-UID read/paste and denial assertions require the fresh installed candidate."
     }
   },
-  "local_candidate_note": "R26 uses the attached app View window identity for both native ownership samples and captures complete failed input diagnostics before teardown. Optional passive tracing is off during ordinary qualification. Native source 9b605021637ac5b645ae73de64b54422c20ad89b443c3693a97f66cc7b448138 and runner 8c452139123691cfafe20e57869ebae59b69bc12ca5aa8cb35f167a46713944b pass 113 SDK tasks, 25 Android Python tests, 98 Node validation cases and 14 layout policies. Source references are rebound without drift. Committed 092fd81 retains ordinary API24 9/10 and API36 8/10 failures; both fault roles and six package readbacks qualify only their actual 092fd81 source/bytes. The separate API24 diagnostic SDK-network retry is still in progress. All 459 statuses remain pending changed-candidate qualification and scoped reconciliation."
+  "local_candidate_note": "R29 source preparation only. All459 installed case statuses remain pending current-candidate qualification and scoped reconciliation."
 }

@@ -43,6 +43,14 @@ async function observe(phase){const session=await connect();const samples=[];try
 try{
  await writeFile(join(out,'provenance.json'),JSON.stringify({product_source:process.env.GLITCHPAD_BUILD_COMMIT,driver_source:process.env.GITHUB_SHA,original_run:42358143054,scope:'Read-only CDP observation of exact retained debug APKs; actual native seed/restart/font change. Not candidate qualification.'},null,2)+'\n','utf8');
  for(const path of ['crates/glitchpad-host/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk','crates/glitchpad-host/gen/android/app/build/outputs/apk/androidTest/universal/debug/app-universal-debug-androidTest.apk'])await adb(['install','-r','-t',path]);
+ await adb(['shell','svc','power','stayon','true']);
+ await adb(['shell','input','keyevent','224']);
+ await adb(['shell','wm','dismiss-keyguard']);
+ await adb(['shell','svc','bluetooth','disable']);
+ await adb(['shell','settings','put','global','hide_error_dialogs','1']);
+ await adb(['shell','am','broadcast','-a','android.intent.action.CLOSE_SYSTEM_DIALOGS']);
+ await adb(['shell','settings','put','secure','show_ime_with_hard_keyboard','1']);
+ await adb(['shell','cmd','overlay','enable','--user','0','com.android.internal.display.cutout.emulation.corner']);
  await adb(['shell','settings','put','system','font_scale','1.0']);
  const seed=await run('bash',['scripts/run-android-instrumentation.sh',join(out,'seed.txt'),'draft_recovery_seed=pass','-e','waitForActivitiesToComplete','false','-e','expectedSource',process.env.GLITCHPAD_BUILD_COMMIT,'-e','expectedRole','ordinary','-e','recoveryPhase','seed','-e','class','com.shruggietech.glitchpad.source.AndroidDeliveryInstrumentedTest#draftRecoveryAcrossProcessBoundary'],{env:{...process.env,ANDROID_INSTRUMENTATION_RESET_APP_DATA:'true'},encoding:'utf8',timeout:180000,maxBuffer:4*1024*1024});await writeFile(join(out,'seed-driver.log'),seed.stdout+'\n'+seed.stderr,'utf8');
  await adb(['shell','am','force-stop',app]);

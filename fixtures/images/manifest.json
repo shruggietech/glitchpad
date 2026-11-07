@@ -126,6 +126,90 @@
       "name": "original.webp",
       "sha256": "aca59787e476c1cb9b27781317ec5b5f6cce77c4cddb4a20a4b670476a1d07b6",
       "width": 4
+    },
+    {
+      "bytes": 138,
+      "height": 3,
+      "name": "s047-playback.gif",
+      "sha256": "b75f6f5f86fd232ca0103087ba4af432ff5cbb4a6541ae39d7adb1c21d4cfc78",
+      "width": 4
+    },
+    {
+      "bytes": 156,
+      "height": 3,
+      "name": "svg-cycle.svg",
+      "sha256": "6944a6dc6f3e62febb9ec3c5f9dbd46a4e7a83e9fcb755cbc6e58a88d082abdf",
+      "width": 4
+    },
+    {
+      "bytes": 117,
+      "height": 3,
+      "name": "svg-external.svg",
+      "sha256": "1bcce23c33208d29b3e6ac07b63884b23b7e6bd1788eda3e85f52feddc43f631",
+      "width": 4
+    },
+    {
+      "bytes": 73,
+      "height": 3,
+      "name": "svg-malformed.svg",
+      "sha256": "329a22db44b53a6571264f28b2f1b2b3a69b5f6f9504c5aa0ff8991b8ddaf462",
+      "width": 4
+    },
+    {
+      "bytes": 88,
+      "height": 3,
+      "name": "svg-missing.svg",
+      "sha256": "1fe9eaef4c378d880d4a3716d61aef5fb97d1f9b6118df13e7ba178d4c976142",
+      "width": 4
+    },
+    {
+      "bytes": 135,
+      "height": 3,
+      "name": "svg-namespaced.svg",
+      "sha256": "f3e6e42c2d846947626f3e9496c01863aa64acb3d5eb13012426b9a65eacb472",
+      "width": 4
+    },
+    {
+      "bytes": 199,
+      "height": 3,
+      "name": "svg-presentation.svg",
+      "sha256": "cd2e537960808e0cff04ca96bb03fb26644b6b62a07f7571a1da81dc7dacc6ef",
+      "width": 4
+    },
+    {
+      "bytes": 199,
+      "height": 3,
+      "name": "svg-read-denied.svg",
+      "sha256": "cd2e537960808e0cff04ca96bb03fb26644b6b62a07f7571a1da81dc7dacc6ef",
+      "width": 4
+    },
+    {
+      "bytes": 970,
+      "height": 3,
+      "name": "svg-resource.svg",
+      "sha256": "ef4aa0e6deba2bec5fafbf720fa081d0e5da5f37aef6009881c00aa035568d43",
+      "width": 4
+    },
+    {
+      "bytes": 203,
+      "height": 3,
+      "name": "svg-reuse.svg",
+      "sha256": "f372767ddb027a45f3ec37767e4219d87c6077994e4a375ba13d682de9a49c29",
+      "width": 4
+    },
+    {
+      "bytes": 76,
+      "height": 3,
+      "name": "svg-unsupported.svg",
+      "sha256": "20ec2f9e6a1568cad6980c1ddca50326e9b9c3ef7394c8a0a158ffc930965ed5",
+      "width": 4
+    },
+    {
+      "bytes": 122,
+      "height": 1200,
+      "name": "svg-viewport.svg",
+      "sha256": "cbd12ee169d5b14da5f058c8049a68c7a907df0d8405853a0b7fa26497dcfff7",
+      "width": 1600
     }
   ],
   "generator": "cargo run -p glitchpad-core --example generate_image_fixtures",

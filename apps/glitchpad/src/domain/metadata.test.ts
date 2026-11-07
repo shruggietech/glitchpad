@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { initialSessions } from '../test/fixtures';
 import {
@@ -113,5 +113,67 @@ describe('metadata catalog', () => {
       'Unavailable (metadata_unavailable)',
     ]);
     expect(bulkCopyText({ ...snapshot, facts })).not.toContain('Redacted');
+  });
+});
+
+describe('minimum WebView numeric formatting', () => {
+  it('retains exact integer digits and explicit units when Intl unit formatting is unavailable', () => {
+    const Original = Intl.NumberFormat;
+    const legacy = vi
+      .spyOn(Intl, 'NumberFormat')
+      .mockImplementation(function (locales, options) {
+        if (options?.style === 'unit')
+          throw new RangeError(
+            'Value unit out of range for numberformat options property style',
+          );
+        return new Original(locales, options);
+      });
+    try {
+      const base = projectSessionMetadata(initialSessions[0]).facts.find(
+        (f) => f.key === 'host.display_name',
+      )!;
+      expect(
+        formatMetadataFact({
+          ...base,
+          key: 'host.byte_length',
+          availability: 'available',
+          unit: 'bytes',
+          value: { kind: 'integer', value: '900719925474099312345' },
+        }).value,
+      ).toBe('900719925474099312345 bytes');
+      expect(
+        formatMetadataFact({
+          ...base,
+          key: 'diagram.parse_duration',
+          availability: 'available',
+          unit: 'ms',
+          value: { kind: 'decimal', value: '1.25' },
+        }).value,
+      ).toBe('1.25 ms');
+    } finally {
+      legacy.mockRestore();
+    }
+  });
+  it('does not convert an exact integer through Number when legacy Intl rejects BigInt', () => {
+    const legacy = vi
+      .spyOn(Intl, 'NumberFormat')
+      .mockImplementation(function () {
+        throw new TypeError('Cannot convert a BigInt value to a number');
+      });
+    try {
+      const base = projectSessionMetadata(initialSessions[0]).facts.find(
+        (f) => f.key === 'host.display_name',
+      )!;
+      expect(
+        formatMetadataFact({
+          ...base,
+          key: 'text.line_count',
+          availability: 'available',
+          value: { kind: 'integer', value: '900719925474099312345' },
+        }).value,
+      ).toBe('900719925474099312345');
+    } finally {
+      legacy.mockRestore();
+    }
   });
 });

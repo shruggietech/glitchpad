@@ -1,0 +1,92 @@
+diff --git a/dist/chunks/mermaid.core/c4Diagram-YGBWAQC7.mjs b/dist/chunks/mermaid.core/c4Diagram-YGBWAQC7.mjs
+index 78acb57df64472a82835e87dc72b74c6361b0339..9404aba22ad4565d51798f0a56c5444cdd281ef0 100644
+--- a/dist/chunks/mermaid.core/c4Diagram-YGBWAQC7.mjs
++++ b/dist/chunks/mermaid.core/c4Diagram-YGBWAQC7.mjs
+@@ -18,6 +18,7 @@ import {
+   assignWithDepth_default,
+   common_default,
+   configureSvgSize,
++  createCssStyleSheet,
+   getAccDescription,
+   getAccTitle,
+   getConfig2 as getConfig,
+@@ -2436,7 +2437,7 @@ var c4Renderer_default = {
+ // src/diagrams/c4/styles.js
+ var elementFontStyles = /* @__PURE__ */ __name(() => {
+   const c4 = getConfig().c4 ?? {};
+-  const sheet = new CSSStyleSheet();
++  const sheet = createCssStyleSheet();
+   for (const type of C4_ELEMENT_TYPES) {
+     const rule = sheet.cssRules[sheet.insertRule(`.c4-shape.c4-${type} .label {}`, sheet.cssRules.length)];
+     const fontFamily = c4[`${type}FontFamily`];
+diff --git a/dist/chunks/mermaid.core/chunk-O7XYJQB3.mjs b/dist/chunks/mermaid.core/chunk-O7XYJQB3.mjs
+index 8ee86aca31fec2ba99bbf9baff60f56a5a2f02ef..6b9566722a55a7f0c1fc2f5cc231b6b916e0993f 100644
+--- a/dist/chunks/mermaid.core/chunk-O7XYJQB3.mjs
++++ b/dist/chunks/mermaid.core/chunk-O7XYJQB3.mjs
+@@ -5489,6 +5489,26 @@ var setupGraphViewbox = /* @__PURE__ */ __name(function(graph, svgElem, padding,
+ 
+ // src/styles.ts
+ var themes = {};
++function createCssStyleSheet() {
++  try {
++    return new CSSStyleSheet();
++  } catch (error) {
++    if (typeof document === "undefined" || !document.implementation) {
++      throw error;
++    }
++    const owner = document.implementation.createHTMLDocument("");
++    const style = owner.createElement("style");
++    style.media = "not all";
++    owner.head.appendChild(style);
++    const sheet = style.sheet;
++    if (!sheet) {
++      throw error;
++    }
++    sheet.disabled = true;
++    return sheet;
++  }
++}
++
+ function cssStyleSheetToString(cssStyleSheet) {
+   return [...cssStyleSheet.cssRules].map((rule) => rule.cssText).join("\n");
+ }
+@@ -5747,6 +5767,7 @@ export {
+   getDiagramLoader,
+   configureSvgSize,
+   setupGraphViewbox,
++  createCssStyleSheet,
+   cssStyleSheetToString,
+   styles_default,
+   clear,
+diff --git a/dist/mermaid.core.mjs b/dist/mermaid.core.mjs
+index 66f30dfb3f3766ed9aafdc717af7fc345274021d..0c2aa36b4a636394db32f2b38c53f49064f1a147 100644
+--- a/dist/mermaid.core.mjs
++++ b/dist/mermaid.core.mjs
+@@ -32,6 +32,7 @@ import {
+   addDirective,
+   assignWithDepth_default,
+   configureSvgSize,
++  createCssStyleSheet,
+   cssStyleSheetToString,
+   defaultConfig,
+   defaultConfig_default,
+@@ -1072,7 +1073,7 @@ var cssImportantStyles = /* @__PURE__ */ __name((cssClass, element, cssClasses =
+   return `.${cssClass} ${element} ${declarationBlock}`;
+ }, "cssImportantStyles");
+ var createCssStyles = /* @__PURE__ */ __name((config, classDefs = /* @__PURE__ */ new Map()) => {
+-  const cssStyles = new CSSStyleSheet();
++  const cssStyles = createCssStyleSheet();
+   if (config.fontFamily !== void 0) {
+     cssStyles.insertRule(
+       `:root { --mermaid-font-family: ${config.fontFamily}}`,
+@@ -1113,8 +1114,8 @@ var createCssStyles = /* @__PURE__ */ __name((config, classDefs = /* @__PURE__ *
+   }
+   let cssString = "";
+   if (config.themeCSS !== void 0) {
+-    if (typeof cssStyles.replaceSync === "function") {
+-      const themeCssStyleSheet = new CSSStyleSheet();
++    if (cssStyles.ownerNode === null && typeof cssStyles.replaceSync === "function") {
++      const themeCssStyleSheet = createCssStyleSheet();
+       themeCssStyleSheet.replaceSync(config.themeCSS);
+       cssString = cssStyleSheetToString(themeCssStyleSheet) + "\n";
+     } else {

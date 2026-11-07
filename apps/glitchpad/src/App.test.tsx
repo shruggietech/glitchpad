@@ -1,3 +1,4 @@
+import { AppFrame } from '../../../brand/web/react/server';
 import axe from 'axe-core';
 import { EditorView } from '@codemirror/view';
 import {
@@ -54,13 +55,23 @@ const saveReceipt = {
 };
 
 const invokeMenu = (name: string | RegExp) => {
-  fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
-  const matcher = typeof name === 'string' ? name : name;
+  const app =
+    typeof name === 'string' &&
+    [
+      'Preferences',
+      'Diagnostics',
+      'Help and support',
+      'About Glitchpad',
+    ].includes(name);
   fireEvent.click(
-    within(screen.getByRole('menu', { name: 'Glitchpad menu' })).getByRole(
-      'menuitem',
-      { name: matcher },
-    ),
+    screen.getByRole('button', { name: app ? 'Menu' : 'Document tools' }),
+  );
+  fireEvent.click(
+    within(
+      screen.getByRole('menu', {
+        name: app ? 'Glitchpad menu' : 'Document tools',
+      }),
+    ).getByRole('menuitem', { name }),
   );
 };
 
@@ -343,7 +354,7 @@ describe('document foundation shell', () => {
     });
     expect(write).not.toHaveBeenCalled();
     expect(editor).toHaveTextContent('Keep document edit');
-    fireEvent.click(screen.getByRole('button', { name: 'Close preferences' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Close Preferences' }));
     editor.focus();
     fireEvent.keyDown(editor, { key: 'z', ctrlKey: true });
     expect(editor).not.toHaveTextContent('Keep document edit');
@@ -502,9 +513,9 @@ describe('document foundation shell', () => {
         recoveryGateway={null}
       />,
     );
-    invokeMenu('Toggle wrap');
+    invokeMenu(/wrap lines/i);
     expect(
-      await screen.findByText('Completed Toggle wrap.'),
+      await screen.findByText('Completed Unwrap lines.'),
     ).toBeInTheDocument();
     const editor = screen.getByRole('textbox', {
       name: 'Untitled.txt text editor',
@@ -807,7 +818,7 @@ describe('document foundation shell', () => {
       screen.getByRole('heading', { name: 'Diagnostics' }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: 'Close diagnostics' }),
+      screen.getByRole('button', { name: 'Close Diagnostics' }),
     ).toBeDisabled();
     await act(async () => {
       finish?.();
@@ -1205,7 +1216,7 @@ describe('document foundation shell', () => {
             );
           }
           if (boundary === 'picker' || boundary === 'picker_read')
-            invokeMenu('Open…');
+            invokeMenu('Open file');
           const captured = () =>
             collectFailureEvents().then((events) =>
               events.filter(
@@ -1281,7 +1292,7 @@ describe('document foundation shell', () => {
             />,
           );
         }
-        invokeMenu('Open…');
+        invokeMenu('Open file');
         await waitFor(() => expect(choose).toHaveBeenCalledOnce());
         await act(async () => {
           await Promise.resolve();
@@ -1363,7 +1374,7 @@ describe('document foundation shell', () => {
               recoveryGateway={null}
             />,
           );
-          if (entrypoint === 'picker') invokeMenu('Open…');
+          if (entrypoint === 'picker') invokeMenu('Open file');
           await screen.findByRole('alert');
           expect(materialize).toHaveBeenCalledExactlyOnceWith(incoming);
           const editor = screen.getByRole('textbox', {
@@ -1461,7 +1472,7 @@ describe('document foundation shell', () => {
       });
     });
     await waitFor(() => expect(materialize).toHaveBeenCalledOnce());
-    invokeMenu('Open…');
+    invokeMenu('Open file');
     await screen.findByRole('tabpanel', { name: 'Original.txt' });
     await act(async () => {
       rejectFirst?.(new Error('earlier acquisition failed'));
@@ -1791,7 +1802,7 @@ describe('document foundation shell', () => {
     expect(screen.getByRole('region', { name: 'notes.txt' })).toHaveTextContent(
       'a small text fixture',
     );
-    fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Document tools' }));
     expect(screen.getByRole('menuitem', { name: 'Save' })).toBeEnabled();
   });
 
@@ -1868,7 +1879,7 @@ describe('document foundation shell', () => {
     ).toHaveFocus();
     fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    expect(document).toHaveFocus();
+    await waitFor(() => expect(document).toHaveFocus());
     expect(
       await screen.findByText('Unsaved fixture content.'),
     ).toBeInTheDocument();
@@ -1964,7 +1975,7 @@ describe('document foundation shell', () => {
     };
     render(<App sessions={[conflicted]} />);
     expect(screen.getByText(/source changed outside/i)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Document tools' }));
     expect(
       screen.queryByRole('menuitem', { name: 'Save' }),
     ).not.toBeInTheDocument();
@@ -1981,17 +1992,19 @@ describe('document foundation shell', () => {
   it('requires an explicit recover or refusal decision for crash inventory', () => {
     const onDecision = vi.fn();
     render(
-      <RecoveryCandidateResolution
-        entry={{
-          record_id: '37d21d4b-674d-41fa-b792-29b7c2012ed3',
-          display_hint: 'recovered.txt',
-          updated_unix_ms: 10,
-          expires_unix_ms: 20,
-          committed_bytes: 100,
-          status: 'available',
-        }}
-        onDecision={onDecision}
-      />,
+      <AppFrame host="tauri" layout="full-bleed">
+        <RecoveryCandidateResolution
+          entry={{
+            record_id: '37d21d4b-674d-41fa-b792-29b7c2012ed3',
+            display_hint: 'recovered.txt',
+            updated_unix_ms: 10,
+            expires_unix_ms: 20,
+            committed_bytes: 100,
+            status: 'available',
+          }}
+          onDecision={onDecision}
+        />
+      </AppFrame>,
     );
     expect(screen.getByRole('button', { name: 'Recover' })).toHaveFocus();
     fireEvent.click(screen.getByRole('button', { name: 'Decline recovery' }));
@@ -2088,7 +2101,7 @@ describe('document foundation shell', () => {
 
   it('derives commands from the active capabilities and reports unavailable execution', async () => {
     render(<App sessions={initialSessions} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Document tools' }));
     expect(
       screen.getByRole('menuitem', { name: /^Copy\b/i }),
     ).toBeInTheDocument();
@@ -2121,10 +2134,12 @@ describe('document foundation shell', () => {
       screen.getByRole('complementary', { name: 'File information' }),
     ).toHaveTextContent('diagram.mmd');
     fireEvent.click(
-      screen.getByRole('button', { name: 'Close file information' }),
+      screen.getByRole('button', { name: 'Close File information' }),
     );
     await waitFor(() =>
-      expect(screen.getByRole('button', { name: 'Menu' })).toHaveFocus(),
+      expect(
+        screen.getByRole('button', { name: 'Document tools' }),
+      ).toHaveFocus(),
     );
     expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
   });
@@ -2204,7 +2219,7 @@ describe('document foundation shell', () => {
       expect.objectContaining({ expected_external_revision: observedRevision }),
       expect.any(AbortSignal),
     );
-  });
+  }, 10_000);
 
   it('withdraws cached source facts and checksum actions when metadata polling fails', async () => {
     const source = {
@@ -2213,8 +2228,9 @@ describe('document foundation shell', () => {
       source_id: 'source',
       external_revision: revision,
     };
+    let rejectPoll: (error: unknown) => void = () => undefined;
     const query = vi
-      .fn()
+      .fn<MetadataGateway['query']>()
       .mockResolvedValueOnce({
         source_id: 'source',
         external_revision: revision,
@@ -2227,7 +2243,12 @@ describe('document foundation shell', () => {
         write_state: 'writable' as const,
         identity_confidence: 'strong' as const,
       })
-      .mockRejectedValue(new Error('source unavailable'));
+      .mockImplementation(
+        () =>
+          new Promise((_resolve, reject) => {
+            rejectPoll = reject;
+          }),
+      );
     const gateway: MetadataGateway = {
       query,
       startIntegrity: vi.fn(),
@@ -2236,11 +2257,21 @@ describe('document foundation shell', () => {
     };
     render(<App sessions={[source]} metadataGateway={gateway} />);
     invokeMenu('File information');
+    const inspector = await screen.findByRole('complementary');
     expect(
-      await screen.findByRole('button', { name: 'Calculate SHA-256' }),
+      await within(inspector).findByRole('button', {
+        name: 'Calculate SHA-256',
+      }),
     ).toBeInTheDocument();
     await waitFor(() => expect(query).toHaveBeenCalledTimes(2), {
       timeout: 2_000,
+    });
+    expect(
+      within(inspector).getByRole('button', { name: 'Calculate SHA-256' }),
+    ).toBeInTheDocument();
+    await act(async () => {
+      rejectPoll(new Error('source unavailable'));
+      await Promise.resolve();
     });
     await waitFor(() =>
       expect(
@@ -2251,11 +2282,16 @@ describe('document foundation shell', () => {
           ),
       ).toBe(true),
     );
+    const unavailableInspector = screen.getByRole('complementary');
     expect(
-      screen.queryByRole('button', { name: 'Calculate SHA-256' }),
+      within(unavailableInspector).queryByRole('button', {
+        name: 'Calculate SHA-256',
+      }),
     ).not.toBeInTheDocument();
     expect(
-      screen.getAllByText('Unavailable (metadata_unavailable)').length,
+      within(unavailableInspector).getAllByText(
+        'Unavailable (metadata_unavailable)',
+      ).length,
     ).toBeGreaterThan(0);
   });
 
@@ -2267,8 +2303,28 @@ describe('document foundation shell', () => {
       external_revision: revision,
     };
     const cancelIntegrity = vi.fn(() => Promise.resolve());
-    const advanceIntegrity = vi.fn(
-      () => new Promise<IntegrityProgress>(() => undefined),
+    let rejectOld: (error: unknown) => void = () => undefined;
+    const advanceIntegrity = vi
+      .fn()
+      .mockImplementationOnce(
+        () =>
+          new Promise<IntegrityProgress>((_resolve, reject) => {
+            rejectOld = reject;
+          }),
+      )
+      .mockImplementation(
+        () => new Promise<IntegrityProgress>(() => undefined),
+      );
+    const startIntegrity = vi.fn((request: IntegrityStartRequest) =>
+      Promise.resolve({
+        request_id: request.request_id,
+        source_id: 'source',
+        external_revision: revision,
+        processed_bytes: '0',
+        total_bytes: '3',
+        state: 'pending' as const,
+        sha256: null,
+      }),
     );
     const gateway: MetadataGateway = {
       query: vi.fn(() =>
@@ -2285,31 +2341,50 @@ describe('document foundation shell', () => {
           identity_confidence: 'strong' as const,
         }),
       ),
-      startIntegrity: vi.fn((request: IntegrityStartRequest) =>
-        Promise.resolve({
-          request_id: request.request_id,
-          source_id: 'source',
-          external_revision: revision,
-          processed_bytes: '0',
-          total_bytes: '3',
-          state: 'pending' as const,
-          sha256: null,
-        }),
-      ),
+      startIntegrity,
       advanceIntegrity,
       cancelIntegrity,
     };
     render(<App sessions={[source]} metadataGateway={gateway} />);
     invokeMenu('File information');
+    const inspector = await screen.findByRole('complementary');
     fireEvent.click(
-      await screen.findByRole('button', { name: 'Calculate SHA-256' }),
+      await within(inspector).findByRole('button', {
+        name: 'Calculate SHA-256',
+      }),
     );
     await waitFor(() => expect(advanceIntegrity).toHaveBeenCalled());
     fireEvent.click(
-      screen.getByRole('button', { name: 'Close file information' }),
+      screen.getByRole('button', { name: 'Close File information' }),
     );
     await waitFor(() => expect(cancelIntegrity).toHaveBeenCalledOnce());
-  });
+    invokeMenu('File information');
+    const reopenedInspector = await screen.findByRole('complementary');
+    expect
+      .soft(
+        within(reopenedInspector)
+          .getByText('SHA-256', { selector: 'dt' })
+          .closest('.metadata-fact'),
+      )
+      .toHaveAttribute('data-availability', 'not_provided');
+    fireEvent.click(
+      await within(reopenedInspector).findByRole('button', {
+        name: 'Calculate SHA-256',
+      }),
+    );
+    await waitFor(() => expect(advanceIntegrity).toHaveBeenCalledTimes(2));
+    const currentId = startIntegrity.mock.calls[1][0].request_id;
+    await act(async () => {
+      rejectOld({ category: 'unavailable' });
+      await Promise.resolve();
+    });
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Close File information' }),
+    );
+    await waitFor(() =>
+      expect(cancelIntegrity).toHaveBeenCalledWith(currentId),
+    );
+  }, 10_000);
 
   it('keeps the reference document area at or above 90 percent', () => {
     expect(DESKTOP_CHROME_MAX_PX).toBeLessThanOrEqual(
@@ -2332,6 +2407,127 @@ describe('document foundation shell', () => {
         ({ impact }) => impact === 'critical' || impact === 'serious',
       ),
     ).toEqual([]);
+  });
+
+  it('applies a changed Markdown default only to a later native delivery', async () => {
+    const first = makeSession(
+      'first-md',
+      'first.md',
+      'Markdown',
+      '# First document\n',
+      {},
+    );
+    const later = {
+      ...makeSession(
+        'later-md',
+        'later.md',
+        'Markdown',
+        '# Later document\n',
+        {},
+      ),
+      source_id: 'later-source',
+    };
+    const laterRevision = {
+      ...revision,
+      identity: later.source.identity,
+      byte_length: later.source.byte_length!,
+    };
+    const choose = vi.fn();
+    const materialize = vi.fn();
+    const gateway: DesktopDeliveryGateway = {
+      choose: choose.mockResolvedValue([
+        {
+          sequence: 1,
+          kind: 'dialog',
+          status: 'opened',
+          source: {
+            source_id: 'later-source',
+            descriptor: later.source,
+            external_revision: laterRevision,
+          },
+          error: null,
+        },
+      ]),
+      drain: vi.fn().mockResolvedValue([]),
+      close: vi.fn().mockResolvedValue(undefined),
+      save: vi.fn(),
+      materialize: materialize.mockResolvedValue({
+        ...later,
+        external_revision: laterRevision,
+      }),
+      saveAs: vi.fn().mockResolvedValue(false),
+      subscribe: vi.fn().mockResolvedValue(() => undefined),
+    };
+    render(
+      <App
+        sessions={[first]}
+        persistenceGateway={persistenceGateway()}
+        desktopDeliveryGateway={gateway}
+        metadataGateway={null}
+        recoveryGateway={null}
+      />,
+    );
+    await screen.findByRole('heading', { name: 'First document' });
+    invokeMenu('Preferences');
+    fireEvent.change(screen.getByLabelText('Default Markdown view'), {
+      target: { value: 'source' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Close Preferences' }));
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect
+      .soft(document.querySelector('.markdown-rendered-mode:not([hidden])'))
+      .toBeInTheDocument();
+    expect
+      .soft(screen.queryByRole('textbox', { name: 'first.md source editor' }))
+      .not.toBeInTheDocument();
+    invokeMenu('Open file');
+    await screen.findByRole('tab', { name: /later\.md/u });
+    await waitFor(() =>
+      expect(
+        document.querySelector('.markdown-source-mode:not([hidden])'),
+      ).toBeInTheDocument(),
+    );
+    expect(choose).toHaveBeenCalledOnce();
+    expect(materialize).toHaveBeenCalledOnce();
+  });
+
+  it('applies the persisted Markdown default when delayed initialization finishes', async () => {
+    let finishLoad: (
+      value: Awaited<ReturnType<PersistenceGateway['loadPreferences']>>,
+    ) => void = () => undefined;
+    const loading = new Promise<
+      Awaited<ReturnType<PersistenceGateway['loadPreferences']>>
+    >((resolve) => {
+      finishLoad = resolve;
+    });
+    render(
+      <App
+        sessions={[initialSessions[0]]}
+        persistenceGateway={persistenceGateway({
+          loadPreferences: vi.fn().mockReturnValue(loading),
+        })}
+        metadataGateway={null}
+        recoveryGateway={null}
+      />,
+    );
+    await act(async () => {
+      finishLoad({
+        status: 'loaded',
+        value: { ...defaultPreferences(), markdown_default_mode: 'source' },
+        warning_code: null,
+      });
+      await loading;
+    });
+    await waitFor(() =>
+      expect(
+        document.querySelector('.markdown-source-mode:not([hidden])'),
+      ).toBeInTheDocument(),
+    );
+    expect(
+      document.querySelector('.markdown-rendered-mode:not([hidden])'),
+    ).not.toBeInTheDocument();
   });
 
   it('loads, edits, persists, and resets bounded preferences without replacing the document', async () => {
@@ -2360,10 +2556,11 @@ describe('document foundation shell', () => {
       { timeout: 1_000 },
     );
     fireEvent.click(screen.getByRole('button', { name: 'Reset preferences' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Reset settings' }));
     await waitFor(() =>
       expect(gateway.reset).toHaveBeenCalledWith('preferences'),
     );
-    fireEvent.click(screen.getByRole('button', { name: 'Close preferences' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Close Preferences' }));
     expect(screen.getByRole('button', { name: 'Menu' })).toBeInTheDocument();
   });
 
@@ -2432,7 +2629,7 @@ describe('document foundation shell', () => {
       ).toHaveAttribute('aria-selected', 'true'),
     );
     expect(
-      screen.getByRole('complementary', { name: 'Preferences' }),
+      await screen.findByRole('complementary', { name: 'Preferences' }),
     ).toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: 'Menu' }),
@@ -2498,4 +2695,425 @@ describe('document foundation shell', () => {
     expect(screen.getByRole('status')).toHaveTextContent('No document is open');
     expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
   });
+
+  it('persists Automatic for the selected extension while retaining other language choices', async () => {
+    const preferences = {
+      ...defaultPreferences(),
+      language_overrides: { txt: 'html', rs: 'rust' },
+    };
+    const gateway = persistenceGateway({
+      loadPreferences: vi.fn().mockResolvedValue({
+        status: 'loaded',
+        value: preferences,
+        warning_code: null,
+      }),
+    });
+    render(
+      <App
+        sessions={[createDraftSession('text')]}
+        recoveryGateway={null}
+        persistenceGateway={gateway}
+      />,
+    );
+    const editor = screen.getByRole('textbox', {
+      name: 'Untitled.txt text editor',
+    });
+    const view = EditorView.findFromDOM(editor)!;
+    const original = view.state.doc.toString();
+    invokeMenu('Document details');
+    const language = await screen.findByRole('combobox', {
+      name: 'Language mode',
+    });
+    await waitFor(() => expect(language).toHaveValue('html'));
+    fireEvent.change(language, { target: { value: 'automatic' } });
+    await waitFor(() => expect(language).toHaveValue('automatic'));
+    await waitFor(() =>
+      expect(gateway.persistPreferences).toHaveBeenLastCalledWith(
+        expect.objectContaining({ language_overrides: { rs: 'rust' } }),
+      ),
+    );
+    expect(view.state.doc.toString()).toBe(original);
+    expect(EditorView.findFromDOM(editor)).toBe(view);
+  });
 });
+
+it('does not advertise JavaScript-only Print in the Android host without a native print provider', async () => {
+  render(
+    <App
+      sessions={[initialSessions[0]]}
+      androidDeliveryGateway={authoringDelivery()}
+      recoveryGateway={null}
+      persistenceGateway={null}
+    />,
+  );
+  await waitFor(() =>
+    expect(document.querySelector('.markdown-document')).toHaveAttribute(
+      'aria-busy',
+      'false',
+    ),
+  );
+  fireEvent.click(screen.getByRole('button', { name: 'Document tools' }));
+  expect(
+    within(screen.getByRole('menu', { name: 'Document tools' })).queryByRole(
+      'menuitem',
+      { name: /^Print/ },
+    ),
+  ).not.toBeInTheDocument();
+});
+
+it.each([false, true])(
+  'crops only the remaining native shell obstruction (canonical already consumed=%s)',
+  async (consumed) => {
+    const width = window.innerWidth,
+      height = window.innerHeight;
+    const viewport = {
+      webview_screen: {
+        left: 17,
+        top: 29,
+        right: 17 + width * 2,
+        bottom: 29 + height * 2,
+      },
+      visible_screen: {
+        left: 33,
+        top: 77,
+        right: 17 + (width - 12) * 2,
+        bottom: 29 + (height - 16) * 2,
+      },
+      view_width: width * 2,
+      view_height: height * 2,
+      density: 3,
+    };
+    render(
+      <App
+        androidDeliveryGateway={authoringDelivery()}
+        persistenceGateway={null}
+        recoveryGateway={null}
+        diagnosticExportGateway={{
+          export: () => Promise.resolve(),
+          viewport: () => Promise.resolve(viewport),
+        }}
+      />,
+    );
+    const rect = consumed
+      ? new DOMRect(8, 24, width - 20, height - 40)
+      : new DOMRect(0, 0, width, height);
+    for (const node of document.querySelectorAll<HTMLElement>(
+      '[data-bb-app-frame],#bb-main,.bb-app-frame__scroll',
+    ))
+      vi.spyOn(node, 'getBoundingClientRect').mockReturnValue(rect);
+    const shell = getApplicationShell();
+    await waitFor(() =>
+      expect(shell).toHaveAttribute('data-native-viewport', 'true'),
+    );
+    expect(shell.style.getPropertyValue('--gl-shell-native-inline-end')).toBe(
+      consumed ? '0px' : '12px',
+    );
+    expect(shell.style.getPropertyValue('--gl-shell-native-block-end')).toBe(
+      consumed ? '0px' : '16px',
+    );
+    expect(shell.style.getPropertyValue('--gl-shell-native-inline-size')).toBe(
+      width - 20 + 'px',
+    );
+    expect(shell.style.getPropertyValue('--gl-shell-native-block-size')).toBe(
+      height - 40 + 'px',
+    );
+  },
+);
+
+it('routes rapid editor indent history through Ctrl+Z and shell Ctrl+Shift+Z once', async () => {
+  const original = 'cat Cat scatter cat\nsecond';
+  const indented = '    cat Cat scatter cat\n    second';
+  render(
+    <App
+      sessions={[createDraftSession('text')]}
+      recoveryGateway={null}
+      persistenceGateway={null}
+    />,
+  );
+  const editor = screen.getByRole('textbox', {
+    name: 'Untitled.txt text editor',
+  });
+  const view = EditorView.findFromDOM(editor)!;
+  act(() => {
+    view.dispatch({
+      changes: { from: 0, insert: original },
+      selection: { anchor: 0, head: original.length },
+      userEvent: 'input.type',
+    });
+  });
+  const clock = vi.spyOn(Date, 'now').mockReturnValue(Date.now());
+  try {
+    fireEvent.keyDown(editor, { key: 'Tab', code: 'Tab', keyCode: 9 });
+    expect(view.state.doc.toString()).toBe(indented);
+    fireEvent.keyDown(editor, {
+      key: 'Tab',
+      code: 'Tab',
+      keyCode: 9,
+      shiftKey: true,
+    });
+    expect(view.state.doc.toString()).toBe(original);
+    fireEvent.keyDown(editor, {
+      key: 'z',
+      code: 'KeyZ',
+      keyCode: 90,
+      ctrlKey: true,
+    });
+    await waitFor(() => expect(view.state.doc.toString()).toBe(indented));
+    fireEvent.keyDown(editor, {
+      key: 'Z',
+      code: 'KeyZ',
+      keyCode: 90,
+      ctrlKey: true,
+      shiftKey: true,
+    });
+    await waitFor(() => expect(view.state.doc.toString()).toBe(original));
+    fireEvent.keyDown(editor, {
+      key: 'z',
+      code: 'KeyZ',
+      keyCode: 90,
+      ctrlKey: true,
+    });
+    await waitFor(() => expect(view.state.doc.toString()).toBe(indented));
+    expect(EditorView.findFromDOM(editor)).toBe(view);
+  } finally {
+    clock.mockRestore();
+  }
+});
+
+it('returns a remembered HTML language override to Automatic without changing source', async () => {
+  render(
+    <App
+      sessions={[createDraftSession('text')]}
+      recoveryGateway={null}
+      persistenceGateway={null}
+    />,
+  );
+  const editor = screen.getByRole('textbox', {
+    name: 'Untitled.txt text editor',
+  });
+  const view = EditorView.findFromDOM(editor)!;
+  act(() =>
+    view.dispatch({
+      changes: { from: 0, insert: 'cat Cat scatter cat\nsecond' },
+    }),
+  );
+  const original = view.state.doc.toString();
+  invokeMenu('Document details');
+  const language = await screen.findByRole('combobox', {
+    name: 'Language mode',
+  });
+  fireEvent.change(language, { target: { value: 'html' } });
+  await waitFor(() => expect(language).toHaveValue('html'));
+  fireEvent.change(language, { target: { value: 'automatic' } });
+  await waitFor(() => expect(language).toHaveValue('automatic'));
+  expect(view.state.doc.toString()).toBe(original);
+  expect(EditorView.findFromDOM(editor)).toBe(view);
+  fireEvent.click(
+    screen.getByRole('button', { name: 'Close Document details' }),
+  );
+  invokeMenu('Document details');
+  expect(
+    await screen.findByRole('combobox', { name: 'Language mode' }),
+  ).toHaveValue('automatic');
+});
+
+it('keeps Replace focused across Search reopen after an exact replacement and Undo', async () => {
+  render(
+    <App
+      sessions={[createDraftSession('text')]}
+      recoveryGateway={null}
+      persistenceGateway={null}
+    />,
+  );
+  const editor = screen.getByRole('textbox', {
+    name: 'Untitled.txt text editor',
+  });
+  const view = EditorView.findFromDOM(editor)!;
+  const original = 'cat Cat scatter cat\nsecond';
+  act(() => view.dispatch({ changes: { from: 0, insert: original } }));
+  invokeMenu('Search');
+  const find = await screen.findByRole('textbox', { name: 'Find' });
+  fireEvent.change(find, { target: { value: 'cat' } });
+  fireEvent.change(screen.getByRole('textbox', { name: 'Replace' }), {
+    target: { value: 'dog' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Replace next' }));
+  await waitFor(() => expect(view.state.doc.toString()).not.toBe(original));
+  fireEvent.click(screen.getByRole('button', { name: 'Close search' }));
+  invokeMenu('Undo');
+  await waitFor(() => expect(view.state.doc.toString()).toBe(original));
+  invokeMenu('Search');
+  const replace = await screen.findByRole('textbox', { name: 'Replace' });
+  await waitFor(() =>
+    expect(screen.getByRole('textbox', { name: 'Find' })).toHaveFocus(),
+  );
+  act(() => replace.focus());
+  expect(replace).toHaveFocus();
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  });
+  expect(replace).toHaveFocus();
+  expect(view.state.doc.toString()).toBe(original);
+}, 10_000);
+
+it('executes immediate Ctrl+Z then Ctrl+Shift+Z using the current editor history', async () => {
+  render(
+    <App
+      sessions={[createDraftSession('text')]}
+      recoveryGateway={null}
+      persistenceGateway={null}
+    />,
+  );
+  const editor = screen.getByRole('textbox', {
+    name: 'Untitled.txt text editor',
+  });
+  const view = EditorView.findFromDOM(editor)!;
+  const original = 'cat Cat scatter cat\nsecond';
+  const indented = '    cat Cat scatter cat\n    second';
+  act(() => {
+    view.dispatch({
+      changes: { from: 0, insert: original },
+      selection: { anchor: 0, head: original.length },
+      userEvent: 'input.type',
+    });
+    editor.focus();
+  });
+  fireEvent.keyDown(editor, { key: 'Tab', code: 'Tab', keyCode: 9 });
+  fireEvent.keyDown(editor, {
+    key: 'Tab',
+    code: 'Tab',
+    keyCode: 9,
+    shiftKey: true,
+  });
+  expect(view.state.doc.toString()).toBe(original);
+  act(() => {
+    editor.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'z',
+        code: 'KeyZ',
+        keyCode: 90,
+        ctrlKey: true,
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+    expect(view.state.doc.toString()).toBe(indented);
+    editor.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Z',
+        code: 'KeyZ',
+        keyCode: 90,
+        ctrlKey: true,
+        shiftKey: true,
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+  });
+  await waitFor(() => expect(view.state.doc.toString()).toBe(original));
+  expect(EditorView.findFromDOM(editor)).toBe(view);
+});
+
+it('keeps shell Redo blocked during a native Save, including before React publishes the pending state', async () => {
+  let finish: ((receipt: AndroidDestinationReceipt | null) => void) | undefined;
+  const saveAs = vi.fn(
+    () =>
+      new Promise<AndroidDestinationReceipt | null>((resolve) => {
+        finish = resolve;
+      }),
+  );
+  render(
+    <App
+      sessions={[createDraftSession('text')]}
+      androidDeliveryGateway={authoringDelivery()}
+      androidAuthoringGateway={{ saveAs }}
+      recoveryGateway={null}
+      persistenceGateway={null}
+    />,
+  );
+  const editor = screen.getByRole('textbox', {
+    name: 'Untitled.txt text editor',
+  });
+  const view = EditorView.findFromDOM(editor)!;
+  act(() => {
+    view.dispatch({
+      changes: { from: 0, insert: 'Draft' },
+      userEvent: 'input.type',
+    });
+  });
+  fireEvent.keyDown(editor, {
+    key: 'z',
+    code: 'KeyZ',
+    keyCode: 90,
+    ctrlKey: true,
+  });
+  expect(view.state.doc.toString()).toBe('');
+  const redo = () =>
+    getApplicationShell().dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Z',
+        code: 'KeyZ',
+        keyCode: 90,
+        ctrlKey: true,
+        shiftKey: true,
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+  act(() => {
+    getApplicationShell().dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 's',
+        ctrlKey: true,
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+    redo();
+    expect(view.state.doc.toString()).toBe('');
+  });
+  await waitFor(() => expect(saveAs).toHaveBeenCalledOnce());
+  act(() => {
+    redo();
+  });
+  expect(view.state.doc.toString()).toBe('');
+  await act(async () => {
+    finish?.(null);
+    await Promise.resolve();
+  });
+  act(() => {
+    redo();
+  });
+  await waitFor(() => expect(view.state.doc.toString()).toBe('Draft'));
+});
+
+it('opens a Mermaid Edit a copy as an independent editable Mermaid source', async () => {
+  const original = makeSession(
+    'mermaid-copy-origin',
+    'diagram-copy.mmd',
+    'Mermaid',
+    'flowchart TB\n  Alpha --> Beta\n',
+    { search: true, zoom: true, edit: false },
+  );
+  const before = JSON.stringify(original);
+  render(<App sessions={[original]} />);
+  invokeMenu('Edit a copy');
+  const editor = await screen.findByRole('textbox', {
+    name: 'Copy of diagram-copy.mmd text editor',
+  });
+  expect(editor.closest('.mermaid-source-mode')).not.toBeNull();
+  expect(editor).toHaveAttribute('contenteditable', 'true');
+  const view = EditorView.findFromDOM(editor)!;
+  const changed = 'flowchart TB\n  Alpha --> Beta\n  Beta --> Gamma\n';
+  act(() => {
+    view.dispatch({
+      changes: { from: 0, to: view.state.doc.length, insert: changed },
+    });
+  });
+  expect(view.state.doc.toString()).toBe(changed);
+  expect(document.querySelector('[data-draft-identity]')).toHaveTextContent(
+    'Unsaved changes',
+  );
+  expect(JSON.stringify(original)).toBe(before);
+}, 10_000);

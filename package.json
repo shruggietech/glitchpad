@@ -23,6 +23,9 @@
       "basic-ftp@5.3.1": "6.2.1",
       "re2js@>=2.0.0 <2.8.7": "2.8.7",
       "minimatch@10.2.6": "11.0.1"
+    },
+    "patchedDependencies": {
+      "mermaid@12.0.0": "patches/mermaid@12.0.0.patch"
     }
   },
   "scripts": {
@@ -31,7 +34,7 @@
     "check:brand": "node --test scripts/check-brand.test.mjs scripts/sync-brand-kit.test.mjs && node scripts/check-brand.mjs",
     "check:brand:freshness": "node scripts/check-brand.mjs --freshness",
     "check:public-release": "node --test scripts/check-public-release.test.mjs scripts/lib/site-release-destination.test.mjs && node scripts/check-public-release.mjs",
-    "check:validation": "node --test scripts/check-validation.test.mjs scripts/run-android-evidence.test.mjs scripts/run-android-s046-journeys.test.mjs",
+    "check:validation": "node --test scripts/check-validation.test.mjs scripts/run-android-evidence.test.mjs scripts/run-android-s046-journeys.test.mjs scripts/test-android-recovery-evidence.mjs scripts/android-offline-mode.test.mjs",
     "check:mermaid-runtime": "node --test scripts/check-mermaid-runtime.test.mjs && node scripts/check-mermaid-runtime.mjs",
     "check:metadata": "node --test scripts/check-metadata-fixture.test.mjs && node scripts/check-metadata-fixture.mjs",
     "check:images": "node scripts/check-fuzz-lock.mjs && node --test scripts/check-image-activation.test.mjs && node scripts/check-image-layout.mjs",
@@ -42,7 +45,7 @@
     "check:android-package": "node --test scripts/check-android-package.test.mjs scripts/android/assemble-package.test.mjs && node scripts/check-android-package.mjs --source-manifest crates/glitchpad-host/gen/android/app/src/main/AndroidManifest.xml",
     "check:linux-package": "node --test scripts/lib/package-document-workflow.test.mjs scripts/check-linux-package.test.mjs scripts/linux/assemble-package.test.mjs scripts/linux/test-package-lifecycle.test.mjs scripts/linux/thin-appimage.test.mjs && node scripts/check-linux-package.mjs",
     "check:macos-package": "node --test scripts/lib/package-document-workflow.test.mjs scripts/check-macos-package.test.mjs scripts/macos/assemble-package.test.mjs scripts/macos/test-package-lifecycle.test.mjs scripts/macos/startup-sampler.test.mjs scripts/macos/compare-startup.test.mjs && node scripts/check-macos-package.mjs",
-    "check:windows-package": "node --test scripts/check-windows-package.test.mjs && node scripts/check-windows-package.mjs",
+    "check:windows-package": "node --test scripts/check-windows-package.test.mjs && pwsh -NoLogo -NoProfile -NonInteractive -File scripts/windows/test-startup-diagnostics.ps1 && node scripts/check-windows-package.mjs",
     "check:community-release": "node --test scripts/check-community-release.test.mjs scripts/assemble-community-release.test.mjs scripts/promote-community-package.test.mjs && node scripts/check-community-release.mjs",
     "check:frontend": "pnpm --filter @shruggietech/glitchpad check",
     "check:site": "pnpm --filter @shruggietech/glitchpad-site check",
@@ -57,7 +60,8 @@
     "docs": "cargo xtask docs",
     "tauri": "cd crates/glitchpad-host && tauri",
     "test": "pnpm --filter @shruggietech/glitchpad test:run",
-    "check:advisories": "pnpm audit --audit-level=moderate"
+    "check:advisories": "pnpm audit --audit-level=moderate",
+    "check:app-layout": "node --test scripts/check-app-layout.test.mjs && node scripts/check-app-layout.mjs --receipt artifacts/android-task-layout/receipt.json"
   },
   "devDependencies": {
     "@mermaid-js/mermaid-cli": "11.17.0",

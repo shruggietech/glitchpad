@@ -1,14 +1,51 @@
 package com.shruggietech.glitchpad
 
+import android.content.res.Configuration
 import android.graphics.Rect
 import android.os.Build
 import android.os.Bundle
+import android.view.ActionMode
 import android.view.ViewGroup
 import android.view.WindowInsets
 import android.webkit.WebView
 import androidx.activity.enableEdgeToEdge
+import kotlin.math.roundToInt
+import com.shruggietech.glitchpad.source.AndroidNativeEditOwner
 
-class MainActivity : TauriActivity() {
+class MainActivity : TauriActivity(), AndroidNativeEditOwner {
+  private var activeWebView: WebView? = null
+  private var nativeEditMode: ActionMode? = null
+
+  override val androidNativeEditModeActive: Boolean get() = nativeEditMode != null
+
+  override fun onActionModeStarted(mode: ActionMode) {
+    super.onActionModeStarted(mode)
+    nativeEditMode = mode
+  }
+
+  override fun onActionModeFinished(mode: ActionMode) {
+    if (nativeEditMode === mode) nativeEditMode = null
+    super.onActionModeFinished(mode)
+  }
+
+  override fun dismissAndroidNativeEditMode(): Boolean {
+    val mode = nativeEditMode ?: return false
+    nativeEditMode = null
+    mode.finish()
+    return true
+  }
+
+  override fun onWebViewCreate(webView: WebView) {
+    super.onWebViewCreate(webView)
+    activeWebView = webView
+    webView.settings.textZoom = (resources.configuration.fontScale * 100).roundToInt()
+  }
+
+  override fun onConfigurationChanged(newConfig: Configuration) {
+    super.onConfigurationChanged(newConfig)
+    activeWebView?.settings?.textZoom = (newConfig.fontScale * 100).roundToInt()
+  }
+
   override fun onCreate(savedInstanceState: Bundle?) {
     enableEdgeToEdge()
     super.onCreate(savedInstanceState)

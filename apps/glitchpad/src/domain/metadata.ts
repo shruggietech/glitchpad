@@ -539,10 +539,20 @@ const formatValue = (value: MetadataValue, unit?: string): string => {
     case 'text': return value.value;
     case 'integer': {
       if (!/^-?\d+$/u.test(value.value)) return value.value;
-      const number = BigInt(value.value);
-      return new Intl.NumberFormat(undefined, unitFormat(unit, 0)).format(number);
+      try {
+        const number = BigInt(value.value);
+        return new Intl.NumberFormat(undefined, unitFormat(unit, 0)).format(number);
+      } catch {
+        return exactNumericFallback(value.value, unit);
+      }
     }
-    case 'decimal': return new Intl.NumberFormat(undefined, unitFormat(unit, 3)).format(Number(value.value));
+    case 'decimal': {
+      try {
+        return new Intl.NumberFormat(undefined, unitFormat(unit, 3)).format(Number(value.value));
+      } catch {
+        return exactNumericFallback(value.value, unit);
+      }
+    }
     case 'boolean': return value.value ? 'Yes' : 'No';
     case 'timestamp_unix_nanos': {
       try {
@@ -554,6 +564,13 @@ const formatValue = (value: MetadataValue, unit?: string): string => {
     }
   }
 };
+
+// Minimum WebView lacks Intl unit/BigInt formatting. Keep exact wire digits.
+const exactNumericFallback = (value: string, unit?: string): string =>
+  value +
+  (unit === 'bytes'
+    ? value === '1' || value === '-1' ? ' byte' : ' bytes'
+    : unit === 'ms' ? ' ms' : '');
 
 const unitFormat = (unit: string | undefined, maximumFractionDigits: number): Intl.NumberFormatOptions => ({
   maximumFractionDigits,

@@ -133,7 +133,82 @@ describe('renderer-driven commands', () => {
       },
     });
     expect(commandSetFor(mermaid).find(({ id }) => id === 'edit')?.label).toBe(
-      'Preview',
+      'Read',
     );
+  });
+});
+
+describe('current editor availability and provider scope', () => {
+  it('uses actual history and wrapping state while leaving unsupported page controls absent', () => {
+    const current = session();
+    current.renderer.capabilities.navigate = true;
+    const commands = commandSetFor(current, {
+      undo: false,
+      redo: true,
+      wrapped: true,
+    });
+    expect(commands.find(({ id }) => id === 'undo')?.enabled).toBe(false);
+    expect(commands.find(({ id }) => id === 'redo')?.enabled).toBe(true);
+    expect(
+      commands.some(({ id }) => id === 'previous_page' || id === 'next_page'),
+    ).toBe(false);
+  });
+});
+
+describe('document task command contexts', () => {
+  it('offers Details for actual text sources and Large text tools only for windowed sources', () => {
+    const text = createDraftSession('text');
+    text.text_document = { ...text.text_document!, mode: 'editable' };
+    const textIds = commandSetFor(text).map(({ id }) => id);
+    expect(textIds).toContain('document_details');
+    expect(textIds).not.toContain('large_text_tools');
+    expect(
+      commandSetFor({
+        ...text,
+        source: {
+          ...text.source,
+          capabilities: { ...text.source.capabilities, write: false },
+        },
+        renderer: {
+          ...text.renderer,
+          capabilities: { ...text.renderer.capabilities, edit: false },
+        },
+      }).map(({ id }) => id),
+    ).toContain('document_details');
+
+    const windowed = {
+      ...text,
+      source_id: 'test-source',
+      text_document: {
+        ...text.text_document,
+        mode: 'large_read_only' as const,
+      },
+    };
+    const windowIds = commandSetFor(windowed).map(({ id }) => id);
+    expect(windowIds).toContain('large_text_tools');
+    expect(windowIds).not.toContain('document_details');
+    expect(
+      commandSetFor({ ...windowed, source_id: undefined }).map(({ id }) => id),
+    ).not.toContain('large_text_tools');
+    const markdown = createDraftSession('markdown');
+    const rendered = {
+      ...markdown,
+      markdown_document: {
+        ...markdown.markdown_document!,
+        mode: 'rendered' as const,
+      },
+    };
+    expect(commandSetFor(rendered).map(({ id }) => id)).not.toContain(
+      'document_details',
+    );
+    expect(
+      commandSetFor({
+        ...rendered,
+        markdown_document: { ...rendered.markdown_document, mode: 'source' },
+      }).map(({ id }) => id),
+    ).toContain('document_details');
+    expect(
+      commandSetFor({ ...text, text_document: undefined }).map(({ id }) => id),
+    ).not.toContain('document_details');
   });
 });

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { deterministicMarkdownFixture, measureMarkdownProjection } from './markdown-performance';
 
 describe('Markdown performance evidence', () => {
+  // Three valid hosted samples can total 7500ms before setup and digest work.
   it('records repeatable 1 MiB projection samples and fixture digest', async () => {
     const source = deterministicMarkdownFixture();
     const measurement = await measureMarkdownProjection(source, 3);
@@ -13,5 +14,5 @@ describe('Markdown performance evidence', () => {
     const referenceProfile = import.meta.env.VITE_GLITCHPAD_REFERENCE_PERFORMANCE === '1';
     const thresholdMs = referenceProfile ? 800 : 2500;
     expect(measurement.p95_ms).toBeLessThan(thresholdMs);
-  });
+  }, 10_000);
 });

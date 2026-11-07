@@ -33,3 +33,98 @@ foreach ($arguments in @(@{ WaitKind = 'private-control' }, @{ WaitCallerLine = 
     if (-not $refused) { throw 'Non-allowlisted readiness site was admitted.' }
 }
 Write-Output 'Failure-only named readiness caller-site tests passed.'
+
+$receipt = New-PortableStartupDiagnostic -Observation $observation -Scenario clean -Stage named_button_wait -SourceCommit ('a' * 40) -ManifestDigest ('b' * 64) -Succeeded $false -ElapsedMilliseconds 10000 -WaitKind named_button -WaitCallerLine 405
+if ($receipt.readiness_wait.function -cne 'Wait-NamedButton' -or $receipt.readiness_wait.caller_line -ne 405) { throw 'Failed button caller site was not retained.' }
+$json = $receipt | ConvertTo-Json -Depth 4 -Compress
+if ($json -match 'private-title|private-arguments|document.pdf|/private|\\') { throw 'Button caller-site observation exposed private input.' }
+$receipt = New-PortableStartupDiagnostic -Observation $observation -Scenario clean -Stage named_button_ready -SourceCommit ('a' * 40) -ManifestDigest ('b' * 64) -Succeeded $true -ElapsedMilliseconds 1 -WaitKind named_button -WaitCallerLine 405
+if ($receipt.Contains('readiness_wait')) { throw 'Successful button readiness must omit failure-only caller diagnostics.' }
+Write-Output 'Failure-only button readiness caller-site tests passed.'
+
+$action = @{ phase = 'save_wait'; menu_available = $false; candidate_available = $true; menu_owned = $true; enabled = $true; visible = $true; scroll_requested = $true; click_dispatched = $true; feedback_pending = $false; control_name = 'private-control'; document_text = 'private-document'; path = '/private/file.md' }
+$receipt = New-PortableStartupDiagnostic -Observation $observation -Scenario editable -Stage named_button_ready -SourceCommit ('a' * 40) -ManifestDigest ('b' * 64) -Succeeded $false -ElapsedMilliseconds 10000 -DocumentAction $action
+if ($receipt.document_action.phase -cne 'save_wait' -or -not $receipt.document_action.menu_owned -or -not $receipt.document_action.click_dispatched -or $receipt.document_action.menu_available -or $receipt.document_action.feedback_pending) { throw 'Document action boolean/phase classification is incorrect.' }
+if ($null -ne $receipt.document_action.feedback_saved) { throw 'Unobserved action outcome must remain unknown.' }
+$json = $receipt | ConvertTo-Json -Depth 4 -Compress
+if ($json -match 'private-control|private-document|/private|file.md|control_name|document_text') { throw 'Document action observation exposed non-allowlisted input.' }
+$receipt = New-PortableStartupDiagnostic -Observation $observation -Scenario editable -Stage named_button_ready -SourceCommit ('a' * 40) -ManifestDigest ('b' * 64) -Succeeded $true -ElapsedMilliseconds 1 -DocumentAction $action
+if ($receipt.Contains('document_action')) { throw 'Successful scenario must omit failure-only action diagnostics.' }
+$action.phase = 'private-phase'
+$refused = $false
+try { New-PortableStartupDiagnostic -Observation $observation -Scenario editable -Stage named_button_ready -SourceCommit ('a' * 40) -ManifestDigest ('b' * 64) -Succeeded $false -ElapsedMilliseconds 1 -DocumentAction $action | Out-Null } catch { $refused = $true }
+if (-not $refused) { throw 'Arbitrary document action phase was admitted.' }
+Write-Output 'Failure-only document action allowlist tests passed.'
+
+$action = @{ phase = 'action_wait'; resolver_error = $true; resolver_method_missing = $true; exception_message = 'private-error-content'; error_id = 'private-error-id' }
+$receipt = New-PortableStartupDiagnostic -Observation $observation -Scenario editable -Stage named_button_ready -SourceCommit ('a' * 40) -ManifestDigest ('b' * 64) -Succeeded $false -ElapsedMilliseconds 10000 -DocumentAction $action
+if (-not $receipt.document_action.resolver_error -or -not $receipt.document_action.resolver_method_missing) { throw 'Fixed UIA error classification is missing.' }
+$json = $receipt | ConvertTo-Json -Depth 4 -Compress
+if ($json -match 'private-error|exception_message|error_id') { throw 'Raw UIA error was included in failure observations.' }
+Write-Output 'Failure-only UIA error classification redaction tests passed.'
+
+$recovery = @{ phase = 'paused_content'; view_source_invoked = $true; capture_available = $true; paused_text_present = $true; source_editor_present = $true; retry_present = $true; view_source_present = $false; document_text = 'private-document'; control_name = 'private-control' }
+$receipt = New-PortableStartupDiagnostic -Observation $observation -Scenario recovery -Stage content_wait -SourceCommit ('a' * 40) -ManifestDigest ('b' * 64) -Succeeded $false -ElapsedMilliseconds 20000 -RecoveryObservation $recovery
+if ($receipt.recovery_observation.phase -cne 'paused_content' -or -not $receipt.recovery_observation.paused_text_present -or -not $receipt.recovery_observation.source_editor_present -or $receipt.recovery_observation.view_source_present -or $null -ne $receipt.recovery_observation.probe_consumed) { throw 'Recovery phase/boolean/unknown classification is incorrect.' }
+$json = $receipt | ConvertTo-Json -Depth 4 -Compress
+if ($json -match 'private-document|private-control|document_text|control_name') { throw 'Recovery observation exposed non-allowlisted input.' }
+$receipt = New-PortableStartupDiagnostic -Observation $observation -Scenario recovery -Stage content_ready -SourceCommit ('a' * 40) -ManifestDigest ('b' * 64) -Succeeded $true -ElapsedMilliseconds 1 -RecoveryObservation $recovery
+if ($receipt.Contains('recovery_observation')) { throw 'Successful recovery must omit failure-only observations.' }
+$recovery.phase='private-phase'; $refused=$false
+try { New-PortableStartupDiagnostic -Observation $observation -Scenario recovery -Stage content_wait -SourceCommit ('a' * 40) -ManifestDigest ('b' * 64) -Succeeded $false -ElapsedMilliseconds 20000 -RecoveryObservation $recovery | Out-Null } catch { $refused=$true }
+if (-not $refused) { throw 'Arbitrary recovery phase was admitted.' }
+Write-Output 'Failure-only recovery observation allowlist tests passed.'
+
+# Every literal readiness state emitted by the production driver must reach its receipt.
+$driverAst = [Management.Automation.Language.Parser]::ParseFile((Join-Path $PSScriptRoot 'test-portable-lifecycle.ps1'), [ref]$null, [ref]$null)
+$assignments = $driverAst.FindAll({ param($node) $node -is [Management.Automation.Language.AssignmentStatementAst] }, $true)
+foreach ($assignment in $assignments) {
+    if ($assignment.Left.Extent.Text -cne '$script:readinessStage') { continue }
+    $stageValue = $assignment.Right.Extent.Text.Trim("'")
+    $receipt = New-PortableStartupDiagnostic -Observation $observation -Scenario editable -Stage $stageValue -SourceCommit ('a' * 40) -ManifestDigest ('b' * 64) -Succeeded $false -ElapsedMilliseconds 1
+    if ($receipt.stage -cne $stageValue) { throw 'Production readiness stage was not retained.' }
+}
+foreach ($stageValue in @('foreground_wait', 'foreground_ready')) {
+    $receipt = New-PortableStartupDiagnostic -Observation $observation -Scenario editable -Stage $stageValue -SourceCommit ('a' * 40) -ManifestDigest ('b' * 64) -Succeeded $false -ElapsedMilliseconds 1 -WaitKind foreground -WaitCallerLine 420
+    if ($receipt.readiness_wait.function -cne 'Wait-ApplicationForeground' -or $receipt.readiness_wait.caller_line -ne 420) { throw 'Foreground readiness caller site was not retained.' }
+}
+$action = @{ phase = 'click_dispatched'; foreground_before_menu = $true; foreground_at_click = $false; private_handle = 'private-native-handle' }
+$receipt = New-PortableStartupDiagnostic -Observation $observation -Scenario editable -Stage foreground_ready -SourceCommit ('a' * 40) -ManifestDigest ('b' * 64) -Succeeded $false -ElapsedMilliseconds 1 -DocumentAction $action
+if (-not $receipt.document_action.foreground_before_menu -or $receipt.document_action.foreground_at_click -or $null -eq $receipt.document_action.foreground_at_click) { throw 'Observed foreground ownership was not retained.' }
+if (($receipt | ConvertTo-Json -Depth 4 -Compress) -match 'private_handle|private-native-handle') { throw 'Foreground observation exposed non-allowlisted input.' }
+Write-Output 'Production readiness and foreground diagnostic contract tests passed.'
+
+$action = @{ phase = 'click_dispatched'; editor_menu_closed = $true; editor_focus_requested = $true; editor_focus_observed = $false; editor_has_keyboard_focus = $false; editor_foreground = $true; editor_observation_stale = $true; focused_name = 'private-document'; private_handle = 'private-handle' }
+foreach ($focusStage in @('editor_focus_wait', 'editor_focus_ready')) {
+    $receipt = New-PortableStartupDiagnostic -Observation $observation -Scenario editable -Stage $focusStage -SourceCommit ('a' * 40) -ManifestDigest ('b' * 64) -Succeeded $false -ElapsedMilliseconds 10000 -WaitKind editor_focus -WaitCallerLine 480 -DocumentAction $action
+    if ($receipt.readiness_wait.function -cne 'Wait-EditorNativeFocus' -or $receipt.readiness_wait.caller_line -ne 480) { throw 'Editor focus caller observation is missing.' }
+    if (-not $receipt.document_action.editor_menu_closed -or -not $receipt.document_action.editor_focus_requested -or $null -eq $receipt.document_action.editor_focus_observed -or $receipt.document_action.editor_focus_observed -or $receipt.document_action.editor_has_keyboard_focus -or -not $receipt.document_action.editor_foreground -or -not $receipt.document_action.editor_observation_stale) { throw 'Editor focus true/false observations changed.' }
+    if (($receipt | ConvertTo-Json -Depth 5 -Compress) -match 'private-document|private-handle|focused_name|private_handle') { throw 'Editor focus diagnostics exposed content.' }
+}
+Write-Output 'Native editor focus diagnostic contract tests passed.'
+
+# Failure diagnostics must preserve the original action exception.
+$saveDefinition = $driverAst.Find({ param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq 'Save-StartupDiagnostic' }, $true)
+. ([scriptblock]::Create($saveDefinition.Extent.Text))
+$originalDiagnostic = (Get-Item Function:New-PortableStartupDiagnostic).ScriptBlock
+$manifestSourceCommit = 'a' * 40; $manifestDigest = 'b' * 64
+$startupDiagnostics = [Collections.Generic.List[object]]::new()
+$script:readinessStage = 'editor_focus_wait'; $script:readinessWaitKind = 'editor_focus'; $script:readinessWaitCallerLine = 480
+$script:documentActionObservation = $action; $script:recoveryObservation = $null
+try {
+    Set-Item Function:New-PortableStartupDiagnostic -Value { throw 'synthetic_diagnostic_failure' }
+    $originalPreserved = $false
+    try {
+        try { throw 'synthetic_action_failure' }
+        finally { Save-StartupDiagnostic ([Diagnostics.Process]::GetCurrentProcess()) editable ([Diagnostics.Stopwatch]::StartNew()) $false }
+    } catch {
+        if ($_.Exception.Message -cne 'synthetic_action_failure') { throw }
+        $originalPreserved = $true
+    }
+    if (-not $originalPreserved) { throw 'Original action failure was swallowed.' }
+    $successDiagnosticFailed = $false
+    try { Save-StartupDiagnostic ([Diagnostics.Process]::GetCurrentProcess()) editable ([Diagnostics.Stopwatch]::StartNew()) $true }
+    catch { if ($_.Exception.Message -cne 'synthetic_diagnostic_failure') { throw }; $successDiagnosticFailed = $true }
+    if (-not $successDiagnosticFailed) { throw 'A successful scenario hid a diagnostic failure.' }
+} finally { Set-Item Function:New-PortableStartupDiagnostic -Value $originalDiagnostic }
+Write-Output 'Original action failure preservation tests passed.'

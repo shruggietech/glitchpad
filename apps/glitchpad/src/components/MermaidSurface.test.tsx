@@ -1,7 +1,15 @@
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  render as renderView,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import { EditorView } from '@codemirror/view';
 import axe from 'axe-core';
-import { createRef, StrictMode } from 'react';
+import { createRef, StrictMode, type ReactElement } from 'react';
+import { AppFrame } from '../../../../brand/web/react/server';
 import { MermaidSurface } from './MermaidSurface';
 import type { TextEditorHandle } from './TextEditorSurface';
 import { describe, expect, it, vi } from 'vitest';
@@ -10,14 +18,23 @@ import { App } from '../App';
 import { initialSessions } from '../test/fixtures';
 import { MERMAID_STANDALONE_MAX_BYTES } from '../domain/mermaid-contract';
 
+const render = (ui: ReactElement) =>
+  renderView(
+    ui,
+    ui.type === MermaidSurface ? { wrapper: AppFrame } : undefined,
+  );
+
 const invokeMenu = (name: string | RegExp) => {
-  fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Document tools' }));
   const matcher = typeof name === 'string' ? new RegExp(`^${name}`, 'u') : name;
-  fireEvent.click(within(screen.getByRole('menu')).getByRole('menuitem', { name: matcher }));
+  fireEvent.click(
+    within(screen.getByRole('menu')).getByRole('menuitem', { name: matcher }),
+  );
 };
 
 vi.mock('../domain/mermaid-adapter', async () => {
-  const { DeterministicMermaidRendererClient } = await import('../test/mermaid-renderer-double');
+  const { DeterministicMermaidRendererClient } =
+    await import('../test/mermaid-renderer-double');
   return { MermaidRendererClient: DeterministicMermaidRendererClient };
 });
 
@@ -60,7 +77,15 @@ const mermaidSession = (content: string) => ({
 describe('Mermaid surface', () => {
   it('reports unavailable viewport actions when only source exists', () => {
     const ref = createRef<TextEditorHandle>();
-    render(<MermaidSurface ref={ref} session={mermaidSession('')} onDocumentChange={vi.fn()} onLanguageChange={vi.fn()} onMermaidChange={vi.fn()} />);
+    render(
+      <MermaidSurface
+        ref={ref}
+        session={mermaidSession('')}
+        onDocumentChange={vi.fn()}
+        onLanguageChange={vi.fn()}
+        onMermaidChange={vi.fn()}
+      />,
+    );
     expect(ref.current!.invoke('zoom_in')).toBe(false);
     expect(ref.current!.invoke('zoom_out')).toBe(false);
     expect(ref.current!.invoke('fit')).toBe(false);
@@ -69,20 +94,43 @@ describe('Mermaid surface', () => {
   it('awaits preview clipboard writes and exposes denial', async () => {
     const ref = createRef<TextEditorHandle>();
     const original = Object.getOwnPropertyDescriptor(navigator, 'clipboard');
-    const writeText = vi.fn(() => Promise.reject(new Error('clipboard denied')));
-    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
+    const writeText = vi.fn(() =>
+      Promise.reject(new Error('clipboard denied')),
+    );
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    });
     try {
-      render(<MermaidSurface ref={ref} session={mermaidSession('flowchart TB\n  A --> B')} onDocumentChange={vi.fn()} onLanguageChange={vi.fn()} onMermaidChange={vi.fn()} />);
+      render(
+        <MermaidSurface
+          ref={ref}
+          session={mermaidSession('flowchart TB\n  A --> B')}
+          onDocumentChange={vi.fn()}
+          onLanguageChange={vi.fn()}
+          onMermaidChange={vi.fn()}
+        />,
+      );
       await screen.findByRole('img');
-      await expect(ref.current!.invoke('copy')).rejects.toThrow('clipboard denied');
+      await expect(ref.current!.invoke('copy')).rejects.toThrow(
+        'clipboard denied',
+      );
     } finally {
       if (original) Object.defineProperty(navigator, 'clipboard', original);
       else Reflect.deleteProperty(navigator, 'clipboard');
     }
   });
   it('renders standalone source locally and exposes navigation and metadata', async () => {
-    render(<App sessions={[mermaidSession('flowchart LR\n  Alpha --> Beta')]} />);
-    expect(await screen.findByRole('img', { name: /architecture\.mmd Mermaid diagram/iu }, { timeout: 10_000 })).toBeInTheDocument();
+    render(
+      <App sessions={[mermaidSession('flowchart LR\n  Alpha --> Beta')]} />,
+    );
+    expect(
+      await screen.findByRole(
+        'img',
+        { name: /architecture\.mmd Mermaid diagram/iu },
+        { timeout: 10_000 },
+      ),
+    ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Fit' })).toBeInTheDocument();
     invokeMenu('File information');
     expect(screen.getByText('flowchart')).toBeInTheDocument();
@@ -102,7 +150,7 @@ describe('Mermaid surface', () => {
   it('composes the exact source editor and labels the last valid preview stale', async () => {
     render(<App sessions={[mermaidSession('flowchart TB\n  A --> B')]} />);
     await screen.findByRole('img');
-    invokeMenu('Edit source');
+    invokeMenu('Edit');
     const textbox = screen.getByRole('textbox', {
       name: 'architecture.mmd text editor',
     });
@@ -116,21 +164,31 @@ describe('Mermaid surface', () => {
         },
       }),
     );
-    await waitFor(() => expect(screen.getByText('Preview is from an earlier source revision')).toBeInTheDocument(), { timeout: 2_000 });
+    await waitFor(
+      () =>
+        expect(
+          screen.getByText('Preview is from an earlier source revision'),
+        ).toBeInTheDocument(),
+      { timeout: 2_000 },
+    );
     expect(screen.getByLabelText('Earlier valid preview')).toBeInTheDocument();
   });
 
   it('opens an empty Mermaid source directly in editable source mode', () => {
     render(<App sessions={[mermaidSession('')]} />);
-    expect(screen.getByRole('textbox', { name: 'architecture.mmd text editor' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('textbox', { name: 'architecture.mmd text editor' }),
+    ).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
-    expect(screen.queryByRole('menuitem', { name: 'Preview' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('menuitem', { name: 'Read' }),
+    ).not.toBeInTheDocument();
   });
 
   it('marks a retained preview stale and publishes the limited state above 1 MiB', async () => {
     render(<App sessions={[mermaidSession('flowchart TB\n  A --> B')]} />);
     await screen.findByRole('img');
-    invokeMenu('Edit source');
+    invokeMenu('Edit');
     const textbox = screen.getByRole('textbox', {
       name: 'architecture.mmd text editor',
     });
@@ -141,7 +199,11 @@ describe('Mermaid surface', () => {
         changes: { from: 0, to: view.state.doc.length, insert: oversized },
       }),
     );
-    await waitFor(() => expect(screen.getByText('Preview is from an earlier source revision')).toBeInTheDocument());
+    await waitFor(() =>
+      expect(
+        screen.getByText('Preview is from an earlier source revision'),
+      ).toBeInTheDocument(),
+    );
     expect(screen.getByLabelText('Earlier valid preview')).toBeInTheDocument();
   });
 
@@ -151,24 +213,173 @@ describe('Mermaid surface', () => {
         <App sessions={[mermaidSession('flowchart TB\n  A --> B')]} />
       </StrictMode>,
     );
-    expect(await screen.findByRole('img', {}, { timeout: 2_000 })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('img', {}, { timeout: 2_000 }),
+    ).toBeInTheDocument();
   });
 
   it('routes the command-bar search to CodeMirror while source mode is active', async () => {
-    const { container } = render(<App sessions={[mermaidSession('flowchart TB\n  SearchableNode --> B')]} />);
+    const { container } = render(
+      <App
+        sessions={[mermaidSession('flowchart TB\n  SearchableNode --> B')]}
+      />,
+    );
     await screen.findByRole('img');
-    invokeMenu('Edit source');
+    invokeMenu('Edit');
     invokeMenu('Search');
-    await waitFor(() => expect(container.querySelector('.cm-search')).toBeInTheDocument());
-    expect(screen.queryByRole('textbox', { name: 'Find diagram text' })).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(container.querySelector('.cm-search')).toBeInTheDocument(),
+    );
+    expect(
+      screen.queryByRole('textbox', { name: 'Find diagram text' }),
+    ).not.toBeInTheDocument();
   });
 
   it('has no critical or serious accessibility violations', async () => {
-    const { container } = render(<App sessions={[mermaidSession('flowchart TB\n  accTitle: Architecture\n  A --> B')]} />);
+    const { container } = render(
+      <App
+        sessions={[
+          mermaidSession('flowchart TB\n  accTitle: Architecture\n  A --> B'),
+        ]}
+      />,
+    );
     await screen.findByRole('img');
     const results = await axe.run(container, {
       runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa'] },
     });
-    expect(results.violations.filter(({ impact }) => impact === 'critical' || impact === 'serious')).toEqual([]);
+    expect(
+      results.violations.filter(
+        ({ impact }) => impact === 'critical' || impact === 'serious',
+      ),
+    ).toEqual([]);
   });
+});
+
+describe('diagram search task', () => {
+  it('moves through identifiable diagram text results and returns focus when search closes', async () => {
+    const ref = createRef<TextEditorHandle>();
+    render(
+      <MermaidSurface
+        ref={ref}
+        session={mermaidSession('flowchart TB\n  Alpha --> Beta')}
+        onDocumentChange={vi.fn()}
+        onLanguageChange={vi.fn()}
+        onMermaidChange={vi.fn()}
+      />,
+    );
+    await screen.findByRole('img');
+    act(() => {
+      void ref.current!.invoke('search');
+    });
+    expect(
+      screen.getByRole('dialog', { name: 'Find in diagram' }),
+    ).toHaveAttribute('aria-modal', 'true');
+    const input = screen.getByRole('textbox', { name: 'Find diagram text' });
+    fireEvent.change(input, { target: { value: 'Alpha' } });
+    expect(
+      screen.getByRole('button', { name: 'Next match' }),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Next match' }));
+    expect(
+      screen.getByRole('status', { name: 'Diagram search results' }),
+    ).toHaveTextContent('1 of 1');
+    expect(screen.getByRole('mark')).toHaveTextContent('Alpha');
+    fireEvent.click(screen.getByRole('button', { name: 'Close search' }));
+    expect(
+      screen.queryByRole('textbox', { name: 'Find diagram text' }),
+    ).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByRole('img').closest('.diagram-canvas')).toHaveFocus(),
+    );
+  });
+});
+
+describe('diagram source range admission', () => {
+  it('selects and focuses an exact requested range after mounting source from Read', async () => {
+    const ref = createRef<TextEditorHandle>();
+    render(
+      <MermaidSurface
+        ref={ref}
+        session={mermaidSession('flowchart TB\n  Alpha --> Beta')}
+        onDocumentChange={vi.fn()}
+        onLanguageChange={vi.fn()}
+        onMermaidChange={vi.fn()}
+      />,
+    );
+    await screen.findByRole('img');
+    act(() => {
+      expect(ref.current!.selectRange(5, 10)).toBe(true);
+    });
+    const editor = await screen.findByRole('textbox', {
+      name: 'architecture.mmd text editor',
+    });
+    await waitFor(() => {
+      const view = EditorView.findFromDOM(editor)!;
+      expect(view.state.selection.main.from).toBe(5);
+      expect(view.state.selection.main.to).toBe(10);
+      expect(view.hasFocus).toBe(true);
+    });
+  });
+});
+
+it('announces no diagram matches without exposing a false navigation action', async () => {
+  const ref = createRef<TextEditorHandle>();
+  const changed = vi.fn();
+  render(
+    <MermaidSurface
+      ref={ref}
+      session={mermaidSession('flowchart TB\n Alpha --> Beta')}
+      onDocumentChange={changed}
+      onLanguageChange={vi.fn()}
+      onMermaidChange={vi.fn()}
+    />,
+  );
+  await screen.findByRole('img');
+  act(() => {
+    void ref.current!.invoke('search');
+  });
+  fireEvent.change(screen.getByRole('textbox', { name: 'Find diagram text' }), {
+    target: { value: 'not-in-diagram' },
+  });
+  expect(
+    screen.getByRole('status', { name: 'Diagram search results' }),
+  ).toHaveTextContent('No matches');
+  expect(screen.getByRole('button', { name: 'Next match' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Previous match' })).toBeDisabled();
+  expect(changed).not.toHaveBeenCalled();
+});
+
+it('automatically exposes exact read-only standalone source after a first malformed preview', async () => {
+  const source = 'flowchart TB\nCats -->\n';
+  const base = mermaidSession(source);
+  const { container } = render(
+    <MermaidSurface
+      session={{
+        ...base,
+        source: {
+          ...base.source,
+          capabilities: {
+            ...base.source.capabilities,
+            write: false,
+            replace_atomically: false,
+          },
+        },
+      }}
+      onDocumentChange={vi.fn()}
+      onLanguageChange={vi.fn()}
+      onMermaidChange={vi.fn()}
+    />,
+  );
+  await screen.findByText(
+    'The Mermaid source is malformed. Source remains available.',
+  );
+  const editor = await screen.findByRole('textbox', {
+    name: 'architecture.mmd text editor',
+  });
+  expect(editor).toHaveAttribute('contenteditable', 'false');
+  expect(EditorView.findFromDOM(editor)!.state.doc.toString()).toBe(source);
+  expect(container.querySelector('.mermaid-source-layout')).not.toHaveAttribute(
+    'hidden',
+  );
+  expect(container.querySelector('.mermaid-fallback')).not.toBeInTheDocument();
 });

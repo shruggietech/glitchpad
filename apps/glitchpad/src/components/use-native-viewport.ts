@@ -5,7 +5,11 @@ import { diagnosticSheetBounds } from '../domain/diagnostic-viewport';
 export function useNativeViewport(
   ref: RefObject<HTMLElement | null>,
   read: DiagnosticExportGateway['viewport'],
-  prefix: '--gl-diagnostic' | '--gl-add-native',
+  prefix:
+    | '--gl-diagnostic'
+    | '--gl-add-native'
+    | '--gl-task-native'
+    | '--gl-shell-native',
 ) {
   useEffect(() => {
     const sheet = ref.current;

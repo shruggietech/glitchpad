@@ -4,6 +4,7 @@ import {
   type ShellSession,
 } from './contracts';
 import { createTextDocument } from './text-document';
+import { initialMermaidViewport } from './mermaid-contract';
 import { createRecoveryRecordId } from './use-recovery';
 
 export const createDraftSession = (
@@ -11,6 +12,8 @@ export const createDraftSession = (
   original?: ShellSession,
 ): ShellSession => {
   const id = 'draft-' + createRecoveryRecordId();
+  const mermaidCopy =
+    original?.renderer.id === 'mermaid' || Boolean(original?.mermaid_document);
   const displayName = original
     ? 'Copy of ' + original.source.display_name
     : kind === 'markdown'
@@ -39,17 +42,26 @@ export const createDraftSession = (
         strength: 'unavailable',
       },
       display_name: displayName,
-      claimed_media_type: kind === 'markdown' ? 'text/markdown' : 'text/plain',
+      claimed_media_type: mermaidCopy
+        ? 'text/vnd.mermaid'
+        : kind === 'markdown'
+          ? 'text/markdown'
+          : 'text/plain',
       byte_length: document.source_bytes,
       modified_unix_ms: null,
       kind: 'memory',
       capabilities: { ...noSourceCapabilities(), read: true },
     },
     renderer: {
-      id: kind,
-      label: kind === 'markdown' ? 'Markdown' : 'Text',
+      id: mermaidCopy ? 'mermaid' : kind,
+      label: mermaidCopy
+        ? 'Mermaid'
+        : kind === 'markdown'
+          ? 'Markdown'
+          : 'Text',
       capabilities: {
         ...noRendererCapabilities(),
+        ...(mermaidCopy ? original?.renderer.capabilities : {}),
         view: true,
         edit: true,
         copy: true,
@@ -68,8 +80,20 @@ export const createDraftSession = (
     saved_revision: 0,
     content: document.normalized_text,
     text_document: document,
+    mermaid_document: mermaidCopy
+      ? {
+          mode: 'source',
+          render_revision: null,
+          render_status: 'idle',
+          preview_stale: false,
+          viewport: {
+            ...(original?.mermaid_document?.viewport ??
+              initialMermaidViewport()),
+          },
+        }
+      : null,
     markdown_document:
-      kind === 'markdown'
+      !mermaidCopy && kind === 'markdown'
         ? {
             mode: 'source',
             eligibility: 'full',

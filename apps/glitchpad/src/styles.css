@@ -53,6 +53,8 @@ button:focus-visible,
   position: relative;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
   width: 100%;
   height: 100%;
   overflow: hidden;
@@ -60,6 +62,8 @@ button:focus-visible,
 }
 
 .shell-chrome {
+  min-width: 0;
+  max-width: 100%;
   position: relative;
   z-index: 8;
   display: grid;
@@ -1110,6 +1114,13 @@ button:focus-visible,
   border-top: 1px solid #343842;
 }
 
+.metadata-group > details > summary {
+  min-height: 48px;
+  min-width: 48px;
+  padding: 0.5rem 0;
+  overflow-wrap: anywhere;
+}
+
 .metadata-group h3 {
   margin-bottom: 0.5rem;
   color: #aeb4bf;
@@ -1503,13 +1514,304 @@ button:focus-visible,
 }
 
 .command-result {
-  position: absolute;
-  z-index: 9;
-  inset-block-start: var(--shell-row-height);
-  inset-inline: var(--bb-spacing-control-block);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  position: static;
+  grid-row: 3;
+  z-index: auto;
+  margin: 0;
+  max-height: 30%;
+  overflow: auto;
   padding: var(--bb-spacing-control-block);
   border: var(--bb-border-default) solid var(--gl-border);
   background: var(--gl-panel-raised);
   color: var(--gl-fg);
   overflow-wrap: anywhere;
+}
+
+/* S047 product composition; AppFrame remains the environment owner. */
+.app-shell {
+  --tab-row-height: 48px;
+  --shell-row-height: 48px;
+  --application-toolbar-size: 48px;
+}
+.shell-chrome {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  height: auto;
+  min-height: 48px;
+  padding-right: 0.25rem;
+}
+.application-menu-shell {
+  display: flex;
+  width: auto;
+  min-width: 48px;
+  height: 48px;
+  flex: 0 0 auto;
+}
+.application-menu-trigger {
+  width: 48px;
+  min-width: 48px;
+  min-height: 48px;
+}
+.document-tools-trigger {
+  min-height: 48px;
+  min-width: 48px;
+  max-width: 10rem;
+  border: 1px solid var(--gl-border);
+  background: var(--gl-panel);
+  color: var(--gl-fg);
+  white-space: normal;
+}
+.active-document-identity {
+  color: var(--gl-fg);
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  flex: 1;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+}
+.active-document-identity > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.app-shell[data-has-tabs='true'][data-compact='false']
+  .active-document-identity {
+  display: none;
+}
+.shell-chrome .tab-strip-shell {
+  flex: 1;
+  min-width: 0;
+  min-height: 48px;
+  height: 48px;
+}
+.shell-chrome .tab-close {
+  min-width: 48px;
+}
+.shell-chrome .tab-button {
+  padding-right: 48px;
+}
+.document-count-trigger {
+  flex: 0 0 auto;
+  padding: 4px;
+  min-height: 48px;
+  min-width: 48px;
+  max-width: 8rem;
+  white-space: normal;
+  background: var(--gl-panel);
+  border: 1px solid var(--gl-border);
+  color: var(--gl-fg);
+}
+.task-surface .application-menu {
+  position: static;
+  display: grid;
+  width: 100%;
+  max-height: none;
+  border: 0;
+  box-shadow: none;
+  overflow: visible;
+  background: transparent;
+}
+.task-surface .application-menu button {
+  min-height: 48px;
+  width: 100%;
+  gap: 0.5rem;
+  justify-content: space-between;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.document-switcher {
+  display: grid;
+  gap: 0.5rem;
+}
+.document-switcher > div {
+  display: flex;
+  gap: 0.25rem;
+}
+.document-switcher > div > button:first-child {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+.about-panel dl {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.5rem;
+}
+.about-panel dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.about-panel nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+}
+.about-panel button {
+  padding: 0.5rem;
+  border: 1px solid var(--gl-border);
+  background: var(--gl-panel-raised);
+  border-radius: var(--bb-radius-sm, 0.25rem);
+}
+.application-notices {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: inherit;
+  max-width: 100%;
+  margin: 0.75rem 0;
+}
+.app-shell[data-compact='true'] .document-surface {
+  padding-bottom: var(--gl-add-document-clearance, 0px);
+}
+.app-shell[data-compact='true'] .shell-chrome {
+  gap: 0;
+}
+@media (max-height: 400px) {
+  .task-surface-heading {
+    padding: 0.125rem 0.5rem;
+  }
+  .task-surface-body {
+    padding: 0.5rem;
+  }
+}
+
+.application-menu-shell {
+  gap: 0.25rem;
+}
+.document-primary-action {
+  min-height: 48px;
+  min-width: 48px;
+  padding: 0.5rem;
+  background: var(--gl-panel-raised);
+  border: 1px solid var(--gl-border);
+}
+.task-surface.resolution-dialog {
+  display: flex;
+  padding: 0;
+  width: 100%;
+  border-radius: var(--bb-radius-lg, 0.75rem);
+}
+.task-surface.resolution-dialog .resolution-actions button {
+  min-height: 48px;
+  min-width: 48px;
+}
+
+.task-surface.file-info-task {
+  height: 60%;
+  max-height: 100%;
+}
+.task-surface.file-info-task.expanded {
+  height: 100%;
+}
+.task-surface.file-info-task[data-native-viewport='true'] {
+  max-height: var(--gl-task-native-block-size);
+}
+
+@media (min-width: 768px) and (min-height: 480px) {
+  .task-surface.resolution-dialog {
+    width: calc(100% - 2rem);
+  }
+}
+
+.task-surface.resolution-dialog[data-task-short='true'] {
+  display: block;
+  overflow: auto;
+}
+
+.about-panel dd,
+.application-notices,
+.document-switcher button {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.app-shell[data-native-viewport='true'] {
+  position: absolute;
+  top: auto;
+  left: auto;
+  right: var(--gl-shell-native-inline-end);
+  bottom: var(--gl-shell-native-block-end);
+  width: var(--gl-shell-native-inline-size);
+  height: var(--gl-shell-native-block-size);
+}
+
+:root .app-shell .application-menu-trigger {
+  color: var(--gl-fg);
+  background: var(--gl-panel);
+}
+
+/* Task-local success is announced locally; global outcome text reserves space. */
+.app-shell[data-command-result-visible='true'] {
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+.app-shell[data-has-draft-identity='true'][data-command-result-visible='true'] {
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+}
+.app-shell[data-has-draft-identity='true'] .command-result {
+  grid-row: 4;
+}
+
+/* Compact app-bar triggers share one row; their existing menus retain the overlay root. */
+.shell-add-control {
+  display: flex;
+  flex: 0 0 auto;
+}
+.add-document-inline-trigger {
+  box-sizing: border-box;
+  width: 48px;
+  min-width: 48px;
+  height: 48px;
+  min-height: 48px;
+  padding: 4px;
+  border: 1px solid var(--gl-border);
+  background: var(--gl-panel-raised);
+  color: var(--gl-fg);
+  line-height: 1;
+  font-size: 1rem;
+}
+.draft-status-inline {
+  flex: 0 0 auto;
+  margin-left: 0.25rem;
+  font-size: 0.625rem;
+  white-space: nowrap;
+}
+.app-shell[data-short='true'] .document-count-trigger {
+  padding: 4px;
+}
+.app-shell[data-short='true'] .image-layout,
+.app-shell[data-short='true'] .diagram-viewer {
+  position: relative;
+}
+.app-shell[data-short='true'] .diagram-viewer {
+  grid-template-rows: minmax(0, 1fr);
+}
+.app-shell[data-short='true'] .image-actions,
+.app-shell[data-short='true'] .diagram-controls {
+  position: absolute;
+  z-index: 2;
+  right: 0;
+  bottom: 0;
+  display: block;
+  width: 56px;
+  max-width: 100%;
+  padding: 4px;
+  border: 0;
+}
+.app-shell[data-short='true'] .image-actions > :not(:last-child),
+.app-shell[data-short='true'] .diagram-controls > :not(:last-child) {
+  display: none;
+}
+
+/* API24 WebView lacks native inert; retain modal pointer and accessibility ownership. */
+.app-shell[inert] {
+  pointer-events: none;
+}
+.add-document-inline-trigger:disabled {
+  visibility: hidden;
 }

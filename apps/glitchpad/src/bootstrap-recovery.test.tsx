@@ -173,3 +173,55 @@ describe('application bootstrap recovery', () => {
     expect(document.body).not.toHaveTextContent('private');
   });
 });
+
+it('recovers a failed main import without replaceChildren before application code loads', async () => {
+  const descriptor = Object.getOwnPropertyDescriptor(
+    Element.prototype,
+    'replaceChildren',
+  );
+  Object.defineProperty(Element.prototype, 'replaceChildren', {
+    configurable: true,
+    writable: true,
+    value: undefined,
+  });
+  const root = document.createElement('div');
+  const stale = document.createElement('p');
+  stale.textContent = 'Startup placeholder';
+  root.appendChild(stale);
+  document.body.appendChild(root);
+  const load = vi.fn(() =>
+    Promise.reject(new Error('private absent module path')),
+  );
+  const restart = vi.fn(() => Promise.resolve());
+  const onFailure = vi.fn();
+  try {
+    expect(typeof root.replaceChildren).toBe('undefined');
+    await expect(
+      bootstrapApplication(root, load, { restart, onFailure }),
+    ).resolves.toBeUndefined();
+    expect(load).toHaveBeenCalledOnce();
+    expect(root).toHaveTextContent('Glitchpad could not start');
+    expect(root).toHaveTextContent('Recovery code: module_load_failed');
+    expect(root).not.toHaveTextContent('Startup placeholder');
+    expect(root).not.toHaveTextContent('private absent module path');
+    expect(root.childElementCount).toBe(1);
+    expect(onFailure).toHaveBeenCalledExactlyOnceWith(
+      'bootstrap',
+      'bootstrap',
+      'module_load_failed',
+    );
+    const help = screen.getByRole('button', { name: 'Help and About' });
+    fireEvent.click(help);
+    expect(help).toHaveAttribute('aria-expanded', 'true');
+    expect(
+      screen.getByRole('button', { name: 'Offline licenses and notices' }),
+    ).toBeEnabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Restart Glitchpad' }));
+    await waitFor(() => expect(restart).toHaveBeenCalledOnce());
+  } finally {
+    if (descriptor)
+      Object.defineProperty(Element.prototype, 'replaceChildren', descriptor);
+    else delete (Element.prototype as Partial<Element>).replaceChildren;
+    root.remove();
+  }
+});

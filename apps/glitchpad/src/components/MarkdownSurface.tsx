@@ -1,3 +1,7 @@
+import {
+  clipboardTextAvailable,
+  writeClipboardText,
+} from '../domain/clipboard-gateway';
 import { consumeRecoveryProbe } from '../domain/recovery-probes';
 import {
   createElement,
@@ -16,7 +20,7 @@ import {
   reportRecoveryFailure,
   type RecoveryFailureReporter,
 } from '../bootstrap-recovery';
-import type { CommandId } from '../domain/commands';
+import type { CommandId, EditorCommandState } from '../domain/commands';
 import type {
   LanguageDecision,
   MarkdownDocumentState,
@@ -48,8 +52,11 @@ import {
   type MetadataObservation,
 } from '../domain/metadata';
 import { TextEditorSurface, type TextEditorHandle } from './TextEditorSurface';
+import { TaskSurface } from './TaskSurface';
+import './DocumentTools.css';
 
 interface MarkdownSurfaceProps {
+  onCommandStateChange?: (state: EditorCommandState) => void;
   session: ShellSession;
   onFailure?: RecoveryFailureReporter;
   projectionSuppressed?: boolean;
@@ -79,6 +86,22 @@ interface MarkdownSurfaceProps {
   onMetadataContribution?: (contribution: MetadataContribution) => void;
 }
 
+const scrollWithinArticle = (
+  content: HTMLElement | null,
+  target: HTMLElement | null | undefined,
+  center = false,
+) => {
+  if (!content || !target || !content.contains(target)) return;
+  const box = content.getBoundingClientRect();
+  const destination = target.getBoundingClientRect();
+  content.scrollTop = Math.max(
+    0,
+    content.scrollTop +
+      destination.top -
+      box.top -
+      (center ? (content.clientHeight - destination.height) / 2 : 0),
+  );
+};
 interface SafeTreeProps {
   node: SafeRenderedNode;
   session: ShellSession;
@@ -87,6 +110,8 @@ interface SafeTreeProps {
   onLocalLink: (candidate: LinkCandidate) => void;
   localAssetGateway: MarkdownLocalAssetGateway;
   onMermaidSource: (range: SourceRange | null) => void;
+  onFragmentNavigation?: (nodeId: string, found: boolean) => void;
+  unavailableFragmentId?: string | null;
 }
 
 function LifecycleMarkdownFailure(): null {
@@ -170,6 +195,8 @@ function SafeTree({
   onLocalLink,
   localAssetGateway,
   onMermaidSource,
+  onFragmentNavigation,
+  unavailableFragmentId,
 }: SafeTreeProps): ReactNode {
   if (node.type === 'text') return node.value;
   if (node.type === 'root') {
@@ -183,6 +210,8 @@ function SafeTree({
         onLocalLink={onLocalLink}
         localAssetGateway={localAssetGateway}
         onMermaidSource={onMermaidSource}
+        onFragmentNavigation={onFragmentNavigation}
+        unavailableFragmentId={unavailableFragmentId}
       />
     ));
   }
@@ -230,6 +259,8 @@ function SafeTree({
         onLocalLink={onLocalLink}
         localAssetGateway={localAssetGateway}
         onMermaidSource={onMermaidSource}
+        onFragmentNavigation={onFragmentNavigation}
+        unavailableFragmentId={unavailableFragmentId}
       />
     ));
   if (node.link) {
@@ -250,51 +281,81 @@ function SafeTree({
       );
     }
     if (candidate.kind === 'fragment' && candidate.normalized_target) {
-      const activate = () => {
-        const target = document.getElementById(
-          candidate.normalized_target!.slice(1),
+      const activate = (trigger: HTMLElement) => {
+        const content = trigger.closest<HTMLElement>('.markdown-document');
+        const target = Array.from(
+          content?.querySelectorAll<HTMLElement>('[id]') ?? [],
+        ).find(
+          (element) => element.id === candidate.normalized_target!.slice(1),
         );
-        target?.scrollIntoView({ block: 'start' });
-        target?.focus();
+        onFragmentNavigation?.(node.id, Boolean(target));
+        if (!target) return;
+        if (!target.hasAttribute('tabindex')) target.tabIndex = -1;
+        scrollWithinArticle(content, target);
+        target.focus({ preventScroll: true });
       };
       return (
-        <span
-          id={
-            typeof node.properties.id === 'string' &&
-            /^user-content-[a-z0-9_-]+$/iu.test(node.properties.id)
-              ? node.properties.id
-              : undefined
-          }
-          className="markdown-link"
-          role="link"
-          tabIndex={0}
-          title={candidate.display_target}
-          aria-describedby={
-            typeof node.properties.ariaDescribedBy === 'string'
-              ? node.properties.ariaDescribedBy
-              : undefined
-          }
-          data-footnote-ref={
-            Object.prototype.hasOwnProperty.call(
-              node.properties,
-              'dataFootnoteRef',
-            )
-              ? ''
-              : undefined
-          }
-          data-footnote-backref={
-            Object.prototype.hasOwnProperty.call(
-              node.properties,
-              'dataFootnoteBackref',
-            )
-              ? ''
-              : undefined
-          }
-          onClick={activate}
-          onKeyDown={(event) => activateOnKeyboard(event, activate)}
-        >
-          {children}
-        </span>
+        <>
+          <span
+            id={
+              typeof node.properties.id === 'string' &&
+              /^user-content-[a-z0-9_-]+$/iu.test(node.properties.id)
+                ? node.properties.id
+                : undefined
+            }
+            className="markdown-link"
+            role="link"
+            aria-label={
+              typeof node.properties.ariaLabel === 'string'
+                ? node.properties.ariaLabel
+                : Object.prototype.hasOwnProperty.call(
+                      node.properties,
+                      'dataFootnoteBackref',
+                    )
+                  ? 'Return to footnote reference'
+                  : Object.prototype.hasOwnProperty.call(
+                        node.properties,
+                        'dataFootnoteRef',
+                      )
+                    ? 'Footnote reference'
+                    : undefined
+            }
+            tabIndex={0}
+            title={candidate.display_target}
+            aria-describedby={
+              typeof node.properties.ariaDescribedBy === 'string'
+                ? node.properties.ariaDescribedBy
+                : undefined
+            }
+            data-footnote-ref={
+              Object.prototype.hasOwnProperty.call(
+                node.properties,
+                'dataFootnoteRef',
+              )
+                ? ''
+                : undefined
+            }
+            data-footnote-backref={
+              Object.prototype.hasOwnProperty.call(
+                node.properties,
+                'dataFootnoteBackref',
+              )
+                ? ''
+                : undefined
+            }
+            onClick={(event) => activate(event.currentTarget)}
+            onKeyDown={(event) =>
+              activateOnKeyboard(event, () => activate(event.currentTarget))
+            }
+          >
+            {children}
+          </span>
+          {unavailableFragmentId === node.id && (
+            <span className="markdown-fragment-feedback" role="alert">
+              The linked section is not available in this document.
+            </span>
+          )}
+        </>
       );
     }
     if (
@@ -408,6 +469,7 @@ export const MarkdownSurface = forwardRef<
     externalLinkGateway = unavailableMarkdownExternalLinkGateway,
     localAssetGateway = unavailableMarkdownLocalAssetGateway,
     onMetadataContribution,
+    onCommandStateChange,
   },
   handleRef,
 ) {
@@ -432,6 +494,7 @@ export const MarkdownSurface = forwardRef<
   const editorRef = useRef<TextEditorHandle>(null);
   const renderedContentRef = useRef<HTMLElement>(null);
   const linkTriggerRef = useRef<HTMLElement | null>(null);
+  const outlineTargetRef = useRef<HTMLElement | null>(null);
   const projectedMode =
     session.markdown_document?.mode ?? initialMarkdownState(session).mode;
   const [modeState, setModeState] = useState(() => ({
@@ -444,6 +507,14 @@ export const MarkdownSurface = forwardRef<
     session.markdown_document?.render_status ?? 'idle',
   );
   const [searchOpen, setSearchOpen] = useState(false);
+  const [sourceVisited, setSourceVisited] = useState(
+    projectedMode === 'source',
+  );
+  const commandCallback = useRef(onCommandStateChange);
+  commandCallback.current = onCommandStateChange;
+  const sourceActionGeneration = useRef(0);
+  const linkOperation = useRef(0);
+  const linkPending = useRef(false);
   const [query, setQuery] = useState('');
   const [activeMatch, setActiveMatch] = useState<number | null>(null);
   const [outlineOpen, setOutlineOpen] = useState(false);
@@ -454,8 +525,25 @@ export const MarkdownSurface = forwardRef<
   const [linkOpening, setLinkOpening] = useState(false);
   const [linkError, setLinkError] = useState('');
   const [localLinkError, setLocalLinkError] = useState('');
+  const [fragmentNotice, setFragmentNotice] = useState<{
+    sessionId: string;
+    revision: number;
+    nodeId: string;
+  } | null>(null);
+  const unavailableFragmentId =
+    fragmentNotice?.sessionId === session.id &&
+    fragmentNotice.revision === session.revision
+      ? fragmentNotice.nodeId
+      : null;
+  const fragmentNavigation = (nodeId: string, found: boolean) =>
+    setFragmentNotice(
+      found
+        ? null
+        : { sessionId: session.id, revision: session.revision, nodeId },
+    );
   const modeRef = useRef(projectedMode);
   const sourceSelectionRef = useRef(sourceSelection);
+  const selectionPending = useRef(false);
   const onMarkdownChangeRef = useRef(onMarkdownChange);
   const onFailureRef = useRef(onFailure);
   onFailureRef.current = onFailure;
@@ -473,6 +561,32 @@ export const MarkdownSurface = forwardRef<
       : projectedMode;
   const mode = projectionSuppressed ? 'source' : synchronizedMode;
   modeRef.current = mode;
+  useEffect(() => {
+    if (mode === 'source') {
+      setSourceVisited(true);
+      commandCallback.current?.(
+        editorRef.current?.commandState?.() ?? {
+          undo: false,
+          redo: false,
+          wrapped: false,
+        },
+      );
+    } else
+      commandCallback.current?.({ undo: false, redo: false, wrapped: false });
+  }, [mode]);
+  useEffect(
+    () => () => {
+      sourceActionGeneration.current += 1;
+      linkOperation.current += 1;
+    },
+    [session.id, session.lifecycle],
+  );
+  const closeSearch = () => {
+    setSearchOpen(false);
+    requestAnimationFrame(() =>
+      renderedContentRef.current?.focus({ preventScroll: true }),
+    );
+  };
   sourceSelectionRef.current = sourceSelection;
   onMarkdownChangeRef.current = onMarkdownChange;
 
@@ -634,8 +748,11 @@ export const MarkdownSurface = forwardRef<
   }, []);
 
   useEffect(() => {
-    if (mode !== 'source' || !sourceSelection) return;
+    if (mode !== 'source' || !sourceSelection || !selectionPending.current)
+      return;
     const timer = setTimeout(() => {
+      if (modeRef.current !== 'source' || !selectionPending.current) return;
+      selectionPending.current = false;
       editorRef.current?.selectRange(
         sourceSelection.start_offset,
         sourceSelection.end_offset,
@@ -660,7 +777,7 @@ export const MarkdownSurface = forwardRef<
     const target = document.querySelector<HTMLElement>(
       `[data-markdown-node="${activeNodeId}"]`,
     );
-    target?.scrollIntoView?.({ block: 'center' });
+    scrollWithinArticle(renderedContentRef.current, target, true);
   }, [activeNodeId]);
 
   const publishMode = (
@@ -668,6 +785,7 @@ export const MarkdownSurface = forwardRef<
     nextSelection = sourceSelection,
   ) => {
     if (nextMode === 'rendered' && eligibility !== 'full') return;
+    if (nextMode === 'rendered') selectionPending.current = false;
     setModeState({
       sessionId: session.id,
       projectedMode,
@@ -691,11 +809,15 @@ export const MarkdownSurface = forwardRef<
       activeMatch === null
         ? sourceSelection
         : (matches[activeMatch]?.source_range ?? sourceSelection);
+    selectionPending.current = activeMatch !== null;
     setSourceSelection(nextSelection);
     publishMode('source', nextSelection);
   };
 
   const enterMermaidSource = (range: SourceRange | null) => {
+    selectionPending.current = mode !== 'source';
+    if (mode === 'source' && range)
+      editorRef.current?.selectRange(range.start_offset, range.end_offset);
     setSourceSelection(range);
     publishMode('source', range);
   };
@@ -710,8 +832,10 @@ export const MarkdownSurface = forwardRef<
   };
 
   useImperativeHandle(handleRef, () => ({
-    invoke(command: CommandId) {
+    invoke(command: CommandId, opener?: HTMLElement) {
+      if (session.lifecycle !== 'active') return false;
       if (command === 'outline') {
+        outlineTargetRef.current = renderedContentRef.current;
         setOutlineOpen((open) => !open);
         return true;
       }
@@ -724,7 +848,7 @@ export const MarkdownSurface = forwardRef<
           publishMode('rendered');
           return true;
         }
-        return editorRef.current?.invoke(command) ?? false;
+        return editorRef.current?.invoke(command, opener) ?? false;
       }
       if (command === 'edit') {
         enterSourceMode();
@@ -737,15 +861,27 @@ export const MarkdownSurface = forwardRef<
       if (command === 'find_next') return moveMatch(1);
       if (command === 'find_previous') return moveMatch(-1);
       if (command === 'close_search') {
-        setSearchOpen(false);
+        closeSearch();
         return true;
       }
       if (command === 'go_to_line') {
         publishMode('source');
-        return true;
+        const expected = sourceActionGeneration.current;
+        return new Promise<boolean>((resolve) =>
+          requestAnimationFrame(() => {
+            if (
+              sourceActionGeneration.current !== expected ||
+              modeRef.current !== 'source'
+            ) {
+              resolve(false);
+              return;
+            }
+            resolve(editorRef.current?.invoke('go_to_line') ?? false);
+          }),
+        );
       }
       if (command === 'copy') {
-        if (!navigator.clipboard) return false;
+        if (!clipboardTextAvailable()) return false;
         const selection = window.getSelection();
         const content = renderedContentRef.current;
         const selectedText =
@@ -763,27 +899,43 @@ export const MarkdownSurface = forwardRef<
           )
             ? selection.toString()
             : '';
-        return navigator.clipboard
-          .writeText(
-            selectedText ||
-              currentResult?.search_text.map(({ text }) => text).join('\n') ||
-              '',
-          )
-          .then(() => true);
+        return writeClipboardText(
+          selectedText ||
+            currentResult?.search_text.map(({ text }) => text).join('\n') ||
+            '',
+        ).then(() => true);
       }
       return false;
     },
+    commandState() {
+      return mode === 'source'
+        ? (editorRef.current?.commandState?.() ?? {
+            undo: false,
+            redo: false,
+            wrapped: false,
+          })
+        : { undo: false, redo: false, wrapped: false };
+    },
     dismissModal() {
-      if (
-        session.lifecycle !== 'active' ||
-        mode !== 'rendered' ||
-        !pendingLink?.normalized_target
-      )
-        return false;
-      closeLink();
-      return true;
+      if (session.lifecycle !== 'active') return false;
+      if (mode === 'source')
+        return editorRef.current?.dismissModal?.() ?? false;
+      if (pendingLink?.normalized_target) {
+        closeLink();
+        return true;
+      }
+      if (outlineOpen) {
+        setOutlineOpen(false);
+        requestAnimationFrame(() =>
+          renderedContentRef.current?.focus({ preventScroll: true }),
+        );
+        return true;
+      }
+      return false;
     },
     selectRange(from, to) {
+      selectionPending.current = mode !== 'source';
+      if (mode === 'source') editorRef.current?.selectRange(from, to);
       setSourceSelection({
         start_offset: from,
         end_offset: to,
@@ -797,11 +949,13 @@ export const MarkdownSurface = forwardRef<
 
   const selectHeading = (range: SourceRange | null, nodeId: string) => {
     setSourceSelection(range);
-    const target = document.querySelector<HTMLElement>(
-      `[data-markdown-node="${nodeId}"]`,
-    );
-    target?.scrollIntoView?.({ block: 'start' });
-    target?.focus();
+    const target =
+      renderedContentRef.current?.querySelector<HTMLElement>(
+        `[data-markdown-node="${nodeId}"]`,
+      ) ?? null;
+    scrollWithinArticle(renderedContentRef.current, target);
+    outlineTargetRef.current = target;
+    target?.focus({ preventScroll: true });
     setOutlineOpen(false);
   };
 
@@ -809,14 +963,20 @@ export const MarkdownSurface = forwardRef<
     linkTriggerRef.current = trigger;
     setLinkError('');
     setLinkOpening(false);
+    linkOperation.current += 1;
+    linkPending.current = false;
     setPendingLink(candidate);
   };
 
   const closeLink = () => {
+    linkOperation.current += 1;
+    linkPending.current = false;
     setPendingLink(null);
     setLinkError('');
     setLinkOpening(false);
-    requestAnimationFrame(() => linkTriggerRef.current?.focus());
+    requestAnimationFrame(() =>
+      linkTriggerRef.current?.focus({ preventScroll: true }),
+    );
   };
 
   const openLocalLink = (candidate: LinkCandidate) => {
@@ -829,164 +989,200 @@ export const MarkdownSurface = forwardRef<
       );
   };
 
-  if (mode === 'source' || eligibility !== 'full') {
-    return (
-      <div className="markdown-surface markdown-source-mode">
-        {eligibility !== 'full' && (
-          <span className="visually-hidden" role="status">
-            Live preview is unavailable above 16 MiB.
-          </span>
-        )}
-        <div className="markdown-source-editor">
-          <TextEditorSurface
-            ref={editorRef}
-            session={session}
-            onDocumentChange={onDocumentChange}
-            onLanguageChange={onLanguageChange}
-          />
-        </div>
-        {!projectionSuppressed && currentResult?.tree && (
-          <article className="markdown-document markdown-print-document">
-            <SafeTree
-              node={currentResult.tree}
-              session={session}
-              activeNodeId={null}
-              onLink={beginLink}
-              onLocalLink={openLocalLink}
-              localAssetGateway={localAssetGateway}
-              onMermaidSource={enterMermaidSource}
-            />
-          </article>
-        )}
+  const sourceView = (
+    <div
+      className="markdown-surface markdown-source-mode"
+      hidden={mode !== 'source' && eligibility === 'full'}
+    >
+      {eligibility !== 'full' && (
+        <span className="visually-hidden" role="status">
+          Live preview is unavailable above 16 MiB.
+        </span>
+      )}
+      <div className="markdown-source-editor">
+        <TextEditorSurface
+          ref={editorRef}
+          session={session}
+          onDocumentChange={onDocumentChange}
+          onLanguageChange={onLanguageChange}
+          onCommandStateChange={(next) => {
+            if (mode === 'source') commandCallback.current?.(next);
+          }}
+        />
       </div>
-    );
-  }
-
-  return (
-    <div className="markdown-surface">
-      {lifecycleFailureProbe && recoveryAttempt === 0 && (
-        <LifecycleMarkdownFailure />
-      )}
-      <span className="visually-hidden" aria-live="polite">
-        {status === 'scheduled' || status === 'rendering'
-          ? 'Rendering preview'
-          : status === 'ready'
-            ? 'Preview current'
-            : status === 'empty'
-              ? 'Empty document'
-              : status === 'failed'
-                ? 'Preview failed safely'
-                : status}
-      </span>
-      {outlineOpen && currentResult && (
-        <nav className="markdown-outline" aria-label="Document outline">
-          <ol>
-            {currentResult.outline.map((heading) => (
-              <li key={heading.id} data-level={heading.level}>
-                <button
-                  type="button"
-                  onClick={() =>
-                    selectHeading(heading.source_range, heading.node_id)
-                  }
-                >
-                  {heading.label}
-                </button>
-              </li>
-            ))}
-          </ol>
-        </nav>
-      )}
-      {searchOpen && (
-        <div className="markdown-search" role="search">
-          <label>
-            Find rendered text
-            <input
-              autoFocus
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-            />
-          </label>
-          <span aria-live="polite">
-            {matches.length === 0
-              ? 'No matches'
-              : `${(activeMatch ?? 0) + 1} of ${matches.length}`}
-          </span>
-          <button
-            type="button"
-            onClick={() => moveMatch(-1)}
-            disabled={!matches.length}
-          >
-            Previous
-          </button>
-          <button
-            type="button"
-            onClick={() => moveMatch(1)}
-            disabled={!matches.length}
-          >
-            Next
-          </button>
-          <button type="button" onClick={() => setSearchOpen(false)}>
-            Close search
-          </button>
-        </div>
-      )}
-      <article
-        ref={renderedContentRef}
-        className="markdown-document"
-        aria-busy={status === 'scheduled'}
-        data-performance-ready={currentResult?.tree ? 'true' : 'pending'}
-        data-performance-status={currentResult?.status ?? status}
-        data-performance-duration={
-          currentResult?.measurements.parse_duration_ms ?? ''
-        }
-        data-performance-diagnostic={currentResult?.diagnostics[0]?.code ?? ''}
-      >
-        {currentResult?.tree && status !== 'empty' ? (
+      {mode === 'source' && !projectionSuppressed && currentResult?.tree && (
+        <article className="markdown-document markdown-print-document">
           <SafeTree
             node={currentResult.tree}
             session={session}
-            activeNodeId={activeNodeId}
+            activeNodeId={null}
             onLink={beginLink}
             onLocalLink={openLocalLink}
             localAssetGateway={localAssetGateway}
             onMermaidSource={enterMermaidSource}
           />
-        ) : status === 'failed' || status === 'limited' ? (
-          <div className="markdown-failure">
-            <p role="alert">
-              {currentResult?.diagnostics[0]?.message ??
-                'Markdown preview failed safely. Source remains available.'}
-            </p>
-            <button
-              type="button"
-              onClick={onEnterRecoverySource ?? enterSourceMode}
-            >
-              View source
-            </button>
-          </div>
-        ) : status === 'empty' ? (
-          <p>This document is empty.</p>
-        ) : (
-          <p className="markdown-pending" aria-hidden="true">
-            Rendering preview
-          </p>
-        )}
-      </article>
-      {localLinkError && <p role="alert">{localLinkError}</p>}
-      {pendingLink?.normalized_target && (
-        <div className="resolution-backdrop" role="presentation">
-          <section
-            className="resolution-dialog markdown-link-dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="markdown-link-title"
-            onKeyDown={(event) => {
-              if (event.key === 'Escape') closeLink();
-            }}
+        </article>
+      )}
+    </div>
+  );
+
+  return (
+    <>
+      {(mode === 'source' || sourceVisited || eligibility !== 'full') &&
+        sourceView}
+      {!projectionSuppressed && (
+        <div
+          className="markdown-surface markdown-rendered-mode"
+          hidden={mode === 'source' || eligibility !== 'full'}
+        >
+          {lifecycleFailureProbe && recoveryAttempt === 0 && (
+            <LifecycleMarkdownFailure />
+          )}
+          <span className="visually-hidden" aria-live="polite">
+            {status === 'scheduled' || status === 'rendering'
+              ? 'Rendering preview'
+              : status === 'ready'
+                ? 'Preview current'
+                : status === 'empty'
+                  ? 'Empty document'
+                  : status === 'failed'
+                    ? 'Preview failed safely'
+                    : status}
+          </span>
+          <TaskSurface
+            open={mode === 'rendered' && outlineOpen && Boolean(currentResult)}
+            onOpenChange={setOutlineOpen}
+            title="Document outline"
+            className="markdown-outline-task document-tools"
+            opener={outlineTargetRef.current ?? renderedContentRef.current}
           >
-            <h2 id="markdown-link-title">Open external destination?</h2>
+            <nav className="markdown-outline" aria-label="Document outline">
+              <ol>
+                {currentResult?.outline.map((heading) => (
+                  <li key={heading.id} data-level={heading.level}>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        selectHeading(heading.source_range, heading.node_id)
+                      }
+                    >
+                      {heading.label}
+                    </button>
+                  </li>
+                ))}
+              </ol>
+            </nav>
+          </TaskSurface>
+          <TaskSurface
+            open={searchOpen && mode === 'rendered'}
+            onOpenChange={(open) => {
+              if (!open) closeSearch();
+            }}
+            title="Find in Markdown"
+            opener={renderedContentRef.current}
+            className="markdown-search-task document-tools"
+          >
+            <div className="markdown-search" role="search">
+              <label>
+                Find rendered text
+                <input
+                  data-task-initial-focus
+                  autoFocus
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                />
+              </label>
+              <span
+                role="status"
+                aria-label="Rendered search results"
+                aria-live="polite"
+              >
+                {!query
+                  ? 'Enter search text'
+                  : matches.length === 0
+                    ? 'No matches'
+                    : `${(activeMatch ?? 0) + 1} of ${matches.length}`}
+              </span>
+              <button
+                type="button"
+                onClick={() => moveMatch(-1)}
+                disabled={!matches.length}
+              >
+                Previous
+              </button>
+              <button
+                type="button"
+                onClick={() => moveMatch(1)}
+                disabled={!matches.length}
+              >
+                Next
+              </button>
+              <button type="button" onClick={closeSearch}>
+                Close search
+              </button>
+            </div>
+          </TaskSurface>
+          <article
+            ref={renderedContentRef}
+            tabIndex={-1}
+            className="markdown-document"
+            aria-busy={status === 'scheduled'}
+            data-performance-ready={currentResult?.tree ? 'true' : 'pending'}
+            data-performance-status={currentResult?.status ?? status}
+            data-performance-duration={
+              currentResult?.measurements.parse_duration_ms ?? ''
+            }
+            data-performance-diagnostic={
+              currentResult?.diagnostics[0]?.code ?? ''
+            }
+          >
+            {currentResult?.tree && status !== 'empty' ? (
+              <SafeTree
+                node={currentResult.tree}
+                session={session}
+                activeNodeId={activeNodeId}
+                onLink={beginLink}
+                onLocalLink={openLocalLink}
+                localAssetGateway={localAssetGateway}
+                onMermaidSource={enterMermaidSource}
+                onFragmentNavigation={fragmentNavigation}
+                unavailableFragmentId={unavailableFragmentId}
+              />
+            ) : status === 'failed' || status === 'limited' ? (
+              <div className="markdown-failure">
+                <p role="alert">
+                  {currentResult?.diagnostics[0]?.message ??
+                    'Markdown preview failed safely. Source remains available.'}
+                </p>
+                <button
+                  type="button"
+                  onClick={onEnterRecoverySource ?? enterSourceMode}
+                >
+                  View source
+                </button>
+              </div>
+            ) : status === 'empty' ? (
+              <p>This document is empty.</p>
+            ) : (
+              <p className="markdown-pending" aria-hidden="true">
+                Rendering preview
+              </p>
+            )}
+          </article>
+          {localLinkError && <p role="alert">{localLinkError}</p>}
+          <TaskSurface
+            open={
+              mode === 'rendered' && Boolean(pendingLink?.normalized_target)
+            }
+            onOpenChange={(open) => {
+              if (!open) closeLink();
+            }}
+            title="Open external destination?"
+            className="markdown-link-task document-tools"
+            opener={linkTriggerRef.current}
+          >
             <p className="markdown-link-destination">
-              {pendingLink.display_target}
+              {pendingLink?.display_target}
             </p>
             <p>The destination will open in your system application.</p>
             {linkError && <p role="alert">{linkError}</p>}
@@ -995,13 +1191,19 @@ export const MarkdownSurface = forwardRef<
                 type="button"
                 disabled={linkOpening}
                 onClick={() => {
-                  if (linkOpening) return;
-                  const target = pendingLink.normalized_target!;
+                  const target = pendingLink?.normalized_target;
+                  if (!target || linkPending.current) return;
+                  linkPending.current = true;
+                  const operation = ++linkOperation.current;
                   setLinkOpening(true);
                   void externalLinkGateway
                     .open(target)
-                    .then(closeLink)
+                    .then(() => {
+                      if (operation === linkOperation.current) closeLink();
+                    })
                     .catch(() => {
+                      if (operation !== linkOperation.current) return;
+                      linkPending.current = false;
                       setLinkOpening(false);
                       setLinkError(
                         'The destination could not be opened. The document remains available.',
@@ -1011,14 +1213,14 @@ export const MarkdownSurface = forwardRef<
               >
                 {linkOpening ? 'Opening destination' : 'Open destination'}
               </button>
-              <button type="button" onClick={closeLink} autoFocus>
+              <button type="button" onClick={closeLink} data-task-initial-focus>
                 Cancel
               </button>
             </div>
-          </section>
+          </TaskSurface>
         </div>
       )}
-    </div>
+    </>
   );
 });
 

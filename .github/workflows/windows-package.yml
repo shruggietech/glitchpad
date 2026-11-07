@@ -25,6 +25,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
+      - name: Verify real Windows UI Automation API
+        shell: pwsh
+        run: ./scripts/windows/test-portable-menu.ps1 -ApiPreflightOnly
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
         with:

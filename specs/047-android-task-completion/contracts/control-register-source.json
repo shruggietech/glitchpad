@@ -1,0 +1,1166 @@
+{
+  "source_title": "Glitchpad Product Recovery",
+  "source_date": "2026-11-03",
+  "source_pdf_sha256": "b46fd23ec94fc458c67c044a5dd1be6f3fec628ab55d9b668d08df51a838da9a",
+  "pages": [17, 31],
+  "record_count": 119,
+  "report_declared_named_controls_or_variants": 150,
+  "literal_top_level_label_chunks": 154,
+  "count_note": "Slash chunks preserve literal labels; they are not semantic test cases. Cover every named option and interaction, including parenthetical choices. Do not force a passing count of 150.",
+  "groups": [
+    "Shell",
+    "About",
+    "Documents",
+    "Document commands",
+    "Declared commands",
+    "Text editor",
+    "Editor search",
+    "Editor line navigation",
+    "Markdown",
+    "Markdown recovery",
+    "Renderer recovery",
+    "Mermaid",
+    "Diagram",
+    "Image",
+    "Animation",
+    "ICO",
+    "Image recovery",
+    "Large text",
+    "Metadata",
+    "Preferences",
+    "Save and recovery",
+    "Diagnostics",
+    "Legacy/dead surface",
+    "Markdown passive control"
+  ],
+  "records": [
+    {
+      "id": "CTRL-001",
+      "label": "Menu (hamburger)",
+      "page": 17,
+      "group": "Shell",
+      "required": "Small labelled overflow/menu trigger in compact app bar; application destinations separated from document tools.",
+      "acceptance": "Menu remains visible after valid/failed Markdown opens; 48dp target; focus and expanded state correct.",
+      "label_chunks": ["Menu (hamburger)"]
+    },
+    {
+      "id": "CTRL-002",
+      "label": "Dismiss menu by Escape / Dismiss menu by outside tap",
+      "page": 17,
+      "group": "Shell",
+      "required": "Use one complete menu interaction primitive with predictable dismissal and menu-key navigation.",
+      "acceptance": "Tap outside/Escape closes once; focus returns; keyboard can traverse all menu items.",
+      "label_chunks": ["Dismiss menu by Escape", "Dismiss menu by outside tap"]
+    },
+    {
+      "id": "CTRL-003",
+      "label": "Open… (menu) / Open file… (empty state) / Open (requested + menu)",
+      "page": 17,
+      "group": "Shell",
+      "required": "Wire one Open action to existing ACTION_OPEN_DOCUMENT in the requested FAB menu. Empty state points to Add document.",
+      "acceptance": "Cold launcher and warm app can select a file; cancellation returns unchanged; URI permission retained.",
+      "label_chunks": [
+        "Open… (menu)",
+        "Open file… (empty state)",
+        "Open (requested + menu)"
+      ]
+    },
+    {
+      "id": "CTRL-004",
+      "label": "+ floating action button",
+      "page": 17,
+      "group": "Shell",
+      "required": "Fixed bottom-right Material FAB menu, inset-aware, opening choices at the same location.",
+      "acceptance": "Always reachable in idle document/launcher states; does not cover content controls or system gesture area.",
+      "label_chunks": ["+ floating action button"]
+    },
+    {
+      "id": "CTRL-005",
+      "label": "New Markdown",
+      "page": 17,
+      "group": "Shell",
+      "required": "FAB menu item creates an editable untitled .md draft with preview and save lifecycle.",
+      "acceptance": "Create, type, preview, save via Android picker, close and reopen without losing content.",
+      "label_chunks": ["New Markdown"]
+    },
+    {
+      "id": "CTRL-006",
+      "label": "New text",
+      "page": 18,
+      "group": "Shell",
+      "required": "FAB menu item creates an editable untitled .txt draft using existing text engine.",
+      "acceptance": "Create, type, save/cancel/retry, close and reopen; dirty state/recovery remain accurate.",
+      "label_chunks": ["New text"]
+    },
+    {
+      "id": "CTRL-007",
+      "label": "Close expanded + menu",
+      "page": 18,
+      "group": "Shell",
+      "required": "Colocated close control and Back/outside-tap dismissal without triggering an item.",
+      "acceptance": "All three labelled choices reachable; close/Back leaves document unchanged.",
+      "label_chunks": ["Close expanded + menu"]
+    },
+    {
+      "id": "CTRL-008",
+      "label": "About",
+      "page": 18,
+      "group": "Shell",
+      "required": "About sheet/page with installed version/build identity and project/support links.",
+      "acceptance": "Reachable with no document and after renderer failure; displayed version matches installed build.",
+      "label_chunks": ["About"]
+    },
+    {
+      "id": "CTRL-012",
+      "label": "Preferences (menu)",
+      "page": 18,
+      "group": "Shell",
+      "required": "Retain application-level destination; adapt sheet/page by window size.",
+      "acceptance": "Opens from empty/loaded app; Back/Close returns to same document and focus.",
+      "label_chunks": ["Preferences (menu)"]
+    },
+    {
+      "id": "CTRL-013",
+      "label": "Diagnostics (menu)",
+      "page": 18,
+      "group": "Shell",
+      "required": "Keep under application menu and root recovery surface.",
+      "acceptance": "Reachable after contained and root-level failures; opening does not destroy document state.",
+      "label_chunks": ["Diagnostics (menu)"]
+    },
+    {
+      "id": "CTRL-014",
+      "label": "Skip to content",
+      "page": 18,
+      "group": "Shell",
+      "required": "Retain and make target the useful document/content focus location.",
+      "acceptance": "Keyboard activation moves focus past repeated chrome; visible focus is not obscured.",
+      "label_chunks": ["Skip to content"]
+    },
+    {
+      "id": "CTRL-020",
+      "label": "Android Back",
+      "page": 18,
+      "group": "Shell",
+      "required": "One Back owner: resolve IME/top transient surface first; prompt for dirty work only when destination Back would abandon it.",
+      "acceptance": "Back never silently discards draft or exits before closing topmost transient surface.",
+      "label_chunks": ["Android Back"]
+    },
+    {
+      "id": "CTRL-009",
+      "label": "GitHub project link",
+      "page": 18,
+      "group": "About",
+      "required": "Clearly labelled external link to verified project repository.",
+      "acceptance": "Opens correct repository through native external-link gateway; return restores About.",
+      "label_chunks": ["GitHub project link"]
+    },
+    {
+      "id": "CTRL-010",
+      "label": "ShruggieTech link",
+      "page": 18,
+      "group": "About",
+      "required": "Clearly labelled company link in About.",
+      "acceptance": "Opens verified ShruggieTech homepage; return preserves current document.",
+      "label_chunks": ["ShruggieTech link"]
+    },
+    {
+      "id": "CTRL-011",
+      "label": "Documentation link / Help / documentation (application menu)",
+      "page": 19,
+      "group": "About",
+      "required": "Clearly labelled documentation link in About.",
+      "acceptance": "Opens verified documentation destination; unavailable destination receives visible feedback.",
+      "label_chunks": [
+        "Documentation link",
+        "Help",
+        "documentation (application menu)"
+      ]
+    },
+    {
+      "id": "CTRL-116",
+      "label": "Licenses",
+      "page": 19,
+      "group": "About",
+      "required": "Link About to bundled application and third-party notices with readable navigation.",
+      "acceptance": "Notices open offline, scroll accessibly and return to About without losing the document.",
+      "label_chunks": ["Licenses"]
+    },
+    {
+      "id": "CTRL-117",
+      "label": "Report an issue",
+      "page": 19,
+      "group": "About",
+      "required": "Open the verified GitHub issue destination from Help/About; offer optional redacted diagnostics without automatic upload.",
+      "acceptance": "Correct destination opens; no document or diagnostic payload leaves the app without the chosen share action.",
+      "label_chunks": ["Report an issue"]
+    },
+    {
+      "id": "CTRL-015",
+      "label": "Activate inline document tab / Activate document in overflow list",
+      "page": 19,
+      "group": "Documents",
+      "required": "Compact document switcher; expanded tabs retained; shared activation handler.",
+      "acceptance": "Switching preserves source, scroll, draft and viewport; current document is labelled.",
+      "label_chunks": [
+        "Activate inline document tab",
+        "Activate document in overflow list"
+      ]
+    },
+    {
+      "id": "CTRL-016",
+      "label": "Close inline document / Close overflow document / Ctrl+W close current document",
+      "page": 19,
+      "group": "Documents",
+      "required": "Retain explicit close within document switcher with dirty-state resolution.",
+      "acceptance": "Closing clean document works; dirty close offers save/discard/cancel and preserves edits on failure.",
+      "label_chunks": [
+        "Close inline document",
+        "Close overflow document",
+        "Ctrl+W close current document"
+      ]
+    },
+    {
+      "id": "CTRL-017",
+      "label": "More open documents (overflow trigger)",
+      "page": 19,
+      "group": "Documents",
+      "required": "Compact document-count/switcher control instead of a clipped tab strip.",
+      "acceptance": "Every open document reachable without horizontal toolbar hunting; popup fits viewport.",
+      "label_chunks": ["More open documents (overflow trigger)"]
+    },
+    {
+      "id": "CTRL-018",
+      "label": "Previous/next document (Ctrl+Tab / Ctrl+Shift+Tab) / First/last tab (Home/End) / Previous/next tab (ArrowLeft/ArrowRight)",
+      "page": 19,
+      "group": "Documents",
+      "required": "Retain shortcuts; expose equivalent touch switcher.",
+      "acceptance": "Each command activates exactly one intended document and updates accessible selection.",
+      "label_chunks": [
+        "Previous/next document (Ctrl+Tab / Ctrl+Shift+Tab)",
+        "First/last tab (Home/End)",
+        "Previous/next tab (ArrowLeft/ArrowRight)"
+      ]
+    },
+    {
+      "id": "CTRL-019",
+      "label": "Reorder tab (Alt+Shift+ArrowLeft / ArrowRight)",
+      "page": 19,
+      "group": "Documents",
+      "required": "Retain accessible reorder where useful; make compact document ordering clear.",
+      "acceptance": "Ordering changes without changing content or losing focus; boundaries handled.",
+      "label_chunks": ["Reorder tab (Alt+Shift+ArrowLeft / ArrowRight)"]
+    },
+    {
+      "id": "CTRL-021",
+      "label": "Copy (menu / Ctrl+C)",
+      "page": 20,
+      "group": "Document commands",
+      "required": "Single clipboard action with selection/document semantics and result feedback.",
+      "acceptance": "Copies intended data; denied/unavailable clipboard shows failure rather than success.",
+      "label_chunks": ["Copy (menu / Ctrl+C)"]
+    },
+    {
+      "id": "CTRL-022",
+      "label": "Search (menu / Ctrl+F)",
+      "page": 20,
+      "group": "Document commands",
+      "required": "One Find entry point activating current renderer's accessible search tool.",
+      "acceptance": "Text, Markdown, Mermaid and large-text search each open a usable contextual tool.",
+      "label_chunks": ["Search (menu / Ctrl+F)"]
+    },
+    {
+      "id": "CTRL-023",
+      "label": "Find next (menu / F3) / Next (Markdown search) / next (CodeMirror panel) / Find next (large text)",
+      "page": 20,
+      "group": "Document commands",
+      "required": "Shared action result contract; retain renderer-appropriate matching.",
+      "acceptance": "Next highlights/moves to correct match; wrap and no-match state announced; read failure visible.",
+      "label_chunks": [
+        "Find next (menu / F3)",
+        "Next (Markdown search)",
+        "next (CodeMirror panel)",
+        "Find next (large text)"
+      ]
+    },
+    {
+      "id": "CTRL-024",
+      "label": "Find previous (menu / Shift+F3) / Previous (Markdown search) / previous (CodeMirror panel)",
+      "page": 20,
+      "group": "Document commands",
+      "required": "One previous-match action presented only when supported.",
+      "acceptance": "Moves to previous match, preserves query and selection; disabled/no-match states correct.",
+      "label_chunks": [
+        "Find previous (menu / Shift+F3)",
+        "Previous (Markdown search)",
+        "previous (CodeMirror panel)"
+      ]
+    },
+    {
+      "id": "CTRL-025",
+      "label": "Close search (Markdown/Mermaid buttons) / close (CodeMirror search panel) / close_search internal command",
+      "page": 20,
+      "group": "Document commands",
+      "required": "Consistent close/Back behavior returning to document selection.",
+      "acceptance": "Close hides query UI, restores expected focus and leaves document unchanged.",
+      "label_chunks": [
+        "Close search (Markdown/Mermaid buttons)",
+        "close (CodeMirror search panel)",
+        "close_search internal command"
+      ]
+    },
+    {
+      "id": "CTRL-026",
+      "label": "Go to line (menu / Ctrl+G)",
+      "page": 20,
+      "group": "Document commands",
+      "required": "Contextual line navigation using appropriate editor or large-text input.",
+      "acceptance": "Valid line focuses target; invalid input receives useful feedback; no false success.",
+      "label_chunks": ["Go to line (menu / Ctrl+G)"]
+    },
+    {
+      "id": "CTRL-027",
+      "label": "Undo (menu / Ctrl+Z)",
+      "page": 20,
+      "group": "Document commands",
+      "required": "Shared enabled state reflects undo stack; contextual editor action.",
+      "acceptance": "Undo reverses latest eligible edit and dirty state; disabled when history empty.",
+      "label_chunks": ["Undo (menu / Ctrl+Z)"]
+    },
+    {
+      "id": "CTRL-028",
+      "label": "Redo (menu / Ctrl+Shift+Z)",
+      "page": 20,
+      "group": "Document commands",
+      "required": "Shared enabled state reflects redo stack.",
+      "acceptance": "Redo restores intended edit; new edit invalidates redo correctly.",
+      "label_chunks": ["Redo (menu / Ctrl+Shift+Z)"]
+    },
+    {
+      "id": "CTRL-029",
+      "label": "Indent (menu / Tab)",
+      "page": 21,
+      "group": "Document commands",
+      "required": "Keep in editor tools/keyboard; omit from viewer chrome.",
+      "acceptance": "Indents selected lines by configured tab width; read-only text cannot change.",
+      "label_chunks": ["Indent (menu / Tab)"]
+    },
+    {
+      "id": "CTRL-030",
+      "label": "Outdent (menu / Shift+Tab)",
+      "page": 21,
+      "group": "Document commands",
+      "required": "Keep beside Indent in contextual editor tools.",
+      "acceptance": "Outdents selected lines safely; keyboard focus can still leave editor.",
+      "label_chunks": ["Outdent (menu / Shift+Tab)"]
+    },
+    {
+      "id": "CTRL-031",
+      "label": "Toggle wrap",
+      "page": 21,
+      "group": "Document commands",
+      "required": "Explicit Wrap lines state in editor tools, with defined local-versus-default scope.",
+      "acceptance": "Current state visible; toggling preserves caret/selection and document bytes.",
+      "label_chunks": ["Toggle wrap"]
+    },
+    {
+      "id": "CTRL-032",
+      "label": "Zoom out (menu / Ctrl+-) / − (image toolbar) / − (diagram toolbar)",
+      "page": 21,
+      "group": "Document commands",
+      "required": "All entry points invoke renderer-neutral zoom action; compact control shown contextually.",
+      "acceptance": "Every exposed path changes same viewport; unavailable image disables action.",
+      "label_chunks": [
+        "Zoom out (menu / Ctrl+-)",
+        "− (image toolbar)",
+        "− (diagram toolbar)"
+      ]
+    },
+    {
+      "id": "CTRL-033",
+      "label": "Zoom in (menu / Ctrl++) / + (image toolbar) / + (diagram toolbar)",
+      "page": 21,
+      "group": "Document commands",
+      "required": "Shared zoom action and truthful state feedback.",
+      "acceptance": "Every entry point yields same zoom result; bounds and focus retained.",
+      "label_chunks": [
+        "Zoom in (menu / Ctrl++)",
+        "+ (image toolbar)",
+        "+ (diagram toolbar)"
+      ]
+    },
+    {
+      "id": "CTRL-034",
+      "label": "Edit source / View source (mode toggle) / Preview",
+      "page": 21,
+      "group": "Document commands",
+      "required": "Use Read / Edit modes with renderer support and source authority reflected; provide Edit a copy for read-only input.",
+      "acceptance": "Toggle preserves source selection, edits and preview identity; read-only remains read-only.",
+      "label_chunks": ["Edit source", "View source (mode toggle)", "Preview"]
+    },
+    {
+      "id": "CTRL-035",
+      "label": "Save (menu / Ctrl+S) / Save (unsaved-changes dialog)",
+      "page": 21,
+      "group": "Document commands",
+      "required": "Use verified save receipts. Reuse Android Save As/create-document mechanics; add in-place save only when authority, conflict and outcome handling are supported.",
+      "acceptance": "Write changed bytes, verify receipt, reopen; failure/cancellation never discards draft.",
+      "label_chunks": ["Save (menu / Ctrl+S)", "Save (unsaved-changes dialog)"]
+    },
+    {
+      "id": "CTRL-036",
+      "label": "File information (menu) / File information (image tools)",
+      "page": 21,
+      "group": "Document commands",
+      "required": "Common document-info action in overflow/tools.",
+      "acceptance": "Reachable on phone in success/error states; displays active document's facts.",
+      "label_chunks": [
+        "File information (menu)",
+        "File information (image tools)"
+      ]
+    },
+    {
+      "id": "CTRL-037",
+      "label": "Outline (menu)",
+      "page": 21,
+      "group": "Document commands",
+      "required": "Contextual outline sheet/list with selection and dismissal.",
+      "acceptance": "Correct headings shown; selecting entry scrolls to it and returns useful focus.",
+      "label_chunks": ["Outline (menu)"]
+    },
+    {
+      "id": "CTRL-038",
+      "label": "Print (menu / Ctrl+P)",
+      "page": 22,
+      "group": "Document commands",
+      "required": "Offer only when host can complete print; keep in secondary actions.",
+      "acceptance": "Opens usable print flow or is absent with clear capability scope; source unaffected.",
+      "label_chunks": ["Print (menu / Ctrl+P)"]
+    },
+    {
+      "id": "CTRL-118",
+      "label": "Edit a copy",
+      "page": 22,
+      "group": "Document commands",
+      "required": "Create an editable draft copy, label its unsaved status and route persistence through Save copy/create-document.",
+      "acceptance": "Original bytes remain intact; edits save to a chosen destination and reopen exactly; cancel preserves the draft.",
+      "label_chunks": ["Edit a copy"]
+    },
+    {
+      "id": "CTRL-039",
+      "label": "Previous page (PageUp)",
+      "page": 22,
+      "group": "Declared commands",
+      "required": "Keep capability conditional; do not expose as dead control.",
+      "acceptance": "Action absent until renderer supplies valid navigation result.",
+      "label_chunks": ["Previous page (PageUp)"]
+    },
+    {
+      "id": "CTRL-040",
+      "label": "Next page (PageDown)",
+      "page": 22,
+      "group": "Declared commands",
+      "required": "Keep capability conditional; no placeholder page controls.",
+      "acceptance": "Action absent until renderer supplies valid navigation result.",
+      "label_chunks": ["Next page (PageDown)"]
+    },
+    {
+      "id": "CTRL-041",
+      "label": "Text editing/selection surface",
+      "page": 22,
+      "group": "Text editor",
+      "required": "Retain editor engine inside adaptive shell with proper IME/inset ownership.",
+      "acceptance": "Typing, selection, paste, multiline editing and keyboard dismissal preserve caret and content.",
+      "label_chunks": ["Text editing/selection surface"]
+    },
+    {
+      "id": "CTRL-042",
+      "label": "Document details disclosure",
+      "page": 22,
+      "group": "Text editor",
+      "required": "Move technical detail into document information or compact disclosure.",
+      "acceptance": "Disclosure keyboard/touch accessible; opening never consumes required editor controls.",
+      "label_chunks": ["Document details disclosure"]
+    },
+    {
+      "id": "CTRL-043",
+      "label": "Language mode selector",
+      "page": 22,
+      "group": "Text editor",
+      "required": "Labelled selector in editor/document tools; retain automatic detection and explicit override.",
+      "acceptance": "All 11 options selectable; override changes highlighting only; stored scope clear.",
+      "label_chunks": ["Language mode selector"]
+    },
+    {
+      "id": "CTRL-044",
+      "label": "Find text field (CodeMirror)",
+      "page": 22,
+      "group": "Editor search",
+      "required": "Responsive labelled Find field, current query and match state.",
+      "acceptance": "IME remains usable; field and adjacent actions fit phone width; search updates matches.",
+      "label_chunks": ["Find text field (CodeMirror)"]
+    },
+    {
+      "id": "CTRL-045",
+      "label": "all (select all matches)",
+      "page": 23,
+      "group": "Editor search",
+      "required": "Expose Select all matches in advanced find actions when editable/meaningful.",
+      "acceptance": "Selects all matches without unintended text changes; count announced.",
+      "label_chunks": ["all (select all matches)"]
+    },
+    {
+      "id": "CTRL-046",
+      "label": "match case checkbox",
+      "page": 23,
+      "group": "Editor search",
+      "required": "Accessible Match case toggle in find options.",
+      "acceptance": "Changes matching semantics; checked state visible and announced.",
+      "label_chunks": ["match case checkbox"]
+    },
+    {
+      "id": "CTRL-047",
+      "label": "regexp checkbox",
+      "page": 23,
+      "group": "Editor search",
+      "required": "Label Regular expression, with useful invalid-pattern feedback.",
+      "acceptance": "Invalid expression does not hang or silently fail; option state clear.",
+      "label_chunks": ["regexp checkbox"]
+    },
+    {
+      "id": "CTRL-048",
+      "label": "by word checkbox",
+      "page": 23,
+      "group": "Editor search",
+      "required": "Label Whole word in find options.",
+      "acceptance": "Whole-word matching works with current query; selection does not change text.",
+      "label_chunks": ["by word checkbox"]
+    },
+    {
+      "id": "CTRL-049",
+      "label": "Replace text field",
+      "page": 23,
+      "group": "Editor search",
+      "required": "Separate labelled replacement field under Find; collapse when read-only.",
+      "acceptance": "Editable state exposes field; read-only hides replacement controls; IME usable.",
+      "label_chunks": ["Replace text field"]
+    },
+    {
+      "id": "CTRL-050",
+      "label": "replace (next match)",
+      "page": 23,
+      "group": "Editor search",
+      "required": "Replace next action with undo support.",
+      "acceptance": "Replaces intended match once; dirty state and undo update correctly.",
+      "label_chunks": ["replace (next match)"]
+    },
+    {
+      "id": "CTRL-051",
+      "label": "replace all",
+      "page": 23,
+      "group": "Editor search",
+      "required": "Clearly scoped Replace all with result count and undo.",
+      "acceptance": "Replaces intended matches only; large input remains responsive; result can be undone.",
+      "label_chunks": ["replace all"]
+    },
+    {
+      "id": "CTRL-052",
+      "label": "Go to line input",
+      "page": 23,
+      "group": "Editor line navigation",
+      "required": "Labelled numeric-friendly line field in compact dialog.",
+      "acceptance": "Valid/invalid line values handled; keyboard does not cover submit/close.",
+      "label_chunks": ["Go to line input"]
+    },
+    {
+      "id": "CTRL-053",
+      "label": "go (submit line)",
+      "page": 23,
+      "group": "Editor line navigation",
+      "required": "Go action plus Back/Escape dismissal.",
+      "acceptance": "Moves caret to requested line and closes dialog; cancellation preserves selection.",
+      "label_chunks": ["go (submit line)"]
+    },
+    {
+      "id": "CTRL-054",
+      "label": "Find rendered text field",
+      "page": 24,
+      "group": "Markdown",
+      "required": "Compact find tool using common search presentation.",
+      "acceptance": "Queries match visible content; current match scrolls into view; all controls reachable with IME.",
+      "label_chunks": ["Find rendered text field"]
+    },
+    {
+      "id": "CTRL-055",
+      "label": "Outline heading entries",
+      "page": 24,
+      "group": "Markdown",
+      "required": "Heading list/sheet with hierarchy and current target.",
+      "acceptance": "Every heading entry reaches correct content; long labels wrap without clipping.",
+      "label_chunks": ["Outline heading entries"]
+    },
+    {
+      "id": "CTRL-056",
+      "label": "External document link / Email link",
+      "page": 24,
+      "group": "Markdown",
+      "required": "Preserve destination disclosure using accessible link semantics and native external launch.",
+      "acceptance": "Correct URL/mail target shown; blocked schemes remain inactive; cancellation safe.",
+      "label_chunks": ["External document link", "Email link"]
+    },
+    {
+      "id": "CTRL-057",
+      "label": "Internal fragment link / Footnote reference / Footnote return link",
+      "page": 24,
+      "group": "Markdown",
+      "required": "Consistent link behavior with destination focus and readable offsets.",
+      "acceptance": "Each anchor reaches correct target below chrome; keyboard and touch equivalent.",
+      "label_chunks": [
+        "Internal fragment link",
+        "Footnote reference",
+        "Footnote return link"
+      ]
+    },
+    {
+      "id": "CTRL-058",
+      "label": "Local document link",
+      "page": 24,
+      "group": "Markdown",
+      "required": "Expose only authorized resolvable local destinations with clear unavailable state.",
+      "acceptance": "Opens intended local file without losing current draft; missing permission offers recovery.",
+      "label_chunks": ["Local document link"]
+    },
+    {
+      "id": "CTRL-059",
+      "label": "Open destination (external-link dialog)",
+      "page": 24,
+      "group": "Markdown",
+      "required": "Retain explicit destination plus visible Opening/failed state in common dialog.",
+      "acceptance": "One launch per activation; failure stays recoverable; focus returns on cancel/finish.",
+      "label_chunks": ["Open destination (external-link dialog)"]
+    },
+    {
+      "id": "CTRL-060",
+      "label": "Cancel (external-link dialog)",
+      "page": 24,
+      "group": "Markdown",
+      "required": "Common dialog cancellation with Android Back.",
+      "acceptance": "Cancel/Back launches nothing and restores originating link focus.",
+      "label_chunks": ["Cancel (external-link dialog)"]
+    },
+    {
+      "id": "CTRL-061",
+      "label": "Retry preview (contained error / paused-preview banner)",
+      "page": 24,
+      "group": "Markdown recovery",
+      "required": "Content-area Retry only for recoverable conditions; preserve source fallback.",
+      "acceptance": "Injected preview failure leaves shell usable; retry restores preview without losing edits.",
+      "label_chunks": [
+        "Retry preview (contained error / paused-preview banner)"
+      ]
+    },
+    {
+      "id": "CTRL-062",
+      "label": "View source (Markdown failure) / View source (Mermaid failure) / View source (embedded Mermaid caption)",
+      "page": 25,
+      "group": "Renderer recovery",
+      "required": "Consistent source fallback with context-specific selection.",
+      "acceptance": "Markdown failure opens source; Mermaid fallback opens diagram source; embedded action selects correct fence.",
+      "label_chunks": [
+        "View source (Markdown failure)",
+        "View source (Mermaid failure)",
+        "View source (embedded Mermaid caption)"
+      ]
+    },
+    {
+      "id": "CTRL-063",
+      "label": "Find diagram text field",
+      "page": 25,
+      "group": "Mermaid",
+      "required": "Clear diagram search with meaningful match highlighting/navigation if offered.",
+      "acceptance": "Matching content is identifiable; query count is accurate; Back returns to diagram.",
+      "label_chunks": ["Find diagram text field"]
+    },
+    {
+      "id": "CTRL-064",
+      "label": "Fit (standalone / embedded diagram)",
+      "page": 25,
+      "group": "Diagram",
+      "required": "Contextual Fit action and gesture alternative; reuse common action model.",
+      "acceptance": "Fits correct diagram without changing source; nested diagram controls target their own viewport.",
+      "label_chunks": ["Fit (standalone / embedded diagram)"]
+    },
+    {
+      "id": "CTRL-065",
+      "label": "Actual size (standalone / embedded diagram)",
+      "page": 25,
+      "group": "Diagram",
+      "required": "Secondary view option in tool sheet.",
+      "acceptance": "Sets defined 100% view; preserves accessible route when gesture unavailable.",
+      "label_chunks": ["Actual size (standalone / embedded diagram)"]
+    },
+    {
+      "id": "CTRL-066",
+      "label": "Pan left",
+      "page": 25,
+      "group": "Diagram",
+      "required": "Secondary accessible pan control; primary touch drag.",
+      "acceptance": "Moves viewport left within bounds; label meaningful to assistive tech.",
+      "label_chunks": ["Pan left"]
+    },
+    {
+      "id": "CTRL-067",
+      "label": "Pan right",
+      "page": 25,
+      "group": "Diagram",
+      "required": "Secondary accessible pan control; primary touch drag.",
+      "acceptance": "Moves viewport right within bounds; no document page scroll collision.",
+      "label_chunks": ["Pan right"]
+    },
+    {
+      "id": "CTRL-068",
+      "label": "Pan up",
+      "page": 25,
+      "group": "Diagram",
+      "required": "Secondary accessible pan control; primary touch drag.",
+      "acceptance": "Moves viewport up within bounds; keyboard equivalent available.",
+      "label_chunks": ["Pan up"]
+    },
+    {
+      "id": "CTRL-069",
+      "label": "Pan down",
+      "page": 25,
+      "group": "Diagram",
+      "required": "Secondary accessible pan control; primary touch drag.",
+      "acceptance": "Moves viewport down within bounds; visible content remains recoverable with Fit.",
+      "label_chunks": ["Pan down"]
+    },
+    {
+      "id": "CTRL-070",
+      "label": "Diagram canvas drag / keyboard navigation",
+      "page": 26,
+      "group": "Diagram",
+      "required": "Preserve gesture surface with documented alternatives and controlled event ownership.",
+      "acceptance": "Drag affects intended diagram; keyboard focus can leave; embedded diagrams do not trap page scroll.",
+      "label_chunks": ["Diagram canvas drag", "keyboard navigation"]
+    },
+    {
+      "id": "CTRL-071",
+      "label": "Fit",
+      "page": 26,
+      "group": "Image",
+      "required": "Primary contextual fit/reset option; no horizontal control scrolling.",
+      "acceptance": "Fits loaded image; disabled without usable preview; reachable at compact widths.",
+      "label_chunks": ["Fit"]
+    },
+    {
+      "id": "CTRL-072",
+      "label": "Actual size",
+      "page": 26,
+      "group": "Image",
+      "required": "Secondary 100% view action in image tools.",
+      "acceptance": "Displays defined actual-size viewport; text scaling does not hide control.",
+      "label_chunks": ["Actual size"]
+    },
+    {
+      "id": "CTRL-073",
+      "label": "Reset view",
+      "page": 26,
+      "group": "Image",
+      "required": "Clarify reset scope; separate background preference if reset should only reset position/zoom.",
+      "acceptance": "Reset outcome matches label; no unrelated state changes.",
+      "label_chunks": ["Reset view"]
+    },
+    {
+      "id": "CTRL-074",
+      "label": "Background selector (Checkerboard / Light / Dark)",
+      "page": 26,
+      "group": "Image",
+      "required": "Labelled background choice within image tools.",
+      "acceptance": "All three options preview immediately; value persists at intended scope and is accessible.",
+      "label_chunks": ["Background selector (Checkerboard / Light / Dark)"]
+    },
+    {
+      "id": "CTRL-075",
+      "label": "Image viewport pinch / drag / keyboard navigation",
+      "page": 26,
+      "group": "Image",
+      "required": "Retain direct manipulation with accessible buttons; avoid competing page gestures.",
+      "acceptance": "Pinch, drag, orientation and keyboard operate within bounds; Fit recovers content.",
+      "label_chunks": ["Image viewport pinch", "drag", "keyboard navigation"]
+    },
+    {
+      "id": "CTRL-076",
+      "label": "Play / Pause",
+      "page": 26,
+      "group": "Animation",
+      "required": "Small contextual playback control with clear state and reduced-motion explanation.",
+      "acceptance": "Play/pause work; backgrounding stops playback; reduced-motion policy visible and consistent.",
+      "label_chunks": ["Play", "Pause"]
+    },
+    {
+      "id": "CTRL-077",
+      "label": "Previous frame",
+      "page": 26,
+      "group": "Animation",
+      "required": "Frame navigation in focused animation controls.",
+      "acceptance": "Steps exactly one frame, pauses playback, respects first-frame boundary.",
+      "label_chunks": ["Previous frame"]
+    },
+    {
+      "id": "CTRL-078",
+      "label": "Next frame",
+      "page": 26,
+      "group": "Animation",
+      "required": "Frame navigation in focused animation controls.",
+      "acceptance": "Steps exactly one frame, pauses playback, respects last-frame boundary.",
+      "label_chunks": ["Next frame"]
+    },
+    {
+      "id": "CTRL-079",
+      "label": "Animation frame number input",
+      "page": 27,
+      "group": "Animation",
+      "required": "Labelled current-frame selector with total and clear validation.",
+      "acceptance": "Valid frame selects correct image; invalid/empty/out-of-range values handled without silent reset.",
+      "label_chunks": ["Animation frame number input"]
+    },
+    {
+      "id": "CTRL-080",
+      "label": "Icon entry selector",
+      "page": 27,
+      "group": "ICO",
+      "required": "Readable entry list showing essential size/format; technical detail secondary.",
+      "acceptance": "Select every entry on phone; failures labelled; long details do not force horizontal scrolling.",
+      "label_chunks": ["Icon entry selector"]
+    },
+    {
+      "id": "CTRL-081",
+      "label": "Export selected entry as PNG",
+      "page": 27,
+      "group": "ICO",
+      "required": "Secondary export action with destination picker and receipt feedback.",
+      "acceptance": "Saved PNG matches selected entry; cancel/failure explicit; original unchanged.",
+      "label_chunks": ["Export selected entry as PNG"]
+    },
+    {
+      "id": "CTRL-082",
+      "label": "Retry preview",
+      "page": 27,
+      "group": "Image recovery",
+      "required": "Retry transient failures; explain unsupported SVG features with useful alternative actions.",
+      "acceptance": "Repeated retry not offered as solution to deterministic refusal; transient retry succeeds without duplicate work.",
+      "label_chunks": ["Retry preview"]
+    },
+    {
+      "id": "CTRL-083",
+      "label": "Previous window",
+      "page": 27,
+      "group": "Large text",
+      "required": "Readable Previous section action in large-file tools.",
+      "acceptance": "Loads prior chunk without lost position; disabled at start; errors visible.",
+      "label_chunks": ["Previous window"]
+    },
+    {
+      "id": "CTRL-084",
+      "label": "Next window",
+      "page": 27,
+      "group": "Large text",
+      "required": "Readable Next section action with position context.",
+      "acceptance": "Loads next chunk without skipping bytes; disabled at end; cancellation safe.",
+      "label_chunks": ["Next window"]
+    },
+    {
+      "id": "CTRL-085",
+      "label": "Find text field",
+      "page": 27,
+      "group": "Large text",
+      "required": "Common find presentation with bounded-search progress.",
+      "acceptance": "Search responds on large files; cancel/error/no-match distinguishable.",
+      "label_chunks": ["Find text field"]
+    },
+    {
+      "id": "CTRL-086",
+      "label": "Line number field",
+      "page": 27,
+      "group": "Large text",
+      "required": "Validated positive line input with clear constraints.",
+      "acceptance": "Rejects empty/NaN/negative/out-of-range entries; IME does not obscure Go.",
+      "label_chunks": ["Line number field"]
+    },
+    {
+      "id": "CTRL-087",
+      "label": "Go to line (large-file action)",
+      "page": 28,
+      "group": "Large text",
+      "required": "Explicit loading/error outcome and cancellation.",
+      "acceptance": "Reaches requested line or reports not found/read failure; no unhandled rejection.",
+      "label_chunks": ["Go to line (large-file action)"]
+    },
+    {
+      "id": "CTRL-088",
+      "label": "Copy window",
+      "page": 28,
+      "group": "Large text",
+      "required": "Copy visible section with exact scope label and clipboard receipt.",
+      "acceptance": "Clipboard contains displayed section; unsupported/denied write produces visible error.",
+      "label_chunks": ["Copy window"]
+    },
+    {
+      "id": "CTRL-089",
+      "label": "Close file information",
+      "page": 28,
+      "group": "Metadata",
+      "required": "Compact sheet Close/Back; expanded inspector may remain nonmodal.",
+      "acceptance": "Dismisses once, restores correct opener and cancels active checksum work.",
+      "label_chunks": ["Close file information"]
+    },
+    {
+      "id": "CTRL-090",
+      "label": "Copy available information",
+      "page": 28,
+      "group": "Metadata",
+      "required": "Retain scoped bulk copy and privacy exclusions.",
+      "acceptance": "Copied facts match visible allowed data; status is visible and announced.",
+      "label_chunks": ["Copy available information"]
+    },
+    {
+      "id": "CTRL-091",
+      "label": "Expand information / Collapse information",
+      "page": 28,
+      "group": "Metadata",
+      "required": "Use accessible sheet expansion or explicit full-screen details view.",
+      "acceptance": "Expansion state labelled; drag/Back/Close behavior consistent; controls remain reachable.",
+      "label_chunks": ["Expand information", "Collapse information"]
+    },
+    {
+      "id": "CTRL-092",
+      "label": "Calculate SHA-256",
+      "page": 28,
+      "group": "Metadata",
+      "required": "Secondary technical action with progress and result copy.",
+      "acceptance": "One computation per request; closing cancels; errors and checksum availability clear.",
+      "label_chunks": ["Calculate SHA-256"]
+    },
+    {
+      "id": "CTRL-093",
+      "label": "Embedded metadata observation disclosures",
+      "page": 28,
+      "group": "Metadata",
+      "required": "Readable advanced observation disclosure; retain provenance below primary facts.",
+      "acceptance": "Each disclosure toggles by keyboard/touch; long values wrap; no hidden expansion state.",
+      "label_chunks": ["Embedded metadata observation disclosures"]
+    },
+    {
+      "id": "CTRL-094",
+      "label": "Copy individual fact",
+      "page": 28,
+      "group": "Metadata",
+      "required": "Compact labelled copy icon/button beside value.",
+      "acceptance": "Copies exact chosen fact and reports completion/failure; 48dp target without bloating rows.",
+      "label_chunks": ["Copy individual fact"]
+    },
+    {
+      "id": "CTRL-095",
+      "label": "Disclose to copy",
+      "page": 28,
+      "group": "Metadata",
+      "required": "Clearly explain exact value/scope before copy; preserve existing disclosure rule.",
+      "acceptance": "No copy before explicit action; confirmation associated with correct fact.",
+      "label_chunks": ["Disclose to copy"]
+    },
+    {
+      "id": "CTRL-096",
+      "label": "Cancel sensitive fact copy",
+      "page": 29,
+      "group": "Metadata",
+      "required": "Small Cancel action within same confirmation.",
+      "acceptance": "Cancels without clipboard change and returns focus to originating disclosure.",
+      "label_chunks": ["Cancel sensitive fact copy"]
+    },
+    {
+      "id": "CTRL-097",
+      "label": "Close preferences",
+      "page": 29,
+      "group": "Preferences",
+      "required": "Common sheet/page Close/Back behavior.",
+      "acceptance": "Returns to prior document and focus; preference changes persist as defined.",
+      "label_chunks": ["Close preferences"]
+    },
+    {
+      "id": "CTRL-098",
+      "label": "Theme selector (System / Light / Dark)",
+      "page": 29,
+      "group": "Preferences",
+      "required": "Labelled three-choice selector in preferences.",
+      "acceptance": "All choices apply to app, tools and renderer; System follows OS; contrast retained.",
+      "label_chunks": ["Theme selector (System / Light / Dark)"]
+    },
+    {
+      "id": "CTRL-099",
+      "label": "Editor font family field",
+      "page": 29,
+      "group": "Preferences",
+      "required": "Validated font choice with preview and explicit custom-value fallback.",
+      "acceptance": "Unavailable font gets explained fallback; arbitrary input cannot break layout.",
+      "label_chunks": ["Editor font family field"]
+    },
+    {
+      "id": "CTRL-100",
+      "label": "Editor font size field (8–72)",
+      "page": 29,
+      "group": "Preferences",
+      "required": "Validated stepper/field with live readable preview.",
+      "acceptance": "Empty/invalid values handled; 200% text scaling keeps actions usable.",
+      "label_chunks": ["Editor font size field (8–72)"]
+    },
+    {
+      "id": "CTRL-101",
+      "label": "Tab width field (1–16)",
+      "page": 29,
+      "group": "Preferences",
+      "required": "Validated editor setting with clear units.",
+      "acceptance": "Only supported widths persist; indentation matches displayed value.",
+      "label_chunks": ["Tab width field (1–16)"]
+    },
+    {
+      "id": "CTRL-102",
+      "label": "Wrap long lines checkbox",
+      "page": 29,
+      "group": "Preferences",
+      "required": "Clear switch for default wrapping; distinguish current-document override.",
+      "acceptance": "Toggle updates expected editors without changing file bytes; state persists.",
+      "label_chunks": ["Wrap long lines checkbox"]
+    },
+    {
+      "id": "CTRL-103",
+      "label": "Markdown default (Rendered / Source)",
+      "page": 29,
+      "group": "Preferences",
+      "required": "Label as Default Markdown view with explanatory scope.",
+      "acceptance": "Newly opened Markdown follows selection; current unsaved editor is not silently replaced.",
+      "label_chunks": ["Markdown default (Rendered / Source)"]
+    },
+    {
+      "id": "CTRL-104",
+      "label": "Reset preferences",
+      "page": 29,
+      "group": "Preferences",
+      "required": "Clearly scoped Reset settings with confirmation or reversible feedback as appropriate.",
+      "acceptance": "Defaults restored, files untouched, success/failure visible; cancel preserves settings.",
+      "label_chunks": ["Reset preferences"]
+    },
+    {
+      "id": "CTRL-105",
+      "label": "Save As (unsaved-changes dialog; required regular action)",
+      "page": 30,
+      "group": "Save and recovery",
+      "required": "Use Android create-document mechanics: source-bound Save As for existing sources, a separate draft-create/save contract for new documents.",
+      "acceptance": "Choose name/destination, write, receive receipt and reopen; cancel/failure preserves draft.",
+      "label_chunks": [
+        "Save As (unsaved-changes dialog; required regular action)"
+      ]
+    },
+    {
+      "id": "CTRL-106",
+      "label": "Discard (unsaved changes)",
+      "page": 30,
+      "group": "Save and recovery",
+      "required": "Explicit discard scope and safe handling of in-flight writes.",
+      "acceptance": "Cannot race pending write into unintended data loss; chosen draft only discarded.",
+      "label_chunks": ["Discard (unsaved changes)"]
+    },
+    {
+      "id": "CTRL-107",
+      "label": "Cancel (unsaved changes)",
+      "page": 30,
+      "group": "Save and recovery",
+      "required": "Common cancel/Back path with clear return to editing.",
+      "acceptance": "No close or data loss; focus returns and pending operation state is coherent.",
+      "label_chunks": ["Cancel (unsaved changes)"]
+    },
+    {
+      "id": "CTRL-108",
+      "label": "Recover",
+      "page": 30,
+      "group": "Save and recovery",
+      "required": "Retain recovery with document identity and clear next Save step.",
+      "acceptance": "Recovered text matches record; original not overwritten without explicit save.",
+      "label_chunks": ["Recover"]
+    },
+    {
+      "id": "CTRL-109",
+      "label": "Decline recovery",
+      "page": 30,
+      "group": "Save and recovery",
+      "required": "Clearly describe effect on recovery record; distinct from decide-later.",
+      "acceptance": "Only selected record declined; no ambiguity with cancel; failure visible.",
+      "label_chunks": ["Decline recovery"]
+    },
+    {
+      "id": "CTRL-110",
+      "label": "Not now",
+      "page": 30,
+      "group": "Save and recovery",
+      "required": "Retain defer action and Android Back equivalence.",
+      "acceptance": "Record remains available for later recovery; current document state unchanged.",
+      "label_chunks": ["Not now"]
+    },
+    {
+      "id": "CTRL-111",
+      "label": "Close diagnostics",
+      "page": 30,
+      "group": "Diagnostics",
+      "required": "Common close icon/Back in diagnostic sheet/page.",
+      "acceptance": "Always reachable while JSON scrolls; returns to document and restores opener.",
+      "label_chunks": ["Close diagnostics"]
+    },
+    {
+      "id": "CTRL-112",
+      "label": "Export previewed bundle",
+      "page": 30,
+      "group": "Diagnostics",
+      "required": "Native save/share of exactly previewed redacted JSON, with exporting/cancelled/saved/failed receipt.",
+      "acceptance": "Export creates readable bundle on Android; chosen destination receives exact bytes; failed export visible.",
+      "label_chunks": ["Export previewed bundle"]
+    },
+    {
+      "id": "CTRL-113",
+      "label": "Clear diagnostics",
+      "page": 30,
+      "group": "Diagnostics",
+      "required": "Clearly scoped clear action with result feedback; avoid erasing evidence accidentally.",
+      "acceptance": "Only diagnostic events cleared; failure retains preview; files/preferences untouched.",
+      "label_chunks": ["Clear diagnostics"]
+    },
+    {
+      "id": "CTRL-119",
+      "label": "Share diagnostic bundle",
+      "page": 31,
+      "group": "Diagnostics",
+      "required": "Invoke Android Sharesheet with the frozen redacted JSON, correct MIME and temporary readable URI grants.",
+      "acceptance": "Receiving app can read the payload; cancellation is neutral; handoff is never described as confirmed delivery.",
+      "label_chunks": ["Share diagnostic bundle"]
+    },
+    {
+      "id": "CTRL-114",
+      "label": "CommandBar generated command buttons",
+      "page": 31,
+      "group": "Legacy/dead surface",
+      "required": "Remove dead presentation or deliberately reuse the same action model; do not count as active UI.",
+      "acceptance": "Build/reference audit confirms one intended command presentation per layout.",
+      "label_chunks": ["CommandBar generated command buttons"]
+    },
+    {
+      "id": "CTRL-115",
+      "label": "Rendered task checkbox (Completed task / Incomplete task)",
+      "page": 31,
+      "group": "Markdown passive control",
+      "required": "Preserve read-only task state in viewer; editing belongs in source unless task editing is explicitly added.",
+      "acceptance": "State is announced accurately; tapping does not falsely appear to save a change.",
+      "label_chunks": [
+        "Rendered task checkbox (Completed task / Incomplete task)"
+      ]
+    }
+  ]
+}

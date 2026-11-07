@@ -19,6 +19,8 @@ Set-StrictMode -Version Latest
 $startupDiagnostics = [Collections.Generic.List[object]]::new()
 $script:readinessWaitKind = 'none'
 $script:readinessWaitCallerLine = 0
+$script:documentActionObservation = $null
+$script:recoveryObservation = $null
 
 $root = (Resolve-Path -LiteralPath $PortableRoot).Path
 $manifestPath = (Resolve-Path -LiteralPath $Manifest).Path
@@ -80,7 +82,13 @@ function Save-StartupDiagnostic([Diagnostics.Process] $Process, [string] $Scenar
         }
         $observation.process_state_available = $true
     } catch { }
-    $record = New-PortableStartupDiagnostic -Observation $observation -Scenario $Scenario -Stage $script:readinessStage -SourceCommit $manifestSourceCommit -ManifestDigest $manifestDigest -Succeeded $Succeeded -ElapsedMilliseconds $Clock.ElapsedMilliseconds -WaitKind $script:readinessWaitKind -WaitCallerLine $script:readinessWaitCallerLine
+    try {
+    $record = New-PortableStartupDiagnostic -Observation $observation -Scenario $Scenario -Stage $script:readinessStage -SourceCommit $manifestSourceCommit -ManifestDigest $manifestDigest -Succeeded $Succeeded -ElapsedMilliseconds $Clock.ElapsedMilliseconds -WaitKind $script:readinessWaitKind -WaitCallerLine $script:readinessWaitCallerLine -DocumentAction $(if ($Scenario -eq 'editable') { $script:documentActionObservation } else { $null }) -RecoveryObservation $(if ($Scenario -eq 'recovery') { $script:recoveryObservation } else { $null })
+    } catch {
+        if ($Succeeded) { throw }
+        Write-Warning 'portable_startup_diagnostic_capture_failed'
+        return
+    }
     $startupDiagnostics.Add($record)
     [IO.File]::WriteAllText([IO.Path]::GetFullPath("$Receipt.startup.json"), (ConvertTo-Json -InputObject @($startupDiagnostics.ToArray()) -Depth 5) + [Environment]::NewLine, [Text.UTF8Encoding]::new($false))
 }
@@ -203,12 +211,12 @@ function Test-WindowContainsText([System.Windows.Automation.AutomationElement] $
     return $false
 }
 
-function Wait-WindowText([Diagnostics.Process] $Process, [string] $Text, [int] $Seconds = 10) {
+function Wait-WindowText([Diagnostics.Process] $Process, [string] $Text, [int] $Seconds = 10, [int] $PollMilliseconds = 50) {
     $deadline = [DateTimeOffset]::UtcNow.AddSeconds($Seconds)
     do {
         $window = Get-WindowRoot $Process
         if ($window -and (Test-WindowContainsText $window $Text)) { return }
-        Start-Sleep -Milliseconds 50
+        Start-Sleep -Milliseconds $PollMilliseconds
     } while ([DateTimeOffset]::UtcNow -lt $deadline)
     throw "Portable UI did not expose text '$Text'."
 }
@@ -248,6 +256,9 @@ function Send-MarkdownDelivery([string] $Path, [Diagnostics.Process] $HostProces
 }
 
 function Wait-NamedButton([Diagnostics.Process] $Process, [string] $Name, [int] $Seconds = 10) {
+    $script:readinessWaitKind = 'named_button'
+    $script:readinessWaitCallerLine = $MyInvocation.ScriptLineNumber
+    $script:readinessStage = 'named_button_wait'
     $deadline = [DateTimeOffset]::UtcNow.AddSeconds($Seconds)
     $condition = New-Object System.Windows.Automation.AndCondition(
         (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::NameProperty, $Name)),
@@ -257,40 +268,81 @@ function Wait-NamedButton([Diagnostics.Process] $Process, [string] $Name, [int] 
         $window = Get-WindowRoot $Process
         if ($window) {
             $button = $window.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $condition)
-            if ($button) { return $button }
+            if ($button) {
+                $script:readinessStage = 'named_button_ready'
+                $script:readinessWaitKind = 'none'
+                $script:readinessWaitCallerLine = 0
+                return $button
+            }
         }
         Start-Sleep -Milliseconds 50
     } while ([DateTimeOffset]::UtcNow -lt $deadline)
     throw "Portable UI did not expose button '$Name'."
 }
 
+function Find-DocumentToolsMenu([System.Windows.Automation.AutomationElement] $Window) {
+    $condition = New-Object System.Windows.Automation.AndCondition(
+        (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::NameProperty, 'Document tools')),
+        (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Menu))
+    )
+    return $Window.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $condition)
+}
+
 function Wait-ActionableNamedElement([Diagnostics.Process] $Process, [string] $Name, [string] $Shortcut = '', [int] $Seconds = 10) {
+    $script:documentActionObservation['phase'] = 'action_wait'
     $deadline = [DateTimeOffset]::UtcNow.AddSeconds($Seconds)
     do {
         $window = Get-WindowRoot $Process
-        if ($window) {
+        $menu = if ($window) { Find-DocumentToolsMenu $window } else { $null }
+        $script:documentActionObservation['menu_available'] = $null -ne $menu
+        if ($menu -and -not $menu.Current.IsOffscreen -and $menu.Current.IsEnabled) {
             $candidates = [Collections.Generic.List[System.Windows.Automation.AutomationElement]]::new()
-            $exact = Find-NamedElement $window $Name
+            $exact = Find-NamedElement $menu $Name
             if ($exact) { $candidates.Add($exact) }
             if ($Shortcut) {
                 $shortcutName = '^{0}\s*{1}$' -f [Regex]::Escape($Name), [Regex]::Escape($Shortcut)
-                foreach ($candidate in $window.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)) {
-                    try {
-                        if ($candidate.Current.Name -match $shortcutName) { $candidates.Add($candidate) }
-                    }
+                foreach ($candidate in $menu.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)) {
+                    try { if ($candidate.Current.Name -match $shortcutName) { $candidates.Add($candidate) } }
                     catch { continue }
                 }
             }
+            $script:documentActionObservation['candidate_available'] = $candidates.Count -gt 0
             foreach ($candidate in $candidates) {
-                $element = $candidate
-                while ($element) {
-                    try {
-                        $bounds = $element.Current.BoundingRectangle
+                try {
+                    $owner = $candidate
+                    while ($owner -and -not [System.Windows.Automation.Automation]::Compare($owner, $menu)) {
+                        $owner = [System.Windows.Automation.TreeWalker]::ControlViewWalker.GetParent($owner)
+                    }
+                    $script:documentActionObservation['menu_owned'] = $null -ne $owner
+                    if (-not $owner) { continue }
+                    $element = $candidate
+                    while ($element -and -not [System.Windows.Automation.Automation]::Compare($element, $menu)) {
                         $patternObject = $null
-                        if (-not $element.Current.IsOffscreen -and $bounds.Width -gt 0 -and $bounds.Height -gt 0 -and $element.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern, [ref]$patternObject)) { return $element }
+                        if ($element.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern, [ref]$patternObject)) {
+                            $script:documentActionObservation['enabled'] = $element.Current.IsEnabled
+                            if (-not $element.Current.IsEnabled) { break }
+                            $scrollItem = $null
+                            if ($element.TryGetCurrentPattern([System.Windows.Automation.ScrollItemPattern]::Pattern, [ref]$scrollItem)) {
+                                $script:documentActionObservation['scroll_requested'] = $true
+                                ([System.Windows.Automation.ScrollItemPattern]$scrollItem).ScrollIntoView()
+                            }
+                            $bounds = $element.Current.BoundingRectangle
+                            $windowBounds = $window.Current.BoundingRectangle
+                            $visible = -not $element.Current.IsOffscreen -and $bounds.Width -gt 0 -and $bounds.Height -gt 0 -and $bounds.Left -ge $windowBounds.Left -and $bounds.Top -ge $windowBounds.Top -and $bounds.Right -le $windowBounds.Right -and $bounds.Bottom -le $windowBounds.Bottom
+                            $script:documentActionObservation['visible'] = $visible
+                            if ($visible) {
+                                $script:documentActionObservation['phase'] = 'action_ready'
+                                return $element
+                            }
+                            break
+                        }
                         $element = [System.Windows.Automation.TreeWalker]::ControlViewWalker.GetParent($element)
                     }
-                    catch { break }
+                }
+                catch {
+                    $script:documentActionObservation['resolver_error'] = $true
+                    if ($_.FullyQualifiedErrorId -eq 'MethodNotFound') { $script:documentActionObservation['resolver_method_missing'] = $true }
+                    continue
                 }
             }
         }
@@ -299,7 +351,32 @@ function Wait-ActionableNamedElement([Diagnostics.Process] $Process, [string] $N
     throw "Portable UI did not expose actionable element '$Name'."
 }
 
+function Wait-ApplicationForeground([Diagnostics.Process] $Process, [int] $Seconds = 10) {
+    $script:readinessWaitKind = 'foreground'
+    $script:readinessWaitCallerLine = $MyInvocation.ScriptLineNumber
+    $script:readinessStage = 'foreground_wait'
+    $Process.Refresh()
+    $handle = $Process.MainWindowHandle
+    if ($handle -eq [IntPtr]::Zero) { throw 'portable_foreground_window_missing' }
+    if ([GlitchpadNativeInput]::GetForegroundWindow() -ne $handle) {
+        [GlitchpadNativeInput]::SetForegroundWindow($handle) | Out-Null
+    }
+    $deadline = [DateTimeOffset]::UtcNow.AddSeconds($Seconds)
+    do {
+        if ([GlitchpadNativeInput]::GetForegroundWindow() -eq $handle) {
+            $script:readinessStage = 'foreground_ready'
+            $script:readinessWaitKind = 'none'
+            $script:readinessWaitCallerLine = 0
+            return
+        }
+        Start-Sleep -Milliseconds 50
+    } while ([DateTimeOffset]::UtcNow -lt $deadline)
+    throw 'portable_foreground_window_timeout'
+}
+
 function Click-AutomationElement([Diagnostics.Process] $Process, [System.Windows.Automation.AutomationElement] $Element, [string] $Description) {
+    # Foreground activation can change modal ownership and screen geometry.
+    Wait-ApplicationForeground $Process
     if ($Element.Current.IsOffscreen) { throw "Portable UI element '$Description' is offscreen and cannot be clicked." }
     try {
         $point = $Element.GetClickablePoint()
@@ -314,9 +391,11 @@ function Click-AutomationElement([Diagnostics.Process] $Process, [System.Windows
     }
     $previousCursor = [System.Windows.Forms.Cursor]::Position
     try {
-        [GlitchpadNativeInput]::SetForegroundWindow($Process.MainWindowHandle) | Out-Null
         [GlitchpadNativeInput]::SetCursorPos([Math]::Round($clickX), [Math]::Round($clickY)) | Out-Null
         Start-Sleep -Milliseconds 50
+        $foreground = [GlitchpadNativeInput]::GetForegroundWindow() -eq $Process.MainWindowHandle
+        if ($script:documentActionObservation) { $script:documentActionObservation['foreground_at_click'] = $foreground }
+        if (-not $foreground) { throw 'portable_foreground_lost_before_click' }
         [GlitchpadNativeInput]::mouse_event(0x0002, 0, 0, 0, [UIntPtr]::Zero)
         [GlitchpadNativeInput]::mouse_event(0x0004, 0, 0, 0, [UIntPtr]::Zero)
     }
@@ -342,10 +421,75 @@ function Invoke-NamedButton([Diagnostics.Process] $Process, [string] $Name) {
     Invoke-AutomationElement $Process $button $Name
 }
 
-function Invoke-MenuCommand([Diagnostics.Process] $Process, [string] $Name, [string] $Shortcut = '') {
-    Invoke-NamedButton $Process 'Menu'
+function Invoke-DocumentCommand([Diagnostics.Process] $Process, [string] $Name, [string] $Shortcut = '') {
+    $script:documentActionObservation = @{ phase = 'menu_wait'; foreground_before_menu = $false; foreground_at_click = $null; menu_available = $false; candidate_available = $false; menu_owned = $false; enabled = $null; visible = $null; scroll_requested = $false; click_dispatched = $false; resolver_error = $false; resolver_method_missing = $false }
+    Wait-ApplicationForeground $Process
+    $script:documentActionObservation['foreground_before_menu'] = $true
+    Invoke-NamedButton $Process 'Document tools'
     $item = Wait-ActionableNamedElement $Process $Name $Shortcut
     Click-AutomationElement $Process $item $Name
+    $script:documentActionObservation['click_dispatched'] = $true
+    $script:documentActionObservation['phase'] = 'click_dispatched'
+}
+
+function Wait-EditorNativeFocus([Diagnostics.Process] $Process, [string] $EditorName) {
+    $deadline = [DateTimeOffset]::UtcNow.AddSeconds(10)
+    $focusRequested = $false
+    $readyEditor = $null
+    $readySamples = 0
+    $consecutiveFocused = 0
+    $script:readinessStage = 'editor_focus_wait'
+    $script:readinessWaitKind = 'editor_focus'
+    $script:readinessWaitCallerLine = $MyInvocation.ScriptLineNumber
+    do {
+        try {
+            $window = Get-WindowRoot $Process
+            $menu = if ($window) { Find-DocumentToolsMenu $window } else { $null }
+            $menuClosed = -not $menu -or $menu.Current.IsOffscreen
+            $script:documentActionObservation['editor_menu_closed'] = $menuClosed
+            if ($window -and $menuClosed) {
+                $editor = Find-NamedElement $window $EditorName
+                if ($editor -and $editor.Current.IsEnabled -and -not $editor.Current.IsOffscreen) {
+                    if (-not $focusRequested) {
+                        if ($readyEditor -and [System.Windows.Automation.Automation]::Compare($readyEditor, $editor)) { $readySamples++ } else { $readySamples = 1 }
+                        $readyEditor = $editor
+                        if ($readySamples -ge 2) {
+                            $editor.SetFocus()
+                            $focusRequested = $true
+                            $script:documentActionObservation['editor_focus_requested'] = $true
+                        }
+                    }
+                    if ($focusRequested) {
+                        $reportedFocus = $editor.Current.HasKeyboardFocus
+                        $focused = [System.Windows.Automation.AutomationElement]::FocusedElement
+                        $ownsFocus = $reportedFocus
+                        for ($depth = 0; -not $ownsFocus -and $focused -and $depth -lt 16; $depth++) {
+                            if ([System.Windows.Automation.Automation]::Compare($focused, $editor)) { $ownsFocus = $true; break }
+                            $focused = [System.Windows.Automation.TreeWalker]::ControlViewWalker.GetParent($focused)
+                        }
+                        $foreground = [GlitchpadNativeInput]::GetForegroundWindow() -eq $Process.MainWindowHandle
+                        $script:documentActionObservation['editor_focus_observed'] = $ownsFocus
+                        $script:documentActionObservation['editor_has_keyboard_focus'] = $reportedFocus
+                        $script:documentActionObservation['editor_foreground'] = $foreground
+                        if ($ownsFocus -and $foreground) { $consecutiveFocused++ } else { $consecutiveFocused = 0 }
+                        if ($consecutiveFocused -ge 2) {
+                            $script:readinessStage = 'editor_focus_ready'
+                            $script:readinessWaitKind = 'none'
+                            $script:readinessWaitCallerLine = 0
+                            return $editor
+                        }
+                    }
+                }
+            } else { $consecutiveFocused = 0; $readySamples = 0; $readyEditor = $null }
+        } catch [System.Windows.Automation.ElementNotAvailableException] {
+            $consecutiveFocused = 0
+            $readySamples = 0
+            $readyEditor = $null
+            $script:documentActionObservation['editor_observation_stale'] = $true
+        }
+        Start-Sleep -Milliseconds 50
+    } while ([DateTimeOffset]::UtcNow -lt $deadline)
+    throw 'portable_editor_native_focus_timeout'
 }
 
 function Exercise-MarkdownEditSavePreview([Diagnostics.Process] $Process, [string] $Path) {
@@ -353,15 +497,31 @@ function Exercise-MarkdownEditSavePreview([Diagnostics.Process] $Process, [strin
     $initialText = 'S038 Editable Markdown 1A2B'
     $savedText = 'S038 Saved Markdown 4C7D'
     Wait-NamedElement $Process $initialText | Out-Null
-    Invoke-MenuCommand $Process 'Edit source'
+    Invoke-DocumentCommand $Process 'Edit'
     $editor = Wait-NamedElement $Process ("{0} text editor" -f $name)
-    $editor.SetFocus()
+    $editor = Wait-EditorNativeFocus $Process ("{0} text editor" -f $name)
     [System.Windows.Forms.SendKeys]::SendWait('^a')
     [System.Windows.Forms.SendKeys]::SendWait($savedText)
     Wait-WindowText $Process $savedText
-    Invoke-MenuCommand $Process 'Save' 'Ctrl+S'
-    Wait-FileText $Path $savedText
-    Invoke-MenuCommand $Process 'Preview'
+    Invoke-DocumentCommand $Process 'Save' 'Ctrl+S'
+    $script:documentActionObservation['phase'] = 'save_wait'
+    try { Wait-FileText $Path $savedText }
+    catch {
+        $saveFailure = $_
+        try {
+            $window = Get-WindowRoot $Process
+            if ($window) {
+                $script:documentActionObservation['menu_available'] = $null -ne (Find-DocumentToolsMenu $window)
+                $script:documentActionObservation['feedback_saved'] = Test-WindowContainsText $window 'Saved after native verification.'
+                $script:documentActionObservation['feedback_pending'] = Test-WindowContainsText $window 'Saving. Waiting for a verified native write receipt.'
+                $script:documentActionObservation['feedback_cancelled'] = Test-WindowContainsText $window 'Cancelled. Your document and edits remain available.'
+                $script:documentActionObservation['feedback_unavailable'] = Test-WindowContainsText $window 'This action is unavailable for the current document.'
+                $script:documentActionObservation['feedback_default_failure'] = Test-WindowContainsText $window 'Save did not complete. Try again or choose another destination. Your edits remain open.'
+            }
+        } catch { }
+        throw $saveFailure
+    }
+    Invoke-DocumentCommand $Process 'Read'
     Wait-SafeMarkdownOutcome $Process $savedText 'S038_EDIT_RAW_SENTINEL'
     if ([IO.File]::ReadAllText($Path, [Text.Encoding]::UTF8) -ne $savedText) {
         throw 'The exact packaged application did not persist the expected Markdown edit.'
@@ -370,15 +530,42 @@ function Exercise-MarkdownEditSavePreview([Diagnostics.Process] $Process, [strin
 
 function Exercise-MarkdownRecovery([Diagnostics.Process] $Process, [string] $Path, [string] $ProbeDirectory) {
     $name = [IO.Path]::GetFileName($Path)
-    Wait-NamedButton $Process 'View source' | Out-Null
-    Invoke-NamedButton $Process 'View source'
-    Wait-NamedElement $Process 'Rendered preview is paused after a contained failure. Source remains available.' | Out-Null
-    Wait-NamedElement $Process ("{0} text editor" -f $name) | Out-Null
-    Wait-WindowText $Process 'S038 Recovery Markdown 6D2E'
-    Invoke-NamedButton $Process 'Retry preview'
-    Wait-SafeMarkdownOutcome $Process 'S038 Recovery Markdown 6D2E' 'S038_RECOVERY_RAW_SENTINEL'
-    if (-not (Test-Path -LiteralPath (Join-Path $ProbeDirectory 'markdown-failure-consumed.marker') -PathType Leaf)) {
-        throw 'The packaged application did not consume the requested Markdown failure.'
+    $pausedText = 'Rendered preview is paused after a contained failure. Source remains available.'
+    $script:recoveryObservation = @{ phase = 'view_source'; view_source_invoked = $false; capture_available = $false }
+    try {
+        Wait-NamedButton $Process 'View source' | Out-Null
+        Invoke-NamedButton $Process 'View source'
+        $script:recoveryObservation['view_source_invoked'] = $true
+        $script:recoveryObservation['phase'] = 'paused_content'
+        $script:readinessStage = 'content_wait'
+        Wait-WindowText $Process $pausedText -Seconds 20 -PollMilliseconds 250
+        $script:recoveryObservation['phase'] = 'source_editor'
+        Wait-NamedElement $Process ("{0} text editor" -f $name) | Out-Null
+        $script:recoveryObservation['phase'] = 'source_content'
+        Wait-WindowText $Process 'S038 Recovery Markdown 6D2E'
+        $script:recoveryObservation['phase'] = 'retry_preview'
+        Invoke-NamedButton $Process 'Retry preview'
+        Wait-SafeMarkdownOutcome $Process 'S038 Recovery Markdown 6D2E' 'S038_RECOVERY_RAW_SENTINEL'
+        if (-not (Test-Path -LiteralPath (Join-Path $ProbeDirectory 'markdown-failure-consumed.marker') -PathType Leaf)) {
+            throw 'The packaged application did not consume the requested Markdown failure.'
+        }
+    }
+    catch {
+        $recoveryFailure = $_
+        try {
+            $window = Get-WindowRoot $Process
+            if ($window) {
+                $script:recoveryObservation['paused_text_present'] = Test-WindowContainsText $window $pausedText
+                $script:recoveryObservation['source_editor_present'] = $null -ne (Find-NamedElement $window ("{0} text editor" -f $name))
+                $script:recoveryObservation['source_marker_present'] = Test-WindowContainsText $window 'S038 Recovery Markdown 6D2E'
+                $script:recoveryObservation['retry_present'] = $null -ne (Find-NamedElement $window 'Retry preview')
+                $script:recoveryObservation['view_source_present'] = $null -ne (Find-NamedElement $window 'View source')
+                $script:recoveryObservation['contained_failure_present'] = (Test-WindowContainsText $window 'This document could not be displayed. The application remains available.') -or (Test-WindowContainsText $window 'Markdown preview failed safely. Source remains available.')
+                $script:recoveryObservation['probe_consumed'] = Test-Path -LiteralPath (Join-Path $ProbeDirectory 'markdown-failure-consumed.marker') -PathType Leaf
+                $script:recoveryObservation['capture_available'] = $true
+            }
+        } catch { }
+        throw $recoveryFailure
     }
 }
 
@@ -402,26 +589,23 @@ function Assert-MenuGeometry([Diagnostics.Process] $Process, [string] $DocumentN
     }
     Invoke-NamedButton $Process 'Menu'
     $menu = Wait-NamedElement $Process 'Glitchpad menu'
-    $during = (Wait-NamedButton $Process 'Menu').Current.BoundingRectangle
-    foreach ($field in @('X', 'Y', 'Width', 'Height')) {
-        if ([Math]::Abs($before.$field - $during.$field) -gt 1) { throw "Menu trigger moved while disclosed ($field)." }
-    }
+    # TaskSurface owns accessibility and focus while open. Background controls and
+    # the document are inert; measure them again only after Escape closes the modal.
     $window = Get-WindowRoot $Process
+    $surface = Find-LargestNamedElement $window 'Application menu'
+    if (-not $surface) { throw 'The application menu modal could not be measured.' }
+    $close = Wait-NamedButton $Process 'Close Application menu'
+    if ($close.Current.IsOffscreen -or -not $close.Current.IsEnabled) { throw 'Application menu close control is unavailable.' }
     $windowBounds = $window.Current.BoundingRectangle
-    $menuBounds = $menu.Current.BoundingRectangle
-    if ($menuBounds.Top -lt ($during.Bottom - 1)) { throw 'Application menu popup covers its trigger.' }
-    if ($menuBounds.Left -lt ($windowBounds.Left - 1) -or $menuBounds.Right -gt ($windowBounds.Right + 1) -or $menuBounds.Bottom -gt ($windowBounds.Bottom + 1)) { throw 'Application menu popup escaped the application viewport.' }
-    $documentDuring = (Find-LargestNamedElement $window $DocumentName).Current.BoundingRectangle
-    foreach ($field in @('X', 'Y', 'Width', 'Height')) {
-        if ([Math]::Abs($documentBefore.$field - $documentDuring.$field) -gt 1) { throw "Document client reflowed while the menu was disclosed ($field)." }
+    $surfaceBounds = $surface.Current.BoundingRectangle
+    foreach ($rect in @($surfaceBounds, $menu.Current.BoundingRectangle, $close.Current.BoundingRectangle)) {
+        if ($rect.Width -le 0 -or $rect.Height -le 0 -or $rect.Left -lt ($windowBounds.Left - 1) -or $rect.Top -lt ($windowBounds.Top - 1) -or $rect.Right -gt ($windowBounds.Right + 1) -or $rect.Bottom -gt ($windowBounds.Bottom + 1)) { throw 'Application menu modal escaped the application viewport.' }
     }
     $scrollCondition = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::ScrollBar)
-    foreach ($scrollbar in $window.FindAll([System.Windows.Automation.TreeScope]::Descendants, $scrollCondition)) {
+    foreach ($scrollbar in $surface.FindAll([System.Windows.Automation.TreeScope]::Descendants, $scrollCondition)) {
         $scrollRect = $scrollbar.Current.BoundingRectangle
-        foreach ($surface in @($during, $menu.Current.BoundingRectangle)) {
-            $intersects = $surface.Left -lt $scrollRect.Right -and $surface.Right -gt $scrollRect.Left -and $surface.Top -lt $scrollRect.Bottom -and $surface.Bottom -gt $scrollRect.Top
-            if ($intersects) { throw 'Application menu intersects a document scrollbar hit region.' }
-        }
+        $closeRect = $close.Current.BoundingRectangle
+        if (-not $scrollbar.Current.IsOffscreen -and $closeRect.Left -lt $scrollRect.Right -and $closeRect.Right -gt $scrollRect.Left -and $closeRect.Top -lt $scrollRect.Bottom -and $closeRect.Bottom -gt $scrollRect.Top) { throw 'Application menu close control intersects its scrollbar hit region.' }
     }
     [GlitchpadNativeInput]::SetForegroundWindow($Process.MainWindowHandle) | Out-Null
     [System.Windows.Forms.SendKeys]::SendWait('{ESC}')
@@ -433,16 +617,16 @@ function Assert-MenuGeometry([Diagnostics.Process] $Process, [string] $DocumentN
         if ([Math]::Abs($before.$field - $after.$field) -gt 1) { throw "Menu trigger moved after disclosure ($field)." }
     }
     $documentAfterElement = Find-LargestNamedElement (Get-WindowRoot $Process) $DocumentName
+    if (-not $documentAfterElement) { throw 'The active document client region did not return after menu dismissal.' }
     $documentAfter = $documentAfterElement.Current.BoundingRectangle
     foreach ($field in @('X', 'Y', 'Width', 'Height')) {
         if ([Math]::Abs($documentBefore.$field - $documentAfter.$field) -gt 1) { throw "Document client changed after menu disclosure ($field)." }
     }
     if ($scrollBefore) {
         $scrollAfterObject = $null
-        if ($documentAfterElement.TryGetCurrentPattern([System.Windows.Automation.ScrollPattern]::Pattern, [ref]$scrollAfterObject)) {
-            $scrollAfter = @(([System.Windows.Automation.ScrollPattern]$scrollAfterObject).Current.HorizontalScrollPercent, ([System.Windows.Automation.ScrollPattern]$scrollAfterObject).Current.VerticalScrollPercent)
-            if ($scrollBefore[0] -ne $scrollAfter[0] -or $scrollBefore[1] -ne $scrollAfter[1]) { throw 'Menu disclosure changed document scroll position.' }
-        }
+        if (-not $documentAfterElement.TryGetCurrentPattern([System.Windows.Automation.ScrollPattern]::Pattern, [ref]$scrollAfterObject)) { throw 'Document scroll observation disappeared after menu dismissal.' }
+        $scrollAfter = @(([System.Windows.Automation.ScrollPattern]$scrollAfterObject).Current.HorizontalScrollPercent, ([System.Windows.Automation.ScrollPattern]$scrollAfterObject).Current.VerticalScrollPercent)
+        if ($scrollBefore[0] -ne $scrollAfter[0] -or $scrollBefore[1] -ne $scrollAfter[1]) { throw 'Menu disclosure changed document scroll position.' }
     }
     $focused = [System.Windows.Automation.AutomationElement]::FocusedElement
     if (-not $focused -or $focused.Current.Name -ne 'Menu') { throw 'Escape did not restore focus to the application menu trigger.' }
@@ -473,6 +657,9 @@ public static class GlitchpadNativeInput
 {
     [DllImport("user32.dll")]
     public static extern bool SetForegroundWindow(IntPtr window);
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetForegroundWindow();
 
     [DllImport("user32.dll")]
     public static extern bool IsWindowVisible(IntPtr window);

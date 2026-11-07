@@ -8,6 +8,8 @@ All notable changes to Glitchpad are documented in this file. The format follows
 
 ### Fixed
 
+- S047 makes Android document tools and search usable in bounded task surfaces, adds installed About/offline notices, accepts the documented inert SVG profile, and corrects image/diagram viewport actions. Large text copies preserve complete UTF-8 text through Android content-URI clipboard items, avoiding the Binder transaction limit while retaining ordinary inline copies. Qualification uses separate ordinary/probe APKs and per-journey evidence. Closing Search or Go to line no longer allows a delayed callback to focus the background editor after a newer task opens.
+
 - S046 restores Android standalone New/Open/edit/save/copy/recovery flows, verified diagnostic Save/Share, visible Markdown/root recovery and actual command outcomes; qualification remains bound to the tested candidate artifact.
 
 - Production deployment verification follows the approved homepage release destination and requires its redirect to the exact published tag, while retaining source, version, documentation and brand checks.
@@ -17,6 +19,12 @@ All notable changes to Glitchpad are documented in this file. The format follows
 - 2026-11-03 (S045): Reconcile the production verifier with the approved releases/latest homepage destination by requiring its redirect to the exact published tag. Preserve the deployed f6a1515 site, immutable product bytes and all version/source/content checks; retain the automatic Pages rejection and stale-verifier failure with their recovery evidence.
 
 - 2026-11-04 (S046): Reuse guarded source-independent native destination writes and existing bounded recovery; retain exact installed/tested APK and runtime identity, every failed attempt and the owner-controlled final merge/release boundary. Keep unavailable original incident inputs explicit.
+
+- 2026-11-05 (S047): Compose controlled product task surfaces with the pinned Radix adapter and existing AppFrame/native frame ownership; retain generated brand bytes and editor history. Validate parsed SVG presentation/local references under existing limits, propagate typed outcomes, and measure effective Fit scale. Separate API24/API36 ordinary/probe candidates with passive observation of the existing Back callback and strict byte-bound journey receipts. Preserve retry limits, failed attempts, owner waivers and the final owner merge/release boundary.
+
+- 2026-11-05 (S047): Keep Mermaid12.0.0 pinned and patch its private stylesheet construction for the minimum Android WebView using a disabled stylesheet in an isolated document. Preserve generated styles, sanitization, bounds and resource ownership; retain the original dependency license and patch provenance.
+
+- 2026-11-06 (S047): Bind the existing Android Back callback to activity lifecycle ownership and retain dispatcher fallback when no application listener is running. Preserve native focus and original action errors in Windows package qualification. Keep actual installed role/API results distinct from source, synthetic-browser and diagnostic evidence.
 
 ## [0.2.0] - 2026-11-03
 

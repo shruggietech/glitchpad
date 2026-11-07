@@ -45,26 +45,44 @@ export function assertAuthoringMeasurement(measurement) {
         action.visibleHeight >= minimumTarget - tolerance,
       label + ' must retain an unclipped reachable target',
     );
-    assert.equal(
-      action.hit,
-      true,
-      label + ' must receive input at its visible center',
-    );
+    if (action.backgroundInert) {
+      assert.equal(
+        action.label,
+        'Add document',
+        'Only the Add document trigger can be a modal background measurement',
+      );
+      assert.equal(
+        measurement.addOpen,
+        true,
+        'A background-inert trigger requires its actual open Add menu',
+      );
+      assert.equal(
+        action.hit,
+        false,
+        'The inert background trigger must not receive pointer input',
+      );
+    } else
+      assert.equal(
+        action.hit,
+        true,
+        label + ' must receive input at its visible center',
+      );
   }
   assert.ok(
     surface.width > 0 && surface.height > 0,
     'the actual document surface must remain mounted with area',
   );
-  assert.ok(
-    paddingBottom + tolerance >= surface.bottom - trigger.top,
-    'document bottom padding must reserve the actual floating Add document target (padding=' +
-      paddingBottom +
-      ', required=' +
-      (surface.bottom - trigger.top) +
-      ', target=' +
-      trigger.height +
-      ')',
-  );
+  if (trigger.bottom > surface.top + tolerance)
+    assert.ok(
+      paddingBottom + tolerance >= surface.bottom - trigger.top,
+      'document bottom padding must reserve the actual floating Add document target (padding=' +
+        paddingBottom +
+        ', required=' +
+        (surface.bottom - trigger.top) +
+        ', target=' +
+        trigger.height +
+        ')',
+    );
 }
 
 export function assertNativeAuthoringMeasurement(measurement) {
@@ -130,8 +148,8 @@ export function assertDiagnosticMeasurement(measurement) {
   );
   for (const action of measurement.actions) {
     assert.ok(
-      action.width >= 44 - tolerance && action.height >= 44 - tolerance,
-      action.label + ' must retain its touch target',
+      action.width >= 48 - tolerance && action.height >= 48 - tolerance,
+      action.label + ' must retain its48dp-equivalent touch target',
     );
     assert.ok(
       action.left >= measurement.visible.left - tolerance &&
@@ -175,7 +193,7 @@ export function assertDiagnosticMeasurement(measurement) {
   );
 }
 
-function installNativeSeams(theme = 'system') {
+export function installNativeSeams(theme = 'system') {
   let callbackId = 0;
   const callbacks = new Map();
   const records = new Map();
@@ -304,7 +322,7 @@ async function measureDiagnostics(page, expectedRemainingBottom) {
   const visible = await page.evaluate(() => window.__diagnosticVisibleFrame);
   const actions = [];
   for (const label of [
-    'Close diagnostics',
+    'Close Diagnostics',
     'Save previewed bundle',
     'Share previewed bundle',
     'Clear diagnostics',
@@ -312,9 +330,18 @@ async function measureDiagnostics(page, expectedRemainingBottom) {
     actions.push(
       await page.evaluate((label) => {
         const button = Array.from(
-          document.querySelectorAll('.diagnostics-sheet button'),
-        ).find((node) => node.textContent.trim() === label);
-        const panel = button.closest('.diagnostics-sheet');
+          document
+            .querySelector('.diagnostics-sheet')
+            .closest('.task-surface')
+            .querySelectorAll('button'),
+        ).find(
+          (node) =>
+            (node.getAttribute('aria-label') || node.textContent.trim()) ===
+            label,
+        );
+        const panel = button
+          .closest('.task-surface')
+          .querySelector('.task-surface-body');
         panel.scrollTop = 0;
         button.scrollIntoView({ block: 'nearest', inline: 'nearest' });
         const rect = button.getBoundingClientRect();
@@ -344,7 +371,7 @@ async function measureDiagnostics(page, expectedRemainingBottom) {
         range.setEnd(text, from + 1);
         const rect = range.getBoundingClientRect();
         const clip = pre.getBoundingClientRect();
-        const panel = pre.closest('.diagnostics-sheet').getBoundingClientRect();
+        const panel = pre.closest('.task-surface-body').getBoundingClientRect();
         const hit = document.elementFromPoint(
           (rect.left + rect.right) / 2,
           (rect.top + rect.bottom) / 2,
@@ -357,7 +384,7 @@ async function measureDiagnostics(page, expectedRemainingBottom) {
           clipBottom: Math.min(clip.bottom, panel.bottom),
           hit: hit === pre || pre.contains(hit),
           innerScrollTop: pre.scrollTop,
-          outerScrollTop: pre.closest('.diagnostics-sheet').scrollTop,
+          outerScrollTop: pre.closest('.task-surface-body').scrollTop,
         };
       }, end),
     );
@@ -374,10 +401,12 @@ async function measureDiagnostics(page, expectedRemainingBottom) {
       '[data-bb-app-frame]',
       (nodes) => nodes.length,
     ),
-    remainingBottom: await page.$eval('.diagnostics-sheet', (node) =>
-      Number.parseFloat(
-        node.style.getPropertyValue('--gl-diagnostic-block-end'),
-      ),
+    remainingBottom: await page.$eval(
+      '.task-surface:has(.diagnostics-sheet)',
+      (node) =>
+        Number.parseFloat(
+          node.style.getPropertyValue('--gl-task-native-block-end'),
+        ),
     ),
     expectedRemainingBottom,
     ...(await page.evaluate(() => {
@@ -385,7 +414,9 @@ async function measureDiagnostics(page, expectedRemainingBottom) {
       const trigger = document.querySelector('.add-document-trigger');
       return {
         inactiveAddInvisible:
-          trigger.disabled && getComputedStyle(add).visibility === 'hidden',
+          trigger.disabled &&
+          getComputedStyle(add).visibility === 'hidden' &&
+          getComputedStyle(trigger).visibility === 'hidden',
         addReservedHeight: trigger.getBoundingClientRect().height,
       };
     })),
@@ -423,7 +454,8 @@ async function measureActions(page, open) {
         (clip.top + clip.bottom) / 2,
       );
       return {
-        label: element.textContent.trim(),
+        label: element.getAttribute('aria-label') || element.textContent.trim(),
+        backgroundInert: Boolean(element.closest('.app-shell[inert]')),
         left: rect.left,
         right: rect.right,
         top: rect.top,
@@ -458,6 +490,7 @@ async function measureActions(page, open) {
     const surface = document.querySelector('.document-surface');
     return {
       actions,
+      addOpen: Boolean(document.querySelector('.add-document-menu')),
       document: rect(surface),
       trigger: rect(document.querySelector('.add-document-trigger')),
       paddingBottom: Number.parseFloat(getComputedStyle(surface).paddingBottom),
@@ -1011,7 +1044,7 @@ export async function checkAndroidAuthoringLayout({
             );
             await page.waitForSelector('.diagnostic-preview');
             await page.waitForSelector(
-              '.diagnostics-sheet[data-native-viewport="true"]',
+              '.task-surface[data-native-viewport="true"]',
             );
             const measured = await measureDiagnostics(
               page,
@@ -1080,8 +1113,16 @@ export async function checkAndroidAuthoringLayout({
               measured.modalPriority = modal;
             }
             await page.evaluate(() =>
-              Array.from(document.querySelectorAll('.diagnostics-sheet button'))
-                .find((node) => node.textContent.trim() === 'Close diagnostics')
+              Array.from(
+                document
+                  .querySelector('.diagnostics-sheet')
+                  .closest('.task-surface')
+                  .querySelectorAll('button'),
+              )
+                .find(
+                  (node) =>
+                    node.getAttribute('aria-label') === 'Close Diagnostics',
+                )
                 .click(),
             );
             await page.waitForFunction(

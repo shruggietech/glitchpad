@@ -136,11 +136,11 @@ async function captureSurface(page, stage) {
           ['action', '.resolution-actions button'],
         ]
       : [
-          ['heading', '.diagnostics-sheet h2'],
+          ['heading', '.task-surface-heading h2'],
           ['body', '.diagnostics-sheet p:not([role="status"])'],
           ['status', '.diagnostics-sheet [role="status"]'],
           ['json', '.diagnostic-preview'],
-          ['action', '.diagnostics-sheet button'],
+          ['action', '.task-surface:has(.diagnostics-sheet) button'],
         ];
     const samples = [];
     for (const spec of specs) {
@@ -222,7 +222,9 @@ export async function checkS046SurfaceContrast({
         const clickText = (label) =>
           page.evaluate((label) => {
             const button = Array.from(document.querySelectorAll('button')).find(
-              (node) => node.textContent.trim() === label,
+              (node) =>
+                (node.getAttribute('aria-label') || node.textContent.trim()) ===
+                label,
             );
             if (!button) throw Error('missing action ' + label);
             button.click();

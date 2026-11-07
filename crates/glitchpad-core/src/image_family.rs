@@ -1,13 +1,14 @@
 //! Inert, bounded image-family previews. No source markup reaches the browser.
 
 mod animation;
+mod svg;
 
 use crate::images::{
     DecodedImage, ImageContainer, ImageEntry, ImageFailure, ImageFamily, ImageFamilyState,
     ImageLimits, ImagePreviewKind, SvgPreviewOutput, admit_surface, decode_image, raster_signature,
     rgba_preview,
 };
-use quick_xml::{Reader, events::Event};
+use quick_xml::{NsReader, events::Event, name::ResolveResult};
 use std::sync::atomic::{AtomicBool, Ordering};
 
 pub use animation::{AnimationContext, animated_webp};
@@ -29,18 +30,15 @@ pub fn image_signature(bytes: &[u8]) -> Option<ImageContainer> {
     if bytes.starts_with(&[0, 0, 1, 0]) {
         return Some(ImageContainer::Ico);
     }
-    let mut reader = Reader::from_reader(&bytes[..bytes.len().min(4096)]);
+    let mut reader = NsReader::from_reader(&bytes[..bytes.len().min(4096)]);
     loop {
-        match reader.read_event() {
-            Ok(Event::Start(element) | Event::Empty(element)) => {
-                return (element.name().as_ref() == "svg"
-                    && element.attributes().flatten().any(|a| {
-                        a.key.as_ref() == "xmlns"
-                            && a.value.as_ref() == "http://www.w3.org/2000/svg"
-                    }))
-                .then_some(ImageContainer::Svg);
+        match reader.read_resolved_event() {
+            Ok((namespace, Event::Start(element) | Event::Empty(element))) => {
+                return (element.local_name().as_ref() == "svg"
+                    && matches!(namespace, ResolveResult::Bound(ns) if ns.as_ref() == "http://www.w3.org/2000/svg"))
+                    .then_some(ImageContainer::Svg);
             }
-            Ok(Event::Decl(_) | Event::Comment(_) | Event::Text(_) | Event::DocType(_)) => {}
+            Ok((_, Event::Decl(_) | Event::Comment(_) | Event::Text(_) | Event::DocType(_))) => {}
             _ => return None,
         }
     }
@@ -84,124 +82,6 @@ pub fn decode_family(
     }
 }
 
-fn svg_attributes(
-    e: &quick_xml::events::BytesStart<'_>,
-    path_tokens: &mut usize,
-) -> Result<(), ImageFailure> {
-    for (index, attribute) in e.attributes().enumerate() {
-        if index >= 64 {
-            return Err(ImageFailure::Oversized);
-        }
-        let attribute = attribute.map_err(|_| ImageFailure::Malformed)?;
-        let key = attribute.key.as_ref();
-        let value = attribute
-            .normalized_value(quick_xml::XmlVersion::Implicit1_0)
-            .map_err(|_| ImageFailure::Malformed)?;
-        if value.len() > 65536
-            || key.starts_with("on")
-            || key.ends_with("href")
-            || key == "style"
-            || value.contains('\\')
-            || value.contains('@')
-            || (value.contains("url(")
-                && !value
-                    .split("url(")
-                    .skip(1)
-                    .all(|v| v.starts_with('#') || v.starts_with("'#") || v.starts_with("\"#")))
-        {
-            return Err(ImageFailure::UnsupportedCodec);
-        }
-        if key == "d" || key == "points" {
-            *path_tokens += value
-                .chars()
-                .filter(|c| c.is_ascii_alphanumeric() || *c == '-' || *c == '.')
-                .count();
-        }
-    }
-    Ok(())
-}
-
-fn preflight_svg<'a>(
-    text: &'a str,
-    cancel: &AtomicBool,
-    deadline: std::time::Instant,
-) -> Result<roxmltree::Document<'a>, ImageFailure> {
-    let mut reader = Reader::from_str(text);
-    let (mut nodes, mut depth, mut path_tokens, mut text_chars) = (0_u32, 0_u32, 0_usize, 0_usize);
-    loop {
-        check(cancel)?;
-        if std::time::Instant::now() > deadline {
-            return Err(ImageFailure::Deadline);
-        }
-        let event = reader.read_event().map_err(|_| ImageFailure::Malformed)?;
-        if matches!(event, Event::Start(_)) {
-            depth += 1;
-        }
-        if depth > 128 {
-            return Err(ImageFailure::Oversized);
-        }
-        match event {
-            Event::Start(ref e) | Event::Empty(ref e) => {
-                nodes += 1;
-                let name = e.name();
-                let name = name.as_ref();
-                if matches!(
-                    name,
-                    "script"
-                        | "foreignObject"
-                        | "image"
-                        | "use"
-                        | "filter"
-                        | "pattern"
-                        | "mask"
-                        | "marker"
-                        | "style"
-                        | "a"
-                        | "animate"
-                        | "animateTransform"
-                        | "set"
-                ) || name.contains(':')
-                {
-                    return Err(ImageFailure::UnsupportedCodec);
-                }
-                svg_attributes(e, &mut path_tokens)?;
-                if nodes > 50_000 || path_tokens > 250_000 {
-                    return Err(ImageFailure::Oversized);
-                }
-            }
-            Event::Text(e) => {
-                text_chars += e.len();
-                if text_chars > 65536 {
-                    return Err(ImageFailure::Oversized);
-                }
-            }
-            Event::DocType(_) | Event::PI(_) => return Err(ImageFailure::UnsupportedCodec),
-            Event::End(_) => {
-                depth = depth.checked_sub(1).ok_or(ImageFailure::Malformed)?;
-            }
-            Event::Eof => break,
-            _ => {}
-        }
-    }
-    // The DOM parser refuses DTD expansion and stops before exceeding its node budget.
-    let document = roxmltree::Document::parse_with_options(
-        text,
-        roxmltree::ParsingOptions {
-            allow_dtd: false,
-            nodes_limit: 50_000,
-            ..Default::default()
-        },
-    )
-    .map_err(|_| ImageFailure::Malformed)?;
-    for node in document.descendants() {
-        depth = depth.max(u32::try_from(node.ancestors().take(130).count()).unwrap_or(130));
-        if depth > 128 {
-            return Err(ImageFailure::Oversized);
-        }
-    }
-    Ok(document)
-}
-
 fn decode_svg(
     bytes: &[u8],
     limits: &ImageLimits,
@@ -212,7 +92,7 @@ fn decode_svg(
         return Err(ImageFailure::Oversized);
     }
     let text = std::str::from_utf8(bytes).map_err(|_| ImageFailure::Malformed)?;
-    let document = preflight_svg(text, cancel, deadline)?;
+    let document = svg::preflight(text, cancel, deadline)?;
     let mut options = resvg::usvg::Options {
         font_family: "Geist".into(),
         ..Default::default()

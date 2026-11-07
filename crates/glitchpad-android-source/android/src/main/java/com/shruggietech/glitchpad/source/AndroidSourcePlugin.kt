@@ -6,9 +6,12 @@ import android.content.ClipData
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import androidx.activity.BackEventCompat
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.OnBackPressedDispatcherOwner
 import androidx.core.content.FileProvider
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
@@ -42,6 +45,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 @TauriPlugin
 class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
   private val ioExecutor = Executors.newSingleThreadExecutor()
+  private val clipboardTextStore = ClipboardTextStore(File(activity.filesDir, "clipboard"))
   private val pending = ArrayBlockingQueue<DeliveryCandidate>(MAX_PENDING_DELIVERIES)
   private val rejections = ArrayBlockingQueue<String>(MAX_PENDING_REJECTIONS)
   private val sources = ConcurrentHashMap<String, NativeSource>()
@@ -51,6 +55,7 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
   private val initialIntentConsumed = AtomicBoolean(false)
   private var backCallback: OnBackPressedCallback? = null
   private var pendingBack: String? = null
+  private val backObservation = IntArray(8)
   private val shareJobs = ConcurrentHashMap<Invoke, DiagnosticShareJob>()
   private val sharePending = AtomicBoolean(false)
   private val mainHandler = Handler(Looper.getMainLooper())
@@ -231,9 +236,8 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
               consumed += read
             }
           }
-          val bytes = JSArray()
-          output.copyOf(consumed).forEach { bytes.put(it.toInt() and 0xff) }
-          JSObject().put("bytes", bytes).put("endOfSource", consumed < requested)
+          val encoded = android.util.Base64.encodeToString(output, 0, consumed, android.util.Base64.NO_WRAP)
+          JSObject().put("bytesBase64", encoded).put("endOfSource", consumed < requested)
         } ?: throw IllegalStateException("provider_unavailable")
       }.onSuccess(invoke::resolve).onFailure { invoke.reject(code(it)) }
     }
@@ -495,20 +499,49 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
     return DocumentDestination(uri.authority, runCatching { DocumentsContract.getDocumentId(uri) }.getOrNull())
   }
 
+  private fun observeBack(index: Int) {
+    if (backObservation[index] < Int.MAX_VALUE) backObservation[index]++
+  }
+
+  private fun backRouteSnapshot(): JSObject = JSObject()
+    .put("started", backObservation[0]).put("progressed", backObservation[1]).put("cancelled", backObservation[2])
+    .put("committed", backObservation[3]).put("requested", backObservation[4])
+    .put("completed", backObservation[5]).put("delegated", backObservation[6])
+    .put("pending", pendingBack != null).put("enabled", backCallback?.isEnabled == true)
+    .put("native_edit_dismissed", backObservation[7]).put("native_edit_active", (activity as? AndroidNativeEditOwner)?.androidNativeEditModeActive == true)
+
   private fun installBackCallback() {
     if (backCallback != null) return
     val owner = activity as? OnBackPressedDispatcherOwner ?: return
     val callback = object : OnBackPressedCallback(true) {
+      override fun handleOnBackStarted(backEvent: BackEventCompat) { observeBack(0) }
+      override fun handleOnBackProgressed(backEvent: BackEventCompat) { observeBack(1) }
+      override fun handleOnBackCancelled() { observeBack(2) }
       override fun handleOnBackPressed() {
+        observeBack(3)
+        val insets = ViewCompat.getRootWindowInsets(activity.window.decorView)
+        // Preserve IME-first ordering, then consume native text editing before JS tasks.
+        if (insets != null && !insets.isVisible(WindowInsetsCompat.Type.ime()) &&
+          (activity as? AndroidNativeEditOwner)?.dismissAndroidNativeEditMode() == true) {
+          observeBack(7)
+          return
+        }
+        if (!hasListener("androidBackRequested")) {
+          pendingBack = null
+          observeBack(6)
+          delegateAndroidBack(owner, this)
+          return
+        }
         if (pendingBack != null) return
         val request = UUID.randomUUID().toString()
         pendingBack = request
+        observeBack(4)
         trigger("androidBackRequested", JSObject().put("requestId", request))
         mainHandler.postDelayed({ if (pendingBack == request) pendingBack = null }, 5_000)
       }
     }
     backCallback = callback
-    owner.onBackPressedDispatcher.addCallback(callback)
+    registerAndroidBackCallback(owner, callback)
   }
 
   @Command
@@ -516,15 +549,66 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
     val args = invoke.parseArgs(AndroidBackArgs::class.java)
     activity.runOnUiThread {
       if (args.requestId == pendingBack) {
+        observeBack(5)
         pendingBack = null
         if (!args.handled) {
+          observeBack(6)
           val owner = activity as? OnBackPressedDispatcherOwner
-          backCallback?.isEnabled = false
-          try { owner?.onBackPressedDispatcher?.onBackPressed() }
-          finally { backCallback?.isEnabled = true }
+          val callback = backCallback
+          if (owner != null && callback != null) delegateAndroidBack(owner, callback)
         }
       }
       invoke.resolve()
+    }
+  }
+
+  @Command
+  fun writeClipboard(invoke: Invoke) {
+    val args = invoke.parseArgs(ClipboardTextArgs::class.java)
+    // One IO queue preserves request order for both inline and file-backed copies.
+    ioExecutor.execute {
+      val payload = try { clipboardTextStore.prepare(args.text) }
+      catch (_: Exception) { invoke.reject("Clipboard copy could not complete"); return@execute }
+      val clip = try {
+        val file = payload.file
+        if (file == null) ClipData.newPlainText("Glitchpad", payload.inlineText)
+        else {
+          val uri = if (Build.VERSION.SDK_INT < 28) LegacyClipboardTextProvider.uriForFile(activity, file)
+            else FileProvider.getUriForFile(activity, activity.packageName + ".fileprovider", file)
+          ClipData.newUri(activity.contentResolver, "Glitchpad", uri)
+        }
+      } catch (_: Exception) {
+        clipboardTextStore.discardUncommitted(payload)
+        invoke.reject("Clipboard copy could not complete")
+        return@execute
+      }
+      activity.runOnUiThread {
+        try {
+          val clipboard = activity.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+          clipboard.setPrimaryClip(clip)
+        } catch (_: Exception) {
+          ioExecutor.execute { clipboardTextStore.discardUncommitted(payload) }
+          invoke.reject("Clipboard copy could not complete")
+          return@runOnUiThread
+        }
+        ioExecutor.execute { clipboardTextStore.retirePrevious(payload) }
+        invoke.resolve()
+      }
+    }
+  }
+
+  @Command
+  fun applicationInfo(invoke: Invoke) {
+    activity.runOnUiThread {
+      val info = activity.packageManager.getPackageInfo(activity.packageName, 0)
+      val versionCode = if (Build.VERSION.SDK_INT >= 28) info.longVersionCode else {
+        @Suppress("DEPRECATION")
+        info.versionCode.toLong()
+      }
+      invoke.resolve(JSObject().put("package_identifier", activity.packageName)
+        .put("version", info.versionName ?: "unavailable").put("version_code", versionCode)
+        .put("channel", if ((activity.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0) "debug" else "release")
+        .put("platform", "android"))
     }
   }
 

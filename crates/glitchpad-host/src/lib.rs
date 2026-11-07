@@ -5,6 +5,7 @@ use tauri::Emitter;
 use tauri::Manager;
 
 pub mod app_state;
+pub mod application_info;
 #[cfg(not(mobile))]
 pub mod desktop_delivery;
 pub mod external_link;
@@ -18,6 +19,8 @@ pub mod source;
 
 #[cfg(any(target_os = "android", test))]
 mod android_interactive;
+#[cfg(any(target_os = "android", test))]
+mod android_range_response;
 pub mod android_source;
 
 struct RecoveryHostState {
@@ -122,6 +125,8 @@ pub fn run() {
     let builder = builder.plugin(glitchpad_android_source::init());
     #[cfg(not(mobile))]
     let builder = builder.invoke_handler(tauri::generate_handler![
+        application_info,
+        application_notices,
         images::identify_image_source,
         images::render_image_source,
         images::cancel_image_render,
@@ -163,6 +168,8 @@ pub fn run() {
     ]);
     #[cfg(target_os = "android")]
     let builder = builder.invoke_handler(tauri::generate_handler![
+        application_info,
+        application_notices,
         images::identify_image_source,
         images::render_image_source,
         images::cancel_image_render,
@@ -195,6 +202,7 @@ pub fn run() {
         share_diagnostics,
         android_diagnostic_environment,
         complete_android_back,
+        write_android_clipboard,
         close_android_source,
     ]);
 
@@ -551,14 +559,24 @@ async fn open_android_document(
 
 #[cfg(target_os = "android")]
 #[tauri::command]
-fn read_android_range(
-    host: tauri::State<'_, android_source::AndroidSourceHost>,
+async fn read_android_range(
+    app: tauri::AppHandle,
     source_id: glitchpad_core::source::SourceId,
     offset: u64,
     length: u64,
     operation_budget: u64,
-) -> Result<glitchpad_core::source::ReadRangeResult, glitchpad_core::contracts::CoreError> {
-    host.read_range(&source_id, offset, length, operation_budget)
+    binary: Option<bool>,
+) -> Result<tauri::ipc::Response, glitchpad_core::contracts::CoreError> {
+    let result = android_interactive::run(move || {
+        app.state::<android_source::AndroidSourceHost>().read_range(
+            &source_id,
+            offset,
+            length,
+            operation_budget,
+        )
+    })
+    .await?;
+    android_range_response::encode(result, binary.unwrap_or(false))
 }
 
 #[cfg(target_os = "android")]
@@ -743,4 +761,72 @@ fn complete_android_back(
     handled: bool,
 ) -> Result<(), glitchpad_core::contracts::CoreError> {
     host.complete_back(&request_id, handled)
+}
+
+#[cfg(target_os = "android")]
+#[tauri::command]
+async fn write_android_clipboard(
+    app: tauri::AppHandle,
+    text: String,
+) -> Result<(), glitchpad_core::contracts::CoreError> {
+    use glitchpad_android_source::AndroidSourceExt;
+    android_interactive::run(move || {
+        app.android_source().write_clipboard(&text).map_err(|_| {
+            glitchpad_core::contracts::CoreError::new(
+                glitchpad_core::contracts::CoreErrorCategory::Unavailable,
+                "Clipboard copy could not complete",
+                true,
+                true,
+            )
+        })
+    })
+    .await
+}
+
+#[tauri::command]
+async fn application_info(
+    app: tauri::AppHandle,
+) -> Result<application_info::InstalledApplicationInfo, glitchpad_core::contracts::CoreError> {
+    #[cfg(target_os = "android")]
+    {
+        use glitchpad_android_source::AndroidSourceExt;
+        android_interactive::run(move || {
+            let value = app.android_source().application_info().map_err(|_| {
+                glitchpad_core::contracts::CoreError::new(
+                    glitchpad_core::contracts::CoreErrorCategory::Unavailable,
+                    "Installed application information is unavailable",
+                    true,
+                    true,
+                )
+            })?;
+            Ok(application_info::InstalledApplicationInfo {
+                package_identifier: value.package_identifier,
+                version: value.version,
+                version_code: Some(value.version_code),
+                channel: value.channel,
+                platform: value.platform,
+                build_commit: application_info::compiled_source(),
+            })
+        })
+        .await
+    }
+    #[cfg(not(target_os = "android"))]
+    Ok(application_info::InstalledApplicationInfo {
+        package_identifier: app.config().identifier.clone(),
+        version: app.package_info().version.to_string(),
+        version_code: None,
+        channel: if cfg!(debug_assertions) {
+            "debug"
+        } else {
+            "release"
+        }
+        .into(),
+        platform: std::env::consts::OS.into(),
+        build_commit: application_info::compiled_source(),
+    })
+}
+
+#[tauri::command]
+fn application_notices() -> String {
+    application_info::offline_notices()
 }

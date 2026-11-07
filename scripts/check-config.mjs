@@ -66,7 +66,12 @@ async function collectConfigurationFiles(repositoryRoot) {
 
   async function collect(directory) {
     for (const entry of await readdir(directory, { withFileTypes: true })) {
-      if (entry.isDirectory() && excludedDirectories.has(entry.name)) continue;
+      if (
+        entry.isDirectory() &&
+        (excludedDirectories.has(entry.name) ||
+          (directory === repositoryRoot && entry.name === '.codex-tmp'))
+      )
+        continue;
 
       const path = join(directory, entry.name);
       if (entry.isDirectory()) {

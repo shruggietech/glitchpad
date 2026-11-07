@@ -1,26 +1,43 @@
-import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
-
+import {
+  clipboardTextAvailable,
+  writeClipboardText,
+} from '../domain/clipboard-gateway';
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import type { TextEditorHandle } from './TextEditorSurface';
-
 import type { ShellSession } from '../domain/contracts';
 import {
   createNativeLargeTextGateway,
   type LargeTextGateway,
 } from '../domain/large-text-gateway';
-import { LargeTextReader, type LargeTextWindow } from '../domain/large-text';
+import {
+  LARGE_TEXT_MATCH_LIMIT,
+  LargeTextReader,
+  type LargeTextWindow,
+} from '../domain/large-text';
+import { TaskSurface } from './TaskSurface';
+import './DocumentTools.css';
 
 interface LargeTextSurfaceProps {
   session: ShellSession;
   gateway?: LargeTextGateway;
 }
-
 interface SearchCursor {
   query: string;
   matches: number[];
   index: number;
 }
 
-export const LargeTextSurface = forwardRef<TextEditorHandle, LargeTextSurfaceProps>(function LargeTextSurface({ session, gateway }, handleRef) {
+export const LargeTextSurface = forwardRef<
+  TextEditorHandle,
+  LargeTextSurfaceProps
+>(function LargeTextSurface({ session, gateway }, handleRef) {
   const selectedGateway = useMemo(
     () => gateway ?? createNativeLargeTextGateway(),
     [gateway],
@@ -40,239 +57,466 @@ export const LargeTextSurface = forwardRef<TextEditorHandle, LargeTextSurfacePro
       session.text_document?.profile.encoding,
     ],
   );
-  const [window, setWindow] = useState<LargeTextWindow | null>(null);
+  const [section, setSection] = useState<LargeTextWindow | null>(null);
   const [status, setStatus] = useState('Loading bounded text window');
   const [query, setQuery] = useState('');
   const [searchCursor, setSearchCursor] = useState<SearchCursor | null>(null);
   const [line, setLine] = useState('1');
+  const [invalidLine, setInvalidLine] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(false);
+  const [focusTool, setFocusTool] = useState<'find' | 'line'>('find');
+  const toolsOpener = useRef<HTMLElement | null>(null);
+  const toolsOpenRef = useRef(false);
+  toolsOpenRef.current = toolsOpen;
+  const owner = useRef(session);
+  owner.current = session;
+  const busy = useRef(false);
   const previousOffsets = useRef<number[]>([]);
   const findInput = useRef<HTMLInputElement>(null);
   const lineInput = useRef<HTMLInputElement>(null);
+  const contentRef = useRef<HTMLPreElement>(null);
   const generation = useRef(0);
+  const focusAfterOperation = useRef<HTMLElement | null>(null);
+  const [completedOperation, setCompletedOperation] = useState(0);
   const byteLength =
     session.source.byte_length ?? session.text_document?.source_bytes ?? 0;
 
   useEffect(() => {
-    generation.current += 1;
+    const expected = ++generation.current;
     previousOffsets.current = [];
-    setWindow(null);
+    focusAfterOperation.current = null;
+    setSection(null);
     setSearchCursor(null);
+    setQuery('');
+    setLine('1');
+    setInvalidLine(false);
+    setToolsOpen(false);
     if (!reader) {
+      busy.current = false;
+      setPending(false);
       setStatus('Large text source authority is unavailable');
       return;
     }
-    let live = true;
+    busy.current = true;
+    setPending(true);
+    setStatus('Loading bounded text window');
     void reader
       .window(0)
       .then((value) => {
-        if (!live) return;
-        setWindow(value);
+        if (generation.current !== expected) return;
+        setSection(value);
         setStatus(
-          value.end_of_source ? 'End of source' : 'Read-only bounded window',
+          value.end_of_source ? 'End of source' : 'Read-only bounded section',
         );
       })
       .catch(() => {
-        if (live) setStatus('Large text window could not be decoded safely');
+        if (generation.current === expected)
+          setStatus('Large text window could not be decoded safely');
+      })
+      .finally(() => {
+        if (generation.current === expected) {
+          busy.current = false;
+          setPending(false);
+        }
       });
     return () => {
-      live = false;
       generation.current += 1;
       reader.cancel();
     };
-  }, [reader]);
+  }, [reader, session.id]);
 
-  const move = async (
-    offset: number,
-    rememberCurrent = true,
-    loadedStatus?: string,
+  useEffect(() => {
+    if (pending) return;
+    const target = focusAfterOperation.current;
+    focusAfterOperation.current = null;
+    // Disabled fields cannot receive focus until the async result has committed.
+    if (
+      target?.isConnected &&
+      !target.matches(':disabled') &&
+      owner.current.lifecycle === 'active' &&
+      Boolean(target.closest('.large-text-task')) === toolsOpen
+    )
+      target.focus({ preventScroll: true });
+  }, [pending, toolsOpen, completedOperation]);
+
+  const run = async (
+    loading: string,
+    failed: string,
+    action: (current: () => boolean) => Promise<boolean>,
   ): Promise<boolean> => {
-    if (!reader) return false;
-    const expectedGeneration = generation.current;
-    const previousOffset = window?.offset;
-    setStatus('Loading bounded text window');
+    if (!reader || busy.current) return false;
+    const expected = ++generation.current;
+    const active = document.activeElement;
+    focusAfterOperation.current =
+      toolsOpenRef.current &&
+      active instanceof HTMLElement &&
+      active.closest('.large-text-task')
+        ? active
+        : null;
+    busy.current = true;
+    setPending(true);
+    setStatus(loading);
+    const current = () => expected === generation.current;
     try {
-      const value = await reader.window(Math.max(0, offset));
-      if (generation.current !== expectedGeneration) return false;
-      if (rememberCurrent && previousOffset !== undefined) previousOffsets.current.push(previousOffset);
-      setWindow(value);
-      setStatus(loadedStatus ?? (value.end_of_source ? 'End of source' : 'Read-only bounded window'));
-      return true;
+      return await action(current);
     } catch (error: unknown) {
-      if (generation.current !== expectedGeneration) return false;
-      if (error instanceof DOMException && error.name === 'AbortError') {
-        setStatus('Text operation cancelled');
-        return false;
-      }
-      setStatus('Large text window could not be decoded safely');
+      if (!current()) return false;
+      setStatus(
+        error instanceof DOMException && error.name === 'AbortError'
+          ? 'Text operation cancelled'
+          : failed,
+      );
       throw error;
+    } finally {
+      if (current()) {
+        busy.current = false;
+        setPending(false);
+        setCompletedOperation((value) => value + 1);
+      }
     }
   };
-
-  const previousWindow = async () => {
-    if (!window || window.offset === 0) return false;
-    const moved = await move(previousOffsets.current.at(-1) ?? 0, false);
-    if (moved) previousOffsets.current.pop();
-    return moved;
+  const load = async (
+    offset: number,
+    current: () => boolean,
+    remember = true,
+  ): Promise<boolean> => {
+    const value = await reader!.window(offset);
+    if (!current()) return false;
+    if (remember && section) previousOffsets.current.push(section.offset);
+    setSection(value);
+    setStatus(
+      value.end_of_source ? 'End of source' : 'Read-only bounded section',
+    );
+    return true;
   };
-
-  const nextWindow = () => !window || window.end_of_source
-    ? false
-    : move(window.offset + window.byte_count);
-
-  const findMatch = async (direction: 1 | -1 = 1): Promise<boolean> => {
-    if (!reader || !query) return false;
-    const expectedGeneration = generation.current;
-    try {
-      const matches = searchCursor?.query === query
-        ? searchCursor.matches
-        : await reader.search(query, byteLength);
-      if (generation.current !== expectedGeneration) return false;
-      if (matches.length === 0) {
-        setSearchCursor({ query, matches, index: -1 });
-        setStatus('No match');
+  const previousSection = () =>
+    !section || section.offset === 0
+      ? false
+      : run(
+          'Loading previous section',
+          'Large text window could not be decoded safely',
+          async (current) => {
+            const moved = await load(
+              previousOffsets.current.at(-1) ?? 0,
+              current,
+              false,
+            );
+            if (moved) previousOffsets.current.pop();
+            return moved;
+          },
+        );
+  const nextSection = () =>
+    !section || section.end_of_source
+      ? false
+      : run(
+          'Loading next section',
+          'Large text window could not be decoded safely',
+          (current) => load(section.offset + section.byte_count, current),
+        );
+  const findMatch = (direction: 1 | -1 = 1) => {
+    if (!query) {
+      setStatus('Enter search text.');
+      return false;
+    }
+    return run(
+      'Searching source. Cancel leaves the current section open.',
+      'Text search could not complete',
+      async (current) => {
+        const matches =
+          searchCursor?.query === query
+            ? searchCursor.matches
+            : await reader!.search(query, byteLength);
+        if (!current()) return false;
+        if (!matches.length) {
+          setSearchCursor({ query, matches, index: -1 });
+          setStatus('No match');
+          return true;
+        }
+        const index =
+          searchCursor?.query === query
+            ? (searchCursor.index + direction + matches.length) % matches.length
+            : direction === 1
+              ? 0
+              : matches.length - 1;
+        const moved = await load(matches[index], current);
+        if (moved) {
+          setSearchCursor({ query, matches, index });
+          const wrapped =
+            searchCursor?.query === query &&
+            ((direction === 1 && index === 0) ||
+              (direction === -1 && index === matches.length - 1));
+          setStatus(
+            'Match ' +
+              (index + 1) +
+              ' of ' +
+              (matches.length === LARGE_TEXT_MATCH_LIMIT ? 'first ' : '') +
+              matches.length +
+              (wrapped ? '. Search wrapped.' : ''),
+          );
+        }
+        return moved;
+      },
+    );
+  };
+  const goToLine = () => {
+    if (
+      !/^\d+$/u.test(line) ||
+      !Number.isSafeInteger(Number(line)) ||
+      Number(line) < 1
+    ) {
+      setInvalidLine(true);
+      setStatus('Enter a positive whole line number.');
+      return false;
+    }
+    setInvalidLine(false);
+    return run(
+      'Finding line ' + line + '. Cancel leaves the current section open.',
+      'Line navigation could not complete',
+      async (current) => {
+        const offset = await reader!.lineOffset(Number(line), byteLength);
+        if (!current()) return false;
+        if (offset === null) {
+          setInvalidLine(true);
+          setStatus('Line is outside the source');
+          return false;
+        }
+        const moved = await load(offset, current);
+        if (moved) {
+          setStatus(
+            'Line ' + line + ' is at the start of the visible section.',
+          );
+          focusAfterOperation.current = toolsOpenRef.current
+            ? lineInput.current
+            : contentRef.current;
+        }
+        return moved;
+      },
+    );
+  };
+  const copySection = () => {
+    if (!section) return false;
+    if (!clipboardTextAvailable()) {
+      setStatus('Clipboard is unavailable. The visible section remains open.');
+      return false;
+    }
+    return run(
+      'Copying visible section',
+      'Clipboard copy could not complete',
+      async (current) => {
+        await writeClipboardText(section.text);
+        if (!current()) return false;
+        setStatus('Visible section copied');
+        return true;
+      },
+    );
+  };
+  const cancel = () => {
+    generation.current += 1;
+    focusAfterOperation.current = null;
+    reader?.cancel();
+    busy.current = false;
+    setPending(false);
+    setStatus('Text operation cancelled. The current section remains open.');
+  };
+  const closeTools = () => {
+    if (busy.current) cancel();
+    setToolsOpen(false);
+  };
+  const local = (operation: () => boolean | Promise<boolean>) => {
+    void Promise.resolve()
+      .then(operation)
+      .catch(() => undefined);
+  };
+  useImperativeHandle(handleRef, () => ({
+    invoke(command, opener) {
+      if (session.lifecycle !== 'active') return false;
+      if (command === 'large_text_tools' && reader) {
+        toolsOpener.current = opener ?? contentRef.current;
+        setToolsOpen(true);
         return true;
       }
-      const index = searchCursor?.query === query
-        ? (searchCursor.index + direction + matches.length) % matches.length
-        : direction === 1 ? 0 : matches.length - 1;
-      const moved = await move(matches[index], true, 'Match ' + (index + 1) + ' of ' + matches.length);
-      if (moved) setSearchCursor({ query, matches, index });
-      return moved;
-    } catch (error: unknown) {
-      if (generation.current !== expectedGeneration) return false;
-      if (error instanceof DOMException && error.name === 'AbortError') {
-        setStatus('Text search cancelled');
-        return false;
-      }
-      setStatus('Text search could not complete');
-      throw error;
-    }
-  };
-
-  const goToLine = async (): Promise<boolean> => {
-    if (!reader) return false;
-    const expectedGeneration = generation.current;
-    try {
-      const offset = await reader.lineOffset(Number(line), byteLength);
-      if (generation.current !== expectedGeneration) return false;
-      if (offset === null) { setStatus('Line is outside the source'); return false; }
-      return await move(offset);
-    } catch (error: unknown) {
-      if (generation.current !== expectedGeneration) return false;
-      if (error instanceof DOMException && error.name === 'AbortError') {
-        setStatus('Line navigation cancelled');
-        return false;
-      }
-      setStatus('Line navigation could not complete');
-      throw error;
-    }
-  };
-
-  const copyWindow = () => {
-    if (!window || !navigator.clipboard?.writeText) return false;
-    const expectedGeneration = generation.current;
-    return navigator.clipboard.writeText(window.text).then(() => {
-      if (generation.current !== expectedGeneration) return false;
-      setStatus('Text window copied');
-      return true;
-    }).catch((error: unknown) => {
-      if (generation.current === expectedGeneration) setStatus('Clipboard copy could not complete');
-      throw error;
-    });
-  };
-
-  const local = (operation: () => boolean | Promise<boolean>) => {
-    void Promise.resolve().then(operation).catch(() => undefined);
-  };
-
-  useImperativeHandle(handleRef, () => ({
-    invoke(command) {
-      if (session.lifecycle !== 'active') return false;
-      if (command === 'copy') return copyWindow();
-      if (command === 'previous_page') return previousWindow();
-      if (command === 'next_page') return nextWindow();
+      if (command === 'copy') return copySection();
+      if (command === 'previous_page') return previousSection();
+      if (command === 'next_page') return nextSection();
       if (command === 'find_next') return findMatch();
       if (command === 'find_previous') return findMatch(-1);
-      if (command === 'search' && reader && findInput.current) {
-        findInput.current.focus();
-        findInput.current.select();
-        return true;
-      }
-      if (command === 'go_to_line' && reader && lineInput.current) {
-        lineInput.current.focus();
-        lineInput.current.select();
-        return true;
+      if ((command === 'search' || command === 'go_to_line') && reader) {
+        const expected = owner.current;
+        toolsOpener.current = opener ?? contentRef.current;
+        const tool = command === 'search' ? 'find' : 'line';
+        setFocusTool(tool);
+        setToolsOpen(true);
+        return new Promise<boolean>((resolve) => {
+          requestAnimationFrame(() => {
+            if (
+              owner.current.id !== expected.id ||
+              owner.current.revision !== expected.revision ||
+              owner.current.source_id !== expected.source_id ||
+              owner.current.lifecycle !== 'active' ||
+              !toolsOpenRef.current
+            ) {
+              resolve(false);
+              return;
+            }
+            const field =
+              tool === 'find' ? findInput.current : lineInput.current;
+            field?.focus();
+            field?.select();
+            resolve(Boolean(field && document.activeElement === field));
+          });
+        });
       }
       return false;
     },
-    selectRange() { return false; },
+    selectRange() {
+      return false;
+    },
+    dismissModal() {
+      if (toolsOpenRef.current) {
+        closeTools();
+        return true;
+      }
+      if (!busy.current) return false;
+      cancel();
+      return true;
+    },
   }));
-
+  const highlighted =
+    searchCursor?.query === query &&
+    searchCursor.index >= 0 &&
+    section?.offset === searchCursor.matches[searchCursor.index] &&
+    section.text.startsWith(query);
   return (
     <div
-      className="large-text"
-      aria-label={`${session.source.display_name} large text viewer`}
+      className="large-text document-tools"
+      aria-label={session.source.display_name + ' large text viewer'}
     >
-      <div className="large-text-controls">
-        <button
-          type="button"
-          disabled={!window || window.offset === 0}
-          onClick={() => local(previousWindow)}
+      {!toolsOpen && (
+        <p
+          id="large-text-status"
+          role="status"
+          aria-live="polite"
+          className={section ? 'visually-hidden' : undefined}
         >
-          Previous window
+          {status}
+        </p>
+      )}
+      {!toolsOpen && pending && !section && (
+        <button type="button" onClick={cancel}>
+          Cancel text operation
         </button>
-        <button
-          type="button"
-          disabled={!window || window.end_of_source}
-          onClick={() => local(nextWindow)}
-        >
-          Next window
-        </button>
-        <label>
-          Find{' '}
-          <input
-            ref={findInput}
-            value={query}
-            onChange={(event) => {
-              setQuery(event.target.value);
-              setSearchCursor(null);
-            }}
-          />
-        </label>
-        <button
-          type="button"
-          disabled={!query || !reader}
-          onClick={() => local(() => findMatch())}
-        >
-          Find next
-        </button>
-        <label>
-          Line{' '}
-          <input
-            ref={lineInput}
-            inputMode="numeric"
-            value={line}
-            onChange={(event) => setLine(event.target.value)}
-          />
-        </label>
-        <button
-          type="button"
-          disabled={!reader}
-          onClick={() => local(goToLine)}
-        >
-          Go to line
-        </button>
-        <button
-          type="button"
-          disabled={!window}
-          onClick={() => local(copyWindow)}
-        >
-          Copy window
-        </button>
-        <span role="status">{status}</span>
-      </div>
-      <pre className="document-content large-text-content">
-        {window?.text ?? ''}
+      )}
+      <TaskSurface
+        open={toolsOpen}
+        onOpenChange={(open) => {
+          if (!open) closeTools();
+        }}
+        title="Large text tools"
+        opener={toolsOpener.current}
+        className="large-text-task document-tools"
+      >
+        <div className="large-text-controls" aria-busy={pending}>
+          <button
+            type="button"
+            disabled={pending || !section || section.offset === 0}
+            onClick={() => local(previousSection)}
+          >
+            Previous section
+          </button>
+          <button
+            type="button"
+            disabled={pending || !section || section.end_of_source}
+            onClick={() => local(nextSection)}
+          >
+            Next section
+          </button>
+          <label>
+            Find{' '}
+            <input
+              ref={findInput}
+              data-task-initial-focus={focusTool === 'find' || undefined}
+              value={query}
+              disabled={pending}
+              onChange={(event) => {
+                setQuery(event.target.value);
+                setSearchCursor(null);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') local(() => findMatch());
+              }}
+            />
+          </label>
+          <button
+            type="button"
+            disabled={pending || !query || !reader}
+            onClick={() => local(() => findMatch())}
+          >
+            Find next
+          </button>
+          <label>
+            Line{' '}
+            <input
+              ref={lineInput}
+              data-task-initial-focus={focusTool === 'line' || undefined}
+              inputMode="numeric"
+              value={line}
+              disabled={pending}
+              aria-invalid={invalidLine}
+              aria-describedby="large-text-status"
+              onChange={(event) => {
+                setLine(event.target.value);
+                setInvalidLine(false);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') local(goToLine);
+              }}
+            />
+          </label>
+          <button
+            type="button"
+            disabled={pending || !reader}
+            onClick={() => local(goToLine)}
+          >
+            Go to line
+          </button>
+          <button
+            type="button"
+            disabled={pending || !section}
+            onClick={() => local(copySection)}
+          >
+            Copy visible section
+          </button>
+          {pending && (
+            <button type="button" onClick={cancel}>
+              Cancel text operation
+            </button>
+          )}
+          <span id="large-text-status" role="status" aria-live="polite">
+            {status}
+          </span>
+          {section && (
+            <span>
+              Source bytes {section.offset + 1}–
+              {section.offset + section.byte_count} of {byteLength}. Copy
+              includes exactly this visible section.
+            </span>
+          )}
+        </div>
+      </TaskSurface>
+      <pre
+        ref={contentRef}
+        tabIndex={-1}
+        className="document-content large-text-content"
+      >
+        {highlighted ? (
+          <>
+            <mark>{query}</mark>
+            {section.text.slice(query.length)}
+          </>
+        ) : (
+          (section?.text ?? '')
+        )}
       </pre>
     </div>
   );

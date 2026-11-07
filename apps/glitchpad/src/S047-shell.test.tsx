@@ -261,7 +261,7 @@ it('keeps the completed Add handoff when an earlier application-panel frame runs
   fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
   fireEvent.click(within(await screen.findByRole('menu', { name: 'Glitchpad menu' })).getByRole('menuitem', { name: 'Preferences' }));
   const panel = await screen.findByRole('dialog', { name: 'Preferences' });
-  const close = within(panel).getByRole('button', { name: 'Close Preferences', exact: true });
+  const close = within(panel).getByRole('button', { name: 'Close Preferences' });
   await waitFor(() => expect(close).toBeEnabled());
   const late: FrameRequestCallback[] = [];
   const frames = vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => { late.push(callback); return 100000 + late.length; });

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "slice": "S047",
-  "source_policy": "Exact installed registry package license texts correlated to pnpm-lock integrity. Existing locked simplecss0.2.2/svgtypes0.16.1 notices retained.",
+  "source_policy": "Exact installed registry package license texts correlated to pnpm-lock integrity. Existing locked simplecss0.2.2/svgtypes0.16.1 notices retained. The direct base640.22.1 pin uses exact upstream texts from its checksum-verified crates.io archive.",
   "npm": [
     {
       "name": "@radix-ui/react-accessible-icon",
@@ -335,6 +335,34 @@
       "license": "MIT",
       "provenance": "packaging/mermaid-cssom-patch.json",
       "notice": "S047 modification notice in each platform THIRD_PARTY_NOTICES.txt"
+    }
+  ],
+  "rust": [
+    {
+      "name": "base64",
+      "version": "0.22.1",
+      "license": "MIT OR Apache-2.0",
+      "registry": "https://crates.io",
+      "crate_archive": "https://static.crates.io/crates/base64/base64-0.22.1.crate",
+      "crate_sha256": "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6",
+      "repository": "https://github.com/marshallpierce/rust-base64",
+      "source_revision": "e14400697453bcc85997119b874bc03d9601d0af",
+      "texts": [
+        {
+          "file": "LICENSE-APACHE",
+          "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+        },
+        {
+          "file": "LICENSE-MIT",
+          "sha256": "0dd882e53de11566d50f8e8e2d5a651bcf3fabee4987d70f306233cf39094ba7"
+        }
+      ],
+      "platform_notices": [
+        "packaging/android/THIRD_PARTY_NOTICES.txt",
+        "packaging/windows/THIRD_PARTY_NOTICES.txt",
+        "packaging/macos/THIRD_PARTY_NOTICES.txt",
+        "packaging/linux/THIRD_PARTY_NOTICES.txt"
+      ]
     }
   ]
 }

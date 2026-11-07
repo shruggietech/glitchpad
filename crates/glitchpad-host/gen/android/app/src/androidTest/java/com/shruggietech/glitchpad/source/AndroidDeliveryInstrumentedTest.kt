@@ -1740,7 +1740,7 @@ class AndroidDeliveryInstrumentedTest {
     clickControl(scenario,"Close Large text tools")
   }
 
-  private fun observeVisibleTaskControls(scenario: ActivityScenario<MainActivity>, profile: String, deadlineOverride: Long? = null): JSONObject {
+  private fun observeVisibleTaskControls(scenario: ActivityScenario<MainActivity>, profile: String, deadlineOverride: Long? = null, expectedImeVisible: Boolean? = null): JSONObject {
     val actionDeadline = deadlineOverride ?: (SystemClock.elapsedRealtime() + 30_000L)
     assertTrue(SystemClock.elapsedRealtime() < actionDeadline)
     val count = evaluate(scenario, "Array.from(document.querySelectorAll('button,input,select,textarea,summary,[role=button],[role=menuitem],[role=link]')).filter(n=>!n.closest('[aria-hidden=true],[inert]')&&!n.matches('.markdown-document input[type=checkbox][disabled]')&&n.getBoundingClientRect().width>0&&n.getBoundingClientRect().height>0).length").toInt()
@@ -1786,14 +1786,15 @@ class AndroidDeliveryInstrumentedTest {
         val agreed = sameControl && sameFrame && sameIme && nativeTapObservationsAgree(measurement, native, nextMeasurement, nextNative)
         measurement = nextMeasurement
         native = nextNative
-        if (SystemClock.elapsedRealtime() < actionDeadline && agreed && nativeTapForeground(native) && measurement.optBoolean("hit") && native.optBoolean("whole_control_visible")) {
+        val imeMatchesProfile = expectedImeVisible == null || (native.getJSONArray("ime_window_bounds").length() > 0) == expectedImeVisible
+        if (SystemClock.elapsedRealtime() < actionDeadline && agreed && imeMatchesProfile && nativeTapForeground(native) && measurement.optBoolean("hit") && native.optBoolean("whole_control_visible")) {
           settled = true
           break
         }
         val remaining = actionDeadline - SystemClock.elapsedRealtime()
         if (remaining > 0) SystemClock.sleep(minOf(100L, remaining))
       }
-      if (!settled) captureEditorFocusFailure(scenario, "control_geometry", measurement.put("profile", profile).put("control_index", index), native)
+      if (!settled) captureEditorFocusFailure(scenario, "control_geometry", measurement.put("profile", profile).put("control_index", index).put("ime_expected", expectedImeVisible ?: JSONObject.NULL), native)
       assertTrue("CSS/native control geometry must settle within the original action deadline: profile=" + profile + ",control=" + measurement + ",native=" + native, settled)
       assertTrue("each live control must remain measurable: " + profile, measurement.getBoolean("found"))
       assertTrue("each action needs a meaningful accessible name", measurement.getString("label").isNotBlank())
@@ -1806,7 +1807,13 @@ class AndroidDeliveryInstrumentedTest {
       controls.put(measurement.put("native", native))
     }
     val css = JSONObject(evaluate(scenario, "({width:innerWidth,height:innerHeight})"))
-    val result = JSONObject().put("profile", profile).put("controls", controls).put("css", css).put("font_scale", clientContext.resources.configuration.fontScale).put("ime_visible",visibleNativeImeBounds().isNotEmpty())
+    val actualImeVisible = visibleNativeImeBounds().isNotEmpty()
+    if (expectedImeVisible != null) {
+      if (actualImeVisible != expectedImeVisible) captureEditorFocusFailure(scenario, "keyboard_profile", JSONObject().put("profile", profile).put("ime_expected", expectedImeVisible).put("ime_visible", actualImeVisible), nativeControlGeometry(scenario, null))
+      assertEquals("geometry must retain its declared actual native keyboard profile: " + profile, expectedImeVisible, actualImeVisible)
+    }
+    val result = JSONObject().put("profile", profile).put("controls", controls).put("css", css).put("font_scale", clientContext.resources.configuration.fontScale).put("ime_visible", actualImeVisible)
+    if (expectedImeVisible != null) result.put("ime_expected", expectedImeVisible)
     taskControlMeasurements.put(result)
     for (index in 0 until controls.length()) println("s047_control_geometry=" + JSONObject().put("profile", profile).put("font_scale", clientContext.resources.configuration.fontScale).put("control", controls.getJSONObject(index)))
     System.out.flush()
@@ -1821,7 +1828,6 @@ class AndroidDeliveryInstrumentedTest {
 
   private fun verifyS047TaskGeometry(scenario: ActivityScenario<MainActivity>, profile: String, ime: Boolean) {
     fun hideIme(deadline:Long) {
-      if(visibleNativeImeBounds().isEmpty())return
       scenario.onActivity { activity->
         val view=requireNotNull(findWebView(activity.window.decorView))
         (activity.getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager).hideSoftInputFromWindow(view.windowToken,0)
@@ -1831,17 +1837,29 @@ class AndroidDeliveryInstrumentedTest {
     }
     fun observe(task: String, inputLabel: String? = null, value: String = "cats") {
       val deadline=SystemClock.elapsedRealtime()+30_000L
-      if (ime && inputLabel != null) {
-        setTaskInput(scenario,inputLabel,value,deadlineOverride=deadline)
+      val expectedIme = ime && inputLabel != null
+      val initialFocusReady = """
+        (()=>{
+          const dialog=document.querySelector('[role=dialog][data-state=open]');
+          if(!dialog)return false;
+          const preferred=dialog.querySelector('[data-task-initial-focus],[role=menuitem]:not([disabled])');
+          const active=document.activeElement;
+          return !!active&&dialog.contains(active)&&(!preferred||preferred===active||preferred.contains(active));
+        })()
+      """.trimIndent()
+      waitForCondition(scenario,initialFocusReady,"managed task must complete its real initial focus before keyboard-profile setup",deadlineOverride=deadline)
+      if (expectedIme) {
+        setTaskInput(scenario,inputLabel!!,value,deadlineOverride=deadline)
         while(visibleNativeImeBounds().isEmpty()&&SystemClock.elapsedRealtime()<deadline)SystemClock.sleep(100L)
         assertTrue("editable task profile requires the actual native IME",visibleNativeImeBounds().isNotEmpty())
       } else hideIme(deadline)
       waitForCondition(scenario,"!!document.querySelector('[role=dialog]')","managed task must settle inside its actual native visible frame",deadlineOverride=deadline) {
         val rect=JSONObject(evaluate(scenario,"(()=>{const n=document.querySelector('[role=dialog]');if(!n)return {found:false};const r=n.getBoundingClientRect();return {found:true,left:r.left,top:r.top,right:r.right,bottom:r.bottom,x:(r.left+r.right)/2,y:(r.top+r.bottom)/2,viewport_width:innerWidth};})()"))
-        rect.getBoolean("found")&&nativeControlGeometry(scenario,rect).getBoolean("whole_control_visible")
+        (expectedIme || visibleNativeImeBounds().isEmpty()) && rect.getBoolean("found")&&nativeControlGeometry(scenario,rect).getBoolean("whole_control_visible")
       }
-      observeVisibleTaskControls(scenario,profile+":"+task,deadlineOverride=deadline)
-      taskControlMeasurements.getJSONObject(taskControlMeasurements.length()-1).put("ime_applicable",inputLabel!=null)
+      observeVisibleTaskControls(scenario,profile+":"+task,deadlineOverride=deadline,expectedImeVisible=expectedIme)
+      val recorded = taskControlMeasurements.getJSONObject(taskControlMeasurements.length()-1)
+      recorded.put("ime_applicable",inputLabel!=null)
     }
     createNewDraftForInput(scenario,"New text file","Untitled.txt")
     menuAction(scenario,"Search")
@@ -1907,7 +1925,7 @@ class AndroidDeliveryInstrumentedTest {
         awaitFontScale(font)
         scenario.onActivity { it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT }
         waitForCondition(scenario, "innerHeight>innerWidth", "actual portrait must be observed")
-        observations.put("portrait-" + font, observeVisibleTaskControls(scenario, "portrait"))
+        observations.put("portrait-" + font, observeVisibleTaskControls(scenario, "portrait", expectedImeVisible=false))
         verifyS047TaskGeometry(scenario,"portrait-"+font,false)
         verifyAddDocumentChoices(scenario)
         for ((destination, close) in listOf("Preferences" to "Close Preferences", "Diagnostics" to "Close Diagnostics", "About Glitchpad" to "Close About Glitchpad")) {
@@ -1920,18 +1938,18 @@ class AndroidDeliveryInstrumentedTest {
         val imeDeadline = SystemClock.elapsedRealtime() + 30_000L
         while (visibleNativeImeBounds().isEmpty() && SystemClock.elapsedRealtime() < imeDeadline) SystemClock.sleep(100L)
         assertTrue("IME geometry requires the actual native keyboard window", visibleNativeImeBounds().isNotEmpty())
-        observations.put("ime-" + font, observeVisibleTaskControls(scenario, "ime"))
+        observations.put("ime-" + font, observeVisibleTaskControls(scenario, "ime", expectedImeVisible=true))
         verifyS047TaskGeometry(scenario,"ime-"+font,true)
         dismissObservedAppIme(scenario)
         scenario.onActivity { it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE }
         waitForCondition(scenario, "innerWidth>innerHeight", "actual landscape must be observed")
-        observations.put("landscape-" + font, observeVisibleTaskControls(scenario, "landscape"))
+        observations.put("landscape-" + font, observeVisibleTaskControls(scenario, "landscape", expectedImeVisible=false))
         verifyS047TaskGeometry(scenario,"landscape-"+font,false)
         scenario.onActivity { it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED }
         val density = clientContext.resources.displayMetrics.density
         shellOutput("wm size " + (480 * density).toInt() + "x" + (240 * density).toInt())
         waitForCondition(scenario, "innerHeight<=260&&innerWidth>innerHeight", "actual short window must be independently observed")
-        observations.put("short-" + font, observeVisibleTaskControls(scenario, "short"))
+        observations.put("short-" + font, observeVisibleTaskControls(scenario, "short", expectedImeVisible=false))
         verifyS047TaskGeometry(scenario,"short-"+font,false)
         shellOutput("wm size reset")
         waitForCondition(scenario, "innerHeight>innerWidth", "native window must restore before later observations")

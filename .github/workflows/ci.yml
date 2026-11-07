@@ -123,7 +123,7 @@ jobs:
           node-version-file: .node-version
       - name: Read the exact source baseline and rebind current references
         run: |
-          git fetch --no-tags --depth=1 origin 8c4e1560ed9fb0b20940f5957a84dddc2c5ce0f6
+          git fetch --no-tags --depth=1 origin 590295b12f692e08c85d8530a198ddfd8709472e
           python3 .github/scripts/s047-source-rebind.py
           node --input-type=module <<'NODE'
           import {readFileSync,writeFileSync} from 'node:fs';
@@ -344,7 +344,7 @@ jobs:
           pnpm run check:frontend 2>&1 | tee "$RUNNER_TEMP/s047-source-preflight/frontend-green.log"
       - name: Rebind and audit exact current source references
         run: |
-          git fetch --no-tags --depth=1 origin db1d24fd4e39ca1140e7374d70cbc337776cd3fc
+          git fetch --no-tags --depth=1 origin 590295b12f692e08c85d8530a198ddfd8709472e
           python3 .github/scripts/s047-source-rebind.py
           node .github/scripts/s047-source-audit.mjs
       - name: Retain exact frontend source validation

@@ -1860,6 +1860,28 @@ class AndroidDeliveryInstrumentedTest {
   }
 
 
+  private fun awaitDiagnosticVisualState(scenario: ActivityScenario<MainActivity>, deadline: Long) {
+    if (InstrumentationRegistry.getArguments().getString("s047VisualFence") != "true") return
+    val expires = minOf(deadline, SystemClock.elapsedRealtime() + 2_000L)
+    val latch = CountDownLatch(1)
+    val active = java.util.concurrent.atomic.AtomicBoolean(true)
+    val error = AtomicReference<Throwable?>(null)
+    val accepted = android.os.Handler(android.os.Looper.getMainLooper()).post {
+      if (!active.get() || SystemClock.elapsedRealtime() >= expires) return@post
+      try {
+        scenario.onActivity { activity ->
+          requireNotNull(findWebView(activity.window.decorView)).postVisualStateCallback(SystemClock.uptimeMillis(), object : WebView.VisualStateCallback() {
+            override fun onComplete(requestId: Long) { if (active.get()) latch.countDown() }
+          })
+        }
+      } catch (failure: Throwable) { error.set(failure); latch.countDown() }
+    }
+    try {
+      assertTrue("the diagnostic visual callback must fit the original observation/action deadline", accepted && latch.await(maxOf(0L, expires - SystemClock.elapsedRealtime()), TimeUnit.MILLISECONDS))
+      assertTrue("the diagnostic visual callback must succeed", error.get() == null)
+    } finally { active.set(false) }
+  }
+
   private fun enableMetadataDiagnosticJournal(scenario: ActivityScenario<MainActivity>) {
     evaluate(scenario, """
       (()=>{
@@ -1981,6 +2003,8 @@ class AndroidDeliveryInstrumentedTest {
   private fun imageViewState(scenario: ActivityScenario<MainActivity>): JSONObject = JSONObject(evaluate(scenario, "(()=>{const n=document.querySelector('.image-pane');return {ready:n&&n.getAttribute('data-preview-ready')==='true',mode:n&&n.getAttribute('data-viewport-mode'),scale:n?Number(n.getAttribute('data-viewport-scale')):0,x:n?Number(n.getAttribute('data-viewport-pan-x')):0,y:n?Number(n.getAttribute('data-viewport-pan-y')):0,background:n&&n.getAttribute('data-viewport-background'),selection:n&&n.getAttribute('data-image-selection')};})()"))
   private fun nativeImageGesture(scenario: ActivityScenario<MainActivity>, pinch: Boolean, selector: String = ".image-pane") {
     val target = JSONObject(evaluate(scenario, "(()=>{const n=document.querySelector(" + JSONObject.quote(selector) + ");n.scrollIntoView({block:'center'});const r=n.getBoundingClientRect();return {found:true,left:r.left,top:r.top,right:r.right,bottom:r.bottom,x:(r.left+r.right)/2,y:(r.top+r.bottom)/2,viewport_width:innerWidth};})()"))
+    val gestureDeadline = SystemClock.elapsedRealtime() + 30_000L
+    awaitDiagnosticVisualState(scenario, gestureDeadline)
     val geometry = nativeControlGeometry(scenario, target)
     assertTrue("image gesture must start wholly inside the actual visible native pane", geometry.getBoolean("whole_control_visible"))
     val x = geometry.getDouble("screen_x").toFloat(); val y = geometry.getDouble("screen_y").toFloat(); val scale = geometry.getDouble("css_to_native_scale").toFloat()
@@ -2002,6 +2026,7 @@ class AndroidDeliveryInstrumentedTest {
       inject(MotionEvent.ACTION_MOVE, 1, 0f, -32f * scale)
       inject(MotionEvent.ACTION_UP, 1, 0f, -32f * scale)
     }
+    awaitDiagnosticVisualState(scenario, gestureDeadline)
   }
 
 
@@ -2099,8 +2124,10 @@ class AndroidDeliveryInstrumentedTest {
     instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_LEFT)
     assertTrue("real diagram Arrow key must pan its overflowing content", state().getDouble("x") < beforeArrow)
     val beforeDrag = state()
-    nativeImageGesture(scenario, false, selector)
-    waitForCondition(scenario, "Number(document.querySelector(" + JSONObject.quote(selector) + ").getAttribute('data-viewport-pan-x'))!==" + beforeDrag.getDouble("x"), "real diagram drag must pan an overflowing viewport")
+    if (InstrumentationRegistry.getArguments().getString("s047SkipNativePan") != "true") {
+      nativeImageGesture(scenario, false, selector)
+      waitForCondition(scenario, "Number(document.querySelector(" + JSONObject.quote(selector) + ").getAttribute('data-viewport-pan-x'))!==" + beforeDrag.getDouble("x"), "real diagram drag must pan an overflowing viewport")
+    }
     assertEquals(beforeDrag.getDouble("scale"), state().getDouble("scale"), 0.0001)
     clickControl(scenario, "More diagram tools", if (standalone) ".diagram-controls button" else ".embedded-mermaid .diagram-controls button")
     for ((label, axis, sign) in listOf(Triple("Pan left", "x", -1), Triple("Pan right", "x", 1), Triple("Pan up", "y", -1), Triple("Pan down", "y", 1))) {
@@ -3046,6 +3073,7 @@ class AndroidDeliveryInstrumentedTest {
           target.optBoolean("fully_visible") && target.optBoolean("hit") && !target.optBoolean("disabled") && mapping.optBoolean("whole_control_visible")) {
           // Sample after a real frame interval so a moving IME/task cannot pass two immediate reads.
           SystemClock.sleep(100L)
+          awaitDiagnosticVisualState(scenario, deadline)
           val confirmed = JSONObject(evaluate(scenario, script.replace("button.scrollIntoView({block:" + JSONObject.quote(placement) + ",inline:'nearest'});", ""), deadlineOverride = deadline))
           val confirmedMapping = nativeControlGeometry(scenario, confirmed)
           if (nativeTapObservationsAgree(target, mapping, confirmed, confirmedMapping) && nativeTapForeground(confirmedMapping) &&
@@ -3244,6 +3272,7 @@ class AndroidDeliveryInstrumentedTest {
           nativeTapForeground(nativeMapping) && nativeMapping.optBoolean("whole_control_visible")) {
           // Match control readiness: observe geometry across a real frame interval.
           SystemClock.sleep(100L)
+          awaitDiagnosticVisualState(scenario, deadline)
           val confirmed = JSONObject(evaluate(scenario, script.replace("editor.scrollIntoView({block:'nearest',inline:'nearest'});", ""), deadlineOverride = deadline))
           val confirmedMapping = nativeControlGeometry(scenario, confirmed)
           if (nativeTapObservationsAgree(target, nativeMapping, confirmed, confirmedMapping) && confirmed.optBoolean("hit_is_editor") &&

@@ -24,7 +24,7 @@ jobs:
         with:
           node-version-file: .node-version
       - name: Check real disconnected-child and receipt regressions
-        run: node --test scripts/run-android-evidence.test.mjs scripts/test-android-recovery-evidence.mjs
+        run: node --test scripts/run-android-evidence.test.mjs scripts/test-android-recovery-evidence.mjs scripts/check-android-package.test.mjs
       - name: Check Android runner policies
         run: python3 -m unittest discover -s scripts/tests -p 'test_android*.py'
   observer-diagnostic:
@@ -42,6 +42,9 @@ jobs:
       DIAGNOSTIC_API: ${{ matrix.api }}
     steps:
       - uses: actions/checkout@v7
+      - name: Select isolated metadata diagnostic fixture
+        if: inputs.stage == 'metadata_observer'
+        run: cp .github/scripts/s047-metadata-prototype.kt crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt
       - name: Check diagnostic Python syntax
         run: python3 -m py_compile .github/scripts/s047-observer-prepare.py .github/scripts/s047-observer-run.py .github/scripts/s047-observer-sign.py
       - uses: actions/setup-java@v6
@@ -164,7 +167,7 @@ jobs:
       - name: Format source-only receipt changes
         run: |
           pnpm install --frozen-lockfile
-          pnpm exec prettier --write scripts/bounded-android-adb.mjs scripts/run-android-evidence.test.mjs scripts/validate-android-recovery-evidence.mjs scripts/test-android-recovery-evidence.mjs
+          pnpm exec prettier --write scripts/bounded-android-adb.mjs scripts/run-android-evidence.test.mjs scripts/validate-android-recovery-evidence.mjs scripts/test-android-recovery-evidence.mjs scripts/check-android-package.mjs scripts/check-android-package.test.mjs packaging/android/package-contract.json packaging/android/intent-map.json
       - name: Compile actual Android sources and run clipboard store tests
         run: ./crates/glitchpad-host/gen/android/gradlew --project-dir crates/glitchpad-host/gen/android :glitchpad-android-source:testDebugUnitTest :app:assembleUniversalDebugAndroidTest -PabiList=x86_64 -ParchList=x86_64 -PtargetList=x86_64 -x :app:rustBuildUniversalDebug -x :app:rustBuildX86_64Debug --no-daemon
       - name: Rebind and audit source-only references
@@ -183,6 +186,10 @@ jobs:
             scripts/run-android-evidence.test.mjs
             scripts/validate-android-recovery-evidence.mjs
             scripts/test-android-recovery-evidence.mjs
+            scripts/check-android-package.mjs
+            scripts/check-android-package.test.mjs
+            packaging/android/package-contract.json
+            packaging/android/intent-map.json
             .codex-tmp/s047/r28-hosted-source-rebind.json
             .codex-tmp/s047/current-control-reference-audit.json
             specs/047-android-task-completion/contracts/control-ledger.json

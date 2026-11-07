@@ -22,6 +22,7 @@ function fixture(role = 'ordinary', api = 36) {
     instrumentation_sha256: instrument,
     package_identifier: 'com.shruggietech.glitchpad',
     instrumentation_package: 'com.shruggietech.glitchpad.test',
+    clipboard_provider: { legacy_authority: 'com.shruggietech.glitchpad.clipboard', legacy_declared_exported: true, legacy_enabled: api < 28, legacy_resolvable: api < 28, legacy_grant_uri_permissions: false, file_provider_private: true },
     version: '0.2.0',
     channel: 'debug',
     build_variant: role,
@@ -829,4 +830,18 @@ test('legacy clipboard token access still requires exact stream bytes, denied wr
       ),
       /clipboard|paste|recipient/i,
     );
+});
+
+test('installed clipboard provider state must match the actual API and every journey identity', async () => {
+  for (const api of [24, 36]) {
+    await check(fixture('ordinary', api));
+    for (const change of [
+      (e) => { delete e.identity.clipboard_provider; },
+      (e) => { e.identity.clipboard_provider.legacy_enabled = api >= 28; },
+      (e) => { e.identity.clipboard_provider.legacy_resolvable = api >= 28; },
+      (e) => { e.identity.clipboard_provider.file_provider_private = false; },
+      (e) => { e.identity.clipboard_provider.legacy_grant_uri_permissions = true; },
+      (e) => { e.journeys[0].identity = { ...e.identity, clipboard_provider: { ...e.identity.clipboard_provider, legacy_authority: 'unrelated.clipboard' } }; },
+    ]) await assert.rejects(check(fixture('ordinary', api), change), /clipboard|identity/i);
+  }
 });

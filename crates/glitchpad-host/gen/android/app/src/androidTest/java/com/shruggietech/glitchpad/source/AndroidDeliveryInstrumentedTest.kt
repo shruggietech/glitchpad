@@ -1859,50 +1859,6 @@ class AndroidDeliveryInstrumentedTest {
     hideIme(SystemClock.elapsedRealtime()+30_000L)
   }
 
-
-  private fun enableMetadataDiagnosticJournal(scenario: ActivityScenario<MainActivity>) {
-    evaluate(scenario, """
-      (()=>{
-        if(window.__s047EditorEvents)return true;
-        const rows=window.__s047EditorEvents=[];
-        const ids=new WeakMap();let serial=0;
-        const node=n=>{if(!n)return null;if(!ids.has(n))ids.set(n,++serial);const r=n.getBoundingClientRect?n.getBoundingClientRect():null;return {node_id:ids.get(n),tag:n.nodeName,label:n.getAttribute?(n.getAttribute('aria-label')||'').slice(0,100):null,connected:n.isConnected,disabled:!!n.disabled,rect:r?{top:r.top,bottom:r.bottom,left:r.left,right:r.right}:null};};
-        for(const capture of [true,false])for(const type of ['pointerdown','pointerup','pointercancel','touchstart','touchend','touchcancel','mousedown','mouseup','click','focusin','focusout'])document.addEventListener(type,e=>{
-          const touch=e.changedTouches&&e.changedTouches[0];const target=e.target;
-          const row={type:type,phase:capture?'capture':'bubble',time:performance.now(),trusted:e.isTrusted,target:node(target),active:node(document.activeElement),default_prevented:e.defaultPrevented,client_x:touch?touch.clientX:e.clientX,client_y:touch?touch.clientY:e.clientY};
-          rows.push(row);if(rows.length>100)rows.shift();
-          setTimeout(()=>{row.target_after=node(target);row.default_prevented_after=e.defaultPrevented;row.active_after=node(document.activeElement);},0);
-        },{capture:capture,passive:true});
-        return true;
-      })()
-    """.trimIndent())
-  }
-
-  @Test fun s047MetadataCopyDiagnostic() {
-    val scenario = launchS047()
-    try {
-      enableMetadataDiagnosticJournal(scenario)
-      openFromAddDocument(scenario, grant(documentUri("s047-controls.md")))
-      menuAction(scenario, "File information")
-      tapNativeControlOnce(scenario, "Copy File name")
-      waitForBodyText(scenario, "File name copied")
-      assertEquals("s047-controls.md", clipboardText())
-      println("s047_metadata_copy_diagnostic=" + JSONObject().put("task", "fresh").put("placement", InstrumentationRegistry.getArguments().getString("s047TapPlacement")).put("events", JSONArray(evaluate(scenario, "window.__s047EditorEvents"))))
-      System.out.flush()
-    } finally { scenario.close() }
-  }
-
-  @Test fun s047MetadataSequenceDiagnostic() {
-    val scenario = launchS047()
-    try {
-      enableMetadataDiagnosticJournal(scenario)
-      verifyS047EditorAndPreferences(scenario)
-      verifyS047MarkdownAndMetadata(scenario)
-      println("s047_metadata_copy_diagnostic=" + JSONObject().put("task", "sequence").put("placement", InstrumentationRegistry.getArguments().getString("s047TapPlacement")).put("events", JSONArray(evaluate(scenario, "window.__s047EditorEvents"))))
-      System.out.flush()
-    } finally { scenario.close() }
-  }
-
   @Test fun s047LayoutJourney() {
     val scenario = launchS047()
     enableNativeWindowObservation()
@@ -2663,6 +2619,25 @@ class AndroidDeliveryInstrumentedTest {
     assertTrue("actual system navigation mode must be observable", id != 0)
     return when (clientContext.resources.getInteger(id)) { 2 -> "gestural"; 0 -> "three_button"; else -> throw AssertionError("unsupported actual navigation mode") }
   }
+  private fun clipboardProviderFacts(): JSONObject {
+    val manager = clientContext.packageManager
+    val authority = clientContext.packageName + ".clipboard"
+    val legacy = manager.getProviderInfo(android.content.ComponentName(clientContext.packageName, LegacyClipboardTextProvider::class.java.name), android.content.pm.PackageManager.MATCH_DISABLED_COMPONENTS)
+    val fileProvider = manager.getProviderInfo(android.content.ComponentName(clientContext.packageName, "androidx.core.content.FileProvider"), 0)
+    val expectedEnabled = Build.VERSION.SDK_INT < 28
+    val resolvable = manager.resolveContentProvider(authority, 0) != null
+    assertEquals("the installed clipboard provider must retain its exact authority", authority, legacy.authority)
+    assertTrue("only the dedicated copied-text provider is declared public", legacy.exported)
+    assertFalse("the legacy token provider does not issue URI grants", legacy.grantUriPermissions)
+    assertEquals("the installed resource must disable the legacy provider on modern Android", expectedEnabled, legacy.enabled)
+    assertEquals("the clipboard provider must be resolvable only on its legacy SDK range", expectedEnabled, resolvable)
+    assertFalse("the general FileProvider must remain private", fileProvider.exported)
+    assertTrue("modern FileProvider must retain explicit URI grants", fileProvider.grantUriPermissions)
+    return JSONObject().put("legacy_authority", legacy.authority).put("legacy_declared_exported", legacy.exported)
+      .put("legacy_enabled", legacy.enabled).put("legacy_resolvable", resolvable).put("legacy_grant_uri_permissions", legacy.grantUriPermissions)
+      .put("file_provider_private", !fileProvider.exported && fileProvider.grantUriPermissions)
+  }
+
   private fun candidateIdentity(scenario: ActivityScenario<MainActivity>): JSONObject {
     val source = requireNotNull(InstrumentationRegistry.getArguments().getString("expectedSource"))
     waitForCondition(scenario, "(()=>{const n=document.querySelector('.app-shell');return !!n&&n.getAttribute('data-native-source-commit')===" + JSONObject.quote(source) + "&&n.getAttribute('data-frontend-source-commit')===" + JSONObject.quote(source) + ";})()", "independent native/frontend compiled source facts must agree with actual selected checkout")
@@ -2673,7 +2648,7 @@ class AndroidDeliveryInstrumentedTest {
     val webview = requireNotNull(WebViewCompat.getCurrentWebViewPackage(clientContext)) { "actual WebView package/version is required" }
     return JSONObject().put("source_commit", source).put("native_source_commit", facts.getString("native")).put("frontend_source_commit", facts.getString("frontend"))
       .put("application_sha256", apkSha256()).put("instrumentation_sha256", sha256(File(test.sourceDir).readBytes()))
-      .put("package_identifier", TARGET_PACKAGE).put("instrumentation_package", instrumentation.context.packageName)
+      .put("package_identifier", TARGET_PACKAGE).put("instrumentation_package", instrumentation.context.packageName).put("clipboard_provider", clipboardProviderFacts())
       .put("version", app.versionName).put("version_code", if (Build.VERSION.SDK_INT >= 28) app.longVersionCode else { @Suppress("DEPRECATION") app.versionCode.toLong() }).put("channel", if ((clientContext.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0) "debug" else "release")
       .put("build_variant", facts.getString("role")).put("api_level", Build.VERSION.SDK_INT).put("android_version", Build.VERSION.RELEASE)
       .put("webview_package", webview.packageName).put("webview_version", webview.versionName)
@@ -2978,12 +2953,11 @@ class AndroidDeliveryInstrumentedTest {
 
   private fun tapNativeControlOnce(scenario: ActivityScenario<MainActivity>, name: String, selector: String = "button", deadlineOverride: Long? = null) {
     val deadline = deadlineOverride ?: (SystemClock.elapsedRealtime() + 30_000L)
-    val placement = if (name == "Copy File name" && InstrumentationRegistry.getArguments().getString("s047TapPlacement") == "center") "center" else "nearest"
     val script = """
       (()=>{
         const button=Array.from(document.querySelectorAll(SELECTOR)).find(b=>!b.disabled&&b.getBoundingClientRect().width>0&&!b.closest('[aria-hidden=true],[inert]')&&(()=>{const label=(b.getAttribute('aria-label')||(b.labels&&b.labels.length?Array.from(b.labels).map(n=>n.textContent).join(' '):(b.getAttribute('role')==='menuitem'&&b.querySelector('span')?b.querySelector('span').textContent:b.textContent))).trim();return SELECTOR==='button'?label===NAME:label.startsWith(NAME);})());
         if(!button)return {found:false};
-        button.scrollIntoView({block:PLACEMENT,inline:'nearest'});
+        button.scrollIntoView({block:'nearest',inline:'nearest'});
         const rect=button.getBoundingClientRect();
         const viewport=window.visualViewport;
         const left=viewport?viewport.offsetLeft:0;
@@ -2998,7 +2972,7 @@ class AndroidDeliveryInstrumentedTest {
           fully_visible:rect.left>=left-0.6&&rect.right<=left+width+0.6&&rect.top>=top-0.6&&rect.bottom<=top+height+0.6,
           hit:hit===button||button.contains(hit),disabled:button.disabled};
       })()
-    """.trimIndent().replace("NAME", JSONObject.quote(name)).replace("SELECTOR", JSONObject.quote(selector)).replace("PLACEMENT", JSONObject.quote(placement))
+    """.trimIndent().replace("NAME", JSONObject.quote(name)).replace("SELECTOR", JSONObject.quote(selector))
     var target = JSONObject()
     var mapping = JSONObject()
     var phase = "readiness"
@@ -3024,7 +2998,7 @@ class AndroidDeliveryInstrumentedTest {
           target.optBoolean("fully_visible") && target.optBoolean("hit") && !target.optBoolean("disabled") && mapping.optBoolean("whole_control_visible")) {
           // Sample after a real frame interval so a moving IME/task cannot pass two immediate reads.
           SystemClock.sleep(100L)
-          val confirmed = JSONObject(evaluate(scenario, script.replace("button.scrollIntoView({block:" + JSONObject.quote(placement) + ",inline:'nearest'});", ""), deadlineOverride = deadline))
+          val confirmed = JSONObject(evaluate(scenario, script.replace("button.scrollIntoView({block:'nearest',inline:'nearest'});", ""), deadlineOverride = deadline))
           val confirmedMapping = nativeControlGeometry(scenario, confirmed)
           if (nativeTapObservationsAgree(target, mapping, confirmed, confirmedMapping) && nativeTapForeground(confirmedMapping) &&
             confirmed.optBoolean("fully_visible") && confirmed.optBoolean("hit") && !confirmed.optBoolean("disabled") && confirmedMapping.optBoolean("whole_control_visible")) {

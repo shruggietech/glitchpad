@@ -182,6 +182,7 @@ function identityMatches(actual, expected) {
     'webview_version',
   ])
     assert.equal(actual?.[key], expected[key], 'identity mismatch: ' + key);
+  assert.deepEqual(actual?.clipboard_provider, expected.clipboard_provider, 'identity mismatch: clipboard provider');
 }
 
 function validateObservedDetails(row, role, api) {
@@ -599,6 +600,11 @@ export async function validateRecoveryEvidence(
       'installed package hash/identity mismatch',
     );
   }
+  const clipboard = identity.clipboard_provider;
+  assert(clipboard && clipboard.legacy_authority === identity.package_identifier + '.clipboard' &&
+    clipboard.legacy_declared_exported === true && clipboard.legacy_grant_uri_permissions === false &&
+    clipboard.legacy_enabled === (api < 28) && clipboard.legacy_resolvable === (api < 28) && clipboard.file_provider_private === true,
+    'installed clipboard provider must match its legacy SDK range and retain the private FileProvider');
   for (const key of [
     'version',
     'channel',

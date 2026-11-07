@@ -19,7 +19,7 @@ if api==36:
  command(['adb','shell','settings','put','global','hide_error_dialogs','1'])
  command(['adb','shell','am','broadcast','-a','android.intent.action.CLOSE_SYSTEM_DIALOGS'])
 command(['adb','shell','settings','put','secure','show_ime_with_hard_keyboard','1'])
-methods=[('fresh-nearest','s047MetadataCopyDiagnostic',180,'nearest'),('sequence-nearest','s047MetadataSequenceDiagnostic',360,'nearest'),('sequence-center','s047MetadataSequenceDiagnostic',360,'center')]
+methods=[('after-editor','s047MetadataAfterEditorDiagnostic',360,'nearest'),('markdown-only','s047MetadataMarkdownOnlyDiagnostic',360,'nearest')]
 for name,method,seconds,placement in methods:
  env=os.environ.copy(); env['ANDROID_INSTRUMENTATION_RESET_APP_DATA']='true'
  args=['bash','scripts/run-android-instrumentation.sh',str(out/(name+'.txt')),'s047_metadata_copy_diagnostic=','-e','waitForActivitiesToComplete','false','-e','s047','true','-e','expectedSource','f572e0fbbd1d2978b6e4064a31817201834c8965','-e','expectedRole','ordinary','-e','s047ObservationTrace','true','-e','s047InputTrace','true','-e','s047TapPlacement',placement,'-e','class','com.shruggietech.glitchpad.source.AndroidDeliveryInstrumentedTest#'+method]
@@ -39,6 +39,7 @@ for name,method,seconds,placement in methods:
  command(['adb','shell','am','force-stop','com.shruggietech.glitchpad.test'],30)
  (out/'result.json').write_text(json.dumps({'diagnostic_only':True,'candidate_qualified':False,'api':api,'tasks':results},indent=2)+'\n',encoding='utf-8')
  print(json.dumps(results[-1]),flush=True)
+ if code: print((out/(name+'.txt')).read_text(encoding='utf-8',errors='replace')[-3000:],flush=True)
  if code==124: break
 
 if any(item['exit']!=0 for item in results): raise SystemExit(1)

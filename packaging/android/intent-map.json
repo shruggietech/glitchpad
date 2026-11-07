@@ -10,7 +10,9 @@
     "android.intent.category.DEFAULT",
     "android.intent.category.LAUNCHER"
   ],
-  "schemes": ["content"],
+  "schemes": [
+    "content"
+  ],
   "media_types": [
     "application/json",
     "application/toml",
@@ -71,8 +73,12 @@
   "intent_filters": [
     {
       "id": "launcher",
-      "actions": ["android.intent.action.MAIN"],
-      "categories": ["android.intent.category.LAUNCHER"],
+      "actions": [
+        "android.intent.action.MAIN"
+      ],
+      "categories": [
+        "android.intent.category.LAUNCHER"
+      ],
       "schemes": [],
       "authorities": [],
       "media_types": [],
@@ -80,12 +86,16 @@
     },
     {
       "id": "view-exact-content",
-      "actions": ["android.intent.action.VIEW"],
+      "actions": [
+        "android.intent.action.VIEW"
+      ],
       "categories": [
         "android.intent.category.BROWSABLE",
         "android.intent.category.DEFAULT"
       ],
-      "schemes": ["content"],
+      "schemes": [
+        "content"
+      ],
       "authorities": [],
       "media_types": [
         "application/json",
@@ -114,8 +124,12 @@
     },
     {
       "id": "send-exact",
-      "actions": ["android.intent.action.SEND"],
-      "categories": ["android.intent.category.DEFAULT"],
+      "actions": [
+        "android.intent.action.SEND"
+      ],
+      "categories": [
+        "android.intent.category.DEFAULT"
+      ],
       "schemes": [],
       "authorities": [],
       "media_types": [
@@ -144,14 +158,31 @@
       "extensions": []
     }
   ],
-  "generic_media_types": ["application/octet-stream"],
+  "generic_media_types": [
+    "application/octet-stream"
+  ],
   "generic_media_type_policy": "reject_without_exact_supported_type",
   "forbidden_permissions": [
     "android.permission.MANAGE_EXTERNAL_STORAGE",
     "android.permission.READ_EXTERNAL_STORAGE",
     "android.permission.WRITE_EXTERNAL_STORAGE"
   ],
-  "forbidden_actions": ["android.intent.action.SEND_MULTIPLE"],
-  "forbidden_schemes": ["file"],
-  "forbidden_media_types": ["*/*", "application/*", "text/*"]
+  "forbidden_actions": [
+    "android.intent.action.SEND_MULTIPLE"
+  ],
+  "forbidden_schemes": [
+    "file"
+  ],
+  "forbidden_media_types": [
+    "*/*",
+    "application/*",
+    "text/*"
+  ],
+  "source_exported_components": [
+    "com.shruggietech.glitchpad.MainActivity"
+  ],
+  "exported_components": [
+    "com.shruggietech.glitchpad.MainActivity",
+    "com.shruggietech.glitchpad.source.LegacyClipboardTextProvider"
+  ]
 }

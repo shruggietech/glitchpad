@@ -13,29 +13,52 @@
     "data_extraction_rules": "@xml/backup_rules",
     "full_backup_content": "@xml/backup_rules_legacy",
     "file_provider": "androidx.core.content.FileProvider",
-    "file_provider_authority": "com.shruggietech.glitchpad.fileprovider"
+    "file_provider_authority": "com.shruggietech.glitchpad.fileprovider",
+    "legacy_clipboard_provider": {
+      "name": "com.shruggietech.glitchpad.source.LegacyClipboardTextProvider",
+      "authority": "com.shruggietech.glitchpad.clipboard",
+      "enabled_resource": "@bool/glitchpad_legacy_clipboard_enabled"
+    }
   },
   "artifacts": [
     {
       "kind": "apk",
       "role": "universal",
       "name": "glitchpad-0.2.0-android-universal.apk",
-      "required_abis": ["arm64-v8a", "x86_64"],
-      "forbidden_abis": ["armeabi-v7a", "x86"]
+      "required_abis": [
+        "arm64-v8a",
+        "x86_64"
+      ],
+      "forbidden_abis": [
+        "armeabi-v7a",
+        "x86"
+      ]
     },
     {
       "kind": "apk",
       "role": "arm64",
       "name": "glitchpad-0.2.0-android-arm64.apk",
-      "required_abis": ["arm64-v8a"],
-      "forbidden_abis": ["armeabi-v7a", "x86", "x86_64"]
+      "required_abis": [
+        "arm64-v8a"
+      ],
+      "forbidden_abis": [
+        "armeabi-v7a",
+        "x86",
+        "x86_64"
+      ]
     },
     {
       "kind": "aab",
       "role": "play",
       "name": "glitchpad-0.2.0-android-universal.aab",
-      "required_abis": ["arm64-v8a", "x86_64"],
-      "forbidden_abis": ["armeabi-v7a", "x86"]
+      "required_abis": [
+        "arm64-v8a",
+        "x86_64"
+      ],
+      "forbidden_abis": [
+        "armeabi-v7a",
+        "x86"
+      ]
     }
   ],
   "size_budget": {

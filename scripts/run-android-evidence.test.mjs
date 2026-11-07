@@ -121,11 +121,11 @@ elif [[ "$1" = features ]]; then
   echo "\${MOCK_ADB_FEATURES:-shell_v2,cmd}"
 elif [[ "$1" = shell && "$2" = -T && "$3" = -n && "$4" = run-as && "$6" = cat ]]; then
   emit_apk "$7"
-  if [[ "\${MOCK_RUN_AS_FAILURE_AFTER_BYTES:-0}" = 1 ]]; then echo "run-as: read refused after output" >&2; exit 7; fi
+  if [[ "\${MOCK_RUN_AS_FAILURE_AFTER_BYTES:-0}" = 1 ]]; then exit 7; fi
 elif [[ "$1" = exec-out && "$2" = run-as && "$4" = cat ]]; then
   if [[ "$5" = files/*.png ]]; then if [[ "\${MOCK_SCREENSHOT_MISSING_SUCCESS:-0}" = 1 ]]; then echo "cat: $5: No such file or directory"; exit 0; fi; cat "$RUNNER_TEMP/remote-\${5#files/}"; exit 0; fi
   emit_apk "$5"
-  if [[ "\${MOCK_RUN_AS_FAILURE_AFTER_BYTES:-0}" = 1 ]]; then echo "run-as: read refused after output" >&2; exit 0; fi
+  if [[ "\${MOCK_RUN_AS_FAILURE_AFTER_BYTES:-0}" = 1 ]]; then exit 0; fi
 elif [[ "$1" = exec-out ]]; then exit 1
 fi
 `,

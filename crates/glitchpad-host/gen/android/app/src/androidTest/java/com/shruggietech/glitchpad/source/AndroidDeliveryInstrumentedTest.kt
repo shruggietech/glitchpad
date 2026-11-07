@@ -462,9 +462,16 @@ class AndroidDeliveryInstrumentedTest {
           throw failure
         } finally {
           val cleanup = runCatching {
-            checkedShell("settings put system font_scale " + originalFont)
+            if (recoveryFailure == null) applyObservedFontScale(scenario, originalFont)
+            else {
+              checkedShell("settings put system font_scale " + originalFont)
+              awaitFontScale(originalFont)
+            }
             scenario.onActivity { it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT }
-            awaitFontScale(originalFont)
+            if (recoveryFailure == null) {
+              waitForCondition(scenario, "innerHeight>innerWidth", "recovery activation must use the actual restored portrait frame")
+              observeVisibleTaskControls(scenario, "recovery-restored-portrait", expectedImeVisible=false)
+            }
           }.exceptionOrNull()
           if (cleanup != null) {
             val primary = recoveryFailure

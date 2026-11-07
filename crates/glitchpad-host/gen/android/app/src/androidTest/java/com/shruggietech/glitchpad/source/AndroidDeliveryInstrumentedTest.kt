@@ -1260,7 +1260,7 @@ class AndroidDeliveryInstrumentedTest {
     assertEquals("the actual clipboard transport must match the payload size", uriBacked, observed.getBoolean("has_uri"))
     assertFalse("the recipient must not receive an explicit Intent URI grant", observed.getBoolean("intent_uri_grant"))
     if (uriBacked) {
-      val legacy = Build.VERSION.SDK_INT < 26
+      val legacy = Build.VERSION.SDK_INT < 28
       assertEquals("the recipient must read the actual platform-specific clipboard provider", clientContext.packageName + if (legacy) ".clipboard" else ".fileprovider", observed.getString("uri_authority"))
       if (!legacy) assertTrue("the clipboard service must grant independent recipient read access", observed.getBoolean("uri_read_granted"))
       assertFalse("clipboard paste must not gain write authority over the payload", observed.getBoolean("uri_write_granted"))
@@ -2892,8 +2892,9 @@ class AndroidDeliveryInstrumentedTest {
     screenX: Float, screenY: Float, deadline: Long,
     inject: (MotionEvent) -> Boolean = { event -> instrumentation.sendPointerSync(event); true }
   ) {
+    val press = android.view.ViewConfiguration.getTapTimeout() / 2L
     val settle = android.view.ViewConfiguration.getTapTimeout() * 3L / 2L
-    assertTrue("a single native tap and its processing must fit the original action deadline", SystemClock.elapsedRealtime() + settle < deadline)
+    assertTrue("a single native tap and its processing must fit the original action deadline", SystemClock.elapsedRealtime() + press + settle < deadline)
     val downTime = SystemClock.uptimeMillis()
     val pointer = MotionEvent.PointerProperties().apply { id = 0; toolType = MotionEvent.TOOL_TYPE_FINGER }
     var downRequested = false
@@ -2907,8 +2908,12 @@ class AndroidDeliveryInstrumentedTest {
       val down = event(MotionEvent.ACTION_DOWN)
       downRequested = true
       try { assertTrue("the sole native DOWN must be accepted", inject(down)) } finally { down.recycle() }
+      // Match AndroidX sendDown: keep the sole press long enough to become a tap.
+      val untilRelease = downTime + press - SystemClock.uptimeMillis()
+      if (untilRelease > 0) SystemClock.sleep(untilRelease)
       assertTrue("the sole native release must begin inside the original action deadline", SystemClock.elapsedRealtime() < deadline)
-      // Create UP after DOWN was dispatched, preserving actual monotonic event chronology.
+      assertTrue("an overslept native tap must not silently become a long press", SystemClock.uptimeMillis() < downTime + android.view.ViewConfiguration.getLongPressTimeout())
+      // Create UP after the physical press interval, preserving monotonic chronology.
       val up = event(MotionEvent.ACTION_UP)
       upTime = up.eventTime
       try { assertTrue("the sole native UP must be accepted", inject(up)); upCompleted = true } finally { up.recycle() }

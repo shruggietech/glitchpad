@@ -4,7 +4,7 @@ on:
     inputs:
       stage:
         type: choice
-        options: [observers, source_binding, sdk_source]
+        options: [observers, source_binding, sdk_source, tap_observer]
         default: observers
 permissions:
   contents: read
@@ -24,7 +24,7 @@ jobs:
       - name: Check Android runner policies
         run: python3 -m unittest discover -s scripts/tests -p 'test_android*.py'
   observer-diagnostic:
-    if: inputs.stage == 'observers'
+    if: inputs.stage == 'observers' || inputs.stage == 'tap_observer'
     needs: supporting-driver-policy
     name: Existing APK observer diagnostic (${{ matrix.api }})
     runs-on: ubuntu-latest
@@ -32,7 +32,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        api: [24, 36]
+        api: ${{ fromJSON(inputs.stage == 'tap_observer' && '[36]' || '[24,36]') }}
     env:
       GLITCHPAD_BUILD_COMMIT: f572e0fbbd1d2978b6e4064a31817201834c8965
       DIAGNOSTIC_API: ${{ matrix.api }}
@@ -95,7 +95,7 @@ jobs:
           retention-days: 7
 
   source-binding:
-    if: inputs.stage == 'source_binding'
+    if: inputs.stage == 'source_binding' || inputs.stage == 'tap_observer'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:

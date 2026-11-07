@@ -11,7 +11,7 @@ import android.provider.OpenableColumns
 import java.io.File
 import java.io.FileNotFoundException
 
-/** Android 7 clipboard services cannot reliably relay private-provider URI grants. Only explicitly copied, opaque text tokens are readable here. */
+/** Android 7/8 clipboard services cannot reliably relay private-provider URI grants. Only explicitly copied, opaque text tokens are readable here. */
 class LegacyClipboardTextProvider : ContentProvider() {
   companion object {
     fun uriForFile(context: Context, file: File): Uri = Uri.Builder().scheme("content")

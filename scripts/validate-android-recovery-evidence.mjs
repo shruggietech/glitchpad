@@ -311,36 +311,134 @@ function validateObservedDetails(row, role, api) {
         );
       }
     const pastes = row.observations?.clipboard_paste_readbacks;
-    assert(Array.isArray(pastes) && pastes.length === 2, 'clipboard requires both independent paste readbacks');
+    assert(
+      Array.isArray(pastes) && pastes.length === 2,
+      'clipboard requires both independent paste readbacks',
+    );
     for (const transport of ['inline', 'uri']) {
       const matches = pastes.filter((paste) => paste.transport === transport);
-      assert.equal(matches.length, 1, 'clipboard paste transports must be unique');
+      assert.equal(
+        matches.length,
+        1,
+        'clipboard paste transports must be unique',
+      );
       const paste = matches[0];
       const receiver = paste.receiver;
-      assert(receiver && !Object.hasOwn(receiver, 'error'), 'clipboard recipient must complete without an error');
-      assert(typeof paste.request_nonce === 'string' && paste.request_nonce.length > 0 && receiver.nonce === paste.request_nonce, 'clipboard paste requires the current request nonce');
-      assert(Number.isInteger(paste.app_uid) && paste.app_uid > 0 && Number.isInteger(receiver.receiver_uid) && receiver.receiver_uid > 0 && receiver.receiver_uid !== paste.app_uid, 'clipboard paste must execute in an independent application UID');
-      assert.equal(receiver.receiver_package, row.identity.instrumentation_package, 'clipboard recipient package must match the installed instrumentation');
-      assert(receiver.plain_text_mime === true && receiver.paste_accepted === true && paste.returned_to_document === true, 'clipboard paste must preserve plain text and return to its document');
-      assert.equal(receiver.has_uri, transport === 'uri', 'clipboard transport must match the actual pasted item');
-      assert.equal(receiver.intent_uri_grant, false, 'clipboard recipient must obtain access without an Intent URI grant');
+      assert(
+        receiver && !Object.hasOwn(receiver, 'error'),
+        'clipboard recipient must complete without an error',
+      );
+      assert(
+        typeof paste.request_nonce === 'string' &&
+          paste.request_nonce.length > 0 &&
+          receiver.nonce === paste.request_nonce,
+        'clipboard paste requires the current request nonce',
+      );
+      assert(
+        Number.isInteger(paste.app_uid) &&
+          paste.app_uid > 0 &&
+          Number.isInteger(receiver.receiver_uid) &&
+          receiver.receiver_uid > 0 &&
+          receiver.receiver_uid !== paste.app_uid,
+        'clipboard paste must execute in an independent application UID',
+      );
+      assert.equal(
+        receiver.receiver_package,
+        row.identity.instrumentation_package,
+        'clipboard recipient package must match the installed instrumentation',
+      );
+      assert(
+        receiver.plain_text_mime === true &&
+          receiver.paste_accepted === true &&
+          paste.returned_to_document === true,
+        'clipboard paste must preserve plain text and return to its document',
+      );
+      assert.equal(
+        receiver.has_uri,
+        transport === 'uri',
+        'clipboard transport must match the actual pasted item',
+      );
+      assert.equal(
+        receiver.intent_uri_grant,
+        false,
+        'clipboard recipient must obtain access without an Intent URI grant',
+      );
       if (transport === 'uri') {
-        assert.equal(receiver.uri_authority, row.identity.package_identifier + (api < 26 ? '.clipboard' : '.fileprovider'), 'clipboard recipient must read the platform-specific copied-text provider');
-        if (api >= 26) assert.equal(receiver.uri_read_granted, true, 'clipboard service must grant modern recipient read access');
-        assert.equal(receiver.uri_write_granted, false, 'clipboard recipient must not receive write authority');
-        for (const key of ['uri_write_denied', 'uri_directory_denied', 'uri_unknown_denied', 'uri_traversal_denied'])
-          assert.equal(receiver[key], true, 'clipboard recipient access boundary missing: ' + key);
-        assert(!Object.hasOwn(receiver, 'uri_stream_error'), 'clipboard URI stream must be readable by the recipient');
-        assert.equal(receiver.uri_stream_utf8_bytes, paste.expected_utf8_bytes, 'clipboard URI stream must preserve every source byte');
-        assert.equal(receiver.uri_stream_sha256, paste.expected_sha256, 'clipboard URI stream must preserve the exact source digest');
-        assert(paste.expected_code_units >= 512 * 1024, 'clipboard URI paste must cover the oversized Binder regression');
+        assert.equal(
+          receiver.uri_authority,
+          row.identity.package_identifier +
+            (api < 28 ? '.clipboard' : '.fileprovider'),
+          'clipboard recipient must read the platform-specific copied-text provider',
+        );
+        if (api >= 28)
+          assert.equal(
+            receiver.uri_read_granted,
+            true,
+            'clipboard service must grant modern recipient read access',
+          );
+        assert.equal(
+          receiver.uri_write_granted,
+          false,
+          'clipboard recipient must not receive write authority',
+        );
+        for (const key of [
+          'uri_write_denied',
+          'uri_directory_denied',
+          'uri_unknown_denied',
+          'uri_traversal_denied',
+        ])
+          assert.equal(
+            receiver[key],
+            true,
+            'clipboard recipient access boundary missing: ' + key,
+          );
+        assert(
+          !Object.hasOwn(receiver, 'uri_stream_error'),
+          'clipboard URI stream must be readable by the recipient',
+        );
+        assert.equal(
+          receiver.uri_stream_utf8_bytes,
+          paste.expected_utf8_bytes,
+          'clipboard URI stream must preserve every source byte',
+        );
+        assert.equal(
+          receiver.uri_stream_sha256,
+          paste.expected_sha256,
+          'clipboard URI stream must preserve the exact source digest',
+        );
+        assert(
+          paste.expected_code_units >= 512 * 1024,
+          'clipboard URI paste must cover the oversized Binder regression',
+        );
       }
-      assert(Number.isSafeInteger(paste.expected_utf8_bytes) && paste.expected_utf8_bytes > 0 && Number.isSafeInteger(paste.expected_code_units) && paste.expected_code_units > 0, 'clipboard expected paste sizes must be observed');
-      assert.equal(receiver.utf8_bytes, paste.expected_utf8_bytes, 'clipboard paste must preserve every UTF-8 byte');
-      assert.equal(receiver.code_units, paste.expected_code_units, 'clipboard paste must preserve every code unit');
-      assert(digest.test(paste.expected_sha256) && receiver.sha256 === paste.expected_sha256, 'clipboard paste digest must match the actual copied source');
+      assert(
+        Number.isSafeInteger(paste.expected_utf8_bytes) &&
+          paste.expected_utf8_bytes > 0 &&
+          Number.isSafeInteger(paste.expected_code_units) &&
+          paste.expected_code_units > 0,
+        'clipboard expected paste sizes must be observed',
+      );
+      assert.equal(
+        receiver.utf8_bytes,
+        paste.expected_utf8_bytes,
+        'clipboard paste must preserve every UTF-8 byte',
+      );
+      assert.equal(
+        receiver.code_units,
+        paste.expected_code_units,
+        'clipboard paste must preserve every code unit',
+      );
+      assert(
+        digest.test(paste.expected_sha256) &&
+          receiver.sha256 === paste.expected_sha256,
+        'clipboard paste digest must match the actual copied source',
+      );
     }
-    assert.notEqual(pastes[0].request_nonce, pastes[1].request_nonce, 'clipboard readbacks must have distinct fresh nonces');
+    assert.notEqual(
+      pastes[0].request_nonce,
+      pastes[1].request_nonce,
+      'clipboard readbacks must have distinct fresh nonces',
+    );
 
     const measurements = row.observations?.control_measurements;
     assert(

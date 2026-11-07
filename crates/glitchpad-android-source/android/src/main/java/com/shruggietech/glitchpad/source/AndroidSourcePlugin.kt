@@ -564,7 +564,7 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
         val file = payload.file
         if (file == null) ClipData.newPlainText("Glitchpad", payload.inlineText)
         else {
-          val uri = if (Build.VERSION.SDK_INT < 26) LegacyClipboardTextProvider.uriForFile(activity, file)
+          val uri = if (Build.VERSION.SDK_INT < 28) LegacyClipboardTextProvider.uriForFile(activity, file)
             else FileProvider.getUriForFile(activity, activity.packageName + ".fileprovider", file)
           ClipData.newUri(activity.contentResolver, "Glitchpad", uri)
         }

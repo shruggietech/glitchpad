@@ -1041,26 +1041,74 @@ export async function checkAppLayout({
               });
             };
             if (group === 'recovery') {
-              await page.waitForSelector('.resolution-dialog[data-state="open"]');
+              await page.waitForSelector(
+                '.resolution-dialog[data-state="open"]',
+              );
               await audit('.resolution-dialog button', 'recovery-decision');
-              row.recovery_surface = await page.$eval('.resolution-dialog', function (node) {
-                const r = node.getBoundingClientRect();
-                return { left: r.left, top: r.top, right: r.right, bottom: r.bottom, max_height: getComputedStyle(node).maxHeight, visible: window.__toolsVisible };
-              });
+              row.recovery_surface = await page.$eval(
+                '.resolution-dialog',
+                function (node) {
+                  const r = node.getBoundingClientRect();
+                  return {
+                    left: r.left,
+                    top: r.top,
+                    right: r.right,
+                    bottom: r.bottom,
+                    max_height: getComputedStyle(node).maxHeight,
+                    visible: window.__toolsVisible,
+                  };
+                },
+              );
               const recoverySurface = row.recovery_surface;
-              assert.ok(recoverySurface.left >= recoverySurface.visible.left - tolerance && recoverySurface.top >= recoverySurface.visible.top - tolerance && recoverySurface.right <= recoverySurface.visible.right + tolerance && recoverySurface.bottom <= recoverySurface.visible.bottom + tolerance, 'Recovery task must fit the actual modeled native visible frame');
+              assert.ok(
+                recoverySurface.left >=
+                  recoverySurface.visible.left - tolerance &&
+                  recoverySurface.top >=
+                    recoverySurface.visible.top - tolerance &&
+                  recoverySurface.right <=
+                    recoverySurface.visible.right + tolerance &&
+                  recoverySurface.bottom <=
+                    recoverySurface.visible.bottom + tolerance,
+                'Recovery task must fit the actual modeled native visible frame',
+              );
 
-              const labels = await page.$$eval('.resolution-dialog button', function (nodes) {
-                return Array.from(nodes).map(function (node) { return node.textContent.trim(); });
-              });
-              assert.deepEqual(labels, ['Recover', 'Decline recovery', 'Not now']);
+              const labels = await page.$$eval(
+                '.resolution-dialog button',
+                function (nodes) {
+                  return Array.from(nodes).map(function (node) {
+                    return node.textContent.trim();
+                  });
+                },
+              );
+              assert.deepEqual(labels, [
+                'Recover',
+                'Decline recovery',
+                'Not now',
+              ]);
               await click('Not now', '.resolution-dialog button');
-              await page.waitForSelector('.resolution-dialog', { hidden: true });
-              const calls = await page.evaluate(function () { return window.__toolsRecoveryCalls; });
+              await page.waitForSelector('.resolution-dialog', {
+                hidden: true,
+              });
+              const calls = await page.evaluate(function () {
+                return window.__toolsRecoveryCalls;
+              });
               assert.ok(calls.includes('inventory_recovery'));
-              assert.equal(calls.includes('remove_recovery'), false, 'Not now must retain the recovery record');
-              assert.equal(calls.includes('load_recovery'), false, 'Not now must defer opening the record');
-              row.outcomes.push({ recovery_actions: labels, not_now_dismissed: true, record_retained: true, native_boundary: 'synthetic_recovery_inventory' });
+              assert.equal(
+                calls.includes('remove_recovery'),
+                false,
+                'Not now must retain the recovery record',
+              );
+              assert.equal(
+                calls.includes('load_recovery'),
+                false,
+                'Not now must defer opening the record',
+              );
+              row.outcomes.push({
+                recovery_actions: labels,
+                not_now_dismissed: true,
+                record_retained: true,
+                native_boundary: 'synthetic_recovery_inventory',
+              });
               assert.deepEqual(row.errors, []);
               row.status = 'passed';
               continue;

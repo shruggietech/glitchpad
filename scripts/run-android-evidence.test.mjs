@@ -247,7 +247,12 @@ test(
   async () => {
     const state = await fixture();
     try {
-      await writeFile(state.application, Buffer.from(Array.from({ length: 1024 * 1024 }, (_, index) => index % 256)));
+      await writeFile(
+        state.application,
+        Buffer.from(
+          Array.from({ length: 1024 * 1024 }, (_, index) => index % 256),
+        ),
+      );
       const result = run('run-android-connected-tests.sh', state, [], {
         MOCK_PULL_FAILURE: '1',
       });
@@ -288,7 +293,8 @@ test(
       );
       assert.ok(
         events.includes(
-          'shell -T -n run-as com.shruggietech.glitchpad cat ' + state.application,
+          'shell -T -n run-as com.shruggietech.glitchpad cat ' +
+            state.application,
         ),
       );
       assert.ok(
@@ -348,7 +354,10 @@ for (const [name, variable] of [
         }
         if (variable === 'MOCK_RUN_AS_FAILURE_AFTER_BYTES') {
           assert.equal(diagnostic.attempts[1].status, 7);
-          assert.equal(diagnostic.attempts[1].stdout_byte_count, (await readFile(state.application)).length);
+          assert.equal(
+            diagnostic.attempts[1].stdout_byte_count,
+            (await readFile(state.application)).length,
+          );
         }
         if (variable === 'MOCK_RUN_AS_FAILURE')
           assert.match(diagnostic.attempts[1].stderr, /read refused/u);
@@ -907,15 +916,29 @@ test(
   },
 );
 
-test('refuses installed binary capture without the connected shell_v2 feature', posix, async () => {
-  const state = await fixture();
-  try {
-    const result = run('run-android-connected-tests.sh', state, [], { MOCK_PULL_FAILURE: '1', MOCK_ADB_FEATURES: 'cmd' });
-    assert.equal(result.status, 1, result.stdout + result.stderr);
-    const directory = join(state.evidence, 'android-tested-candidate');
-    await assert.rejects(access(join(directory, 'tested-apk-receipt.json')));
-    await assert.rejects(access(join(directory, 'application.apk')));
-    const diagnostic = JSON.parse(await readFile(join(directory, 'application-capture.json'), 'utf8'));
-    assert.equal(diagnostic.validation, 'required_shell_protocol_unavailable');
-  } finally { await state.dispose(); }
-});
+test(
+  'refuses installed binary capture without the connected shell_v2 feature',
+  posix,
+  async () => {
+    const state = await fixture();
+    try {
+      const result = run('run-android-connected-tests.sh', state, [], {
+        MOCK_PULL_FAILURE: '1',
+        MOCK_ADB_FEATURES: 'cmd',
+      });
+      assert.equal(result.status, 1, result.stdout + result.stderr);
+      const directory = join(state.evidence, 'android-tested-candidate');
+      await assert.rejects(access(join(directory, 'tested-apk-receipt.json')));
+      await assert.rejects(access(join(directory, 'application.apk')));
+      const diagnostic = JSON.parse(
+        await readFile(join(directory, 'application-capture.json'), 'utf8'),
+      );
+      assert.equal(
+        diagnostic.validation,
+        'required_shell_protocol_unavailable',
+      );
+    } finally {
+      await state.dispose();
+    }
+  },
+);

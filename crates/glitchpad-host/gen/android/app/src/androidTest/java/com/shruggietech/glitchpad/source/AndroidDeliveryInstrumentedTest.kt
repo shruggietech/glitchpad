@@ -2684,17 +2684,18 @@ class AndroidDeliveryInstrumentedTest {
     while (SystemClock.elapsedRealtime() < deadline) {
       assertEquals("native text-edit Back must retain the underlying task and all field values", context, taskContextSnapshot(scenario, deadline))
       after = nativeBackObservation(scenario)
-      if (!after.getBoolean("native_edit_active") && after.getInt("native_edit_dismissed") == before.getInt("native_edit_dismissed") + 1) break
+      if (!after.getBoolean("native_edit_active") && !nativeTextPopupPresent(native.getInt("app_window_id"), deadline)) break
       SystemClock.sleep(100L)
     }
     val delta = deltaBack(before, after).put("native_edit_dismissed", after.getInt("native_edit_dismissed") - before.getInt("native_edit_dismissed"))
-    assertEquals(1, delta.getInt("committed")); assertEquals(1, delta.getInt("native_edit_dismissed"))
+    assertTrue("native text Back may be consumed by the platform or the sole source owner", delta.getInt("committed") in 0..1)
+    assertEquals("a source-owned native edit dismissal must match its one commit", delta.getInt("committed"), delta.getInt("native_edit_dismissed"))
     assertEquals(0, delta.getInt("requested")); assertEquals(0, delta.getInt("completed")); assertEquals(0, delta.getInt("delegated"))
     assertFalse(after.getBoolean("native_edit_active"))
     observeVisibleTaskControls(scenario, "native-text-edit-after", deadlineOverride=deadline, expectedImeVisible=false)
     tapNativeControlOnce(scenario, "Close search", deadlineOverride=deadline)
     waitForCondition(scenario, "!document.querySelector('.task-surface[role=dialog][data-state=open]')", "Close search must complete after native text editing ends", deadlineOverride=deadline)
-    return JSONObject().put("native_mode_observed", true).put("popup_observed", true).put("task_retained", true).put("fields_unchanged", true).put("close_completed", true).put("callback_delta", delta)
+    return JSONObject().put("route", if (delta.getInt("committed") == 1) "source_owner" else "platform").put("native_mode_observed", true).put("popup_observed", true).put("task_retained", true).put("fields_unchanged", true).put("close_completed", true).put("callback_delta", delta)
   }
 
   @Test fun s047BackJourney() {

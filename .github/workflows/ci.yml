@@ -161,7 +161,7 @@ jobs:
         with:
           node-version-file: .node-version
       - name: Format capture source before hashing
-        run: npx --yes --ignore-scripts prettier@3.9.9 --write scripts/run-android-evidence.test.mjs
+        run: npx --yes --ignore-scripts prettier@3.9.9 --write scripts/run-android-evidence.test.mjs scripts/validate-android-recovery-evidence.mjs scripts/test-android-recovery-evidence.mjs
       - name: Read the exact source baseline and rebind current references
         run: |
           git fetch --no-tags --depth=1 origin 8eef5f589cab9a17c15ca1937fc0c65223cfabe0

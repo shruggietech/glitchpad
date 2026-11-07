@@ -11,7 +11,7 @@ def command(args,seconds=30,output=None):
 results=[]
 for package in ['com.google.android.gms','com.google.android.googlequicksearchbox']:
  command(['adb','shell','pm','disable-user','--user','0',package])
-for args in [['adb','shell','svc','power','stayon','true'],['adb','shell','input','keyevent','224'],['adb','install','-r',os.environ['S047_ORIGINAL_APK']],['adb','install','-r','crates/glitchpad-host/gen/android/app/build/outputs/apk/androidTest/universal/debug/app-universal-debug-androidTest.apk']]:
+for args in [['adb','shell','svc','power','stayon','true'],['adb','shell','input','keyevent','224'],['adb','install','-r',os.environ['S047_DIAGNOSTIC_APK']],['adb','install','-r','crates/glitchpad-host/gen/android/app/build/outputs/apk/androidTest/universal/debug/app-universal-debug-androidTest.apk']]:
  result=command(args,120)
  if result['exit']: raise RuntimeError('diagnostic setup failed; see setup.log')
 if api==36:
@@ -41,3 +41,5 @@ for name,method,seconds in methods:
  (out/'result.json').write_text(json.dumps({'diagnostic_only':True,'candidate_qualified':False,'api':api,'tasks':results},indent=2)+'\n',encoding='utf-8')
  print(json.dumps(results[-1]),flush=True)
  if code==124: break
+
+if any(item['exit']!=0 for item in results): raise SystemExit(1)

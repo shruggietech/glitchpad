@@ -1,5 +1,6 @@
 package com.shruggietech.glitchpad.source
 
+import android.content.ClipDescription
 import android.content.ContentProvider
 import android.content.ContentValues
 import android.content.Context
@@ -28,6 +29,11 @@ class LegacyClipboardTextProvider : ContentProvider() {
   }
 
   override fun getType(uri: Uri): String { payload(uri); return "text/plain" }
+
+  override fun getStreamTypes(uri: Uri, mimeTypeFilter: String): Array<String>? {
+    payload(uri)
+    return if (ClipDescription.compareMimeTypes("text/plain", mimeTypeFilter)) arrayOf("text/plain") else null
+  }
 
   override fun openFile(uri: Uri, mode: String): ParcelFileDescriptor {
     if (mode != "r") throw SecurityException("Clipboard payload is read-only")

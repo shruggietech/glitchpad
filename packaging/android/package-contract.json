@@ -12,8 +12,13 @@
     "launcher_icon": "@mipmap/ic_launcher",
     "data_extraction_rules": "@xml/backup_rules",
     "full_backup_content": "@xml/backup_rules_legacy",
-    "file_provider": "androidx.core.content.FileProvider",
-    "file_provider_authority": "com.shruggietech.glitchpad.fileprovider"
+    "file_provider": "com.shruggietech.glitchpad.source.SharedFileProvider",
+    "file_provider_authority": "com.shruggietech.glitchpad.fileprovider",
+    "legacy_clipboard_provider": {
+      "name": "com.shruggietech.glitchpad.source.LegacyClipboardTextProvider",
+      "authority": "com.shruggietech.glitchpad.clipboard",
+      "enabled_resource": "@bool/glitchpad_legacy_clipboard_enabled"
+    }
   },
   "artifacts": [
     {

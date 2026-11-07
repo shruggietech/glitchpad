@@ -3,6 +3,11 @@
 set -u
 set -o pipefail
 
+# The Gradle suite retains its existing two attempts; supporting transport is finite.
+adb() {
+  node "${BASH_SOURCE[0]%/*}/bounded-android-adb.mjs" "$@"
+}
+
 run_connected_suite() {
   ./crates/glitchpad-host/gen/android/gradlew \
     --project-dir crates/glitchpad-host/gen/android \

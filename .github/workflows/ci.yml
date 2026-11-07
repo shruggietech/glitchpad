@@ -383,34 +383,32 @@ jobs:
           script: |
             # These offline tests do not need Google services. Avoid their first-boot
             # work starving instrumentation on the disposable hosted emulator.
-            set -e; for package in com.google.android.gms com.google.android.googlequicksearchbox; do if adb shell pm list packages "$package" | grep -Fq "package:$package"; then adb shell pm disable-user --user 0 "$package"; fi; done
+            set -e; for package in com.google.android.gms com.google.android.googlequicksearchbox; do if node scripts/bounded-android-adb.mjs shell pm list packages "$package" | grep -Fq "package:$package"; then node scripts/bounded-android-adb.mjs shell pm disable-user --user 0 "$package"; fi; done
             # The API 36 system Bluetooth service can crash and leave its error dialog above
             # the AppFrame activity, stealing input focus from the WebView under test.
             node scripts/capture-android-navigation.mjs "$RUNNER_TEMP/s047-navigation-environment.json"
-            adb shell svc power stayon true
-            adb shell input keyevent 224
-            if [ "${{ matrix.api-level }}" = "36" ]; then adb shell svc bluetooth disable; fi
+            node scripts/bounded-android-adb.mjs shell svc power stayon true
+            node scripts/bounded-android-adb.mjs shell input keyevent 224
+            if [ "${{ matrix.api-level }}" = "36" ]; then node scripts/bounded-android-adb.mjs shell svc bluetooth disable; fi
             # Follow AOSP CTS input-test setup: suppress later system crash/ANR dialogs and
             # close any dialog already present before testing the foreground WebView.
-            if [ "${{ matrix.api-level }}" = "36" ]; then adb shell settings put global hide_error_dialogs 1 && adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS; fi
+            if [ "${{ matrix.api-level }}" = "36" ]; then node scripts/bounded-android-adb.mjs shell settings put global hide_error_dialogs 1 && node scripts/bounded-android-adb.mjs shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS; fi
             bash scripts/run-android-connected-tests.sh
             apkanalyzer manifest print "$RUNNER_TEMP/android-tested-candidate/application.apk" > "$RUNNER_TEMP/s047-application-manifest.xml"
             grep -Eq 'android:enableOnBackInvokedCallback="true"' "$RUNNER_TEMP/s047-application-manifest.xml"
-            adb install -r "$RUNNER_TEMP/android-tested-candidate/application.apk"
-            adb install -r "$RUNNER_TEMP/android-tested-candidate/instrumentation.apk"
-            adb shell settings put secure show_ime_with_hard_keyboard 1
-            if [ "${{ matrix.api-level }}" = "36" ]; then adb shell cmd overlay list | grep -F 'com.android.internal.display.cutout.emulation.corner' && adb shell cmd overlay enable --user 0 com.android.internal.display.cutout.emulation.corner && adb shell cmd overlay list | grep -F '[x] com.android.internal.display.cutout.emulation.corner'; fi
+            node scripts/bounded-android-adb.mjs shell settings put secure show_ime_with_hard_keyboard 1
+            if [ "${{ matrix.api-level }}" = "36" ]; then node scripts/bounded-android-adb.mjs shell cmd overlay list | grep -F 'com.android.internal.display.cutout.emulation.corner' && node scripts/bounded-android-adb.mjs shell cmd overlay enable --user 0 com.android.internal.display.cutout.emulation.corner && node scripts/bounded-android-adb.mjs shell cmd overlay list | grep -F '[x] com.android.internal.display.cutout.emulation.corner'; fi
             # Exercise API 36 AppFrame on a fresh emulator, before long provider suites.
-            if [ "${{ matrix.api-level }}" = "36" ]; then adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS && adb shell input keyevent KEYCODE_WAKEUP && adb shell wm dismiss-keyguard; fi
-            if [ "${{ matrix.api-level }}" = "36" ]; then ime_id='com.shruggietech.glitchpad.test/com.shruggietech.glitchpad.shell.FixtureInputMethodService'; for attempt in $(seq 1 30); do if adb shell ime list -s -a | grep -Fq "$ime_id"; then break; fi; sleep 1; done; adb shell ime list -s -a | grep -Fq "$ime_id" && adb shell ime enable "$ime_id" && adb shell ime set "$ime_id" && adb shell settings get secure default_input_method | grep -Fqx "$ime_id"; fi
+            if [ "${{ matrix.api-level }}" = "36" ]; then node scripts/bounded-android-adb.mjs shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS && node scripts/bounded-android-adb.mjs shell input keyevent KEYCODE_WAKEUP && node scripts/bounded-android-adb.mjs shell wm dismiss-keyguard; fi
+            if [ "${{ matrix.api-level }}" = "36" ]; then ime_id='com.shruggietech.glitchpad.test/com.shruggietech.glitchpad.shell.FixtureInputMethodService'; for attempt in $(seq 1 30); do if node scripts/bounded-android-adb.mjs shell ime list -s -a | grep -Fq "$ime_id"; then break; fi; sleep 1; done; node scripts/bounded-android-adb.mjs shell ime list -s -a | grep -Fq "$ime_id" && node scripts/bounded-android-adb.mjs shell ime enable "$ime_id" && node scripts/bounded-android-adb.mjs shell ime set "$ime_id" && node scripts/bounded-android-adb.mjs shell settings get secure default_input_method | grep -Fqx "$ime_id"; fi
             if [ "${{ matrix.api-level }}" = "36" ]; then ANDROID_INSTRUMENTATION_PRESERVE_TEST_INPUT_METHOD=true bash scripts/run-android-instrumentation.sh "$RUNNER_TEMP/appframe-evidence.txt" 'appframe_evidence=' -e waitForActivitiesToComplete false -e class com.shruggietech.glitchpad.shell.BrandBuilderAppFrameInstrumentedTest; fi
-            if [ "${{ matrix.api-level }}" = "36" ]; then adb shell ime reset; fi
+            if [ "${{ matrix.api-level }}" = "36" ]; then node scripts/bounded-android-adb.mjs shell ime reset; fi
             bash scripts/run-android-s047-journeys.sh "${{ matrix.api-level }}" "$GLITCHPAD_BUILD_COMMIT" "${{ matrix.role }}"
             if [ "$ANDROID_S047_BACK_DIAGNOSTIC" != true ]; then bash scripts/run-android-instrumentation.sh "$RUNNER_TEMP/restoration-seed.txt" 'OK (1 test)' -e class com.shruggietech.glitchpad.source.RestorationInstrumentedTest#privateRestorationRecordSurvivesProcessBoundary -e restorationPhase seed; fi
             if [ "$ANDROID_S047_BACK_DIAGNOSTIC" != true ]; then bash scripts/run-android-instrumentation.sh "$RUNNER_TEMP/restoration-verify.txt" 'OK (1 test)' -e class com.shruggietech.glitchpad.source.RestorationInstrumentedTest#privateRestorationRecordSurvivesProcessBoundary -e restorationPhase verify; fi
             if [ "$ANDROID_S047_BACK_DIAGNOSTIC" != true ]; then bash scripts/run-android-instrumentation.sh "$RUNNER_TEMP/performance-evidence.txt" 'performance_evidence=' -e waitForActivitiesToComplete false -e class com.shruggietech.glitchpad.performance.PerformanceInstrumentedTest; fi
             if [ "$ANDROID_S047_BACK_DIAGNOSTIC" != true ]; then node scripts/check-performance.mjs --android-instrumentation-output "$RUNNER_TEMP/performance-evidence.txt" --api-level "${{ matrix.api-level }}"; fi
-            if [ "${{ matrix.api-level }}" != "36" ]; then adb shell ime enable 'com.shruggietech.glitchpad.test/com.shruggietech.glitchpad.shell.FixtureInputMethodService' && adb shell ime set 'com.shruggietech.glitchpad.test/com.shruggietech.glitchpad.shell.FixtureInputMethodService' && adb shell settings get secure default_input_method | grep -Fqx 'com.shruggietech.glitchpad.test/com.shruggietech.glitchpad.shell.FixtureInputMethodService'; fi
+            if [ "${{ matrix.api-level }}" != "36" ]; then node scripts/bounded-android-adb.mjs shell ime enable 'com.shruggietech.glitchpad.test/com.shruggietech.glitchpad.shell.FixtureInputMethodService' && node scripts/bounded-android-adb.mjs shell ime set 'com.shruggietech.glitchpad.test/com.shruggietech.glitchpad.shell.FixtureInputMethodService' && node scripts/bounded-android-adb.mjs shell settings get secure default_input_method | grep -Fqx 'com.shruggietech.glitchpad.test/com.shruggietech.glitchpad.shell.FixtureInputMethodService'; fi
             if [ "${{ matrix.api-level }}" != "36" ]; then ANDROID_INSTRUMENTATION_PRESERVE_TEST_INPUT_METHOD=true bash scripts/run-android-instrumentation.sh "$RUNNER_TEMP/appframe-evidence.txt" 'appframe_evidence=' -e waitForActivitiesToComplete false -e class com.shruggietech.glitchpad.shell.BrandBuilderAppFrameInstrumentedTest; fi
 
       - name: Upload Android instrumentation reports

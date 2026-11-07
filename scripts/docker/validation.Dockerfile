@@ -177,6 +177,7 @@ RUN apt-get update \
         libdbus-1-dev \
         libnspr4 \
         libnss3 \
+        libxss1 \
         librsvg2-dev \
         libwebkit2gtk-4.1-dev \
         pkg-config \

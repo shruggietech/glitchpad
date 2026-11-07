@@ -87,3 +87,7 @@ Parallel examples: US1 TaskSurface test and host metadata contract use separate 
 ## Implementation strategy
 
 Validate each story independently as an intermediate checkpoint, then complete all five as the approved single slice. US1 is the earliest useful demo, not an authorized reduction of scope. Checklists validate written requirements only. Candidate and issue closure remain blocked until all required real task evidence exists. No merge/tag/release/deployment.
+
+## Phase 9: Convergence
+
+- [ ] T041 Resolve current-source actual task-control geometry failures in AndroidDeliveryInstrumentedTest.kt and the affected task layout: retain exact failing CSS/native bounds, distinguish transient frame movement from persistent clipping inside the existing action budget, preserve every visibility/48dp/contrast/semantic gate, and rerun the complete required API24/API36 profiles per FR-015/023, SC-002 and US5/AC1/3 (partial).

@@ -234,9 +234,8 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
               consumed += read
             }
           }
-          val bytes = JSArray()
-          output.copyOf(consumed).forEach { bytes.put(it.toInt() and 0xff) }
-          JSObject().put("bytes", bytes).put("endOfSource", consumed < requested)
+          val encoded = android.util.Base64.encodeToString(output, 0, consumed, android.util.Base64.NO_WRAP)
+          JSObject().put("bytesBase64", encoded).put("endOfSource", consumed < requested)
         } ?: throw IllegalStateException("provider_unavailable")
       }.onSuccess(invoke::resolve).onFailure { invoke.reject(code(it)) }
     }

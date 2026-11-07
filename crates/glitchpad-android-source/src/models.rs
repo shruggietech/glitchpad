@@ -61,6 +61,39 @@ pub struct ReadResponse {
     pub end_of_source: bool,
 }
 
+#[cfg(any(target_os = "android", test))]
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct EncodedReadResponse {
+    pub bytes_base64: String,
+    pub end_of_source: bool,
+}
+
+#[cfg(any(target_os = "android", test))]
+impl EncodedReadResponse {
+    pub(crate) fn decode(self, maximum: u64) -> Result<ReadResponse, &'static str> {
+        use base64::Engine as _;
+        let maximum = usize::try_from(maximum).map_err(|_| "invalid_range_reply")?;
+        let encoded_maximum = maximum
+            .div_ceil(3)
+            .checked_mul(4)
+            .ok_or("invalid_range_reply")?;
+        if self.bytes_base64.len() > encoded_maximum {
+            return Err("invalid_range_reply");
+        }
+        let bytes = base64::engine::general_purpose::STANDARD
+            .decode(self.bytes_base64)
+            .map_err(|_| "invalid_range_reply")?;
+        if bytes.len() > maximum || (!self.end_of_source && bytes.len() != maximum) {
+            return Err("invalid_range_reply");
+        }
+        Ok(ReadResponse {
+            bytes,
+            end_of_source: self.end_of_source,
+        })
+    }
+}
+
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OpenStreamRequest<'a> {
@@ -193,4 +226,48 @@ pub struct InstalledApplicationInfo {
     pub version_code: u64,
     pub channel: String,
     pub platform: String,
+}
+
+#[cfg(test)]
+mod range_transport_tests {
+    use super::*;
+    use base64::Engine as _;
+
+    fn reply(bytes: &[u8], terminal: bool) -> EncodedReadResponse {
+        EncodedReadResponse {
+            bytes_base64: base64::engine::general_purpose::STANDARD.encode(bytes),
+            end_of_source: terminal,
+        }
+    }
+
+    #[test]
+    fn encoded_ranges_preserve_all_byte_values_unicode_and_eof() {
+        let binary: Vec<u8> = (0..=255).collect();
+        let decoded = reply(&binary, false).decode(256).unwrap();
+        assert_eq!(decoded.bytes, binary);
+        assert!(!decoded.end_of_source);
+        let unicode = "S047 Ω🙂\n".as_bytes();
+        let decoded = reply(unicode, true).decode(256).unwrap();
+        assert_eq!(decoded.bytes, unicode);
+        assert!(decoded.end_of_source);
+        let eof = reply(&[], true).decode(256).unwrap();
+        assert!(eof.bytes.is_empty());
+        assert!(eof.end_of_source);
+    }
+
+    #[test]
+    fn malformed_oversized_or_nonterminal_short_replies_are_rejected() {
+        assert!(
+            EncodedReadResponse {
+                bytes_base64: "invalid$".into(),
+                end_of_source: true
+            }
+            .decode(256)
+            .is_err()
+        );
+        assert!(reply(&[0; 33], true).decode(32).is_err());
+        assert!(reply(&[0; 128], true).decode(1).is_err());
+        assert!(reply(&[], false).decode(256).is_err());
+        assert!(reply(&[1, 2], false).decode(3).is_err());
+    }
 }

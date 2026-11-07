@@ -22,13 +22,16 @@ run_connected_suite() {
 }
 
 retain_tested_candidate() {
+  export GLITCHPAD_TESTED_CAPTURE_BOUNDARY="${1:-post_connected_suite_reinstall}"
   export GLITCHPAD_TESTED_CANDIDATE_DIR="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/android-tested-candidate"
   node --input-type=module <<'NODE'
-import { mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
 const directory = process.env.GLITCHPAD_TESTED_CANDIDATE_DIR;
+const boundary = process.env.GLITCHPAD_TESTED_CAPTURE_BOUNDARY;
+if (!['post_connected_suite_reinstall', 'post_direct_suite_existing_install'].includes(boundary)) throw new Error('Unknown tested capture boundary');
 await mkdir(directory, { recursive: true });
 await rm(join(directory, 'tested-apk-receipt.json'), { force: true });
 const variants = [
@@ -66,8 +69,10 @@ const setupCommand = async (phase, packageName, args) => {
     await writeFile(setupPath, JSON.stringify(setup, null, 2) + '\n', 'utf8');
   }
 };
-for (const [, packageName, builtPath] of variants) {
-  await setupCommand('install', packageName, ['install', '-r', '-t', builtPath]);
+if (boundary === 'post_connected_suite_reinstall') {
+  for (const [, packageName, builtPath] of variants) {
+    await setupCommand('install', packageName, ['install', '-r', '-t', builtPath]);
+  }
 }
 const artifacts = [];
 for (const [kind, packageName, builtPath] of variants) {
@@ -78,7 +83,7 @@ for (const [kind, packageName, builtPath] of variants) {
   const installedPath = join(directory, kind + '.apk');
   const diagnosticFilename = kind + '-capture.json';
   const built = await readFile(builtPath);
-  const capture = { package: packageName, installed_path: remotePath, expected_byte_count: built.length, attempts: [], validation: 'not_completed' };
+  const capture = { package: packageName, installed_path: remotePath, expected_byte_count: built.length, expected_sha256: createHash('sha256').update(built).digest('hex'), attempts: [], validation: 'not_completed' };
   let installed;
   let method = 'adb_pull';
   let matched = false;
@@ -109,12 +114,21 @@ for (const [kind, packageName, builtPath] of variants) {
       const information = await stat(installedPath);
       if (information.size !== built.length) {
         capture.validation = 'installed_length_differs';
+        capture.observed_byte_count = information.size;
+        capture.mismatch_filename = kind + '-capture-mismatch.apk';
+        await rename(installedPath, join(directory, capture.mismatch_filename));
         throw new Error('Installed APK length differs from built candidate for ' + kind);
       }
       installed = await readFile(installedPath);
     }
     if (!installed.equals(built)) {
       capture.validation = 'installed_bytes_differ';
+      capture.observed_byte_count = installed.length;
+      capture.observed_sha256 = createHash('sha256').update(installed).digest('hex');
+      capture.first_different_byte = installed.findIndex((byte, index) => byte !== built[index]);
+      if (capture.first_different_byte < 0) capture.first_different_byte = Math.min(installed.length, built.length);
+      capture.mismatch_filename = kind + '-capture-mismatch.apk';
+      await writeFile(join(directory, capture.mismatch_filename), installed, { flag: 'wx' });
       throw new Error('Installed APK differs from built candidate for ' + kind);
     }
     if (method === 'adb_exec_out_run_as_cat') await writeFile(installedPath, installed);
@@ -129,11 +143,29 @@ for (const [kind, packageName, builtPath] of variants) {
 const product = JSON.parse(await readFile('apps/glitchpad/package.json', 'utf8'));
 const source = process.env.GLITCHPAD_BUILD_COMMIT || process.env.GITHUB_SHA || null;
 if (!source || !/^[0-9a-f]{40}$/u.test(source)) throw new Error('A full source commit is required for tested APK evidence');
-const receipt = { schema_version: 1, evidence_class: 'hosted_debug_instrumentation', capture_boundary: 'post_connected_suite_reinstall', signed_release_bytes_tested: false, recovery_probe_variant: process.env.GLITCHPAD_RECOVERY_PROBE_VARIANT || 'none', candidate_build_variant: process.env.GLITCHPAD_CANDIDATE_ROLE || 'ordinary', source_commit: source, product_version: product.version, api_level: Number(execFileSync('adb', ['shell', 'getprop', 'ro.build.version.sdk'], { encoding: 'utf8', timeout: 30_000, maxBuffer: 64 * 1024, windowsHide: true }).trim()), android_version: execFileSync('adb', ['shell', 'getprop', 'ro.build.version.release'], { encoding: 'utf8', timeout: 30_000, maxBuffer: 64 * 1024, windowsHide: true }).trim(), artifacts };
+const receipt = { schema_version: 1, evidence_class: 'hosted_debug_instrumentation', capture_boundary: boundary, signed_release_bytes_tested: false, recovery_probe_variant: process.env.GLITCHPAD_RECOVERY_PROBE_VARIANT || 'none', candidate_build_variant: process.env.GLITCHPAD_CANDIDATE_ROLE || 'ordinary', source_commit: source, product_version: product.version, api_level: Number(execFileSync('adb', ['shell', 'getprop', 'ro.build.version.sdk'], { encoding: 'utf8', timeout: 30_000, maxBuffer: 64 * 1024, windowsHide: true }).trim()), android_version: execFileSync('adb', ['shell', 'getprop', 'ro.build.version.release'], { encoding: 'utf8', timeout: 30_000, maxBuffer: 64 * 1024, windowsHide: true }).trim(), artifacts };
 await writeFile(join(directory, 'tested-apk-receipt.json'), JSON.stringify(receipt, null, 2) + '\n', 'utf8');
 console.log('tested_apk_evidence=' + JSON.stringify(receipt));
 NODE
 }
+
+# AGP 8.11 ddmlib repeatedly stalls install-write on API24.
+# Run the identical selected JUnit suite through the strict two-attempt runner.
+api_level=$(adb shell getprop ro.build.version.sdk | tr -d '\r') || exit 1
+[[ "$api_level" =~ ^[0-9]+$ ]] || exit 1
+if [[ "$api_level" == "24" ]]; then
+  app_apk="crates/glitchpad-host/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk"
+  test_apk="crates/glitchpad-host/gen/android/app/build/outputs/apk/androidTest/universal/debug/app-universal-debug-androidTest.apk"
+  adb install -r -t "$app_apk" || exit 1
+  adb install -r -t "$test_apk" || exit 1
+  connected_output="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/connected-suite-api24.txt"
+  ANDROID_INSTRUMENTATION_RESET_APP_DATA=true bash scripts/run-android-instrumentation.sh "$connected_output" "OK (9 tests)" \
+    -e notClass com.shruggietech.glitchpad.performance.PerformanceInstrumentedTest,com.shruggietech.glitchpad.source.AndroidDeliveryInstrumentedTest,com.shruggietech.glitchpad.shell.BrandBuilderAppFrameInstrumentedTest || exit 1
+  # Direct instrumentation leaves these same tested packages installed.
+  retain_tested_candidate post_direct_suite_existing_install || exit 1
+  cp "$connected_output" "${RUNNER_TEMP:-${TMPDIR:-/tmp}}/android-tested-candidate/connected-suite-native-junit.txt"
+  exit 0
+fi
 
 log_dir="${RUNNER_TEMP:-${TMPDIR:-/tmp}}"
 

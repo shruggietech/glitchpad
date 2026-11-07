@@ -194,7 +194,7 @@ export function TaskSurface({
           }}
           onOpenAutoFocus={(event) => {
             const target = content.current?.querySelector<HTMLElement>(
-              '[data-task-initial-focus],[role=menuitem]:not([disabled])',
+              '[data-task-initial-focus]:not(:disabled),[role=menuitem]:not([disabled])',
             );
             if (target) {
               event.preventDefault();
@@ -215,14 +215,15 @@ export function TaskSurface({
               );
             if (remainingModal && (!target || !remainingModal.contains(target)))
               return;
-            // Keep a completed document handoff instead of returning to navigation chrome.
+            // Preserve a completed document or Add-menu handoff during late close cleanup.
             const active = document.activeElement;
             if (
               !remainingModal &&
               active?.isConnected &&
-              active.closest('.document-surface') &&
               !active.closest('.task-surface') &&
-              !target?.closest('.document-surface')
+              (active.matches('.add-document-trigger[aria-expanded="false"]') ||
+                (active.closest('.document-surface') &&
+                  !target?.closest('.document-surface')))
             )
               return;
             if (target) {

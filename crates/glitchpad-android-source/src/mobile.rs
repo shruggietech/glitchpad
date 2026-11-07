@@ -91,7 +91,8 @@ impl<R: Runtime> AndroidSource<R> {
         offset: u64,
         length: u64,
     ) -> Result<ReadResponse, String> {
-        self.0
+        let encoded: crate::models::EncodedReadResponse = self
+            .0
             .run_mobile_plugin(
                 "readRange",
                 ReadRequest {
@@ -100,7 +101,8 @@ impl<R: Runtime> AndroidSource<R> {
                     length,
                 },
             )
-            .map_err(|error| error.to_string())
+            .map_err(|error| error.to_string())?;
+        encoded.decode(length).map_err(str::to_owned)
     }
 
     /// Refreshes one registered source.

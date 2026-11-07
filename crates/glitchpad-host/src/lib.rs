@@ -19,6 +19,8 @@ pub mod source;
 
 #[cfg(any(target_os = "android", test))]
 mod android_interactive;
+#[cfg(any(target_os = "android", test))]
+mod android_range_response;
 pub mod android_source;
 
 struct RecoveryHostState {
@@ -563,12 +565,18 @@ async fn read_android_range(
     offset: u64,
     length: u64,
     operation_budget: u64,
-) -> Result<glitchpad_core::source::ReadRangeResult, glitchpad_core::contracts::CoreError> {
-    android_interactive::run(move || {
-        app.state::<android_source::AndroidSourceHost>()
-            .read_range(&source_id, offset, length, operation_budget)
+    binary: Option<bool>,
+) -> Result<tauri::ipc::Response, glitchpad_core::contracts::CoreError> {
+    let result = android_interactive::run(move || {
+        app.state::<android_source::AndroidSourceHost>().read_range(
+            &source_id,
+            offset,
+            length,
+            operation_budget,
+        )
     })
-    .await
+    .await?;
+    android_range_response::encode(result, binary.unwrap_or(false))
 }
 
 #[cfg(target_os = "android")]

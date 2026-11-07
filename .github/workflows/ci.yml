@@ -26,36 +26,10 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
-      - name: Prove API24 redundant reinstall regression before correction
-        run: |
-          mkdir -p "$RUNNER_TEMP/s047-capture-source"
-          cp scripts/run-android-connected-tests.sh "$RUNNER_TEMP/s047-fixed-connected.sh"
-          git fetch --no-tags --depth=1 origin da96b0a4f96f3bcbaf9af3127ad96c064a371767
-          git show da96b0a4f96f3bcbaf9af3127ad96c064a371767:scripts/run-android-connected-tests.sh > scripts/run-android-connected-tests.sh
-          set +e
-          node --test --test-name-pattern='API24 captures the directly tested' scripts/run-android-evidence.test.mjs > "$RUNNER_TEMP/s047-capture-source/api24-red.log" 2>&1
-          red_exit=$?
-          set -e
-          cp "$RUNNER_TEMP/s047-fixed-connected.sh" scripts/run-android-connected-tests.sh
-          test "$red_exit" -ne 0
-          grep -F 'API24 captures the directly tested' "$RUNNER_TEMP/s047-capture-source/api24-red.log"
-          grep -F '4 !== 2' "$RUNNER_TEMP/s047-capture-source/api24-red.log"
-      - name: Format affected runner regressions with repository pin
-        run: npx --yes --ignore-scripts prettier@3.9.9 --write scripts/run-android-evidence.test.mjs
       - name: Check real disconnected-child and receipt regressions
-        run: node --test scripts/run-android-evidence.test.mjs scripts/test-android-recovery-evidence.mjs scripts/check-android-package.test.mjs 2>&1 | tee "$RUNNER_TEMP/s047-capture-source/supporting-green.log"
+        run: node --test scripts/run-android-evidence.test.mjs scripts/test-android-recovery-evidence.mjs scripts/check-android-package.test.mjs
       - name: Check Android runner policies
         run: python3 -m unittest discover -s scripts/tests -p 'test_android*.py'
-      - name: Retain source-only capture regression evidence
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: s047-capture-source-preflight
-          path: |
-            scripts/run-android-evidence.test.mjs
-            scripts/run-android-connected-tests.sh
-            ${{ runner.temp }}/s047-capture-source/**
-          retention-days: 7
   observer-diagnostic:
     if: inputs.stage == 'observers' || inputs.stage == 'tap_observer' || inputs.stage == 'metadata_observer' || inputs.stage == 'clipboard_observer'
     needs: supporting-driver-policy
@@ -363,6 +337,22 @@ jobs:
           node-version-file: .node-version
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Prove disabled preferred-focus regression before correction
+        run: |
+          mkdir -p "$RUNNER_TEMP/s047-source-preflight"
+          cp apps/glitchpad/src/components/TaskSurface.tsx "$RUNNER_TEMP/s047-fixed-task-focus.tsx"
+          git fetch --no-tags --depth=1 origin 307b9eeb11fe5ad0de8c1a53930f19d3d7e62b92
+          git show 307b9eeb11fe5ad0de8c1a53930f19d3d7e62b92:apps/glitchpad/src/components/TaskSurface.tsx > apps/glitchpad/src/components/TaskSurface.tsx
+          set +e
+          pnpm --filter @shruggietech/glitchpad exec vitest run --maxWorkers=2 src/components/TaskSurface.test.tsx -t 'falls back to enabled dialog focus' > "$RUNNER_TEMP/s047-source-preflight/disabled-focus-red.log" 2>&1
+          red_exit=$?
+          set -e
+          cp "$RUNNER_TEMP/s047-fixed-task-focus.tsx" apps/glitchpad/src/components/TaskSurface.tsx
+          test "$red_exit" -ne 0
+          grep -F 'falls back to enabled dialog focus' "$RUNNER_TEMP/s047-source-preflight/disabled-focus-red.log"
+          grep -F 'Expected element with focus' "$RUNNER_TEMP/s047-source-preflight/disabled-focus-red.log"
+      - name: Format affected focus regression with repository pin
+        run: pnpm exec prettier --write apps/glitchpad/src/components/TaskSurface.tsx apps/glitchpad/src/components/TaskSurface.test.tsx
       - name: Check complete frontend with unmasked failure exits
         run: |
           mkdir -p "$RUNNER_TEMP/s047-source-preflight"
@@ -381,6 +371,8 @@ jobs:
           path: |
             ${{ runner.temp }}/s047-source-preflight/**
             apps/glitchpad/src/domain/large-text-gateway.test.ts
+            apps/glitchpad/src/components/TaskSurface.tsx
+            apps/glitchpad/src/components/TaskSurface.test.tsx
             .codex-tmp/s047/r28-hosted-source-rebind.json
             .codex-tmp/s047/current-control-reference-audit.json
             specs/047-android-task-completion/contracts/control-ledger.json
@@ -403,7 +395,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        api-level: [24]
+        api-level: [24, 36]
         role: [ordinary]
     steps:
       - name: Checkout

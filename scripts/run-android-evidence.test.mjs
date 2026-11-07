@@ -321,9 +321,17 @@ for (const [name, variable] of [
         assert.equal(diagnostic.attempts[0].status, 1);
         assert.notEqual(diagnostic.validation, 'matched_built_candidate');
         if (variable === 'MOCK_RUN_AS_MISMATCH') {
-          const mismatched = await readFile(join(directory, diagnostic.mismatch_filename));
-          assert.deepEqual(mismatched, await readFile(state.environment.FIXTURE_WRONG));
-          assert.equal(diagnostic.observed_sha256, createHash('sha256').update(mismatched).digest('hex'));
+          const mismatched = await readFile(
+            join(directory, diagnostic.mismatch_filename),
+          );
+          assert.deepEqual(
+            mismatched,
+            await readFile(state.environment.FIXTURE_WRONG),
+          );
+          assert.equal(
+            diagnostic.observed_sha256,
+            createHash('sha256').update(mismatched).digest('hex'),
+          );
           assert.equal(diagnostic.observed_byte_count, mismatched.length);
           assert.equal(diagnostic.first_different_byte, 0);
         }
@@ -807,27 +815,73 @@ test('supporting ADB transport preserves binary capture bytes, stderr and the ac
   assert.equal(result.stderr.toString(), 'capture failed');
 });
 
-test('API24 captures the directly tested binary APKs without uninstalling or reinstalling them', posix, async () => {
-  const state = await fixture();
-  try {
-    await mkdir(join(state.directory, 'scripts'));
-    for (const helper of ['run-android-instrumentation.sh', 'bounded-android-adb.mjs', 'prepare-android-instrumentation.mjs']) {
-      await writeFile(join(state.directory, 'scripts', helper), await readFile(join(repository, 'scripts', helper)));
+test(
+  'API24 captures the directly tested binary APKs without uninstalling or reinstalling them',
+  posix,
+  async () => {
+    const state = await fixture();
+    try {
+      await mkdir(join(state.directory, 'scripts'));
+      for (const helper of [
+        'run-android-instrumentation.sh',
+        'bounded-android-adb.mjs',
+        'prepare-android-instrumentation.mjs',
+      ]) {
+        await writeFile(
+          join(state.directory, 'scripts', helper),
+          await readFile(join(repository, 'scripts', helper)),
+        );
+      }
+      const bytes = Buffer.from([
+        0, 255, 137, 80, 78, 71, 13, 10, 0, 65, 13, 255,
+      ]);
+      await writeFile(state.application, bytes);
+      const result = run('run-android-connected-tests.sh', state, [], {
+        MOCK_SDK_LEVEL: '24',
+      });
+      assert.equal(result.status, 0, result.stdout + result.stderr);
+      const events = (
+        await readFile(join(state.evidence, 'adb-events.txt'), 'utf8')
+      )
+        .trim()
+        .split('\n');
+      assert.equal(
+        events.filter((event) => event.startsWith('install ')).length,
+        2,
+        events.join('\n'),
+      );
+      assert.equal(
+        events.filter((event) => event.startsWith('uninstall ')).length,
+        0,
+        events.join('\n'),
+      );
+      assert.equal(events.includes('gradle-cleanup'), false);
+      const directory = join(state.evidence, 'android-tested-candidate');
+      const receipt = JSON.parse(
+        await readFile(join(directory, 'tested-apk-receipt.json'), 'utf8'),
+      );
+      assert.equal(receipt.api_level, 24);
+      assert.equal(
+        receipt.capture_boundary,
+        'post_direct_suite_existing_install',
+      );
+      assert.deepEqual(
+        await readFile(join(directory, 'application.apk')),
+        bytes,
+      );
+      assert.equal(
+        receipt.artifacts[0].sha256,
+        createHash('sha256').update(bytes).digest('hex'),
+      );
+      assert.match(
+        await readFile(
+          join(directory, 'connected-suite-native-junit.txt'),
+          'utf8',
+        ),
+        /OK \(9 tests\)/u,
+      );
+    } finally {
+      await state.dispose();
     }
-    const bytes = Buffer.from([0, 255, 137, 80, 78, 71, 13, 10, 0, 65, 13, 255]);
-    await writeFile(state.application, bytes);
-    const result = run('run-android-connected-tests.sh', state, [], { MOCK_SDK_LEVEL: '24' });
-    assert.equal(result.status, 0, result.stdout + result.stderr);
-    const events = (await readFile(join(state.evidence, 'adb-events.txt'), 'utf8')).trim().split('\n');
-    assert.equal(events.filter(event => event.startsWith('install ')).length, 2, events.join('\n'));
-    assert.equal(events.filter(event => event.startsWith('uninstall ')).length, 0, events.join('\n'));
-    assert.equal(events.includes('gradle-cleanup'), false);
-    const directory = join(state.evidence, 'android-tested-candidate');
-    const receipt = JSON.parse(await readFile(join(directory, 'tested-apk-receipt.json'), 'utf8'));
-    assert.equal(receipt.api_level, 24);
-    assert.equal(receipt.capture_boundary, 'post_direct_suite_existing_install');
-    assert.deepEqual(await readFile(join(directory, 'application.apk')), bytes);
-    assert.equal(receipt.artifacts[0].sha256, createHash('sha256').update(bytes).digest('hex'));
-    assert.match(await readFile(join(directory, 'connected-suite-native-junit.txt'), 'utf8'), /OK \(9 tests\)/u);
-  } finally { await state.dispose(); }
-});
+  },
+);

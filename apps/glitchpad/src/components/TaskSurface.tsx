@@ -194,7 +194,7 @@ export function TaskSurface({
           }}
           onOpenAutoFocus={(event) => {
             const target = content.current?.querySelector<HTMLElement>(
-              '[data-task-initial-focus],[role=menuitem]:not([disabled])',
+              '[data-task-initial-focus]:not(:disabled),[role=menuitem]:not([disabled])',
             );
             if (target) {
               event.preventDefault();

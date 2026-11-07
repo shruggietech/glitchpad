@@ -1842,12 +1842,20 @@ class AndroidDeliveryInstrumentedTest {
         (()=>{
           const dialog=document.querySelector('[role=dialog][data-state=open]');
           if(!dialog)return false;
-          const preferred=dialog.querySelector('[data-task-initial-focus],[role=menuitem]:not([disabled])');
+          const preferred=dialog.querySelector('[data-task-initial-focus]:not(:disabled),[role=menuitem]:not([disabled])');
           const active=document.activeElement;
           return !!active&&dialog.contains(active)&&(!preferred||preferred===active||preferred.contains(active));
         })()
       """.trimIndent()
-      waitForCondition(scenario,initialFocusReady,"managed task must complete its real initial focus before keyboard-profile setup",deadlineOverride=deadline)
+      try {
+        waitForCondition(scenario,initialFocusReady,"managed task must complete its real initial focus before keyboard-profile setup: " + profile + ":" + task,deadlineOverride=deadline)
+      } catch (failure: Throwable) {
+        runCatching {
+          val state = JSONObject(evaluate(scenario,"(()=>{const d=document.querySelector('[role=dialog][data-state=open]'),a=document.activeElement,p=d&&d.querySelector('[data-task-initial-focus]');const info=n=>n?{tag:n.tagName,label:n.getAttribute('aria-label')||(n.labels&&Array.from(n.labels).map(l=>l.textContent).join(' '))||n.textContent.slice(0,120),disabled:!!n.disabled,connected:n.isConnected}:null;return {dialog:info(d),active:info(a),preferred:info(p),active_inside:!!(d&&a&&d.contains(a))};})()"))
+          captureEditorFocusFailure(scenario,"task_initial_focus",state.put("profile",profile).put("task",task),nativeControlGeometry(scenario,null))
+        }
+        throw failure
+      }
       if (expectedIme) {
         setTaskInput(scenario,inputLabel!!,value,deadlineOverride=deadline)
         while(visibleNativeImeBounds().isEmpty()&&SystemClock.elapsedRealtime()<deadline)SystemClock.sleep(100L)

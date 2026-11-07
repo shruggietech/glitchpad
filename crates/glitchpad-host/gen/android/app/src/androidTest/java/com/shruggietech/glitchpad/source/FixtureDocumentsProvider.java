@@ -150,7 +150,7 @@ public final class FixtureDocumentsProvider extends DocumentsProvider {
     writeFixture(directory, "s047-controls.mmd", "flowchart TB\nCats --> Dogs\nCats --> Birds\n");
     writeFixture(directory, "recovery-empty.md", "");
     writeFixture(directory, "recovery-malformed.md", "# Incomplete [link\n\n```unclosed\nS046_MALFORMED_MARKER\n");
-    for (String name : new String[] {"original.png", "orientation-6.jpg", "original.jpg", "original.webp", "original.bmp", "original.tiff", "original.gif", "animated.webp", "original.svg", "entries.ico", "hostile.svg", "svg-presentation.svg", "svg-namespaced.svg", "svg-reuse.svg", "svg-external.svg", "svg-cycle.svg", "svg-malformed.svg", "svg-unsupported.svg", "svg-missing.svg", "svg-resource.svg", "svg-viewport.svg", "svg-read-denied.svg"}) {
+    for (String name : new String[] {"original.png", "orientation-6.jpg", "original.jpg", "original.webp", "original.bmp", "original.tiff", "original.gif", "s047-playback.gif", "animated.webp", "original.svg", "entries.ico", "hostile.svg", "svg-presentation.svg", "svg-namespaced.svg", "svg-reuse.svg", "svg-external.svg", "svg-cycle.svg", "svg-malformed.svg", "svg-unsupported.svg", "svg-missing.svg", "svg-resource.svg", "svg-viewport.svg", "svg-read-denied.svg"}) {
       try {
         FixtureCanonicalFiles.initialize(new File(directory, name), () -> getContext().getAssets().open(name), false);
       } catch (IOException error) {

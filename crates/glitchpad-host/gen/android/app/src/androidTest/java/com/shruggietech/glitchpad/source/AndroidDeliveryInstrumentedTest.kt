@@ -446,6 +446,7 @@ class AndroidDeliveryInstrumentedTest {
       if (isS047Evidence()) {
         enableNativeWindowObservation()
         val originalFont = clientContext.resources.configuration.fontScale
+        var recoveryFailure: Throwable? = null
         try {
           for (font in if (Build.VERSION.SDK_INT >= 34) listOf(1f, 2f) else listOf(1f, 1.3f)) {
             applyObservedFontScale(scenario, font)
@@ -456,9 +457,19 @@ class AndroidDeliveryInstrumentedTest {
             waitForCondition(scenario, "innerWidth>innerHeight", "recovery landscape must be observed")
             observeVisibleTaskControls(scenario, "recovery-landscape-" + font, expectedImeVisible=false)
           }
+        } catch (failure: Throwable) {
+          recoveryFailure = failure
+          throw failure
         } finally {
-          applyObservedFontScale(scenario, originalFont)
-          scenario.onActivity { it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT }
+          val cleanup = runCatching {
+            checkedShell("settings put system font_scale " + originalFont)
+            scenario.onActivity { it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT }
+            awaitFontScale(originalFont)
+          }.exceptionOrNull()
+          if (cleanup != null) {
+            val primary = recoveryFailure
+            if (primary != null) primary.addSuppressed(cleanup) else throw cleanup
+          }
         }
         tapNativeControlOnce(scenario, "Recover")
       } else clickControl(scenario, "Recover")
@@ -1868,16 +1879,33 @@ class AndroidDeliveryInstrumentedTest {
     val priorActivity = AtomicReference<MainActivity>()
     scenario.onActivity { priorActivity.set(it) }
     val changingFont = kotlin.math.abs(priorActivity.get().resources.configuration.fontScale - font) > 0.01f
-    shellOutput("settings put system font_scale " + font)
-    awaitFontScale(font, deadlineOverride=fontDeadline)
-    if (changingFont) {
-      waitForCondition(scenario, "document.readyState==='complete'", "font configuration must update the existing activity without losing its native task binding", deadlineOverride=fontDeadline) {
-        var updated = false
-        scenario.onActivity { updated = it === priorActivity.get() && kotlin.math.abs(it.resources.configuration.fontScale - font) <= 0.01f }
-        updated
+    try {
+      shellOutput("settings put system font_scale " + font)
+      awaitFontScale(font, deadlineOverride=fontDeadline)
+      if (changingFont) {
+        waitForCondition(scenario, "document.readyState==='complete'", "font configuration must update the existing activity without losing its native task binding", deadlineOverride=fontDeadline) {
+          var updated = false
+          scenario.onActivity { updated = it === priorActivity.get() && kotlin.math.abs(it.resources.configuration.fontScale - font) <= 0.01f }
+          updated
+        }
       }
+      waitForCondition(scenario, "Math.abs(parseFloat(getComputedStyle(document.documentElement).fontSize)-16*" + font + ")<0.1", "the actual WebView text must use the requested system font scale", deadlineOverride=fontDeadline)
+    } catch (failure: Throwable) {
+      runCatching {
+        val observation = JSONObject().put("requested_font", font)
+          .put("system_setting", android.provider.Settings.System.getFloat(clientContext.contentResolver, android.provider.Settings.System.FONT_SCALE, 1f))
+          .put("application_resource_font", clientContext.resources.configuration.fontScale)
+        scenario.onActivity { current ->
+          observation.put("same_activity", current === priorActivity.get())
+            .put("prior_activity", System.identityHashCode(priorActivity.get()))
+            .put("current_activity", System.identityHashCode(current))
+            .put("activity_resource_font", current.resources.configuration.fontScale)
+        }
+        println("s047_font_configuration_failure=" + observation); System.out.flush()
+        captureEditorFocusFailure(scenario, "font_configuration", observation, nativeControlGeometry(scenario, null))
+      }
+      throw failure
     }
-    waitForCondition(scenario, "Math.abs(parseFloat(getComputedStyle(document.documentElement).fontSize)-16*" + font + ")<0.1", "the actual WebView text must use the requested system font scale", deadlineOverride=fontDeadline)
   }
 
   private fun verifyS047TaskGeometry(scenario: ActivityScenario<MainActivity>, profile: String, ime: Boolean) {
@@ -1970,44 +1998,6 @@ class AndroidDeliveryInstrumentedTest {
     observe("preferences","Editor font family",family)
     tapNativeControlOnce(scenario,"Close Preferences")
     hideIme(SystemClock.elapsedRealtime()+30_000L)
-  }
-
-
-  private fun beginHandoffObservation(scenario: ActivityScenario<MainActivity>) {
-    evaluate(scenario, "(()=>{document.addEventListener('pointerdown',e=>{const b=e.target.closest&&e.target.closest('button');if(e.pointerType==='touch'&&e.button===0&&b&&!b.disabled&&b.closest('.task-surface'))e.preventDefault();},true);window.__s047TouchTrace=[];for(const kind of ['pointerdown','pointerup','touchstart','touchend','mousedown','mouseup','click'])document.addEventListener(kind,e=>{const n=e.target,p=e.changedTouches&&e.changedTouches[0];window.__s047TouchTrace.push({kind,at:performance.now(),label:n.getAttribute('aria-label')||n.textContent.slice(0,48),tag:n.tagName,pointer:e.pointerType,x:e.clientX===undefined&&p?p.clientX:e.clientX,y:e.clientY===undefined&&p?p.clientY:e.clientY,prevented:e.defaultPrevented});if(window.__s047TouchTrace.length>40)window.__s047TouchTrace.shift();},true);window.__s047FocusTrace=[];document.addEventListener('focusin',e=>{const n=e.target;window.__s047FocusTrace.push({at:performance.now(),label:n.getAttribute('aria-label')||n.textContent.slice(0,48),tag:n.tagName,cls:n.className});if(window.__s047FocusTrace.length>30)window.__s047FocusTrace.shift();},true);return true;})()")
-  }
-  private fun retainHandoffObservation(scenario: ActivityScenario<MainActivity>, stage: String) {
-    val state=JSONObject(evaluate(scenario, "(()=>{const info=n=>{const r=n.getBoundingClientRect();return {tag:n.tagName,cls:n.className,label:n.getAttribute('aria-label'),hidden:(n.closest('[aria-hidden=true],[inert]')||{outerHTML:''}).outerHTML.slice(0,140),width:r.width,height:r.height};};return {active:info(document.activeElement),focus:window.__s047FocusTrace,touches:window.__s047TouchTrace,more:Array.from(document.querySelectorAll('[aria-label=\"More diagram tools\"]')).map(info),surfaces:Array.from(document.querySelectorAll('.document-surface,.mermaid-surface,[role=dialog]')).map(info),source:Array.from(document.querySelectorAll('.mermaid-surface .cm-content')).map(n=>n.textContent.slice(0,200))};})()"))
-    captureEditorFocusFailure(scenario,stage,state,nativeControlGeometry(scenario,null))
-  }
-  @Test fun s047DraftFocusProbe() {
-    val scenario=launchS047()
-    enableNativeWindowObservation()
-    beginHandoffObservation(scenario)
-    try {
-      verifyS047EditorAndPreferences(scenario)
-      createNewDraftForInput(scenario,"New Markdown","Untitled.md")
-    } finally { retainHandoffObservation(scenario,"draft_focus_probe") }
-    println("s047_handoff_probe=pass");System.out.flush()
-  }
-  @Test fun s047SearchCloseProbe() {
-    val scenario=launchS047()
-    enableNativeWindowObservation()
-    beginHandoffObservation(scenario)
-    try {
-    applyObservedFontScale(scenario,if(Build.VERSION.SDK_INT>=34)2f else 1.3f)
-    openFromAddDocument(scenario,grant(documentUri("s047-controls.mmd")))
-    if(evaluate(scenario,"!!document.querySelector('.document-surface .mermaid-source-mode')")=="true")menuAction(scenario,"Read",nativeActivation=true)
-    waitForCondition(scenario,"!!document.querySelector('.document-surface .mermaid-rendered-mode [data-preview-ready=true]')","probe must use the actual ready Mermaid view")
-    menuAction(scenario,"Search",nativeActivation=true)
-    setTaskInput(scenario,"Find diagram text","Cats")
-    observeVisibleTaskControls(scenario,"probe-max-ime",expectedImeVisible=true)
-    tapNativeControlOnce(scenario,"Close search")
-    retainHandoffObservation(scenario,"after_real_search_close")
-    try { tapNativeControlOnce(scenario,"More diagram tools") }
-    finally { retainHandoffObservation(scenario,"after_more_tools") }
-    } finally { retainHandoffObservation(scenario,"complete_search_probe") }
-    println("s047_handoff_probe=pass");System.out.flush()
   }
 
   @Test fun s047LayoutJourney() {
@@ -2229,8 +2219,8 @@ class AndroidDeliveryInstrumentedTest {
   }
 
   private fun verifyS047SecondaryImageTasks(scenario: ActivityScenario<MainActivity>): JSONObject {
-    openFromAddDocument(scenario, grant(documentUri("original.gif")))
-    waitForImagePixels(scenario, "original.gif")
+    openFromAddDocument(scenario, grant(documentUri("s047-playback.gif")))
+    waitForImagePixels(scenario, "s047-playback.gif")
     clickControl(scenario, "More image tools")
     for ((index, background) in listOf("checker", "light", "dark").withIndex()) {
       chooseTaskOption(scenario, "Image background", index, background)
@@ -2260,7 +2250,7 @@ class AndroidDeliveryInstrumentedTest {
     } else {
       evaluate(scenario, "window.__s040PreviousPreview=document.querySelector('.image-preview').src;true")
       clickControl(scenario, "Play")
-      waitForImagePixels(scenario, "original.gif", true)
+      waitForImagePixels(scenario, "s047-playback.gif", true)
       clickControl(scenario, "Pause")
       waitForCondition(scenario, "!!document.querySelector('.image-pane[data-preview-ready=true]')&&Array.from(document.querySelectorAll('button')).some(b=>b.textContent.trim()==='Play'&&b.getAttribute('aria-pressed')==='false')", "Pause must stop playback and retain an actually displayed decoded frame")
       animation.put("branch","played_and_paused").put("advanced",true).put("paused",true).put("unexecuted_actions",JSONArray())

@@ -21,33 +21,38 @@ fn chunk(tag: [u8; 4], payload: &[u8]) -> Vec<u8> {
 }
 
 fn families(root: &Path) {
-    let mut gif = Vec::new();
-    {
-        let mut encoder =
-            gif::Encoder::new(&mut gif, 4, 3, &[255, 0, 0, 0, 0, 255, 0, 255, 0, 0, 0, 0]).unwrap();
-        encoder.set_repeat(gif::Repeat::Finite(2)).unwrap();
-        for (left, top, width, height, pixels, dispose) in [
-            (0, 0, 4, 3, vec![0; 12], gif::DisposalMethod::Keep),
-            (1, 1, 1, 1, vec![1], gif::DisposalMethod::Previous),
-            (2, 1, 1, 1, vec![2], gif::DisposalMethod::Background),
-            (0, 0, 1, 1, vec![3], gif::DisposalMethod::Keep),
-        ] {
-            encoder
-                .write_frame(&gif::Frame {
-                    left,
-                    top,
-                    width,
-                    height,
-                    delay: 4,
-                    transparent: Some(3),
-                    dispose,
-                    buffer: pixels.into(),
-                    ..Default::default()
-                })
-                .unwrap();
+    for (name, repeat) in [
+        ("original.gif", gif::Repeat::Finite(2)),
+        ("s047-playback.gif", gif::Repeat::Infinite),
+    ] {
+        let mut gif = Vec::new();
+        {
+            let mut encoder =
+                gif::Encoder::new(&mut gif, 4, 3, &[255, 0, 0, 0, 0, 255, 0, 255, 0, 0, 0, 0]).unwrap();
+            encoder.set_repeat(repeat).unwrap();
+            for (left, top, width, height, pixels, dispose) in [
+                (0, 0, 4, 3, vec![0; 12], gif::DisposalMethod::Keep),
+                (1, 1, 1, 1, vec![1], gif::DisposalMethod::Previous),
+                (2, 1, 1, 1, vec![2], gif::DisposalMethod::Background),
+                (0, 0, 1, 1, vec![3], gif::DisposalMethod::Keep),
+            ] {
+                encoder
+                    .write_frame(&gif::Frame {
+                        left,
+                        top,
+                        width,
+                        height,
+                        delay: 4,
+                        transparent: Some(3),
+                        dispose,
+                        buffer: pixels.into(),
+                        ..Default::default()
+                    })
+                    .unwrap();
+            }
         }
+        fs::write(root.join(name), gif).unwrap();
     }
-    fs::write(root.join("original.gif"), gif).unwrap();
     let mut chunks = chunk(*b"VP8X", &[0x12, 0, 0, 0, 3, 0, 0, 2, 0, 0]);
     chunks.extend(chunk(*b"ANIM", &[0, 0, 0, 0, 0, 0]));
     for (color, duration) in [([255, 0, 0, 255], 40), ([0, 0, 255, 128], 60)] {

@@ -991,8 +991,9 @@ class AndroidDeliveryInstrumentedTest {
     val nameLiteral = JSONObject.quote(name)
     val selectorLiteral = JSONObject.quote(selector)
     val actionDeadline = deadlineOverride ?: (SystemClock.elapsedRealtime() + 30_000L)
-    waitForCondition(scenario, "Array.from(document.querySelectorAll(" + selectorLiteral + ")).some(b=>!b.disabled&&(b.getAttribute('aria-label')||(b.getAttribute('role')==='menuitem'&&b.querySelector('span')?b.querySelector('span').textContent:b.textContent)).trim()===" + nameLiteral + ")", "named actual-app control must be enabled: " + name, deadlineOverride = actionDeadline)
-    assertEquals("actual-app control must be clicked once", "true", evaluate(scenario, "(()=>{const button=Array.from(document.querySelectorAll(" + selectorLiteral + ")).find(b=>!b.disabled&&(b.getAttribute('aria-label')||(b.getAttribute('role')==='menuitem'&&b.querySelector('span')?b.querySelector('span').textContent:b.textContent)).trim()===" + nameLiteral + ");if(!button)return false;button.click();return true;})()", deadlineOverride = actionDeadline, actionCallback = true))
+    val findButton = "Array.from(document.querySelectorAll(" + selectorLiteral + ")).find(b=>!b.disabled&&!b.closest('[aria-hidden=true],[inert]')&&b.getBoundingClientRect().width>0&&b.getBoundingClientRect().height>0&&getComputedStyle(b).visibility==='visible'&&(b.getAttribute('aria-label')||(b.getAttribute('role')==='menuitem'&&b.querySelector('span')?b.querySelector('span').textContent:b.textContent)).trim()===" + nameLiteral + ")"
+    waitForCondition(scenario, "!!(" + findButton + ")", "named actual-app control must be enabled and visible: " + name, deadlineOverride = actionDeadline)
+    assertEquals("actual-app control must be clicked once", "true", evaluate(scenario, "(()=>{const button=" + findButton + ";if(!button)return false;button.click();return true;})()", deadlineOverride = actionDeadline, actionCallback = true))
     if (name == "Close Preferences") waitForCondition(scenario, "!Array.from(document.querySelectorAll('[role=dialog]')).some(n=>n.querySelector('h2')&&n.querySelector('h2').textContent==='Preferences')&&document.activeElement===document.querySelector('.application-menu-trigger')", "Preferences dismissal must restore its real opener before the following task starts", deadlineOverride = actionDeadline)
   }
 
@@ -1744,6 +1745,15 @@ class AndroidDeliveryInstrumentedTest {
   private fun observeVisibleTaskControls(scenario: ActivityScenario<MainActivity>, profile: String, deadlineOverride: Long? = null, expectedImeVisible: Boolean? = null): JSONObject {
     val actionDeadline = deadlineOverride ?: (SystemClock.elapsedRealtime() + 30_000L)
     assertTrue(SystemClock.elapsedRealtime() < actionDeadline)
+    val nativeViewportReady = """
+      (()=>{
+        const surfaces=Array.from(document.querySelectorAll('.task-surface[data-state=open]')).filter(n=>!n.closest('[aria-hidden=true],[inert]'));
+        const add=document.querySelector('.add-document');
+        if(!surfaces.length&&add)surfaces.push(add);
+        return document.readyState==='complete'&&surfaces.every(n=>n.getAttribute('data-native-viewport')==='true'&&Number(n.getAttribute('data-native-viewport-width'))===innerWidth&&Number(n.getAttribute('data-native-viewport-height'))===innerHeight);
+      })()
+    """.trimIndent()
+    waitForCondition(scenario,nativeViewportReady,"actual task viewport bounds must be applied before control inventory and the single scroll",deadlineOverride=actionDeadline)
     var count = 0
     while (SystemClock.elapsedRealtime() < actionDeadline) {
       count = evaluate(scenario, "Array.from(document.querySelectorAll('button,input,select,textarea,summary,[role=button],[role=menuitem],[role=link]')).filter(n=>!n.closest('[aria-hidden=true],[inert]')&&!n.matches('.markdown-document input[type=checkbox][disabled]')&&n.getBoundingClientRect().width>0&&n.getBoundingClientRect().height>0).length").toInt()
@@ -1755,6 +1765,7 @@ class AndroidDeliveryInstrumentedTest {
     assertTrue("the composed task must expose bounded real controls", count in 1..200)
     val controls = JSONArray()
     for (index in 0 until count) {
+      waitForCondition(scenario,nativeViewportReady,"the current task must retain applied native viewport bounds before scrolling its next control",deadlineOverride=actionDeadline)
       assertTrue("native control observation must retain the original action deadline", SystemClock.elapsedRealtime() < actionDeadline)
       val controlScript = """
         (()=>{
@@ -1781,7 +1792,7 @@ class AndroidDeliveryInstrumentedTest {
         return measured to nativeControlGeometry(scenario, measured)
       }
       var (measurement, native) = readControl(true)
-      val expectedControl = measurement
+      val expectedControl = JSONObject(measurement.toString())
       var settled = false
       while (SystemClock.elapsedRealtime() < actionDeadline) {
         val (nextMeasurement, nextNative) = readControl(false)
@@ -1802,7 +1813,7 @@ class AndroidDeliveryInstrumentedTest {
         val remaining = actionDeadline - SystemClock.elapsedRealtime()
         if (remaining > 0) SystemClock.sleep(minOf(100L, remaining))
       }
-      if (!settled) captureEditorFocusFailure(scenario, "control_geometry", measurement.put("profile", profile).put("control_index", index).put("ime_expected", expectedImeVisible ?: JSONObject.NULL), native)
+      if (!settled) captureEditorFocusFailure(scenario, "control_geometry", measurement.put("profile", profile).put("control_index", index).put("initial_control", expectedControl).put("ime_expected", expectedImeVisible ?: JSONObject.NULL), native)
       assertTrue("CSS/native control geometry must settle within the original action deadline: profile=" + profile + ",control=" + measurement + ",native=" + native, settled)
       assertTrue("each live control must remain measurable: " + profile, measurement.getBoolean("found"))
       assertTrue("each action needs a meaningful accessible name", measurement.getString("label").isNotBlank())
@@ -1828,8 +1839,8 @@ class AndroidDeliveryInstrumentedTest {
     return JSONObject().put("profile", profile).put("control_count", count).put("css", css).put("font_scale", clientContext.resources.configuration.fontScale)
   }
   private fun shellOutput(command: String): String = instrumentation.uiAutomation.executeShellCommand(command).use { descriptor -> android.os.ParcelFileDescriptor.AutoCloseInputStream(descriptor).bufferedReader().use { it.readText() } }
-  private fun awaitFontScale(value: Float) {
-    val deadline = SystemClock.elapsedRealtime() + 30_000L
+  private fun awaitFontScale(value: Float, deadlineOverride: Long? = null) {
+    val deadline = deadlineOverride ?: (SystemClock.elapsedRealtime() + 30_000L)
     while (SystemClock.elapsedRealtime() < deadline && kotlin.math.abs(clientContext.resources.configuration.fontScale - value) > 0.01f) SystemClock.sleep(100L)
     assertEquals("actual Android font configuration must change", value.toDouble(), clientContext.resources.configuration.fontScale.toDouble(), 0.01)
   }
@@ -1936,13 +1947,24 @@ class AndroidDeliveryInstrumentedTest {
     verifyS047LargeText(scenario)
     try {
       for (font in if (Build.VERSION.SDK_INT >= 34) listOf(1f, 2f) else listOf(1f, 1.3f)) {
+        val fontDeadline = SystemClock.elapsedRealtime() + 30_000L
+        val priorActivity = AtomicReference<MainActivity>()
+        scenario.onActivity { priorActivity.set(it) }
+        val changingFont = kotlin.math.abs(priorActivity.get().resources.configuration.fontScale - font) > 0.01f
         shellOutput("settings put system font_scale " + font)
-        awaitFontScale(font)
+        awaitFontScale(font, deadlineOverride=fontDeadline)
+        if (changingFont) {
+          waitForCondition(scenario, "(()=>{const n=document.querySelector('.resolution-dialog h2');return document.readyState==='complete'&&!!n&&n.textContent.startsWith('Recover ')&&n.textContent.endsWith('?');})()", "font configuration must recreate the real activity and offer the existing unsaved recovery candidate before sampling controls", deadlineOverride=fontDeadline) {
+            var recreated = false
+            scenario.onActivity { recreated = it !== priorActivity.get() && kotlin.math.abs(it.resources.configuration.fontScale - font) <= 0.01f }
+            recreated
+          }
+        }
         scenario.onActivity { it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT }
         waitForCondition(scenario, "innerHeight>innerWidth", "actual portrait must be observed")
         observations.put("portrait-" + font, observeVisibleTaskControls(scenario, "portrait", expectedImeVisible=false))
         if (evaluate(scenario, "(()=>{const n=document.querySelector('.resolution-dialog h2');return !!n&&n.textContent.startsWith('Recover ')&&n.textContent.endsWith('?');})()") == "true") {
-          clickControl(scenario, "Not now")
+          tapNativeControlOnce(scenario, "Not now")
           waitForCondition(scenario, "!document.querySelector('.resolution-dialog')", "geometry must defer the observed recovery candidate through its actual Not now action")
           observations.put("recovery-deferred-" + font, JSONObject().put("action", "Not now").put("decision", "defer"))
           observeVisibleTaskControls(scenario, "portrait-after-recovery", expectedImeVisible=false)
@@ -2973,7 +2995,8 @@ class AndroidDeliveryInstrumentedTest {
         val wholeVisible = !visible.isEmpty && !imeWindowCovers && left >= visible.left - tolerance && top >= visible.top - tolerance &&
           right <= visible.right + tolerance && bottom <= visible.bottom + tolerance &&
           screenX >= visible.left && screenX < visible.right && screenY >= visible.top && screenY < visible.bottom
-        val bottomOccluded = bottom > window.bottom + tolerance
+        // An IME can shrink the native View below the window frame; its visible intersection is authoritative.
+        val bottomOccluded = bottom > visible.bottom + tolerance
         val nonBarBottomGap = location[1] + view.height - window.bottom - barsBottom
         val imeOccludes = imeWindowCovers || (bottomOccluded && (imeBottom > 0 || observed.getBoolean("ime_reported_visible") ||
           (input.isActive(view) && nonBarBottomGap > tolerance)))
@@ -3443,6 +3466,10 @@ class AndroidDeliveryInstrumentedTest {
         inner_width:window.innerWidth,inner_height:window.innerHeight,device_pixel_ratio:window.devicePixelRatio,window_scroll_x:window.scrollX,window_scroll_y:window.scrollY,
         scroller:scroller?{rect:rect(scroller),scroll_top:scroller.scrollTop,scroll_left:scroller.scrollLeft,scroll_height:scroller.scrollHeight,client_height:scroller.clientHeight}:null,
         add_menu_present:!!document.querySelector('.add-document-menu'),scrim_present:!!document.querySelector('.add-document-scrim'),dialog_count:document.querySelectorAll('[role=dialog]').length,
+        task_surfaces:Array.from(document.querySelectorAll('.task-surface[data-state=open]')).slice(0,4).map(node=>{
+          const title=node.querySelector('h2'),style=getComputedStyle(node),body=node.querySelector('.task-surface-body'),bodyStyle=body&&getComputedStyle(body);
+          return {title:title?title.textContent:null,rect:rect(node),native_applied:node.getAttribute('data-native-viewport'),native_width:node.getAttribute('data-native-viewport-width'),native_height:node.getAttribute('data-native-viewport-height'),native_block_size:style.getPropertyValue('--gl-task-native-block-size'),native_inline_size:style.getPropertyValue('--gl-task-native-inline-size'),max_height:style.maxHeight,max_width:style.maxWidth,overflow:style.overflow,body:body?{rect:rect(body),client_height:body.clientHeight,scroll_height:body.scrollHeight,scroll_top:body.scrollTop,min_height:bodyStyle.minHeight,overflow:bodyStyle.overflow}:null};
+        }),
         insert_supported:document.queryCommandSupported('insertText'),insert_enabled:document.queryCommandEnabled('insertText'),
         user_activation:navigator.userActivation?navigator.userActivation.isActive:null,
         edit_context_attached:!!context,editing_representation:context?'edit_context_text':'contenteditable_inner_text',

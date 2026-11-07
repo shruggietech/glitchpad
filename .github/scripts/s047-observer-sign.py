@@ -22,7 +22,13 @@ def payload(path):
 expected='939eee7b4ee3d211fb5bf82da140690248b3b5c12e6b07f40a76f91f6c9dc266'
 if digest(original)!=expected: raise RuntimeError('original APK changed')
 signer=Path(os.environ['ANDROID_SDK_ROOT'])/'build-tools/36.0.0/apksigner'
-subprocess.run([str(signer),'sign','--ks',str(Path.home()/'.android/debug.keystore'),'--ks-key-alias','androiddebugkey','--ks-pass','pass:android','--key-pass','pass:android','--out',str(diagnostic),str(original)],check=True)
+fixture_original=Path(os.environ['GITHUB_WORKSPACE'])/'crates/glitchpad-host/gen/android/app/build/outputs/apk/androidTest/universal/debug/app-universal-debug-androidTest.apk'
+fixture_digest=digest(fixture_original); fixture_payload=payload(fixture_original)
+key=Path(os.environ['RUNNER_TEMP'])/'s047-diagnostic.keystore'
+subprocess.run(['keytool','-genkeypair','-noprompt','-keystore',str(key),'-storepass','android','-keypass','android','-alias','androiddebugkey','-dname','CN=Android Debug,O=Android,C=US','-keyalg','RSA','-keysize','2048','-validity','2'],check=True,capture_output=True)
+for source,destination in [(original,diagnostic),(fixture_original,out/'instrumentation.apk')]:
+ subprocess.run([str(signer),'sign','--ks',str(key),'--ks-key-alias','androiddebugkey','--ks-pass','pass:android','--key-pass','pass:android','--out',str(destination),str(source)],check=True)
+if payload(out/'instrumentation.apk')!=fixture_payload or digest(fixture_original)!=fixture_digest: raise RuntimeError('diagnostic signing changed fixture payload or original fixture')
 original_payload=payload(original)
 if payload(diagnostic)!=original_payload or digest(original)!=expected: raise RuntimeError('diagnostic signing changed the application payload or original')
 def certificate(path):
@@ -35,7 +41,7 @@ if certificate(diagnostic)!=certificate(test): raise RuntimeError('diagnostic ap
 manifest=json.loads((out/'source-manifest.json').read_text())
 manifest['original_product_sha256']=manifest.pop('product_sha256')
 manifest['original_product_bytes']=manifest.pop('product_bytes')
-manifest.update({'product_sha256':digest(diagnostic),'product_bytes':diagnostic.stat().st_size,'instrumentation_sha256':digest(test),'debug_certificate_sha256':certificate(diagnostic),'unmodified_payload_entries':len(original_payload),'payload_inventory_sha256':hashlib.sha256(json.dumps(original_payload,sort_keys=True).encode()).hexdigest(),'identity_boundary':'separate_debug_resigned_diagnostic_copy_not_original_installed_bytes'})
+manifest.update({'product_sha256':digest(diagnostic),'product_bytes':diagnostic.stat().st_size,'instrumentation_sha256':digest(test),'instrumentation_original_sha256':fixture_digest,'instrumentation_unmodified_payload_entries':len(fixture_payload),'debug_certificate_sha256':certificate(diagnostic),'unmodified_payload_entries':len(original_payload),'payload_inventory_sha256':hashlib.sha256(json.dumps(original_payload,sort_keys=True).encode()).hexdigest(),'identity_boundary':'separate_debug_resigned_diagnostic_copy_not_original_installed_bytes'})
 (out/'source-manifest.json').write_text(json.dumps(manifest,indent=2)+'\n',encoding='utf-8')
 (out/'original-payload-inventory.json').write_text(json.dumps(original_payload,indent=2)+'\n',encoding='utf-8')
 with open(os.environ['GITHUB_ENV'],'a',encoding='utf-8') as env: env.write('S047_DIAGNOSTIC_APK='+str(diagnostic)+'\n')

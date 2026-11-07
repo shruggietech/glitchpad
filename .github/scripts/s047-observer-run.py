@@ -11,7 +11,7 @@ def command(args,seconds=30,output=None):
 results=[]
 for package in ['com.google.android.gms','com.google.android.googlequicksearchbox']:
  command(['adb','shell','pm','disable-user','--user','0',package])
-for args in [['adb','shell','svc','power','stayon','true'],['adb','shell','input','keyevent','224'],['adb','install','-r',os.environ['S047_DIAGNOSTIC_APK']],['adb','install','-r','crates/glitchpad-host/gen/android/app/build/outputs/apk/androidTest/universal/debug/app-universal-debug-androidTest.apk']]:
+for args in [['adb','shell','svc','power','stayon','true'],['adb','shell','input','keyevent','224'],['adb','install','-r',os.environ['S047_DIAGNOSTIC_APK']],['adb','install','-r',str(out/'instrumentation.apk')]]:
  result=command(args,120)
  if result['exit']: raise RuntimeError('diagnostic setup failed; see setup.log')
 if api==36:

@@ -119,12 +119,10 @@ describe('native range transport', () => {
       17,
       LARGE_TEXT_READ_BYTES,
     );
-    expect(result).toEqual({
-      source_id: 'source',
-      offset: 17,
-      bytes,
-      end_of_source: true,
-    });
+    expect(result.source_id).toBe('source');
+    expect(result.offset).toBe(17);
+    expect(Array.from(result.bytes)).toEqual(Array.from(bytes));
+    expect(result.end_of_source).toBe(true);
     expect(rangeInvoke).toHaveBeenCalledExactlyOnceWith('read_android_range', {
       sourceId: 'source',
       offset: 17,

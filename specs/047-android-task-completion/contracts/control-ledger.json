@@ -19579,11 +19579,11 @@
       "path": "apps/glitchpad/src/domain/large-text-gateway.test.ts",
       "line": 110,
       "anchor": "describe('native range transport',",
-      "source_sha256": "3d0d97342cbd02d9e28d9b945bbd35bfef5a1fdb9925f499d5e90c28096ed86f",
+      "source_sha256": "c0a8b09d327395ffeb82330f42b20642d43f9baa37b64c889bf8d54c901c88df",
       "effect": "Request bounded raw Android frames, validate fallback/header/bytes, retain desktop JSON identity and reject late aborted replies.",
       "execution": "prepared_not_executed",
       "limit": "Requires current source test execution; does not qualify the installed candidate."
     }
   },
-  "local_candidate_note": "R38 source references only. All459 cases remain pending current-candidate installed reconciliation."
+  "local_candidate_note": "R39 source references only. Frontend rerun and installed current-source layout remain pending; all 459 case statuses remain pending."
 }

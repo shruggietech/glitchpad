@@ -13,6 +13,9 @@ on:
 permissions:
   contents: read
   actions: read
+defaults:
+  run:
+    shell: bash
 jobs:
   supporting-driver-policy:
     if: inputs.stage != 'source_binding'
@@ -296,6 +299,44 @@ jobs:
         with:
           name: s047-exact-source-aggregate
           path: ${{ runner.temp }}/s047-aggregate/**
+          retention-days: 7
+
+  frontend-source:
+    if: inputs.stage == 'working_candidate'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.28.2
+          run_install: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Check complete frontend with unmasked failure exits
+        run: |
+          mkdir -p "$RUNNER_TEMP/s047-source-preflight"
+          pnpm exec prettier --check apps/glitchpad/src/domain/large-text-gateway.test.ts
+          pnpm run check:frontend 2>&1 | tee "$RUNNER_TEMP/s047-source-preflight/frontend-green.log"
+      - name: Rebind and audit exact current source references
+        run: |
+          git fetch --no-tags --depth=1 origin db1d24fd4e39ca1140e7374d70cbc337776cd3fc
+          python3 .github/scripts/s047-source-rebind.py
+          node .github/scripts/s047-source-audit.mjs
+      - name: Retain exact frontend source validation
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: s047-current-frontend-preflight
+          path: |
+            ${{ runner.temp }}/s047-source-preflight/**
+            apps/glitchpad/src/domain/large-text-gateway.test.ts
+            .codex-tmp/s047/r28-hosted-source-rebind.json
+            .codex-tmp/s047/current-control-reference-audit.json
+            specs/047-android-task-completion/contracts/control-ledger.json
           retention-days: 7
 
   working-candidate:

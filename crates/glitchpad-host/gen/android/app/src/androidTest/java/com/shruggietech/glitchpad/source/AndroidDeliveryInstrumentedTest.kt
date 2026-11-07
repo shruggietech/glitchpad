@@ -2666,17 +2666,23 @@ class AndroidDeliveryInstrumentedTest {
     }
     val rect = JSONObject(evaluate(scenario, "(()=>{const n=" + taskInputExpression("Find diagram text") + ";const r=n.getBoundingClientRect();return {found:true,x:(r.left+r.right)/2,y:(r.top+r.bottom)/2,left:r.left,top:r.top,right:r.right,bottom:r.bottom,viewport_width:innerWidth,viewport_height:innerHeight};})()", deadlineOverride=deadline))
     val native = nativeControlGeometry(scenario, rect)
+    var appWindowId = -1
+    scenario.onActivity { activity ->
+      val view = requireNotNull(findWebView(activity.window.decorView))
+      appWindowId = android.view.accessibility.AccessibilityNodeInfo().apply { setSource(view) }.windowId
+    }
+    assertTrue("the attached WebView must expose its actual native window identity", appWindowId >= 0)
     assertTrue("the long-press field must belong wholly to the foreground app", nativeTapForeground(native) && native.getBoolean("whole_control_visible"))
     val x = kotlin.math.round(native.getDouble("screen_x")).toInt()
     val y = kotlin.math.round(native.getDouble("screen_y")).toInt()
     checkedShell("input swipe " + x + " " + y + " " + x + " " + y + " " + (android.view.ViewConfiguration.getLongPressTimeout() + 200))
     hideKeyboard()
     var before = nativeBackObservation(scenario)
-    while (SystemClock.elapsedRealtime() < deadline && (!before.optBoolean("native_edit_active") || !nativeTextPopupPresent(native.getInt("app_window_id"), deadline))) {
+    while (SystemClock.elapsedRealtime() < deadline && (!before.optBoolean("native_edit_active") || !nativeTextPopupPresent(appWindowId, deadline))) {
       SystemClock.sleep(100L); before = nativeBackObservation(scenario)
     }
     assertTrue("the actual long press must open the native text-edit action mode", before.getBoolean("native_edit_active"))
-    assertTrue("the actual native popup must expose its Paste action", nativeTextPopupPresent(native.getInt("app_window_id"), deadline))
+    assertTrue("the actual native popup must expose its Paste action", nativeTextPopupPresent(appWindowId, deadline))
     assertFalse("native text-toolbar Back must begin without a pending JS task request", before.getBoolean("pending"))
     val context = taskContextSnapshot(scenario, deadline)
     assertTrue("the system must accept the one native text-edit Back", instrumentation.uiAutomation.performGlobalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK))
@@ -2684,7 +2690,7 @@ class AndroidDeliveryInstrumentedTest {
     while (SystemClock.elapsedRealtime() < deadline) {
       assertEquals("native text-edit Back must retain the underlying task and all field values", context, taskContextSnapshot(scenario, deadline))
       after = nativeBackObservation(scenario)
-      if (!after.getBoolean("native_edit_active") && !nativeTextPopupPresent(native.getInt("app_window_id"), deadline)) break
+      if (!after.getBoolean("native_edit_active") && !nativeTextPopupPresent(appWindowId, deadline)) break
       SystemClock.sleep(100L)
     }
     val delta = deltaBack(before, after).put("native_edit_dismissed", after.getInt("native_edit_dismissed") - before.getInt("native_edit_dismissed"))

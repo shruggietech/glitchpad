@@ -1251,6 +1251,8 @@ class AndroidDeliveryInstrumentedTest {
       SystemClock.sleep(100L)
     }
     val observed = requireNotNull(actual) { "the independent foreground recipient must report its own clipboard paste inside the original deadline" }
+    val bytes = expected.toByteArray(Charsets.UTF_8)
+    println("s047_clipboard_recipient_observation=" + JSONObject().put("expected_sha256", sha256(bytes)).put("expected_utf8_bytes", bytes.size).put("expected_code_units", expected.length).put("expected_uri", uriBacked).put("receiver", observed)); System.out.flush()
     assertFalse("independent clipboard recipient must complete without a transport error: " + observed, observed.has("error"))
     assertEquals(instrumentation.context.packageName, observed.getString("receiver_package"))
     assertTrue("clipboard paste must execute in a different application UID", observed.getInt("receiver_uid") != clientContext.applicationInfo.uid)
@@ -1261,7 +1263,6 @@ class AndroidDeliveryInstrumentedTest {
       assertTrue("the clipboard service must grant independent recipient read access", observed.getBoolean("uri_read_granted"))
       assertFalse("clipboard paste must not gain write authority over the payload", observed.getBoolean("uri_write_granted"))
     }
-    val bytes = expected.toByteArray(Charsets.UTF_8)
     assertEquals("independent paste must preserve every UTF-8 byte", bytes.size, observed.getInt("utf8_bytes"))
     assertEquals("independent paste must preserve every code unit", expected.length, observed.getInt("code_units"))
     assertEquals("independent paste digest must match the actual source text", sha256(bytes), observed.getString("sha256"))

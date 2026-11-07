@@ -23,7 +23,7 @@ methods=[('cold','s047ColdAddJourney',300),('layout','s047LayoutJourney',900)]
 if api==24: methods.append(('authoring','standaloneAuthoringAndDiagnosticJourneys',600))
 for name,method,seconds in methods:
  env=os.environ.copy(); env['ANDROID_INSTRUMENTATION_RESET_APP_DATA']='true'
- args=['bash','scripts/run-android-instrumentation.sh',str(out/(name+'.txt')),'s047_journey_evidence=','-e','waitForActivitiesToComplete','false','-e','s047','true','-e','expectedSource','f572e0fbbd1d2978b6e4064a31817201834c8965','-e','expectedRole','ordinary','-e','s047ObservationTrace','true','-e','class','com.shruggietech.glitchpad.source.AndroidDeliveryInstrumentedTest#'+method]
+ args=['bash','scripts/run-android-instrumentation.sh',str(out/(name+'.txt')),'s047_journey_evidence=','-e','waitForActivitiesToComplete','false','-e','s047','true','-e','expectedSource','f572e0fbbd1d2978b6e4064a31817201834c8965','-e','expectedRole','ordinary','-e','s047ObservationTrace','true','-e','s047InputTrace','true','-e','class','com.shruggietech.glitchpad.source.AndroidDeliveryInstrumentedTest#'+method]
  started=time.monotonic()
  with (out/(name+'-driver.log')).open('w',encoding='utf-8') as log:
   proc=subprocess.Popen(args,env=env,stdout=log,stderr=subprocess.STDOUT,start_new_session=True)

@@ -1043,8 +1043,15 @@ export async function checkAppLayout({
             if (group === 'recovery') {
               await page.waitForSelector('.resolution-dialog[data-state="open"]');
               await audit('.resolution-dialog button', 'recovery-decision');
+              row.recovery_surface = await page.$eval('.resolution-dialog', function (node) {
+                const r = node.getBoundingClientRect();
+                return { left: r.left, top: r.top, right: r.right, bottom: r.bottom, max_height: getComputedStyle(node).maxHeight, visible: window.__toolsVisible };
+              });
+              const recoverySurface = row.recovery_surface;
+              assert.ok(recoverySurface.left >= recoverySurface.visible.left - tolerance && recoverySurface.top >= recoverySurface.visible.top - tolerance && recoverySurface.right <= recoverySurface.visible.right + tolerance && recoverySurface.bottom <= recoverySurface.visible.bottom + tolerance, 'Recovery task must fit the actual modeled native visible frame');
+
               const labels = await page.$eval('.resolution-dialog button', function (nodes) {
-                return nodes.map(function (node) { return node.textContent.trim(); });
+                return Array.from(nodes).map(function (node) { return node.textContent.trim(); });
               });
               assert.deepEqual(labels, ['Recover', 'Decline recovery', 'Not now']);
               await click('Not now', '.resolution-dialog button');

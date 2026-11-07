@@ -466,7 +466,7 @@ jobs:
           import assert from 'node:assert/strict';
           import {readFileSync} from 'node:fs';
           const receipt=JSON.parse(readFileSync(process.env.RUNNER_TEMP+'/s047-recovery-preflight/recovery-red.json','utf8'));
-          assert.ok(receipt.failures.some(f=>f.text_scale===2 && /must fit the actual modeled native visible frame/.test(f.message)),'RED must reproduce the actual enlarged recovery overflow');
+          assert.ok(receipt.failures.some(f=>f.text_scale===2 && /Recovery task must fit the actual modeled native visible frame/.test(f.message)),'RED must reproduce the actual enlarged recovery overflow');
           NODE
       - name: Validate complete frontend and corrected production recovery profiles
         run: |

@@ -1,11 +1,17 @@
 name: ci
 on:
   workflow_dispatch:
+    inputs:
+      stage:
+        type: choice
+        options: [observers, source_binding]
+        default: observers
 permissions:
   contents: read
   actions: read
 jobs:
   supporting-driver-policy:
+    if: inputs.stage != 'source_binding'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -18,6 +24,7 @@ jobs:
       - name: Check Android runner policies
         run: python3 -m unittest discover -s scripts/tests -p 'test_android*.py'
   observer-diagnostic:
+    if: inputs.stage != 'source_binding'
     needs: supporting-driver-policy
     name: Existing APK observer diagnostic (${{ matrix.api }})
     runs-on: ubuntu-latest
@@ -85,4 +92,36 @@ jobs:
           name: s047-existing-apk-observer-${{ matrix.api }}
           path: ${{ runner.temp }}/s047-observer-diagnostic/**
           if-no-files-found: warn
+          retention-days: 7
+
+  source-binding:
+    if: inputs.stage == 'source_binding'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GIT_TERMINAL_PROMPT: '0'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+      - name: Read the exact source baseline and rebind current references
+        run: |
+          git fetch --no-tags --depth=1 origin f572e0fbbd1d2978b6e4064a31817201834c8965
+          python3 .github/scripts/s047-source-rebind.py
+          node --input-type=module <<'NODE'
+          import {readFileSync,writeFileSync} from 'node:fs';
+          const p='specs/047-android-task-completion/contracts/control-ledger.json';
+          writeFileSync(p,JSON.stringify(JSON.parse(readFileSync(p,'utf8')),null,2)+'\n');
+          NODE
+          node .github/scripts/s047-source-audit.mjs
+      - name: Retain source-only audit and proposed ledger data
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: s047-current-source-binding
+          path: |
+            .codex-tmp/s047/r28-hosted-source-rebind.json
+            .codex-tmp/s047/current-control-reference-audit.json
+            specs/047-android-task-completion/contracts/control-ledger.json
           retention-days: 7

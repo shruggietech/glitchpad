@@ -924,10 +924,6 @@ export function App({
   const closeApplicationPanel = () => {
     windowProjectionChangedRef.current = true;
     setApplicationPanel('closed');
-    requestAnimationFrame(() => {
-      if (applicationOpenerRef.current?.isConnected)
-        applicationOpenerRef.current.focus();
-    });
   };
 
   const saveSession = async (

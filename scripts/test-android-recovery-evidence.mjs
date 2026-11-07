@@ -235,6 +235,22 @@ function fixture(role = 'ordinary', api = 36) {
             : [],
     })),
   };
+  if (role === 'ordinary')
+    evidence.journeys[8].observations.native_edit_back = {
+      route: 'source_owner',
+      native_mode_observed: true,
+      popup_observed: true,
+      task_retained: true,
+      fields_unchanged: true,
+      close_completed: true,
+      callback_delta: {
+        committed: 1,
+        requested: 0,
+        completed: 0,
+        delegated: 0,
+        native_edit_dismissed: 1,
+      },
+    };
   const measurement =
     evidence.journeys[7].observations.control_measurements?.find(
       (m) => m.controls,
@@ -875,6 +891,45 @@ test('installed clipboard provider state must match the actual API and every jou
       await assert.rejects(
         check(fixture('ordinary', api), change),
         /clipboard|identity/i,
+      );
+  }
+});
+
+test('native text edit Back requires one native dismissal, retained fields and a working subsequent Close', async () => {
+  for (const api of [24, 36]) {
+    await check(fixture('ordinary', api));
+    const platform = fixture('ordinary', api);
+    platform.journeys[8].observations.native_edit_back.route = 'platform';
+    platform.journeys[8].observations.native_edit_back.callback_delta.committed = 0;
+    platform.journeys[8].observations.native_edit_back.callback_delta.native_edit_dismissed = 0;
+    await check(platform);
+    for (const mutate of [
+      (e) => delete e.journeys[8].observations.native_edit_back,
+      (e) => {
+        e.journeys[8].observations.native_edit_back.route = 'platform';
+      },
+      (e) => {
+        e.journeys[8].observations.native_edit_back.task_retained = false;
+      },
+      (e) => {
+        e.journeys[8].observations.native_edit_back.fields_unchanged = false;
+      },
+      (e) => {
+        e.journeys[8].observations.native_edit_back.close_completed = false;
+      },
+      (e) => {
+        e.journeys[8].observations.native_edit_back.callback_delta.requested = 1;
+      },
+      (e) => {
+        e.journeys[8].observations.native_edit_back.callback_delta.native_edit_dismissed = 0;
+      },
+      (e) => {
+        e.journeys[8].observations.native_edit_back.callback_delta.committed = 2;
+      },
+    ])
+      await assert.rejects(
+        check(fixture('ordinary', api), mutate),
+        /native text edit Back/,
       );
   }
 });

@@ -265,6 +265,38 @@ function validateObservedDetails(row, role, api) {
       'offline notices require actual network-none and successful hosted shell observations',
     );
   }
+  if (role === 'ordinary' && row.journey === 9) {
+    const edit = row.observations?.native_edit_back;
+    for (const key of [
+      'native_mode_observed',
+      'popup_observed',
+      'task_retained',
+      'fields_unchanged',
+      'close_completed',
+    ])
+      assert.equal(
+        edit?.[key],
+        true,
+        'native text edit Back must retain the task and complete its later Close action',
+      );
+    assert(
+      ['source_owner', 'platform'].includes(edit?.route),
+      'native text edit Back must identify its actual native owner',
+    );
+    const nativeCommit = edit.route === 'source_owner' ? 1 : 0;
+    for (const [key, expected] of Object.entries({
+      committed: nativeCommit,
+      requested: 0,
+      completed: 0,
+      delegated: 0,
+      native_edit_dismissed: nativeCommit,
+    }))
+      assert.equal(
+        edit?.callback_delta?.[key],
+        expected,
+        'native text edit Back must consume one native layer without another JS request',
+      );
+  }
   if (role === 'ordinary' && row.journey === 9 && api === 36) {
     for (const [id, cancel] of [
       ['predictive_cancel', true],

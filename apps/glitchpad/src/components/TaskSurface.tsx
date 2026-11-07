@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
   type ReactNode,
+  type SyntheticEvent,
 } from 'react';
 import {
   nativeAndroidDiagnosticExportGateway,
@@ -15,6 +16,16 @@ import {
 import { nativeAndroidDeliveryAvailable } from '../domain/android-delivery-gateway';
 import { useNativeViewport } from './use-native-viewport';
 import './TaskSurface.css';
+
+function preserveTouchButtonFocus(event: SyntheticEvent<HTMLDivElement>) {
+  const button =
+    event.target instanceof Element
+      ? event.target.closest<HTMLButtonElement>('button')
+      : null;
+  // Keep touch focus and IME geometry stable until the button click.
+  if (button && !button.disabled && event.currentTarget.contains(button))
+    event.preventDefault();
+}
 
 const TaskDepth = createContext(0);
 const layers = new Map<
@@ -127,9 +138,11 @@ export function TaskSurface({
         ],
       ] as const;
       for (const [name, value] of values) {
-        const next = value + 'px';
-        if (element.style.getPropertyValue(name) !== next)
-          element.style.setProperty(name, next);
+        const current = Number.parseFloat(element.style.getPropertyValue(name));
+        // Legacy WebView rounds CSSOM values (55.96875px becomes 55.9688px).
+        // Rewriting that equivalent size would retrigger this style observer forever.
+        if (!Number.isFinite(current) || Math.abs(current - value) > 0.001)
+          element.style.setProperty(name, value + 'px');
       }
       const available =
         Number.parseFloat(
@@ -185,6 +198,21 @@ export function TaskSurface({
             event.preventDefault();
             // Keep Escape on the same owned layer order as native Back.
             dismissTopTaskSurface();
+          }}
+          onPointerDown={(event) => {
+            if (event.pointerType === 'touch' && event.button === 0)
+              preserveTouchButtonFocus(event);
+          }}
+          onMouseDown={(event) => {
+            const native = event.nativeEvent as MouseEvent & {
+              sourceCapabilities?: { firesTouchEvents?: boolean };
+            };
+            // API 24 can omit pointerType and deliver compatibility mouse events.
+            if (
+              event.button === 0 &&
+              native.sourceCapabilities?.firesTouchEvents
+            )
+              preserveTouchButtonFocus(event);
           }}
           onPointerDownOutside={(event) => {
             if (!canClose) event.preventDefault();

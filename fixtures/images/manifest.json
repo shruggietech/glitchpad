@@ -128,6 +128,13 @@
       "width": 4
     },
     {
+      "bytes": 138,
+      "height": 3,
+      "name": "s047-playback.gif",
+      "sha256": "b75f6f5f86fd232ca0103087ba4af432ff5cbb4a6541ae39d7adb1c21d4cfc78",
+      "width": 4
+    },
+    {
       "bytes": 156,
       "height": 3,
       "name": "svg-cycle.svg",

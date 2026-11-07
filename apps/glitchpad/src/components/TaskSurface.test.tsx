@@ -458,3 +458,147 @@ it('keeps focus inside an open Add document menu when an older task closes late'
   opener.remove();
   menu.remove();
 });
+
+it.each([
+  {
+    pointerType: 'touch',
+    eventType: 'pointerdown',
+    touch: false,
+    preventsFocus: true,
+  },
+  {
+    pointerType: 'mouse',
+    eventType: 'pointerdown',
+    touch: false,
+    preventsFocus: false,
+  },
+  { pointerType: '', eventType: 'mousedown', touch: true, preventsFocus: true },
+  {
+    pointerType: '',
+    eventType: 'mousedown',
+    touch: false,
+    preventsFocus: false,
+  },
+])(
+  'defers touch focus until button activation ($eventType, $pointerType, $touch)',
+  async ({ pointerType, eventType, touch, preventsFocus }) => {
+    const host = document.createElement('div');
+    host.id = 'bb-overlay-root';
+    document.body.append(host);
+    const activate = vi.fn();
+    render(
+      <TaskSurface open title="Search" onOpenChange={() => undefined}>
+        <label>
+          Find
+          <input />
+        </label>
+        <button onClick={activate}>
+          <span>Next match</span>
+        </button>
+      </TaskSurface>,
+    );
+    await screen.findByRole('dialog', { name: 'Search' });
+    const input = screen.getByRole('textbox', { name: 'Find' });
+    input.focus();
+    const pointer = new MouseEvent(eventType, {
+      bubbles: true,
+      cancelable: true,
+      button: 0,
+    });
+    Object.defineProperty(pointer, 'pointerType', { value: pointerType });
+    Object.defineProperty(pointer, 'sourceCapabilities', {
+      value: { firesTouchEvents: touch },
+    });
+    fireEvent(screen.getByText('Next match'), pointer);
+    expect(pointer.defaultPrevented).toBe(preventsFocus);
+    expect(input).toHaveFocus();
+    expect(activate).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Next match' }));
+    expect(activate).toHaveBeenCalledExactlyOnceWith(expect.anything());
+  },
+);
+
+it('settles rounded CSSOM measurements and still updates real geometry changes', () => {
+  const host = document.createElement('div');
+  host.id = 'bb-overlay-root';
+  document.body.append(host);
+  const observed: {
+    target: Node;
+    callback: MutationCallback;
+    observer: MutationObserver;
+  }[] = [];
+  class ControlledMutationObserver {
+    constructor(private callback: MutationCallback) {}
+    observe(target: Node, options?: MutationObserverInit) {
+      if (options?.attributeFilter?.includes('style'))
+        observed.push({ target, callback: this.callback, observer: this });
+    }
+    disconnect() {}
+    takeRecords() {
+      return [];
+    }
+  }
+  vi.stubGlobal('MutationObserver', ControlledMutationObserver);
+  const rect = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect');
+  let height = 55.96875;
+  rect.mockImplementation(function (this: HTMLElement) {
+    return {
+      x: 0,
+      y: 0,
+      left: 0,
+      top: 0,
+      width: 320,
+      height: this.classList.contains('task-surface-heading') ? height : 640,
+      right: 320,
+      bottom: height,
+      toJSON: () => ({}),
+    };
+  });
+  // The original method is called with its original receiver below.
+  // eslint-disable-next-line @typescript-eslint/unbound-method
+  const read = CSSStyleDeclaration.prototype.getPropertyValue;
+  const cssom = vi
+    .spyOn(CSSStyleDeclaration.prototype, 'getPropertyValue')
+    .mockImplementation(function (this: CSSStyleDeclaration, name: string) {
+      const value = read.call(this, name);
+      return name === '--gl-task-heading-block-size' && value
+        ? Number.parseFloat(value).toFixed(4) + 'px'
+        : value;
+    });
+  const write = vi.spyOn(CSSStyleDeclaration.prototype, 'setProperty');
+  try {
+    render(
+      <TaskSurface
+        open
+        title="Rounded measurement"
+        onOpenChange={() => undefined}
+      >
+        <button>Continue</button>
+      </TaskSurface>,
+    );
+    const dialog = screen.getByRole('dialog', { name: 'Rounded measurement' });
+    const subscription = observed.find(({ target }) => target === dialog);
+    expect(subscription).toBeDefined();
+    const writes = () =>
+      write.mock.calls.filter(
+        ([name]) => name === '--gl-task-heading-block-size',
+      ).length;
+    expect(writes()).toBe(1);
+    act(() => {
+      for (let count = 0; count < 5; count++)
+        subscription!.callback([], subscription!.observer);
+    });
+    expect(writes()).toBe(1);
+    height = 71.5625;
+    act(() => subscription!.callback([], subscription!.observer));
+    expect(writes()).toBe(2);
+    expect(dialog.style.getPropertyValue('--gl-task-heading-block-size')).toBe(
+      '71.5625px',
+    );
+  } finally {
+    write.mockRestore();
+    cssom.mockRestore();
+    rect.mockRestore();
+    vi.unstubAllGlobals();
+  }
+});

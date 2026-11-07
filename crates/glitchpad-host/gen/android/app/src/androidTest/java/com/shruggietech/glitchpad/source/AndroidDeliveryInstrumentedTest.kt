@@ -446,6 +446,7 @@ class AndroidDeliveryInstrumentedTest {
       if (isS047Evidence()) {
         enableNativeWindowObservation()
         val originalFont = clientContext.resources.configuration.fontScale
+        var recoveryFailure: Throwable? = null
         try {
           for (font in if (Build.VERSION.SDK_INT >= 34) listOf(1f, 2f) else listOf(1f, 1.3f)) {
             applyObservedFontScale(scenario, font)
@@ -456,9 +457,19 @@ class AndroidDeliveryInstrumentedTest {
             waitForCondition(scenario, "innerWidth>innerHeight", "recovery landscape must be observed")
             observeVisibleTaskControls(scenario, "recovery-landscape-" + font, expectedImeVisible=false)
           }
+        } catch (failure: Throwable) {
+          recoveryFailure = failure
+          throw failure
         } finally {
-          applyObservedFontScale(scenario, originalFont)
-          scenario.onActivity { it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT }
+          val cleanup = runCatching {
+            checkedShell("settings put system font_scale " + originalFont)
+            scenario.onActivity { it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT }
+            awaitFontScale(originalFont)
+          }.exceptionOrNull()
+          if (cleanup != null) {
+            val primary = recoveryFailure
+            if (primary != null) primary.addSuppressed(cleanup) else throw cleanup
+          }
         }
         tapNativeControlOnce(scenario, "Recover")
       } else clickControl(scenario, "Recover")
@@ -1868,16 +1879,33 @@ class AndroidDeliveryInstrumentedTest {
     val priorActivity = AtomicReference<MainActivity>()
     scenario.onActivity { priorActivity.set(it) }
     val changingFont = kotlin.math.abs(priorActivity.get().resources.configuration.fontScale - font) > 0.01f
-    shellOutput("settings put system font_scale " + font)
-    awaitFontScale(font, deadlineOverride=fontDeadline)
-    if (changingFont) {
-      waitForCondition(scenario, "document.readyState==='complete'", "font configuration must update the existing activity without losing its native task binding", deadlineOverride=fontDeadline) {
-        var updated = false
-        scenario.onActivity { updated = it === priorActivity.get() && kotlin.math.abs(it.resources.configuration.fontScale - font) <= 0.01f }
-        updated
+    try {
+      shellOutput("settings put system font_scale " + font)
+      awaitFontScale(font, deadlineOverride=fontDeadline)
+      if (changingFont) {
+        waitForCondition(scenario, "document.readyState==='complete'", "font configuration must update the existing activity without losing its native task binding", deadlineOverride=fontDeadline) {
+          var updated = false
+          scenario.onActivity { updated = it === priorActivity.get() && kotlin.math.abs(it.resources.configuration.fontScale - font) <= 0.01f }
+          updated
+        }
       }
+      waitForCondition(scenario, "Math.abs(parseFloat(getComputedStyle(document.documentElement).fontSize)-16*" + font + ")<0.1", "the actual WebView text must use the requested system font scale", deadlineOverride=fontDeadline)
+    } catch (failure: Throwable) {
+      runCatching {
+        val observation = JSONObject().put("requested_font", font)
+          .put("system_setting", android.provider.Settings.System.getFloat(clientContext.contentResolver, android.provider.Settings.System.FONT_SCALE, 1f))
+          .put("application_resource_font", clientContext.resources.configuration.fontScale)
+        scenario.onActivity { current ->
+          observation.put("same_activity", current === priorActivity.get())
+            .put("prior_activity", System.identityHashCode(priorActivity.get()))
+            .put("current_activity", System.identityHashCode(current))
+            .put("activity_resource_font", current.resources.configuration.fontScale)
+        }
+        println("s047_font_configuration_failure=" + observation); System.out.flush()
+        captureEditorFocusFailure(scenario, "font_configuration", observation, nativeControlGeometry(scenario, null))
+      }
+      throw failure
     }
-    waitForCondition(scenario, "Math.abs(parseFloat(getComputedStyle(document.documentElement).fontSize)-16*" + font + ")<0.1", "the actual WebView text must use the requested system font scale", deadlineOverride=fontDeadline)
   }
 
   private fun verifyS047TaskGeometry(scenario: ActivityScenario<MainActivity>, profile: String, ime: Boolean) {
@@ -2191,8 +2219,8 @@ class AndroidDeliveryInstrumentedTest {
   }
 
   private fun verifyS047SecondaryImageTasks(scenario: ActivityScenario<MainActivity>): JSONObject {
-    openFromAddDocument(scenario, grant(documentUri("original.gif")))
-    waitForImagePixels(scenario, "original.gif")
+    openFromAddDocument(scenario, grant(documentUri("s047-playback.gif")))
+    waitForImagePixels(scenario, "s047-playback.gif")
     clickControl(scenario, "More image tools")
     for ((index, background) in listOf("checker", "light", "dark").withIndex()) {
       chooseTaskOption(scenario, "Image background", index, background)
@@ -2222,7 +2250,7 @@ class AndroidDeliveryInstrumentedTest {
     } else {
       evaluate(scenario, "window.__s040PreviousPreview=document.querySelector('.image-preview').src;true")
       clickControl(scenario, "Play")
-      waitForImagePixels(scenario, "original.gif", true)
+      waitForImagePixels(scenario, "s047-playback.gif", true)
       clickControl(scenario, "Pause")
       waitForCondition(scenario, "!!document.querySelector('.image-pane[data-preview-ready=true]')&&Array.from(document.querySelectorAll('button')).some(b=>b.textContent.trim()==='Play'&&b.getAttribute('aria-pressed')==='false')", "Pause must stop playback and retain an actually displayed decoded frame")
       animation.put("branch","played_and_paused").put("advanced",true).put("paused",true).put("unexecuted_actions",JSONArray())

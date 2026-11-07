@@ -325,7 +325,14 @@ function validateObservedDetails(row, role, api) {
       assert.equal(receiver.has_uri, transport === 'uri', 'clipboard transport must match the actual pasted item');
       assert.equal(receiver.intent_uri_grant, false, 'clipboard recipient must obtain access without an Intent URI grant');
       if (transport === 'uri') {
-        assert(receiver.uri_read_granted === true && receiver.uri_write_granted === false, 'clipboard service must grant the recipient read-only text access');
+        assert.equal(receiver.uri_authority, row.identity.package_identifier + (api < 26 ? '.clipboard' : '.fileprovider'), 'clipboard recipient must read the platform-specific copied-text provider');
+        if (api >= 26) assert.equal(receiver.uri_read_granted, true, 'clipboard service must grant modern recipient read access');
+        assert.equal(receiver.uri_write_granted, false, 'clipboard recipient must not receive write authority');
+        for (const key of ['uri_write_denied', 'uri_directory_denied', 'uri_unknown_denied', 'uri_traversal_denied'])
+          assert.equal(receiver[key], true, 'clipboard recipient access boundary missing: ' + key);
+        assert(!Object.hasOwn(receiver, 'uri_stream_error'), 'clipboard URI stream must be readable by the recipient');
+        assert.equal(receiver.uri_stream_utf8_bytes, paste.expected_utf8_bytes, 'clipboard URI stream must preserve every source byte');
+        assert.equal(receiver.uri_stream_sha256, paste.expected_sha256, 'clipboard URI stream must preserve the exact source digest');
         assert(paste.expected_code_units >= 512 * 1024, 'clipboard URI paste must cover the oversized Binder regression');
       }
       assert(Number.isSafeInteger(paste.expected_utf8_bytes) && paste.expected_utf8_bytes > 0 && Number.isSafeInteger(paste.expected_code_units) && paste.expected_code_units > 0, 'clipboard expected paste sizes must be observed');

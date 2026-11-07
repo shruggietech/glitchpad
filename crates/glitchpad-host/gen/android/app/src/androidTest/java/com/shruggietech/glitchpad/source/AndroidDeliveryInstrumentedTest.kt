@@ -1239,7 +1239,7 @@ class AndroidDeliveryInstrumentedTest {
     val nonce = UUID.randomUUID().toString()
     val documentId = stringValue(evaluate(scenario, "document.querySelector('.document-surface').id", deadlineOverride = deadline))
     resolver.call(FixtureGrantProvider.COMMAND_URI, "clear_clipboard_result", null, null)
-    // Only a nonce is supplied. The recipient must obtain its own clipboard grant and paste the bytes itself.
+    // Only a nonce is supplied. The recipient must independently read the real clipboard and paste its bytes.
     scenario.onActivity { activity -> activity.startActivity(Intent().setClassName(instrumentation.context.packageName, "com.shruggietech.glitchpad.source.ClipboardPasteReceiverActivity").putExtra("nonce", nonce)) }
     var actual: JSONObject? = null
     while (SystemClock.elapsedRealtime() < deadline) {
@@ -1260,8 +1260,14 @@ class AndroidDeliveryInstrumentedTest {
     assertEquals("the actual clipboard transport must match the payload size", uriBacked, observed.getBoolean("has_uri"))
     assertFalse("the recipient must not receive an explicit Intent URI grant", observed.getBoolean("intent_uri_grant"))
     if (uriBacked) {
-      assertTrue("the clipboard service must grant independent recipient read access", observed.getBoolean("uri_read_granted"))
+      val legacy = Build.VERSION.SDK_INT < 26
+      assertEquals("the recipient must read the actual platform-specific clipboard provider", clientContext.packageName + if (legacy) ".clipboard" else ".fileprovider", observed.getString("uri_authority"))
+      if (!legacy) assertTrue("the clipboard service must grant independent recipient read access", observed.getBoolean("uri_read_granted"))
       assertFalse("clipboard paste must not gain write authority over the payload", observed.getBoolean("uri_write_granted"))
+      assertTrue("the actual recipient must be unable to write, enumerate, guess, or traverse clipboard payloads", listOf("uri_write_denied", "uri_directory_denied", "uri_unknown_denied", "uri_traversal_denied").all { observed.getBoolean(it) })
+      assertFalse("the actual recipient must read the URI stream without an error", observed.has("uri_stream_error"))
+      assertEquals("the recipient URI stream must contain every copied byte", bytes.size, observed.getInt("uri_stream_utf8_bytes"))
+      assertEquals("the recipient URI stream digest must match the source", sha256(bytes), observed.getString("uri_stream_sha256"))
     }
     assertEquals("independent paste must preserve every UTF-8 byte", bytes.size, observed.getInt("utf8_bytes"))
     assertEquals("independent paste must preserve every code unit", expected.length, observed.getInt("code_units"))

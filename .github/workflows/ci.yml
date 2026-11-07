@@ -4,7 +4,7 @@ on:
     inputs:
       stage:
         type: choice
-        options: [observers, source_binding]
+        options: [observers, source_binding, sdk_source]
         default: observers
 permissions:
   contents: read
@@ -24,7 +24,7 @@ jobs:
       - name: Check Android runner policies
         run: python3 -m unittest discover -s scripts/tests -p 'test_android*.py'
   observer-diagnostic:
-    if: inputs.stage != 'source_binding'
+    if: inputs.stage == 'observers'
     needs: supporting-driver-policy
     name: Existing APK observer diagnostic (${{ matrix.api }})
     runs-on: ubuntu-latest
@@ -121,6 +121,64 @@ jobs:
         with:
           name: s047-current-source-binding
           path: |
+            .codex-tmp/s047/r28-hosted-source-rebind.json
+            .codex-tmp/s047/current-control-reference-audit.json
+            specs/047-android-task-completion/contracts/control-ledger.json
+          retention-days: 7
+
+  sdk-source:
+    if: inputs.stage == 'sdk_source'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.28.2
+          run_install: false
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: platform-tools
+      - name: Install pinned SDK
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0" "ndk;28.2.13676358"
+      - uses: actions/download-artifact@v8
+        with:
+          name: android-task-journeys-ordinary-api-36
+          run-id: 42321138281
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/original
+      - name: Prepare pinned generated SDK inputs
+        run: python3 .github/scripts/s047-observer-prepare.py
+      - name: Format source-only receipt changes
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm exec prettier --write scripts/bounded-android-adb.mjs scripts/run-android-evidence.test.mjs scripts/validate-android-recovery-evidence.mjs scripts/test-android-recovery-evidence.mjs
+      - name: Compile actual Android sources and run clipboard store tests
+        run: ./crates/glitchpad-host/gen/android/gradlew --project-dir crates/glitchpad-host/gen/android :glitchpad-android-source:testDebugUnitTest :app:assembleUniversalDebugAndroidTest -PabiList=x86_64 -ParchList=x86_64 -PtargetList=x86_64 -x :app:rustBuildUniversalDebug -x :app:rustBuildX86_64Debug --no-daemon
+      - name: Rebind and audit source-only references
+        run: |
+          git fetch --no-tags --depth=1 origin f572e0fbbd1d2978b6e4064a31817201834c8965
+          python3 .github/scripts/s047-source-rebind.py
+          node .github/scripts/s047-source-audit.mjs
+      - name: Retain source-only validation
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: s047-legacy-clipboard-source-validation
+          path: |
+            crates/glitchpad-android-source/android/build/test-results/testDebugUnitTest/**
+            scripts/bounded-android-adb.mjs
+            scripts/run-android-evidence.test.mjs
+            scripts/validate-android-recovery-evidence.mjs
+            scripts/test-android-recovery-evidence.mjs
             .codex-tmp/s047/r28-hosted-source-rebind.json
             .codex-tmp/s047/current-control-reference-audit.json
             specs/047-android-task-completion/contracts/control-ledger.json

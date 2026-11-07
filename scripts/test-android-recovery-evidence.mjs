@@ -116,7 +116,14 @@ function fixture(role = 'ordinary', api = 36) {
                   plain_text_mime: true,
                   paste_accepted: true,
                   has_uri: transport === 'uri',
-                  uri_read_granted: transport === 'uri',
+                  uri_read_granted: transport === 'uri' && api >= 26,
+                  uri_authority: identity.package_identifier + (api < 26 ? '.clipboard' : '.fileprovider'),
+                  uri_write_denied: true,
+                  uri_directory_denied: true,
+                  uri_unknown_denied: true,
+                  uri_traversal_denied: true,
+                  uri_stream_utf8_bytes: transport === 'uri' ? 524288 : 26,
+                  uri_stream_sha256: app,
                   uri_write_granted: false,
                   intent_uri_grant: false,
                   utf8_bytes: transport === 'uri' ? 524288 : 26,
@@ -711,7 +718,7 @@ test('durable instrumentation stream retains early authoring rows after logcat r
   }
 });
 
-test('independent clipboard paste requires fresh recipient bytes and real URI grants', async () => {
+test('independent clipboard paste requires fresh recipient bytes and modern URI grants', async () => {
   for (const mutate of [
     (e) => delete e.journeys[7].observations.clipboard_paste_readbacks,
     (e) => { e.journeys[7].observations.clipboard_paste_readbacks[1] = structuredClone(e.journeys[7].observations.clipboard_paste_readbacks[0]); },
@@ -736,4 +743,19 @@ test('streamed clipboard witness must cover the actual oversized Binder regressi
     const p = e.journeys[7].observations.clipboard_paste_readbacks[1];
     p.expected_utf8_bytes = p.expected_code_units = p.receiver.utf8_bytes = p.receiver.code_units = 100;
   }), /clipboard|paste|Binder|oversized/i);
+});
+
+test('legacy clipboard token access still requires exact stream bytes, denied writes, and no enumeration', async () => {
+  await check(fixture('ordinary', 24));
+  for (const mutate of [
+    (p) => { p.receiver.uri_authority = 'unrelated.clipboard'; },
+    (p) => { p.receiver.uri_write_denied = false; },
+    (p) => { delete p.receiver.uri_directory_denied; },
+    (p) => { p.receiver.uri_unknown_denied = false; },
+    (p) => { p.receiver.uri_traversal_denied = false; },
+    (p) => { p.receiver.uri_stream_error = 'SecurityException'; },
+    (p) => { p.receiver.uri_stream_utf8_bytes -= 1; },
+    (p) => { p.receiver.uri_stream_sha256 = 'd'.repeat(64); },
+    (p) => { p.receiver.sha256 = 'd'.repeat(64); },
+  ]) await assert.rejects(check(fixture('ordinary', 24), (e) => mutate(e.journeys[7].observations.clipboard_paste_readbacks[1])), /clipboard|paste|recipient/i);
 });

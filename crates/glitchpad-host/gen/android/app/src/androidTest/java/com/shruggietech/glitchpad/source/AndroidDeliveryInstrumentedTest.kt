@@ -2802,6 +2802,7 @@ class AndroidDeliveryInstrumentedTest {
     .put("left", rect.left).put("top", rect.top).put("right", rect.right).put("bottom", rect.bottom)
 
   private fun nativeControlGeometry(scenario: ActivityScenario<MainActivity>, target: JSONObject?): JSONObject {
+    enableNativeWindowObservation()
     val observed = JSONObject().put("scenario_state", scenario.state.name)
     val windows = instrumentation.uiAutomation.windows
     val imeWindows = visibleNativeImeBounds(windows)
@@ -3753,9 +3754,31 @@ class AndroidDeliveryInstrumentedTest {
     scenario.onActivity { view.set(findWebView(it.window.decorView)) }
     val latch = CountDownLatch(1)
     val result = AtomicReference("null")
-    instrumentation.runOnMainSync { requireNotNull(view.get()).evaluateJavascript(script) { value -> result.set(value ?: "null"); latch.countDown() } }
+    val requested = SystemClock.elapsedRealtime()
+    val posted = java.util.concurrent.atomic.AtomicLong(0L)
+    val traceCallbacks = InstrumentationRegistry.getArguments().getString("s047ObservationTrace") == "true"
+    val caller = if (traceCallbacks) Throwable().stackTrace.firstOrNull { it.methodName != "evaluate" && it.methodName != "evaluate\$default" } else null
+    val scriptDigest = if (traceCallbacks) sha256(script.toByteArray(Charsets.UTF_8)) else "trace_disabled"
+    instrumentation.runOnMainSync {
+      posted.set(SystemClock.elapsedRealtime())
+      requireNotNull(view.get()).evaluateJavascript(script) { value ->
+        result.set(value ?: "null"); latch.countDown()
+        val completed = SystemClock.elapsedRealtime()
+        if (traceCallbacks && completed - requested >= 1_000L) {
+          println("native_webview_slow_callback=" + JSONObject().put("requested_at", requested).put("posted_at", posted.get()).put("completed_at", completed)
+            .put("elapsed_ms", completed - requested).put("payload_characters", value?.length ?: 0).put("script_sha256", scriptDigest).put("caller", caller?.toString()).put("activation", actionCallback))
+          System.out.flush()
+        }
+      }
+    }
     val remaining = minOf(if (actionCallback) 30_000L else 2_000L, (deadlineOverride ?: Long.MAX_VALUE) - SystemClock.elapsedRealtime())
-    assertTrue("WebView observation or activation did not complete", remaining > 0 && latch.await(remaining, TimeUnit.MILLISECONDS))
+    val completed = remaining > 0 && latch.await(remaining, TimeUnit.MILLISECONDS)
+    if (!completed) {
+      println("native_webview_callback_timeout=" + JSONObject().put("requested_at", requested).put("posted_at", posted.get()).put("elapsed_ms", SystemClock.elapsedRealtime() - requested)
+        .put("allowed_wait_ms", remaining).put("script_characters", script.length).put("script_sha256", scriptDigest).put("caller", caller?.toString()).put("activation", actionCallback))
+      System.out.flush()
+    }
+    assertTrue("WebView observation or activation did not complete", completed)
     return result.get()
   }
 

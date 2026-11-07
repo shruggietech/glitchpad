@@ -118,7 +118,7 @@ elif [[ "$1" = shell && "$2" = run-as && "$4" = rm && "$5" = -f ]]; then
   rm -f "$RUNNER_TEMP/remote-\${6#files/}"
 elif [[ "$1" = logcat && "\${2:-}" != -c ]]; then echo 'synthetic bounded logcat'; if [[ "\${MOCK_INSTRUMENT_OUTCOME:-}" = logcat_marker_* ]]; then echo 'journey_marker=pass'; fi
 elif [[ "$1" = features ]]; then
-  echo "\${MOCK_ADB_FEATURES:-shell_v2,cmd}"
+  printf '%s\\n' "\${MOCK_ADB_FEATURES:-cmd,shell_v2}" | tr ',' '\\n'
 elif [[ "$1" = shell && "$2" = -T && "$3" = -n && "$4" = run-as && "$6" = cat ]]; then
   emit_apk "$7"
   if [[ "\${MOCK_RUN_AS_FAILURE_AFTER_BYTES:-0}" = 1 ]]; then exit 7; fi

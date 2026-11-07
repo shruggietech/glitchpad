@@ -51,6 +51,7 @@ const failedCapture = (method, error) => ({
   stderr: String(error.stderr ?? '').slice(0, 8192),
   stderr_truncated: (error.stderr?.length ?? 0) > 8192,
   stdout_byte_count: error.stdout_byte_count ?? (Buffer.isBuffer(error.stdout) ? error.stdout.length : Buffer.byteLength(String(error.stdout ?? ''))),
+  error_message: String(error.message ?? '').slice(0, 1024),
   cause: 'unknown',
 });
 const setup = { schema_version: 1, timeout_ms: 60_000, current_phase: null, state: 'pending', commands: [] };
@@ -137,7 +138,8 @@ for (const [kind, packageName, builtPath] of variants) {
       // Never substitute build output when the installed file cannot be read.
       try {
         if (!shellV2Verified) {
-          const features = (await setupCommand('shell_features', packageName, ['features'])).trim().split(',');
+          const features = (await setupCommand('shell_features', packageName, ['features'])).trim().split(/[\s,]+/u).filter(Boolean);
+          capture.shell_features = features;
           if (!features.includes('shell_v2')) {
             capture.validation = 'required_shell_protocol_unavailable';
             throw new Error('Installed capture requires the connected shell_v2 feature');

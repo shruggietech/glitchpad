@@ -563,7 +563,11 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
       val clip = try {
         val file = payload.file
         if (file == null) ClipData.newPlainText("Glitchpad", payload.inlineText)
-        else ClipData.newUri(activity.contentResolver, "Glitchpad", FileProvider.getUriForFile(activity, activity.packageName + ".fileprovider", file))
+        else {
+          val uri = if (Build.VERSION.SDK_INT < 28) LegacyClipboardTextProvider.uriForFile(activity, file)
+            else FileProvider.getUriForFile(activity, activity.packageName + ".fileprovider", file)
+          ClipData.newUri(activity.contentResolver, "Glitchpad", uri)
+        }
       } catch (_: Exception) {
         clipboardTextStore.discardUncommitted(payload)
         invoke.reject("Clipboard copy could not complete")

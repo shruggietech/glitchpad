@@ -992,6 +992,7 @@ class AndroidDeliveryInstrumentedTest {
     val actionDeadline = deadlineOverride ?: (SystemClock.elapsedRealtime() + 30_000L)
     waitForCondition(scenario, "Array.from(document.querySelectorAll(" + selectorLiteral + ")).some(b=>!b.disabled&&(b.getAttribute('aria-label')||(b.getAttribute('role')==='menuitem'&&b.querySelector('span')?b.querySelector('span').textContent:b.textContent)).trim()===" + nameLiteral + ")", "named actual-app control must be enabled: " + name, deadlineOverride = actionDeadline)
     assertEquals("actual-app control must be clicked once", "true", evaluate(scenario, "(()=>{const button=Array.from(document.querySelectorAll(" + selectorLiteral + ")).find(b=>!b.disabled&&(b.getAttribute('aria-label')||(b.getAttribute('role')==='menuitem'&&b.querySelector('span')?b.querySelector('span').textContent:b.textContent)).trim()===" + nameLiteral + ");if(!button)return false;button.click();return true;})()", deadlineOverride = actionDeadline, actionCallback = true))
+    if (name == "Close Preferences") waitForCondition(scenario, "!Array.from(document.querySelectorAll('[role=dialog]')).some(n=>n.querySelector('h2')&&n.querySelector('h2').textContent==='Preferences')&&document.activeElement===document.querySelector('.application-menu-trigger')", "Preferences dismissal must restore its real opener before the following task starts", deadlineOverride = actionDeadline)
   }
 
   // Read native visible bounds and IME windows before mapping a CSS control to screen input.
@@ -1239,7 +1240,7 @@ class AndroidDeliveryInstrumentedTest {
     val nonce = UUID.randomUUID().toString()
     val documentId = stringValue(evaluate(scenario, "document.querySelector('.document-surface').id", deadlineOverride = deadline))
     resolver.call(FixtureGrantProvider.COMMAND_URI, "clear_clipboard_result", null, null)
-    // Only a nonce is supplied. The recipient must obtain its own clipboard grant and paste the bytes itself.
+    // Only a nonce is supplied. The recipient must independently read the real clipboard and paste its bytes.
     scenario.onActivity { activity -> activity.startActivity(Intent().setClassName(instrumentation.context.packageName, "com.shruggietech.glitchpad.source.ClipboardPasteReceiverActivity").putExtra("nonce", nonce)) }
     var actual: JSONObject? = null
     while (SystemClock.elapsedRealtime() < deadline) {
@@ -1251,6 +1252,8 @@ class AndroidDeliveryInstrumentedTest {
       SystemClock.sleep(100L)
     }
     val observed = requireNotNull(actual) { "the independent foreground recipient must report its own clipboard paste inside the original deadline" }
+    val bytes = expected.toByteArray(Charsets.UTF_8)
+    println("s047_clipboard_recipient_observation=" + JSONObject().put("expected_sha256", sha256(bytes)).put("expected_utf8_bytes", bytes.size).put("expected_code_units", expected.length).put("expected_uri", uriBacked).put("receiver", observed)); System.out.flush()
     assertFalse("independent clipboard recipient must complete without a transport error: " + observed, observed.has("error"))
     assertEquals(instrumentation.context.packageName, observed.getString("receiver_package"))
     assertTrue("clipboard paste must execute in a different application UID", observed.getInt("receiver_uid") != clientContext.applicationInfo.uid)
@@ -1258,10 +1261,15 @@ class AndroidDeliveryInstrumentedTest {
     assertEquals("the actual clipboard transport must match the payload size", uriBacked, observed.getBoolean("has_uri"))
     assertFalse("the recipient must not receive an explicit Intent URI grant", observed.getBoolean("intent_uri_grant"))
     if (uriBacked) {
-      assertTrue("the clipboard service must grant independent recipient read access", observed.getBoolean("uri_read_granted"))
+      val legacy = Build.VERSION.SDK_INT < 28
+      assertEquals("the recipient must read the actual platform-specific clipboard provider", clientContext.packageName + if (legacy) ".clipboard" else ".fileprovider", observed.getString("uri_authority"))
+      if (!legacy) assertTrue("the clipboard service must grant independent recipient read access", observed.getBoolean("uri_read_granted"))
       assertFalse("clipboard paste must not gain write authority over the payload", observed.getBoolean("uri_write_granted"))
+      assertTrue("the actual recipient must be unable to write, enumerate, guess, or traverse clipboard payloads", listOf("uri_write_denied", "uri_directory_denied", "uri_unknown_denied", "uri_traversal_denied").all { observed.getBoolean(it) })
+      assertFalse("the actual recipient must read the URI stream without an error", observed.has("uri_stream_error"))
+      assertEquals("the recipient URI stream must contain every copied byte", bytes.size, observed.getInt("uri_stream_utf8_bytes"))
+      assertEquals("the recipient URI stream digest must match the source", sha256(bytes), observed.getString("uri_stream_sha256"))
     }
-    val bytes = expected.toByteArray(Charsets.UTF_8)
     assertEquals("independent paste must preserve every UTF-8 byte", bytes.size, observed.getInt("utf8_bytes"))
     assertEquals("independent paste must preserve every code unit", expected.length, observed.getInt("code_units"))
     assertEquals("independent paste digest must match the actual source text", sha256(bytes), observed.getString("sha256"))
@@ -2802,6 +2810,7 @@ class AndroidDeliveryInstrumentedTest {
     .put("left", rect.left).put("top", rect.top).put("right", rect.right).put("bottom", rect.bottom)
 
   private fun nativeControlGeometry(scenario: ActivityScenario<MainActivity>, target: JSONObject?): JSONObject {
+    enableNativeWindowObservation()
     val observed = JSONObject().put("scenario_state", scenario.state.name)
     val windows = instrumentation.uiAutomation.windows
     val imeWindows = visibleNativeImeBounds(windows)
@@ -2884,8 +2893,9 @@ class AndroidDeliveryInstrumentedTest {
     screenX: Float, screenY: Float, deadline: Long,
     inject: (MotionEvent) -> Boolean = { event -> instrumentation.sendPointerSync(event); true }
   ) {
+    val press = android.view.ViewConfiguration.getTapTimeout() / 2L
     val settle = android.view.ViewConfiguration.getTapTimeout() * 3L / 2L
-    assertTrue("a single native tap and its processing must fit the original action deadline", SystemClock.elapsedRealtime() + settle < deadline)
+    assertTrue("a single native tap and its processing must fit the original action deadline", SystemClock.elapsedRealtime() + press + settle < deadline)
     val downTime = SystemClock.uptimeMillis()
     val pointer = MotionEvent.PointerProperties().apply { id = 0; toolType = MotionEvent.TOOL_TYPE_FINGER }
     var downRequested = false
@@ -2899,8 +2909,12 @@ class AndroidDeliveryInstrumentedTest {
       val down = event(MotionEvent.ACTION_DOWN)
       downRequested = true
       try { assertTrue("the sole native DOWN must be accepted", inject(down)) } finally { down.recycle() }
+      // Match AndroidX sendDown: keep the sole press long enough to become a tap.
+      val untilRelease = downTime + press - SystemClock.uptimeMillis()
+      if (untilRelease > 0) SystemClock.sleep(untilRelease)
       assertTrue("the sole native release must begin inside the original action deadline", SystemClock.elapsedRealtime() < deadline)
-      // Create UP after DOWN was dispatched, preserving actual monotonic event chronology.
+      assertTrue("an overslept native tap must not silently become a long press", SystemClock.uptimeMillis() < downTime + android.view.ViewConfiguration.getLongPressTimeout())
+      // Create UP after the physical press interval, preserving monotonic chronology.
       val up = event(MotionEvent.ACTION_UP)
       upTime = up.eventTime
       try { assertTrue("the sole native UP must be accepted", inject(up)); upCompleted = true } finally { up.recycle() }
@@ -3753,9 +3767,31 @@ class AndroidDeliveryInstrumentedTest {
     scenario.onActivity { view.set(findWebView(it.window.decorView)) }
     val latch = CountDownLatch(1)
     val result = AtomicReference("null")
-    instrumentation.runOnMainSync { requireNotNull(view.get()).evaluateJavascript(script) { value -> result.set(value ?: "null"); latch.countDown() } }
+    val requested = SystemClock.elapsedRealtime()
+    val posted = java.util.concurrent.atomic.AtomicLong(0L)
+    val traceCallbacks = InstrumentationRegistry.getArguments().getString("s047ObservationTrace") == "true"
+    val caller = if (traceCallbacks) Throwable().stackTrace.firstOrNull { it.methodName != "evaluate" && it.methodName != "evaluate\$default" } else null
+    val scriptDigest = if (traceCallbacks) sha256(script.toByteArray(Charsets.UTF_8)) else "trace_disabled"
+    instrumentation.runOnMainSync {
+      posted.set(SystemClock.elapsedRealtime())
+      requireNotNull(view.get()).evaluateJavascript(script) { value ->
+        result.set(value ?: "null"); latch.countDown()
+        val completed = SystemClock.elapsedRealtime()
+        if (traceCallbacks && completed - requested >= 1_000L) {
+          println("native_webview_slow_callback=" + JSONObject().put("requested_at", requested).put("posted_at", posted.get()).put("completed_at", completed)
+            .put("elapsed_ms", completed - requested).put("payload_characters", value?.length ?: 0).put("script_sha256", scriptDigest).put("caller", caller?.toString()).put("activation", actionCallback))
+          System.out.flush()
+        }
+      }
+    }
     val remaining = minOf(if (actionCallback) 30_000L else 2_000L, (deadlineOverride ?: Long.MAX_VALUE) - SystemClock.elapsedRealtime())
-    assertTrue("WebView observation or activation did not complete", remaining > 0 && latch.await(remaining, TimeUnit.MILLISECONDS))
+    val completed = remaining > 0 && latch.await(remaining, TimeUnit.MILLISECONDS)
+    if (!completed) {
+      println("native_webview_callback_timeout=" + JSONObject().put("requested_at", requested).put("posted_at", posted.get()).put("elapsed_ms", SystemClock.elapsedRealtime() - requested)
+        .put("allowed_wait_ms", remaining).put("script_characters", script.length).put("script_sha256", scriptDigest).put("caller", caller?.toString()).put("activation", actionCallback))
+      System.out.flush()
+    }
+    assertTrue("WebView observation or activation did not complete", completed)
     return result.get()
   }
 

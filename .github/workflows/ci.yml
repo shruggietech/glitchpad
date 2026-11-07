@@ -285,10 +285,9 @@ jobs:
       GLITCHPAD_BUILD_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
       VITE_GLITCHPAD_BUILD_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
     name: ${{ github.event_name == 'workflow_dispatch' && inputs.android_runtime == 'back_diagnostic' && 'Android Back diagnostic' || 'Android task journeys' }} (${{ matrix.role }}, API ${{ matrix.api-level }})
-    # Android emulator installation repeatedly stalls without hardware acceleration
-    # on Linux-hosted runners. The Intel macOS image provides accelerated x86_64
-    # emulation for the required API 24 and API 36 lifecycle evidence.
-    runs-on: macos-15-intel
+    # Explicit KVM access keeps the guest Android versions and test budgets unchanged.
+    # Focused API 24/API 36 diagnostics completed on this accelerated Linux host.
+    runs-on: ubuntu-latest
     # Retain the full composed campaign after the observed build/emulator setup cost.
     # Per-action and per-process attempt limits remain enforced by their runners.
     timeout-minutes: 90
@@ -354,6 +353,12 @@ jobs:
           node --test scripts/configure-android-task-avd.test.mjs
           ./crates/glitchpad-host/gen/android/gradlew --project-dir crates/glitchpad-host/gen/android :glitchpad-android-source:testDebugUnitTest --no-daemon
           ./crates/glitchpad-host/gen/android/gradlew --project-dir crates/glitchpad-host/gen/android :app:assembleUniversalDebugAndroidTest -PabiList=x86_64 -ParchList=x86_64 -PtargetList=x86_64 -x :app:rustBuildUniversalDebug -x :app:rustBuildX86_64Debug --no-daemon
+
+      - name: Enable emulator KVM access
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
 
       - name: Run provider, resolver, delivery, and restoration evidence
         env:

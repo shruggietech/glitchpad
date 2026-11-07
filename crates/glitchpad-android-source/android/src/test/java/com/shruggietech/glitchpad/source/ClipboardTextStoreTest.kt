@@ -2,6 +2,8 @@ package com.shruggietech.glitchpad.source
 
 import java.io.File
 import java.io.IOException
+import java.io.FileNotFoundException
+import java.nio.file.Files
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
@@ -87,5 +89,46 @@ class ClipboardTextStoreTest {
     assertEquals("small", store.prepare("small").inlineText)
     try { store.prepare(largeText()); fail("large payload unexpectedly used unavailable storage") }
     catch (_: IOException) { assertEquals(0L, notDirectory.length()) }
+  }
+
+  @Test fun opaqueTokensResolveOnlyTheExactPreparedFile() {
+    val store = ClipboardTextStore(directory())
+    val first = store.prepare(largeText()).file!!
+    val second = store.prepare(largeText()).file!!
+    assertTrue(first.name.matches(Regex("clip-[0-9a-f-]{36}\\.txt")))
+    assertNotEquals(first.name, second.name)
+    assertEquals(first.canonicalFile, store.resolveToken(first.name))
+    assertArrayEquals(largeText().toByteArray(Charsets.UTF_8), store.resolveToken(first.name).readBytes())
+  }
+
+  private fun rejectsToken(store: ClipboardTextStore, name: String) {
+    try { store.resolveToken(name); fail("unexpected clipboard token: " + name) }
+    catch (_: FileNotFoundException) { }
+  }
+
+  @Test fun tokensCannotEnumerateTraverseOrReadAnUnrelatedFile() {
+    val directory = directory().apply { mkdirs() }
+    val unrelated = File(directory, "unrelated.txt").apply { writeText("not copied", Charsets.UTF_8) }
+    val store = ClipboardTextStore(directory)
+    for (name in listOf("", ".", "..", "../" + unrelated.name, unrelated.name, unrelated.absolutePath,
+      "clip-00000000-0000-4000-8000-000000000000.txt", "clip-00000000-0000-4000-8000-000000000000.txt/../unrelated.txt")) rejectsToken(store, name)
+    assertEquals("not copied", unrelated.readText(Charsets.UTF_8))
+  }
+
+  @Test fun aTokenCannotFollowALinkOutsideTheClipboardDirectory() {
+    val directory = directory().apply { mkdirs() }
+    val outside = temporary.newFile("private.txt").apply { writeText("private", Charsets.UTF_8) }
+    val link = File(directory, "clip-00000000-0000-4000-8000-000000000000.txt")
+    Files.createSymbolicLink(link.toPath(), outside.toPath())
+    rejectsToken(ClipboardTextStore(directory), link.name)
+    assertEquals("private", outside.readText(Charsets.UTF_8))
+  }
+
+  @Test fun successfulReplacementMakesAnOldTokenUnreadable() {
+    val store = ClipboardTextStore(directory())
+    val first = store.prepare(largeText()).file!!
+    assertEquals(first.canonicalFile, store.resolveToken(first.name))
+    store.retirePrevious(store.prepare("next copy"))
+    rejectsToken(store, first.name)
   }
 }

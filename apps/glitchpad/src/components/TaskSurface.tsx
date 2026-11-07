@@ -18,9 +18,13 @@ import { useNativeViewport } from './use-native-viewport';
 import './TaskSurface.css';
 
 function preserveTouchButtonFocus(event: SyntheticEvent<HTMLDivElement>) {
-  const button = event.target instanceof Element
-    ? event.target.closest<HTMLButtonElement>('button')
-    : null;
+  const active = document.activeElement;
+  if (!active || !event.currentTarget.contains(active) ||
+      !active.matches('input,textarea,[contenteditable="true"]')) return;
+  const button =
+    event.target instanceof Element
+      ? event.target.closest<HTMLButtonElement>('button')
+      : null;
   // Keep touch focus and IME geometry stable until the button click.
   if (button && !button.disabled && event.currentTarget.contains(button))
     event.preventDefault();
@@ -207,7 +211,10 @@ export function TaskSurface({
               sourceCapabilities?: { firesTouchEvents?: boolean };
             };
             // API 24 can omit pointerType and deliver compatibility mouse events.
-            if (event.button === 0 && native.sourceCapabilities?.firesTouchEvents)
+            if (
+              event.button === 0 &&
+              native.sourceCapabilities?.firesTouchEvents
+            )
               preserveTouchButtonFocus(event);
           }}
           onPointerDownOutside={(event) => {

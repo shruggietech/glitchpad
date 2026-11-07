@@ -463,7 +463,7 @@ jobs:
           PY
           python scripts/verify-brandbuilder.py 2>&1 | tee "$RUNNER_TEMP/s047-recovery-preflight/brand-contract.log"
       - name: Format affected sources with the repository pin
-        run: pnpm exec prettier --write scripts/check-app-layout.mjs scripts/run-android-evidence.test.mjs apps/glitchpad/src/styles.css apps/glitchpad/src/components/TaskSurface.tsx apps/glitchpad/src/components/TaskSurface.test.tsx
+        run: pnpm exec prettier --write scripts/check-app-layout.mjs scripts/run-android-evidence.test.mjs apps/glitchpad/src/styles.css apps/glitchpad/src/components/TaskSurface.tsx apps/glitchpad/src/components/TaskSurface.test.tsx apps/glitchpad/src/components/LargeTextSurface.tsx apps/glitchpad/src/components/LargeTextSurface.test.tsx scripts/check-image-layout.mjs
       - name: Reproduce pointer focus movement with the previous TaskSurface
         if: inputs.stage == 'touch_preflight'
         run: |
@@ -484,27 +484,22 @@ jobs:
           assert.ok(r.testResults.flatMap(t=>t.assertionResults).some(a=>a.status==='failed'&&a.fullName.includes('rounded CSSOM')));
           NODE
 
-      - name: Reproduce enlarged recovery overflow with the previous CSS
+      - name: Reproduce large-text modal focus escape with previous source
         run: |
-          cp apps/glitchpad/src/styles.css "$RUNNER_TEMP/s047-fixed-recovery.css"
-          git fetch --no-tags --depth=1 origin 8eef5f589cab9a17c15ca1937fc0c65223cfabe0
-          git show 8eef5f589cab9a17c15ca1937fc0c65223cfabe0:apps/glitchpad/src/styles.css > apps/glitchpad/src/styles.css
-          pnpm run build > "$RUNNER_TEMP/s047-recovery-preflight/red-build.log" 2>&1
+          cp apps/glitchpad/src/components/LargeTextSurface.tsx "$RUNNER_TEMP/s047-fixed-large-text.tsx"
+          git fetch --no-tags --depth=1 origin 789ad693bc1d72dfcbbe74a4aad24ba30ce337c5
+          git show 789ad693bc1d72dfcbbe74a4aad24ba30ce337c5:apps/glitchpad/src/components/LargeTextSurface.tsx > apps/glitchpad/src/components/LargeTextSurface.tsx
           set +e
-          node scripts/check-app-layout.mjs --group recovery --profile narrow --receipt "$RUNNER_TEMP/s047-recovery-preflight/recovery-red.json" > "$RUNNER_TEMP/s047-recovery-preflight/recovery-red.log" 2>&1
+          pnpm --dir apps/glitchpad exec vitest run src/components/LargeTextSurface.test.tsx --testNamePattern='keeps successful line-navigation focus' > "$RUNNER_TEMP/s047-recovery-preflight/large-text-red.log" 2>&1
           red_exit=$?
           set -e
-          cp "$RUNNER_TEMP/s047-fixed-recovery.css" apps/glitchpad/src/styles.css
+          cp "$RUNNER_TEMP/s047-fixed-large-text.tsx" apps/glitchpad/src/components/LargeTextSurface.tsx
           test "$red_exit" -ne 0
-          node --input-type=module <<'NODE'
-          import assert from 'node:assert/strict';
-          import {readFileSync} from 'node:fs';
-          const receipt=JSON.parse(readFileSync(process.env.RUNNER_TEMP+'/s047-recovery-preflight/recovery-red.json','utf8'));
-          assert.ok(receipt.failures.some(f=>f.text_scale===2 && /Recovery task must fit the actual modeled native visible frame/.test(f.message)),'RED must reproduce the actual enlarged recovery overflow');
-          NODE
+          grep -F 'keeps successful line-navigation focus' "$RUNNER_TEMP/s047-recovery-preflight/large-text-red.log"
       - name: Validate complete frontend and corrected production recovery profiles
         run: |
           pnpm run check:frontend 2>&1 | tee "$RUNNER_TEMP/s047-recovery-preflight/frontend-green.log"
+          pnpm run check:images 2>&1 | tee "$RUNNER_TEMP/s047-recovery-preflight/images-green.log"
           node scripts/check-app-layout.mjs --group recovery --receipt "$RUNNER_TEMP/s047-recovery-preflight/recovery-modern.json" 2>&1 | tee "$RUNNER_TEMP/s047-recovery-preflight/modern.log"
           mkdir -p /tmp/glitchpad-browser-compat/client
           npm install --prefix /tmp/glitchpad-browser-compat/client --ignore-scripts --no-audit --no-fund puppeteer-core@1.9.0
@@ -527,6 +522,9 @@ jobs:
             apps/glitchpad/src/styles.css
             apps/glitchpad/src/components/TaskSurface.tsx
             apps/glitchpad/src/components/TaskSurface.test.tsx
+            apps/glitchpad/src/components/LargeTextSurface.tsx
+            apps/glitchpad/src/components/LargeTextSurface.test.tsx
+            scripts/check-image-layout.mjs
             scripts/check-app-layout.mjs
             scripts/run-android-evidence.test.mjs
             .codex-tmp/s047/r28-hosted-source-rebind.json

@@ -18,11 +18,11 @@ const manifest = JSON.parse(
   await readFile(join(root, 'fixtures/images/manifest.json'), 'utf8'),
 );
 assert.equal(manifest.license, 'Apache-2.0');
-assert.equal(manifest.files.length, 29);
+assert.equal(manifest.files.length, 30);
 for (const file of manifest.files) {
   assert.match(
     file.name,
-    /^(?:original\.(?:png|jpg|webp|bmp|tiff|gif|svg)|orientation-[1-8]\.jpg|animated\.webp|entries\.ico|hostile\.svg|svg-(?:presentation|namespaced|reuse|external|cycle|malformed|unsupported|missing|resource|viewport|read-denied)\.svg)$/u,
+    /^(?:original\.(?:png|jpg|webp|bmp|tiff|gif|svg)|orientation-[1-8]\.jpg|s047-playback\.gif|animated\.webp|entries\.ico|hostile\.svg|svg-(?:presentation|namespaced|reuse|external|cycle|malformed|unsupported|missing|resource|viewport|read-denied)\.svg)$/u,
   );
   const bytes = await readFile(join(root, 'fixtures/images', file.name));
   assert.equal(bytes.length, file.bytes);

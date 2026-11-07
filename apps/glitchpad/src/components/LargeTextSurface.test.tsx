@@ -566,3 +566,44 @@ it('announces real search progress and retains current bytes after search and Go
     screen.getByRole('button', { name: 'Previous section' }),
   ).toBeDisabled();
 });
+
+it('keeps successful line-navigation focus inside the open tools modal', async () => {
+  const ref = createRef<TextEditorHandle>();
+  const { container } = render(<LargeTextSurface ref={ref} session={session} gateway={new MemoryLargeTextGateway('large-source', bytes)} />);
+  await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(/read-only/i));
+  openLargeTools(ref);
+  const line = screen.getByLabelText('Line');
+  const content = container.querySelector<HTMLPreElement>('.large-text-content')!;
+  const backgroundFocus = vi.spyOn(content, 'focus');
+  try {
+    line.focus();
+    fireEvent.change(line, { target: { value: '2' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Go to line' }));
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Line 2 is at the start of the visible section.'));
+    await waitFor(() => expect(line).toHaveFocus());
+    expect(backgroundFocus).not.toHaveBeenCalled();
+    expect(screen.getByRole('dialog', { name: 'Large text tools' }).contains(document.activeElement)).toBe(true);
+  } finally { backgroundFocus.mockRestore(); }
+});
+
+it('restores the tool field after asynchronous Copy temporarily disables it', async () => {
+  const original = Object.getOwnPropertyDescriptor(navigator, 'clipboard');
+  let finishCopy!: () => void;
+  Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: () => new Promise<void>((resolve) => { finishCopy = resolve; }) } });
+  try {
+    const ref = createRef<TextEditorHandle>();
+    render(<LargeTextSurface ref={ref} session={session} gateway={new MemoryLargeTextGateway('large-source', bytes)} />);
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(/read-only/i));
+    openLargeTools(ref);
+    const line = screen.getByLabelText('Line'); line.focus();
+    fireEvent.click(screen.getByRole('button', { name: 'Copy visible section' }));
+    await waitFor(() => expect(line).toBeDisabled());
+    line.blur();
+    await act(async () => { finishCopy(); await Promise.resolve(); });
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Visible section copied'));
+    expect(line).toHaveFocus();
+  } finally {
+    if (original) Object.defineProperty(navigator, 'clipboard', original);
+    else Reflect.deleteProperty(navigator, 'clipboard');
+  }
+});

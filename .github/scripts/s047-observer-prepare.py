@@ -10,8 +10,8 @@ def digest(path):
  with path.open('rb') as stream:
   for chunk in iter(lambda:stream.read(1024*1024),b''): h.update(chunk)
  return h.hexdigest()
-expected='939eee7b4ee3d211fb5bf82da140690248b3b5c12e6b07f40a76f91f6c9dc266'
-if digest(app)!=expected or app.stat().st_size!=230309962: raise RuntimeError('original APK mismatch')
+expected=os.environ.get('S047_ORIGINAL_APK_SHA256','939eee7b4ee3d211fb5bf82da140690248b3b5c12e6b07f40a76f91f6c9dc266')
+if digest(app)!=expected or app.stat().st_size!=int(os.environ.get('S047_ORIGINAL_APK_BYTES','230309962')): raise RuntimeError('original APK mismatch')
 lock=tomllib.loads((root/'Cargo.lock').read_text())
 pin=next(p for p in lock['package'] if p['name']=='tauri' and p['version']=='2.11.6')
 with urllib.request.urlopen('https://static.crates.io/crates/tauri/tauri-2.11.6.crate',timeout=60) as response: data=response.read(64*1024*1024+1)
@@ -39,7 +39,7 @@ project=root/'crates/glitchpad-host/gen/android'
 generated=json.loads((root/'.github/scripts/s047-generated-sdk-inputs.json').read_text(encoding='utf-8'))
 for item in generated:
  if digest(root/item['path'])!=item['sha256']: raise RuntimeError('generated SDK source mismatch')
-manifest={'generated_sdk_inputs':generated,'diagnostic_only':True,'candidate_qualified':False,'product_source':'f572e0fbbd1d2978b6e4064a31817201834c8965','product_sha256':expected,'product_bytes':app.stat().st_size,'original_artifact':13555731908,'fixture_source':os.environ['GITHUB_SHA'],'native_fixture_sha256':digest(root/'crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt')}
+manifest={'generated_sdk_inputs':generated,'diagnostic_only':True,'candidate_qualified':False,'product_source':os.environ.get('S047_PRODUCT_SOURCE','f572e0fbbd1d2978b6e4064a31817201834c8965'),'product_sha256':expected,'product_bytes':app.stat().st_size,'original_artifact':int(os.environ.get('S047_ORIGINAL_ARTIFACT','13555731908')),'fixture_source':os.environ['GITHUB_SHA'],'native_fixture_sha256':digest(root/'crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt')}
 (out/'source-manifest.json').write_text(json.dumps(manifest,indent=2)+'\n',encoding='utf-8')
 with open(os.environ['GITHUB_ENV'],'a',encoding='utf-8') as env: env.write('S047_ORIGINAL_APK='+str(app)+'\n')
 print(json.dumps(manifest))

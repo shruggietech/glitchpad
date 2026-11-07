@@ -19,7 +19,7 @@ def payload(path):
     for chunk in iter(lambda:stream.read(1024*1024),b''): h.update(chunk)
    rows.append({'name':info.filename,'bytes':info.file_size,'sha256':h.hexdigest()})
  return rows
-expected='939eee7b4ee3d211fb5bf82da140690248b3b5c12e6b07f40a76f91f6c9dc266'
+expected=os.environ.get('S047_ORIGINAL_APK_SHA256','939eee7b4ee3d211fb5bf82da140690248b3b5c12e6b07f40a76f91f6c9dc266')
 if digest(original)!=expected: raise RuntimeError('original APK changed')
 signer=Path(os.environ['ANDROID_SDK_ROOT'])/'build-tools/36.0.0/apksigner'
 fixture_original=Path(os.environ['GITHUB_WORKSPACE'])/'crates/glitchpad-host/gen/android/app/build/outputs/apk/androidTest/universal/debug/app-universal-debug-androidTest.apk'

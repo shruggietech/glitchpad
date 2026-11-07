@@ -458,3 +458,30 @@ it('keeps focus inside an open Add document menu when an older task closes late'
   opener.remove();
   menu.remove();
 });
+
+it.each([
+  { pointerType: 'touch', preventsFocus: true },
+  { pointerType: 'mouse', preventsFocus: false },
+])('defers pointer focus until button activation ($pointerType)', async ({ pointerType, preventsFocus }) => {
+  const host = document.createElement('div');
+  host.id = 'bb-overlay-root';
+  document.body.append(host);
+  const activate = vi.fn();
+  render(
+    <TaskSurface open title="Search" onOpenChange={() => undefined}>
+      <label>Find<input /></label>
+      <button onClick={activate}><span>Next match</span></button>
+    </TaskSurface>,
+  );
+  await screen.findByRole('dialog', { name: 'Search' });
+  const input = screen.getByRole('textbox', { name: 'Find' });
+  input.focus();
+  const pointer = new MouseEvent('pointerdown', { bubbles: true, cancelable: true, button: 0 });
+  Object.defineProperty(pointer, 'pointerType', { value: pointerType });
+  fireEvent(screen.getByText('Next match'), pointer);
+  expect(pointer.defaultPrevented).toBe(preventsFocus);
+  expect(input).toHaveFocus();
+  expect(activate).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: 'Next match' }));
+  expect(activate).toHaveBeenCalledExactlyOnceWith(expect.anything());
+});

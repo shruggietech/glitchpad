@@ -4,7 +4,7 @@ on:
     inputs:
       stage:
         type: choice
-        options: [observers, source_binding, sdk_source, tap_observer, metadata_observer, clipboard_observer, aggregate, working_candidate, converge_context, geometry_candidate, recovery_preflight, legacy_capture, bootstrap_viewport, font_configuration, handoff_probe]
+        options: [observers, source_binding, sdk_source, tap_observer, metadata_observer, clipboard_observer, aggregate, working_candidate, converge_context, geometry_candidate, recovery_preflight, legacy_capture, bootstrap_viewport, font_configuration, handoff_probe, touch_preflight]
         default: observers
       candidate_source:
         description: Exact public candidate SHA for aggregate only
@@ -423,7 +423,7 @@ jobs:
           retention-days: 7
 
   recovery-preflight:
-    if: inputs.stage == 'recovery_preflight'
+    if: inputs.stage == 'recovery_preflight' || inputs.stage == 'touch_preflight'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -463,7 +463,27 @@ jobs:
           PY
           python scripts/verify-brandbuilder.py 2>&1 | tee "$RUNNER_TEMP/s047-recovery-preflight/brand-contract.log"
       - name: Format affected sources with the repository pin
-        run: pnpm exec prettier --write scripts/check-app-layout.mjs scripts/run-android-evidence.test.mjs apps/glitchpad/src/styles.css
+        run: pnpm exec prettier --write scripts/check-app-layout.mjs scripts/run-android-evidence.test.mjs apps/glitchpad/src/styles.css apps/glitchpad/src/components/TaskSurface.tsx apps/glitchpad/src/components/TaskSurface.test.tsx
+      - name: Reproduce pointer focus movement with the previous TaskSurface
+        if: inputs.stage == 'touch_preflight'
+        run: |
+          cp apps/glitchpad/src/components/TaskSurface.tsx "$RUNNER_TEMP/s047-fixed-task-surface.tsx"
+          git fetch --no-tags --depth=1 origin 1f4b05170567fa19b97f4e4dc92e8730822b0441
+          git show 1f4b05170567fa19b97f4e4dc92e8730822b0441:apps/glitchpad/src/components/TaskSurface.tsx > apps/glitchpad/src/components/TaskSurface.tsx
+          set +e
+          pnpm --dir apps/glitchpad exec vitest run src/components/TaskSurface.test.tsx --testNamePattern='defers pointer focus until button activation' --reporter=json --outputFile="$RUNNER_TEMP/s047-recovery-preflight/touch-red.json" > "$RUNNER_TEMP/s047-recovery-preflight/touch-red.log" 2>&1
+          red_exit=$?
+          set -e
+          cp "$RUNNER_TEMP/s047-fixed-task-surface.tsx" apps/glitchpad/src/components/TaskSurface.tsx
+          test "$red_exit" -ne 0
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import {readFileSync} from 'node:fs';
+          const r=JSON.parse(readFileSync(process.env.RUNNER_TEMP+'/s047-recovery-preflight/touch-red.json','utf8'));
+          assert.equal(r.numFailedTests,1);
+          assert.ok(r.testResults.flatMap(t=>t.assertionResults).some(a=>a.status==='failed'&&a.fullName.includes('(touch)')));
+          NODE
+
       - name: Reproduce enlarged recovery overflow with the previous CSS
         run: |
           cp apps/glitchpad/src/styles.css "$RUNNER_TEMP/s047-fixed-recovery.css"
@@ -505,6 +525,8 @@ jobs:
           path: |
             ${{ runner.temp }}/s047-recovery-preflight/**
             apps/glitchpad/src/styles.css
+            apps/glitchpad/src/components/TaskSurface.tsx
+            apps/glitchpad/src/components/TaskSurface.test.tsx
             scripts/check-app-layout.mjs
             scripts/run-android-evidence.test.mjs
             .codex-tmp/s047/r28-hosted-source-rebind.json

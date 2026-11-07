@@ -186,6 +186,21 @@ export function TaskSurface({
             // Keep Escape on the same owned layer order as native Back.
             dismissTopTaskSurface();
           }}
+          onPointerDown={(event) => {
+            const button =
+              event.target instanceof Element
+                ? event.target.closest<HTMLButtonElement>('button')
+                : null;
+            // Keep touch focus and IME geometry stable until the button click.
+            if (
+              event.pointerType === 'touch' &&
+              event.button === 0 &&
+              button &&
+              !button.disabled &&
+              event.currentTarget.contains(button)
+            )
+              event.preventDefault();
+          }}
           onPointerDownOutside={(event) => {
             if (!canClose) event.preventDefault();
           }}

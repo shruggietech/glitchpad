@@ -1953,6 +1953,23 @@ class AndroidDeliveryInstrumentedTest {
         val rect=JSONObject(evaluate(scenario,"(()=>{const n=document.querySelector('[role=dialog]');if(!n)return {found:false};const r=n.getBoundingClientRect();return {found:true,left:r.left,top:r.top,right:r.right,bottom:r.bottom,x:(r.left+r.right)/2,y:(r.top+r.bottom)/2,viewport_width:innerWidth};})()"))
         (expectedIme || visibleNativeImeBounds().isEmpty()) && rect.getBoolean("found")&&nativeControlGeometry(scenario,rect).getBoolean("whole_control_visible")
       }
+      if (!expectedIme && task == "mermaid_search" && InstrumentationRegistry.getArguments().getString("selectionToolbarProbe") == "true") {
+        val before = selectionToolbarWindows()
+        println("s047_selection_toolbar_before=" + before); System.out.flush()
+        captureEditorFocusFailure(scenario, "selection_toolbar_before", JSONObject().put("windows", before))
+        val popup = (0 until before.length()).any { before.getJSONObject(it).optString("title") == "Popup Window" && before.getJSONObject(it).getJSONArray("labels").toString().contains("Paste") }
+        assertTrue("the exact native text-edit popup must be reproduced before testing Back", popup)
+        val result = instrumentation.uiAutomation.performGlobalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK)
+        println("s047_selection_toolbar_back=" + result); System.out.flush()
+        try {
+          waitForCondition(scenario, "Array.from(document.querySelectorAll('.task-surface[role=dialog][data-state=open] h2')).some(n=>n.textContent==='Find in diagram')", "one actual system Back must retain the search task while dismissing its native text toolbar", deadlineOverride=deadline)
+          val after = selectionToolbarWindows()
+          println("s047_selection_toolbar_after=" + after); System.out.flush()
+          assertFalse("the native text-edit popup must be dismissed by that one Back", (0 until after.length()).any { after.getJSONObject(it).optString("title") == "Popup Window" && after.getJSONObject(it).getJSONArray("labels").toString().contains("Paste") })
+        } finally {
+          captureEditorFocusFailure(scenario, "selection_toolbar_after", JSONObject().put("windows", selectionToolbarWindows()))
+        }
+      }
       observeVisibleTaskControls(scenario,profile+":"+task,deadlineOverride=deadline,expectedImeVisible=expectedIme)
       val recorded = taskControlMeasurements.getJSONObject(taskControlMeasurements.length()-1)
       recorded.put("ime_applicable",inputLabel!=null)
@@ -2005,6 +2022,34 @@ class AndroidDeliveryInstrumentedTest {
     observe("preferences","Editor font family",family)
     tapNativeControlOnce(scenario,"Close Preferences")
     hideIme(SystemClock.elapsedRealtime()+30_000L)
+  }
+
+  @Test fun s047SelectionToolbarProbe() {
+    val scenario = launchS047()
+    enableNativeWindowObservation()
+    verifyS047EditorAndPreferences(scenario)
+    verifyS047MarkdownAndMetadata(scenario)
+    verifyS047LargeText(scenario)
+    verifyS047TaskGeometry(scenario, "portrait-1.0", false)
+    println("s047_handoff_probe=pass"); System.out.flush()
+  }
+
+  private fun selectionToolbarWindows(): org.json.JSONArray {
+    val rows = org.json.JSONArray()
+    for (window in instrumentation.uiAutomation.windows) {
+      val labels = org.json.JSONArray()
+      val nodes = java.util.ArrayDeque<AccessibilityNodeInfo>()
+      window.root?.let { nodes.add(it) }
+      var count = 0
+      while (nodes.isNotEmpty() && count++ < 256) {
+        val node = nodes.removeFirst()
+        val label = node.text?.toString() ?: node.contentDescription?.toString()
+        if (label != null) labels.put(label.take(160))
+        for (index in 0 until node.childCount) node.getChild(index)?.let { nodes.add(it) }
+      }
+      rows.put(JSONObject().put("title", window.title?.toString()).put("type", window.type).put("layer", window.layer).put("labels", labels))
+    }
+    return rows
   }
 
   @Test fun s047LayoutJourney() {

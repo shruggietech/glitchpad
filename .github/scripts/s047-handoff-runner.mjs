@@ -24,10 +24,10 @@ if (api === 36) {
   await adb(['shell', 'cmd', 'overlay', 'enable', '--user', '0', 'com.android.internal.display.cutout.emulation.corner']);
 }
 const results = [];
-for (const method of ['s047DraftFocusProbe', 's047SearchCloseProbe']) {
+for (const method of ['s047SelectionToolbarProbe']) {
   await adb(['shell', 'settings', 'put', 'system', 'font_scale', '1.0']);
   try {
-    const r = await run('bash', ['scripts/run-android-instrumentation.sh', join(out, method + '.txt'), 's047_handoff_probe=pass', '-e', 's047', 'true', '-e', 'waitForActivitiesToComplete', 'false', '-e', 'expectedSource', process.env.GLITCHPAD_BUILD_COMMIT, '-e', 'expectedRole', 'ordinary', '-e', 'class', 'com.shruggietech.glitchpad.source.AndroidDeliveryInstrumentedTest#' + method], { env: { ...process.env, ANDROID_INSTRUMENTATION_RESET_APP_DATA: 'true' }, encoding: 'utf8', timeout: 480000, maxBuffer: 4 * 1024 * 1024 });
+    const r = await run('bash', ['scripts/run-android-instrumentation.sh', join(out, method + '.txt'), 's047_handoff_probe=pass', '-e', 's047', 'true', '-e', 'selectionToolbarProbe', 'true', '-e', 'waitForActivitiesToComplete', 'false', '-e', 'expectedSource', process.env.GLITCHPAD_BUILD_COMMIT, '-e', 'expectedRole', 'ordinary', '-e', 'class', 'com.shruggietech.glitchpad.source.AndroidDeliveryInstrumentedTest#' + method], { env: { ...process.env, ANDROID_INSTRUMENTATION_RESET_APP_DATA: 'true' }, encoding: 'utf8', timeout: 480000, maxBuffer: 4 * 1024 * 1024 });
     await writeFile(join(out, method + '-driver.log'), r.stdout + '\n' + r.stderr);
     results.push({ method, status: 'pass' });
   } catch (error) {

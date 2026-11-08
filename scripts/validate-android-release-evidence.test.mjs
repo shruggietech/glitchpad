@@ -118,7 +118,17 @@ test('a marker or claimed pass cannot hide runner failure or wrong readback byte
   };
   const output = 'OK (1 test)\nINSTRUMENTATION_CODE: -1\n';
   validateReleaseAttempt(clean, output, marker, 'delivery', marker.sha256);
-  assert.throws(() => validateReleaseAttempt(clean, 'OK (1 test)\n', marker, 'delivery', marker.sha256), /instrumentation completion/u);
+  assert.throws(
+    () =>
+      validateReleaseAttempt(
+        clean,
+        'OK (1 test)\n',
+        marker,
+        'delivery',
+        marker.sha256,
+      ),
+    /instrumentation completion/u,
+  );
   assert.throws(() =>
     validateReleaseAttempt(
       { ...clean, command_exit: 137 },

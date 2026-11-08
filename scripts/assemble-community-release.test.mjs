@@ -125,14 +125,12 @@ async function releaseFixture() {
       linux: [3, 5],
       android: [5, 8],
     };
-    const payloads = artifacts
-      .slice(...ranges[platform])
-      .map((name) => ({
-        name,
-        bytes: Buffer.byteLength(name),
-        size_bytes: Buffer.byteLength(name),
-        sha256: createHash('sha256').update(name).digest('hex'),
-      }));
+    const payloads = artifacts.slice(...ranges[platform]).map((name) => ({
+      name,
+      bytes: Buffer.byteLength(name),
+      size_bytes: Buffer.byteLength(name),
+      sha256: createHash('sha256').update(name).digest('hex'),
+    }));
     const manifestBytes = JSON.stringify({
       version: '0.2.1',
       publication_context: 'staged_unpublished',

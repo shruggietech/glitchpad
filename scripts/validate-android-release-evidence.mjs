@@ -5,7 +5,12 @@ import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { releaseIdentity } from './lib/release-identity.mjs';
 
-const androidPackageContract = JSON.parse(readFileSync(new URL('../packaging/android/package-contract.json', import.meta.url), 'utf8'));
+const androidPackageContract = JSON.parse(
+  readFileSync(
+    new URL('../packaging/android/package-contract.json', import.meta.url),
+    'utf8',
+  ),
+);
 
 export const releaseCaseGroups = Object.freeze({
   delivery: ['delivery'],

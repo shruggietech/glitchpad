@@ -259,7 +259,17 @@ async function verifyAndroidRuntime(files, record) {
     tests.length === 1,
     'accepted release instrumentation missing/duplicated',
   );
-  execFileSync('python3', [fileURLToPath(new URL('./android/check-release-test-notices.py', import.meta.url)), '--apk', tests[0]], {stdio:'pipe',windowsHide:true,timeout:30000});
+  execFileSync(
+    'python3',
+    [
+      fileURLToPath(
+        new URL('./android/check-release-test-notices.py', import.meta.url),
+      ),
+      '--apk',
+      tests[0],
+    ],
+    { stdio: 'pipe', windowsHide: true, timeout: 30000 },
+  );
   const summaries = files.filter(
     (path) => path.split(/[\\/]/u).at(-1) === 'release-runtime.json',
   );

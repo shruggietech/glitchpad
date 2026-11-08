@@ -271,7 +271,7 @@ test('generation validates specification, workspace, license, and README authori
         workspace: { version: '1.2.3', license: 'Apache-2.0' },
         readme: 'No current release statement.\n',
       }),
-    /README community release status authority/i,
+    /README target release version authority/i,
   );
 });
 
@@ -428,7 +428,7 @@ test('landing copy keeps the current release, canonical brand, and navigation co
     join(siteRoot, 'components', 'footer.tsx'),
     'utf8',
   );
-  assert.match(home, /v0\.2\.0 image-activation candidate/i);
+  assert.match(home, /v0\.2\.1 product recovery source/i);
   assert.match(home, /View your files\./);
   assert.match(
     home,

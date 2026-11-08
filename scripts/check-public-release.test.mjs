@@ -21,9 +21,9 @@ test('active public authority rejects the legacy v0.1.2 identity', async () => {
   const sources = await loadPublicSources();
   const errors = verifyPublicSources({
     ...sources,
-    readme: sources.readme.replaceAll('0.2.0', '0.1.2'),
+    readme: sources.readme.replaceAll('0.2.1', '0.1.2'),
   });
-  assert.match(errors.join('\n'), /0\.2\.0|current release identity/u);
+  assert.match(errors.join('\n'), /0\.2\.1|current release identity/u);
 });
 
 for (const [name, mutate, expected] of [
@@ -68,11 +68,11 @@ for (const [name, mutate, expected] of [
     'stale specification date',
     (sources) => {
       sources.specification = sources.specification.replace(
-        '| Updated | 2026-11-02 |',
+        '| Updated | 2026-11-08 |',
         '| Updated | 2026-08-30 |',
       );
     },
-    /missing \| Updated \| 2026-11-02/,
+    /Updated date does not match latest revision/,
   ],
   [
     'primary support navigation',
@@ -85,8 +85,8 @@ for (const [name, mutate, expected] of [
     'premature main deployment authority',
     (sources) => {
       sources.workflow = sources.workflow.replaceAll(
-        "inputs.deploy && inputs.release_tag == 'v0.2.0'",
-        "(github.event_name == 'push' && github.ref == 'refs/heads/main') || (inputs.deploy && inputs.release_tag == 'v0.2.0')",
+        "inputs.deploy && inputs.release_tag == 'v0.2.1'",
+        "(github.event_name == 'push' && github.ref == 'refs/heads/main') || (inputs.deploy && inputs.release_tag == 'v0.2.1')",
       );
     },
     /exact trusted deployment authority/,
@@ -254,3 +254,15 @@ for (const [name, mutate, expected] of [
     assert.match(verifyPublicSources(sources).join('\n'), expected);
   });
 }
+
+test('source preview metadata cannot claim an unverified published tag', async () => {
+  const sources = await loadPublicSources();
+  sources.workflow = sources.workflow.replace(
+    "GLITCHPAD_PUBLISHED_RELEASE_TAG: ${{ steps.release_authority.outputs.authorized == 'true' && inputs.release_tag || '' }}",
+    'GLITCHPAD_PUBLISHED_RELEASE_TAG: v0.2.1',
+  );
+  assert.match(
+    verifyPublicSources(sources).join('\n'),
+    /published metadata authority/u,
+  );
+});

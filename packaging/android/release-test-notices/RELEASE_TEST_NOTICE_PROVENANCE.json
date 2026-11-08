@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "normalization": "UTF-8 without BOM; CRLF normalized to LF",
+  "licenses": [
+    {
+      "name": "LICENSE-HAMCREST-BSD.txt",
+      "source": "https://raw.githubusercontent.com/hamcrest/JavaHamcrest/hamcrest-java-1.3/LICENSE.txt",
+      "upstream_sha256": "1cde867cab5c8e842929da5391cef98b4017314822270e934e8e2eef3767c666",
+      "normalized_sha256": "3810798072d089fb5e521688b868df0885f7e1b312b1e20c345be34c8e21f06a"
+    },
+    {
+      "name": "LICENSE-JUNIT-EPL-1.0.txt",
+      "source": "https://raw.githubusercontent.com/junit-team/junit4/r4.13.2/LICENSE-junit.txt",
+      "upstream_sha256": "9648bb2891b9813970bddb68d4be8a5e6ec8280d0180a53dfb29236b579c55bb",
+      "normalized_sha256": "9648bb2891b9813970bddb68d4be8a5e6ec8280d0180a53dfb29236b579c55bb"
+    }
+  ]
+}

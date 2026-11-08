@@ -85,7 +85,7 @@ function verifiedAttestation(evidence) {
     repository: contract.official.repository,
     authorized_event: contract.official.authorized_event,
     build_trigger: contract.official.attestation_build_trigger,
-    source_ref: `refs/tags/${contract.official.tag_pattern}`,
+    source_ref: evidence.workflow_identity.split('@').at(-1),
     signer_workflow: `${contract.official.repository}/.github/workflows/linux-package.yml`,
     source_commit: evidence.source_commit,
     version: evidence.version,
@@ -100,9 +100,10 @@ function officialLifecycleEvidence() {
     official: true,
     gate_status: 'official_valid',
     event: contract.official.authorized_event,
+    publication_context: 'staged_unpublished',
     tag: contract.official.tag_pattern,
     evidence_files: [...contract.official.required_evidence],
-    repository_attestation_status: 'generated_by_tag_workflow',
+    repository_attestation_status: 'generated_by_staging_workflow',
   };
 }
 
@@ -456,7 +457,7 @@ test('official receipt filenames bind each Ubuntu and package-form matrix slot',
 test('Debian control metadata requires canonical runtime dependency families', () => {
   const valid = [
     'Package: glitchpad',
-    'Version: 0.2.0',
+    'Version: 0.2.1',
     'Architecture: amd64',
     'Depends: libwebkit2gtk-4.1-0 (>= 2.40), libgtk-3-0 | libgtk-3-0t64',
   ].join('\n');
@@ -497,7 +498,9 @@ test('live attestation verification pins repository, workflow, tag, and source d
                   certificate: {
                     buildTrigger: contract.official.attestation_build_trigger,
                     runnerEnvironment: 'github-hosted',
-                    sourceRepositoryRef: `refs/tags/${contract.official.tag_pattern}`,
+                    sourceRepositoryRef: evidence.workflow_identity
+                      .split('@')
+                      .at(-1),
                     sourceRepositoryDigest: evidence.source_commit,
                     githubWorkflowRepository: contract.official.repository,
                   },
@@ -514,7 +517,7 @@ test('live attestation verification pins repository, workflow, tag, and source d
   for (const { file, args } of calls) {
     assert.equal(file, 'gh');
     assert.ok(args.includes(contract.official.repository));
-    assert.ok(args.includes(`refs/tags/${contract.official.tag_pattern}`));
+    assert.ok(args.includes(evidence.workflow_identity.split('@').at(-1)));
     assert.ok(args.includes(evidence.source_commit));
     assert.ok(args.includes('--deny-self-hosted-runners'));
   }
@@ -524,7 +527,7 @@ test('Linux SBOM uses the shared deterministic desktop component model', () => {
   const bom = generateLinuxSbom(
     {
       packages: [
-        { name: 'glitchpad-host', version: '0.2.0', license: 'Apache-2.0' },
+        { name: 'glitchpad-host', version: '0.2.1', license: 'Apache-2.0' },
       ],
     },
     [{ dependencies: { react: { version: '19.0.0', license: 'MIT' } } }],

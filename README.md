@@ -9,7 +9,7 @@
 
 **A fast, cross-platform viewer and editor for local files.**
 
-[![CI](https://github.com/ShruggieTech/glitchpad/actions/workflows/ci.yml/badge.svg)](https://github.com/ShruggieTech/glitchpad/actions/workflows/ci.yml) [![CodeQL](https://github.com/ShruggieTech/glitchpad/actions/workflows/codeql.yml/badge.svg)](https://github.com/ShruggieTech/glitchpad/actions/workflows/codeql.yml) [![Version](https://img.shields.io/badge/version-0.2.0-6f42c1)](https://github.com/ShruggieTech/glitchpad/releases) [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE) [![Status](https://img.shields.io/badge/status-community%20release-green)](#status)
+[![CI](https://github.com/ShruggieTech/glitchpad/actions/workflows/ci.yml/badge.svg)](https://github.com/ShruggieTech/glitchpad/actions/workflows/ci.yml) [![CodeQL](https://github.com/ShruggieTech/glitchpad/actions/workflows/codeql.yml/badge.svg)](https://github.com/ShruggieTech/glitchpad/actions/workflows/codeql.yml) [![Version](https://img.shields.io/badge/version-0.2.1-6f42c1)](https://github.com/ShruggieTech/glitchpad/releases) [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE) [![Status](https://img.shields.io/badge/status-community%20release-green)](#status)
 
 </div>
 
@@ -17,25 +17,25 @@ Glitchpad is a minimal desktop and Android application for opening, inspecting, 
 
 ## Status
 
-Glitchpad v0.2.0 is the image-activation release candidate. It adds bounded PNG, JPEG, WebP, BMP, TIFF, GIF, SVG and ICO viewing/inspection to the existing text-family capabilities. Download the [latest published release](https://github.com/ShruggieTech/glitchpad/releases/latest); this source-tree candidate does not imply v0.2.0 publication. Windows packages remain unsigned and macOS remains ad-hoc signed and not notarized. See the [candidate release notes](docs/releases/v0.2.0.md).
+Glitchpad v0.2.1 defines the S046/S047 product recovery release: Android New/Open/edit/save/copy/recovery, a compact document shell, truthful document tools, useful inert SVG handling, and verified diagnostic export. It retains bounded image and text-family capabilities. Download the [latest published release](https://github.com/ShruggieTech/glitchpad/releases/latest); the source version alone does not establish publication. Windows packages are unsigned, and macOS is ad-hoc signed and not notarized. See the [release notes](docs/releases/v0.2.1.md) and [preparation receipt](docs/releases/v0.2.1-receipt.md).
 
-The candidate specification and product versions move together; published releases retain their own historical receipts. Every release requires a documentation reconciliation pass before publication.
+Specification and product versions move together. Published releases retain their immutable historical receipts, and each release requires documentation reconciliation and current package/runtime evidence.
 
 ## Current and planned capabilities
 
-- Markdown viewing and in-place editing, including Mermaid diagram source, preview, and validation (retained in the v0.2.0 candidate).
-- Plain-text and supported source-code viewing and editing with language detection and syntax highlighting (retained in the v0.2.0 candidate).
-- Image viewing and inspection, including WebP, SVG, animation and multi-image ICO containers (v0.2.0 candidate).
+- Markdown viewing and in-place editing, including Mermaid diagram source, preview, and validation.
+- Plain-text and supported source-code viewing and editing with language detection and syntax highlighting.
+- Image viewing and inspection, including WebP, SVG, animation and multi-image ICO containers.
 - Planned: PDF viewing with page navigation, document outlines, search, and metadata.
 - Planned: DOCX and OpenDocument viewing through a safe, read-only rendering pipeline.
-- A compact metadata inspector for supported text-family filesystem and document properties (retained in the v0.2.0 candidate); image metadata is included in the v0.2.0 candidate with explicit GPS/location reveal.
-- Small, keyboard-friendly tabs without workspace or project-management UI (retained in the v0.2.0 candidate).
+- A compact metadata inspector for supported text-family filesystem and document properties; image metadata is included with explicit GPS/location reveal.
+- Small, keyboard-friendly tabs without workspace or project-management UI.
 
 Capability claims are promoted from planned to implemented only after their specification, implementation, tests, and platform evidence land together.
 
 ## Supported platforms
 
-| Platform | v0.2.0 candidate baseline | Distribution status |
+| Platform | v0.2.1 baseline | Distribution status |
 | --- | --- | --- |
 | Windows 11 x86_64 | Tauri desktop host | Unsigned NSIS installer and portable ZIP |
 | macOS 13+ universal | Tauri desktop host | Ad-hoc-signed application in a non-notarized DMG |
@@ -43,6 +43,14 @@ Capability claims are promoted from planned to implemented only after their spec
 | Android 7.0+ | Tauri Android host | Stable-project-key universal APK, ARM64 APK, and AAB |
 
 Platform support is evidence-based. A platform becomes supported for a release only when its build, smoke-test, packaging, and documentation gates pass for that release.
+
+## Android document tasks
+
+Use Add document for New Markdown, New text file or Open file. New drafts are editable local documents. Save selects a destination; read-only sources offer Edit a copy, and providers without truthful replacement support use Save As. Cancellation or a failed write keeps the draft dirty. Complete text, including its final newline, is retained by bounded process recovery without inventing a source grant.
+
+Document tools holds actions for the current file; Menu holds Preferences, Diagnostics, Help and About. Back dismisses the keyboard or top temporary layer before document navigation. Unsupported previews explain their cause while retaining available source/details access. Diagnostics lets you inspect one frozen redacted preview before native Save or Share.
+
+Android 7/API24 is the minimum OS baseline; Chromium 69-class WebView is the minimum qualified compatibility profile. Actual API24/API36 WebView versions and package-specific task evidence belong to the [release receipt](docs/releases/v0.2.1-receipt.md).
 
 ## Development
 

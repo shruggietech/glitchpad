@@ -1,3 +1,7 @@
+import com.android.build.api.artifact.ScopedArtifact
+import com.android.build.api.variant.ScopedArtifacts
+import com.shruggietech.glitchpad.kotlin.ReleaseTestRuntimeIsolationTask
+import org.gradle.api.artifacts.component.ModuleComponentIdentifier
 import java.util.Properties
 import org.gradle.api.GradleException
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
@@ -33,8 +37,13 @@ if (keystorePropertiesFile.exists()) {
     }
 }
 
+val instrumentationBuildType = providers.gradleProperty("glitchpad.testBuildType").orElse("debug").get()
+require(instrumentationBuildType in setOf("debug", "release")) { "glitchpad.testBuildType must be debug or release" }
+
 android {
+    testBuildType = instrumentationBuildType
     sourceSets.getByName("androidTest").assets.srcDir(rootProject.file("../../../../fixtures/images"))
+    sourceSets.getByName("androidTest").assets.srcDir(rootProject.file("../../../../packaging/android/release-test-notices"))
     compileSdk = 36
     ndkVersion = "28.2.13676358"
     namespace = "com.shruggietech.glitchpad"
@@ -44,7 +53,7 @@ android {
         minSdk = 24
         targetSdk = 36
         versionCode = tauriProperties.getProperty("tauri.android.versionCode", "1").toInt()
-        versionName = tauriProperties.getProperty("tauri.android.versionName", "0.2.0")
+        versionName = tauriProperties.getProperty("tauri.android.versionName", "0.2.1")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     signingConfigs {
@@ -119,3 +128,30 @@ configurations.configureEach {
 }
 
 apply(from = "tauri.build.gradle.kts")
+
+// App R8 may change shared Kotlin/Trace ABIs. Only release AndroidTest receives
+// private runtime copies; the product artifact graph and keep rules stay untouched.
+if (instrumentationBuildType == "release") {
+    androidComponents.onVariants(androidComponents.selector().withBuildType("release")) { variant ->
+        val test = variant.androidTest ?: return@onVariants
+        val isolated = tasks.register<ReleaseTestRuntimeIsolationTask>(
+            "isolate" + test.name.replaceFirstChar { it.uppercaseChar() } + "Runtime",
+        ) {
+            sharedRuntimeInputs.from(configurations.named(test.name + "CompileClasspath").map { configuration ->
+                configuration.incoming.artifactView {
+                    componentFilter { identifier ->
+                        identifier is ModuleComponentIdentifier &&
+                            ((identifier.group == "org.jetbrains.kotlin" && identifier.module.startsWith("kotlin-stdlib")) ||
+                                (identifier.group == "androidx.tracing" && identifier.module == "tracing"))
+                    }
+                }.files
+            })
+        }
+        test.artifacts.forScope(ScopedArtifacts.Scope.ALL).use(isolated).toTransform(
+            ScopedArtifact.CLASSES,
+            ReleaseTestRuntimeIsolationTask::inputJars,
+            ReleaseTestRuntimeIsolationTask::inputDirectories,
+            ReleaseTestRuntimeIsolationTask::outputJar,
+        )
+    }
+}

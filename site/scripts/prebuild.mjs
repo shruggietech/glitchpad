@@ -395,13 +395,9 @@ function validateAuthorities(parsed, workspace, readme) {
       `Document-control license does not include workspace license ${workspace.license}`,
     );
   const escapedVersion = workspace.version.replaceAll('.', '\\.');
-  if (
-    !new RegExp(
-      `Glitchpad v${escapedVersion} is the image-activation release candidate`,
-    ).test(readme)
-  )
+  if (!new RegExp(`Glitchpad v${escapedVersion}(?:\\s|[.,:])`).test(readme))
     throw new Error(
-      `README community release status authority for v${workspace.version} is missing or changed`,
+      `README target release version authority for v${workspace.version} is missing or changed`,
     );
 }
 
@@ -414,7 +410,7 @@ function renderIntroduction(parsed, workspace) {
     'Authoritative project documentation for Glitchpad.',
   )}${generatedMarker}
 
-Glitchpad is a fast, cross-platform viewer and editor for local files. v${workspace.version} is the image-activation release candidate for Markdown, Mermaid, plain-text, supported source files, and bounded image viewing.
+Glitchpad is a fast, cross-platform viewer and editor for local files. This source defines v${workspace.version} product recovery for Markdown, Mermaid, plain text, supported source files and bounded images, including Android New/Open/save/recovery and current document tools.
 
 ## Technical Specification authority
 
@@ -426,7 +422,7 @@ ${rows}
 
 ## Current release and source
 
-Download the latest published Glitchpad package from the [GitHub release](https://github.com/ShruggieTech/glitchpad/releases/latest). This source tree prepares v${workspace.version}; candidate capabilities are not a claim that its release has been published. For contribution requirements, source code, verification evidence, and current work, visit the [Glitchpad repository](https://github.com/ShruggieTech/glitchpad).
+Download the latest published Glitchpad package from the [GitHub release](https://github.com/ShruggieTech/glitchpad/releases/latest). This source defines v${workspace.version} behavior; a source version does not establish publication. For contribution requirements, source code, verification evidence, and current work, visit the [Glitchpad repository](https://github.com/ShruggieTech/glitchpad).
 `;
 }
 

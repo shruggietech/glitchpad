@@ -96,7 +96,7 @@ async function releaseFixture() {
   await mkdir(input);
   const artifacts = Array.from(
     { length: 8 },
-    (_, index) => `glitchpad-0.2.0-${index}.bin`,
+    (_, index) => `glitchpad-0.2.1-${index}.bin`,
   );
   for (const name of artifacts) await writeFile(join(input, name), name);
   const trustStates = {
@@ -119,7 +119,24 @@ async function releaseFixture() {
       platform === 'android'
         ? { authority: 'official', publication_status: 'eligible_official' }
         : { official: true, gate_status: 'official_valid' };
+    const ranges = {
+      windows: [0, 2],
+      macos: [2, 3],
+      linux: [3, 5],
+      android: [5, 8],
+    };
+    const payloads = artifacts.slice(...ranges[platform]).map((name) => ({
+      name,
+      bytes: Buffer.byteLength(name),
+      size_bytes: Buffer.byteLength(name),
+      sha256: createHash('sha256').update(name).digest('hex'),
+    }));
     const manifestBytes = JSON.stringify({
+      version: '0.2.1',
+      publication_context: 'staged_unpublished',
+      ...(platform === 'macos'
+        ? { artifact: payloads[0] }
+        : { artifacts: payloads }),
       source_commit: sourceCommit,
       ...identity,
     });
@@ -152,8 +169,8 @@ async function releaseFixture() {
   await writeFile(
     contractPath,
     JSON.stringify({
-      version: '0.2.0',
-      tag: 'v0.2.0',
+      version: '0.2.1',
+      tag: 'v0.2.1',
       repository: 'shruggietech/glitchpad',
       artifacts,
       trust_states: trustStates,
@@ -176,7 +193,7 @@ test('assembles exactly the declared artifact and practical-use evidence set', a
   assert.deepEqual(manifest.practical_use_evidence, practicalUseEvidence);
   assert.match(
     await readFile(join(fixture.output, 'SHA256SUMS'), 'utf8'),
-    /glitchpad-0\.2\.0-7\.bin/u,
+    /glitchpad-0\.2\.1-7\.bin/u,
   );
 });
 
@@ -185,8 +202,8 @@ test('rejects a missing practical-use receipt', async () => {
   await writeFile(
     fixture.contractPath,
     JSON.stringify({
-      version: '0.2.0',
-      tag: 'v0.2.0',
+      version: '0.2.1',
+      tag: 'v0.2.1',
       repository: 'shruggietech/glitchpad',
       artifacts: fixture.artifacts,
       trust_states: {
@@ -320,3 +337,15 @@ for (const platform of ['linux', 'macos'])
         );
       },
     );
+
+test('rejects final payload changes even when native manifest receipts remain valid', async () => {
+  const fixture = await releaseFixture();
+  await writeFile(
+    join(fixture.input, fixture.artifacts[0]),
+    'different payload bytes',
+  );
+  await assert.rejects(
+    assembleCommunityRelease({ ...fixture, sourceCommit }),
+    /differ from the staged platform manifest/u,
+  );
+});

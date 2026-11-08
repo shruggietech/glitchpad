@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
+import { releaseIdentity } from './lib/release-identity.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -12,79 +15,86 @@ import {
 
 const finalHandoff = () => ({
   releaseNotes:
-    'S043 imports BrandBuilder with image activation. Stable images wait for #75 and #76.',
+    'S046 and S047 product recovery for #244 and #255; issue #66 and #239 remain open. unsigned not notarized SHA-256',
   releaseReceipt:
-    '| Brand slice | S043 BrandBuilder and image activation |\n| Deferred image gates | #75 and #76 |',
+    'S046 and S047 product recovery for #244 and #255. Preparation is unpublished; final source/package evidence is confirmed in the PR handoff. issue #66 and #239 remain open.',
   operatorRunbook:
-    '1. Pin the exact reviewed and qualified S045 source commit for v0.2.0, including S043 BrandBuilder and image activation. The owner explicitly authorizes publication before final PR merge; leave the S045 pull request open for owner review and merge.\n5. Create the annotated tag `v0.2.0` on the exact reviewed and qualified S045 source commit and push only that tag.',
-  changelog: 'S043 adopted BrandBuilder and image activation before release.',
+    'Stop unmerged with auto-merge disabled. Tagging and publication require later owner authorization. Use the accepted candidate SHA and accepted staging inputs; consume accepted payloads without rebuilding. S046 S047 product recovery #244 #255.',
+  changelog: 'S046 and S047 product recovery.',
 });
 
-test('accepts the final v0.2.0 release handoff', () =>
+test('accepts the S048 preparation handoff without publication authority', () =>
   assert.equal(validateFinalReleaseHandoff(finalHandoff()), true));
-
 for (const [name, mutate, expected] of [
   [
-    'stale release authority',
-    (handoff) => {
-      handoff.operatorRunbook = handoff.operatorRunbook.replaceAll(
-        'reviewed and qualified S045 source commit',
-        'unqualified source commit',
+    'premature publication authority',
+    (h) => {
+      h.operatorRunbook +=
+        ' The owner explicitly authorizes publication before final PR merge.';
+    },
+    /publication authority/u,
+  ],
+  [
+    'missing later owner authorization',
+    (h) => {
+      h.operatorRunbook = h.operatorRunbook.replace(
+        'later owner authorization',
+        'automatic publication',
       );
     },
-    /v0.2.0 release authority/u,
+    /owner authorization/u,
   ],
   [
-    'tag instruction targeting another commit',
-    (handoff) => {
-      handoff.operatorRunbook = handoff.operatorRunbook.replace(
-        'on the exact reviewed and qualified S045 source commit and push only that tag',
-        'on an unqualified source commit and push only that tag',
+    'wrong future source binding',
+    (h) => {
+      h.operatorRunbook = h.operatorRunbook.replace(
+        'accepted candidate SHA',
+        'current main SHA',
       );
     },
-    /tag instruction does not target v0.2.0/u,
+    /accepted candidate/u,
   ],
   [
-    'missing S043 traceability',
-    (handoff) => {
-      handoff.releaseNotes = handoff.releaseNotes.replace('S043', 'S041');
-    },
-    /S043 qualification/u,
-  ],
-  [
-    'missing image traceability',
-    (handoff) => {
-      handoff.releaseReceipt = handoff.releaseReceipt.replace(
-        'image activation',
-        'shell',
+    'payload rebuild',
+    (h) => {
+      h.operatorRunbook = h.operatorRunbook.replace(
+        'consume accepted payloads without rebuilding',
+        'rebuild packages after tagging',
       );
     },
-    /image activation/u,
+    /accepted payloads/u,
   ],
   [
-    'missing image conformance boundary',
-    (handoff) => {
-      handoff.releaseNotes = handoff.releaseNotes.replace('#75', '#74');
+    'missing recovery traceability',
+    (h) => {
+      h.releaseNotes = h.releaseNotes.replace('S047', 'S043');
     },
-    /tracked image gate #75/u,
+    /S047/u,
   ],
-]) {
-  test(`rejects a final handoff with ${name}`, () => {
-    const handoff = finalHandoff();
-    mutate(handoff);
-    assert.throws(() => validateFinalReleaseHandoff(handoff), expected);
+  [
+    'missing tracked recovery gate',
+    (h) => {
+      h.releaseReceipt = h.releaseReceipt.replace('#255', '#75');
+    },
+    /#255/u,
+  ],
+])
+  test('rejects handoff with ' + name, () => {
+    const h = finalHandoff();
+    mutate(h);
+    assert.throws(() => validateFinalReleaseHandoff(h), expected);
   });
-}
 
 const contract = () => ({
   schema_version: 1,
-  version: '0.2.0',
-  tag: 'v0.2.0',
+  version: releaseIdentity.version,
+  tag: releaseIdentity.tag,
   repository: 'shruggietech/glitchpad',
-  artifacts: Array.from(
-    { length: 8 },
-    (_, index) => `glitchpad-0.2.0-${index}`,
-  ),
+  artifacts: [...releaseIdentity.artifacts],
+  accepted_staging_evidence: [
+    'accepted-staging.json',
+    'accepted-input-receipt.json',
+  ],
   trust_states: {
     windows: 'unsigned_community',
     macos: 'adhoc_non_notarized_community',
@@ -182,7 +192,7 @@ test('rejects paid desktop credentials', () =>
   assert.throws(
     () =>
       validateGovernedClaims({
-        releaseWorkflow: "workflow_dispatch:\n- 'v0.2.0'\nAPPLE_API_KEY",
+        releaseWorkflow: "workflow_dispatch:\n- 'v0.2.1'\nAPPLE_API_KEY",
         windowsContract: {
           official: {
             trust_state: 'unsigned_community',
@@ -206,140 +216,132 @@ test('rejects paid desktop credentials', () =>
     /paid desktop/u,
   ));
 
-test('requires every tag-only package input and persisted attestation', () => {
-  const workflows = {
-    androidWorkflow:
-      '- name: Inspect raw signed packages\n  env:\n    ANDROID_SIGNING_CERT_SHA256: ${{ secrets.ANDROID_SIGNING_CERT_SHA256 }}\n  run: |',
-    macosWorkflow:
-      "${{ startsWith(github.ref, 'refs/tags/') && '--official' || '' }}",
-    linuxWorkflow: `
-- name: Assemble final-byte candidate and evidence
-sudo chown --recursive "$(id --user):$(id --group)" artifacts/linux
-- name: Exercise release promotion mutation before merge
-if: \${{ !startsWith(github.ref, 'refs/tags/') }}
-node scripts/promote-community-package.mjs --platform linux --directory artifacts/linux --source-commit '\${{ github.sha }}'
-- name: Upload governed Linux package
-if: \${{ !startsWith(github.ref, 'refs/tags/') }}
-- name: Promote truthful community evidence
-node scripts/promote-community-package.mjs --platform linux --directory artifacts/linux --source-commit '\${{ github.sha }}'
-id: attest
-\${{ steps.attest.outputs.bundle-path }}
-artifacts/linux/repository-attestation.json
-\${{ startsWith(github.ref, 'refs/tags/') && '--official' || '' }}
-`,
-  };
-  assert.equal(validateTagPackageWorkflows(workflows), true);
-  assert.throws(
-    () => validateTagPackageWorkflows({ ...workflows, androidWorkflow: '' }),
-    /Android official raw inspection/u,
-  );
-  assert.throws(
-    () => validateTagPackageWorkflows({ ...workflows, linuxWorkflow: '' }),
-    /Linux tag lifecycle/u,
-  );
-  assert.throws(
-    () =>
-      validateTagPackageWorkflows({
-        ...workflows,
-        linuxWorkflow: workflows.linuxWorkflow.replace(
-          'sudo chown --recursive "$(id --user):$(id --group)" artifacts/linux',
-          '',
-        ),
-      }),
-    /exercise runner-side promotion/u,
-  );
-  assert.throws(
-    () =>
-      validateTagPackageWorkflows({
-        ...workflows,
-        linuxWorkflow: workflows.linuxWorkflow.replace(
-          '- name: Exercise release promotion mutation before merge',
-          '- name: Candidate-only shortcut',
-        ),
-      }),
-    /exercise runner-side promotion/u,
-  );
-  assert.throws(
-    () =>
-      validateTagPackageWorkflows({
-        ...workflows,
-        linuxWorkflow: workflows.linuxWorkflow.replace(
-          "if: ${{ !startsWith(github.ref, 'refs/tags/') }}",
-          '',
-        ),
-      }),
-    /exercise runner-side promotion/u,
-  );
-});
-
-const releaseAuthorityWorkflow = `
-- name: Confirm stable Android release authority
-  env:
-    ANDROID_KEYSTORE_BASE64: \${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-    ANDROID_KEYSTORE_PASSWORD: \${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-    ANDROID_KEY_ALIAS: \${{ secrets.ANDROID_KEY_ALIAS }}
-    ANDROID_KEY_PASSWORD: \${{ secrets.ANDROID_KEY_PASSWORD }}
-    ANDROID_SIGNING_CERT_SHA256: \${{ secrets.ANDROID_SIGNING_CERT_SHA256 }}
-  run: |
-    required=(ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD ANDROID_SIGNING_CERT_SHA256)
-    for name in "\${required[@]}"; do
-      if [[ -z "\${!name:-}" ]]; then
-        echo "::error title=Missing release authority::$name is not configured."
-        exit 1
-      fi
-    done
-- name: Confirm manual readiness source
-  if: github.event_name == 'workflow_dispatch'
-  run: |
-    if [[ "$GITHUB_REF" != 'refs/heads/main' ]]; then
-      echo '::error title=Invalid readiness source::Manual release readiness must run from current main.'
-      exit 1
-    fi
-`;
-
-test('accepts the complete fail-closed Android release authority gate', () =>
-  assert.equal(validateReleaseAuthorityGate(releaseAuthorityWorkflow), true));
-
-for (const name of [
-  'ANDROID_KEYSTORE_BASE64',
-  'ANDROID_KEYSTORE_PASSWORD',
-  'ANDROID_KEY_ALIAS',
-  'ANDROID_KEY_PASSWORD',
-  'ANDROID_SIGNING_CERT_SHA256',
-]) {
-  test(`rejects a release authority gate without ${name}`, () =>
-    assert.throws(
-      () =>
-        validateReleaseAuthorityGate(
-          releaseAuthorityWorkflow.replace(
-            `    ${name}: \${{ secrets.${name} }}\n`,
-            '',
-          ),
-        ),
-      new RegExp(name, 'u'),
-    ));
-}
-
-test('rejects a release authority gate that does not fail on empty values', () =>
-  assert.throws(
-    () =>
-      validateReleaseAuthorityGate(
-        releaseAuthorityWorkflow.replace('[[ -z "\${!name:-}" ]]', 'false'),
+const releaseAuthorityWorkflow = readFileSync(
+  new URL('../.github/workflows/release.yml', import.meta.url),
+  'utf8',
+);
+const packageWorkflows = Object.fromEntries(
+  ['android', 'windows', 'macos', 'linux'].map((platform) => [
+    platform + 'Workflow',
+    readFileSync(
+      new URL(
+        '../.github/workflows/' + platform + '-package.yml',
+        import.meta.url,
       ),
-    /fail closed/u,
-  ));
-
-test('rejects manual readiness that is not restricted to main', () =>
+      'utf8',
+    ),
+  ]),
+);
+test('explicit staging preserves signed authority, native bindings and later accepted-input publication', () => {
+  assert.equal(validateTagPackageWorkflows(packageWorkflows), true);
+  assert.equal(validateReleaseAuthorityGate(releaseAuthorityWorkflow), true);
+});
+test('stable Android authority cannot be omitted from staging or final readback', () => {
+  assert.throws(
+    () =>
+      validateTagPackageWorkflows({
+        ...packageWorkflows,
+        androidWorkflow: packageWorkflows.androidWorkflow.replace(
+          'ANDROID_SIGNING_CERT_SHA256: ${{ secrets.ANDROID_SIGNING_CERT_SHA256 }}',
+          '',
+        ),
+      }),
+    /signing authority|omits/u,
+  );
   assert.throws(
     () =>
       validateReleaseAuthorityGate(
         releaseAuthorityWorkflow.replace(
-          `if [[ "$GITHUB_REF" != 'refs/heads/main' ]]; then`,
+          'ANDROID_SIGNING_CERT_SHA256: ${{ secrets.ANDROID_SIGNING_CERT_SHA256 }}',
+          '',
+        ),
+      ),
+    /ANDROID_SIGNING_CERT_SHA256/u,
+  );
+});
+test('manual readiness and stable staging fail closed', () => {
+  assert.throws(
+    () =>
+      validateReleaseAuthorityGate(
+        releaseAuthorityWorkflow.replace(
+          'if [[ ! "$ANDROID_SIGNING_CERT_SHA256" =~',
+          'if [[ "$ANDROID_SIGNING_CERT_SHA256" =~',
+        ),
+      ),
+    /fail closed/u,
+  );
+  assert.throws(
+    () =>
+      validateReleaseAuthorityGate(
+        releaseAuthorityWorkflow.replace(
+          'if [[ "$GITHUB_REF" != \'refs/heads/main\' ]]; then',
           'if false; then',
         ),
       ),
     /fail closed/u,
-  ));
+  );
+  assert.throws(
+    () =>
+      validateTagPackageWorkflows({
+        ...packageWorkflows,
+        androidWorkflow: packageWorkflows.androidWorkflow.replace(
+          'test "$GITHUB_EVENT_NAME" = workflow_dispatch',
+          'true',
+        ),
+      }),
+    /authority/u,
+  );
+});
+test('tag rebuilds, automatic publication and post-qualification manifest changes are rejected', () => {
+  const automatic = parseYaml(releaseAuthorityWorkflow);
+  automatic.jobs.publish.if = 'always()';
+  assert.throws(
+    () => validateReleaseAuthorityGate(stringifyYaml(automatic)),
+    /later owner tag/u,
+  );
+  const rebuild = parseYaml(releaseAuthorityWorkflow);
+  rebuild.jobs.publish.steps.push({ run: 'pnpm tauri android build --apk' });
+  assert.throws(
+    () => validateReleaseAuthorityGate(stringifyYaml(rebuild)),
+    /without rebuilding/u,
+  );
+  const tagBuild = parseYaml(packageWorkflows.linuxWorkflow);
+  tagBuild.on.push.tags = ['v0.2.1'];
+  assert.throws(
+    () =>
+      validateTagPackageWorkflows({
+        ...packageWorkflows,
+        linuxWorkflow: stringifyYaml(tagBuild),
+      }),
+    /without tag rebuilds/u,
+  );
+  const lateManifest = parseYaml(packageWorkflows.windowsWorkflow);
+  const steps = lateManifest.jobs.candidate.steps;
+  const index = steps.findIndex(
+    (step) => step.name === 'Promote truthful community evidence',
+  );
+  const [promotion] = steps.splice(index, 1);
+  steps.push(promotion);
+  assert.throws(
+    () =>
+      validateTagPackageWorkflows({
+        ...packageWorkflows,
+        windowsWorkflow: stringifyYaml(lateManifest),
+      }),
+    /precede native receipt/u,
+  );
+  assert.throws(
+    () =>
+      validateTagPackageWorkflows({
+        ...packageWorkflows,
+        linuxWorkflow: packageWorkflows.linuxWorkflow.replace(
+          'sudo chown --recursive "$(id --user):$(id --group)" artifacts/linux',
+          'true',
+        ),
+      }),
+    /ownership/u,
+  );
+});
 
 const releaseReadinessScript = `
 $requiredEvidence = @(
@@ -404,4 +406,12 @@ test('requires complete locked offline Linux provenance across container boundar
       /Linux offline provenance/u,
     );
   }
+});
+
+test('accepted staging evidence remains a separate complete asset inventory', () => {
+  assert.throws(
+    () =>
+      validateReleaseContract({ ...contract(), accepted_staging_evidence: [] }),
+    /staging evidence asset inventory/u,
+  );
 });

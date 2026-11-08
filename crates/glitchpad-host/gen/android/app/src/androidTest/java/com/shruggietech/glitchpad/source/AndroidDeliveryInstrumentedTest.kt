@@ -56,6 +56,12 @@ class AndroidDeliveryInstrumentedTest {
   @Before
   fun requireRunnerOwnedCompletion() {
     assertEquals("Dedicated Tauri UI instrumentation must own terminal completion", "false", InstrumentationRegistry.getArguments().getString("waitForActivitiesToComplete"))
+    if (isReleaseRuntimeEvidence()) {
+      assertEquals("ordinary", expectedBuildVariant())
+      assertFalse("release runtime must install the nondebuggable application", (clientContext.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0)
+      assertTrue("release evidence requires an exact source", InstrumentationRegistry.getArguments().getString("expectedSource")?.matches(Regex("[0-9a-f]{40}")) == true)
+      assertEquals("installed application must match the selected canonical release", InstrumentationRegistry.getArguments().getString("expectedApplicationSha"), apkSha256())
+    }
     val power = clientContext.getSystemService(android.content.Context.POWER_SERVICE) as android.os.PowerManager
     val keyguard = clientContext.getSystemService(android.content.Context.KEYGUARD_SERVICE) as android.app.KeyguardManager
     if (!power.isInteractive) shellOutput("input keyevent 224")
@@ -163,6 +169,7 @@ class AndroidDeliveryInstrumentedTest {
     waitForBodyText(scenario, "File information", "hostile.svg")
     clickControl(scenario, "Close File information")
     assertTrue("unsupported SVG preview must preserve every original source byte", hostileBefore.contentEquals(readBytes(hostile)))
+    retainReleaseEvidence(scenario, "delivery", includePackages = true)
     println("image_family_evidence=gif:pass,animated_webp:pass,svg:pass,ico_png_dib:pass,hostile_svg:refused,source_unchanged:pass,api:${android.os.Build.VERSION.SDK_INT}")
     println("image_evidence=png:pass,jpeg:pass,webp:pass,bmp:pass,tiff:pass,source_unchanged:pass,api:${android.os.Build.VERSION.SDK_INT}")
     println("delivery_evidence=cold:pass,warm:pass,api:${android.os.Build.VERSION.SDK_INT}")
@@ -253,7 +260,7 @@ class AndroidDeliveryInstrumentedTest {
     }.getOrElse { JSONObject().put("capture_error", it.javaClass.simpleName).toString() }
     val screenshotName = "s046-markdown-delivery-failure.png"
     val screenshotSaved = runCatching { saveScreenshot(screenshotName); File(clientContext.filesDir, screenshotName).isFile }.getOrDefault(false)
-    println("markdown_delivery_failure=" + JSONObject().put("native_route", nativeDeliveryRouteSnapshot(scenario)).put("fixture", name).put("route", InstrumentationRegistry.getArguments().getString("deliveryAction")).put("api_level", Build.VERSION.SDK_INT).put("screenshot_saved", screenshotSaved).put("state_json", snapshot.take(24576)).toString())
+    println("markdown_delivery_failure=" + JSONObject().put("native_route", if (isReleaseRuntimeEvidence()) JSONObject().put("unavailable", "private_debug_bridge_probe_not_used_for_minified_release") else nativeDeliveryRouteSnapshot(scenario)).put("fixture", name).put("route", InstrumentationRegistry.getArguments().getString("deliveryAction")).put("api_level", Build.VERSION.SDK_INT).put("screenshot_saved", screenshotSaved).put("state_json", snapshot.take(24576)).toString())
     System.out.flush()
   }
 
@@ -376,6 +383,7 @@ class AndroidDeliveryInstrumentedTest {
     println("recovery_evidence=launcher:pass,new_markdown:pass,new_text:pass,native_open:pass,exact_save_reopen:pass,keyboard_ctrl_s_receipt_reopen:pass,cancel:pass,failed_write:pass,readonly_copy:pass,dirty_close_pending:pass,diagnostic_save_share:pass,menu_local_zoom:pass,api:" + Build.VERSION.SDK_INT)
     System.out.flush()
     saveScreenshot("s046-authoring.png")
+    retainReleaseEvidence(scenario, "authoring")
     created.forEach { runCatching { DocumentsContract.deleteDocument(resolver, it) } }
 
   }
@@ -485,6 +493,7 @@ class AndroidDeliveryInstrumentedTest {
       assertEquals("process recovery must retain every exact draft character", text, editableSourceText(scenario))
       println("draft_recovery_verify=pass,api:" + Build.VERSION.SDK_INT)
     }
+    retainReleaseEvidence(scenario, "recovery_" + phase, observations = JSONObject().put("recovery_phase", phase).put("exact_text_verified", phase == "verify"))
     System.out.flush()
 
   }
@@ -896,7 +905,7 @@ class AndroidDeliveryInstrumentedTest {
     assertTrue("full expected source identity must be supplied", expectedSource != null && expectedSource.matches(Regex("[0-9a-f]{40}")))
     assertEquals("preview source must match built candidate", expectedSource, environment.getString("build_commit"))
     assertEquals(Build.VERSION.SDK_INT, native.getInt("api_level"))
-    val webview = WebViewCompat.getCurrentWebViewPackage(clientContext)
+    val webview = observedTestWebViewPackage()
     if (webview == null) assertTrue("unavailable WebView identity must be explicit", native.isNull("webview_version"))
     else { assertEquals(webview.packageName, native.getString("webview_package")); assertEquals(webview.versionName, native.getString("webview_version")) }
     if (expectedBuildVariant() == "fault_probe") for (reason in listOf("markdown_worker_failed", "markdown_parse_failed", "markdown_projection_failed")) assertTrue("actual injected failure must be in the frozen bundle: " + reason, frozen.contains(reason))
@@ -923,7 +932,7 @@ class AndroidDeliveryInstrumentedTest {
     recordJourneyReadback(7, "json_receiver", frozen.toByteArray(Charsets.UTF_8), requireNotNull(received?.getString("json")).toByteArray(Charsets.UTF_8))
     waitForAppNativeWindow(scenario, "Share previewed bundle")
     waitForBodyText(scenario, "Shared with the system. Recipient delivery is unconfirmed.")
-    println("recovery_runtime_evidence=" + JSONObject().put("apk_sha256", apkSha256()).put("source_commit", expectedSource).put("package", TARGET_PACKAGE).put("product_version", packageInfo.versionName).put("evidence_class", "hosted_debug_instrumentation").put("signed_release_bytes_tested", false).put("recovery_probe_variant", if (expectedBuildVariant() == "fault_probe") "compiled_test_only" else "none").put("native_environment", native).put("font_scale", clientContext.resources.configuration.fontScale).toString())
+    println("recovery_runtime_evidence=" + JSONObject().put("apk_sha256", apkSha256()).put("source_commit", expectedSource).put("package", TARGET_PACKAGE).put("product_version", packageInfo.versionName).put("evidence_class", if (isReleaseRuntimeEvidence()) "hosted_minified_release_instrumentation" else "hosted_debug_instrumentation").put("signed_release_bytes_tested", isReleaseRuntimeEvidence()).put("recovery_probe_variant", if (expectedBuildVariant() == "fault_probe") "compiled_test_only" else "none").put("native_environment", native).put("font_scale", clientContext.resources.configuration.fontScale).toString())
 
     if (isS047Evidence()) {
       val surface = stringValue(evaluate(scenario,"document.querySelector('.document-surface').id"))
@@ -2879,6 +2888,127 @@ class AndroidDeliveryInstrumentedTest {
   private val journeyReadbacks = mutableMapOf<Int, JSONArray>()
   private val taskControlMeasurements = JSONArray()
   private val clipboardPasteReadbacks = JSONArray()
+  private fun isReleaseRuntimeEvidence(): Boolean = InstrumentationRegistry.getArguments().getString("releaseRuntime") == "true"
+
+  private fun observedTestWebViewPackage(): android.content.pm.PackageInfo? {
+    if (!isReleaseRuntimeEvidence()) return WebViewCompat.getCurrentWebViewPackage(clientContext)
+    val loaded = if (Build.VERSION.SDK_INT >= 26) WebView.getCurrentWebViewPackage() else {
+      // Android 7 exposes the loaded provider through this framework method.
+      // This is platform observation, independent of product/R8 library methods.
+      Class.forName("android.webkit.WebViewFactory").getMethod("getLoadedPackageInfo").invoke(null) as? android.content.pm.PackageInfo
+    }
+    val observed = requireNotNull(loaded) { "The initialized release WebView must expose its actually loaded package" }
+    assertTrue("loaded WebView package/version must be explicit", observed.packageName.isNotBlank() && !observed.versionName.isNullOrBlank())
+    val installed = clientContext.packageManager.getPackageInfo(observed.packageName, 0)
+    assertEquals("loaded WebView version must match PackageManager", observed.versionName, installed.versionName)
+    @Suppress("DEPRECATION")
+    val observedCode = if (Build.VERSION.SDK_INT >= 28) observed.longVersionCode else observed.versionCode.toLong()
+    @Suppress("DEPRECATION")
+    val installedCode = if (Build.VERSION.SDK_INT >= 28) installed.longVersionCode else installed.versionCode.toLong()
+    assertEquals("loaded WebView code must match PackageManager", observedCode, installedCode)
+    return observed
+  }
+
+  private fun signingCertificate(packageName: String): String {
+    val manager = clientContext.packageManager
+    val signatures = if (Build.VERSION.SDK_INT >= 28) {
+      manager.getPackageInfo(packageName, android.content.pm.PackageManager.GET_SIGNING_CERTIFICATES).signingInfo!!.apkContentsSigners
+    } else {
+      @Suppress("DEPRECATION")
+      manager.getPackageInfo(packageName, android.content.pm.PackageManager.GET_SIGNATURES).signatures!!
+    }
+    assertEquals("release evidence expects exactly one current signer", 1, signatures.size)
+    return sha256(signatures.single().toByteArray())
+  }
+
+  private fun retainReleaseEvidence(scenario: ActivityScenario<MainActivity>, caseId: String, includePackages: Boolean = false, observations: JSONObject = JSONObject()) {
+    if (!isReleaseRuntimeEvidence()) return
+    assertTrue("only the bounded release cases may emit evidence", caseId in listOf("startup", "delivery", "authoring", "recovery_seed", "recovery_verify", "back_about"))
+    assertS047Role(scenario)
+    val identity = candidateIdentity(scenario)
+    val kotlinRuntime = kotlin.jvm.internal.Intrinsics::class.java.name
+    val tracingRuntime = androidx.tracing.Trace::class.java.name
+    assertEquals("com.shruggietech.glitchpad.testisolated.kotlin.jvm.internal.Intrinsics", kotlinRuntime)
+    assertEquals("com.shruggietech.glitchpad.testisolated.androidx.tracing.Trace", tracingRuntime)
+    identity.put("test_kotlin_runtime", kotlinRuntime).put("test_tracing_runtime", tracingRuntime)
+    assertEquals("0.2.1", identity.getString("version"))
+    assertEquals("release", identity.getString("channel"))
+    assertEquals(InstrumentationRegistry.getArguments().getString("expectedApplicationSha"), identity.getString("application_sha256"))
+    assertEquals(InstrumentationRegistry.getArguments().getString("expectedInstrumentationSha"), identity.getString("instrumentation_sha256"))
+    val testApplication = instrumentation.context.packageManager.getApplicationInfo(instrumentation.context.packageName, 0)
+    val applicationCertificate = signingCertificate(TARGET_PACKAGE)
+    val instrumentationCertificate = signingCertificate(instrumentation.context.packageName)
+    assertEquals("instrumentation and target must share the selected signing authority", applicationCertificate, instrumentationCertificate)
+    identity.put("signing_certificate_sha256", applicationCertificate).put("instrumentation_certificate_sha256", instrumentationCertificate)
+      .put("application_debuggable", false).put("instrumentation_debuggable", (testApplication.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0)
+    assertTrue("only test-owned storage is debuggable for capture", identity.getBoolean("instrumentation_debuggable"))
+    val root = grant(documentUri("fixture-root"))
+    fun capture(name: String, mime: String, input: java.io.InputStream) {
+      val destination = grant(requireNotNull(DocumentsContract.createDocument(resolver, root, mime, name)))
+      input.use { source -> resolver.openOutputStream(destination, "wt")!!.use { output -> source.copyTo(output, 65536) } }
+    }
+    if (includePackages) {
+      capture("s048-installed-application.apk", "application/vnd.android.package-archive", File(clientContext.applicationInfo.sourceDir).inputStream())
+      capture("s048-installed-instrumentation.apk", "application/vnd.android.package-archive", File(testApplication.sourceDir).inputStream())
+    }
+    val screenshot = "s048-" + caseId + ".png"
+    assertTrue("release case must capture its actual visible result", saveScreenshot(screenshot))
+    val screenshotFile = File(clientContext.filesDir, screenshot)
+    val screenshotHash = sha256(screenshotFile.readBytes())
+    capture(screenshot, "image/png", screenshotFile.inputStream())
+    val readbacks = JSONArray()
+    journeyReadbacks.toSortedMap().forEach { (journey, rows) -> for (index in 0 until rows.length()) readbacks.put(JSONObject(rows.getJSONObject(index).toString()).put("journey", journey)) }
+    val receipt = JSONObject().put("schema", 1).put("case_id", caseId).put("status", "pass")
+      .put("evidence_class", "hosted_minified_release_instrumentation").put("identity", identity)
+      .put("readbacks", readbacks).put("observations", observations)
+      .put("screenshot", JSONObject().put("file", screenshot).put("sha256", screenshotHash)).toString().toByteArray(Charsets.UTF_8)
+    val name = "s048-" + caseId + ".json"
+    capture(name, "application/json", receipt.inputStream())
+    val marker = "s048_release_evidence=" + JSONObject().put("case_id", caseId).put("file", name).put("sha256", sha256(receipt))
+    println(marker); System.out.flush()
+    instrumentation.sendStatus(2, android.os.Bundle().apply { putString(android.app.Instrumentation.REPORT_KEY_STREAMRESULT, marker + "\n") })
+  }
+
+  @Test fun releaseStartupIdentityAndCapture() {
+    assertTrue("dedicated release startup runner required", isReleaseRuntimeEvidence())
+    shellCommandTransportPreservesFixtureBytesAndExitStatus()
+    val scenario = launchS047()
+    retainReleaseEvidence(scenario, "startup", includePackages = true, observations = verifyReleaseBackAbout(scenario))
+  }
+
+  private fun verifyReleaseBackAbout(scenario: ActivityScenario<MainActivity>): JSONObject {
+    val draft = "S048_RELEASE_BACK_RETAINED_Ω\n"
+    createNewDraftForInput(scenario, "New text file", "Untitled.txt")
+    replaceEditorText(scenario, draft)
+    val imeDismissed = dismissObservedAppIme(scenario)
+    assertEquals("keyboard dismissal must retain every draft character", draft, editableSourceText(scenario))
+    menuAction(scenario, "Preferences")
+    waitForCondition(scenario, "Array.from(document.querySelectorAll('[role=dialog]')).some(n=>n.querySelector('h2')&&n.querySelector('h2').textContent==='Preferences')", "Preferences must be visibly open before native Back")
+    taskKey(KeyEvent.KEYCODE_BACK)
+    waitForCondition(scenario, "!Array.from(document.querySelectorAll('[role=dialog]')).some(n=>n.querySelector('h2')&&n.querySelector('h2').textContent==='Preferences')", "native Back must dismiss the actually opened Preferences task")
+    assertEquals("native Back must retain every draft character", draft, editableSourceText(scenario))
+    recordJourneyReadback(9, "back_retained_utf8", draft.toByteArray(Charsets.UTF_8), editableSourceText(scenario).toByteArray(Charsets.UTF_8))
+    menuAction(scenario, "About Glitchpad")
+    val source = requireNotNull(InstrumentationRegistry.getArguments().getString("expectedSource"))
+    waitForBodyText(scenario, "0.2.1", TARGET_PACKAGE, source, "ShruggieTech")
+    val displayed = JSONObject(evaluate(scenario, "(()=>{const d=document.querySelector('[data-application-info]');const r={};Array.from(d.querySelectorAll('dt')).forEach(n=>r[n.textContent]=n.nextElementSibling.textContent);return r;})()"))
+    val info = clientContext.packageManager.getPackageInfo(TARGET_PACKAGE, 0)
+    val code = if (Build.VERSION.SDK_INT >= 28) info.longVersionCode else { @Suppress("DEPRECATION") info.versionCode.toLong() }
+    assertEquals(code.toString(), displayed.getString("Version code"))
+    assertEquals("release", displayed.getString("Channel"))
+    assertEquals("android", displayed.getString("Platform"))
+    assertEquals(source, displayed.getString("Build"))
+    val offline = verifyOfflineNotices(scenario)
+    return JSONObject().put("about", displayed).put("back_retained", true).put("ime_observed_dismissed", imeDismissed).put("offline_notices", offline)
+  }
+
+  @Test fun releaseBackAboutAndCapture() {
+    assertTrue("dedicated release-runtime runner required", isReleaseRuntimeEvidence())
+    shellCommandTransportPreservesFixtureBytesAndExitStatus()
+    val scenario = launchS047()
+    retainReleaseEvidence(scenario, "back_about", observations = verifyReleaseBackAbout(scenario))
+  }
+
   private fun isS047Evidence(): Boolean = InstrumentationRegistry.getArguments().getString("s047") == "true"
   private fun expectedBuildVariant(): String = InstrumentationRegistry.getArguments().getString("expectedRole") ?: "fault_probe"
   private fun sha256(bytes: ByteArray): String = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it.toInt() and 255) }
@@ -2924,7 +3054,7 @@ class AndroidDeliveryInstrumentedTest {
     assertEquals(expectedBuildVariant(), facts.getString("role"))
     val app = clientContext.packageManager.getPackageInfo(TARGET_PACKAGE, 0)
     val test = instrumentation.context.packageManager.getApplicationInfo(instrumentation.context.packageName, 0)
-    val webview = requireNotNull(WebViewCompat.getCurrentWebViewPackage(clientContext)) { "actual WebView package/version is required" }
+    val webview = requireNotNull(observedTestWebViewPackage()) { "actual WebView package/version is required" }
     return JSONObject().put("source_commit", source).put("native_source_commit", facts.getString("native")).put("frontend_source_commit", facts.getString("frontend"))
       .put("application_sha256", apkSha256()).put("instrumentation_sha256", sha256(File(test.sourceDir).readBytes()))
       .put("package_identifier", TARGET_PACKAGE).put("instrumentation_package", instrumentation.context.packageName).put("clipboard_provider", clipboardProviderFacts())
@@ -3125,20 +3255,40 @@ class AndroidDeliveryInstrumentedTest {
       view.getWindowVisibleDisplayFrame(window)
       val visible = android.graphics.Rect(location[0], location[1], location[0] + view.width, location[1] + view.height)
       if (!locallyVisible || !visible.intersect(localOnScreen) || !visible.intersect(window)) visible.setEmpty()
-      val insets = androidx.core.view.ViewCompat.getRootWindowInsets(view)
-      val imeBottom = insets?.getInsets(androidx.core.view.WindowInsetsCompat.Type.ime())?.bottom ?: 0
-      val barsBottom = insets?.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars())?.bottom ?: 0
+      val releaseObservation = isReleaseRuntimeEvidence()
+      val insets = if (releaseObservation) null else androidx.core.view.ViewCompat.getRootWindowInsets(view)
+      val platformInsets = if (releaseObservation) view.rootWindowInsets else null
+      val imeBottom = if (!releaseObservation) insets?.getInsets(androidx.core.view.WindowInsetsCompat.Type.ime())?.bottom ?: 0
+        else if (Build.VERSION.SDK_INT >= 30) platformInsets?.getInsets(android.view.WindowInsets.Type.ime())?.bottom ?: 0
+        else imeWindows.maxOfOrNull { it.height() } ?: 0
+      @Suppress("DEPRECATION")
+      val barsBottom = if (!releaseObservation) insets?.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars())?.bottom ?: 0
+        else if (Build.VERSION.SDK_INT >= 30) platformInsets?.getInsets(android.view.WindowInsets.Type.systemBars())?.bottom ?: 0
+        else platformInsets?.stableInsetBottom ?: 0
+      val imeReportedVisible = if (!releaseObservation) insets?.isVisible(androidx.core.view.WindowInsetsCompat.Type.ime()) == true
+        else if (Build.VERSION.SDK_INT >= 30) platformInsets?.isVisible(android.view.WindowInsets.Type.ime()) == true
+        else imeWindows.isNotEmpty()
+      val tappableBottom = if (!releaseObservation) insets?.getInsets(androidx.core.view.WindowInsetsCompat.Type.tappableElement())?.bottom ?: 0
+        else if (Build.VERSION.SDK_INT >= 30) platformInsets?.getInsets(android.view.WindowInsets.Type.tappableElement())?.bottom ?: 0
+        else barsBottom
+      val gestureBottom = if (!releaseObservation) insets?.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemGestures())?.bottom ?: 0
+        else if (Build.VERSION.SDK_INT >= 30) platformInsets?.getInsets(android.view.WindowInsets.Type.systemGestures())?.bottom ?: 0
+        else 0
+      val mandatoryGestureBottom = if (!releaseObservation) insets?.getInsets(androidx.core.view.WindowInsetsCompat.Type.mandatorySystemGestures())?.bottom ?: 0
+        else if (Build.VERSION.SDK_INT >= 30) platformInsets?.getInsets(android.view.WindowInsets.Type.mandatorySystemGestures())?.bottom ?: 0
+        else 0
+      if (releaseObservation) observed.put("insets_observation", if (Build.VERSION.SDK_INT >= 30) "framework_window_insets" else "legacy_framework_stable_bar_and_native_ime_window")
       val input = activity.getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
       observed.put("activity_window_focus", activity.hasWindowFocus()).put("webview_window_focus", view.hasWindowFocus()).put("shown", view.isShown)
         .put("view_left", location[0]).put("view_top", location[1]).put("view_width", view.width).put("view_height", view.height).put("density", view.resources.displayMetrics.density)
         .put("view_scroll_x", view.scrollX).put("view_scroll_y", view.scrollY)
         .put("local_visible_screen", nativeRectBounds(localOnScreen)).put("window_visible_frame", nativeRectBounds(window)).put("effective_visible_screen", nativeRectBounds(visible))
-        .put("ime_reported_visible", insets?.isVisible(androidx.core.view.WindowInsetsCompat.Type.ime()) == true)
+        .put("ime_reported_visible", imeReportedVisible)
         .put("ime_bottom", imeBottom).put("system_bars_bottom", barsBottom).put("input_method_active", input.isActive(view))
         .put("ime_window_bounds", JSONArray(imeWindows.map { nativeRectBounds(it) }))
-        .put("tappable_element_bottom", insets?.getInsets(androidx.core.view.WindowInsetsCompat.Type.tappableElement())?.bottom ?: 0)
-        .put("system_gesture_bottom", insets?.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemGestures())?.bottom ?: 0)
-        .put("mandatory_system_gesture_bottom", insets?.getInsets(androidx.core.view.WindowInsetsCompat.Type.mandatorySystemGestures())?.bottom ?: 0)
+        .put("tappable_element_bottom", tappableBottom)
+        .put("system_gesture_bottom", gestureBottom)
+        .put("mandatory_system_gesture_bottom", mandatoryGestureBottom)
       if (target?.optBoolean("found") == true && target.optDouble("viewport_width") > 0) {
         // CSS coordinates use one physical scale, including when only height is occluded.
         val scale = view.width / target.getDouble("viewport_width")

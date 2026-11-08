@@ -76,7 +76,7 @@ jobs:
             artifacts/image-layout/failed.json
             artifacts/image-layout/failed.png
           if-no-files-found: warn
-          retention-days: 7
+          retention-days: 30
 
   shared:
     name: Shared native and frontend checks
@@ -276,7 +276,7 @@ jobs:
           name: glitchpad-foundation-android-aarch64
           path: crates/glitchpad-host/gen/android/app/build/outputs/apk/**/*.apk
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 30
 
   android-instrumentation:
     if: github.event_name != 'workflow_dispatch' || inputs.android_runtime != 'source_only'
@@ -425,7 +425,7 @@ jobs:
             ${{ runner.temp }}/*.xml
             ${{ runner.temp }}/android-tested-candidate/**
           if-no-files-found: warn
-          retention-days: 7
+          retention-days: 30
 
   dependency-review:
     name: Dependency review

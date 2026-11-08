@@ -109,6 +109,7 @@ function officialLifecycleEvidence() {
     official: true,
     gate_status: 'official_valid',
     event: contract.official.authorized_event,
+    publication_context: 'staged_unpublished',
     tag: contract.official.tag_pattern,
     evidence_files: [...contract.official.required_evidence],
     artifact: {
@@ -264,6 +265,54 @@ test('tag lifecycle validates promoted community trust without paid Apple author
   );
 });
 
+test('published startup baseline retains its historical schema while current staging requires context', async () => {
+  const historicalContract = JSON.parse(
+    await readFile(
+      new URL(
+        '../fixtures/macos-startup/v0.1.4-package-contract.json',
+        import.meta.url,
+      ),
+      'utf8',
+    ),
+  );
+  const historicalBytes = await readFile(
+    new URL(
+      '../fixtures/macos-startup/v0.1.4-package-manifest.json',
+      import.meta.url,
+    ),
+  );
+  assert.equal(
+    createHash('sha256').update(historicalBytes).digest('hex'),
+    '7d8c8b409117542605ad26fe69b54aae0150466433cfd1a385663dc525f5d1ff',
+  );
+  const historical = JSON.parse(historicalBytes);
+  assert.equal(
+    validateMacosLifecycleEvidence(historical, historicalContract, {
+      official: true,
+    }),
+    true,
+  );
+  assert.throws(() =>
+    validateMacosLifecycleEvidence(
+      { ...historical, publication_context: 'staged_unpublished' },
+      historicalContract,
+      { official: true },
+    ),
+  );
+  const current = officialLifecycleEvidence();
+  delete current.publication_context;
+  assert.throws(() =>
+    validateMacosLifecycleEvidence(current, contract, { official: true }),
+  );
+  assert.throws(() =>
+    validateMacosLifecycleEvidence(
+      { ...officialLifecycleEvidence(), publication_context: 'published' },
+      contract,
+      { official: true },
+    ),
+  );
+});
+
 test('candidate mode binds staged application, DMG, supply chain, and notices', async () => {
   const root = await mkdtemp(join(tmpdir(), 'glitchpad-macos-candidate-'));
   try {
@@ -331,7 +380,7 @@ test('candidate mode binds staged application, DMG, supply chain, and notices', 
             ],
           },
           components: [
-            { 'bom-ref': 'pkg:cargo/glitchpad-core@0.2.0' },
+            { 'bom-ref': 'pkg:cargo/glitchpad-core@0.2.1' },
             { 'bom-ref': 'pkg:npm/react@19.2.8' },
           ],
         }),
@@ -529,8 +578,9 @@ test('official community mode binds final bytes and truthful macOS trust', async
     const evidence = candidate();
     evidence.official = true;
     evidence.gate_status = 'official_valid';
-    evidence.event = 'push_tag';
-    evidence.tag = 'v0.2.0';
+    evidence.event = contract.official.authorized_event;
+    evidence.publication_context = 'staged_unpublished';
+    evidence.tag = 'v0.2.1';
     evidence.evidence_files = [...contract.official.required_evidence];
     evidence.artifact.signature_status = 'not_signed';
     evidence.artifact.notarization_status = 'not_submitted';
@@ -594,7 +644,7 @@ test('official community mode binds final bytes and truthful macOS trust', async
           ],
         },
         components: [
-          { 'bom-ref': 'pkg:cargo/glitchpad-core@0.2.0' },
+          { 'bom-ref': 'pkg:cargo/glitchpad-core@0.2.1' },
           { 'bom-ref': 'pkg:npm/react@19.2.8' },
         ],
       }),
@@ -725,7 +775,7 @@ test('macOS SBOM combines Cargo and transitive production JavaScript dependencie
       packages: [
         {
           name: 'glitchpad-core',
-          version: '0.2.0',
+          version: '0.2.1',
           source: null,
           license: 'Apache-2.0',
         },

@@ -1,0 +1,13 @@
+Glitchpad Android release instrumentation notices
+
+These notices accompany AndroidTest packages and installed-package captures retained with release-runtime evidence. Product payload notices remain in their ordinary package evidence.
+
+JUnit 4.13.2 is distributed under the Eclipse Public License 1.0. Its full text is LICENSE-JUNIT-EPL-1.0.txt. Corresponding source is https://github.com/junit-team/junit4/tree/r4.13.2.
+
+Hamcrest Core 1.3 is distributed under its BSD three-clause license. The full upstream copyright, conditions and disclaimer are LICENSE-HAMCREST-BSD.txt. Corresponding source is https://github.com/hamcrest/JavaHamcrest/tree/hamcrest-java-1.3.
+
+AndroidX and Kotlin runtime components use the accompanying Apache License 2.0 text in LICENSE-APACHE-2.0.txt. Their resolved module identities and versions are recorded in test-compile-dependencies.txt and test-runtime-dependencies.txt beside the signed instrumentation package. Upstream sources are https://android.googlesource.com/platform/frameworks/support/, https://github.com/android/android-test and https://github.com/JetBrains/kotlin.
+
+Kotlin stdlib and AndroidX tracing classes in the release test package have their namespaces relocated to com.shruggietech.glitchpad.testisolated so external test callers cannot borrow app-optimized library ABIs. This transformation applies only to test code and its copied runtimes. It changes binary namespaces; the canonical product APK and its keep rules are unchanged.
+
+RELEASE_TEST_NOTICE_PROVENANCE.json records exact upstream and normalized license text digests. License texts use UTF-8 without BOM and LF line endings.

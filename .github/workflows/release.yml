@@ -3,7 +3,7 @@ name: release
 on:
   push:
     tags:
-      - 'v0.2.0'
+      - 'v0.2.1'
   workflow_dispatch:
 
 permissions:
@@ -12,17 +12,19 @@ permissions:
   attestations: read
 
 concurrency:
-  group: release-v0.2.0
+  group: release-v0.2.1
   cancel-in-progress: false
 
 jobs:
   readiness:
     name: Validate release preparation
     runs-on: ubuntu-24.04
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
+          persist-credentials: false
       - uses: pnpm/action-setup@v6
         with:
           version: 10.28.2
@@ -35,19 +37,12 @@ jobs:
       - run: pnpm run check:community-release
       - name: Confirm stable Android release authority
         env:
-          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
           ANDROID_SIGNING_CERT_SHA256: ${{ secrets.ANDROID_SIGNING_CERT_SHA256 }}
         run: |
-          required=(ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD ANDROID_SIGNING_CERT_SHA256)
-          for name in "${required[@]}"; do
-            if [[ -z "${!name:-}" ]]; then
-              echo "::error title=Missing release authority::$name is not configured."
-              exit 1
-            fi
-          done
+          if [[ ! "$ANDROID_SIGNING_CERT_SHA256" =~ ^([a-fA-F0-9]{64}|([a-fA-F0-9]{2}:){31}[a-fA-F0-9]{2})$ ]]; then
+            echo '::error title=Missing release authority::Stable certificate fingerprint is not configured.'
+            exit 1
+          fi
       - name: Confirm manual readiness source
         if: github.event_name == 'workflow_dispatch'
         run: |
@@ -61,93 +56,67 @@ jobs:
         run: ./scripts/check-release-readiness.ps1 -Tag '${{ github.ref_name }}' -Repository '${{ github.repository }}'
       - name: Confirm non-publishing manual validation
         if: github.event_name == 'workflow_dispatch'
-        run: echo 'Readiness and release authority checks passed. Manual dispatch cannot publish.'
-
-  locate-platform-runs:
-    name: Wait for tag package workflows
-    if: startsWith(github.ref, 'refs/tags/')
-    needs: readiness
-    runs-on: ubuntu-24.04
-    outputs:
-      windows: ${{ steps.locate.outputs.windows }}
-      macos: ${{ steps.locate.outputs.macos }}
-      linux: ${{ steps.locate.outputs.linux }}
-      android: ${{ steps.locate.outputs.android }}
-    steps:
-      - name: Locate successful package runs for this commit
-        id: locate
-        uses: actions/github-script@v9
-        with:
-          script: |
-            const workflows = { windows: 'windows-package.yml', macos: 'macos-package.yml', linux: 'linux-package.yml', android: 'android-package.yml' };
-            const deadline = Date.now() + 90 * 60 * 1000;
-            for (const [platform, workflow_id] of Object.entries(workflows)) {
-              let run;
-              while (Date.now() < deadline) {
-                const response = await github.rest.actions.listWorkflowRuns({ owner: context.repo.owner, repo: context.repo.repo, workflow_id, event: 'push', per_page: 20 });
-                run = response.data.workflow_runs.find((candidate) => candidate.head_sha === context.sha && candidate.head_branch === context.ref.replace('refs/tags/', ''));
-                if (run?.conclusion === 'success') break;
-                if (run?.status === 'completed') throw new Error(`${platform} package workflow concluded ${run.conclusion}`);
-                await new Promise((resolve) => setTimeout(resolve, 30000));
-              }
-              if (!run || run.conclusion !== 'success') throw new Error(`${platform} package workflow did not succeed before timeout`);
-              core.setOutput(platform, String(run.id));
-            }
+        run: echo 'Readiness passed. Manual dispatch cannot publish.'
 
   publish:
-    name: Publish immutable GitHub release
-    if: startsWith(github.ref, 'refs/tags/')
-    needs: locate-platform-runs
+    name: Publish accepted immutable bytes
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    needs: readiness
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/download-artifact@v8
         with:
-          name: glitchpad-0.2.0-windows-x86_64-community-release
-          path: gathered/windows
-          run-id: ${{ needs.locate-platform-runs.outputs.windows }}
-          github-token: ${{ github.token }}
-      - name: Download glitchpad-0.2.0-macos-universal-community-release and receipts
-        uses: actions/download-artifact@v8
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v7
         with:
-          pattern: glitchpad-*
-          merge-multiple: true
-          path: gathered/macos
-          run-id: ${{ needs.locate-platform-runs.outputs.macos }}
-          github-token: ${{ github.token }}
-      - name: Download glitchpad-0.2.0-linux-x86_64-community-release and receipts
-        uses: actions/download-artifact@v8
-        with:
-          pattern: glitchpad-*
-          merge-multiple: true
-          path: gathered/linux
-          run-id: ${{ needs.locate-platform-runs.outputs.linux }}
-          github-token: ${{ github.token }}
-      - uses: actions/download-artifact@v8
-        with:
-          name: glitchpad-0.2.0-android-community-release
-          path: gathered/android
-          run-id: ${{ needs.locate-platform-runs.outputs.android }}
-          github-token: ${{ github.token }}
-      - name: Preserve platform evidence bundles
+          node-version-file: .node-version
+      - name: Read owner-accepted annotated tag inputs
         run: |
-          mkdir -p release-assets
+          set -euo pipefail
+          test "$GITHUB_REF_NAME" = v0.2.1
+          test "$(git cat-file -t "$GITHUB_REF")" = tag
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          git for-each-ref --format='%(contents)' "$GITHUB_REF" > accepted-staging.json
+          test "$(git rev-parse 'HEAD^{tree}')" = "$(git rev-parse 'origin/main^{tree}')"
+      - name: Consume accepted payloads without rebuilding
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ANDROID_SIGNING_CERT_SHA256: ${{ secrets.ANDROID_SIGNING_CERT_SHA256 }}
+        run: |
+          node scripts/accepted-release-inputs.mjs --accepted accepted-staging.json --source "$GITHUB_SHA" --directory gathered --receipt accepted-input-receipt.json
+      - name: Assemble unchanged accepted payloads and native evidence
+        run: |
+          mkdir release-assets
           for platform in windows macos linux android; do
-            tar -czf "release-assets/glitchpad-0.2.0-${platform}-evidence.tar.gz" -C "gathered/$platform" .
+            tar -czf "release-assets/glitchpad-0.2.1-${platform}-evidence.tar.gz" -C "gathered/$platform" .
           done
-      - run: node scripts/assemble-community-release.mjs --input gathered --output release-assets --source-commit '${{ github.sha }}'
+          node scripts/assemble-community-release.mjs --input gathered --output release-assets --source-commit "$GITHUB_SHA"
+          cp accepted-staging.json accepted-input-receipt.json release-assets/
+      - name: Retain accepted-input verification
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: accepted-release-input-verification-${{ github.run_attempt }}
+          path: |
+            accepted-staging.json
+            accepted-input-receipt.json
+            release-assets/community-release-manifest.json
+          if-no-files-found: error
+          retention-days: 90
       - name: Refuse replacement and publish once
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if gh release view '${{ github.ref_name }}' >/dev/null 2>&1; then
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
             echo 'Release already exists; refusing to replace published bytes.' >&2
             exit 1
           fi
-          gh release create '${{ github.ref_name }}' release-assets/* --verify-tag --title 'Glitchpad v0.2.0' --notes-file docs/releases/v0.2.0.md
+          gh release create "$GITHUB_REF_NAME" release-assets/* --verify-tag --title 'Glitchpad v0.2.1' --notes-file docs/releases/v0.2.1.md
 
   publish-site:
-    name: Publish v0.2.0 site
+    name: Publish v0.2.1 site
     needs: publish
     permissions:
       contents: read
@@ -156,4 +125,4 @@ jobs:
     uses: ./.github/workflows/docs.yml
     with:
       deploy: true
-      release_tag: v0.2.0
+      release_tag: v0.2.1

@@ -31,12 +31,12 @@ const sourceCommit = 'b'.repeat(40);
 function candidate() {
   return {
     schema_version: 1,
-    version: '0.2.0',
+    version: '0.2.1',
     platform: 'windows',
     architecture: 'x86_64',
     source_commit: sourceCommit,
     workflow_identity:
-      'shruggietech/glitchpad/.github/workflows/windows-package.yml@refs/tags/v0.2.0',
+      'shruggietech/glitchpad/.github/workflows/windows-package.yml@refs/tags/v0.2.1',
     official: false,
     gate_status: 'candidate_valid',
     artifacts: contract.artifacts.map((artifact) => ({
@@ -447,8 +447,9 @@ test('a self-asserted official manifest cannot bypass live verification', () => 
   const evidence = candidate();
   evidence.official = true;
   evidence.gate_status = 'official_valid';
-  evidence.event = 'push_tag';
-  evidence.tag = 'v0.2.0';
+  evidence.event = contract.official.authorized_event;
+  evidence.publication_context = 'staged_unpublished';
+  evidence.tag = 'v0.2.1';
   evidence.evidence_files = [...contract.official.required_evidence];
   evidence.artifacts = evidence.artifacts.map((artifact) => ({
     ...artifact,
@@ -469,8 +470,9 @@ test('official community mode binds unsigned final bytes and recorded trust evid
     const evidence = candidate();
     evidence.official = true;
     evidence.gate_status = 'official_valid';
-    evidence.event = 'push_tag';
-    evidence.tag = 'v0.2.0';
+    evidence.event = contract.official.authorized_event;
+    evidence.publication_context = 'staged_unpublished';
+    evidence.tag = 'v0.2.1';
     evidence.evidence_files = [...contract.official.required_evidence];
     for (const artifact of evidence.artifacts) {
       const bytes = Buffer.from(artifact.kind);
@@ -534,7 +536,7 @@ test('official community mode binds unsigned final bytes and recorded trust evid
           ],
         },
         components: [
-          { 'bom-ref': 'pkg:cargo/glitchpad-core@0.2.0' },
+          { 'bom-ref': 'pkg:cargo/glitchpad-core@0.2.1' },
           { 'bom-ref': 'pkg:npm/react@19.2.8' },
         ],
       }),
@@ -704,7 +706,7 @@ test('Windows SBOM combines Cargo and transitive production JavaScript dependenc
       packages: [
         {
           name: 'glitchpad-core',
-          version: '0.2.0',
+          version: '0.2.1',
           source: null,
           license: 'Apache-2.0',
         },

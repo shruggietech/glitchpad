@@ -19,4 +19,6 @@ repositories {
 dependencies {
     compileOnly(gradleApi())
     implementation("com.android.tools.build:gradle:8.11.0")
+    implementation("org.ow2.asm:asm-commons:9.8")
+    testImplementation("junit:junit:4.13.2")
 }

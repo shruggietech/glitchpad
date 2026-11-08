@@ -1,3 +1,4 @@
+import { releaseIdentity } from './lib/release-identity.mjs';
 import { validateDocumentWorkflowProof } from './lib/package-document-workflow.mjs';
 
 import { createHash } from 'node:crypto';
@@ -277,7 +278,7 @@ export function validateLinuxEvidence(
     attestation.repository !== contract.official.repository ||
     attestation.authorized_event !== contract.official.authorized_event ||
     attestation.build_trigger !== contract.official.attestation_build_trigger ||
-    attestation.source_ref !== `refs/tags/${contract.official.tag_pattern}` ||
+    attestation.source_ref !== evidence.workflow_identity.split('@').at(-1) ||
     attestation.signer_workflow !==
       `${contract.official.repository}/.github/workflows/linux-package.yml` ||
     attestation.source_commit !== evidence.source_commit ||
@@ -313,8 +314,10 @@ export function validateLinuxLifecycleEvidence(
     evidence.official !== true ||
     evidence.gate_status !== 'official_valid' ||
     evidence.event !== contract.official.authorized_event ||
+    evidence.publication_context !== 'staged_unpublished' ||
     evidence.tag !== contract.official.tag_pattern ||
-    evidence.repository_attestation_status !== 'generated_by_tag_workflow' ||
+    evidence.repository_attestation_status !==
+      'generated_by_staging_workflow' ||
     !same(evidence.evidence_files ?? [], contract.official.required_evidence)
   )
     fail('official lifecycle evidence is unauthorized or incomplete');
@@ -555,8 +558,13 @@ export async function checkLinuxConfiguration(
       'utf8',
     ),
   ]);
-  if (capabilities.schema_version !== 1 || capabilities.release !== '0.2.0')
-    fail('capability inventory version is not v0.2.0 schema 1');
+  if (
+    capabilities.schema_version !== 1 ||
+    capabilities.release !== releaseIdentity.version
+  )
+    fail(
+      'capability inventory version differs from the target release schema 1',
+    );
   const capabilityExtensions = uniqueExtensions(capabilities);
   const mimeFacts = mimeMapFacts(mimeMap);
   const packageOwnedTypes = sorted(mimeMap.package_owned_types ?? []);
@@ -663,8 +671,8 @@ export async function checkLinuxConfiguration(
       fail(`Linux package workflow is missing ${required}`);
   if (
     !packageWorkflow.includes('actions/attest-build-provenance@v4') ||
-    !packageWorkflow.includes("tags:\n      - 'v0.2.0'") ||
-    !releaseWorkflow.includes('glitchpad-0.2.0-linux-x86_64-community-release')
+    !packageWorkflow.includes('stage_release:') ||
+    !releaseWorkflow.includes('scripts/accepted-release-inputs.mjs')
   )
     fail('release path omits repository-attested Linux authority');
   if (
@@ -756,27 +764,33 @@ export async function verifyRepositoryAttestations(
   { runner = execFileAsync } = {},
 ) {
   const repository = contract.official.repository;
-  const sourceRef = `refs/tags/${contract.official.tag_pattern}`;
+  const sourceRef = evidence.workflow_identity.split('@').at(-1);
+  if (!/^refs\/heads\/[A-Za-z0-9_./-]+$/u.test(sourceRef))
+    fail('staging attestation must bind the actual branch ref');
   const signerWorkflow = `${repository}/.github/workflows/linux-package.yml`;
   for (const artifact of evidence.artifacts) {
     let output;
     try {
-      ({ stdout: output } = await runner('gh', [
-        'attestation',
-        'verify',
-        join(resolve(artifactRoot), artifact.name),
-        '--repo',
-        repository,
-        '--signer-workflow',
-        signerWorkflow,
-        '--source-ref',
-        sourceRef,
-        '--source-digest',
-        evidence.source_commit,
-        '--deny-self-hosted-runners',
-        '--format',
-        'json',
-      ]));
+      ({ stdout: output } = await runner(
+        'gh',
+        [
+          'attestation',
+          'verify',
+          join(resolve(artifactRoot), artifact.name),
+          '--repo',
+          repository,
+          '--signer-workflow',
+          signerWorkflow,
+          '--source-ref',
+          sourceRef,
+          '--source-digest',
+          evidence.source_commit,
+          '--deny-self-hosted-runners',
+          '--format',
+          'json',
+        ],
+        { windowsHide: true, timeout: 60000 },
+      ));
     } catch {
       fail(
         `live repository attestation verification failed for ${artifact.name}`,
@@ -852,7 +866,7 @@ function validateProvenance(provenance, evidence, contract) {
   if (
     provenance.schema_version !== 1 ||
     provenance.predicate_type !== 'https://slsa.dev/provenance/v1' ||
-    provenance.candidate_only !== true ||
+    provenance.candidate_only !== !evidence.official ||
     provenance.repository !== contract.official.repository ||
     provenance.source_commit !== evidence.source_commit ||
     provenance.workflow_identity !== evidence.workflow_identity ||

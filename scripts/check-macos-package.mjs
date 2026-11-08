@@ -1,3 +1,4 @@
+import { releaseIdentity } from './lib/release-identity.mjs';
 import { validateDocumentWorkflowProof } from './lib/package-document-workflow.mjs';
 
 import { createHash } from 'node:crypto';
@@ -190,8 +191,13 @@ export async function checkMacosConfiguration(
     ),
   ]);
 
-  if (capabilities.schema_version !== 1 || capabilities.release !== '0.2.0')
-    fail('capability inventory version is not v0.2.0 schema 1');
+  if (
+    capabilities.schema_version !== 1 ||
+    capabilities.release !== releaseIdentity.version
+  )
+    fail(
+      'capability inventory version differs from the target release schema 1',
+    );
   const configured = uniqueExtensions(capabilities.families);
   if (!same(contract.document_extensions ?? [], configured))
     fail(
@@ -327,11 +333,7 @@ export async function checkMacosConfiguration(
     )
   )
     fail('branch and pull-request package workflow must not publish');
-  if (
-    !releaseWorkflow.includes(
-      'glitchpad-0.2.0-macos-universal-community-release',
-    )
-  )
+  if (!releaseWorkflow.includes('scripts/accepted-release-inputs.mjs'))
     fail('release workflow omits the macOS community package');
   if (contract.official.trust_state !== 'adhoc_non_notarized_community')
     fail('macOS official community trust state is invalid');
@@ -357,7 +359,16 @@ function validateMacosEvidenceShape(evidence, contract, official) {
       'application',
       'application_inventory',
       'document_extensions',
-      ...(official ? ['event', 'tag', 'evidence_files'] : []),
+      ...(official
+        ? [
+            'event',
+            'tag',
+            ...(contract.official.publication_context
+              ? ['publication_context']
+              : []),
+            'evidence_files',
+          ]
+        : []),
     ],
     'package evidence',
   );
@@ -531,6 +542,8 @@ function validateMacosEvidenceShape(evidence, contract, official) {
     evidence.official !== true ||
     evidence.gate_status !== 'official_valid' ||
     evidence.event !== contract.official.authorized_event ||
+    (contract.official.publication_context !== undefined &&
+      evidence.publication_context !== contract.official.publication_context) ||
     evidence.tag !== contract.official.tag_pattern ||
     !same(evidence.evidence_files ?? [], contract.official.required_evidence)
   )

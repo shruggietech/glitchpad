@@ -1,3 +1,4 @@
+import { releaseIdentity } from './lib/release-identity.mjs';
 import { readFile, readdir } from 'node:fs/promises';
 import { extname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -145,7 +146,11 @@ export async function checkConfiguration(
     ['protected Pages environment', /^\s*name:\s*github-pages\s*$/m],
     [
       'exact publisher deployment condition',
-      /inputs\.deploy[\s\S]*inputs\.release_tag == 'v0\.2\.0'/,
+      new RegExp(
+        "inputs\\.deploy[\\s\\S]*inputs\\.release_tag == '" +
+          releaseIdentity.tag.replaceAll('.', '\\.') +
+          "'",
+      ),
     ],
     [
       'shared Pages deployment group',
@@ -158,9 +163,13 @@ export async function checkConfiguration(
     }
   }
   const expectedUploadCondition =
-    "inputs.deploy && inputs.release_tag == 'v0.2.0' && steps.release_authority.outputs.authorized == 'true'";
+    "inputs.deploy && inputs.release_tag == '" +
+    releaseIdentity.tag +
+    "' && steps.release_authority.outputs.authorized == 'true'";
   const expectedDeploymentCondition =
-    "inputs.deploy && inputs.release_tag == 'v0.2.0' && needs.build.outputs.release_authorized == 'true'";
+    "inputs.deploy && inputs.release_tag == '" +
+    releaseIdentity.tag +
+    "' && needs.build.outputs.release_authorized == 'true'";
   const normalizeExpression = (value) =>
     typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : '';
   const uploadStep = parsedDocsWorkflow.jobs?.build?.steps?.find(
@@ -296,7 +305,15 @@ export async function checkConfiguration(
       /^\s*uses:\s*\.\/\.github\/workflows\/docs\.yml\s*$/m,
     ],
     ['deployment authorization', /^\s*deploy:\s*true\s*$/m],
-    ['exact release tag input', /^\s*release_tag:\s*v0\.2\.0\s*$/m],
+    [
+      'exact release tag input',
+      new RegExp(
+        '^\\s*release_tag:\\s*' +
+          releaseIdentity.tag.replaceAll('.', '\\.') +
+          '\\s*$',
+        'm',
+      ),
+    ],
   ]) {
     if (!pattern.test(releaseWorkflow)) {
       throw new Error(`Invalid release workflow contract: missing ${label}`);

@@ -53,7 +53,7 @@ export const PdfSurface=forwardRef<TextEditorHandle,Props>(function PdfSurface({
   },[controller,state.capabilities.view,state.navigation.page,scale,rotation,width]);
   const go=(offset:number)=>{try{controller.navigate(state.navigation.page+offset);}catch{/* Boundaries are disabled below. */}};
   useImperativeHandle(handleRef,()=>({
-    invoke(command,opener){if(command==='inspect_metadata'&&opener){callbacks.current.onOpenMetadata?.(opener);return true;}if(!state.capabilities.view)return false;if(command==='zoom_in'){setScale(x=>Math.min(4,x*1.25));return true;}if(command==='zoom_out'){setScale(x=>Math.max(0.25,x/1.25));return true;}if(command==='fit'){setScale(1);return true;}return false;},
+    invoke(command,opener){if(command==='metadata'&&opener){callbacks.current.onOpenMetadata?.(opener);return true;}if(!state.capabilities.view)return false;if(command==='zoom_in'){setScale(x=>Math.min(4,x*1.25));return true;}if(command==='zoom_out'){setScale(x=>Math.max(0.25,x/1.25));return true;}if(command==='fit'){setScale(1);return true;}return false;},
     selectRange(){return false;},
     dismissModal(){if(state.state==='password_required'){setPassword('');controller.cancel();return true;}return false;},
   }));

@@ -17,3 +17,7 @@ Implementation prerequisite run42520672883 passed against9c866c. Checklist requi
 ## 2026-11-08: Initial worker foundation
 
 Isolated preparation run42521116684 passed againstcb5419df3b875c70e6370dc6117b45d3ede51180. Exact pdfjs-dist6.5.438 package resource/static-decoder tests, PDF contract tests, frontend typecheck and production frontend build passed. Artifact13633024507 independently hasheda01c063d777169ff0c57a4f56741a1c9d9f7d459b7108223e014c1b39935d360; its generated dependency lock was read back. The PDF display/controller is not connected yet, so this build does not establish emitted-worker or native runtime compatibility.
+
+## 2026-11-08: Composed build attempt1
+
+Run42521619680 against1c0e2ec75dc403143ffea307dc947b52c2006609 failed typecheck because the minimal PDF surface used inspect_metadata instead of the existing metadata command ID. Resource/decoder and contract tests passed; no emitted worker/native runtime result was produced. Corrected the command ID and added the original structured/hostile PDF fixture generator plus a composed production-browser read probe for the next focused run.

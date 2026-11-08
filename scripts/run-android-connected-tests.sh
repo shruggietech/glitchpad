@@ -202,6 +202,7 @@ if [[ "${GLITCHPAD_ANDROID_PDF_PREFLIGHT:-false}" == "true" ]]; then
   status=0
   ANDROID_INSTRUMENTATION_RESET_APP_DATA=true bash scripts/run-android-instrumentation.sh "$preflight_output" 's049_pdf_compatibility=' -e waitForActivitiesToComplete false -e expectedSource "$GLITCHPAD_BUILD_COMMIT" -e expectedRole ordinary -e class com.shruggietech.glitchpad.source.AndroidDeliveryInstrumentedTest#pdfCompatibility || status=$?
   retain_tested_candidate post_direct_suite_existing_install || exit 1
+  adb shell -T -n run-as com.shruggietech.glitchpad cat files/s049-pdf-native-print-failure.json > "${RUNNER_TEMP:-/tmp}/s049-pdf-native-print-failure.json" || true
   adb shell -T -n run-as com.shruggietech.glitchpad cat files/s049-pdf-compatibility.json > "${RUNNER_TEMP:-/tmp}/s049-pdf-compatibility.json" || status=1
   adb shell -T -n run-as com.shruggietech.glitchpad cat files/s049-print-output.pdf > "${RUNNER_TEMP:-/tmp}/s049-pdf-print-output.pdf" || status=1
   exit "$status"

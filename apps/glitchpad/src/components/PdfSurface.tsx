@@ -18,6 +18,8 @@ import { PdfController } from '../domain/pdf-controller';
 import { createPdfSourceLease } from '../domain/pdf-source-gateway';
 import {
   classifyPdfFailure,
+  pdfFailureMessage,
+  type PdfErrorCode,
   type PdfDocumentState,
 } from '../domain/pdf-contract';
 import {
@@ -85,7 +87,8 @@ export const PdfSurface = forwardRef<TextEditorHandle, Props>(
     const [visible, setVisible] = useState(
       document.visibilityState !== 'hidden',
     );
-    const [failure, setFailure] = useState<string | null>(null);
+    const [failure, setFailure] = useState<PdfErrorCode | null>(null);
+    const [pageFailures,setPageFailures]=useState(new Map<number,{key:string;error:PdfErrorCode}>());
     const [preparation, setPreparation] = useState<string | null>(null);
     const [password, setPassword] = useState('');
     const [retry, setRetry] = useState(0);
@@ -187,7 +190,8 @@ export const PdfSurface = forwardRef<TextEditorHandle, Props>(
       [],
     );
     const onReady = useCallback(
-      (page: number, renderKey: string, value: boolean) =>
+      (page: number, renderKey: string, value: boolean, error?:PdfErrorCode) => {
+        setPageFailures(previous=>{const known=previous.get(page);if(error){if(known?.key===renderKey&&known.error===error)return previous;const next=new Map(previous);next.set(page,{key:renderKey,error});return next;}if(known?.key!==renderKey)return previous;const next=new Map(previous);next.delete(page);return next;});
         setReady((previous) => {
           if (
             (value && previous.get(page) === renderKey) ||
@@ -198,7 +202,8 @@ export const PdfSurface = forwardRef<TextEditorHandle, Props>(
           if (value) next.set(page, renderKey);
           else next.delete(page);
           return next;
-        }),
+        });
+      },
       [],
     );
     useEffect(
@@ -471,20 +476,15 @@ export const PdfSurface = forwardRef<TextEditorHandle, Props>(
       session.id,
       session.revision,
     ]);
-    const status =
-      failure ??
-      state.error ??
-      preparation ??
-      (state.state === 'loading'
-        ? 'Loading PDF…'
-        : state.state === 'cancelled'
-          ? 'PDF viewing paused.'
-          : state.state);
+    const pageFailure=pageFailures.get(view.page);const pageError=pageFailure?.key===key?pageFailure.error:null;
+    const errorCode=failure??state.error??pageError;
+    const status=errorCode?pdfFailureMessage(errorCode,platform):preparation??(state.state==='loading'?'Loading PDF…':state.state==='cancelled'?'PDF viewing paused.':state.capabilities.view&&!currentReady?'Rendering PDF page…':'Waiting for PDF…');
     return (
       <div
         className="pdf-layout"
         data-pdf-owner={state.owner_id}
         data-pdf-state={state.state}
+        data-pdf-error={errorCode??undefined}
         data-pdf-ready={currentReady}
         data-pdf-worker={controller.workerReady}
         data-pdf-engine="6.5.438"

@@ -189,6 +189,7 @@ export function classifyPdfFailure(error: unknown): PdfErrorCode {
   if (error instanceof PdfFailure) return error.code;
   if (error && typeof error === 'object' && 'category' in error) {
     if (error.category === 'permission_revoked') return 'permission_revoked';
+    if (error.category === 'resource_limit') return 'source_limit';
     if (error.category === 'conflict') return 'source_changed';
     if (error.category === 'stale_session') return 'cancelled';
     if (
@@ -212,4 +213,8 @@ export function classifyPdfFailure(error: unknown): PdfErrorCode {
   if (/unsupported.*(?:encrypt|security)|unknown encryption/i.test(message))
     return 'unsupported_encryption';
   return 'worker_failure';
+}
+
+export function pdfFailureMessage(code:PdfErrorCode,platform:PdfPlatform):string {
+  const messages:Record<PdfErrorCode,string>={malformed:'This PDF could not be read.',incorrect_password:'The password was not accepted.',unsupported_encryption:'This PDF uses unsupported encryption.',source_limit:'This PDF exceeds the '+(platform==='android'?'256':'512')+' MiB source limit.',page_limit:'This PDF exceeds the 10,000-page limit.',surface_limit:'This page exceeds the canvas budget. Use Fit page or reduce zoom.',source_changed:'The document changed. Reopen it to continue.',permission_revoked:'Read permission was revoked. Grant access and reopen the document.',worker_failure:'The PDF renderer stopped. Retry viewing.',unavailable:'PDF viewing is unavailable for this source.',invalid_destination:'This destination is unavailable in this document.',cancelled:'PDF viewing paused.'};return messages[code];
 }

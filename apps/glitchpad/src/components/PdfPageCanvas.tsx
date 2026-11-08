@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { PdfController, type PdfPageSurface } from '../domain/pdf-controller';
 import {
   classifyPdfFailure,
+  pdfFailureMessage,
   pdfSurfaceBytes,
+  type PdfErrorCode,
   type PdfNavigation,
   type PdfPlatform,
 } from '../domain/pdf-contract';
@@ -31,7 +33,7 @@ interface Props {
   reduced: boolean;
   platform: PdfPlatform;
   onMetrics: (page: number, key: string, metrics: PdfPageMetrics) => void;
-  onReady: (page: number, key: string, ready: boolean) => void;
+  onReady: (page: number, key: string, ready: boolean, error?:PdfErrorCode) => void;
 }
 export function PdfPageCanvas({
   controller,
@@ -49,7 +51,7 @@ export function PdfPageCanvas({
 }: Props) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const text = useRef<HTMLDivElement>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<PdfErrorCode | null>(null);
   const key = pdfViewKey(view, width, height, reduced);
   useEffect(() => {
     const abort = new AbortController();
@@ -94,7 +96,7 @@ export function PdfPageCanvas({
     void render().catch((reason) => {
       if (!abort.signal.aborted) {
         setError(classifyPdfFailure(reason));
-        onReady(index, key, false);
+        onReady(index, key, false,classifyPdfFailure(reason));
       }
     });
     return () => {
@@ -130,9 +132,7 @@ export function PdfPageCanvas({
       <div ref={text} className="pdf-text-layer" />
       {error && (
         <p className="pdf-page-error" role="status">
-          {error === 'surface_limit'
-            ? 'This page exceeds the current canvas budget. Use Fit page or reduce zoom.'
-            : 'Page rendering unavailable: ' + error}
+          {pdfFailureMessage(error,platform)}
         </p>
       )}
     </div>

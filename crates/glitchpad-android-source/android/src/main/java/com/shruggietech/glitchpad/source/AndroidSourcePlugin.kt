@@ -666,7 +666,11 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
           }
           else -> invoke.reject("invalid_print_operation")
         }
-      }.onFailure { invoke.reject("pdf_print_unavailable") }
+      }.onFailure { error ->
+        val reason=error.message?.takeIf { it.matches(Regex("[a-z_]{1,64}")) } ?: "native_failure"
+        android.util.Log.w("GlitchpadPdfPrint", "operation="+args.operation+" reason="+reason)
+        invoke.reject("pdf_print_unavailable")
+      }
     }
   }
 

@@ -121,6 +121,7 @@ class AndroidDeliveryInstrumentedTest {
     val reading = JSONObject(evaluate(scenario,"window.__s049ReadingResult"))
     assertFalse("PDF journey must complete: $reading",reading.has("error"))
     for (key in listOf("outline_named_destination","search","thumbnail","internal_link","external_link_disclosure","rotation","go_to_page","keyboard","metadata")) assertTrue(key,reading.getJSONObject("checks").getBoolean(key))
+    val printStoreProof=PdfPrintNativeStoreChecks.verify(clientContext)
     val printProof=verifyPdfNativePrint(scenario)
     val stream = grant(documentUri("s049-stream.pdf"))
     clientContext.startActivity(viewIntent(stream,"application/pdf").setComponent(component).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
@@ -139,13 +140,14 @@ class AndroidDeliveryInstrumentedTest {
     assertTrue("viewing/navigation must preserve original provider bytes", original.contentEquals(readBytes(uri)))
     val webview = WebViewCompat.getCurrentWebViewPackage(clientContext)
     if (Build.VERSION.SDK_INT == 24) assertTrue("minimum profile must retain actual Chrome69", webview?.versionName?.startsWith("69.") == true)
-    val result = JSONObject().put("schema_version",1).put("diagnostic_only",true).put("candidate_qualified",false).put("source_commit",InstrumentationRegistry.getArguments().getString("expectedSource")).put("api_level",Build.VERSION.SDK_INT).put("webview_package",webview?.packageName).put("webview_version",webview?.versionName).put("candidate_identity",identity).put("fixture_sha256",sha256(original)).put("facts",facts).put("reading_journey",reading).put("print",printProof).put("stream_cache_files",JSONArray(streamCacheObserved)).put("stream_rendered",true).put("second_page",true).put("disposal",disposal).put("source_unchanged",true)
+    val result = JSONObject().put("schema_version",1).put("diagnostic_only",true).put("candidate_qualified",false).put("source_commit",InstrumentationRegistry.getArguments().getString("expectedSource")).put("api_level",Build.VERSION.SDK_INT).put("webview_package",webview?.packageName).put("webview_version",webview?.versionName).put("candidate_identity",identity).put("fixture_sha256",sha256(original)).put("facts",facts).put("reading_journey",reading).put("print",printProof).put("native_print_store",printStoreProof).put("stream_cache_files",JSONArray(streamCacheObserved)).put("stream_rendered",true).put("second_page",true).put("disposal",disposal).put("source_unchanged",true)
     File(clientContext.filesDir,"s049-pdf-compatibility.json").writeText(result.toString(2)+"\n",Charsets.UTF_8)
     println("s049_pdf_compatibility="+result.toString());System.out.flush()
   }
 
 
   private fun verifyPdfNativePrint(scenario: ActivityScenario<MainActivity>): JSONObject {
+    val retainedView=AtomicReference<WebView?>();scenario.onActivity { retainedView.set(findWebView(it.window.decorView)) }
     val automation=instrumentation.uiAutomation
     val service=automation.serviceInfo;service.flags=service.flags or android.accessibilityservice.AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS;automation.serviceInfo=service
     fun findNative(predicate:(android.view.accessibility.AccessibilityNodeInfo)->Boolean):android.view.accessibility.AccessibilityNodeInfo? {
@@ -157,6 +159,11 @@ class AndroidDeliveryInstrumentedTest {
     fun awaitNative(label:String,predicate:(android.view.accessibility.AccessibilityNodeInfo)->Boolean):android.view.accessibility.AccessibilityNodeInfo {
       val deadline=SystemClock.elapsedRealtime()+30000L
       while(SystemClock.elapsedRealtime()<deadline){findNative(predicate)?.let{return it};SystemClock.sleep(100)}
+      val nodes=JSONArray();val pending=java.util.ArrayDeque<android.view.accessibility.AccessibilityNodeInfo>();automation.rootInActiveWindow?.let{pending.add(it)}
+      while(pending.isNotEmpty()&&nodes.length()<256){val node=pending.removeFirst();nodes.put(JSONObject().put("id",node.viewIdResourceName).put("class",node.className?.toString()).put("text",node.text?.toString()?.take(256)).put("description",node.contentDescription?.toString()?.take(256)).put("enabled",node.isEnabled));for(index in 0 until node.childCount)node.getChild(index)?.let{pending.add(it)}}
+      val body=AtomicReference("unavailable");val latch=CountDownLatch(1);instrumentation.runOnMainSync {retainedView.get()?.evaluateJavascript("document.body.innerText.slice(0,8192)") { value->body.set(value);latch.countDown() }};latch.await(2,TimeUnit.SECONDS)
+      val details=JSONObject().put("label",label).put("nodes",nodes).put("body",body.get()).put("spool_files",JSONArray(File(clientContext.cacheDir,"pdf-print-v1").walkTopDown().filter {it.isFile}.map {it.name+":"+it.length()}.toList()))
+      File(clientContext.filesDir,"s049-pdf-native-print-failure.json").writeText(details.toString(2),Charsets.UTF_8);println("s049_pdf_native_print_failure="+details.toString());System.out.flush()
       throw AssertionError("Native print control unavailable: $label; package="+automation.rootInActiveWindow?.packageName)
     }
     fun activate(node:android.view.accessibility.AccessibilityNodeInfo){var current:android.view.accessibility.AccessibilityNodeInfo?=node;while(current!=null&&!current.isClickable)current=current.parent;assertTrue("native control must activate",current?.performAction(android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK)==true)}

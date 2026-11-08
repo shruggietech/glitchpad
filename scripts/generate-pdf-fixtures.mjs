@@ -117,6 +117,11 @@ export function createPdfFixture({
     ' /XYZ null null null]] >>';
   const encryption=unsupportedEncryption?add('<< /Filter /UnsupportedS049SecurityHandler /V 9 /R 99 /Length 256 >>'):null;
   if (padding) add(stream(' '.repeat(padding)));
+  return serializePdfObjects(objects,catalog,info,encryption);
+}
+
+function serializePdfObjects(objects,catalog,info,encryption=null){
+  const ref=(id)=>String(id)+' 0 R';
   const parts = [
     Buffer.from('%PDF-1.7\n% Original Glitchpad fixture\n', 'ascii'),
   ];
@@ -152,6 +157,13 @@ export function createPdfFixture({
   );
   return Buffer.concat(parts);
 }
+/** Valid large page tree with shared resources/content rather than duplicated document payload. */
+export function createPageCountFixture(count){
+  const kids=Array.from({length:count},(_,index)=>String(index+6)+' 0 R').join(' ');
+  const content='BT /F1 18 Tf 48 720 Td (Page-count contract fixture) Tj ET';
+  const objects=['<< /Type /Catalog /Pages 2 0 R >>','<< /Type /Pages /Count '+count+' /Kids ['+kids+'] /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> >>','<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>','<< /Title (Page-count contract fixture) >>','<< /Length '+content.length+' >>\nstream\n'+content+'\nendstream',...Array(count).fill('<< /Type /Page /Parent 2 0 R /Contents 5 0 R >>')];
+  return serializePdfObjects(objects,1,4);
+}
 
 if (
   process.argv[1] &&
@@ -166,7 +178,7 @@ if (
     's049-compatibility.pdf': createPdfFixture({font,jpeg}),
     's049-small.pdf': createPdfFixture({ padding: 0,font,jpeg }),
     's049-large.pdf':createPdfFixture({pages:1000,padding:0,hostile:false}),
-    's049-page-limit.pdf':createPdfFixture({pages:10001,padding:0,hostile:false}),
+    's049-page-limit.pdf':createPageCountFixture(10001),
     's049-unsupported-encryption.pdf':createPdfFixture({pages:1,padding:0,unsupportedEncryption:true}),
     's049-malformed.pdf': Buffer.from('%PDF-1.7\ninvalid\n', 'ascii'),
   };

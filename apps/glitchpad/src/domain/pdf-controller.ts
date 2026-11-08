@@ -214,6 +214,7 @@ export class PdfController {
       });
       this.current(generation);
       this.workerReady = true;
+      worker.addEventListener('error',event=>{if(generation!==this.generation)return;event.preventDefault();this.fail(new PdfFailure('worker_failure'));},{once:true});
       const parserWorker = PDFWorker.create({ port: worker });
       this.parserWorker = parserWorker;
       await parserWorker.promise;
@@ -229,7 +230,7 @@ export class PdfController {
         source,
         initial,
         this.aborter.signal,
-        (error) => this.fail(error),
+        (error) => {if(generation===this.generation)this.fail(error);},
       );
       this.documentResources = createPdfDocumentResources(globalThis.document);
       const loading = getDocument({

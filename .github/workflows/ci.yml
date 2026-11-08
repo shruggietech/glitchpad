@@ -234,13 +234,13 @@ jobs:
         run: pnpm tauri build --debug --config tauri.s021-linux.conf.json --bundles deb --ci
       - name: Actual packaged Windows PDF reading journey
         if: runner.os == 'Windows'
-        run: node scripts/run-pdf-native-journey.mjs target/debug/glitchpad.exe --packaged
+        run: node scripts/run-pdf-native-journey.mjs target/debug/glitchpad-host.exe --packaged
       - name: Actual packaged macOS PDF reading journey
         if: runner.os == 'macOS'
-        run: node scripts/run-pdf-native-journey.mjs target/debug/glitchpad --packaged
+        run: node scripts/run-pdf-native-journey.mjs target/debug/glitchpad-host --packaged
       - name: Actual packaged Linux PDF reading journey
         if: runner.os == 'Linux'
-        run: xvfb-run -a node scripts/run-pdf-native-journey.mjs target/debug/glitchpad --packaged
+        run: xvfb-run -a node scripts/run-pdf-native-journey.mjs target/debug/glitchpad-host --packaged
       - name: Retain native PDF runtime evidence
         if: always()
         uses: actions/upload-artifact@v7

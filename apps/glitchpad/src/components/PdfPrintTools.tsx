@@ -30,6 +30,7 @@ export const PdfPrintTools = forwardRef<
   const [handedOff, setHandedOff] = useState(false);
   const [gateway, setGateway] = useState<PdfPrintGateway | null>(null);
   const abort = useRef<AbortController | null>(null);
+  const ownedGateway=useRef<PdfPrintGateway|null>(null);
   const mounted = useRef(true);
   useEffect(() => {
     mounted.current = true;
@@ -44,6 +45,7 @@ export const PdfPrintTools = forwardRef<
     return () => {
       mounted.current = false;
       abort.current?.abort();
+      ownedGateway.current?.dispose();
     };
   }, [controller, session.id, session.revision]);
   useImperativeHandle(ref, () => ({
@@ -72,6 +74,7 @@ export const PdfPrintTools = forwardRef<
     abort.current = cancel;
     const job = nativePdfPrintGateway(session);
     setGateway(job);
+    ownedGateway.current=job;
     setBusy(true);
     setHandedOff(false);
     let surface: PdfPageSurface | null = null;
@@ -139,6 +142,8 @@ export const PdfPrintTools = forwardRef<
         setStatus(
           cancel.signal.aborted
             ? 'Print preparation cancelled.'
+            : error instanceof Error && /pending/.test(error.message)
+              ? 'Close the current system print dialog before preparing another job.'
             : error instanceof Error && /limit/.test(error.message)
               ? 'This print range exceeds the print budget. Choose a smaller range.'
               : 'PDF print preparation or system handoff failed.',

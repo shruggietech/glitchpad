@@ -260,7 +260,7 @@ class AndroidDeliveryInstrumentedTest {
     }.getOrElse { JSONObject().put("capture_error", it.javaClass.simpleName).toString() }
     val screenshotName = "s046-markdown-delivery-failure.png"
     val screenshotSaved = runCatching { saveScreenshot(screenshotName); File(clientContext.filesDir, screenshotName).isFile }.getOrDefault(false)
-    println("markdown_delivery_failure=" + JSONObject().put("native_route", nativeDeliveryRouteSnapshot(scenario)).put("fixture", name).put("route", InstrumentationRegistry.getArguments().getString("deliveryAction")).put("api_level", Build.VERSION.SDK_INT).put("screenshot_saved", screenshotSaved).put("state_json", snapshot.take(24576)).toString())
+    println("markdown_delivery_failure=" + JSONObject().put("native_route", if (isReleaseRuntimeEvidence()) JSONObject().put("unavailable", "private_debug_bridge_probe_not_used_for_minified_release") else nativeDeliveryRouteSnapshot(scenario)).put("fixture", name).put("route", InstrumentationRegistry.getArguments().getString("deliveryAction")).put("api_level", Build.VERSION.SDK_INT).put("screenshot_saved", screenshotSaved).put("state_json", snapshot.take(24576)).toString())
     System.out.flush()
   }
 
@@ -2951,6 +2951,8 @@ class AndroidDeliveryInstrumentedTest {
     val draft = "S048_RELEASE_BACK_RETAINED_Ω\n"
     createNewDraftForInput(scenario, "New text file", "Untitled.txt")
     replaceEditorText(scenario, draft)
+    val imeDismissed = dismissObservedAppIme(scenario)
+    assertEquals("keyboard dismissal must retain every draft character", draft, editableSourceText(scenario))
     menuAction(scenario, "File information")
     waitForBodyText(scenario, "File information", "Untitled.txt")
     taskKey(KeyEvent.KEYCODE_BACK)
@@ -2968,7 +2970,7 @@ class AndroidDeliveryInstrumentedTest {
     assertEquals("android", displayed.getString("Platform"))
     assertEquals(source, displayed.getString("Build"))
     val offline = verifyOfflineNotices(scenario)
-    retainReleaseEvidence(scenario, "back_about", observations = JSONObject().put("about", displayed).put("back_retained", true).put("offline_notices", offline))
+    retainReleaseEvidence(scenario, "back_about", observations = JSONObject().put("about", displayed).put("back_retained", true).put("ime_observed_dismissed", imeDismissed).put("offline_notices", offline))
   }
 
   private fun isS047Evidence(): Boolean = InstrumentationRegistry.getArguments().getString("s047") == "true"

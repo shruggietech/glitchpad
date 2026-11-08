@@ -251,10 +251,10 @@ export function validateTagPackageWorkflows({androidWorkflow,windowsWorkflow,mac
     throw new Error('Android stable key restoration must require manual staging');
   const linux=parseYaml(linuxWorkflow);
   const steps=linux.jobs.candidate.steps;
-  const ownership=steps.findIndex(step=>step.run?.includes('sudo chown --recursive "$(id --user):$(id --group)" artifacts/linux'));
+  const ownership=steps.findIndex(step=>(typeof step.run === 'string' && step.run.includes('sudo chown --recursive "$(id --user):$(id --group)" artifacts/linux')));
   const promotion=steps.findIndex(step=>step.name === 'Promote truthful community evidence');
   const attestation=steps.findIndex(step=>step.id === 'attest');
-  const preserved=steps.findIndex(step=>step.run?.includes('steps.attest.outputs.bundle-path'));
+  const preserved=steps.findIndex(step=>(typeof step.run === 'string' && step.run.includes('steps.attest.outputs.bundle-path')));
   const upload=steps.findIndex(step=>step.name === 'Upload governed Linux community package');
   if (ownership < 0 || promotion <= ownership || attestation <= promotion || preserved <= attestation || upload <= preserved)
     throw new Error('Linux staged native path requires ownership, promotion, attestation and immutable upload in order');

@@ -175,7 +175,9 @@ export function boundPdfTextSink<T extends TextSink>(sink: T): T {
     get(target, key) {
       if (key === 'enqueue') return enqueue;
       const value: unknown = Reflect.get(target, key);
-      return typeof value === 'function' ? value.bind(target) : value;
+      return typeof value === 'function'
+        ? (value as (...args: unknown[]) => unknown).bind(target)
+        : value;
     },
   });
 }

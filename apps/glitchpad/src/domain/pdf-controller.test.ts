@@ -31,8 +31,8 @@ function deferred<T>() {
   const promise = new Promise<T>((yes, no) => { resolve = yes; reject = no; });
   return { promise, resolve, reject };
 }
-function lease(read: PdfSourceLease['read'] = vi.fn(async (_offset: number, length: number) => new Uint8Array(length))): PdfSourceLease {
-  return { length: 8192, platform: 'desktop', revision: null, read, close: vi.fn() };
+function lease(read: PdfSourceLease['read'] = vi.fn((_offset: number, length: number) => Promise.resolve(new Uint8Array(length)))) {
+  return { length: 8192, platform: 'desktop' as const, revision: null, read, close: vi.fn() };
 }
 function doc() {
   return { numPages: 4, getMetadata: vi.fn().mockResolvedValue({ info: { Title: 'Current document' }, metadata: null }), getPermissions: vi.fn().mockResolvedValue(null), getOutline: vi.fn().mockResolvedValue([]), getPageLabels: vi.fn().mockResolvedValue(['i', 'ii', 'iii', 'iv']), getPage: vi.fn().mockResolvedValue({ rotate: 0, getViewport: () => ({ width: 612, height: 792 }) }) };

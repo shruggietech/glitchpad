@@ -137,6 +137,7 @@ class AndroidDeliveryInstrumentedTest {
     assertTrue("stream-only cache preserves provider bytes",original.contentEquals(readBytes(stream)))
     val streamCache=File(clientContext.cacheDir,"pdf-source-v1")
     val streamCacheObserved=streamCache.walkTopDown().filter { it.isFile }.map { it.length() }.toList()
+    assertEquals("native stream observation must inspect the actual populated private cache",listOf(original.size.toLong()),streamCacheObserved)
     evaluate(scenario, "window.__s049PdfDisposals=[];window.addEventListener('glitchpad-pdf-disposed',e=>window.__s049PdfDisposals.push(e.detail));true")
     val warm = grant(documentUri("resolver-warm"))
     clientContext.startActivity(viewIntent(warm, "text/plain").setComponent(component).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))

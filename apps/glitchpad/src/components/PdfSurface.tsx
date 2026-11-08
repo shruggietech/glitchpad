@@ -169,6 +169,7 @@ export const PdfSurface = forwardRef<TextEditorHandle, Props>(
       ? (heights.get(view.page) ?? estimate)
       : offsets[count];
     const openTask = (next: 'view' | 'page', target?: HTMLElement) => {
+      if (!state.capabilities.view) return;
       opener.current = target ?? (document.activeElement as HTMLElement);
       setPageDraft(String(view.page + 1));
       setPageError(null);
@@ -496,6 +497,9 @@ export const PdfSurface = forwardRef<TextEditorHandle, Props>(
       session.id,
       session.revision,
     ]);
+    useEffect(() => {
+      if (!state.capabilities.view) { setTask(null); setSelectedMatch(null); }
+    }, [state.capabilities.view]);
     const pageFailure = pageFailures.get(view.page);
     const renderError = pageFailure?.key === key ? pageFailure.error : null;
     const errorCode = failure ?? state.error ?? renderError;

@@ -73,3 +73,11 @@ Run42531545454 passed the entire current-browser reading and isolation journey. 
 ## R18. Worker output and independent inspection bounds
 
 Inspected PDF replies and text streams are now bounded inside the pinned worker before structured cloning to the main WebView. The exact reviewed worker hash and one-occurrence anchors cover outline, labels, destinations, metadata, annotations and per-page streamed text, alongside the existing static decoder transform. The adapter preserves ordinary shared references and rejects cycles or excessive output. Independent metadata/outline/labels/permissions/page-dimension requests report their own availability; one failed or limited inspection does not erase unrelated valid facts. Source information remains host-owned, XMP supplies missing document-information values, and stored permissions remain informational.
+
+## R19. Legacy worker resource guard
+
+Current Chromium applies the worker response script/connect/child CSP, but the actual Chromium69 diagnostic demonstrated that CSP alone is not a complete API boundary there. After all pinned engine/static compatibility initialization, lock the PDF worker's fetch/importScripts/Worker/SharedWorker/XMLHttpRequest/WebSocket/EventSource/WebTransport APIs. The parser has no legitimate network or dynamic decoder imports: source bytes and reviewed resources arrive over the owned message port. Keep the response CSP and normal-realm dynamic-code refusal. Run42535897974 independently observed all worker denial routes and no native bridge on both current and69. No global application network API is altered.
+
+## R20. Print transport and generated light theme
+
+Installed API24 run42536058242 showed native print begin/cancel without a staged page. The PNG transport used Blob.arrayBuffer, unavailable on the minimum Chrome69 profile. Use cancellable FileReader for bounded PNG blobs rather than relaxing the minimum runtime. New actual keyboard/touch/Axe checks also found that the app's selected light theme did not enable the delivered kit's bb-light scope, leaving dark generated fields with inherited dark text. Synchronize that class with the effective selected/system theme, including legacy MediaQueryList listeners. Do not substitute palette values or change the pinned generated kit.

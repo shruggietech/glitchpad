@@ -124,6 +124,7 @@ export const PdfNavigationTools = forwardRef<PdfNavigationHandle, Props>(
     const callbacks = useRef({ onLabels, onMatch });
     callbacks.current = { onLabels, onMatch };
     const open = (next: NonNullable<typeof task>, target: HTMLElement) => {
+      if (!state.capabilities.view || (next === 'thumbnails' && !state.capabilities.thumbnails)) return;
       opener.current = target;
       setError(null);
       if (next === 'thumbnails')
@@ -140,6 +141,7 @@ export const PdfNavigationTools = forwardRef<PdfNavigationHandle, Props>(
     useImperativeHandle(ref, () => ({
       open,
       invoke(command, target) {
+        if (command !== 'close_search' && !state.capabilities.view) return false;
         if (command === 'search' && target) {
           open('search', target);
           return true;

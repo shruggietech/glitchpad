@@ -38,7 +38,7 @@ it('keeps text streams cancellable and bounds the entire page across chunks', ()
     cancel() {
       this.value = 0;
     },
-    get ready() {
+    get ready(): number {
       return this.value;
     },
   };

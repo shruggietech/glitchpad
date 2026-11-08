@@ -1,5 +1,8 @@
 import { parse as parseYaml } from 'yaml';
-import { releaseIdentity, targetReleaseIdentity } from './lib/release-identity.mjs';
+import {
+  releaseIdentity,
+  targetReleaseIdentity,
+} from './lib/release-identity.mjs';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
@@ -23,8 +26,11 @@ export function validateReleaseContract(contract) {
   )
     throw new Error('release must declare exactly eight unique artifacts');
   targetReleaseIdentity(contract);
-  if (JSON.stringify(contract.accepted_staging_evidence) !== JSON.stringify(["accepted-staging.json","accepted-input-receipt.json"]))
-    throw new Error("accepted staging evidence asset inventory is incomplete");
+  if (
+    JSON.stringify(contract.accepted_staging_evidence) !==
+    JSON.stringify(['accepted-staging.json', 'accepted-input-receipt.json'])
+  )
+    throw new Error('accepted staging evidence asset inventory is incomplete');
   const expectedTrust = {
     windows: 'unsigned_community',
     macos: 'adhoc_non_notarized_community',
@@ -125,24 +131,55 @@ export const releaseAuthoritySecrets = [
 export function validateReleaseAuthorityGate(releaseWorkflow) {
   const workflow = parseYaml(releaseWorkflow);
   const readiness = workflow.jobs?.readiness?.steps ?? [];
-  const authority = readiness.find(step=>step.name === 'Confirm stable Android release authority');
-  if (authority?.env?.ANDROID_SIGNING_CERT_SHA256 !== '${{ secrets.ANDROID_SIGNING_CERT_SHA256 }}')
+  const authority = readiness.find(
+    (step) => step.name === 'Confirm stable Android release authority',
+  );
+  if (
+    authority?.env?.ANDROID_SIGNING_CERT_SHA256 !==
+    '${{ secrets.ANDROID_SIGNING_CERT_SHA256 }}'
+  )
     throw new Error('release readiness omits ANDROID_SIGNING_CERT_SHA256');
-  if (!authority.run?.includes('if [[ ! "$ANDROID_SIGNING_CERT_SHA256" =~') || !authority.run.includes('exit 1'))
+  if (
+    !authority.run?.includes('if [[ ! "$ANDROID_SIGNING_CERT_SHA256" =~') ||
+    !authority.run.includes('exit 1')
+  )
     throw new Error('release authority readiness does not fail closed');
-  const manual = readiness.find(step=>step.name === 'Confirm manual readiness source');
-  if (manual?.if !== "github.event_name == 'workflow_dispatch'" ||
-    !manual.run?.includes('if [[ "$GITHUB_REF" != \'refs/heads/main\' ]]; then') || !manual.run.includes('exit 1'))
+  const manual = readiness.find(
+    (step) => step.name === 'Confirm manual readiness source',
+  );
+  if (
+    manual?.if !== "github.event_name == 'workflow_dispatch'" ||
+    !manual.run?.includes(
+      'if [[ "$GITHUB_REF" != \'refs/heads/main\' ]]; then',
+    ) ||
+    !manual.run.includes('exit 1')
+  )
     throw new Error('manual release readiness does not fail closed');
   const publisher = workflow.jobs?.publish;
-  if (publisher?.if !== "github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')")
+  if (
+    publisher?.if !==
+    "github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')"
+  )
     throw new Error('only a later owner tag push may publish');
-  const commands = (publisher.steps ?? []).map(step=>step.run ?? '').join('\n');
-  if (!commands.includes('scripts/accepted-release-inputs.mjs --accepted accepted-staging.json') ||
-    !commands.includes('cp accepted-staging.json accepted-input-receipt.json release-assets/') ||
-    !commands.includes('git cat-file -t "$GITHUB_REF"') || !commands.includes('origin/main^{tree}') ||
-    /(?:cargo|tauri)\s+(?:android\s+)?build|pnpm\s+(?:run\s+)?build|actions\/workflows\/.*dispatches/u.test(commands))
-    throw new Error('publication must consume accepted staged bytes without rebuilding');
+  const commands = (publisher.steps ?? [])
+    .map((step) => step.run ?? '')
+    .join('\n');
+  if (
+    !commands.includes(
+      'scripts/accepted-release-inputs.mjs --accepted accepted-staging.json',
+    ) ||
+    !commands.includes(
+      'cp accepted-staging.json accepted-input-receipt.json release-assets/',
+    ) ||
+    !commands.includes('git cat-file -t "$GITHUB_REF"') ||
+    !commands.includes('origin/main^{tree}') ||
+    /(?:cargo|tauri)\s+(?:android\s+)?build|pnpm\s+(?:run\s+)?build|actions\/workflows\/.*dispatches/u.test(
+      commands,
+    )
+  )
+    throw new Error(
+      'publication must consume accepted staged bytes without rebuilding',
+    );
   return true;
 }
 
@@ -158,16 +195,54 @@ export function validateReleaseReadinessEvidence(readinessScript) {
   return true;
 }
 
-export function validateFinalReleaseHandoff({ releaseNotes, releaseReceipt, operatorRunbook, changelog }) {
-  if (/authorizes publication before final PR merge|owner publication is already authorized/iu.test(operatorRunbook)) throw new Error('Preparation cannot grant publication authority');
-  for (const phrase of ['later owner authorization','Stop unmerged','auto-merge disabled']) if (!operatorRunbook.includes(phrase)) throw new Error('Preparation handoff omits owner authorization boundary: ' + phrase);
-  if (!operatorRunbook.includes('accepted candidate SHA') || !operatorRunbook.includes('accepted staging inputs')) throw new Error('Future publication must bind the accepted candidate and staging inputs');
-  if (!operatorRunbook.includes('consume accepted payloads without rebuilding')) throw new Error('Future publication must consume accepted payloads without rebuilding');
-  for (const [source, content] of [['release notes',releaseNotes],['release receipt',releaseReceipt],['operator runbook',operatorRunbook],['changelog',changelog]]) {
-    for (const phrase of ['S046','S047','product recovery']) if (!content.includes(phrase)) throw new Error(source + ' omits ' + phrase);
+export function validateFinalReleaseHandoff({
+  releaseNotes,
+  releaseReceipt,
+  operatorRunbook,
+  changelog,
+}) {
+  if (
+    /authorizes publication before final PR merge|owner publication is already authorized/iu.test(
+      operatorRunbook,
+    )
+  )
+    throw new Error('Preparation cannot grant publication authority');
+  for (const phrase of [
+    'later owner authorization',
+    'Stop unmerged',
+    'auto-merge disabled',
+  ])
+    if (!operatorRunbook.includes(phrase))
+      throw new Error(
+        'Preparation handoff omits owner authorization boundary: ' + phrase,
+      );
+  if (
+    !operatorRunbook.includes('accepted candidate SHA') ||
+    !operatorRunbook.includes('accepted staging inputs')
+  )
+    throw new Error(
+      'Future publication must bind the accepted candidate and staging inputs',
+    );
+  if (!operatorRunbook.includes('consume accepted payloads without rebuilding'))
+    throw new Error(
+      'Future publication must consume accepted payloads without rebuilding',
+    );
+  for (const [source, content] of [
+    ['release notes', releaseNotes],
+    ['release receipt', releaseReceipt],
+    ['operator runbook', operatorRunbook],
+    ['changelog', changelog],
+  ]) {
+    for (const phrase of ['S046', 'S047', 'product recovery'])
+      if (!content.includes(phrase))
+        throw new Error(source + ' omits ' + phrase);
   }
-  for (const issue of ['#244','#255']) if (!releaseNotes.includes(issue) || !releaseReceipt.includes(issue)) throw new Error('Release handoff omits tracked recovery gate ' + issue);
-  for (const issue of ['#66','#239']) if (!releaseNotes.includes(issue) || !releaseReceipt.includes(issue)) throw new Error('Release handoff omits separate follow-up ' + issue);
+  for (const issue of ['#244', '#255'])
+    if (!releaseNotes.includes(issue) || !releaseReceipt.includes(issue))
+      throw new Error('Release handoff omits tracked recovery gate ' + issue);
+  for (const issue of ['#66', '#239'])
+    if (!releaseNotes.includes(issue) || !releaseReceipt.includes(issue))
+      throw new Error('Release handoff omits separate follow-up ' + issue);
   return true;
 }
 
@@ -215,55 +290,134 @@ export function validateGovernedClaims({
   return true;
 }
 
-export function validateTagPackageWorkflows({androidWorkflow,windowsWorkflow,macosWorkflow,linuxWorkflow}) {
-  for (const [platform, source] of Object.entries({android:androidWorkflow,windows:windowsWorkflow,macos:macosWorkflow,linux:linuxWorkflow})) {
+export function validateTagPackageWorkflows({
+  androidWorkflow,
+  windowsWorkflow,
+  macosWorkflow,
+  linuxWorkflow,
+}) {
+  for (const [platform, source] of Object.entries({
+    android: androidWorkflow,
+    windows: windowsWorkflow,
+    macos: macosWorkflow,
+    linux: linuxWorkflow,
+  })) {
     const workflow = parseYaml(source ?? '');
-    if (!workflow || workflow.on?.push?.tags || workflow.on?.workflow_dispatch?.inputs?.stage_release?.type !== 'boolean' ||
-      workflow.on.workflow_dispatch.inputs.stage_release.default !== false)
-      throw new Error(platform + ' staging must be explicit manual preparation without tag rebuilds');
-    if (workflow.env?.GLITCHPAD_BUILD_COMMIT !== '${{ github.sha }}' ||
-      workflow.env?.VITE_GLITCHPAD_BUILD_COMMIT !== '${{ github.sha }}')
-      throw new Error(platform + ' staging omits actual native/frontend source');
-    const steps=workflow.jobs?.candidate?.steps ?? [];
-    const authority=steps.find(step=>step.name === 'Validate preparation authority');
-    if (!authority?.run?.includes('test "$GITHUB_REF_TYPE" = branch') ||
-      !authority.run.includes('test "$GITHUB_EVENT_NAME" = workflow_dispatch') ||
-      !authority.run.includes('test "$GITHUB_REPOSITORY" = shruggietech/glitchpad'))
+    if (
+      !workflow ||
+      workflow.on?.push?.tags ||
+      workflow.on?.workflow_dispatch?.inputs?.stage_release?.type !==
+        'boolean' ||
+      workflow.on.workflow_dispatch.inputs.stage_release.default !== false
+    )
+      throw new Error(
+        platform +
+          ' staging must be explicit manual preparation without tag rebuilds',
+      );
+    if (
+      workflow.env?.GLITCHPAD_BUILD_COMMIT !== '${{ github.sha }}' ||
+      workflow.env?.VITE_GLITCHPAD_BUILD_COMMIT !== '${{ github.sha }}'
+    )
+      throw new Error(
+        platform + ' staging omits actual native/frontend source',
+      );
+    const steps = workflow.jobs?.candidate?.steps ?? [];
+    const authority = steps.find(
+      (step) => step.name === 'Validate preparation authority',
+    );
+    if (
+      !authority?.run?.includes('test "$GITHUB_REF_TYPE" = branch') ||
+      !authority.run.includes(
+        'test "$GITHUB_EVENT_NAME" = workflow_dispatch',
+      ) ||
+      !authority.run.includes(
+        'test "$GITHUB_REPOSITORY" = shruggietech/glitchpad',
+      )
+    )
       throw new Error(platform + ' preparation authority must fail closed');
     if (platform !== 'android') {
-      const promotion=steps.findIndex(step=>step.name === 'Promote truthful community evidence');
+      const promotion = steps.findIndex(
+        (step) => step.name === 'Promote truthful community evidence',
+      );
       if (promotion < 0 || steps[promotion].if !== 'inputs.stage_release')
-        throw new Error(platform + ' promotion must select explicit unpublished staging');
-      const assembly=steps.findIndex(step=>step.name === 'Assemble final-byte candidate and evidence');
+        throw new Error(
+          platform + ' promotion must select explicit unpublished staging',
+        );
+      const assembly = steps.findIndex(
+        (step) => step.name === 'Assemble final-byte candidate and evidence',
+      );
       if (assembly < 0 || promotion <= assembly)
-        throw new Error(platform + ' promotion must follow final-byte assembly');
-      if (platform === 'windows' && steps.findIndex(step=>step.name === 'Exercise installed and portable lifecycles') <= promotion)
+        throw new Error(
+          platform + ' promotion must follow final-byte assembly',
+        );
+      if (
+        platform === 'windows' &&
+        steps.findIndex(
+          (step) => step.name === 'Exercise installed and portable lifecycles',
+        ) <= promotion
+      )
         throw new Error('Windows staged manifest must precede native receipt');
     }
   }
-  const android=parseYaml(androidWorkflow);
-  const androidSteps=android.jobs.candidate.steps;
-  const raw=androidSteps.find(step=>step.name === 'Inspect raw signed packages and resolver groups');
-  if (raw?.env?.ANDROID_SIGNING_CERT_SHA256 !== '${{ secrets.ANDROID_SIGNING_CERT_SHA256 }}')
+  const android = parseYaml(androidWorkflow);
+  const androidSteps = android.jobs.candidate.steps;
+  const raw = androidSteps.find(
+    (step) => step.name === 'Inspect raw signed packages and resolver groups',
+  );
+  if (
+    raw?.env?.ANDROID_SIGNING_CERT_SHA256 !==
+    '${{ secrets.ANDROID_SIGNING_CERT_SHA256 }}'
+  )
     throw new Error('Android official raw inspection lacks signing authority');
-  const stable=androidSteps.find(step=>step.name === 'Restore stable project signing authority');
+  const stable = androidSteps.find(
+    (step) => step.name === 'Restore stable project signing authority',
+  );
   for (const name of releaseAuthoritySecrets)
-    if (stable?.env?.[name] !== '${{ secrets.'+name+' }}')
-      throw new Error('Android stable staging omits '+name);
-  if (!stable?.if?.includes("github.event_name == 'workflow_dispatch'") || !stable.if.includes('inputs.stage_release'))
-    throw new Error('Android stable key restoration must require manual staging');
-  const linux=parseYaml(linuxWorkflow);
-  const steps=linux.jobs.candidate.steps;
-  const ownership=steps.findIndex(step=>(typeof step.run === 'string' && step.run.includes('sudo chown --recursive "$(id --user):$(id --group)" artifacts/linux')));
-  const promotion=steps.findIndex(step=>step.name === 'Promote truthful community evidence');
-  const attestation=steps.findIndex(step=>step.id === 'attest');
-  const preserved=steps.findIndex(step=>(typeof step.run === 'string' && step.run.includes('steps.attest.outputs.bundle-path')));
-  const upload=steps.findIndex(step=>step.name === 'Upload governed Linux community package');
-  if (ownership < 0 || promotion <= ownership || attestation <= promotion || preserved <= attestation || upload <= preserved)
-    throw new Error('Linux staged native path requires ownership, promotion, attestation and immutable upload in order');
-  for (const source of [macosWorkflow,linuxWorkflow])
+    if (stable?.env?.[name] !== '${{ secrets.' + name + ' }}')
+      throw new Error('Android stable staging omits ' + name);
+  if (
+    !stable?.if?.includes("github.event_name == 'workflow_dispatch'") ||
+    !stable.if.includes('inputs.stage_release')
+  )
+    throw new Error(
+      'Android stable key restoration must require manual staging',
+    );
+  const linux = parseYaml(linuxWorkflow);
+  const steps = linux.jobs.candidate.steps;
+  const ownership = steps.findIndex(
+    (step) =>
+      typeof step.run === 'string' &&
+      step.run.includes(
+        'sudo chown --recursive "$(id --user):$(id --group)" artifacts/linux',
+      ),
+  );
+  const promotion = steps.findIndex(
+    (step) => step.name === 'Promote truthful community evidence',
+  );
+  const attestation = steps.findIndex((step) => step.id === 'attest');
+  const preserved = steps.findIndex(
+    (step) =>
+      typeof step.run === 'string' &&
+      step.run.includes('steps.attest.outputs.bundle-path'),
+  );
+  const upload = steps.findIndex(
+    (step) => step.name === 'Upload governed Linux community package',
+  );
+  if (
+    ownership < 0 ||
+    promotion <= ownership ||
+    attestation <= promotion ||
+    preserved <= attestation ||
+    upload <= preserved
+  )
+    throw new Error(
+      'Linux staged native path requires ownership, promotion, attestation and immutable upload in order',
+    );
+  for (const source of [macosWorkflow, linuxWorkflow])
     if (!source.includes("inputs.stage_release && '--official' || ''"))
-      throw new Error('staged native lifecycle must select official eligible metadata');
+      throw new Error(
+        'staged native lifecycle must select official eligible metadata',
+      );
   return true;
 }
 
@@ -335,8 +489,18 @@ export async function checkCommunityRelease(repositoryRoot = root) {
     text(join(repositoryRoot, '.github/workflows/release.yml')),
     text(join(repositoryRoot, 'scripts/check-release-readiness.ps1')),
     text(join(repositoryRoot, 'docs/releases/' + releaseIdentity.tag + '.md')),
-    text(join(repositoryRoot, 'docs/releases/' + releaseIdentity.tag + '-receipt.md')),
-    text(join(repositoryRoot, 'docs/releases/' + releaseIdentity.tag + '-operator-runbook.md')),
+    text(
+      join(
+        repositoryRoot,
+        'docs/releases/' + releaseIdentity.tag + '-receipt.md',
+      ),
+    ),
+    text(
+      join(
+        repositoryRoot,
+        'docs/releases/' + releaseIdentity.tag + '-operator-runbook.md',
+      ),
+    ),
     text(join(repositoryRoot, 'CHANGELOG.md')),
     text(join(repositoryRoot, '.github/workflows/android-package.yml')),
     text(join(repositoryRoot, '.github/workflows/windows-package.yml')),
@@ -380,5 +544,8 @@ export async function checkCommunityRelease(repositoryRoot = root) {
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   await checkCommunityRelease();
-  console.log(releaseIdentity.tag + ' community release preparation policy is internally consistent.');
+  console.log(
+    releaseIdentity.tag +
+      ' community release preparation policy is internally consistent.',
+  );
 }

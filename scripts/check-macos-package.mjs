@@ -191,8 +191,13 @@ export async function checkMacosConfiguration(
     ),
   ]);
 
-  if (capabilities.schema_version !== 1 || capabilities.release !== releaseIdentity.version)
-    fail('capability inventory version differs from the target release schema 1');
+  if (
+    capabilities.schema_version !== 1 ||
+    capabilities.release !== releaseIdentity.version
+  )
+    fail(
+      'capability inventory version differs from the target release schema 1',
+    );
   const configured = uniqueExtensions(capabilities.families);
   if (!same(contract.document_extensions ?? [], configured))
     fail(
@@ -328,9 +333,7 @@ export async function checkMacosConfiguration(
     )
   )
     fail('branch and pull-request package workflow must not publish');
-  if (
-    !releaseWorkflow.includes('scripts/accepted-release-inputs.mjs')
-  )
+  if (!releaseWorkflow.includes('scripts/accepted-release-inputs.mjs'))
     fail('release workflow omits the macOS community package');
   if (contract.official.trust_state !== 'adhoc_non_notarized_community')
     fail('macOS official community trust state is invalid');
@@ -356,7 +359,9 @@ function validateMacosEvidenceShape(evidence, contract, official) {
       'application',
       'application_inventory',
       'document_extensions',
-      ...(official ? ['event', 'tag', 'publication_context', 'evidence_files'] : []),
+      ...(official
+        ? ['event', 'tag', 'publication_context', 'evidence_files']
+        : []),
     ],
     'package evidence',
   );

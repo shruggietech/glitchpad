@@ -25,40 +25,22 @@
       "kind": "apk",
       "role": "universal",
       "name": "glitchpad-0.2.1-android-universal.apk",
-      "required_abis": [
-        "arm64-v8a",
-        "x86_64"
-      ],
-      "forbidden_abis": [
-        "armeabi-v7a",
-        "x86"
-      ]
+      "required_abis": ["arm64-v8a", "x86_64"],
+      "forbidden_abis": ["armeabi-v7a", "x86"]
     },
     {
       "kind": "apk",
       "role": "arm64",
       "name": "glitchpad-0.2.1-android-arm64.apk",
-      "required_abis": [
-        "arm64-v8a"
-      ],
-      "forbidden_abis": [
-        "armeabi-v7a",
-        "x86",
-        "x86_64"
-      ]
+      "required_abis": ["arm64-v8a"],
+      "forbidden_abis": ["armeabi-v7a", "x86", "x86_64"]
     },
     {
       "kind": "aab",
       "role": "play",
       "name": "glitchpad-0.2.1-android-universal.aab",
-      "required_abis": [
-        "arm64-v8a",
-        "x86_64"
-      ],
-      "forbidden_abis": [
-        "armeabi-v7a",
-        "x86"
-      ]
+      "required_abis": ["arm64-v8a", "x86_64"],
+      "forbidden_abis": ["armeabi-v7a", "x86"]
     }
   ],
   "size_budget": {

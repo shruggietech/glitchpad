@@ -96,7 +96,8 @@ export async function assembleAndroidPackage({
     source_commit: sourceCommit,
     authority,
     publication_status: publicationStatus,
-    publication_context: authority === "official" ? "staged_unpublished" : "candidate",
+    publication_context:
+      authority === 'official' ? 'staged_unpublished' : 'candidate',
     artifacts,
     sbom: 'glitchpad-android.cdx.json',
     provenance: 'provenance.json',
@@ -114,7 +115,8 @@ export async function assembleAndroidPackage({
     source_commit: sourceCommit,
     authority,
     publication_status: publicationStatus,
-    publication_context: authority === "official" ? "staged_unpublished" : "candidate",
+    publication_context:
+      authority === 'official' ? 'staged_unpublished' : 'candidate',
     builder: 'scripts/android/assemble-package.mjs',
     artifact_digests: Object.fromEntries(
       artifacts.map(({ role, sha256: digest }) => [role, digest]),

@@ -100,7 +100,7 @@ function officialLifecycleEvidence() {
     official: true,
     gate_status: 'official_valid',
     event: contract.official.authorized_event,
-    publication_context: "staged_unpublished",
+    publication_context: 'staged_unpublished',
     tag: contract.official.tag_pattern,
     evidence_files: [...contract.official.required_evidence],
     repository_attestation_status: 'generated_by_staging_workflow',
@@ -498,7 +498,9 @@ test('live attestation verification pins repository, workflow, tag, and source d
                   certificate: {
                     buildTrigger: contract.official.attestation_build_trigger,
                     runnerEnvironment: 'github-hosted',
-                    sourceRepositoryRef: evidence.workflow_identity.split('@').at(-1),
+                    sourceRepositoryRef: evidence.workflow_identity
+                      .split('@')
+                      .at(-1),
                     sourceRepositoryDigest: evidence.source_commit,
                     githubWorkflowRepository: contract.official.repository,
                   },

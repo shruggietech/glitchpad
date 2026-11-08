@@ -257,6 +257,12 @@ for (const [name, mutate, expected] of [
 
 test('source preview metadata cannot claim an unverified published tag', async () => {
   const sources = await loadPublicSources();
-  sources.workflow = sources.workflow.replace("GLITCHPAD_PUBLISHED_RELEASE_TAG: ${{ steps.release_authority.outputs.authorized == 'true' && inputs.release_tag || '' }}", 'GLITCHPAD_PUBLISHED_RELEASE_TAG: v0.2.1');
-  assert.match(verifyPublicSources(sources).join('\n'), /published metadata authority/u);
+  sources.workflow = sources.workflow.replace(
+    "GLITCHPAD_PUBLISHED_RELEASE_TAG: ${{ steps.release_authority.outputs.authorized == 'true' && inputs.release_tag || '' }}",
+    'GLITCHPAD_PUBLISHED_RELEASE_TAG: v0.2.1',
+  );
+  assert.match(
+    verifyPublicSources(sources).join('\n'),
+    /published metadata authority/u,
+  );
 });

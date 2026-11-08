@@ -395,11 +395,7 @@ function validateAuthorities(parsed, workspace, readme) {
       `Document-control license does not include workspace license ${workspace.license}`,
     );
   const escapedVersion = workspace.version.replaceAll('.', '\\.');
-  if (
-    !new RegExp(
-      `Glitchpad v${escapedVersion}(?:\\s|[.,:])`,
-    ).test(readme)
-  )
+  if (!new RegExp(`Glitchpad v${escapedVersion}(?:\\s|[.,:])`).test(readme))
     throw new Error(
       `README target release version authority for v${workspace.version} is missing or changed`,
     );

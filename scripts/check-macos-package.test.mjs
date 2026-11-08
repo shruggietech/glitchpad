@@ -109,7 +109,7 @@ function officialLifecycleEvidence() {
     official: true,
     gate_status: 'official_valid',
     event: contract.official.authorized_event,
-    publication_context: "staged_unpublished",
+    publication_context: 'staged_unpublished',
     tag: contract.official.tag_pattern,
     evidence_files: [...contract.official.required_evidence],
     artifact: {

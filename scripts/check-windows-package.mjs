@@ -386,8 +386,13 @@ export async function checkWindowsConfiguration(
     if (!source.includes(marker))
       fail(`Windows practical-use probe omits ${marker}`);
 
-  if (capabilities.schema_version !== 1 || capabilities.release !== releaseIdentity.version)
-    fail('capability inventory version differs from the target release schema 1');
+  if (
+    capabilities.schema_version !== 1 ||
+    capabilities.release !== releaseIdentity.version
+  )
+    fail(
+      'capability inventory version differs from the target release schema 1',
+    );
   const configured = uniqueExtensions(capabilities.families);
   const expectedBase = ['markdown', 'md', 'mermaid', 'mmd', 'txt'];
   for (const extension of expectedBase)

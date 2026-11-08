@@ -4,7 +4,10 @@ import { access, readFile, writeFile } from 'node:fs/promises';
 const packageSource = JSON.parse(await readFile('../package.json', 'utf8'));
 const sourceRevision =
   process.env.GLITCHPAD_SOURCE_REVISION ?? process.env.GITHUB_SHA ?? 'local';
-const releaseMetadata = deploymentReleaseMetadata(packageSource.version, process.env.GLITCHPAD_PUBLISHED_RELEASE_TAG ?? '');
+const releaseMetadata = deploymentReleaseMetadata(
+  packageSource.version,
+  process.env.GLITCHPAD_PUBLISHED_RELEASE_TAG ?? '',
+);
 
 await access('out');
 await writeFile('out/.nojekyll', '');

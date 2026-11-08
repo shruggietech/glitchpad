@@ -426,8 +426,8 @@ Routine session restoration remains disabled. An explicit launch source opens th
 
 Recovery snapshots use application-private storage, owner-only permissions where supported, atomic writes, a seven-day lifetime, and total quotas of 256 MiB desktop and 128 MiB Android. Snapshots are written after 2 seconds of edit idle time and at least every 30 seconds while dirty. If quota pressure threatens the active document, the application warns immediately. Confirmed save or explicit discard removes the matching record.
 
-
 Bounded recovery includes unsaved drafts and editable copies. Recovery after process restart preserves complete text, including the terminal newline, without fabricating external grants or in-place Save authority. A recovered document whose source is unavailable remains editable and offers Save As. Confirmed save or explicit discard removes only the matching recovery record.
+
 ## 16. Renderer System
 
 The base renderer contract is `specs/002-v000-technical-specification/contracts/renderer.md`; Mermaid specializes it through `specs/003-mermaid-view-edit/contracts/mermaid-renderer.md`. A renderer registers a stable ID, exact format families and variants, maturity, platform set, operations, limits, worker policy, and lazy module loader. Registration order never decides detection priority.
@@ -476,8 +476,8 @@ The renderer MUST NOT implement language servers, compilers, build commands, deb
 
 Files through 32 MiB support full editing and syntax highlighting subject to line limits. Files from 32 MiB through 256 MiB open in virtualized large-text read-only mode with search and copy; syntax highlighting is disabled. Files above 256 MiB are refused with size and alternative-tool guidance. A single line above 2 MiB disables syntax parsing for that document and remains viewable in plain-text mode.
 
-
 Large-text navigation, search and go-to-line use user-facing labels and preserve or deliberately move position. Copy completion reflects actual clipboard content within existing bounds. Large Android copies may use a temporary readable UTF-8 content item while preserving complete contents; an inline truncation or placeholder cannot stand in for the copy.
+
 ## 19. Image Viewing and Inspection
 
 Image support activates in v0.2.0. Required raster formats are PNG, JPEG, GIF, WebP, BMP, and TIFF. SVG and ICO are separate variants under the image renderer family.
@@ -491,6 +491,7 @@ ICO inspection lists each bounded directory entry with width, height, bit depth,
 Standalone SVG is validated as a bounded inert profile and rasterized natively by usvg/resvg to checked PNG output; original markup is never inserted into the application DOM. The implemented profile accepts supported SVG namespaces, geometry, bundled-font text, presentation attributes/internal presentation CSS, gradients, clip paths and bounded local-fragment reuse. Active content, external/data/file resources, DTD/entities, foreign content, missing/cyclic references and unsupported constructs receive distinct refusals. Filters, masks, patterns, markers and cursors remain outside the implemented profile. Original bytes and available source/metadata access remain intact.
 
 Malformed, unsupported, external-reference, cyclic/missing-reference, resource/deadline, source-read and host-transport outcomes remain distinct. Deterministic refusal does not offer identical Retry as its remedy. Existing 4 MiB/50,000-node/depth-128 limits remain in force; native five-second checks are cooperative and do not establish hard preemption inside an uninterruptible render call.
+
 ## 20. PDF Viewing and Navigation
 
 PDF support activates in v0.3.0 and uses the PDF.js display layer in a dedicated worker. Glitchpad supplies its own compact shell rather than embedding the generic PDF.js viewer.
@@ -559,6 +560,7 @@ Windows file associations and command-line delivery route to the running instanc
 Windows ARM64 and Linux ARM64 are planned platform expansions after v0.2.0 and require their own build, package, and device evidence. iOS is outside the current platform boundary.
 
 The minimum qualified Android compatibility profile is Chromium 69-class WebView, with actual package/version recorded per run. Android 7/API24 and API36 installed-runtime evidence remain separate from synthetic/browser-only Chrome 69 checks. Glitchpad does not bundle a browser engine; unqualified runtime behavior is not claimed as a passing profile.
+
 ## 25. Security and Privacy
 
 Every opened source is hostile input. The trust boundary begins at native acquisition and remains in force through detection, parsing, generated markup, metadata, navigation, saving, caching, logs, and packaging.
@@ -607,6 +609,7 @@ Structured logs include timestamp, level, stable event ID, platform, component, 
 About displays native installed package ID, product version/version code, build commit, channel and platform, using explicit Unavailable states. It provides complete offline LICENSE/NOTICE/third-party notices and explicit documentation, repository, issue-report and ShruggieTech destinations. Help/About remain reachable after contained failures; no document or diagnostic content is attached or uploaded automatically. Broader available runtime facts, including architecture, WebView and core/specification identity, belong to Diagnostics.
 
 Diagnostic export freezes one immutable redacted JSON preview. Native Save verifies those exact bytes; Share grants temporary receiver access and reports handoff or cancellation, while receiver readability is established separately. Pending, saved, failed, cancelled and share-handoff states remain distinct. Duplicate export is blocked, failure retains the frozen payload, and failed Clear retains events. Evidence uses allowlisted correlated stage/reason observations without contents, names, paths, provider URIs or link targets. Viewport observations remain ephemeral and outside the frozen bundle.
+
 ## 28. Repository Layout and Dependency Governance
 
 ```text
@@ -737,8 +740,8 @@ Size classes are tiny, normal, medium, boundary, over-limit, malformed, truncate
 
 Coverage is a diagnostic, not a success metric. Critical state, save, recovery, detection, permission, and parser-limit branches require direct tests regardless of aggregate percentage.
 
-
 Current ordinary/fault-probe API24/API36 journey evidence binds actual source, installed packages, API/WebView, geometry/font/IME profiles, exact destination/receiver readbacks and every attempt. Missing or failed required rows block qualification. Browser/unit assertions are supplemental and cannot become individual installed assertions. The report inventory retains 119 records, 150 report-declared named controls/variants and 459 scoped cases with explicit distinctions: 98 supplemental-only cases, unmounted CTRL-114, passive CTRL-115, absent unsupported page providers and conditional animation actions. Actual minified release operation requires its own package-bound campaign.
+
 ## 32. Packaging, Distribution, and Updates
 
 Official artifact names follow `glitchpad-{version}-{platform}-{arch}.{ext}` and contain or accompany `LICENSE`, `NOTICE`, `THIRD_PARTY_NOTICES`, SHA-256 checksums, CycloneDX SBOM, and provenance attestation.
@@ -750,6 +753,7 @@ Desktop packages register only stable editable/viewable formats from the release
 v0.2.1 has no in-app updater. Direct-distribution users obtain community releases through the project release channel. A future updater requires a separately approved specification and corresponding integrity, rollback, offline and recovery evidence.
 
 No artifact is release-eligible without its declared trust state, checksum, SBOM, provenance, license notices, source revision, version and applicable runtime evidence. Windows remains unsigned, macOS ad-hoc signed/non-notarized, Linux repository-attested and Android stable-project-key signed. Staged signing eligibility remains unpublished. Existing physical-device/manual-screen-reader/reference-hardware owner waivers remain in force; unrun manual macOS/Linux GUI and VoiceOver rows remain literal, with #66 and #239 separately tracked. Original incident bytes/APK hash/trace are unavailable, so exact original incident replay is not claimed.
+
 ## 33. Release and Versioning Process
 
 Glitchpad follows semantic versioning. Before 1.0.0, minor releases may change unstable behavior, while save integrity, source privacy, licensing and release-evidence guarantees remain commitments. Patch releases contain compatible fixes and documentation reconciliation. v0.0.0 is the foundation, v0.1.0 the first binary release, v0.1.1-v0.1.4 its corrective successors, v0.2.0 activates images and v0.2.1 reconciles S046/S047 product recovery.

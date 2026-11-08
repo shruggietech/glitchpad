@@ -95,7 +95,6 @@ jobs:
             }
             core.setOutput('authorized', 'true');
 
-
       - name: Build and test public site
         run: pnpm check:site
         env:
@@ -104,7 +103,6 @@ jobs:
 
       - name: Verify generated documentation contracts are committed
         run: git diff --exit-code -- site/content/docs/index.mdx site/content/docs/meta.json site/lib/generated/documentation.json
-
 
       - name: Upload Pages artifact
         if: inputs.deploy && inputs.release_tag == 'v0.2.1' && steps.release_authority.outputs.authorized == 'true'

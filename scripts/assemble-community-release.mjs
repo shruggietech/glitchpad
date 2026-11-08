@@ -100,18 +100,42 @@ export async function assembleCommunityRelease({
       throw new Error(
         `${platform} package was not promoted by qualified staging`,
       );
-    if (platformManifest.version !== contract.version || platformManifest.publication_context !== 'staged_unpublished')
-      throw new Error(platform + ' package is not an identified unpublished staging input');
-    const declaredPayloads = platform === 'macos' ? [platformManifest.artifact] : platformManifest.artifacts;
-    const expectedCount = {windows:2,macos:1,linux:2,android:3}[platform];
-    if (!Array.isArray(declaredPayloads) || declaredPayloads.length !== expectedCount)
+    if (
+      platformManifest.version !== contract.version ||
+      platformManifest.publication_context !== 'staged_unpublished'
+    )
+      throw new Error(
+        platform + ' package is not an identified unpublished staging input',
+      );
+    const declaredPayloads =
+      platform === 'macos'
+        ? [platformManifest.artifact]
+        : platformManifest.artifacts;
+    const expectedCount = { windows: 2, macos: 1, linux: 2, android: 3 }[
+      platform
+    ];
+    if (
+      !Array.isArray(declaredPayloads) ||
+      declaredPayloads.length !== expectedCount
+    )
       throw new Error(platform + ' package payload inventory is incomplete');
     for (const payload of declaredPayloads) {
       const size = payload?.bytes ?? payload?.size_bytes;
-      if (!payload || !contract.artifacts.includes(payload.name) || payloadBindings.has(payload.name) ||
-        !/^[a-f0-9]{64}$/u.test(payload.sha256 ?? '') || !Number.isSafeInteger(size) || size <= 0)
-        throw new Error(platform + ' package payload binding is invalid/duplicated');
-      payloadBindings.set(payload.name,{sha256:payload.sha256,bytes:size});
+      if (
+        !payload ||
+        !contract.artifacts.includes(payload.name) ||
+        payloadBindings.has(payload.name) ||
+        !/^[a-f0-9]{64}$/u.test(payload.sha256 ?? '') ||
+        !Number.isSafeInteger(size) ||
+        size <= 0
+      )
+        throw new Error(
+          platform + ' package payload binding is invalid/duplicated',
+        );
+      payloadBindings.set(payload.name, {
+        sha256: payload.sha256,
+        bytes: size,
+      });
     }
     if (platform !== 'android') {
       const trustMatches = available.filter(
@@ -210,8 +234,14 @@ export async function assembleCommunityRelease({
       throw new Error(`expected exactly one ${name}; found ${matches.length}`);
     const bytes = await readFile(matches[0]);
     const binding = payloadBindings.get(name);
-    if (!binding || binding.sha256 !== sha256(bytes) || binding.bytes !== bytes.length)
-      throw new Error("final payload bytes differ from the staged platform manifest: " + name);
+    if (
+      !binding ||
+      binding.sha256 !== sha256(bytes) ||
+      binding.bytes !== bytes.length
+    )
+      throw new Error(
+        'final payload bytes differ from the staged platform manifest: ' + name,
+      );
     await cp(matches[0], join(output, name), {
       errorOnExist: true,
       force: false,

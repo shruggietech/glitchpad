@@ -27,7 +27,8 @@ export async function promoteCommunityPackage({
     throw new Error('platform must be windows, macos, or linux');
   if (!/^[a-f0-9]{40}$/u.test(sourceCommit))
     throw new Error('source commit is invalid');
-  if (!/^refs\/heads\/[A-Za-z0-9_./-]+$/u.test(sourceRef ?? "")) throw new Error("staging requires the actual branch source ref");
+  if (!/^refs\/heads\/[A-Za-z0-9_./-]+$/u.test(sourceRef ?? ''))
+    throw new Error('staging requires the actual branch source ref');
   const root = resolve(directory);
   const manifestPath = join(root, manifests[platform]);
   const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
@@ -51,7 +52,7 @@ export async function promoteCommunityPackage({
   const packageContract = JSON.parse(await readFile(contractPath, 'utf8'));
   manifest.evidence_files = packageContract.official.required_evidence;
   provenance.candidate_only = false;
-  provenance.publication_context = "staged_unpublished";
+  provenance.publication_context = 'staged_unpublished';
   const trust = { schema_version: 1, source_commit: sourceCommit };
   if (platform === 'windows') {
     trust.trust_state = 'unsigned_community';

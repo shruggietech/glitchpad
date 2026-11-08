@@ -46,7 +46,10 @@ mod tests {
 
         assert_eq!(product.name, PRODUCT_NAME);
         assert_eq!(product.version, VERSION);
-        let release: serde_json::Value = serde_json::from_str(include_str!("../../../packaging/release/package-contract.json")).expect("release contract");
+        let release: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../packaging/release/package-contract.json"
+        ))
+        .expect("release contract");
         assert_eq!(Some(product.version), release["version"].as_str());
     }
 }

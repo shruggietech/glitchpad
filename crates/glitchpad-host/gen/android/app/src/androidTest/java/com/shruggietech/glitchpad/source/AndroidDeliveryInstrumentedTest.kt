@@ -905,7 +905,7 @@ class AndroidDeliveryInstrumentedTest {
     assertTrue("full expected source identity must be supplied", expectedSource != null && expectedSource.matches(Regex("[0-9a-f]{40}")))
     assertEquals("preview source must match built candidate", expectedSource, environment.getString("build_commit"))
     assertEquals(Build.VERSION.SDK_INT, native.getInt("api_level"))
-    val webview = WebViewCompat.getCurrentWebViewPackage(clientContext)
+    val webview = observedTestWebViewPackage()
     if (webview == null) assertTrue("unavailable WebView identity must be explicit", native.isNull("webview_version"))
     else { assertEquals(webview.packageName, native.getString("webview_package")); assertEquals(webview.versionName, native.getString("webview_version")) }
     if (expectedBuildVariant() == "fault_probe") for (reason in listOf("markdown_worker_failed", "markdown_parse_failed", "markdown_projection_failed")) assertTrue("actual injected failure must be in the frozen bundle: " + reason, frozen.contains(reason))
@@ -2890,6 +2890,25 @@ class AndroidDeliveryInstrumentedTest {
   private val clipboardPasteReadbacks = JSONArray()
   private fun isReleaseRuntimeEvidence(): Boolean = InstrumentationRegistry.getArguments().getString("releaseRuntime") == "true"
 
+  private fun observedTestWebViewPackage(): android.content.pm.PackageInfo? {
+    if (!isReleaseRuntimeEvidence()) return WebViewCompat.getCurrentWebViewPackage(clientContext)
+    val loaded = if (Build.VERSION.SDK_INT >= 26) WebView.getCurrentWebViewPackage() else {
+      // Android 7 exposes the loaded provider through this framework method.
+      // This is platform observation, independent of product/R8 library methods.
+      Class.forName("android.webkit.WebViewFactory").getMethod("getLoadedPackageInfo").invoke(null) as? android.content.pm.PackageInfo
+    }
+    val observed = requireNotNull(loaded) { "The initialized release WebView must expose its actually loaded package" }
+    assertTrue("loaded WebView package/version must be explicit", observed.packageName.isNotBlank() && !observed.versionName.isNullOrBlank())
+    val installed = clientContext.packageManager.getPackageInfo(observed.packageName, 0)
+    assertEquals("loaded WebView version must match PackageManager", observed.versionName, installed.versionName)
+    @Suppress("DEPRECATION")
+    val observedCode = if (Build.VERSION.SDK_INT >= 28) observed.longVersionCode else observed.versionCode.toLong()
+    @Suppress("DEPRECATION")
+    val installedCode = if (Build.VERSION.SDK_INT >= 28) installed.longVersionCode else installed.versionCode.toLong()
+    assertEquals("loaded WebView code must match PackageManager", observedCode, installedCode)
+    return observed
+  }
+
   private fun signingCertificate(packageName: String): String {
     val manager = clientContext.packageManager
     val signatures = if (Build.VERSION.SDK_INT >= 28) {
@@ -3029,7 +3048,7 @@ class AndroidDeliveryInstrumentedTest {
     assertEquals(expectedBuildVariant(), facts.getString("role"))
     val app = clientContext.packageManager.getPackageInfo(TARGET_PACKAGE, 0)
     val test = instrumentation.context.packageManager.getApplicationInfo(instrumentation.context.packageName, 0)
-    val webview = requireNotNull(WebViewCompat.getCurrentWebViewPackage(clientContext)) { "actual WebView package/version is required" }
+    val webview = requireNotNull(observedTestWebViewPackage()) { "actual WebView package/version is required" }
     return JSONObject().put("source_commit", source).put("native_source_commit", facts.getString("native")).put("frontend_source_commit", facts.getString("frontend"))
       .put("application_sha256", apkSha256()).put("instrumentation_sha256", sha256(File(test.sourceDir).readBytes()))
       .put("package_identifier", TARGET_PACKAGE).put("instrumentation_package", instrumentation.context.packageName).put("clipboard_provider", clipboardProviderFacts())

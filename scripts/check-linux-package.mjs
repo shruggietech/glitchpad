@@ -316,7 +316,8 @@ export function validateLinuxLifecycleEvidence(
     evidence.event !== contract.official.authorized_event ||
     evidence.publication_context !== 'staged_unpublished' ||
     evidence.tag !== contract.official.tag_pattern ||
-    evidence.repository_attestation_status !== 'generated_by_staging_workflow' ||
+    evidence.repository_attestation_status !==
+      'generated_by_staging_workflow' ||
     !same(evidence.evidence_files ?? [], contract.official.required_evidence)
   )
     fail('official lifecycle evidence is unauthorized or incomplete');
@@ -557,8 +558,13 @@ export async function checkLinuxConfiguration(
       'utf8',
     ),
   ]);
-  if (capabilities.schema_version !== 1 || capabilities.release !== releaseIdentity.version)
-    fail('capability inventory version differs from the target release schema 1');
+  if (
+    capabilities.schema_version !== 1 ||
+    capabilities.release !== releaseIdentity.version
+  )
+    fail(
+      'capability inventory version differs from the target release schema 1',
+    );
   const capabilityExtensions = uniqueExtensions(capabilities);
   const mimeFacts = mimeMapFacts(mimeMap);
   const packageOwnedTypes = sorted(mimeMap.package_owned_types ?? []);
@@ -759,27 +765,32 @@ export async function verifyRepositoryAttestations(
 ) {
   const repository = contract.official.repository;
   const sourceRef = evidence.workflow_identity.split('@').at(-1);
-  if (!/^refs\/heads\/[A-Za-z0-9_./-]+$/u.test(sourceRef)) fail("staging attestation must bind the actual branch ref");
+  if (!/^refs\/heads\/[A-Za-z0-9_./-]+$/u.test(sourceRef))
+    fail('staging attestation must bind the actual branch ref');
   const signerWorkflow = `${repository}/.github/workflows/linux-package.yml`;
   for (const artifact of evidence.artifacts) {
     let output;
     try {
-      ({ stdout: output } = await runner('gh', [
-        'attestation',
-        'verify',
-        join(resolve(artifactRoot), artifact.name),
-        '--repo',
-        repository,
-        '--signer-workflow',
-        signerWorkflow,
-        '--source-ref',
-        sourceRef,
-        '--source-digest',
-        evidence.source_commit,
-        '--deny-self-hosted-runners',
-        '--format',
-        'json',
-      ], {windowsHide:true,timeout:60000}));
+      ({ stdout: output } = await runner(
+        'gh',
+        [
+          'attestation',
+          'verify',
+          join(resolve(artifactRoot), artifact.name),
+          '--repo',
+          repository,
+          '--signer-workflow',
+          signerWorkflow,
+          '--source-ref',
+          sourceRef,
+          '--source-digest',
+          evidence.source_commit,
+          '--deny-self-hosted-runners',
+          '--format',
+          'json',
+        ],
+        { windowsHide: true, timeout: 60000 },
+      ));
     } catch {
       fail(
         `live repository attestation verification failed for ${artifact.name}`,

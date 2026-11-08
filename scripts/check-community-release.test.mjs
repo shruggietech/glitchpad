@@ -14,21 +14,76 @@ import {
 } from './check-community-release.mjs';
 
 const finalHandoff = () => ({
-  releaseNotes: 'S046 and S047 product recovery for #244 and #255; issue #66 and #239 remain open. unsigned not notarized SHA-256',
-  releaseReceipt: 'S046 and S047 product recovery for #244 and #255. Preparation is unpublished; final source/package evidence is confirmed in the PR handoff. issue #66 and #239 remain open.',
-  operatorRunbook: 'Stop unmerged with auto-merge disabled. Tagging and publication require later owner authorization. Use the accepted candidate SHA and accepted staging inputs; consume accepted payloads without rebuilding. S046 S047 product recovery #244 #255.',
+  releaseNotes:
+    'S046 and S047 product recovery for #244 and #255; issue #66 and #239 remain open. unsigned not notarized SHA-256',
+  releaseReceipt:
+    'S046 and S047 product recovery for #244 and #255. Preparation is unpublished; final source/package evidence is confirmed in the PR handoff. issue #66 and #239 remain open.',
+  operatorRunbook:
+    'Stop unmerged with auto-merge disabled. Tagging and publication require later owner authorization. Use the accepted candidate SHA and accepted staging inputs; consume accepted payloads without rebuilding. S046 S047 product recovery #244 #255.',
   changelog: 'S046 and S047 product recovery.',
 });
 
-test('accepts the S048 preparation handoff without publication authority', () => assert.equal(validateFinalReleaseHandoff(finalHandoff()), true));
+test('accepts the S048 preparation handoff without publication authority', () =>
+  assert.equal(validateFinalReleaseHandoff(finalHandoff()), true));
 for (const [name, mutate, expected] of [
-  ['premature publication authority', h => { h.operatorRunbook += ' The owner explicitly authorizes publication before final PR merge.'; }, /publication authority/u],
-  ['missing later owner authorization', h => { h.operatorRunbook = h.operatorRunbook.replace('later owner authorization','automatic publication'); }, /owner authorization/u],
-  ['wrong future source binding', h => { h.operatorRunbook = h.operatorRunbook.replace('accepted candidate SHA','current main SHA'); }, /accepted candidate/u],
-  ['payload rebuild', h => { h.operatorRunbook = h.operatorRunbook.replace('consume accepted payloads without rebuilding','rebuild packages after tagging'); }, /accepted payloads/u],
-  ['missing recovery traceability', h => { h.releaseNotes = h.releaseNotes.replace('S047','S043'); }, /S047/u],
-  ['missing tracked recovery gate', h => { h.releaseReceipt = h.releaseReceipt.replace('#255','#75'); }, /#255/u],
-]) test('rejects handoff with ' + name, () => { const h = finalHandoff(); mutate(h); assert.throws(() => validateFinalReleaseHandoff(h),expected); });
+  [
+    'premature publication authority',
+    (h) => {
+      h.operatorRunbook +=
+        ' The owner explicitly authorizes publication before final PR merge.';
+    },
+    /publication authority/u,
+  ],
+  [
+    'missing later owner authorization',
+    (h) => {
+      h.operatorRunbook = h.operatorRunbook.replace(
+        'later owner authorization',
+        'automatic publication',
+      );
+    },
+    /owner authorization/u,
+  ],
+  [
+    'wrong future source binding',
+    (h) => {
+      h.operatorRunbook = h.operatorRunbook.replace(
+        'accepted candidate SHA',
+        'current main SHA',
+      );
+    },
+    /accepted candidate/u,
+  ],
+  [
+    'payload rebuild',
+    (h) => {
+      h.operatorRunbook = h.operatorRunbook.replace(
+        'consume accepted payloads without rebuilding',
+        'rebuild packages after tagging',
+      );
+    },
+    /accepted payloads/u,
+  ],
+  [
+    'missing recovery traceability',
+    (h) => {
+      h.releaseNotes = h.releaseNotes.replace('S047', 'S043');
+    },
+    /S047/u,
+  ],
+  [
+    'missing tracked recovery gate',
+    (h) => {
+      h.releaseReceipt = h.releaseReceipt.replace('#255', '#75');
+    },
+    /#255/u,
+  ],
+])
+  test('rejects handoff with ' + name, () => {
+    const h = finalHandoff();
+    mutate(h);
+    assert.throws(() => validateFinalReleaseHandoff(h), expected);
+  });
 
 const contract = () => ({
   schema_version: 1,
@@ -36,7 +91,10 @@ const contract = () => ({
   tag: releaseIdentity.tag,
   repository: 'shruggietech/glitchpad',
   artifacts: [...releaseIdentity.artifacts],
-  accepted_staging_evidence: ["accepted-staging.json","accepted-input-receipt.json"],
+  accepted_staging_evidence: [
+    'accepted-staging.json',
+    'accepted-input-receipt.json',
+  ],
   trust_states: {
     windows: 'unsigned_community',
     macos: 'adhoc_non_notarized_community',
@@ -158,39 +216,131 @@ test('rejects paid desktop credentials', () =>
     /paid desktop/u,
   ));
 
-const releaseAuthorityWorkflow = readFileSync(new URL('../.github/workflows/release.yml',import.meta.url),'utf8');
-const packageWorkflows = Object.fromEntries(['android','windows','macos','linux'].map(platform=>[
-  platform+'Workflow', readFileSync(new URL('../.github/workflows/'+platform+'-package.yml',import.meta.url),'utf8')
-]));
-test('explicit staging preserves signed authority, native bindings and later accepted-input publication',()=>{
-  assert.equal(validateTagPackageWorkflows(packageWorkflows),true);
-  assert.equal(validateReleaseAuthorityGate(releaseAuthorityWorkflow),true);
+const releaseAuthorityWorkflow = readFileSync(
+  new URL('../.github/workflows/release.yml', import.meta.url),
+  'utf8',
+);
+const packageWorkflows = Object.fromEntries(
+  ['android', 'windows', 'macos', 'linux'].map((platform) => [
+    platform + 'Workflow',
+    readFileSync(
+      new URL(
+        '../.github/workflows/' + platform + '-package.yml',
+        import.meta.url,
+      ),
+      'utf8',
+    ),
+  ]),
+);
+test('explicit staging preserves signed authority, native bindings and later accepted-input publication', () => {
+  assert.equal(validateTagPackageWorkflows(packageWorkflows), true);
+  assert.equal(validateReleaseAuthorityGate(releaseAuthorityWorkflow), true);
 });
-test('stable Android authority cannot be omitted from staging or final readback',()=>{
-  assert.throws(()=>validateTagPackageWorkflows({...packageWorkflows,androidWorkflow:packageWorkflows.androidWorkflow.replace('ANDROID_SIGNING_CERT_SHA256: ${{ secrets.ANDROID_SIGNING_CERT_SHA256 }}','')}),/signing authority|omits/u);
-  assert.throws(()=>validateReleaseAuthorityGate(releaseAuthorityWorkflow.replace('ANDROID_SIGNING_CERT_SHA256: ${{ secrets.ANDROID_SIGNING_CERT_SHA256 }}','')),/ANDROID_SIGNING_CERT_SHA256/u);
+test('stable Android authority cannot be omitted from staging or final readback', () => {
+  assert.throws(
+    () =>
+      validateTagPackageWorkflows({
+        ...packageWorkflows,
+        androidWorkflow: packageWorkflows.androidWorkflow.replace(
+          'ANDROID_SIGNING_CERT_SHA256: ${{ secrets.ANDROID_SIGNING_CERT_SHA256 }}',
+          '',
+        ),
+      }),
+    /signing authority|omits/u,
+  );
+  assert.throws(
+    () =>
+      validateReleaseAuthorityGate(
+        releaseAuthorityWorkflow.replace(
+          'ANDROID_SIGNING_CERT_SHA256: ${{ secrets.ANDROID_SIGNING_CERT_SHA256 }}',
+          '',
+        ),
+      ),
+    /ANDROID_SIGNING_CERT_SHA256/u,
+  );
 });
-test('manual readiness and stable staging fail closed',()=>{
-  assert.throws(()=>validateReleaseAuthorityGate(releaseAuthorityWorkflow.replace('if [[ ! "$ANDROID_SIGNING_CERT_SHA256" =~','if [[ "$ANDROID_SIGNING_CERT_SHA256" =~')),/fail closed/u);
-  assert.throws(()=>validateReleaseAuthorityGate(releaseAuthorityWorkflow.replace('if [[ "$GITHUB_REF" != \'refs/heads/main\' ]]; then','if false; then')),/fail closed/u);
-  assert.throws(()=>validateTagPackageWorkflows({...packageWorkflows,androidWorkflow:packageWorkflows.androidWorkflow.replace('test "$GITHUB_EVENT_NAME" = workflow_dispatch','true')}),/authority/u);
+test('manual readiness and stable staging fail closed', () => {
+  assert.throws(
+    () =>
+      validateReleaseAuthorityGate(
+        releaseAuthorityWorkflow.replace(
+          'if [[ ! "$ANDROID_SIGNING_CERT_SHA256" =~',
+          'if [[ "$ANDROID_SIGNING_CERT_SHA256" =~',
+        ),
+      ),
+    /fail closed/u,
+  );
+  assert.throws(
+    () =>
+      validateReleaseAuthorityGate(
+        releaseAuthorityWorkflow.replace(
+          'if [[ "$GITHUB_REF" != \'refs/heads/main\' ]]; then',
+          'if false; then',
+        ),
+      ),
+    /fail closed/u,
+  );
+  assert.throws(
+    () =>
+      validateTagPackageWorkflows({
+        ...packageWorkflows,
+        androidWorkflow: packageWorkflows.androidWorkflow.replace(
+          'test "$GITHUB_EVENT_NAME" = workflow_dispatch',
+          'true',
+        ),
+      }),
+    /authority/u,
+  );
 });
-test('tag rebuilds, automatic publication and post-qualification manifest changes are rejected',()=>{
-  const automatic=parseYaml(releaseAuthorityWorkflow);
-  automatic.jobs.publish.if='always()';
-  assert.throws(()=>validateReleaseAuthorityGate(stringifyYaml(automatic)),/later owner tag/u);
-  const rebuild=parseYaml(releaseAuthorityWorkflow);
-  rebuild.jobs.publish.steps.push({run:'pnpm tauri android build --apk'});
-  assert.throws(()=>validateReleaseAuthorityGate(stringifyYaml(rebuild)),/without rebuilding/u);
-  const tagBuild=parseYaml(packageWorkflows.linuxWorkflow);
-  tagBuild.on.push.tags=['v0.2.1'];
-  assert.throws(()=>validateTagPackageWorkflows({...packageWorkflows,linuxWorkflow:stringifyYaml(tagBuild)}),/without tag rebuilds/u);
-  const lateManifest=parseYaml(packageWorkflows.windowsWorkflow);
-  const steps=lateManifest.jobs.candidate.steps;
-  const index=steps.findIndex(step=>step.name==='Promote truthful community evidence');
-  const [promotion]=steps.splice(index,1);steps.push(promotion);
-  assert.throws(()=>validateTagPackageWorkflows({...packageWorkflows,windowsWorkflow:stringifyYaml(lateManifest)}),/precede native receipt/u);
-  assert.throws(()=>validateTagPackageWorkflows({...packageWorkflows,linuxWorkflow:packageWorkflows.linuxWorkflow.replace('sudo chown --recursive "$(id --user):$(id --group)" artifacts/linux','true')}),/ownership/u);
+test('tag rebuilds, automatic publication and post-qualification manifest changes are rejected', () => {
+  const automatic = parseYaml(releaseAuthorityWorkflow);
+  automatic.jobs.publish.if = 'always()';
+  assert.throws(
+    () => validateReleaseAuthorityGate(stringifyYaml(automatic)),
+    /later owner tag/u,
+  );
+  const rebuild = parseYaml(releaseAuthorityWorkflow);
+  rebuild.jobs.publish.steps.push({ run: 'pnpm tauri android build --apk' });
+  assert.throws(
+    () => validateReleaseAuthorityGate(stringifyYaml(rebuild)),
+    /without rebuilding/u,
+  );
+  const tagBuild = parseYaml(packageWorkflows.linuxWorkflow);
+  tagBuild.on.push.tags = ['v0.2.1'];
+  assert.throws(
+    () =>
+      validateTagPackageWorkflows({
+        ...packageWorkflows,
+        linuxWorkflow: stringifyYaml(tagBuild),
+      }),
+    /without tag rebuilds/u,
+  );
+  const lateManifest = parseYaml(packageWorkflows.windowsWorkflow);
+  const steps = lateManifest.jobs.candidate.steps;
+  const index = steps.findIndex(
+    (step) => step.name === 'Promote truthful community evidence',
+  );
+  const [promotion] = steps.splice(index, 1);
+  steps.push(promotion);
+  assert.throws(
+    () =>
+      validateTagPackageWorkflows({
+        ...packageWorkflows,
+        windowsWorkflow: stringifyYaml(lateManifest),
+      }),
+    /precede native receipt/u,
+  );
+  assert.throws(
+    () =>
+      validateTagPackageWorkflows({
+        ...packageWorkflows,
+        linuxWorkflow: packageWorkflows.linuxWorkflow.replace(
+          'sudo chown --recursive "$(id --user):$(id --group)" artifacts/linux',
+          'true',
+        ),
+      }),
+    /ownership/u,
+  );
 });
 
 const releaseReadinessScript = `
@@ -258,6 +408,10 @@ test('requires complete locked offline Linux provenance across container boundar
   }
 });
 
-test("accepted staging evidence remains a separate complete asset inventory",()=>{
-  assert.throws(()=>validateReleaseContract({...contract(),accepted_staging_evidence:[]}),/staging evidence asset inventory/u);
+test('accepted staging evidence remains a separate complete asset inventory', () => {
+  assert.throws(
+    () =>
+      validateReleaseContract({ ...contract(), accepted_staging_evidence: [] }),
+    /staging evidence asset inventory/u,
+  );
 });

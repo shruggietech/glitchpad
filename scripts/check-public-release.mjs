@@ -11,9 +11,13 @@ export const currentTag = `v${currentVersion}`;
 export const releaseUrl =
   'https://github.com/ShruggieTech/glitchpad/releases/latest';
 const uploadCondition =
-  "inputs.deploy && inputs.release_tag == '" + currentTag + "' && steps.release_authority.outputs.authorized == 'true'";
+  "inputs.deploy && inputs.release_tag == '" +
+  currentTag +
+  "' && steps.release_authority.outputs.authorized == 'true'";
 const deploymentCondition =
-  "inputs.deploy && inputs.release_tag == '" + currentTag + "' && needs.build.outputs.release_authorized == 'true'";
+  "inputs.deploy && inputs.release_tag == '" +
+  currentTag +
+  "' && needs.build.outputs.release_authorized == 'true'";
 
 function normalizeExpression(value) {
   return typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : '';
@@ -125,7 +129,9 @@ export function verifyPublicSources(sources) {
     problems.push(
       'technical specification revision history is not chronological',
     );
-  const updatedDate = specification.match(/^\| Updated \| (\d{4}-\d{2}-\d{2}) \|$/mu)?.[1];
+  const updatedDate = specification.match(
+    /^\| Updated \| (\d{4}-\d{2}-\d{2}) \|$/mu,
+  )?.[1];
   if (!updatedDate || revisionDates.at(-1) !== updatedDate)
     problems.push(
       'technical specification Updated date does not match latest revision',
@@ -158,17 +164,32 @@ export function verifyPublicSources(sources) {
     'github.rest.git.getTag',
     "object.type !== 'commit' || object.sha !== process.env.CANDIDATE_SHA",
     "core.setOutput('authorized', 'true')",
-    "ref: ${{ inputs.deploy && inputs.release_tag == '" + currentTag + "' && inputs.release_tag || github.ref }}",
+    "ref: ${{ inputs.deploy && inputs.release_tag == '" +
+      currentTag +
+      "' && inputs.release_tag || github.ref }}",
     'GLITCHPAD_EXPECTED_REVISION: ${{ needs.build.outputs.source_revision }}',
   ])
     requireText(problems, '.github/workflows/docs.yml', workflow, expected);
   try {
     const parsedWorkflow = parseYaml(workflow);
     const buildSteps = parsedWorkflow.jobs?.build?.steps ?? [];
-    const publishedAuthorityIndex = buildSteps.findIndex(step => step.name === 'Confirm published release authority');
-    const siteBuildIndex = buildSteps.findIndex(step => step.name === 'Build and test public site');
-    const publishedMetadataAuthority = buildSteps[siteBuildIndex]?.env?.GLITCHPAD_PUBLISHED_RELEASE_TAG;
-    if (publishedAuthorityIndex < 0 || siteBuildIndex <= publishedAuthorityIndex || publishedMetadataAuthority !== "${{ steps.release_authority.outputs.authorized == 'true' && inputs.release_tag || '' }}") problems.push('docs workflow published metadata authority is not checked before building');
+    const publishedAuthorityIndex = buildSteps.findIndex(
+      (step) => step.name === 'Confirm published release authority',
+    );
+    const siteBuildIndex = buildSteps.findIndex(
+      (step) => step.name === 'Build and test public site',
+    );
+    const publishedMetadataAuthority =
+      buildSteps[siteBuildIndex]?.env?.GLITCHPAD_PUBLISHED_RELEASE_TAG;
+    if (
+      publishedAuthorityIndex < 0 ||
+      siteBuildIndex <= publishedAuthorityIndex ||
+      publishedMetadataAuthority !==
+        "${{ steps.release_authority.outputs.authorized == 'true' && inputs.release_tag || '' }}"
+    )
+      problems.push(
+        'docs workflow published metadata authority is not checked before building',
+      );
     const uploadStep = parsedWorkflow.jobs?.build?.steps?.find(
       (step) => step.name === 'Upload Pages artifact',
     );

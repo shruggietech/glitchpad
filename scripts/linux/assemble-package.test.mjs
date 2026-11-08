@@ -7,7 +7,10 @@ import test from 'node:test';
 import { assembleLinuxCandidate } from './assemble-package.mjs';
 
 const contract = JSON.parse(
-  await readFile(new URL('../../packaging/linux/package-contract.json', import.meta.url), 'utf8'),
+  await readFile(
+    new URL('../../packaging/linux/package-contract.json', import.meta.url),
+    'utf8',
+  ),
 );
 
 test('assembly renames and binds both final artifacts', async () => {
@@ -38,13 +41,22 @@ test('assembly renames and binds both final artifacts', async () => {
         deb: contract.required_content.deb.map((path) => ({ path })),
       },
     });
-    assert.deepEqual(result.manifest.artifacts.map(({ name }) => name), [
-      'glitchpad-0.2.1-linux-x86_64.AppImage',
-      'glitchpad-0.2.1-linux-x86_64.deb',
-    ]);
-    assert.match(await readFile(result.checksumsPath, 'utf8'), /^[a-f0-9]{64}  glitchpad-/mu);
+    assert.deepEqual(
+      result.manifest.artifacts.map(({ name }) => name),
+      [
+        'glitchpad-0.2.1-linux-x86_64.AppImage',
+        'glitchpad-0.2.1-linux-x86_64.deb',
+      ],
+    );
+    assert.match(
+      await readFile(result.checksumsPath, 'utf8'),
+      /^[a-f0-9]{64}  glitchpad-/mu,
+    );
     assert.equal(result.manifest.official, false);
-    assert.equal(result.manifest.repository_attestation_status, 'not_generated_candidate');
+    assert.equal(
+      result.manifest.repository_attestation_status,
+      'not_generated_candidate',
+    );
   } finally {
     await rm(root, { recursive: true, force: true });
   }

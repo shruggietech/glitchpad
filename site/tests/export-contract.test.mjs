@@ -40,10 +40,19 @@ test('GitHub Pages markers are complete', async () => {
   assert.equal(
     deployment.releaseUrl,
     process.env.GLITCHPAD_PUBLISHED_RELEASE_TAG
-      ? 'https://github.com/ShruggieTech/glitchpad/releases/tag/' + process.env.GLITCHPAD_PUBLISHED_RELEASE_TAG
+      ? 'https://github.com/ShruggieTech/glitchpad/releases/tag/' +
+          process.env.GLITCHPAD_PUBLISHED_RELEASE_TAG
       : 'https://github.com/ShruggieTech/glitchpad/releases/latest',
   );
-  assert.equal(deployment.releaseTag, process.env.GLITCHPAD_PUBLISHED_RELEASE_TAG || null);
-  assert.equal(deployment.publicationContext, process.env.GLITCHPAD_PUBLISHED_RELEASE_TAG ? 'published_tag' : 'source_preview');
+  assert.equal(
+    deployment.releaseTag,
+    process.env.GLITCHPAD_PUBLISHED_RELEASE_TAG || null,
+  );
+  assert.equal(
+    deployment.publicationContext,
+    process.env.GLITCHPAD_PUBLISHED_RELEASE_TAG
+      ? 'published_tag'
+      : 'source_preview',
+  );
   assert.ok(Number.isFinite(Date.parse(deployment.builtAt)));
 });

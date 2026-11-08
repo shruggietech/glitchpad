@@ -18,7 +18,7 @@ public final class PdfPrintNativeStoreChecks {
     try {
       PdfPrintStore store=new PdfPrintStore(root);PdfPrintArgs request=args();store.begin(request);
       Bitmap bitmap=Bitmap.createBitmap(16,16,Bitmap.Config.ARGB_8888);bitmap.eraseColor(android.graphics.Color.BLUE);ByteArrayOutputStream bytes=new ByteArrayOutputStream();assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG,100,bytes));bitmap.recycle();byte[] png=bytes.toByteArray();int[] integers=new int[png.length];for(int index=0;index<png.length;index++)integers[index]=png[index]&255;
-      request.setBytes(integers);store.append(request);request.setWidth(16);request.setHeight(16);assertEquals("ready",store.seal(request).getString("status"));
+      request.setBytes(integers);store.append(request);request.setWidth(16.3);request.setHeight(15.5);assertEquals("ready",store.seal(request).getString("status"));
       PdfPrintArgs wrong=args();wrong.setRequestId(request.getRequestId());wrong.setOwner("different-owner");refused(()->store.status(wrong));refused(()->store.begin(args()));
       assertEquals("cancelled",store.cancel(request).getString("status"));assertFalse(new File(root,request.getRequestId()).exists());
       PdfPrintArgs partial=args();store.begin(partial);partial.setBytes(new int[262145]);refused(()->store.append(partial));partial.setBytes(new int[]{1,2,3});store.append(partial);partial.setWidth(16);partial.setHeight(16);refused(()->store.seal(partial));store.cancel(partial);assertFalse(new File(root,partial.getRequestId()).exists());

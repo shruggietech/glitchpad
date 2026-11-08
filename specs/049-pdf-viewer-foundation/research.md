@@ -81,3 +81,7 @@ Current Chromium applies the worker response script/connect/child CSP, but the a
 ## R20. Print transport and generated light theme
 
 Installed API24 run42536058242 showed native print begin/cancel without a staged page. The PNG transport used Blob.arrayBuffer, unavailable on the minimum Chrome69 profile. Use cancellable FileReader for bounded PNG blobs rather than relaxing the minimum runtime. New actual keyboard/touch/Axe checks also found that the app's selected light theme did not enable the delivered kit's bb-light scope, leaving dark generated fields with inherited dark text. Synchronize that class with the effective selected/system theme, including legacy MediaQueryList listeners. Do not substitute palette values or change the pinned generated kit.
+
+## R21. Validate print page geometry at raster precision
+
+The native raster store must account for ceil-rounded pixel dimensions at the chosen scale. A fixed absolute aspect-ratio tolerance rejects legitimate thin or small page snapshots. Validate that the pixel width and height have a common scale interval for their source-point dimensions instead. Native store qualification includes noninteger point dimensions whose valid ceil-rounded raster has a visibly different ratio. This preserves the dimension binding without an arbitrary page-shape restriction.

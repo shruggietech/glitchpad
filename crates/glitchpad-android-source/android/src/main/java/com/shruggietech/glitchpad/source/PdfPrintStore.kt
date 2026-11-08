@@ -53,8 +53,10 @@ internal class PdfPrintStore(private val root: File) {
     check(args.sha256.isEmpty() || args.sha256 == hash) { "print_hash_mismatch" }
     val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }; BitmapFactory.decodeFile(file.absolutePath, options)
     check(options.outMimeType == "image/png" && options.outWidth in 1..8192 && options.outHeight in 1..8192 && options.outWidth.toLong() * options.outHeight <= 16000000L) { "print_surface_limit" }
-    val ratio = options.outWidth.toDouble() / options.outHeight
-    check(kotlin.math.abs(ratio - args.width / args.height) <= 0.02) { "print_page_dimensions" }
+    // Raster dimensions are ceil(point dimensions * scale), including very thin pages.
+    val lower = maxOf((options.outWidth - 1).toDouble() / args.width, (options.outHeight - 1).toDouble() / args.height)
+    val upper = minOf(options.outWidth.toDouble() / args.width, options.outHeight.toDouble() / args.height)
+    check(lower <= upper + upper * 1e-9) { "print_page_dimensions" }
     value.pages.add(Page(file, args.width, args.height, hash)); value.pending = null
     if (value.pages.size == value.count) value.status = "ready"
     return snapshot(value)

@@ -94,7 +94,7 @@ export function nativePdfPrintGateway(session: ShellSession): PdfPrintGateway {
   };
   const release = () => {
     window.removeEventListener('afterprint',finishDesktop);
-    if(desktopPrintOwner===id)desktopPrintOwner=null;
+    if(desktopPrintOwner===id){desktopPrintOwner=null;document.body.classList.remove('pdf-print-active');}
     owner?.remove();
     owner = null;
     for (const url of urls) URL.revokeObjectURL(url);
@@ -177,6 +177,7 @@ export function nativePdfPrintGateway(session: ShellSession): PdfPrintGateway {
         return receipt;
       }
       handedOff = true;
+      document.body.classList.add('pdf-print-active');
       window.addEventListener('afterprint',finishDesktop,{once:true});
       try{await invoke<void>('request_pdf_desktop_print', source);}catch(error){handedOff=false;release();throw error;}
       return { request_id: id, status: 'handed_off', pages_written: 0 };

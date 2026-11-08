@@ -47,7 +47,7 @@ internal class PdfPrintStore(private val root: File) {
   }
   @Synchronized fun seal(args: PdfPrintArgs): JSObject {
     val value = current(args); val file = value.pending ?: throw IllegalStateException("invalid_print_page")
-    check(value.status == "preparing" && args.pageIndex == value.pages.size && args.width.isFinite() && args.height.isFinite() && args.width in 1.0..14400.0 && args.height in 1.0..14400.0) { "invalid_print_page" }
+    check(value.status == "preparing" && args.pageIndex == value.pages.size && args.width.isFinite() && args.height.isFinite() && args.width > 0 && args.height > 0) { "invalid_print_page" }
     val digest = MessageDigest.getInstance("SHA-256"); file.inputStream().use { input -> val bytes = ByteArray(262144); while (true) { val count = input.read(bytes); if (count < 0) break; digest.update(bytes, 0, count) } }
     val hash = digest.digest().joinToString("") { "%02x".format(it) }
     check(args.sha256.isEmpty() || args.sha256 == hash) { "print_hash_mismatch" }

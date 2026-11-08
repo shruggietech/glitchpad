@@ -36,10 +36,12 @@ function Thumbnail({
   controller,
   index,
   activate,
+  current,
 }: {
   controller: PdfController;
   index: number;
   activate: () => void;
+  current: boolean;
 }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const [error, setError] = useState(false);
@@ -72,7 +74,8 @@ function Thumbnail({
   return (
     <div className="pdf-thumbnail">
     <Button
-      variant="ghost"
+      variant={current?'secondary':'ghost'}
+      aria-current={current?'page':undefined}
       onClick={activate}
       aria-label={'Go to page ' + String(index + 1)}
     >
@@ -103,6 +106,7 @@ export const PdfNavigationTools = forwardRef<PdfNavigationHandle, Props>(
     const [error, setError] = useState<string | null>(null);
     const [rows, setRows] = useState<PdfOutlineRow[]>([]);
     const [outlineLimited, setOutlineLimited] = useState(false);
+    const [outlineFailed,setOutlineFailed]=useState(false);
     const [outlineStart, setOutlineStart] = useState(0);
     const [query, setQuery] = useState('');
     const [matches, setMatches] = useState<PdfSearchMatch[]>([]);
@@ -165,6 +169,7 @@ export const PdfNavigationTools = forwardRef<PdfNavigationHandle, Props>(
           if (active) {
             setRows(index.rows);
             setOutlineLimited(index.limited);
+            setOutlineFailed(index.outlineError);
             callbacks.current.onLabels(index.labels);
           }
         })
@@ -204,6 +209,8 @@ export const PdfNavigationTools = forwardRef<PdfNavigationHandle, Props>(
         setTask(null);
         setExternal(null);
         setMatches([]);
+        setRows([]);
+        callbacks.current.onLabels([]);
       }
       return () => searchAbort.current?.abort();
     }, [state.capabilities.view]);
@@ -294,6 +301,7 @@ export const PdfNavigationTools = forwardRef<PdfNavigationHandle, Props>(
           opener={opener.current}
           className="pdf-tools"
         >
+          <p role="status">Page {String(state.navigation.page+1)} of {String(state.page_count??0)}</p>
           {task === 'search' && (
             <>
               <form
@@ -386,7 +394,7 @@ export const PdfNavigationTools = forwardRef<PdfNavigationHandle, Props>(
           )}
           {task === 'outline' && (
             <>
-              {!rows.length && <p>No outline provided.</p>}
+              {!rows.length && <p>{outlineFailed?'The outline could not be inspected within its limits.':'No outline provided.'}</p>}
               {outlineLimited && (
                 <p role="status">
                   Outline limit reached; invalid or excessive entries were
@@ -467,6 +475,7 @@ export const PdfNavigationTools = forwardRef<PdfNavigationHandle, Props>(
                           key={thumbStart + index}
                           controller={controller}
                           index={thumbStart + index}
+                          current={thumbStart+index===state.navigation.page}
                           activate={() => {
                             controller.navigate(thumbStart + index);
                             setTask(null);

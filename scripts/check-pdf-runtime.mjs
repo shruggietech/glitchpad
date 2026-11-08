@@ -306,9 +306,9 @@ try {
     var pixels = canvas
       .getContext('2d')
       .getImageData(0, 0, canvas.width, canvas.height).data;
-    var ink = 0;
+    var ink = 0;var colored=0;
     for (var i = 0; i < pixels.length; i += 4)
-      if (pixels[i] < 200 && pixels[i + 1] < 200 && pixels[i + 2] < 200) ink++;
+      {if (pixels[i] < 200 && pixels[i + 1] < 200 && pixels[i + 2] < 200) ink++;if(Math.max(pixels[i],pixels[i+1],pixels[i+2])-Math.min(pixels[i],pixels[i+1],pixels[i+2])>40)colored++;}
     var text = document.querySelector(
       '.pdf-page[data-current=true] .pdf-text-layer',
     );
@@ -321,6 +321,7 @@ try {
       width: canvas.width,
       height: canvas.height,
       ink: ink,
+      colored_pixels:colored,
       text: content,
       selected: selected,
       reads: window.__pdfReads,
@@ -335,6 +336,8 @@ try {
   assert.ok(facts.ink > 500, 'Actual canvas needs representative text ink');
   assert.match(facts.text, /Glitchpad PDF compatibility page 1/);
   assert.match(facts.selected, /Glitchpad PDF compatibility/);
+  assert.match(facts.text,/Embedded Courier Prime text/);
+  assert.ok(facts.colored_pixels>100,'Embedded JPEG must contribute actual colored pixels');
   assert.equal(facts.engine, '6.5.438');
   assert.equal(facts.frames, 1);
   assert.equal(facts.executed, false);

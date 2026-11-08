@@ -476,8 +476,8 @@ export const PdfSurface = forwardRef<TextEditorHandle, Props>(
       session.id,
       session.revision,
     ]);
-    const pageFailure=pageFailures.get(view.page);const pageError=pageFailure?.key===key?pageFailure.error:null;
-    const errorCode=failure??state.error??pageError;
+    const pageFailure=pageFailures.get(view.page);const renderError=pageFailure?.key===key?pageFailure.error:null;
+    const errorCode=failure??state.error??renderError;
     const status=errorCode?pdfFailureMessage(errorCode,platform):preparation??(state.state==='loading'?'Loading PDF…':state.state==='cancelled'?'PDF viewing paused.':state.capabilities.view&&!currentReady?'Rendering PDF page…':'Waiting for PDF…');
     return (
       <div
@@ -505,9 +505,11 @@ export const PdfSurface = forwardRef<TextEditorHandle, Props>(
             disabled={!state.capabilities.navigate}
             onClick={(event) => openTask('page', event.currentTarget)}
             aria-label="Go to page"
+            aria-describedby="pdf-current-page"
           >
-            {count ? String(view.page + 1) + ' / ' + String(count) : 'PDF'}
+            <span className="pdf-page-counter">{count ? String(view.page + 1) + ' / ' + String(count)+(labels[view.page]?' ('+labels[view.page]+')':'') : 'PDF'}</span>
           </Button>
+          <span id="pdf-current-page" className="visually-hidden" aria-live="polite">{count?'Page '+String(view.page+1)+' of '+String(count)+(labels[view.page]?', label '+labels[view.page]:''):'PDF loading'}</span>
           <Button
             variant="ghost"
             disabled={!state.capabilities.navigate || view.page + 1 >= count}
@@ -536,6 +538,7 @@ export const PdfSurface = forwardRef<TextEditorHandle, Props>(
           className="pdf-pane"
           ref={pane}
           tabIndex={0}
+          role="region"
           aria-label="PDF pages"
           onWheel={()=>{scrollIntent.current=true;}}
           onTouchStart={()=>{scrollIntent.current=true;}}

@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { pdfPackageRoot, preparePdfAssets } from './prepare-pdf-assets.mjs';
 import { transformPdfWorker } from './lib/pdf-worker-compatibility.mjs';
 
-test('reviewed worker replaces only the dynamic decoder boundary', async () => {
+test('reviewed worker pins static decoder and bounded inspection boundaries', async () => {
   const code = await readFile(
     join(pdfPackageRoot(), 'legacy/build/pdf.worker.mjs'),
     'utf8',
@@ -21,6 +21,8 @@ test('reviewed worker replaces only the dynamic decoder boundary', async () => {
       "import __glitchpadOpenJpeg from 'pdfjs-dist/wasm/openjpeg_nowasm_fallback.js'",
     ),
   );
+  for(const name of ['outline','labels','destination','metadata','annotations'])assert.ok(transformed.includes('__glitchpadBoundPdfReply("'+name+'"'));
+  assert.ok(transformed.includes('sink: __glitchpadBoundPdfTextSink(sink)'));
   assert.ok(!/\bimport\s*\(/.test(transformed));
   assert.throws(() => transformPdfWorker(code + '\n'), /unreviewed input/);
 });

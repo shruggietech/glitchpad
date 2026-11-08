@@ -101,6 +101,7 @@ const entry = (
 });
 
 export const METADATA_CATALOG: readonly MetadataCatalogEntry[] = [
+  entry('pdf.inspection_status','renderer','PDF inspection status','text','pdf'),
   entry('pdf.version', 'content', 'PDF version', 'text', 'pdf'),
   entry('pdf.pages', 'content', 'PDF pages', 'integer', 'pdf'),
   entry('pdf.encrypted', 'content', 'Encrypted', 'boolean', 'pdf'),

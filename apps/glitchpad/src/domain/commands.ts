@@ -139,7 +139,7 @@ export const commandSetFor = (
       'Save As…',
     ],
     [
-      renderer.inspect_metadata && source.metadata,
+      (renderer.inspect_metadata && source.metadata) || Boolean(session.pdf_document?.capabilities.inspect_metadata),
       'metadata',
       'File information',
     ],

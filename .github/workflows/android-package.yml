@@ -19,7 +19,6 @@ on:
       - 'pnpm-lock.yaml'
   push:
     branches: [main]
-    tags: ['v0.2.1']
     paths:
       - '.github/workflows/android-package.yml'
       - 'apps/glitchpad/**'
@@ -36,6 +35,11 @@ on:
       - 'package.json'
       - 'pnpm-lock.yaml'
   workflow_dispatch:
+    inputs:
+      stage_release:
+        description: Prepare stable-key unpublished release inputs (no publication)
+        type: boolean
+        default: false
 
 env:
   GLITCHPAD_BUILD_COMMIT: ${{ github.sha }}
@@ -54,6 +58,16 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
+      - name: Validate preparation authority
+        env:
+          STAGE_RELEASE: ${{ inputs.stage_release || false }}
+        run: |
+          test "$GITHUB_REF_TYPE" = branch
+          if [ "$STAGE_RELEASE" = true ]; then
+            test "$GITHUB_EVENT_NAME" = workflow_dispatch
+            test "$GITHUB_REPOSITORY" = shruggietech/glitchpad
+          fi
+
       - name: Checkout
         uses: actions/checkout@v7
 
@@ -103,7 +117,7 @@ jobs:
           shared-key: android-package-aarch64-x86_64
 
       - name: Create disposable candidate signing authority
-        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+        if: ${{ !inputs.stage_release }}
         run: |
           keytool -genkeypair -noprompt -keystore "$RUNNER_TEMP/glitchpad-candidate.jks" -storepass candidate-password -keypass candidate-password -alias candidate -keyalg RSA -keysize 3072 -validity 2 -dname "CN=Glitchpad Pull Request Candidate, O=ShruggieTech, C=US"
           {
@@ -114,7 +128,7 @@ jobs:
           } > crates/glitchpad-host/gen/android/keystore.properties
 
       - name: Restore stable project signing authority
-        if: startsWith(github.ref, 'refs/tags/')
+        if: github.event_name == 'workflow_dispatch' && inputs.stage_release && github.repository == 'shruggietech/glitchpad'
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -145,6 +159,32 @@ jobs:
           cp crates/glitchpad-host/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk "$RUNNER_TEMP/app-universal-release.apk"
           cp crates/glitchpad-host/gen/android/app/build/outputs/bundle/universalRelease/app-universal-release.aab "$RUNNER_TEMP/app-universal-release.aab"
 
+      - name: Build matching release instrumentation without changing canonical inputs
+        run: |
+          ./crates/glitchpad-host/gen/android/gradlew --project-dir crates/glitchpad-host/gen/android :app:assembleUniversalReleaseAndroidTest -Pglitchpad.testBuildType=release -PabiList=arm64-v8a,x86_64 -ParchList=arm64,x86_64 -PtargetList=aarch64,x86_64 -x :app:rustBuildUniversalRelease -x :app:rustBuildArm64Release -x :app:rustBuildX86_64Release --no-daemon
+          mkdir -p artifacts/android-release-inputs
+          cp crates/glitchpad-host/gen/android/app/build/outputs/apk/androidTest/universal/release/app-universal-release-androidTest.apk artifacts/android-release-inputs/instrumentation.apk
+          cp crates/glitchpad-host/gen/android/app/build/outputs/mapping/universalRelease/mapping.txt artifacts/android-release-inputs/r8-mapping.txt
+          test -s artifacts/android-release-inputs/r8-mapping.txt
+          apksigner="$ANDROID_SDK_ROOT/build-tools/36.0.0/apksigner"
+          "$apksigner" verify --verbose --print-certs "$RUNNER_TEMP/app-universal-release.apk" > artifacts/android-release-inputs/application-signature.txt
+          "$apksigner" verify --verbose --print-certs artifacts/android-release-inputs/instrumentation.apk > artifacts/android-release-inputs/instrumentation-signature.txt
+          apkanalyzer manifest print "$RUNNER_TEMP/app-universal-release.apk" > artifacts/android-release-inputs/application-manifest.xml
+          apkanalyzer manifest print artifacts/android-release-inputs/instrumentation.apk > artifacts/android-release-inputs/instrumentation-manifest.xml
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import crypto from 'node:crypto';
+          const base='artifacts/android-release-inputs/';
+          const hash=path=>crypto.createHash('sha256').update(fs.readFileSync(path)).digest('hex');
+          const cert=path=>{const text=fs.readFileSync(path,'utf8');const digests=[...text.matchAll(/^Signer #\d+ certificate SHA-256 digest: ([a-f0-9]{64})$/gim)].map(m=>m[1].toLowerCase());if(digests.length!==1)throw Error('one verified signer required');return digests[0]};
+          const applicationCertificate=cert(base+'application-signature.txt');
+          if(applicationCertificate!==cert(base+'instrumentation-signature.txt'))throw Error('release instrumentation signer differs from canonical application');
+          const target=fs.readFileSync(base+'application-manifest.xml','utf8');
+          const test=fs.readFileSync(base+'instrumentation-manifest.xml','utf8');
+          if(/android:debuggable="true"/.test(target)||!/android:debuggable="true"/.test(test)||!/android:testOnly="true"/.test(test)||!/android:targetPackage="com.shruggietech.glitchpad"/.test(test))throw Error('release/test manifest boundary mismatch');
+          fs.writeFileSync(base+'identity.json',JSON.stringify({schema:1,source_commit:process.env.GITHUB_SHA,application_sha256:hash(process.env.RUNNER_TEMP+'/app-universal-release.apk'),instrumentation_sha256:hash(base+'instrumentation.apk'),r8_mapping_sha256:hash(base+'r8-mapping.txt'),signing_certificate_sha256:applicationCertificate,application_debuggable:false,minified:true},null,2)+'\n');
+          NODE
+
       - name: Build ARM64 APK
         run: |
           export NDK_HOME="$ANDROID_SDK_ROOT/ndk/28.2.13676358"
@@ -157,7 +197,7 @@ jobs:
           ANDROID_SIGNING_CERT_SHA256: ${{ secrets.ANDROID_SIGNING_CERT_SHA256 }}
         run: |
           node scripts/check-android-package.mjs \
-            --authority "${{ startsWith(github.ref, 'refs/tags/') && 'official' || 'candidate' }}" \
+            --authority "${{ inputs.stage_release && 'official' || 'candidate' }}" \
             --output "$RUNNER_TEMP/android-inventories" \
             --artifact "universal=$RUNNER_TEMP/app-universal-release.apk" \
             --artifact "arm64=$RUNNER_TEMP/app-arm64-release.apk" \
@@ -175,7 +215,7 @@ jobs:
             --contract packaging/android/package-contract.json \
             --output artifacts/android \
             --source-commit "$GITHUB_SHA" \
-            --authority "${{ startsWith(github.ref, 'refs/tags/') && 'official' || 'candidate' }}" \
+            --authority "${{ inputs.stage_release && 'official' || 'candidate' }}" \
             --input "universal=$RUNNER_TEMP/app-universal-release.apk" \
             --input "arm64=$RUNNER_TEMP/app-arm64-release.apk" \
             --input "play=$RUNNER_TEMP/app-universal-release.aab" \
@@ -194,12 +234,97 @@ jobs:
         env:
           BUNDLETOOL_JAR: ${{ runner.temp }}/bundletool.jar
           ANDROID_SIGNING_CERT_SHA256: ${{ secrets.ANDROID_SIGNING_CERT_SHA256 }}
-        run: node scripts/check-android-package.mjs --authority "${{ startsWith(github.ref, 'refs/tags/') && 'official' || 'candidate' }}" --directory artifacts/android
+        run: node scripts/check-android-package.mjs --authority "${{ inputs.stage_release && 'official' || 'candidate' }}" --directory artifacts/android
+
+      - name: Upload matching release test inputs
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-minified-release-inputs
+          path: artifacts/android-release-inputs/
+          if-no-files-found: error
+          retention-days: 30
 
       - name: Upload governed Android package
         uses: actions/upload-artifact@v7
         with:
-          name: ${{ startsWith(github.ref, 'refs/tags/') && 'glitchpad-0.2.1-android-community-release' || 'glitchpad-0.2.1-android-candidates' }}
+          name: ${{ inputs.stage_release && 'glitchpad-0.2.1-android-community-release' || 'glitchpad-0.2.1-android-candidates' }}
           path: artifacts/android/
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 30
+
+  release-runtime:
+    name: Installed minified release API ${{ matrix.api }}
+    needs: candidate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [24, 36]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v4
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+      - name: Download unchanged canonical release package
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ inputs.stage_release && 'glitchpad-0.2.1-android-community-release' || 'glitchpad-0.2.1-android-candidates' }}
+          path: ${{ runner.temp }}/canonical-android
+      - name: Download matching release test inputs
+        uses: actions/download-artifact@v8
+        with:
+          name: android-minified-release-inputs
+          path: ${{ runner.temp }}/android-release-inputs
+      - name: Verify immutable runtime inputs
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import crypto from 'node:crypto';
+          const hash=path=>crypto.createHash('sha256').update(fs.readFileSync(path)).digest('hex');
+          const base=process.env.RUNNER_TEMP+'/';
+          const identity=JSON.parse(fs.readFileSync(base+'android-release-inputs/identity.json'));
+          const manifest=JSON.parse(fs.readFileSync(base+'canonical-android/android-package-manifest.json'));
+          const universal=manifest.artifacts.find(row=>row.role==='universal');
+          if(identity.source_commit!==process.env.GITHUB_SHA||manifest.source_commit!==process.env.GITHUB_SHA||identity.application_sha256!==universal.sha256||hash(base+'canonical-android/'+universal.name)!==universal.sha256||hash(base+'android-release-inputs/instrumentation.apk')!==identity.instrumentation_sha256||hash(base+'android-release-inputs/r8-mapping.txt')!==identity.r8_mapping_sha256||!identity.minified||identity.application_debuggable!==false)throw Error('release runtime input identity mismatch');
+          NODE
+      - name: Enable emulator KVM access
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Operate installed minified canonical APK
+        uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2
+        with:
+          api-level: ${{ matrix.api }}
+          arch: x86_64
+          target: ${{ matrix.api == 36 && 'default' || 'google_apis' }}
+          cores: 4
+          emulator-boot-timeout: 900
+          disable-animations: true
+          emulator-options: -no-window -no-audio -no-snapshot -no-boot-anim -gpu swiftshader -feature -Vulkan
+          pre-emulator-launch-script: node scripts/configure-android-task-avd.mjs "$ANDROID_AVD_HOME/test.avd/config.ini"
+          script: |
+            set -e
+            for package in com.google.android.gms com.google.android.googlequicksearchbox; do if node scripts/bounded-android-adb.mjs shell pm list packages "$package" | grep -Fq "package:$package"; then node scripts/bounded-android-adb.mjs shell pm disable-user --user 0 "$package"; fi; done
+            node scripts/bounded-android-adb.mjs shell svc power stayon true
+            node scripts/bounded-android-adb.mjs shell input keyevent 224
+            if [ "${{ matrix.api }}" = 36 ]; then node scripts/bounded-android-adb.mjs shell svc bluetooth disable; node scripts/bounded-android-adb.mjs shell settings put global hide_error_dialogs 1; node scripts/bounded-android-adb.mjs shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS; fi
+            bash scripts/run-android-release-tests.sh "${{ matrix.api }}" "$GITHUB_SHA" "$RUNNER_TEMP/canonical-android/glitchpad-0.2.1-android-universal.apk" "$RUNNER_TEMP/android-release-inputs/instrumentation.apk" "$RUNNER_TEMP/s048-release-runtime"
+      - name: Retain every release-runtime attempt
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-minified-release-runtime-api-${{ matrix.api }}
+          path: |
+            ${{ runner.temp }}/s048-release-runtime/**
+            ${{ runner.temp }}/android-release-inputs/identity.json
+          if-no-files-found: error
+          retention-days: 30

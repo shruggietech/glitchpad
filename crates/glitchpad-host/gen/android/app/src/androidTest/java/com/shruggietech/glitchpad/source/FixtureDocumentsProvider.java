@@ -242,7 +242,8 @@ public final class FixtureDocumentsProvider extends DocumentsProvider {
   @Override
   public String createDocument(String parentDocumentId, String mimeType, String displayName)
       throws FileNotFoundException {
-    if (!ROOT_ID.equals(parentDocumentId) || !("text/plain".equals(mimeType) || "text/markdown".equals(mimeType) || "application/json".equals(mimeType) || "image/png".equals(mimeType))) {
+    boolean releaseCapture = "application/vnd.android.package-archive".equals(mimeType) && ("s048-installed-application.apk".equals(displayName) || "s048-installed-instrumentation.apk".equals(displayName));
+    if (!ROOT_ID.equals(parentDocumentId) || !(releaseCapture || "text/plain".equals(mimeType) || "text/markdown".equals(mimeType) || "application/json".equals(mimeType) || "image/png".equals(mimeType))) {
       throw new FileNotFoundException(parentDocumentId);
     }
     String safeName = safeName(displayName);
@@ -377,6 +378,8 @@ public final class FixtureDocumentsProvider extends DocumentsProvider {
   }
 
   private static String mimeType(String name) {
+    if ("s048-installed-application.apk".equals(name) || "s048-installed-instrumentation.apk".equals(name)) return "application/vnd.android.package-archive";
+    if (name.endsWith(".png")) return "image/png";
     if (name.startsWith("original.")) {
       if (name.endsWith(".jpg")) return "image/jpeg";
       if (name.endsWith(".tiff")) return "image/tiff";

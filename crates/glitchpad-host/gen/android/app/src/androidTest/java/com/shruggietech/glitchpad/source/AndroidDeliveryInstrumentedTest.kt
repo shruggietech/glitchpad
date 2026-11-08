@@ -56,6 +56,12 @@ class AndroidDeliveryInstrumentedTest {
   @Before
   fun requireRunnerOwnedCompletion() {
     assertEquals("Dedicated Tauri UI instrumentation must own terminal completion", "false", InstrumentationRegistry.getArguments().getString("waitForActivitiesToComplete"))
+    if (isReleaseRuntimeEvidence()) {
+      assertEquals("ordinary", expectedBuildVariant())
+      assertFalse("release runtime must install the nondebuggable application", (clientContext.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0)
+      assertTrue("release evidence requires an exact source", InstrumentationRegistry.getArguments().getString("expectedSource")?.matches(Regex("[0-9a-f]{40}")) == true)
+      assertEquals("installed application must match the selected canonical release", InstrumentationRegistry.getArguments().getString("expectedApplicationSha"), apkSha256())
+    }
     val power = clientContext.getSystemService(android.content.Context.POWER_SERVICE) as android.os.PowerManager
     val keyguard = clientContext.getSystemService(android.content.Context.KEYGUARD_SERVICE) as android.app.KeyguardManager
     if (!power.isInteractive) shellOutput("input keyevent 224")
@@ -163,6 +169,7 @@ class AndroidDeliveryInstrumentedTest {
     waitForBodyText(scenario, "File information", "hostile.svg")
     clickControl(scenario, "Close File information")
     assertTrue("unsupported SVG preview must preserve every original source byte", hostileBefore.contentEquals(readBytes(hostile)))
+    retainReleaseEvidence(scenario, "delivery", includePackages = true)
     println("image_family_evidence=gif:pass,animated_webp:pass,svg:pass,ico_png_dib:pass,hostile_svg:refused,source_unchanged:pass,api:${android.os.Build.VERSION.SDK_INT}")
     println("image_evidence=png:pass,jpeg:pass,webp:pass,bmp:pass,tiff:pass,source_unchanged:pass,api:${android.os.Build.VERSION.SDK_INT}")
     println("delivery_evidence=cold:pass,warm:pass,api:${android.os.Build.VERSION.SDK_INT}")
@@ -376,6 +383,7 @@ class AndroidDeliveryInstrumentedTest {
     println("recovery_evidence=launcher:pass,new_markdown:pass,new_text:pass,native_open:pass,exact_save_reopen:pass,keyboard_ctrl_s_receipt_reopen:pass,cancel:pass,failed_write:pass,readonly_copy:pass,dirty_close_pending:pass,diagnostic_save_share:pass,menu_local_zoom:pass,api:" + Build.VERSION.SDK_INT)
     System.out.flush()
     saveScreenshot("s046-authoring.png")
+    retainReleaseEvidence(scenario, "authoring")
     created.forEach { runCatching { DocumentsContract.deleteDocument(resolver, it) } }
 
   }
@@ -485,6 +493,7 @@ class AndroidDeliveryInstrumentedTest {
       assertEquals("process recovery must retain every exact draft character", text, editableSourceText(scenario))
       println("draft_recovery_verify=pass,api:" + Build.VERSION.SDK_INT)
     }
+    retainReleaseEvidence(scenario, "recovery_" + phase, observations = JSONObject().put("recovery_phase", phase).put("exact_text_verified", phase == "verify"))
     System.out.flush()
 
   }
@@ -923,7 +932,7 @@ class AndroidDeliveryInstrumentedTest {
     recordJourneyReadback(7, "json_receiver", frozen.toByteArray(Charsets.UTF_8), requireNotNull(received?.getString("json")).toByteArray(Charsets.UTF_8))
     waitForAppNativeWindow(scenario, "Share previewed bundle")
     waitForBodyText(scenario, "Shared with the system. Recipient delivery is unconfirmed.")
-    println("recovery_runtime_evidence=" + JSONObject().put("apk_sha256", apkSha256()).put("source_commit", expectedSource).put("package", TARGET_PACKAGE).put("product_version", packageInfo.versionName).put("evidence_class", "hosted_debug_instrumentation").put("signed_release_bytes_tested", false).put("recovery_probe_variant", if (expectedBuildVariant() == "fault_probe") "compiled_test_only" else "none").put("native_environment", native).put("font_scale", clientContext.resources.configuration.fontScale).toString())
+    println("recovery_runtime_evidence=" + JSONObject().put("apk_sha256", apkSha256()).put("source_commit", expectedSource).put("package", TARGET_PACKAGE).put("product_version", packageInfo.versionName).put("evidence_class", if (isReleaseRuntimeEvidence()) "hosted_minified_release_instrumentation" else "hosted_debug_instrumentation").put("signed_release_bytes_tested", isReleaseRuntimeEvidence()).put("recovery_probe_variant", if (expectedBuildVariant() == "fault_probe") "compiled_test_only" else "none").put("native_environment", native).put("font_scale", clientContext.resources.configuration.fontScale).toString())
 
     if (isS047Evidence()) {
       val surface = stringValue(evaluate(scenario,"document.querySelector('.document-surface').id"))
@@ -2879,6 +2888,89 @@ class AndroidDeliveryInstrumentedTest {
   private val journeyReadbacks = mutableMapOf<Int, JSONArray>()
   private val taskControlMeasurements = JSONArray()
   private val clipboardPasteReadbacks = JSONArray()
+  private fun isReleaseRuntimeEvidence(): Boolean = InstrumentationRegistry.getArguments().getString("releaseRuntime") == "true"
+
+  private fun signingCertificate(packageName: String): String {
+    val manager = clientContext.packageManager
+    val signatures = if (Build.VERSION.SDK_INT >= 28) {
+      manager.getPackageInfo(packageName, android.content.pm.PackageManager.GET_SIGNING_CERTIFICATES).signingInfo!!.apkContentsSigners
+    } else {
+      @Suppress("DEPRECATION")
+      manager.getPackageInfo(packageName, android.content.pm.PackageManager.GET_SIGNATURES).signatures!!
+    }
+    assertEquals("release evidence expects exactly one current signer", 1, signatures.size)
+    return sha256(signatures.single().toByteArray())
+  }
+
+  private fun retainReleaseEvidence(scenario: ActivityScenario<MainActivity>, caseId: String, includePackages: Boolean = false, observations: JSONObject = JSONObject()) {
+    if (!isReleaseRuntimeEvidence()) return
+    assertTrue("only the bounded release cases may emit evidence", caseId in listOf("delivery", "authoring", "recovery_seed", "recovery_verify", "back_about"))
+    assertS047Role(scenario)
+    val identity = candidateIdentity(scenario)
+    assertEquals("0.2.1", identity.getString("version"))
+    assertEquals("release", identity.getString("channel"))
+    assertEquals(InstrumentationRegistry.getArguments().getString("expectedApplicationSha"), identity.getString("application_sha256"))
+    assertEquals(InstrumentationRegistry.getArguments().getString("expectedInstrumentationSha"), identity.getString("instrumentation_sha256"))
+    val applicationCertificate = signingCertificate(TARGET_PACKAGE)
+    val instrumentationCertificate = signingCertificate(instrumentation.context.packageName)
+    assertEquals("instrumentation and target must share the selected signing authority", applicationCertificate, instrumentationCertificate)
+    identity.put("signing_certificate_sha256", applicationCertificate).put("instrumentation_certificate_sha256", instrumentationCertificate)
+      .put("application_debuggable", false).put("instrumentation_debuggable", (instrumentation.context.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0)
+    assertTrue("only test-owned storage is debuggable for capture", identity.getBoolean("instrumentation_debuggable"))
+    val root = grant(documentUri("fixture-root"))
+    fun capture(name: String, mime: String, input: java.io.InputStream) {
+      val destination = grant(requireNotNull(DocumentsContract.createDocument(resolver, root, mime, name)))
+      input.use { source -> resolver.openOutputStream(destination, "wt")!!.use { output -> source.copyTo(output, 65536) } }
+    }
+    if (includePackages) {
+      capture("s048-installed-application.apk", "application/vnd.android.package-archive", File(clientContext.applicationInfo.sourceDir).inputStream())
+      capture("s048-installed-instrumentation.apk", "application/vnd.android.package-archive", File(instrumentation.context.applicationInfo.sourceDir).inputStream())
+    }
+    val screenshot = "s048-" + caseId + ".png"
+    assertTrue("release case must capture its actual visible result", saveScreenshot(screenshot))
+    val screenshotFile = File(clientContext.filesDir, screenshot)
+    val screenshotHash = sha256(screenshotFile.readBytes())
+    capture(screenshot, "image/png", screenshotFile.inputStream())
+    val readbacks = JSONArray()
+    journeyReadbacks.toSortedMap().forEach { (journey, rows) -> for (index in 0 until rows.length()) readbacks.put(JSONObject(rows.getJSONObject(index).toString()).put("journey", journey)) }
+    val receipt = JSONObject().put("schema", 1).put("case_id", caseId).put("status", "pass")
+      .put("evidence_class", "hosted_minified_release_instrumentation").put("identity", identity)
+      .put("readbacks", readbacks).put("observations", observations)
+      .put("screenshot", JSONObject().put("file", screenshot).put("sha256", screenshotHash)).toString().toByteArray(Charsets.UTF_8)
+    val name = "s048-" + caseId + ".json"
+    capture(name, "application/json", receipt.inputStream())
+    val marker = "s048_release_evidence=" + JSONObject().put("case_id", caseId).put("file", name).put("sha256", sha256(receipt))
+    println(marker); System.out.flush()
+    instrumentation.sendStatus(2, android.os.Bundle().apply { putString(android.app.Instrumentation.REPORT_KEY_STREAMRESULT, marker + "\n") })
+  }
+
+  @Test fun releaseBackAboutAndCapture() {
+    assertTrue("dedicated release-runtime runner required", isReleaseRuntimeEvidence())
+    shellCommandTransportPreservesFixtureBytesAndExitStatus()
+    val scenario = launchS047()
+    val draft = "S048_RELEASE_BACK_RETAINED_Ω\n"
+    createNewDraftForInput(scenario, "New text file", "Untitled.txt")
+    replaceEditorText(scenario, draft)
+    menuAction(scenario, "File information")
+    waitForBodyText(scenario, "File information", "Untitled.txt")
+    taskKey(KeyEvent.KEYCODE_BACK)
+    waitForCondition(scenario, "!document.querySelector('[aria-label=\"File information\"]')", "native Back must dismiss the current task")
+    assertEquals("native Back must retain every draft character", draft, editableSourceText(scenario))
+    recordJourneyReadback(9, "back_retained_utf8", draft.toByteArray(Charsets.UTF_8), editableSourceText(scenario).toByteArray(Charsets.UTF_8))
+    menuAction(scenario, "About Glitchpad")
+    val source = requireNotNull(InstrumentationRegistry.getArguments().getString("expectedSource"))
+    waitForBodyText(scenario, "0.2.1", TARGET_PACKAGE, source, "ShruggieTech")
+    val displayed = JSONObject(evaluate(scenario, "(()=>{const d=document.querySelector('[data-application-info]');const r={};Array.from(d.querySelectorAll('dt')).forEach(n=>r[n.textContent]=n.nextElementSibling.textContent);return r;})()"))
+    val info = clientContext.packageManager.getPackageInfo(TARGET_PACKAGE, 0)
+    val code = if (Build.VERSION.SDK_INT >= 28) info.longVersionCode else { @Suppress("DEPRECATION") info.versionCode.toLong() }
+    assertEquals(code.toString(), displayed.getString("Version code"))
+    assertEquals("release", displayed.getString("Channel"))
+    assertEquals("android", displayed.getString("Platform"))
+    assertEquals(source, displayed.getString("Build"))
+    val offline = verifyOfflineNotices(scenario)
+    retainReleaseEvidence(scenario, "back_about", observations = JSONObject().put("about", displayed).put("back_retained", true).put("offline_notices", offline))
+  }
+
   private fun isS047Evidence(): Boolean = InstrumentationRegistry.getArguments().getString("s047") == "true"
   private fun expectedBuildVariant(): String = InstrumentationRegistry.getArguments().getString("expectedRole") ?: "fault_probe"
   private fun sha256(bytes: ByteArray): String = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it.toInt() and 255) }

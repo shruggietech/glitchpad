@@ -51,6 +51,11 @@ try {
     function ObservedWorker(url,options){
       var worker;
       try{worker=new NativeWorker(url,options);}catch(error){window.__pdfWorkerEvents.push({stage:'constructor',message:String(error)});throw error;}
+      var nativePost=worker.postMessage;
+      worker.postMessage=function(message,transfer){
+        try{return nativePost.apply(this,arguments);}
+        catch(error){window.__pdfWorkerEvents.push({stage:'postMessage',action:message&&message.action,message:String(error),transfer_kind:transfer===null?'null':typeof transfer});throw error;}
+      };
       worker.addEventListener('error',function(event){window.__pdfWorkerEvents.push({stage:'error',message:event.message,filename:event.filename,line:event.lineno,column:event.colno});});
       worker.addEventListener('messageerror',function(){window.__pdfWorkerEvents.push({stage:'messageerror'});});
       worker.addEventListener('message',function(event){if(event.data&&event.data.type==='glitchpad-pdf-worker-ready')window.__pdfWorkerEvents.push({stage:'ready',version:event.data.version,native_bridge:event.data.native_bridge});});
@@ -88,7 +93,7 @@ try {
   await writeFile(resolve(output,'result.json'),JSON.stringify({schema_version:1,diagnostic_only:true,candidate_qualified:false,evidence_class:'production_browser_synthetic_native_boundary',source:process.env.SOURCE_REF||null,browser:version,fixture_sha256:createHash('sha256').update(fixture).digest('hex'),facts,errors,consoleMessages,requests,second_page:true},null,2)+'\n');
   assert.deepEqual(errors,[]);console.log('PDF production browser read/navigation passed: '+version);
 }catch(error){
-  await writeFile(resolve(output,'failure.json'),JSON.stringify({version,error:String(error),errors,consoleMessages,requests,worker_events:page?await page.evaluate(function(){return window.__pdfWorkerEvents||[];}).catch(()=>[]):[],body:page?await page.$eval('body',node=>node.innerText).catch(()=>null):null},null,2)+'\n');
+  await writeFile(resolve(output,'failure.json'),JSON.stringify({version,error:String(error),errors,consoleMessages,requests,worker_events:page?await page.evaluate(function(){return window.__pdfWorkerEvents||[];}).catch(()=>[]):[],source_reads:page?await page.evaluate(function(){return window.__pdfReads||[];}).catch(()=>[]):[],body:page?await page.$eval('body',node=>node.innerText).catch(()=>null):null},null,2)+'\n');
   if(page)await page.screenshot({path:resolve(output,'failure.png')}).catch(()=>undefined);
   throw error;
 }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}

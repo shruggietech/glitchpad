@@ -2,7 +2,6 @@ import {
   PDF_LIMITS,
   PdfFailure,
   type PdfInternalTarget,
-  type PdfOutlineEntry,
   type PdfSearchMatch,
 } from './pdf-contract';
 export interface PdfOutlineRow {

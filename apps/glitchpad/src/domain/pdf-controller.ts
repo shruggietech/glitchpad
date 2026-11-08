@@ -545,10 +545,12 @@ export class PdfController {
       scale,
       rotation: (page.rotate + rotation) % 360,
     });
+    const bounds = page.view as number[];
     const point = viewport.convertToViewportPoint(
-      target.x ?? page.view[0],
-      target.y ?? page.view[3],
-    );
+      target.x ?? bounds[0],
+      target.y ?? bounds[3],
+    ) as [number,number];
+    if(!point.every(Number.isFinite))throw new PdfFailure('invalid_destination');
     return {
       x: Math.max(0, Math.min(viewport.width, point[0])),
       y: Math.max(0, Math.min(viewport.height, point[1])),

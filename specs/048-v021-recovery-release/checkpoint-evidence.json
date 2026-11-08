@@ -1,0 +1,2732 @@
+{
+  "schema": 1,
+  "slice": "S048",
+  "record_kind": "qualified_implementation_checkpoint",
+  "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc",
+  "publication_context": "qualified_preparation_unpublished",
+  "final_confirmation": "PR #263 final confirmation supersedes this checkpoint for the eventual accepted source; this file never authorizes tagging or publication.",
+  "runs": [
+    {
+      "platform": "ci",
+      "id": 42504654974,
+      "url": "https://github.com/shruggietech/glitchpad/actions/runs/42504654974",
+      "event": "workflow_dispatch",
+      "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc",
+      "run_attempt": 1,
+      "created_at": "2026-11-08T17:22:33Z",
+      "completed_at": "2026-11-08T17:37:24Z",
+      "conclusion": "success"
+    },
+    {
+      "platform": "windows",
+      "id": 42504650140,
+      "url": "https://github.com/shruggietech/glitchpad/actions/runs/42504650140",
+      "event": "workflow_dispatch",
+      "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc",
+      "run_attempt": 1,
+      "created_at": "2026-11-08T17:22:29Z",
+      "completed_at": "2026-11-08T17:27:26Z",
+      "conclusion": "success"
+    },
+    {
+      "platform": "macos",
+      "id": 42504651936,
+      "url": "https://github.com/shruggietech/glitchpad/actions/runs/42504651936",
+      "event": "workflow_dispatch",
+      "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc",
+      "run_attempt": 1,
+      "created_at": "2026-11-08T17:22:31Z",
+      "completed_at": "2026-11-08T17:39:58Z",
+      "conclusion": "success"
+    },
+    {
+      "platform": "linux",
+      "id": 42504653433,
+      "url": "https://github.com/shruggietech/glitchpad/actions/runs/42504653433",
+      "event": "workflow_dispatch",
+      "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc",
+      "run_attempt": 1,
+      "created_at": "2026-11-08T17:22:32Z",
+      "completed_at": "2026-11-08T17:35:55Z",
+      "conclusion": "success"
+    },
+    {
+      "platform": "android",
+      "id": 42504648395,
+      "url": "https://github.com/shruggietech/glitchpad/actions/runs/42504648395",
+      "event": "workflow_dispatch",
+      "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc",
+      "run_attempt": 1,
+      "created_at": "2026-11-08T17:22:28Z",
+      "completed_at": "2026-11-08T17:34:05Z",
+      "conclusion": "success"
+    }
+  ],
+  "expected_ci_skips": [
+    "Pull request labels",
+    "Dependency review"
+  ],
+  "staging_archives": [
+    {
+      "artifact": {
+        "id": 13626873341,
+        "name": "glitchpad-0.2.1-windows-x86_64-community-release",
+        "size_in_bytes": 22956087,
+        "digest": "sha256:0db968ada28d7b410019d6fea4832ac97939b9b32dfcbf7944ca9b716d2c1e89",
+        "created_at": "2026-11-08T17:27:22Z",
+        "expires_at": "2026-12-08T17:27:20Z",
+        "workflow_run_id": 42504650140,
+        "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+      },
+      "archive_bytes_verified": true,
+      "archive_sha256_verified": true,
+      "payloads": [
+        {
+          "name": "glitchpad-0.2.1-windows-x86_64-setup.exe",
+          "bytes": 6255225,
+          "sha256": "f5ff5552ed07bef2a95e2e2515c9a406f97be2e0f01dc9c70b60817092f25194"
+        },
+        {
+          "name": "glitchpad-0.2.1-windows-x86_64.zip",
+          "bytes": 8034663,
+          "sha256": "c2fb841deb288013c55f72ba0ba30513761a9d70b1225376186d9ddb819b134e"
+        }
+      ],
+      "installed": [],
+      "json_receipts": [
+        {
+          "path": "community-trust-evidence.json",
+          "bytes": 363,
+          "sha256": "623e0d93f00164e8199476aca101a86ce505d6e3791bad3e2c80221c622df2ce"
+        },
+        {
+          "path": "cargo-metadata.json",
+          "bytes": 2861462,
+          "sha256": "f941760db48f149f4866ec72f0476486a37e96cdfa3fcc3d6a2ab87c210d6cf5"
+        },
+        {
+          "path": "glitchpad-windows.cdx.json",
+          "bytes": 252220,
+          "sha256": "3f7c1403cd7c1d90343719bf5aca1f225861ef2b42e7ede3d616fc01b5277347"
+        },
+        {
+          "path": "installed-markdown-lifecycle-receipt.json",
+          "bytes": 1458,
+          "sha256": "980103a84b7c5e786710410b8ddae4d8541618b652380819c1e8dd353d49ec44"
+        },
+        {
+          "path": "installer-lifecycle-receipt.json",
+          "bytes": 259,
+          "sha256": "36e69f1a24a82bdfe058b7c1935c139992b3517de8258442b9ae959503ef156c"
+        },
+        {
+          "path": "installed-markdown-lifecycle-receipt.json.startup.json",
+          "bytes": 3238,
+          "sha256": "14983378880670b4ad12d66a04a5d98a3c34834c42aa22fe73456d80aac30235"
+        },
+        {
+          "path": "installer-size-evidence.json/performance-evidence.json",
+          "bytes": 672,
+          "sha256": "bc5c1027e5b111b53e2e569fcba270b65848b1665ee3821d54c184399bce4a8a"
+        },
+        {
+          "path": "pnpm-list.json",
+          "bytes": 13721908,
+          "sha256": "091967cd3113ebd9b3a45d05d93e2162c6bc0454d7e57eab42fff9275dea336f"
+        },
+        {
+          "path": "portable-lifecycle-receipt.json.startup.json",
+          "bytes": 3238,
+          "sha256": "2cddd3ebb31d84559d2894294a5a4b00f8053362947d3f85d7b06b296343bb34"
+        },
+        {
+          "path": "portable-lifecycle-receipt.json",
+          "bytes": 1458,
+          "sha256": "980103a84b7c5e786710410b8ddae4d8541618b652380819c1e8dd353d49ec44"
+        },
+        {
+          "path": "portable-size-evidence.json/performance-evidence.json",
+          "bytes": 672,
+          "sha256": "bce7651ca51ae4b790141b99f8f97fda8b66ac90cb2d07d3b2066f08470b8c78"
+        },
+        {
+          "path": "provenance.json",
+          "bytes": 711,
+          "sha256": "6bb16d1529c509986e9617412b832869b22b63056f4bdf8706ddb3c814448fa2"
+        },
+        {
+          "path": "shell-layout-scale-receipt.json",
+          "bytes": 610,
+          "sha256": "6c5f2cb956d6ea3a9245020b6f649b5ff114b9d906d0f1ccb7900ff1920772d3"
+        },
+        {
+          "path": "windows-package-manifest.json",
+          "bytes": 2033,
+          "sha256": "bc7ca41631e6392dd1ad7fbb4959bb19c2dc441ce2b6041570e10ba67a7c90ff"
+        }
+      ],
+      "unselected_json_diagnostics": 0
+    },
+    {
+      "artifact": {
+        "id": 13627102666,
+        "name": "glitchpad-0.2.1-macos-universal-community-release",
+        "size_in_bytes": 34260794,
+        "digest": "sha256:0141d12588b6b3c3736192fa452826e12498f844b0e621cb8bf92026fc4b70a4",
+        "created_at": "2026-11-08T17:30:21Z",
+        "expires_at": "2026-12-08T17:30:16Z",
+        "workflow_run_id": 42504651936,
+        "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+      },
+      "archive_bytes_verified": true,
+      "archive_sha256_verified": true,
+      "payloads": [
+        {
+          "name": "glitchpad-0.2.1-macos-universal.dmg",
+          "bytes": 16628105,
+          "sha256": "3cec952fd596588214d4d7e937a38eb882e21efde54ad4efbba7f4251030cc5e"
+        }
+      ],
+      "installed": [],
+      "json_receipts": [
+        {
+          "path": "cargo-metadata.json",
+          "bytes": 2817494,
+          "sha256": "db28fca67bfec7f1cb5e9ede12d4d649e1c7e984c431a607f539f68a29f4ead0"
+        },
+        {
+          "path": "community-trust-evidence.json",
+          "bytes": 225,
+          "sha256": "228623bdaf9e582dcac8aaa2566317a8d6aa63eb68f847ab68847dbed5de309c"
+        },
+        {
+          "path": "dmg-size-evidence/performance-evidence.json",
+          "bytes": 674,
+          "sha256": "5dbeb4dfe1949a69c8ceefff9bbfc8c05e628696a818a72b5fd240866a7186d3"
+        },
+        {
+          "path": "glitchpad-macos.cdx.json",
+          "bytes": 252218,
+          "sha256": "66557c36f5a0a01b458c53fbaf0f76b9e1f66c70716d98ad57d013ee3f573781"
+        },
+        {
+          "path": "macos-package-manifest.json",
+          "bytes": 3731,
+          "sha256": "50efa05eeb6631b8d741fc6a326693ae982ae4dc943783832127f9e156c2c21c"
+        },
+        {
+          "path": "pnpm-list.json",
+          "bytes": 13718139,
+          "sha256": "38aacad0ed7a226a0794c6912ab9609f9056dda5209f942f462186c620185187"
+        },
+        {
+          "path": "provenance.json",
+          "bytes": 818,
+          "sha256": "a09029f31e0fabd05d205ca57a63a92467f62d53bb0d8e0d130b61216589a235"
+        }
+      ],
+      "unselected_json_diagnostics": 0
+    },
+    {
+      "artifact": {
+        "id": 13627281021,
+        "name": "android-minified-release-inputs",
+        "size_in_bytes": 3091465,
+        "digest": "sha256:ebb9677eb9fab1c1080f080e73b364738da9d11c4b45d642a5f72bd88dcad630",
+        "created_at": "2026-11-08T17:30:58Z",
+        "expires_at": "2026-12-08T17:30:57Z",
+        "workflow_run_id": 42504648395,
+        "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+      },
+      "archive_bytes_verified": true,
+      "archive_sha256_verified": true,
+      "payloads": [],
+      "installed": [
+        {
+          "path": "instrumentation.apk",
+          "bytes": 1305908,
+          "sha256": "705166e8f6adc9482bc18c788daa718882559a76c4e165082078cc6665e302af"
+        }
+      ],
+      "json_receipts": [
+        {
+          "path": "identity.json",
+          "bytes": 686,
+          "sha256": "aca205ba70f679e31731a40695f03650dff0b6a44342dfbec8fa0e67609a4c7a"
+        }
+      ],
+      "unselected_json_diagnostics": 0
+    },
+    {
+      "artifact": {
+        "id": 13626344248,
+        "name": "glitchpad-0.2.1-android-community-release",
+        "size_in_bytes": 46703967,
+        "digest": "sha256:79b01b9ead7c8a0d26f65d0b7ddaaf38227a3fbbb2fd0de9918ebf24ac543640",
+        "created_at": "2026-11-08T17:31:01Z",
+        "expires_at": "2026-12-08T17:30:58Z",
+        "workflow_run_id": 42504648395,
+        "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+      },
+      "archive_bytes_verified": true,
+      "archive_sha256_verified": true,
+      "payloads": [
+        {
+          "name": "glitchpad-0.2.1-android-arm64.apk",
+          "bytes": 22402915,
+          "sha256": "fd57b93e0cc4b301577b8bae203a7d2ae0231e261cb52284b69fb690c113d18d"
+        },
+        {
+          "name": "glitchpad-0.2.1-android-universal.aab",
+          "bytes": 19447406,
+          "sha256": "8793e699fb1f7bb45fff3a80be5798a45f46efcdabef007889043d51300a8b03"
+        },
+        {
+          "name": "glitchpad-0.2.1-android-universal.apk",
+          "bytes": 41781511,
+          "sha256": "24b1ede3a8948962457d3ceefff6d6e6b0440e8f4921e00e6abaa2160cf4f896"
+        }
+      ],
+      "installed": [],
+      "json_receipts": [
+        {
+          "path": "android-package-manifest.json",
+          "bytes": 1140,
+          "sha256": "fd81999a838056337d59f85c0598a00a86fb6835af2e5fa044652fc18f9f08a2"
+        },
+        {
+          "path": "arm64-inventory.json",
+          "bytes": 4164,
+          "sha256": "9b2a099eb3d9658f0488e2a229b821bb0ab6e19b862592a133dbdb0efde786e6"
+        },
+        {
+          "path": "artifact-digests.json",
+          "bytes": 243,
+          "sha256": "799d8e072332eac0084029c9be36d97880aa741cd4281020e8018f6e51c4e241"
+        },
+        {
+          "path": "glitchpad-android.cdx.json",
+          "bytes": 274845,
+          "sha256": "1e8cf3b9f62c74b8175a6a3d3a84b0d02b042d7a61a22a80c729adef0f43ff47"
+        },
+        {
+          "path": "play-inventory.json",
+          "bytes": 4222,
+          "sha256": "99fbefe0ab13593a6abb7d8536c19c0d646d860db40288eda3d655f60ea8f3e1"
+        },
+        {
+          "path": "provenance.json",
+          "bytes": 628,
+          "sha256": "76c71657ff2394b661e69ed24fd863e7c9a7d7b5969f67f214f5464b26fb0246"
+        },
+        {
+          "path": "universal-inventory.json",
+          "bytes": 4228,
+          "sha256": "129d529237b2a34c3148b44041a551f16e9fa74d254b9e496406957a099eb925"
+        }
+      ],
+      "unselected_json_diagnostics": 0
+    },
+    {
+      "artifact": {
+        "id": 13627406723,
+        "name": "android-minified-release-runtime-api-36",
+        "size_in_bytes": 38410583,
+        "digest": "sha256:f887a2500839db6eb57ee0f0c726a653b6de61e891ae7bc053f7273fdc4c5631",
+        "created_at": "2026-11-08T17:34:00Z",
+        "expires_at": "2026-12-08T17:33:57Z",
+        "workflow_run_id": 42504648395,
+        "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+      },
+      "archive_bytes_verified": true,
+      "archive_sha256_verified": true,
+      "payloads": [],
+      "installed": [
+        {
+          "path": "s048-release-runtime/delivery-attempt-1/s048-installed-application.apk",
+          "bytes": 41781511,
+          "sha256": "24b1ede3a8948962457d3ceefff6d6e6b0440e8f4921e00e6abaa2160cf4f896"
+        },
+        {
+          "path": "s048-release-runtime/delivery-attempt-1/s048-installed-instrumentation.apk",
+          "bytes": 1305908,
+          "sha256": "705166e8f6adc9482bc18c788daa718882559a76c4e165082078cc6665e302af"
+        },
+        {
+          "path": "s048-release-startup/startup-attempt-1/s048-installed-application.apk",
+          "bytes": 41781511,
+          "sha256": "24b1ede3a8948962457d3ceefff6d6e6b0440e8f4921e00e6abaa2160cf4f896"
+        },
+        {
+          "path": "s048-release-startup/startup-attempt-1/s048-installed-instrumentation.apk",
+          "bytes": 1305908,
+          "sha256": "705166e8f6adc9482bc18c788daa718882559a76c4e165082078cc6665e302af"
+        }
+      ],
+      "json_receipts": [
+        {
+          "path": "s048-release-runtime/authoring-attempt-1/authoring-status.json",
+          "bytes": 64,
+          "sha256": "9eb4117c5e1dbe716be3c35577fa4b824417d08b77fa320ed60ae622f18453a5"
+        },
+        {
+          "path": "s048-release-runtime/authoring-attempt-1/s048-authoring.json",
+          "bytes": 2704,
+          "sha256": "07cc82faefb6c5840f9608859bf5c0e52cf5f172e27129c04cac4265e0ff35e3"
+        },
+        {
+          "path": "s048-release-runtime/back_about-attempt-1/back_about-status.json",
+          "bytes": 64,
+          "sha256": "9eb4117c5e1dbe716be3c35577fa4b824417d08b77fa320ed60ae622f18453a5"
+        },
+        {
+          "path": "s048-release-runtime/back_about-attempt-1/s048-back_about.json",
+          "bytes": 2241,
+          "sha256": "33bc6ca4e9b0234c4c6c895c5d3779b75dfa63ba8de2c2ef23b9e2c43ee60d4d"
+        },
+        {
+          "path": "s048-release-runtime/delivery-attempt-1/delivery-status.json",
+          "bytes": 64,
+          "sha256": "9eb4117c5e1dbe716be3c35577fa4b824417d08b77fa320ed60ae622f18453a5"
+        },
+        {
+          "path": "s048-release-runtime/delivery-attempt-1/s048-delivery.json",
+          "bytes": 1846,
+          "sha256": "3aed9807bcd081bd978604f08a3e6207775e97e6d6a7ddb65239ce5db0777111"
+        },
+        {
+          "path": "s048-release-runtime/recovery-attempt-1/recovery_seed-status.json",
+          "bytes": 64,
+          "sha256": "9eb4117c5e1dbe716be3c35577fa4b824417d08b77fa320ed60ae622f18453a5"
+        },
+        {
+          "path": "s048-release-runtime/recovery-attempt-1/recovery_verify-status.json",
+          "bytes": 64,
+          "sha256": "9eb4117c5e1dbe716be3c35577fa4b824417d08b77fa320ed60ae622f18453a5"
+        },
+        {
+          "path": "s048-release-runtime/recovery-attempt-1/s048-recovery_seed.json",
+          "bytes": 1690,
+          "sha256": "f765ad6dadcefc7ce31ebb59460e82bfa0351eb61aa5cf0093d9b9341e0f7dd3"
+        },
+        {
+          "path": "s048-release-runtime/recovery-attempt-1/s048-recovery_verify.json",
+          "bytes": 1695,
+          "sha256": "6306d1f2b2a242fd76343d794d67c7f096c7afb38c325a93e4fadde4db1e615d"
+        },
+        {
+          "path": "s048-release-runtime/release-runtime.json",
+          "bytes": 13891,
+          "sha256": "e7e7f0d6c3169fcd272266469c6867a3bac6c35482bf190b07580a8fd3df3678"
+        },
+        {
+          "path": "s048-release-startup/startup-attempt-1/s048-startup.json",
+          "bytes": 2235,
+          "sha256": "67a4ccf794a43bb5fd99667cfc5afaae3dc000db1f681367d307cab5a6a9be8e"
+        },
+        {
+          "path": "s048-release-startup/startup-attempt-1/startup-status.json",
+          "bytes": 64,
+          "sha256": "9eb4117c5e1dbe716be3c35577fa4b824417d08b77fa320ed60ae622f18453a5"
+        },
+        {
+          "path": "s048-release-startup/startup-diagnostic.json",
+          "bytes": 3160,
+          "sha256": "e677de54ad35ced2b00257104c7c2fe21bb85b87cc3c666abde9a978f05cea77"
+        },
+        {
+          "path": "android-release-inputs/identity.json",
+          "bytes": 686,
+          "sha256": "aca205ba70f679e31731a40695f03650dff0b6a44342dfbec8fa0e67609a4c7a"
+        }
+      ],
+      "unselected_json_diagnostics": 0
+    },
+    {
+      "artifact": {
+        "id": 13626839556,
+        "name": "android-minified-release-runtime-api-24",
+        "size_in_bytes": 38314674,
+        "digest": "sha256:fb89c98ef537c6a24f50e3c8b0435324ffb5718f94ce646ceee963905da43c24",
+        "created_at": "2026-11-08T17:34:01Z",
+        "expires_at": "2026-12-08T17:33:58Z",
+        "workflow_run_id": 42504648395,
+        "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+      },
+      "archive_bytes_verified": true,
+      "archive_sha256_verified": true,
+      "payloads": [],
+      "installed": [
+        {
+          "path": "s048-release-runtime/delivery-attempt-1/s048-installed-application.apk",
+          "bytes": 41781511,
+          "sha256": "24b1ede3a8948962457d3ceefff6d6e6b0440e8f4921e00e6abaa2160cf4f896"
+        },
+        {
+          "path": "s048-release-runtime/delivery-attempt-1/s048-installed-instrumentation.apk",
+          "bytes": 1305908,
+          "sha256": "705166e8f6adc9482bc18c788daa718882559a76c4e165082078cc6665e302af"
+        },
+        {
+          "path": "s048-release-startup/startup-attempt-1/s048-installed-application.apk",
+          "bytes": 41781511,
+          "sha256": "24b1ede3a8948962457d3ceefff6d6e6b0440e8f4921e00e6abaa2160cf4f896"
+        },
+        {
+          "path": "s048-release-startup/startup-attempt-1/s048-installed-instrumentation.apk",
+          "bytes": 1305908,
+          "sha256": "705166e8f6adc9482bc18c788daa718882559a76c4e165082078cc6665e302af"
+        }
+      ],
+      "json_receipts": [
+        {
+          "path": "s048-release-runtime/authoring-attempt-1/authoring-status.json",
+          "bytes": 64,
+          "sha256": "9eb4117c5e1dbe716be3c35577fa4b824417d08b77fa320ed60ae622f18453a5"
+        },
+        {
+          "path": "s048-release-runtime/authoring-attempt-1/s048-authoring.json",
+          "bytes": 2701,
+          "sha256": "f985657c1d45723c3e4150114710694c96fb1e5c872bcd9326294e31b720308f"
+        },
+        {
+          "path": "s048-release-runtime/back_about-attempt-1/back_about-status.json",
+          "bytes": 64,
+          "sha256": "9eb4117c5e1dbe716be3c35577fa4b824417d08b77fa320ed60ae622f18453a5"
+        },
+        {
+          "path": "s048-release-runtime/back_about-attempt-1/s048-back_about.json",
+          "bytes": 2238,
+          "sha256": "782adb27c6c11b1b9d42bcf033e608229f180bc99de4247d6231399a20d53c54"
+        },
+        {
+          "path": "s048-release-runtime/delivery-attempt-1/delivery-status.json",
+          "bytes": 64,
+          "sha256": "9eb4117c5e1dbe716be3c35577fa4b824417d08b77fa320ed60ae622f18453a5"
+        },
+        {
+          "path": "s048-release-runtime/delivery-attempt-1/s048-delivery.json",
+          "bytes": 1843,
+          "sha256": "094a15ee5c4a044526d9394ef3db79008f24012e1b932a1d97c6cd67d839baee"
+        },
+        {
+          "path": "s048-release-runtime/recovery-attempt-1/recovery_seed-status.json",
+          "bytes": 64,
+          "sha256": "9eb4117c5e1dbe716be3c35577fa4b824417d08b77fa320ed60ae622f18453a5"
+        },
+        {
+          "path": "s048-release-runtime/recovery-attempt-1/recovery_verify-status.json",
+          "bytes": 64,
+          "sha256": "9eb4117c5e1dbe716be3c35577fa4b824417d08b77fa320ed60ae622f18453a5"
+        },
+        {
+          "path": "s048-release-runtime/recovery-attempt-1/s048-recovery_seed.json",
+          "bytes": 1687,
+          "sha256": "b2b2150bc2aaecb1a9b1ffb00d5cdc0abce92820632714bdd089ef1e3719555b"
+        },
+        {
+          "path": "s048-release-runtime/recovery-attempt-1/s048-recovery_verify.json",
+          "bytes": 1692,
+          "sha256": "77801a8fa037d72205540aacb541bee796651dd47862303f6eda7db2017069fd"
+        },
+        {
+          "path": "s048-release-runtime/release-runtime.json",
+          "bytes": 13876,
+          "sha256": "d1771ef78f8e9fbf8962c0b14e4ee6ba36f0765a6515fca874f7baee4afd9808"
+        },
+        {
+          "path": "s048-release-startup/startup-attempt-1/s048-startup.json",
+          "bytes": 2232,
+          "sha256": "7da8482e61b718e9e6f14967cab3bbdb1457d5da44ec4b07d7693439d553593d"
+        },
+        {
+          "path": "s048-release-startup/startup-attempt-1/startup-status.json",
+          "bytes": 64,
+          "sha256": "9eb4117c5e1dbe716be3c35577fa4b824417d08b77fa320ed60ae622f18453a5"
+        },
+        {
+          "path": "s048-release-startup/startup-diagnostic.json",
+          "bytes": 3157,
+          "sha256": "395fc6788fa4830bf8c149bddd3d718040eb27b3e5df483d14b59d33488ba5b1"
+        },
+        {
+          "path": "android-release-inputs/identity.json",
+          "bytes": 686,
+          "sha256": "aca205ba70f679e31731a40695f03650dff0b6a44342dfbec8fa0e67609a4c7a"
+        }
+      ],
+      "unselected_json_diagnostics": 0
+    },
+    {
+      "artifact": {
+        "id": 13627700842,
+        "name": "glitchpad-0.2.1-linux-x86_64-community-release",
+        "size_in_bytes": 20620024,
+        "digest": "sha256:24b5c6e11af0c6b7717b32c38552bae3cb6efac3176a2a814ebda8fb5817f206",
+        "created_at": "2026-11-08T17:34:11Z",
+        "expires_at": "2026-12-08T17:34:09Z",
+        "workflow_run_id": 42504653433,
+        "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+      },
+      "archive_bytes_verified": true,
+      "archive_sha256_verified": true,
+      "payloads": [
+        {
+          "name": "glitchpad-0.2.1-linux-x86_64.AppImage",
+          "bytes": 10648056,
+          "sha256": "683c1cf8e19a7c21118d99bb2c02707b5196bc59f8592b639083daa022424a05"
+        },
+        {
+          "name": "glitchpad-0.2.1-linux-x86_64.deb",
+          "bytes": 9794390,
+          "sha256": "86c08dcaaf434d6c1be38ad243500871c32c535581f31b93167e7e19daefb915"
+        }
+      ],
+      "installed": [],
+      "json_receipts": [
+        {
+          "path": "build-baseline.json",
+          "bytes": 497,
+          "sha256": "a123ba21d8f6b283567942f363947c3d125c951eaa8fbb81ae30e492832c0384"
+        },
+        {
+          "path": "appimage-inventory.json",
+          "bytes": 7662,
+          "sha256": "a762118fb4e7fc69b066ff551846ace7fc3a15d220b7b666a00ed1ffe4470d83"
+        },
+        {
+          "path": "cargo-metadata.json",
+          "bytes": 2803266,
+          "sha256": "f2452c2a26bdf8bc9704fe3b359420add69755bfc0d8e8baf8064edc497244b0"
+        },
+        {
+          "path": "community-trust-evidence.json",
+          "bytes": 173,
+          "sha256": "587f5dca3d674b8087b3880eeecc47d5ab50b8964899734c8cac56bf502f18b9"
+        },
+        {
+          "path": "deb-inventory.json",
+          "bytes": 1492,
+          "sha256": "487ef5af90cd6e6d956b23aaea852ff0b1a2077d53ee32fd2464445c70d16983"
+        },
+        {
+          "path": "glitchpad-linux.cdx.json",
+          "bytes": 252218,
+          "sha256": "812eeb0e09dc4905d21d102b06748e62c5885bc6dcacc093fd8a9f203e31213e"
+        },
+        {
+          "path": "linux-package-manifest.json",
+          "bytes": 2787,
+          "sha256": "208c83ce06a65b43259de9da19a124445fc140af1dccfc52064ca03a0cec122a"
+        },
+        {
+          "path": "pnpm-list.json",
+          "bytes": 12938647,
+          "sha256": "67691403adb63155b11a0d8825a86c4616bdbda94420112c9eee6b558bc6ed33"
+        },
+        {
+          "path": "provenance.json",
+          "bytes": 1252,
+          "sha256": "5d4730546ba22a5f1922939f93c53603033f1fa76d7abe3622b95dc6c71cd556"
+        },
+        {
+          "path": "repository-attestation.json",
+          "bytes": 11724,
+          "sha256": "f2ad93cf71929c0e2cd8ca3f29a035a55f90d689aeb4122dbf7fd89e4dccd1a2"
+        }
+      ],
+      "unselected_json_diagnostics": 0
+    },
+    {
+      "artifact": {
+        "id": 13626977681,
+        "name": "glitchpad-linux-clean-ubuntu-22.04-appimage",
+        "size_in_bytes": 1199,
+        "digest": "sha256:7e50562741a9d30fdd44329cca9128b91ebc0892bad797171b8aadddb1eaebb0",
+        "created_at": "2026-11-08T17:35:46Z",
+        "expires_at": "2026-12-08T17:35:45Z",
+        "workflow_run_id": 42504653433,
+        "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+      },
+      "archive_bytes_verified": true,
+      "archive_sha256_verified": true,
+      "payloads": [],
+      "installed": [],
+      "json_receipts": [
+        {
+          "path": "clean-ubuntu-22.04-appimage.json",
+          "bytes": 2740,
+          "sha256": "75c11ccc525d2d5c5fb13fceff427485f01b4bfa3daf45a0fd841b5920cda44b"
+        }
+      ],
+      "unselected_json_diagnostics": 0
+    },
+    {
+      "artifact": {
+        "id": 13626904612,
+        "name": "glitchpad-linux-clean-ubuntu-24.04-deb",
+        "size_in_bytes": 1193,
+        "digest": "sha256:4d0a590ee0fcaa31ff1870a4ea28e53dcb10d99330928f97f3909e0222d1be59",
+        "created_at": "2026-11-08T17:35:52Z",
+        "expires_at": "2026-12-08T17:35:51Z",
+        "workflow_run_id": 42504653433,
+        "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+      },
+      "archive_bytes_verified": true,
+      "archive_sha256_verified": true,
+      "payloads": [],
+      "installed": [],
+      "json_receipts": [
+        {
+          "path": "clean-ubuntu-24.04-deb.json",
+          "bytes": 2737,
+          "sha256": "c2b420d31445fcebb2f8a64933ec431b430fcc7921ba3460911c8ae0df614a6d"
+        }
+      ],
+      "unselected_json_diagnostics": 0
+    },
+    {
+      "artifact": {
+        "id": 13626544385,
+        "name": "glitchpad-linux-clean-ubuntu-24.04-appimage",
+        "size_in_bytes": 1210,
+        "digest": "sha256:5427ae35902134100f2841e2a8a9cb9e7626f68a982db90a706bda7559bbecde",
+        "created_at": "2026-11-08T17:35:50Z",
+        "expires_at": "2026-12-08T17:35:50Z",
+        "workflow_run_id": 42504653433,
+        "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+      },
+      "archive_bytes_verified": true,
+      "archive_sha256_verified": true,
+      "payloads": [],
+      "installed": [],
+      "json_receipts": [
+        {
+          "path": "clean-ubuntu-24.04-appimage.json",
+          "bytes": 2743,
+          "sha256": "2cfae5e10ccea37b21133099de01ed5dd364333e2f53e9ada457d8a4b02a56b8"
+        }
+      ],
+      "unselected_json_diagnostics": 0
+    },
+    {
+      "artifact": {
+        "id": 13626399752,
+        "name": "glitchpad-linux-clean-ubuntu-22.04-deb",
+        "size_in_bytes": 1186,
+        "digest": "sha256:0c41ef72e8ec35424ab77bcf26ed2ed54d27ec4a8fcc42b73a0d1d780bd844cc",
+        "created_at": "2026-11-08T17:35:42Z",
+        "expires_at": "2026-12-08T17:35:41Z",
+        "workflow_run_id": 42504653433,
+        "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+      },
+      "archive_bytes_verified": true,
+      "archive_sha256_verified": true,
+      "payloads": [],
+      "installed": [],
+      "json_receipts": [
+        {
+          "path": "clean-ubuntu-22.04-deb.json",
+          "bytes": 2735,
+          "sha256": "3403865d9bbbe8dd80e2e1bdc4afec45e9a70004bee6b277e48c8b6ceeb28d94"
+        }
+      ],
+      "unselected_json_diagnostics": 0
+    },
+    {
+      "artifact": {
+        "id": 13627531341,
+        "name": "glitchpad-macos-clean-host-arm64",
+        "size_in_bytes": 3588,
+        "digest": "sha256:f37904531f1a17d5eefb7c429569a36c45246052287a0e6d0d5cc0b48e1b9f61",
+        "created_at": "2026-11-08T17:34:04Z",
+        "expires_at": "2026-12-08T17:34:03Z",
+        "workflow_run_id": 42504651936,
+        "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+      },
+      "archive_bytes_verified": true,
+      "archive_sha256_verified": true,
+      "payloads": [],
+      "installed": [],
+      "json_receipts": [
+        {
+          "path": "clean-host-arm64.json",
+          "bytes": 2637,
+          "sha256": "2243ba02cfe6cd1b742a86973321f56efb537d587e4d8dd8a105cb3dd76f8fd0"
+        },
+        {
+          "path": "clean-host-arm64.json.startup.json",
+          "bytes": 2704,
+          "sha256": "1cc781e5d2eb9be4ea62e2f99f92d149d9b51e2d9f9e1fb0b079d831a259e987"
+        },
+        {
+          "path": "startup-comparison-arm64.json",
+          "bytes": 9019,
+          "sha256": "3ca3fd7dca51c5290e4d01017a4e3bd8f96fbfc3d806247c901bb746e66d0333"
+        }
+      ],
+      "unselected_json_diagnostics": 0
+    },
+    {
+      "artifact": {
+        "id": 13627855533,
+        "name": "glitchpad-macos-clean-host-x86_64",
+        "size_in_bytes": 3602,
+        "digest": "sha256:f2cf75a60e459c4f5cb33ff79bf13e7eef08a0f24f2b937f11a58a087b152bb5",
+        "created_at": "2026-11-08T17:38:57Z",
+        "expires_at": "2026-12-08T17:38:48Z",
+        "workflow_run_id": 42504651936,
+        "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+      },
+      "archive_bytes_verified": true,
+      "archive_sha256_verified": true,
+      "payloads": [],
+      "installed": [],
+      "json_receipts": [
+        {
+          "path": "clean-host-x86_64.json",
+          "bytes": 2638,
+          "sha256": "0ab8a8f4d32d12f633ccc906f317ee26f12620c15859a9260193f2fbc5e4b11a"
+        },
+        {
+          "path": "clean-host-x86_64.json.startup.json",
+          "bytes": 2707,
+          "sha256": "07bccf907464caefaa56bf569cf9202827398f64dd58baf381961a2781a136c5"
+        },
+        {
+          "path": "startup-comparison-x86_64.json",
+          "bytes": 9031,
+          "sha256": "e84bcae109fcee11cd51140977139bf31c3c5d6a2d6499931356259ed6e0629d"
+        }
+      ],
+      "unselected_json_diagnostics": 0
+    }
+  ],
+  "ci_archives": [
+    {
+      "artifact": {
+        "id": 13627640365,
+        "name": "composed-task-geometry",
+        "size_in_bytes": 1066316,
+        "digest": "sha256:3216c5ff0ea991a88f71e68f3181b6146d3e590a13495e73d65523c6571bc825",
+        "created_at": "2026-11-08T17:30:42Z",
+        "expires_at": "2026-12-08T17:30:41Z",
+        "workflow_run_id": 42504654974,
+        "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+      },
+      "archive_bytes_verified": true,
+      "archive_sha256_verified": true,
+      "payloads": [],
+      "installed": [],
+      "json_receipts": [
+        {
+          "path": "android-task-layout/receipt.json",
+          "bytes": 28439897,
+          "sha256": "5199a51674b5ab20c76a4535dcd21f2a5a9a94aa9407f471b4579552ca30b8f7"
+        },
+        {
+          "path": "android-authoring-layout/receipt.json",
+          "bytes": 260387,
+          "sha256": "abb9aea36737a6b10cd26c75abfc4e0882249941636fd82f2eeffff843e08067"
+        },
+        {
+          "path": "image-layout/result.json",
+          "bytes": 240571,
+          "sha256": "14d828d22c2529de3b172bd480f67e4c162685e761c06424094c6e85dcae83c7"
+        }
+      ],
+      "unselected_json_diagnostics": 0
+    },
+    {
+      "artifact": {
+        "id": 13627405303,
+        "name": "image-qualification-macos-latest",
+        "size_in_bytes": 967,
+        "digest": "sha256:daf278ff9f523ff2941f0a17b2f3cb6e23588b16f8605448d923e9ed6a938381",
+        "created_at": "2026-11-08T17:24:26Z",
+        "expires_at": "2027-02-06T17:22:34Z",
+        "workflow_run_id": 42504654974,
+        "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+      },
+      "archive_bytes_verified": true,
+      "archive_sha256_verified": true,
+      "payloads": [],
+      "installed": [],
+      "json_receipts": [
+        {
+          "path": "native-macos-latest.json",
+          "bytes": 1703,
+          "sha256": "05cda622e5dff75e769b9ea2f72a9a0eb72ca1a8bd11bcc291f432eaf849849a"
+        }
+      ],
+      "unselected_json_diagnostics": 0
+    },
+    {
+      "artifact": {
+        "id": 13627395540,
+        "name": "glitchpad-foundation-android-aarch64",
+        "size_in_bytes": 64662493,
+        "digest": "sha256:e76eab6e25994d6641b5e757a18a7fd89d07a230453dbd9f0d54fa62962ae980",
+        "created_at": "2026-11-08T17:25:40Z",
+        "expires_at": "2026-12-08T17:25:34Z",
+        "workflow_run_id": 42504654974,
+        "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+      },
+      "archive_bytes_verified": true,
+      "archive_sha256_verified": true,
+      "payloads": [],
+      "installed": [],
+      "json_receipts": [],
+      "unselected_json_diagnostics": 0
+    },
+    {
+      "artifact": {
+        "id": 13627275875,
+        "name": "image-qualification-ubuntu-latest",
+        "size_in_bytes": 974,
+        "digest": "sha256:8a8a2c2d434a6ce36988c8b3fd5729bb80c897a318d7c1b5e5badfcc528db7be",
+        "created_at": "2026-11-08T17:24:53Z",
+        "expires_at": "2027-02-06T17:22:34Z",
+        "workflow_run_id": 42504654974,
+        "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+      },
+      "archive_bytes_verified": true,
+      "archive_sha256_verified": true,
+      "payloads": [],
+      "installed": [],
+      "json_receipts": [
+        {
+          "path": "native-ubuntu-latest.json",
+          "bytes": 1706,
+          "sha256": "2605a8d3eb5ae079588bc776db1ae84d7ee15f95a0a3c4f2e6b378916b0b5b75"
+        }
+      ],
+      "unselected_json_diagnostics": 0
+    },
+    {
+      "artifact": {
+        "id": 13627092019,
+        "name": "image-qualification-windows-latest",
+        "size_in_bytes": 977,
+        "digest": "sha256:b7cdf0cf430b05d7816d119b9eb16e16fb275e3d06a6310d0577019b9c21cd16",
+        "created_at": "2026-11-08T17:25:58Z",
+        "expires_at": "2027-02-06T17:22:34Z",
+        "workflow_run_id": 42504654974,
+        "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+      },
+      "archive_bytes_verified": true,
+      "archive_sha256_verified": true,
+      "payloads": [],
+      "installed": [],
+      "json_receipts": [
+        {
+          "path": "native-windows-latest.json",
+          "bytes": 1708,
+          "sha256": "53ced29e7efdc1983f94634aadbc33665e28cef751780b73547ca118978ddbf6"
+        }
+      ],
+      "unselected_json_diagnostics": 0
+    },
+    {
+      "artifact": {
+        "id": 13627066675,
+        "name": "android-task-journeys-fault_probe-api-24",
+        "size_in_bytes": 66913764,
+        "digest": "sha256:474e01f29b44df6c9a92a7726b14e3ea49c327488834fd93dd55883319dad3d4",
+        "created_at": "2026-11-08T17:28:40Z",
+        "expires_at": "2026-12-08T17:28:34Z",
+        "workflow_run_id": 42504654974,
+        "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+      },
+      "archive_bytes_verified": true,
+      "archive_sha256_verified": true,
+      "payloads": [
+        {
+          "name": "application.apk",
+          "bytes": 231153074,
+          "sha256": "ff6b706d9cc76686c70be4b231bdb6702ab62ff0cf76646b0c952fac2fe338b6"
+        },
+        {
+          "name": "instrumentation.apk",
+          "bytes": 847646,
+          "sha256": "5207a67909ca026be8a9d52a66423668dcc94a30bb380c1ddcd73d3758948448"
+        }
+      ],
+      "installed": [
+        {
+          "path": "_temp/android-tested-candidate/instrumentation.apk",
+          "bytes": 847646,
+          "sha256": "5207a67909ca026be8a9d52a66423668dcc94a30bb380c1ddcd73d3758948448"
+        }
+      ],
+      "json_receipts": [
+        {
+          "path": "_temp/android-tested-candidate/application-capture.json",
+          "bytes": 1023,
+          "sha256": "f381cea692a20d90b7160fe0059d561252df1f7eab40458034ccc21a9b655f50"
+        },
+        {
+          "path": "_temp/android-tested-candidate/candidate-setup.json",
+          "bytes": 555,
+          "sha256": "14dde39fd34223890466fb0f7c063f622910480a60f978b20e60f7411f0b1b1c"
+        },
+        {
+          "path": "_temp/android-tested-candidate/instrumentation-capture.json",
+          "bytes": 993,
+          "sha256": "c51d1220888659ff57a92c658c45f958c8d3878e11e854afe8d48feee2ce1326"
+        },
+        {
+          "path": "_temp/android-tested-candidate/tested-apk-receipt.json",
+          "bytes": 1143,
+          "sha256": "12340034c098840025daa9042f9fc6a2b4b413cf8a4586828fbf9890541bf888"
+        },
+        {
+          "path": "_temp/s047-faults-attempt-1-s047-row-3.json",
+          "bytes": 1749,
+          "sha256": "aac3e47cd1afbdbfb261ad47f7f00db386189e9360c460d435357339c42af130"
+        },
+        {
+          "path": "_temp/s047-faults-attempt-1-s047-row-7.json",
+          "bytes": 1850,
+          "sha256": "1924114c6b10362042c37c171ad9b0371b3666890d93a83435a487022e60ad65"
+        },
+        {
+          "path": "_temp/s047-navigation-environment.json",
+          "bytes": 30958,
+          "sha256": "1ec98621e00cd32d8a5143846a181f0690bc629592570d06fe6576f1c8dca687"
+        },
+        {
+          "path": "_temp/s047-recovery-evidence.json",
+          "bytes": 17812,
+          "sha256": "7f8a7787e8ab6ad6d8f4d4724977332fa83d6fab2d2b2501267bac08ea21e05c"
+        }
+      ],
+      "unselected_json_diagnostics": 8
+    },
+    {
+      "artifact": {
+        "id": 13626997670,
+        "name": "image-fuzz-qualification",
+        "size_in_bytes": 1033603,
+        "digest": "sha256:1e8f19bf0db7da5c8ab93d7ed002c15f9122ca5ff0732ff6c869b91aac85c93e",
+        "created_at": "2026-11-08T17:27:21Z",
+        "expires_at": "2027-02-06T17:22:34Z",
+        "workflow_run_id": 42504654974,
+        "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+      },
+      "archive_bytes_verified": true,
+      "archive_sha256_verified": true,
+      "payloads": [],
+      "installed": [],
+      "json_receipts": [],
+      "unselected_json_diagnostics": 0
+    },
+    {
+      "artifact": {
+        "id": 13626883144,
+        "name": "android-task-journeys-ordinary-api-24",
+        "size_in_bytes": 67431940,
+        "digest": "sha256:0e31ae88afe3c0aa8a045c87e64de83a6df90a46d1d44b7bd5b52ef6c1bab81e",
+        "created_at": "2026-11-08T17:36:49Z",
+        "expires_at": "2026-12-08T17:36:42Z",
+        "workflow_run_id": 42504654974,
+        "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+      },
+      "archive_bytes_verified": true,
+      "archive_sha256_verified": true,
+      "payloads": [
+        {
+          "name": "application.apk",
+          "bytes": 231152066,
+          "sha256": "12dc936e587bd39ae0a1b0dd20db36f9c9034c5f458c166598714a6d7e33c4ad"
+        },
+        {
+          "name": "instrumentation.apk",
+          "bytes": 847646,
+          "sha256": "c29d2f19be1f1a34d47037493c1cb157654ec0bef45048d68b2a7c045c8799c8"
+        }
+      ],
+      "installed": [
+        {
+          "path": "_temp/android-tested-candidate/instrumentation.apk",
+          "bytes": 847646,
+          "sha256": "c29d2f19be1f1a34d47037493c1cb157654ec0bef45048d68b2a7c045c8799c8"
+        }
+      ],
+      "json_receipts": [
+        {
+          "path": "_temp/android-tested-candidate/application-capture.json",
+          "bytes": 1023,
+          "sha256": "2bdf6d67607bf2b1d9905f42fe9a2890c1b9db92ab896f94f2ed3633349c2a2c"
+        },
+        {
+          "path": "_temp/android-tested-candidate/candidate-setup.json",
+          "bytes": 555,
+          "sha256": "14dde39fd34223890466fb0f7c063f622910480a60f978b20e60f7411f0b1b1c"
+        },
+        {
+          "path": "_temp/android-tested-candidate/instrumentation-capture.json",
+          "bytes": 993,
+          "sha256": "aa50e8f43a4f05c6141d54cd96e0ada62cbc1332fc3878bffe962873fefe9073"
+        },
+        {
+          "path": "_temp/android-tested-candidate/tested-apk-receipt.json",
+          "bytes": 1126,
+          "sha256": "0467cf29dcc52aa7e6ccd059c82e2c0c48cd7d52880d561d14a0a4bfd04d2e6e"
+        },
+        {
+          "path": "_temp/s047-about-attempt-1-s047-row-10.json",
+          "bytes": 1714,
+          "sha256": "b35d4b48abf6afd02a908c3eac43143af85050e8fb2ef1e51370630c251a2022"
+        },
+        {
+          "path": "_temp/s047-authoring-attempt-1-s047-row-4.json",
+          "bytes": 1998,
+          "sha256": "098a158d4e31c7cbae275fcb451a8f7e9d36691dac83a3520990a7998c0893dd"
+        },
+        {
+          "path": "_temp/s047-authoring-attempt-1-s047-row-5.json",
+          "bytes": 1558,
+          "sha256": "dd68466cd6a3c493e08e59a0e7bce70c3ab57965900671a362ff9a229641ab40"
+        },
+        {
+          "path": "_temp/s047-authoring-attempt-1-s047-row-7.json",
+          "bytes": 2101,
+          "sha256": "0d808bd563dab6a17949eef67163ace6bb659b60deaf0433ce36adc0a9b78b29"
+        },
+        {
+          "path": "_temp/s047-back-attempt-1-s047-row-9.json",
+          "bytes": 1791,
+          "sha256": "a3674506ae1b1eb800612ca96290103ad21ac4af03204f54f48b336b4b6defbd"
+        },
+        {
+          "path": "_temp/s047-cold-attempt-1-s047-row-1.json",
+          "bytes": 1549,
+          "sha256": "32253c995e70f7dcac90dd418f21e0b3e31b8f848baac47cdbfac6e96c2273c0"
+        },
+        {
+          "path": "_temp/s047-images-attempt-1-s047-row-6.json",
+          "bytes": 3059,
+          "sha256": "6d0474e5e60cfe83d5e025a51b5a02f1d869a0e283b953e9af0127974c885c57"
+        },
+        {
+          "path": "_temp/s047-layout-attempt-1-s047-row-8.json",
+          "bytes": 1302149,
+          "sha256": "6affc6e923eafc1419cbf4eb89a02744936376ddc0689e03266ce555ebd50fc2"
+        },
+        {
+          "path": "_temp/s047-markdown-attempt-1-s047-row-2.json",
+          "bytes": 1585,
+          "sha256": "b26087a8605aa854a96904af771cf1ee2ad90195eb6652d8e17ef10760b2144a"
+        },
+        {
+          "path": "_temp/s047-navigation-environment.json",
+          "bytes": 30945,
+          "sha256": "cd5c904df840a9a331c7fc06fb2f6419ddbbe148715e0f221d5ca34b0867612f"
+        },
+        {
+          "path": "_temp/s047-recovery-evidence.json",
+          "bytes": 2818352,
+          "sha256": "5256a585a5d69569adb9952e13b98d604158d668caa3b2931189bc2b14895685"
+        },
+        {
+          "path": "_temp/s047-source-failure-attempt-1-s047-row-3.json",
+          "bytes": 1217,
+          "sha256": "98d6e0ab7db519aa5e59b809bfbd863d0e12dbdc123240e1066303facdb5a5a4"
+        }
+      ],
+      "unselected_json_diagnostics": 90
+    },
+    {
+      "artifact": {
+        "id": 13626723814,
+        "name": "android-task-journeys-ordinary-api-36",
+        "size_in_bytes": 67901180,
+        "digest": "sha256:f2801098ccc4e45e57a3096bb4a9a53fe016d83752dd6ffaef2b13ef5a0b2439",
+        "created_at": "2026-11-08T17:37:15Z",
+        "expires_at": "2026-12-08T17:37:08Z",
+        "workflow_run_id": 42504654974,
+        "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+      },
+      "archive_bytes_verified": true,
+      "archive_sha256_verified": true,
+      "payloads": [
+        {
+          "name": "application.apk",
+          "bytes": 231152066,
+          "sha256": "ea6f0bc23868918cf62d435fbb6edd0d52b1e76cb30a247caa7a4cf3993577a3"
+        },
+        {
+          "name": "instrumentation.apk",
+          "bytes": 847646,
+          "sha256": "297690228208fb6c5d8f5a1c781c9e9ca3ca7a10f9c8a9728bf31c32a1d9608b"
+        }
+      ],
+      "installed": [
+        {
+          "path": "_temp/android-tested-candidate/instrumentation.apk",
+          "bytes": 847646,
+          "sha256": "297690228208fb6c5d8f5a1c781c9e9ca3ca7a10f9c8a9728bf31c32a1d9608b"
+        }
+      ],
+      "json_receipts": [
+        {
+          "path": "_temp/android-tested-candidate/application-capture.json",
+          "bytes": 414,
+          "sha256": "ea0c4f2f784df680755d17f8a5fbe75ebd8e05964f51affafc4cd2f41426412e"
+        },
+        {
+          "path": "_temp/android-tested-candidate/candidate-setup.json",
+          "bytes": 690,
+          "sha256": "a8f460be0ba368a57cda24114befc4b0a0a8a16f9699bf3d6ad70e25c5e0021a"
+        },
+        {
+          "path": "_temp/android-tested-candidate/instrumentation-capture.json",
+          "bytes": 421,
+          "sha256": "38e71240a966dec69be487d39937ab01af228f57e623aab6ef50845b4ec3adaf"
+        },
+        {
+          "path": "_temp/android-tested-candidate/tested-apk-receipt.json",
+          "bytes": 1091,
+          "sha256": "e0754134e3a2275d006f23a1a760be8a766ffb4217d72c2e5f3f9f8e03078b97"
+        },
+        {
+          "path": "_temp/s047-about-attempt-1-s047-row-10.json",
+          "bytes": 1717,
+          "sha256": "b5564be454d1a28c572e78ed433833e87734beb7ac9aab7a78e31fed142df004"
+        },
+        {
+          "path": "_temp/s047-authoring-attempt-1-s047-row-4.json",
+          "bytes": 2001,
+          "sha256": "ae4099eeeae14610bdbe0fe44b64214b4cfa7c8d4885542047238d11b3b8b27e"
+        },
+        {
+          "path": "_temp/s047-authoring-attempt-1-s047-row-5.json",
+          "bytes": 1561,
+          "sha256": "0bf95a5157e4c514064627ce53741230caee40b50a7070848a54e25fda57f23e"
+        },
+        {
+          "path": "_temp/s047-authoring-attempt-1-s047-row-7.json",
+          "bytes": 2104,
+          "sha256": "c15e3ec6a88ebb9d52362b05df14bf4b0db36c57b5482da16546b32dd0456a72"
+        },
+        {
+          "path": "_temp/s047-back-attempt-1-s047-row-9.json",
+          "bytes": 2414,
+          "sha256": "4563a7cc4217850c6d56715b9f1888b5478cc831c6ca555227101c96b29424ed"
+        },
+        {
+          "path": "_temp/s047-cold-attempt-1-s047-row-1.json",
+          "bytes": 1552,
+          "sha256": "6ea5d629335dcfef4920f73e05cea8a38d97db34851e549929014661b1832a5a"
+        },
+        {
+          "path": "_temp/s047-images-attempt-1-s047-row-6.json",
+          "bytes": 3158,
+          "sha256": "f46d4d1deabdf691d336facceabfc56cef0ec9f04de4f31af35f2b4158c53832"
+        },
+        {
+          "path": "_temp/s047-layout-attempt-1-s047-row-8.json",
+          "bytes": 1504569,
+          "sha256": "87a1da3dfdc75d5e47370e7732147a8f0d9ac68bf5767cd18039224053abd076"
+        },
+        {
+          "path": "_temp/s047-markdown-attempt-1-s047-row-2.json",
+          "bytes": 1588,
+          "sha256": "617d1a91ddf23b932387e6c88473eecadfaf94e086f21f3fa5fb4af7205a53a2"
+        },
+        {
+          "path": "_temp/s047-navigation-environment.json",
+          "bytes": 226393,
+          "sha256": "b450068cf5595cfce9069300e6719d544dfac53a1aced7972dc3cba1b8153c2d"
+        },
+        {
+          "path": "_temp/s047-recovery-evidence.json",
+          "bytes": 3356448,
+          "sha256": "b20b1eb70a7c7038bb69238452d24f6d2fa001be8864fbd5523c324708fdab66"
+        },
+        {
+          "path": "_temp/s047-source-failure-attempt-1-s047-row-3.json",
+          "bytes": 1220,
+          "sha256": "e981acd9deb60d556fba01888cda92d6141b846d2f04a0d6c02fedfb36f91f65"
+        }
+      ],
+      "unselected_json_diagnostics": 90
+    },
+    {
+      "artifact": {
+        "id": 13626708187,
+        "name": "android-task-journeys-fault_probe-api-36",
+        "size_in_bytes": 67059973,
+        "digest": "sha256:afabc6021226afa2c8d79b6dac5fe8c48db1b9a2fcbb56ec083fe5ad904250fb",
+        "created_at": "2026-11-08T17:29:18Z",
+        "expires_at": "2026-12-08T17:29:12Z",
+        "workflow_run_id": 42504654974,
+        "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+      },
+      "archive_bytes_verified": true,
+      "archive_sha256_verified": true,
+      "payloads": [
+        {
+          "name": "application.apk",
+          "bytes": 231153074,
+          "sha256": "09aecf8ff6086893e732dda7a9bed1aac7d3687dc2a519c429c740878a63470c"
+        },
+        {
+          "name": "instrumentation.apk",
+          "bytes": 847646,
+          "sha256": "ae140d87619de4a6d512824438a8c3d74c0f7ca51e0fe62c7506d08364ad290b"
+        }
+      ],
+      "installed": [
+        {
+          "path": "_temp/android-tested-candidate/instrumentation.apk",
+          "bytes": 847646,
+          "sha256": "ae140d87619de4a6d512824438a8c3d74c0f7ca51e0fe62c7506d08364ad290b"
+        }
+      ],
+      "json_receipts": [
+        {
+          "path": "_temp/android-tested-candidate/application-capture.json",
+          "bytes": 414,
+          "sha256": "30d19426a0bd155c1375df56722aad4474b5176778e14b5e0a746dfade496aee"
+        },
+        {
+          "path": "_temp/android-tested-candidate/candidate-setup.json",
+          "bytes": 690,
+          "sha256": "a8f460be0ba368a57cda24114befc4b0a0a8a16f9699bf3d6ad70e25c5e0021a"
+        },
+        {
+          "path": "_temp/android-tested-candidate/instrumentation-capture.json",
+          "bytes": 421,
+          "sha256": "2ea560af30e843b94cc09dab62c92a62ed52c6fbdb65c394fc2853258f7f6b7d"
+        },
+        {
+          "path": "_temp/android-tested-candidate/tested-apk-receipt.json",
+          "bytes": 1108,
+          "sha256": "b0bc06f7623c56b23d128f91e85341ff18df09958429a5cca6580c6f085b467c"
+        },
+        {
+          "path": "_temp/s047-faults-attempt-1-s047-row-3.json",
+          "bytes": 1752,
+          "sha256": "3996cfdb99391fb5c881d51986940a6b97ef2c163f1754095ca9997da2337fa4"
+        },
+        {
+          "path": "_temp/s047-faults-attempt-1-s047-row-7.json",
+          "bytes": 1853,
+          "sha256": "395cdb3eb08be460a76a69057a390ea76ff52984b261ed59a00204cd3cfd2a23"
+        },
+        {
+          "path": "_temp/s047-navigation-environment.json",
+          "bytes": 225175,
+          "sha256": "82cab16ec5832bb71f9d51e10a9d705a4137b719569bdaa2b30366b108b87f90"
+        },
+        {
+          "path": "_temp/s047-recovery-evidence.json",
+          "bytes": 17845,
+          "sha256": "25aece608148dd40853cfd4f4c773ea7f835a332be54b71ca6155fe68d42213f"
+        }
+      ],
+      "unselected_json_diagnostics": 8
+    }
+  ],
+  "payloads": [
+    {
+      "name": "glitchpad-0.2.1-windows-x86_64-setup.exe",
+      "bytes": 6255225,
+      "sha256": "f5ff5552ed07bef2a95e2e2515c9a406f97be2e0f01dc9c70b60817092f25194",
+      "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+    },
+    {
+      "name": "glitchpad-0.2.1-windows-x86_64.zip",
+      "bytes": 8034663,
+      "sha256": "c2fb841deb288013c55f72ba0ba30513761a9d70b1225376186d9ddb819b134e",
+      "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+    },
+    {
+      "name": "glitchpad-0.2.1-macos-universal.dmg",
+      "bytes": 16628105,
+      "sha256": "3cec952fd596588214d4d7e937a38eb882e21efde54ad4efbba7f4251030cc5e",
+      "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+    },
+    {
+      "name": "glitchpad-0.2.1-linux-x86_64.AppImage",
+      "bytes": 10648056,
+      "sha256": "683c1cf8e19a7c21118d99bb2c02707b5196bc59f8592b639083daa022424a05",
+      "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+    },
+    {
+      "name": "glitchpad-0.2.1-linux-x86_64.deb",
+      "bytes": 9794390,
+      "sha256": "86c08dcaaf434d6c1be38ad243500871c32c535581f31b93167e7e19daefb915",
+      "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+    },
+    {
+      "name": "glitchpad-0.2.1-android-universal.apk",
+      "bytes": 41781511,
+      "sha256": "24b1ede3a8948962457d3ceefff6d6e6b0440e8f4921e00e6abaa2160cf4f896",
+      "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+    },
+    {
+      "name": "glitchpad-0.2.1-android-arm64.apk",
+      "bytes": 22402915,
+      "sha256": "fd57b93e0cc4b301577b8bae203a7d2ae0231e261cb52284b69fb690c113d18d",
+      "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+    },
+    {
+      "name": "glitchpad-0.2.1-android-universal.aab",
+      "bytes": 19447406,
+      "sha256": "8793e699fb1f7bb45fff3a80be5798a45f46efcdabef007889043d51300a8b03",
+      "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+    }
+  ],
+  "android_release": {
+    "version": "0.2.1",
+    "version_code": 1005,
+    "input_identity": {
+      "schema": 1,
+      "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc",
+      "application_sha256": "24b1ede3a8948962457d3ceefff6d6e6b0440e8f4921e00e6abaa2160cf4f896",
+      "instrumentation_sha256": "705166e8f6adc9482bc18c788daa718882559a76c4e165082078cc6665e302af",
+      "r8_mapping_sha256": "35aa21b459618a32b6af29ae3458e164fc7e9e33d9a50ecb1beb1327f6711fef",
+      "signing_certificate_sha256": "c60df04bb87b65f2721c404b37ae138944998eaa2a284ebef518d462eca83cbd",
+      "application_debuggable": false,
+      "minified": true,
+      "test_runtime_isolation": [
+        "kotlin",
+        "androidx.tracing"
+      ],
+      "test_dex_inventory_sha256": "a438bb64b56658c34f0d86e2e96f4deb307cef3dce2e331ba2809d6ab06cd3ea"
+    },
+    "independent_proof": [
+      {
+        "artifact": {
+          "id": 13627406723,
+          "name": "android-minified-release-runtime-api-36",
+          "size_in_bytes": 38410583,
+          "digest": "sha256:f887a2500839db6eb57ee0f0c726a653b6de61e891ae7bc053f7273fdc4c5631",
+          "created_at": "2026-11-08T17:34:00Z",
+          "expires_at": "2026-12-08T17:33:57Z",
+          "workflow_run_id": 42504648395,
+          "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+        },
+        "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc",
+        "api": 36,
+        "application_sha256": "24b1ede3a8948962457d3ceefff6d6e6b0440e8f4921e00e6abaa2160cf4f896",
+        "instrumentation_sha256": "705166e8f6adc9482bc18c788daa718882559a76c4e165082078cc6665e302af",
+        "cases": [
+          {
+            "scope": "s048-release-runtime",
+            "case_id": "delivery",
+            "attempt": 1,
+            "receipt_sha256": "3aed9807bcd081bd978604f08a3e6207775e97e6d6a7ddb65239ce5db0777111",
+            "screenshot_sha256": "f12294b5e6c28dc910a2ffc68a713e2354ceb1563e681109cb8d4e028a69a0c7",
+            "readbacks": 1,
+            "webview": "com.android.webview 133.0.6943.137"
+          },
+          {
+            "scope": "s048-release-runtime",
+            "case_id": "authoring",
+            "attempt": 1,
+            "receipt_sha256": "07cc82faefb6c5840f9608859bf5c0e52cf5f172e27129c04cac4265e0ff35e3",
+            "screenshot_sha256": "2ce900d6057df7b76c3d62062102d070e1f6e0497da427b960583301a14ff8a8",
+            "readbacks": 5,
+            "webview": "com.android.webview 133.0.6943.137"
+          },
+          {
+            "scope": "s048-release-runtime",
+            "case_id": "recovery_seed",
+            "attempt": 1,
+            "receipt_sha256": "f765ad6dadcefc7ce31ebb59460e82bfa0351eb61aa5cf0093d9b9341e0f7dd3",
+            "screenshot_sha256": "2e990f064f2ab0772ef66cf2c5158d1edf3930d4d02103bfce01565da3dc16fb",
+            "readbacks": 0,
+            "webview": "com.android.webview 133.0.6943.137"
+          },
+          {
+            "scope": "s048-release-runtime",
+            "case_id": "recovery_verify",
+            "attempt": 1,
+            "receipt_sha256": "6306d1f2b2a242fd76343d794d67c7f096c7afb38c325a93e4fadde4db1e615d",
+            "screenshot_sha256": "2f496e08aa1c72aca36e297d17be3253b39bc7b2dee301f56eb259c3ecac7559",
+            "readbacks": 0,
+            "webview": "com.android.webview 133.0.6943.137"
+          },
+          {
+            "scope": "s048-release-runtime",
+            "case_id": "back_about",
+            "attempt": 1,
+            "receipt_sha256": "33bc6ca4e9b0234c4c6c895c5d3779b75dfa63ba8de2c2ef23b9e2c43ee60d4d",
+            "screenshot_sha256": "2cd496f6fdb64ada5bd00999aed9acc73c07f349aa4ec80b17dc89351ecbf7a9",
+            "readbacks": 1,
+            "webview": "com.android.webview 133.0.6943.137"
+          },
+          {
+            "scope": "s048-release-startup",
+            "case_id": "startup",
+            "attempt": 1,
+            "receipt_sha256": "67a4ccf794a43bb5fd99667cfc5afaae3dc000db1f681367d307cab5a6a9be8e",
+            "screenshot_sha256": "11bdf3aeb50bfeee6aeac81aef303c3d930289606fb8cb739f543f2f441d68a1",
+            "readbacks": 1,
+            "webview": "com.android.webview 133.0.6943.137"
+          }
+        ]
+      },
+      {
+        "artifact": {
+          "id": 13626839556,
+          "name": "android-minified-release-runtime-api-24",
+          "size_in_bytes": 38314674,
+          "digest": "sha256:fb89c98ef537c6a24f50e3c8b0435324ffb5718f94ce646ceee963905da43c24",
+          "created_at": "2026-11-08T17:34:01Z",
+          "expires_at": "2026-12-08T17:33:58Z",
+          "workflow_run_id": 42504648395,
+          "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+        },
+        "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc",
+        "api": 24,
+        "application_sha256": "24b1ede3a8948962457d3ceefff6d6e6b0440e8f4921e00e6abaa2160cf4f896",
+        "instrumentation_sha256": "705166e8f6adc9482bc18c788daa718882559a76c4e165082078cc6665e302af",
+        "cases": [
+          {
+            "scope": "s048-release-runtime",
+            "case_id": "delivery",
+            "attempt": 1,
+            "receipt_sha256": "094a15ee5c4a044526d9394ef3db79008f24012e1b932a1d97c6cd67d839baee",
+            "screenshot_sha256": "4bb3a955d722dac5aaf19163f9cb9e8feda6d92af9d11d1924d092465dd8a821",
+            "readbacks": 1,
+            "webview": "com.android.chrome 69.0.3497.100"
+          },
+          {
+            "scope": "s048-release-runtime",
+            "case_id": "authoring",
+            "attempt": 1,
+            "receipt_sha256": "f985657c1d45723c3e4150114710694c96fb1e5c872bcd9326294e31b720308f",
+            "screenshot_sha256": "ce1b4410795ba52e27eb4c79d4f656dff98599165a58a2963b7e096012cc99e1",
+            "readbacks": 5,
+            "webview": "com.android.chrome 69.0.3497.100"
+          },
+          {
+            "scope": "s048-release-runtime",
+            "case_id": "recovery_seed",
+            "attempt": 1,
+            "receipt_sha256": "b2b2150bc2aaecb1a9b1ffb00d5cdc0abce92820632714bdd089ef1e3719555b",
+            "screenshot_sha256": "bb650489d5898220e5cb54159cba574162f095f0516b569f6077225d0ea45ea1",
+            "readbacks": 0,
+            "webview": "com.android.chrome 69.0.3497.100"
+          },
+          {
+            "scope": "s048-release-runtime",
+            "case_id": "recovery_verify",
+            "attempt": 1,
+            "receipt_sha256": "77801a8fa037d72205540aacb541bee796651dd47862303f6eda7db2017069fd",
+            "screenshot_sha256": "7c157a425e8a46ff6b572b595fbc8444441fd9ea735db648bb427ce414603aff",
+            "readbacks": 0,
+            "webview": "com.android.chrome 69.0.3497.100"
+          },
+          {
+            "scope": "s048-release-runtime",
+            "case_id": "back_about",
+            "attempt": 1,
+            "receipt_sha256": "782adb27c6c11b1b9d42bcf033e608229f180bc99de4247d6231399a20d53c54",
+            "screenshot_sha256": "3949aa75c4a5047cba507e61e7e9b432d386c4674d2c0866f7af5cc2272d17c2",
+            "readbacks": 1,
+            "webview": "com.android.chrome 69.0.3497.100"
+          },
+          {
+            "scope": "s048-release-startup",
+            "case_id": "startup",
+            "attempt": 1,
+            "receipt_sha256": "7da8482e61b718e9e6f14967cab3bbdb1457d5da44ec4b07d7693439d553593d",
+            "screenshot_sha256": "ff5549c71c206c1f49266adcdac34f1700bbb106a4bc4da1c7bdf65976734783",
+            "readbacks": 1,
+            "webview": "com.android.chrome 69.0.3497.100"
+          }
+        ]
+      }
+    ],
+    "notice_proof": [
+      {
+        "name": "LICENSE-APACHE-2.0.txt",
+        "bytes": 11357,
+        "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+      },
+      {
+        "name": "LICENSE-HAMCREST-BSD.txt",
+        "bytes": 1482,
+        "sha256": "3810798072d089fb5e521688b868df0885f7e1b312b1e20c345be34c8e21f06a"
+      },
+      {
+        "name": "LICENSE-JUNIT-EPL-1.0.txt",
+        "bytes": 11376,
+        "sha256": "9648bb2891b9813970bddb68d4be8a5e6ec8280d0180a53dfb29236b579c55bb"
+      },
+      {
+        "name": "RELEASE_TEST_NOTICES.txt",
+        "bytes": 1639,
+        "sha256": "6ae15d4baa0714ea21dade35b4ba229b7b8185f96e2dcc3ff7f257905f9e2680"
+      },
+      {
+        "name": "RELEASE_TEST_NOTICE_PROVENANCE.json",
+        "bytes": 788,
+        "sha256": "d4c9489c684ae148ae8eb020acba6b1eb39048765c4b67ef9175bd6bf9a215bb"
+      }
+    ],
+    "scope": "Canonical minified nondebuggable universal APK on hosted x86_64 API24/API36 emulators; ARM64 APK/AAB statically verified, not installed.",
+    "startup_diagnostic": "Separate from full campaign: diagnostic_only=true, candidate_qualified=false."
+  },
+  "android_debug": {
+    "independent_proof": [
+      {
+        "artifact": {
+          "id": 13627066675,
+          "name": "android-task-journeys-fault_probe-api-24",
+          "size_in_bytes": 66913764,
+          "digest": "sha256:474e01f29b44df6c9a92a7726b14e3ea49c327488834fd93dd55883319dad3d4",
+          "created_at": "2026-11-08T17:28:40Z",
+          "expires_at": "2026-12-08T17:28:34Z",
+          "workflow_run_id": 42504654974,
+          "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+        },
+        "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc",
+        "role": "fault_probe",
+        "api": 24,
+        "installed": [
+          {
+            "name": "application.apk",
+            "bytes": 231153074,
+            "sha256": "ff6b706d9cc76686c70be4b231bdb6702ab62ff0cf76646b0c952fac2fe338b6"
+          },
+          {
+            "name": "instrumentation.apk",
+            "bytes": 847646,
+            "sha256": "5207a67909ca026be8a9d52a66423668dcc94a30bb380c1ddcd73d3758948448"
+          }
+        ],
+        "pass_journeys": [
+          {
+            "journey": 3,
+            "attempt": 1,
+            "variants": 9,
+            "readbacks": 0
+          },
+          {
+            "journey": 7,
+            "attempt": 1,
+            "variants": 4,
+            "readbacks": 2
+          }
+        ],
+        "not_applicable": [
+          1,
+          2,
+          4,
+          5,
+          6,
+          8,
+          9,
+          10
+        ],
+        "unselected_missing_row_diagnostics": 8
+      },
+      {
+        "artifact": {
+          "id": 13626883144,
+          "name": "android-task-journeys-ordinary-api-24",
+          "size_in_bytes": 67431940,
+          "digest": "sha256:0e31ae88afe3c0aa8a045c87e64de83a6df90a46d1d44b7bd5b52ef6c1bab81e",
+          "created_at": "2026-11-08T17:36:49Z",
+          "expires_at": "2026-12-08T17:36:42Z",
+          "workflow_run_id": 42504654974,
+          "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+        },
+        "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc",
+        "role": "ordinary",
+        "api": 24,
+        "installed": [
+          {
+            "name": "application.apk",
+            "bytes": 231152066,
+            "sha256": "12dc936e587bd39ae0a1b0dd20db36f9c9034c5f458c166598714a6d7e33c4ad"
+          },
+          {
+            "name": "instrumentation.apk",
+            "bytes": 847646,
+            "sha256": "c29d2f19be1f1a34d47037493c1cb157654ec0bef45048d68b2a7c045c8799c8"
+          }
+        ],
+        "pass_journeys": [
+          {
+            "journey": 1,
+            "attempt": 1,
+            "variants": 6,
+            "readbacks": 0
+          },
+          {
+            "journey": 2,
+            "attempt": 1,
+            "variants": 7,
+            "readbacks": 0
+          },
+          {
+            "journey": 3,
+            "attempt": 1,
+            "variants": 1,
+            "readbacks": 0
+          },
+          {
+            "journey": 4,
+            "attempt": 1,
+            "variants": 7,
+            "readbacks": 2
+          },
+          {
+            "journey": 5,
+            "attempt": 1,
+            "variants": 3,
+            "readbacks": 1
+          },
+          {
+            "journey": 6,
+            "attempt": 1,
+            "variants": 19,
+            "readbacks": 1
+          },
+          {
+            "journey": 7,
+            "attempt": 1,
+            "variants": 8,
+            "readbacks": 2
+          },
+          {
+            "journey": 8,
+            "attempt": 1,
+            "variants": 23,
+            "readbacks": 0
+          },
+          {
+            "journey": 9,
+            "attempt": 1,
+            "variants": 5,
+            "readbacks": 0
+          },
+          {
+            "journey": 10,
+            "attempt": 1,
+            "variants": 4,
+            "readbacks": 0
+          }
+        ],
+        "not_applicable": [],
+        "unselected_missing_row_diagnostics": 90
+      },
+      {
+        "artifact": {
+          "id": 13626723814,
+          "name": "android-task-journeys-ordinary-api-36",
+          "size_in_bytes": 67901180,
+          "digest": "sha256:f2801098ccc4e45e57a3096bb4a9a53fe016d83752dd6ffaef2b13ef5a0b2439",
+          "created_at": "2026-11-08T17:37:15Z",
+          "expires_at": "2026-12-08T17:37:08Z",
+          "workflow_run_id": 42504654974,
+          "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+        },
+        "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc",
+        "role": "ordinary",
+        "api": 36,
+        "installed": [
+          {
+            "name": "application.apk",
+            "bytes": 231152066,
+            "sha256": "ea6f0bc23868918cf62d435fbb6edd0d52b1e76cb30a247caa7a4cf3993577a3"
+          },
+          {
+            "name": "instrumentation.apk",
+            "bytes": 847646,
+            "sha256": "297690228208fb6c5d8f5a1c781c9e9ca3ca7a10f9c8a9728bf31c32a1d9608b"
+          }
+        ],
+        "pass_journeys": [
+          {
+            "journey": 1,
+            "attempt": 1,
+            "variants": 6,
+            "readbacks": 0
+          },
+          {
+            "journey": 2,
+            "attempt": 1,
+            "variants": 7,
+            "readbacks": 0
+          },
+          {
+            "journey": 3,
+            "attempt": 1,
+            "variants": 1,
+            "readbacks": 0
+          },
+          {
+            "journey": 4,
+            "attempt": 1,
+            "variants": 7,
+            "readbacks": 2
+          },
+          {
+            "journey": 5,
+            "attempt": 1,
+            "variants": 3,
+            "readbacks": 1
+          },
+          {
+            "journey": 6,
+            "attempt": 1,
+            "variants": 19,
+            "readbacks": 1
+          },
+          {
+            "journey": 7,
+            "attempt": 1,
+            "variants": 8,
+            "readbacks": 2
+          },
+          {
+            "journey": 8,
+            "attempt": 1,
+            "variants": 24,
+            "readbacks": 0
+          },
+          {
+            "journey": 9,
+            "attempt": 1,
+            "variants": 7,
+            "readbacks": 0
+          },
+          {
+            "journey": 10,
+            "attempt": 1,
+            "variants": 4,
+            "readbacks": 0
+          }
+        ],
+        "not_applicable": [],
+        "unselected_missing_row_diagnostics": 90
+      },
+      {
+        "artifact": {
+          "id": 13626708187,
+          "name": "android-task-journeys-fault_probe-api-36",
+          "size_in_bytes": 67059973,
+          "digest": "sha256:afabc6021226afa2c8d79b6dac5fe8c48db1b9a2fcbb56ec083fe5ad904250fb",
+          "created_at": "2026-11-08T17:29:18Z",
+          "expires_at": "2026-12-08T17:29:12Z",
+          "workflow_run_id": 42504654974,
+          "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+        },
+        "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc",
+        "role": "fault_probe",
+        "api": 36,
+        "installed": [
+          {
+            "name": "application.apk",
+            "bytes": 231153074,
+            "sha256": "09aecf8ff6086893e732dda7a9bed1aac7d3687dc2a519c429c740878a63470c"
+          },
+          {
+            "name": "instrumentation.apk",
+            "bytes": 847646,
+            "sha256": "ae140d87619de4a6d512824438a8c3d74c0f7ca51e0fe62c7506d08364ad290b"
+          }
+        ],
+        "pass_journeys": [
+          {
+            "journey": 3,
+            "attempt": 1,
+            "variants": 9,
+            "readbacks": 0
+          },
+          {
+            "journey": 7,
+            "attempt": 1,
+            "variants": 4,
+            "readbacks": 2
+          }
+        ],
+        "not_applicable": [
+          1,
+          2,
+          4,
+          5,
+          6,
+          8,
+          9,
+          10
+        ],
+        "unselected_missing_row_diagnostics": 8
+      }
+    ],
+    "classification": "Four separate debug ordinary/fault-probe campaigns; no release-payload substitution."
+  },
+  "desktop_native": {
+    "windows": [
+      {
+        "name": "installed-markdown-lifecycle-receipt.json",
+        "sha256": "980103a84b7c5e786710410b8ddae4d8541618b652380819c1e8dd353d49ec44",
+        "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc",
+        "candidate_manifest_sha256": "bc7ca41631e6392dd1ad7fbb4959bb19c2dc441ce2b6041570e10ba67a7c90ff"
+      },
+      {
+        "name": "portable-lifecycle-receipt.json",
+        "sha256": "980103a84b7c5e786710410b8ddae4d8541618b652380819c1e8dd353d49ec44",
+        "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc",
+        "candidate_manifest_sha256": "bc7ca41631e6392dd1ad7fbb4959bb19c2dc441ce2b6041570e10ba67a7c90ff"
+      }
+    ],
+    "linux_and_macos_arm64": [
+      {
+        "platform": "linux",
+        "artifact_id": 13626977681,
+        "name": "clean-ubuntu-22.04-appimage.json",
+        "receipt_sha256": "75c11ccc525d2d5c5fb13fceff427485f01b4bfa3daf45a0fd841b5920cda44b",
+        "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc",
+        "candidate_manifest_sha256": "208c83ce06a65b43259de9da19a124445fc140af1dccfc52064ca03a0cec122a",
+        "manual": {
+          "dialog": "deferred_post_release",
+          "drag_drop": "deferred_post_release",
+          "save_as": "deferred_post_release",
+          "print": "deferred_post_release",
+          "keyboard": "deferred_post_release",
+          "focus": "deferred_post_release",
+          "text_scale": "deferred_post_release",
+          "increased_contrast": "deferred_post_release",
+          "reduced_motion": "deferred_post_release",
+          "assistive_technology": "deferred_post_release",
+          "markdown_webkitgtk": "deferred_post_release",
+          "mermaid_webkitgtk": "deferred_post_release"
+        },
+        "performance": {
+          "startup_evidence_class": "hosted_smoke",
+          "startup_samples_ms": [
+            457,
+            457,
+            459,
+            459,
+            459
+          ],
+          "startup_p95_ms": 459,
+          "startup_classification": "pass",
+          "artifact_size_classification": "pass"
+        }
+      },
+      {
+        "platform": "linux",
+        "artifact_id": 13626904612,
+        "name": "clean-ubuntu-24.04-deb.json",
+        "receipt_sha256": "c2b420d31445fcebb2f8a64933ec431b430fcc7921ba3460911c8ae0df614a6d",
+        "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc",
+        "candidate_manifest_sha256": "208c83ce06a65b43259de9da19a124445fc140af1dccfc52064ca03a0cec122a",
+        "manual": {
+          "dialog": "deferred_post_release",
+          "drag_drop": "deferred_post_release",
+          "save_as": "deferred_post_release",
+          "print": "deferred_post_release",
+          "keyboard": "deferred_post_release",
+          "focus": "deferred_post_release",
+          "text_scale": "deferred_post_release",
+          "increased_contrast": "deferred_post_release",
+          "reduced_motion": "deferred_post_release",
+          "assistive_technology": "deferred_post_release",
+          "markdown_webkitgtk": "deferred_post_release",
+          "mermaid_webkitgtk": "deferred_post_release"
+        },
+        "performance": {
+          "startup_evidence_class": "hosted_smoke",
+          "startup_samples_ms": [
+            959,
+            961,
+            1060,
+            956,
+            962
+          ],
+          "startup_p95_ms": 1060,
+          "startup_classification": "pass",
+          "artifact_size_classification": "pass"
+        }
+      },
+      {
+        "platform": "linux",
+        "artifact_id": 13626544385,
+        "name": "clean-ubuntu-24.04-appimage.json",
+        "receipt_sha256": "2cfae5e10ccea37b21133099de01ed5dd364333e2f53e9ada457d8a4b02a56b8",
+        "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc",
+        "candidate_manifest_sha256": "208c83ce06a65b43259de9da19a124445fc140af1dccfc52064ca03a0cec122a",
+        "manual": {
+          "dialog": "deferred_post_release",
+          "drag_drop": "deferred_post_release",
+          "save_as": "deferred_post_release",
+          "print": "deferred_post_release",
+          "keyboard": "deferred_post_release",
+          "focus": "deferred_post_release",
+          "text_scale": "deferred_post_release",
+          "increased_contrast": "deferred_post_release",
+          "reduced_motion": "deferred_post_release",
+          "assistive_technology": "deferred_post_release",
+          "markdown_webkitgtk": "deferred_post_release",
+          "mermaid_webkitgtk": "deferred_post_release"
+        },
+        "performance": {
+          "startup_evidence_class": "hosted_smoke",
+          "startup_samples_ms": [
+            1061,
+            1165,
+            963,
+            911,
+            958
+          ],
+          "startup_p95_ms": 1165,
+          "startup_classification": "pass",
+          "artifact_size_classification": "pass"
+        }
+      },
+      {
+        "platform": "linux",
+        "artifact_id": 13626399752,
+        "name": "clean-ubuntu-22.04-deb.json",
+        "receipt_sha256": "3403865d9bbbe8dd80e2e1bdc4afec45e9a70004bee6b277e48c8b6ceeb28d94",
+        "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc",
+        "candidate_manifest_sha256": "208c83ce06a65b43259de9da19a124445fc140af1dccfc52064ca03a0cec122a",
+        "manual": {
+          "dialog": "deferred_post_release",
+          "drag_drop": "deferred_post_release",
+          "save_as": "deferred_post_release",
+          "print": "deferred_post_release",
+          "keyboard": "deferred_post_release",
+          "focus": "deferred_post_release",
+          "text_scale": "deferred_post_release",
+          "increased_contrast": "deferred_post_release",
+          "reduced_motion": "deferred_post_release",
+          "assistive_technology": "deferred_post_release",
+          "markdown_webkitgtk": "deferred_post_release",
+          "mermaid_webkitgtk": "deferred_post_release"
+        },
+        "performance": {
+          "startup_evidence_class": "hosted_smoke",
+          "startup_samples_ms": [
+            405,
+            405,
+            405,
+            406,
+            460
+          ],
+          "startup_p95_ms": 460,
+          "startup_classification": "pass",
+          "artifact_size_classification": "pass"
+        }
+      },
+      {
+        "platform": "macos",
+        "artifact_id": 13627531341,
+        "name": "clean-host-arm64.json",
+        "receipt_sha256": "2243ba02cfe6cd1b742a86973321f56efb537d587e4d8dd8a105cb3dd76f8fd0",
+        "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc",
+        "candidate_manifest_sha256": "50efa05eeb6631b8d741fc6a326693ae982ae4dc943783832127f9e156c2c21c",
+        "manual": {
+          "dialog": "not_run_candidate",
+          "drag_drop": "not_run_candidate",
+          "save_as": "not_run_candidate",
+          "print": "not_run_candidate",
+          "keyboard": "not_run_candidate",
+          "focus": "not_run_candidate",
+          "text_scale": "not_run_candidate",
+          "increased_contrast": "not_run_candidate",
+          "reduced_motion": "not_run_candidate",
+          "voiceover": "not_run_candidate",
+          "markdown_wkwebview": "not_run_candidate",
+          "mermaid_wkwebview": "not_run_candidate"
+        },
+        "performance": {
+          "cold_startup_evidence_class": "hosted_smoke",
+          "cold_startup_samples_ms": [
+            2336,
+            2028,
+            1800,
+            1713,
+            1702
+          ],
+          "cold_startup_p95_ms": 2336,
+          "cold_startup_classification": "warning",
+          "dmg_size_classification": "pass"
+        }
+      }
+    ],
+    "macos_intel": {
+      "artifact_id": 13627855533,
+      "receipt": {
+        "bytes": 2638,
+        "sha256": "0ab8a8f4d32d12f633ccc906f317ee26f12620c15859a9260193f2fbc5e4b11a",
+        "value": {
+          "schema_version": 1,
+          "candidate_manifest_sha256": "50efa05eeb6631b8d741fc6a326693ae982ae4dc943783832127f9e156c2c21c",
+          "evidence_authority": {
+            "kind": "github_actions_workflow",
+            "workflow_identity": "shruggietech/glitchpad/.github/workflows/macos-package.yml@refs/heads/codex/048-v021-recovery-release",
+            "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc",
+            "native_test_suites": [
+              "app_document_workflow",
+              "desktop_delivery_conformance",
+              "desktop_source_conformance",
+              "recovery_conformance"
+            ]
+          },
+          "macos": {
+            "product_version": "15.7.9",
+            "build_version": "24G830",
+            "hardware_architecture": "x86_64",
+            "application_architectures": [
+              "arm64",
+              "x86_64"
+            ],
+            "wkwebview_version": "20621"
+          },
+          "document_workflow": {
+            "schema_version": 1,
+            "method": "packaged_js_native_roundtrip",
+            "checks": {
+              "read": "pass",
+              "edit": "pass",
+              "save": "pass",
+              "metadata": "pass",
+              "recovery": "pass"
+            },
+            "input_sha256": "0808cdd99306a70948ef83b695a4fecf506f872eb90651ddd2ffb259871b99ee",
+            "saved_sha256": "1a45fd6faaaacaedf2621ddf897eb7f3eb6766d960e83551e42e391f527bed3a",
+            "original_document_preserved": true,
+            "owned_recovery_removed": true,
+            "source_closed": true,
+            "process_stopped": true,
+            "probe_removed": true
+          },
+          "automated": {
+            "mount": "pass",
+            "applications_link": "pass",
+            "copy": "pass",
+            "launch": "pass",
+            "finder_delivery": "pass",
+            "running_instance_delivery": "pass",
+            "read": "pass",
+            "edit": "pass",
+            "save": "pass",
+            "metadata": "pass",
+            "recovery": "pass",
+            "remove": "pass",
+            "cleanup": "pass",
+            "universal_architecture": "pass",
+            "performance": "measured_hosted_smoke"
+          },
+          "manual": {
+            "dialog": "not_run_candidate",
+            "drag_drop": "not_run_candidate",
+            "save_as": "not_run_candidate",
+            "print": "not_run_candidate",
+            "keyboard": "not_run_candidate",
+            "focus": "not_run_candidate",
+            "text_scale": "not_run_candidate",
+            "increased_contrast": "not_run_candidate",
+            "reduced_motion": "not_run_candidate",
+            "voiceover": "not_run_candidate",
+            "markdown_wkwebview": "not_run_candidate",
+            "mermaid_wkwebview": "not_run_candidate"
+          },
+          "performance": {
+            "cold_startup_evidence_class": "hosted_smoke",
+            "cold_startup_samples_ms": [
+              1683,
+              1182,
+              1297,
+              1332,
+              1440
+            ],
+            "cold_startup_p95_ms": 1683,
+            "cold_startup_classification": "warning",
+            "dmg_size_classification": "pass"
+          },
+          "content_free": true,
+          "completed_utc": "2026-11-08T17:38:47.456Z"
+        }
+      }
+    },
+    "macos_intel_comparison": {
+      "schema_version": 1,
+      "evidence_class": "hosted_smoke",
+      "endpoint": "launch_request_to_shell_ready",
+      "profile": "same_runner_shared_profile_no_cache_reset",
+      "environment": {
+        "product_version": "15.7.9",
+        "build_version": "24G830",
+        "webkit_version": "20621",
+        "architecture": "x86_64"
+      },
+      "packages": {
+        "baseline": {
+          "version": "0.1.4",
+          "source_commit": "1d7dcd46689fb0ea68e4cee5c3d43a06d94bc94b",
+          "dmg_sha256": "0d116cf8f8d0528e2d84f54adc934a3368f9d221b07935bb8324d2213a8bfcff",
+          "manifest_sha256": "7d8c8b409117542605ad26fe69b54aae0150466433cfd1a385663dc525f5d1ff",
+          "application_sha256": "1aeb0a1f9b75c962a13f455cc1ecae777ddbf8da6efb891db89db489ff953d8c"
+        },
+        "candidate": {
+          "version": "0.2.1",
+          "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc",
+          "dmg_sha256": "3cec952fd596588214d4d7e937a38eb882e21efde54ad4efbba7f4251030cc5e",
+          "manifest_sha256": "50efa05eeb6631b8d741fc6a326693ae982ae4dc943783832127f9e156c2c21c",
+          "application_sha256": "7073ad9d386b0d33b8b0dab16abf8ec4661f0fc49cd952da5dc9fdb5446942a7"
+        }
+      },
+      "sampler_source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc",
+      "sampler_sha256": "2fb843b637b217fecfa27d60568d3f92539e6333cd2d3044b8c73db9ac3bc2c6",
+      "order": [
+        {
+          "identity": "baseline",
+          "index": 0,
+          "sequence": 0
+        },
+        {
+          "identity": "candidate",
+          "index": 0,
+          "sequence": 1
+        },
+        {
+          "identity": "candidate",
+          "index": 1,
+          "sequence": 2
+        },
+        {
+          "identity": "baseline",
+          "index": 1,
+          "sequence": 3
+        },
+        {
+          "identity": "baseline",
+          "index": 2,
+          "sequence": 4
+        },
+        {
+          "identity": "candidate",
+          "index": 2,
+          "sequence": 5
+        },
+        {
+          "identity": "candidate",
+          "index": 3,
+          "sequence": 6
+        },
+        {
+          "identity": "baseline",
+          "index": 3,
+          "sequence": 7
+        },
+        {
+          "identity": "baseline",
+          "index": 4,
+          "sequence": 8
+        },
+        {
+          "identity": "candidate",
+          "index": 4,
+          "sequence": 9
+        },
+        {
+          "identity": "candidate",
+          "index": 5,
+          "sequence": 10
+        },
+        {
+          "identity": "baseline",
+          "index": 5,
+          "sequence": 11
+        }
+      ],
+      "content_free": true,
+      "attempts": [
+        {
+          "identity": "baseline",
+          "index": 0,
+          "sequence": 0,
+          "launch_category": "first_launch",
+          "status": "pass",
+          "cleanup": "pass",
+          "phases_ms": {
+            "launch_requested": 0,
+            "launch_command_exited": 488,
+            "process_observed": 1374,
+            "shell_ready": 5153,
+            "document_ready": 5228,
+            "delivery_verified": 5748,
+            "cleanup_completed": 6449
+          },
+          "shell_ready_ms": 5153
+        },
+        {
+          "identity": "candidate",
+          "index": 0,
+          "sequence": 1,
+          "launch_category": "first_launch",
+          "status": "pass",
+          "cleanup": "pass",
+          "phases_ms": {
+            "launch_requested": 0,
+            "launch_command_exited": 180,
+            "process_observed": 296,
+            "shell_ready": 1655,
+            "document_ready": 1699,
+            "delivery_verified": 2243,
+            "cleanup_completed": 2422
+          },
+          "shell_ready_ms": 1655
+        },
+        {
+          "identity": "candidate",
+          "index": 1,
+          "sequence": 2,
+          "launch_category": "process_restart_warm_os_caches",
+          "status": "pass",
+          "cleanup": "pass",
+          "phases_ms": {
+            "launch_requested": 0,
+            "launch_command_exited": 81,
+            "process_observed": 137,
+            "shell_ready": 2010,
+            "document_ready": 2082,
+            "delivery_verified": 2625,
+            "cleanup_completed": 2795
+          },
+          "shell_ready_ms": 2010
+        },
+        {
+          "identity": "baseline",
+          "index": 1,
+          "sequence": 3,
+          "launch_category": "process_restart_warm_os_caches",
+          "status": "pass",
+          "cleanup": "pass",
+          "phases_ms": {
+            "launch_requested": 0,
+            "launch_command_exited": 89,
+            "process_observed": 165,
+            "shell_ready": 1376,
+            "document_ready": 1399,
+            "delivery_verified": 1946,
+            "cleanup_completed": 2143
+          },
+          "shell_ready_ms": 1376
+        },
+        {
+          "identity": "baseline",
+          "index": 2,
+          "sequence": 4,
+          "launch_category": "process_restart_warm_os_caches",
+          "status": "pass",
+          "cleanup": "pass",
+          "phases_ms": {
+            "launch_requested": 0,
+            "launch_command_exited": 102,
+            "process_observed": 162,
+            "shell_ready": 1253,
+            "document_ready": 1292,
+            "delivery_verified": 1836,
+            "cleanup_completed": 2112
+          },
+          "shell_ready_ms": 1253
+        },
+        {
+          "identity": "candidate",
+          "index": 2,
+          "sequence": 5,
+          "launch_category": "process_restart_warm_os_caches",
+          "status": "pass",
+          "cleanup": "pass",
+          "phases_ms": {
+            "launch_requested": 0,
+            "launch_command_exited": 110,
+            "process_observed": 214,
+            "shell_ready": 1335,
+            "document_ready": 1408,
+            "delivery_verified": 1954,
+            "cleanup_completed": 2137
+          },
+          "shell_ready_ms": 1335
+        },
+        {
+          "identity": "candidate",
+          "index": 3,
+          "sequence": 6,
+          "launch_category": "process_restart_warm_os_caches",
+          "status": "pass",
+          "cleanup": "pass",
+          "phases_ms": {
+            "launch_requested": 0,
+            "launch_command_exited": 112,
+            "process_observed": 181,
+            "shell_ready": 1311,
+            "document_ready": 1385,
+            "delivery_verified": 1929,
+            "cleanup_completed": 2109
+          },
+          "shell_ready_ms": 1311
+        },
+        {
+          "identity": "baseline",
+          "index": 3,
+          "sequence": 7,
+          "launch_category": "process_restart_warm_os_caches",
+          "status": "pass",
+          "cleanup": "pass",
+          "phases_ms": {
+            "launch_requested": 0,
+            "launch_command_exited": 104,
+            "process_observed": 173,
+            "shell_ready": 1224,
+            "document_ready": 1270,
+            "delivery_verified": 1774,
+            "cleanup_completed": 1995
+          },
+          "shell_ready_ms": 1224
+        },
+        {
+          "identity": "baseline",
+          "index": 4,
+          "sequence": 8,
+          "launch_category": "process_restart_warm_os_caches",
+          "status": "pass",
+          "cleanup": "pass",
+          "phases_ms": {
+            "launch_requested": 0,
+            "launch_command_exited": 100,
+            "process_observed": 165,
+            "shell_ready": 1181,
+            "document_ready": 1425,
+            "delivery_verified": 1928,
+            "cleanup_completed": 2095
+          },
+          "shell_ready_ms": 1181
+        },
+        {
+          "identity": "candidate",
+          "index": 4,
+          "sequence": 9,
+          "launch_category": "process_restart_warm_os_caches",
+          "status": "pass",
+          "cleanup": "pass",
+          "phases_ms": {
+            "launch_requested": 0,
+            "launch_command_exited": 112,
+            "process_observed": 205,
+            "shell_ready": 1276,
+            "document_ready": 1347,
+            "delivery_verified": 1851,
+            "cleanup_completed": 2050
+          },
+          "shell_ready_ms": 1276
+        },
+        {
+          "identity": "candidate",
+          "index": 5,
+          "sequence": 10,
+          "launch_category": "process_restart_warm_os_caches",
+          "status": "pass",
+          "cleanup": "pass",
+          "phases_ms": {
+            "launch_requested": 0,
+            "launch_command_exited": 99,
+            "process_observed": 189,
+            "shell_ready": 1566,
+            "document_ready": 1624,
+            "delivery_verified": 2172,
+            "cleanup_completed": 2365
+          },
+          "shell_ready_ms": 1566
+        },
+        {
+          "identity": "baseline",
+          "index": 5,
+          "sequence": 11,
+          "launch_category": "process_restart_warm_os_caches",
+          "status": "pass",
+          "cleanup": "pass",
+          "phases_ms": {
+            "launch_requested": 0,
+            "launch_command_exited": 116,
+            "process_observed": 177,
+            "shell_ready": 1248,
+            "document_ready": 1264,
+            "delivery_verified": 1812,
+            "cleanup_completed": 1994
+          },
+          "shell_ready_ms": 1248
+        }
+      ],
+      "summaries": {
+        "baseline": {
+          "campaign": "pass",
+          "attempted": 6,
+          "successful": 6,
+          "samples_ms": [
+            5153,
+            1376,
+            1253,
+            1224,
+            1181,
+            1248
+          ],
+          "p95_ms": 5153,
+          "reference_classification": "failure",
+          "hosted_smoke": "pass",
+          "hosted_smoke_hard_limit_ms": 10000,
+          "first_launch_ms": 5153,
+          "subsequent_process_starts_p95_ms": 1376,
+          "planned": 6
+        },
+        "candidate": {
+          "campaign": "pass",
+          "attempted": 6,
+          "successful": 6,
+          "samples_ms": [
+            1655,
+            2010,
+            1335,
+            1311,
+            1276,
+            1566
+          ],
+          "p95_ms": 2010,
+          "reference_classification": "warning",
+          "hosted_smoke": "pass",
+          "hosted_smoke_hard_limit_ms": 10000,
+          "first_launch_ms": 1655,
+          "subsequent_process_starts_p95_ms": 2010,
+          "planned": 6
+        }
+      },
+      "completed_utc": "2026-11-08T17:38:28.472Z"
+    }
+  },
+  "accepted_input_rehearsal": {
+    "workflow_run_id": 42506472287,
+    "orchestration_source_commit": "d3576c5e47830c3f604ba05bf20f1b8c6776e062",
+    "runtime_source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc",
+    "artifact_id": 13627179354,
+    "archive_bytes": 5129,
+    "archive_sha256": "54a516d1ee44fabce2c2945c020178d822633aad3e2e44a3457f4bdaec86f18f",
+    "receipt": {
+      "schema": 1,
+      "status": "accepted_bytes_verified",
+      "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc",
+      "version": "0.2.1",
+      "tag": "v0.2.1",
+      "linux_attestation_verification": {
+        "status": "verified",
+        "repository": "shruggietech/glitchpad",
+        "authorized_event": "workflow_dispatch_stage",
+        "build_trigger": "workflow_dispatch",
+        "source_ref": "refs/heads/codex/048-v021-recovery-release",
+        "signer_workflow": "shruggietech/glitchpad/.github/workflows/linux-package.yml",
+        "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc",
+        "version": "0.2.1",
+        "artifacts": [
+          {
+            "name": "glitchpad-0.2.1-linux-x86_64.AppImage",
+            "sha256": "683c1cf8e19a7c21118d99bb2c02707b5196bc59f8592b639083daa022424a05"
+          },
+          {
+            "name": "glitchpad-0.2.1-linux-x86_64.deb",
+            "sha256": "86c08dcaaf434d6c1be38ad243500871c32c535581f31b93167e7e19daefb915"
+          }
+        ]
+      },
+      "platform_runs": {
+        "windows": {
+          "run_id": 42504650140,
+          "run_attempt": 1,
+          "artifact_ids": [
+            13626873341
+          ]
+        },
+        "macos": {
+          "run_id": 42504651936,
+          "run_attempt": 1,
+          "artifact_ids": [
+            13627102666,
+            13627531341,
+            13627855533
+          ]
+        },
+        "linux": {
+          "run_id": 42504653433,
+          "run_attempt": 1,
+          "artifact_ids": [
+            13627700842,
+            13626977681,
+            13626399752,
+            13626544385,
+            13626904612
+          ]
+        },
+        "android": {
+          "run_id": 42504648395,
+          "run_attempt": 1,
+          "artifact_ids": [
+            13627281021,
+            13626839556,
+            13627406723,
+            13626344248
+          ]
+        }
+      },
+      "payloads": [
+        {
+          "name": "glitchpad-0.2.1-windows-x86_64-setup.exe",
+          "bytes": 6255225,
+          "sha256": "f5ff5552ed07bef2a95e2e2515c9a406f97be2e0f01dc9c70b60817092f25194",
+          "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+        },
+        {
+          "name": "glitchpad-0.2.1-windows-x86_64.zip",
+          "bytes": 8034663,
+          "sha256": "c2fb841deb288013c55f72ba0ba30513761a9d70b1225376186d9ddb819b134e",
+          "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+        },
+        {
+          "name": "glitchpad-0.2.1-macos-universal.dmg",
+          "bytes": 16628105,
+          "sha256": "3cec952fd596588214d4d7e937a38eb882e21efde54ad4efbba7f4251030cc5e",
+          "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+        },
+        {
+          "name": "glitchpad-0.2.1-linux-x86_64.AppImage",
+          "bytes": 10648056,
+          "sha256": "683c1cf8e19a7c21118d99bb2c02707b5196bc59f8592b639083daa022424a05",
+          "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+        },
+        {
+          "name": "glitchpad-0.2.1-linux-x86_64.deb",
+          "bytes": 9794390,
+          "sha256": "86c08dcaaf434d6c1be38ad243500871c32c535581f31b93167e7e19daefb915",
+          "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+        },
+        {
+          "name": "glitchpad-0.2.1-android-universal.apk",
+          "bytes": 41781511,
+          "sha256": "24b1ede3a8948962457d3ceefff6d6e6b0440e8f4921e00e6abaa2160cf4f896",
+          "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+        },
+        {
+          "name": "glitchpad-0.2.1-android-arm64.apk",
+          "bytes": 22402915,
+          "sha256": "fd57b93e0cc4b301577b8bae203a7d2ae0231e261cb52284b69fb690c113d18d",
+          "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+        },
+        {
+          "name": "glitchpad-0.2.1-android-universal.aab",
+          "bytes": 19447406,
+          "sha256": "8793e699fb1f7bb45fff3a80be5798a45f46efcdabef007889043d51300a8b03",
+          "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+        }
+      ]
+    },
+    "assembly": {
+      "version": "0.2.1",
+      "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc",
+      "payloads_unchanged": true
+    },
+    "published": false,
+    "rebuilt": false
+  },
+  "reviews": {
+    "schema": 1,
+    "pr": 263,
+    "cap": 2,
+    "rounds": [
+      {
+        "round": 1,
+        "source": "f6f162329316374c2fa57d580750d5fe837e6b2e",
+        "trigger": "explicit_review_comment",
+        "comment_id": 6723956196,
+        "created_at": "2026-11-08T16:22:38Z",
+        "status": "completed",
+        "has_findings": false,
+        "summary_comment_id": 6723959593
+      },
+      {
+        "round": 2,
+        "source": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc",
+        "trigger": "draft_marked_ready",
+        "status": "completed",
+        "requested_at": "2026-11-08T17:55:23Z",
+        "has_findings": false,
+        "summary_comment_id": 6723959593
+      }
+    ]
+  },
+  "convergence": {
+    "outcome": "converged",
+    "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc",
+    "requirements_checked": 17,
+    "success_criteria_checked": 6,
+    "acceptance_scenarios_checked": 12,
+    "plan_areas_checked": 7,
+    "constitution_principles_checked": 8,
+    "gaps": {
+      "missing": 0,
+      "partial": 0,
+      "contradicts": 0,
+      "unrequested": 0
+    },
+    "severity": {
+      "critical": 0,
+      "high": 0,
+      "medium": 0,
+      "low": 0
+    },
+    "tasks_hash_before": "9a3b9d52bac3c29c7e4618580329a3ba905e63a627be17baecfa2ea1fa7cba68",
+    "tasks_hash_after": "9a3b9d52bac3c29c7e4618580329a3ba905e63a627be17baecfa2ea1fa7cba68",
+    "prerequisite_run_id": 42507835143,
+    "prerequisite_artifact_id": 13628136253
+  },
+  "limits": {
+    "historical_controls": 119,
+    "historical_control_variants": 459,
+    "supplemental_only_cases": 98,
+    "control_114": "unmounted",
+    "control_115": "passive",
+    "conditional_animation": "Actual API36 reduced-motion Play/Pause action unexecuted; not a pass.",
+    "incident": "Original incident bytes, APK hash and trace unavailable.",
+    "physical_manual_reference": "Existing physical-device/manual-screen-reader/reference-hardware waivers unchanged; no physical device claim.",
+    "manual_desktop": "macOS/Linux GUI and VoiceOver observations unrun, receipt dispositions preserved.",
+    "separate_issues": [
+      66,
+      239
+    ],
+    "security_review": "No separate external security-review receipt; passing CI security gates are a separate claim.",
+    "browser_geometry": "96 task-layout cases (source field null; workflow source and observed source hashes separately retained), 10 authoring cases and 80 image-layout cases are supplemental composed-browser evidence, not installed APK/native IME/Back/screen-reader proof."
+  },
+  "owner_boundary": {
+    "pr": 263,
+    "ready": true,
+    "unmerged": true,
+    "auto_merge": false,
+    "issues_open": [
+      244,
+      255
+    ],
+    "project_status": "In Progress",
+    "project_stage": "PR review",
+    "tag_created": false,
+    "release_created": false,
+    "site_deployed": false
+  },
+  "timing": {
+    "first_retained_preparation_phase": "2026-11-08T13:12:59Z",
+    "checkpoint_source_freeze_at": "2026-11-08T17:22:22Z",
+    "checkpoint_qualification_started_at": "2026-11-08T17:22:28Z",
+    "checkpoint_qualification_completed_at": "2026-11-08T17:39:58Z",
+    "final_source_and_qualification": "Measured separately in final PR confirmation after completion-record commit."
+  }
+}

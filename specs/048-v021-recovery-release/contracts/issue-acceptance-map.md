@@ -11,3 +11,7 @@
 | #244 final release criterion | FR-001/003/006/007/008/009/012/015/017 | Coherent v0.2.1 specification/claims/notices/packages/preparation receipt. | Shipped behavior, accepted publication/readback and final epic closure remain pending. |
 
 All other #244 criteria are historical completed S046/S047 work. This map does not reopen or requalify their old package bytes, waive new manual work, or close #66/#239.
+
+## Qualified preparation checkpoint
+
+The populated [checkpoint index](../checkpoint-evidence.json), [accepted staging inputs](../checkpoint-accepted-staging.json), [validation log](../validation.md) and [review ledger](../handoff.md) supply actual source-f4a3a4f evidence for every preparation row above. All five formal workflows, required Android/native campaigns, eight payload readbacks, pinned brand verification and the live accepted-input/assembler rehearsal passed. Two external reviews completed without findings. Final PR confirmation repeats the required source-bound gates for the subsequent completion-record head. #255 AC5 and the #244 release criterion retain their later owner-controlled publication/readback step; both issues stay open, In Progress / PR review.

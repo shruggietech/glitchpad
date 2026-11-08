@@ -56,20 +56,20 @@
 
 **Independent Test**: Future publication resolves explicit accepted immutable staging inputs without rebuilding, while this session cannot publish, merge or close the release issues.
 
-- [ ] T022 [US4] Implement strict accepted-source/platform-run/artifact/payload validation in scripts/accepted-release-inputs.mjs and meaningful negative/positive tests, then consume it in .github/workflows/release.yml without a rebuild path (FR-011/015/017).
+- [x] T022 [US4] Implement strict accepted-source/platform-run/artifact/payload validation in scripts/accepted-release-inputs.mjs and meaningful negative/positive tests, then consume it in .github/workflows/release.yml without a rebuild path (FR-011/015/017).
 - [x] T023 [US4] Document future owner-authorized annotated tag/staging-input publication and accepted-source-versus-squash-merge rules in docs/releases/v0.2.1-operator-runbook.md (FR-012/015/017).
 - [x] T024 [US4] Exercise preparation-only/manual/tag/site authorization gates and staging-input selection without tag/release/deployment side effects in scripts/check-community-release.test.mjs, scripts/check-public-release.test.mjs and accepted-release-input tests (FR-002/015/017).
 - [x] T025 [US4] Prepare current PR/review/issue/project handoff state and a two-round review counter in specs/048-v021-recovery-release/handoff.md; keep #244/#255 open and avoid closing references (FR-012/014/015).
 
 ## Phase 7: Polish and final qualification
 
-- [ ] T026 Format/regenerate affected files, check links/UTF-8/mojibake/TB Mermaid and reconcile all focused failures before final qualification; record results in specs/048-v021-recovery-release/validation.md (FR-003/006/007/016).
-- [ ] T027 Run exact final-source CI, browser/geometry aggregate, all four ordinary/fault-probe API24/API36 debug campaigns and staged Windows/macOS/Linux/Android package/native/release-runtime campaigns (FR-007/008/009; SC-002/003).
-- [ ] T028 Independently read and hash every selected archive, all eight release payloads and installed Android app/test packages; reconcile source/version/certificate/manifest/native/readback/attempt identities in the retained S048 index and final PR evidence (FR-010/011/012/013; SC-002/003).
-- [ ] T029 Reconcile seven issue criteria, historical/conditional/supplemental/manual limits, checkpoint receipt and final-source PR confirmation without self-SHA churn in docs/releases/v0.2.1-receipt.md and specs/048-v021-recovery-release/contracts/issue-acceptance-map.md (FR-012/013/014; SC-004/005).
-- [ ] T030 Push/open the reviewable PR automatically, monitor applicable CI and resolve external findings within two rounds; record exact reviewed/current heads and retained failures in specs/048-v021-recovery-release/handoff.md (FR-007/015; SC-006).
-- [ ] T031 Perform formal present-code Spec-Kit convergence against all requirements/scenarios, plan decisions and constitution; preserve specs/048-v021-recovery-release/tasks.md byte-for-byte when clean (FR-012/015).
-- [ ] T032 Verify final public/local source, terminal applicable checks, selected artifacts, resolved threads, open issue/project state and no merge/auto-merge/tag/release/deployment; hand the PR to the owner with current evidence and limits in its final handoff (FR-012/014/015/017; SC-004/005/006).
+- [x] T026 Format/regenerate affected files, check links/UTF-8/mojibake/TB Mermaid and reconcile all focused failures before final qualification; record results in specs/048-v021-recovery-release/validation.md (FR-003/006/007/016).
+- [x] T027 Run exact final-source CI, browser/geometry aggregate, all four ordinary/fault-probe API24/API36 debug campaigns and staged Windows/macOS/Linux/Android package/native/release-runtime campaigns (FR-007/008/009; SC-002/003).
+- [x] T028 Independently read and hash every selected archive, all eight release payloads and installed Android app/test packages; reconcile source/version/certificate/manifest/native/readback/attempt identities in the retained S048 index and final PR evidence (FR-010/011/012/013; SC-002/003).
+- [x] T029 Reconcile seven issue criteria, historical/conditional/supplemental/manual limits, checkpoint receipt and final-source PR confirmation without self-SHA churn in docs/releases/v0.2.1-receipt.md and specs/048-v021-recovery-release/contracts/issue-acceptance-map.md (FR-012/013/014; SC-004/005).
+- [x] T030 Push/open the reviewable PR automatically, monitor applicable CI and resolve external findings within two rounds; record exact reviewed/current heads and retained failures in specs/048-v021-recovery-release/handoff.md (FR-007/015; SC-006).
+- [x] T031 Perform formal present-code Spec-Kit convergence against all requirements/scenarios, plan decisions and constitution; preserve specs/048-v021-recovery-release/tasks.md byte-for-byte when clean (FR-012/015).
+- [x] T032 Verify final public/local source, terminal applicable checks, selected artifacts, resolved threads, open issue/project state and no merge/auto-merge/tag/release/deployment; hand the PR to the owner with current evidence and limits in its final handoff (FR-012/014/015/017; SC-004/005/006).
 
 ## Dependencies and execution order
 
@@ -110,3 +110,7 @@ After foundation, public-copy validation (US1), Android helper research/isolated
 ## Implementation strategy
 
 US1 is the first independently reviewable increment, but S048 delivers all four stories as one coherent release-preparation slice. Write meaningful policy/transport/signature regressions before their implementation, use existing checks for reversible identity/prose edits, and validate each fixture failure before full reruns. Do not deploy an interim increment. Publication and final issue closure remain later owner-controlled work.
+
+## Implementation checkpoint completion
+
+All implementation and checkpoint tasks completed against qualified source f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc. [checkpoint-evidence.json](checkpoint-evidence.json) records the successful full campaigns, independent bytes, accepted-input rehearsal, two completed no-finding reviews and clean convergence. Checkbox updates occurred after the read-only convergence command ended. The tracked completion records intentionally identify that existing source. Final confirmation of the subsequent completion-record head repeats applicable exact-source qualification and verifies the owner boundary in PR #263 before handoff; it is external to source to avoid a self-SHA loop. Both issues remain open for later owner-controlled publication.

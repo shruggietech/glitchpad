@@ -1,0 +1,188 @@
+{
+  "schema": 1,
+  "version": "0.2.1",
+  "tag": "v0.2.1",
+  "repository": "shruggietech/glitchpad",
+  "accepted_source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc",
+  "publication_context": "qualified_preparation_unpublished",
+  "ci": {
+    "workflow": "ci.yml",
+    "run_id": 42504654974,
+    "run_attempt": 1
+  },
+  "platforms": {
+    "windows": {
+      "workflow": "windows-package.yml",
+      "run_id": 42504650140,
+      "run_attempt": 1,
+      "source_ref": "refs/heads/codex/048-v021-recovery-release",
+      "artifacts": [
+        {
+          "id": 13626873341,
+          "name": "glitchpad-0.2.1-windows-x86_64-community-release",
+          "size_in_bytes": 22956087,
+          "digest": "sha256:0db968ada28d7b410019d6fea4832ac97939b9b32dfcbf7944ca9b716d2c1e89",
+          "created_at": "2026-11-08T17:27:22Z"
+        }
+      ]
+    },
+    "macos": {
+      "workflow": "macos-package.yml",
+      "run_id": 42504651936,
+      "run_attempt": 1,
+      "source_ref": "refs/heads/codex/048-v021-recovery-release",
+      "artifacts": [
+        {
+          "id": 13627102666,
+          "name": "glitchpad-0.2.1-macos-universal-community-release",
+          "size_in_bytes": 34260794,
+          "digest": "sha256:0141d12588b6b3c3736192fa452826e12498f844b0e621cb8bf92026fc4b70a4",
+          "created_at": "2026-11-08T17:30:21Z"
+        },
+        {
+          "id": 13627531341,
+          "name": "glitchpad-macos-clean-host-arm64",
+          "size_in_bytes": 3588,
+          "digest": "sha256:f37904531f1a17d5eefb7c429569a36c45246052287a0e6d0d5cc0b48e1b9f61",
+          "created_at": "2026-11-08T17:34:04Z"
+        },
+        {
+          "id": 13627855533,
+          "name": "glitchpad-macos-clean-host-x86_64",
+          "size_in_bytes": 3602,
+          "digest": "sha256:f2cf75a60e459c4f5cb33ff79bf13e7eef08a0f24f2b937f11a58a087b152bb5",
+          "created_at": "2026-11-08T17:38:57Z"
+        }
+      ]
+    },
+    "linux": {
+      "workflow": "linux-package.yml",
+      "run_id": 42504653433,
+      "run_attempt": 1,
+      "source_ref": "refs/heads/codex/048-v021-recovery-release",
+      "artifacts": [
+        {
+          "id": 13627700842,
+          "name": "glitchpad-0.2.1-linux-x86_64-community-release",
+          "size_in_bytes": 20620024,
+          "digest": "sha256:24b5c6e11af0c6b7717b32c38552bae3cb6efac3176a2a814ebda8fb5817f206",
+          "created_at": "2026-11-08T17:34:11Z"
+        },
+        {
+          "id": 13626977681,
+          "name": "glitchpad-linux-clean-ubuntu-22.04-appimage",
+          "size_in_bytes": 1199,
+          "digest": "sha256:7e50562741a9d30fdd44329cca9128b91ebc0892bad797171b8aadddb1eaebb0",
+          "created_at": "2026-11-08T17:35:46Z"
+        },
+        {
+          "id": 13626399752,
+          "name": "glitchpad-linux-clean-ubuntu-22.04-deb",
+          "size_in_bytes": 1186,
+          "digest": "sha256:0c41ef72e8ec35424ab77bcf26ed2ed54d27ec4a8fcc42b73a0d1d780bd844cc",
+          "created_at": "2026-11-08T17:35:42Z"
+        },
+        {
+          "id": 13626544385,
+          "name": "glitchpad-linux-clean-ubuntu-24.04-appimage",
+          "size_in_bytes": 1210,
+          "digest": "sha256:5427ae35902134100f2841e2a8a9cb9e7626f68a982db90a706bda7559bbecde",
+          "created_at": "2026-11-08T17:35:50Z"
+        },
+        {
+          "id": 13626904612,
+          "name": "glitchpad-linux-clean-ubuntu-24.04-deb",
+          "size_in_bytes": 1193,
+          "digest": "sha256:4d0a590ee0fcaa31ff1870a4ea28e53dcb10d99330928f97f3909e0222d1be59",
+          "created_at": "2026-11-08T17:35:52Z"
+        }
+      ]
+    },
+    "android": {
+      "workflow": "android-package.yml",
+      "run_id": 42504648395,
+      "run_attempt": 1,
+      "source_ref": "refs/heads/codex/048-v021-recovery-release",
+      "artifacts": [
+        {
+          "id": 13627281021,
+          "name": "android-minified-release-inputs",
+          "size_in_bytes": 3091465,
+          "digest": "sha256:ebb9677eb9fab1c1080f080e73b364738da9d11c4b45d642a5f72bd88dcad630",
+          "created_at": "2026-11-08T17:30:58Z"
+        },
+        {
+          "id": 13626839556,
+          "name": "android-minified-release-runtime-api-24",
+          "size_in_bytes": 38314674,
+          "digest": "sha256:fb89c98ef537c6a24f50e3c8b0435324ffb5718f94ce646ceee963905da43c24",
+          "created_at": "2026-11-08T17:34:01Z"
+        },
+        {
+          "id": 13627406723,
+          "name": "android-minified-release-runtime-api-36",
+          "size_in_bytes": 38410583,
+          "digest": "sha256:f887a2500839db6eb57ee0f0c726a653b6de61e891ae7bc053f7273fdc4c5631",
+          "created_at": "2026-11-08T17:34:00Z"
+        },
+        {
+          "id": 13626344248,
+          "name": "glitchpad-0.2.1-android-community-release",
+          "size_in_bytes": 46703967,
+          "digest": "sha256:79b01b9ead7c8a0d26f65d0b7ddaaf38227a3fbbb2fd0de9918ebf24ac543640",
+          "created_at": "2026-11-08T17:31:01Z"
+        }
+      ]
+    }
+  },
+  "payloads": [
+    {
+      "name": "glitchpad-0.2.1-windows-x86_64-setup.exe",
+      "bytes": 6255225,
+      "sha256": "f5ff5552ed07bef2a95e2e2515c9a406f97be2e0f01dc9c70b60817092f25194",
+      "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+    },
+    {
+      "name": "glitchpad-0.2.1-windows-x86_64.zip",
+      "bytes": 8034663,
+      "sha256": "c2fb841deb288013c55f72ba0ba30513761a9d70b1225376186d9ddb819b134e",
+      "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+    },
+    {
+      "name": "glitchpad-0.2.1-macos-universal.dmg",
+      "bytes": 16628105,
+      "sha256": "3cec952fd596588214d4d7e937a38eb882e21efde54ad4efbba7f4251030cc5e",
+      "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+    },
+    {
+      "name": "glitchpad-0.2.1-linux-x86_64.AppImage",
+      "bytes": 10648056,
+      "sha256": "683c1cf8e19a7c21118d99bb2c02707b5196bc59f8592b639083daa022424a05",
+      "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+    },
+    {
+      "name": "glitchpad-0.2.1-linux-x86_64.deb",
+      "bytes": 9794390,
+      "sha256": "86c08dcaaf434d6c1be38ad243500871c32c535581f31b93167e7e19daefb915",
+      "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+    },
+    {
+      "name": "glitchpad-0.2.1-android-universal.apk",
+      "bytes": 41781511,
+      "sha256": "24b1ede3a8948962457d3ceefff6d6e6b0440e8f4921e00e6abaa2160cf4f896",
+      "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+    },
+    {
+      "name": "glitchpad-0.2.1-android-arm64.apk",
+      "bytes": 22402915,
+      "sha256": "fd57b93e0cc4b301577b8bae203a7d2ae0231e261cb52284b69fb690c113d18d",
+      "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+    },
+    {
+      "name": "glitchpad-0.2.1-android-universal.aab",
+      "bytes": 19447406,
+      "sha256": "8793e699fb1f7bb45fff3a80be5798a45f46efcdabef007889043d51300a8b03",
+      "source_commit": "f4a3a4fce0d91889e8c7f002980b82c2a5c1b9dc"
+    }
+  ]
+}

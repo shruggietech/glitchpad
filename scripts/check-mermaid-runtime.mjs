@@ -72,34 +72,59 @@ export const verifyMermaidRuntime = async () => {
       headless: 'shell',
       args: ['--no-sandbox', '--disable-dev-shm-usage'],
     });
-    const page = await browser.newPage();
-    const externalRequests = [];
-    const dialogs = [];
-    const pageErrors = [];
-    page.on('request', (request) => {
-      if (!isAllowedRuntimeRequest(request.url(), origin)) externalRequests.push(request.url());
-    });
-    page.on('dialog', (dialog) => {
-      dialogs.push(dialog.message());
-      void dialog.dismiss();
-    });
-    page.on('pageerror', (error) => pageErrors.push(error.message));
-    await page.evaluateOnNewDocument(() => {
-      Object.defineProperty(window, '__TAURI_INTERNALS__', {
-        configurable: false,
-        value: { invoke: () => { throw new Error('native_invocation_blocked_by_test'); } },
-      });
-      window.open = () => { throw new Error('navigation_blocked_by_test'); };
-    });
-    await page.goto(origin, { waitUntil: 'networkidle0' });
-    await page.waitForSelector('[role="tab"][aria-label*="performance.mmd"]');
-    await page.$eval('[role="tab"][aria-label*="performance.mmd"]', (tab) => tab.click());
-    await page.waitForSelector('img.diagram-image', { timeout: 10_000 });
-    const source = await page.$eval('img.diagram-image', (image) => image.getAttribute('src'));
-    if (!source?.startsWith('blob:')) throw new Error('runtime_diagram_is_not_inert_blob');
-    if (externalRequests.length || dialogs.length || pageErrors.length)
-      throw new Error(`runtime_boundary_failed requests=${externalRequests.length} dialogs=${dialogs.length} errors=${pageErrors.join('|')}`);
-    process.stdout.write('Mermaid runtime rendered inertly with zero external requests, navigation dialogs, or native invocation.\n');
+    for (const constructableStylesheets of [true, false]) {
+      const profile = constructableStylesheets ? 'native-cssom' : 'stylesheet-constructor-unavailable';
+      const page = await browser.newPage();
+      try {
+        const externalRequests = [];
+        const dialogs = [];
+        const pageErrors = [];
+        page.on('request', (request) => {
+          if (!isAllowedRuntimeRequest(request.url(), origin)) externalRequests.push(request.url());
+        });
+        page.on('dialog', (dialog) => {
+          dialogs.push(dialog.message());
+          void dialog.dismiss();
+        });
+        page.on('pageerror', (error) => pageErrors.push(error.message));
+        await page.evaluateOnNewDocument((available) => {
+          Object.defineProperty(window, '__TAURI_INTERNALS__', {
+            configurable: false,
+            value: { invoke: () => { throw new Error('native_invocation_blocked_by_test'); } },
+          });
+          window.open = () => { throw new Error('navigation_blocked_by_test'); };
+          if (!available) {
+            window.CSSStyleSheet = function CSSStyleSheet() { throw new TypeError('stylesheet_constructor_unavailable_by_test'); };
+          }
+          window.__runtimeOriginalStylesheetConstructor = window.CSSStyleSheet;
+        }, constructableStylesheets);
+        await page.goto(origin, { waitUntil: 'networkidle0' });
+        await page.waitForSelector('[role="tab"][aria-label*="performance.mmd"]');
+        const headStyles = await page.$$eval('head style', (styles) => styles.map((style) => style.textContent));
+        await page.$eval('[role="tab"][aria-label*="performance.mmd"]', (tab) => tab.click());
+        await page.waitForFunction(() => {
+          const image = document.querySelector('img.diagram-image');
+          return image instanceof HTMLImageElement && image.complete && image.naturalWidth > 0 && image.naturalHeight > 0;
+        }, { timeout: 10_000 });
+        const rendered = await page.$eval('img.diagram-image', async (image) => {
+          const source = image.getAttribute('src');
+          if (!source?.startsWith('blob:')) throw new Error('runtime_diagram_is_not_inert_blob');
+          const svg = new DOMParser().parseFromString(await (await fetch(source)).text(), 'image/svg+xml');
+          return {
+            hasStyles: Array.from(svg.querySelectorAll('style')).some((style) => style.textContent.includes('font-family')),
+            constructorUnchanged: window.CSSStyleSheet === window.__runtimeOriginalStylesheetConstructor,
+            headStyles: Array.from(document.head.querySelectorAll('style'), (style) => style.textContent),
+          };
+        });
+        if (!rendered.hasStyles || !rendered.constructorUnchanged || JSON.stringify(rendered.headStyles) !== JSON.stringify(headStyles))
+          throw new Error('runtime_cssom_boundary_failed:' + profile);
+        if (externalRequests.length || dialogs.length || pageErrors.length)
+          throw new Error('runtime_boundary_failed:' + profile + ' requests=' + externalRequests.length + ' dialogs=' + dialogs.length + ' errors=' + pageErrors.join('|'));
+        process.stdout.write('Mermaid runtime ' + profile + ': decoded styled inert image, unchanged global CSSOM and active head styles, zero external requests, navigation dialogs, or native invocation.\n');
+      } finally {
+        await page.close();
+      }
+    }
   } finally {
     await browser?.close();
     await new Promise((resolve) => server.close(resolve));

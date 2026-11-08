@@ -5,7 +5,10 @@ import { dirname, join, relative, resolve, sep } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { assertValidatorTopology } from './check-config.mjs';
+import {
+  assertValidatorTopology,
+  checkConfiguration,
+} from './check-config.mjs';
 import { validateLinks } from './check-links.mjs';
 import { extractMermaidBlocks, validateMermaid } from './check-mermaid.mjs';
 import { collectMarkdownFiles } from './validation-files.mjs';
@@ -28,6 +31,68 @@ async function writeFixture(root, path, content) {
 function repositoryPaths(root, files) {
   return files.map((file) => relative(root, file).split(sep).join('/'));
 }
+
+async function temporaryConfigurationRepository(t) {
+  const root = await temporaryRepository(t);
+  for (const path of [
+    'package.json',
+    'scripts/check-links.mjs',
+    'scripts/check-mermaid.mjs',
+    '.github/workflows/docs.yml',
+    '.github/workflows/delete-merged-branch.yml',
+    '.github/workflows/release.yml',
+  ]) {
+    await writeFixture(
+      root,
+      path,
+      await readFile(join(repositoryRoot, path), 'utf8'),
+    );
+  }
+  return root;
+}
+
+for (const [path, invalid] of [
+  ['config/source.json', '{"incomplete":'],
+  ['config/source.yaml', 'source: [unterminated'],
+]) {
+  test(`Configuration discovery ignores private failed captures but rejects malformed ${path}`, async (t) => {
+    const root = await temporaryConfigurationRepository(t);
+    const capture = 'cat: files/s047-row-1.json: No such file or directory\n';
+    const capturePath = await writeFixture(
+      root,
+      '.codex-tmp/s047/failed-attempt/_temp/s047-row-1.json',
+      capture,
+    );
+
+    assert.equal(await checkConfiguration(root), 4);
+    assert.equal(await readFile(capturePath, 'utf8'), capture);
+
+    await writeFixture(root, path, invalid);
+    await assert.rejects(checkConfiguration(root), (error) => {
+      assert.ok(
+        error.message.startsWith(
+          `Invalid configuration in ${relative(root, join(root, path))}:`,
+        ),
+      );
+      return true;
+    });
+    assert.equal(await readFile(capturePath, 'utf8'), capture);
+  });
+}
+
+test('Configuration discovery excludes only the root private session directory', async (t) => {
+  const root = await temporaryConfigurationRepository(t);
+  const path = 'config/.codex-tmp/source.json';
+  await writeFixture(root, path, '{"incomplete":');
+  await assert.rejects(checkConfiguration(root), (error) => {
+    assert.ok(
+      error.message.startsWith(
+        `Invalid configuration in ${relative(root, join(root, path))}:`,
+      ),
+    );
+    return true;
+  });
+});
 
 test('Markdown discovery is deterministic and preserves exclusion policy', async (t) => {
   const root = await temporaryRepository(t);
@@ -170,6 +235,57 @@ test('Mermaid launcher failure names the first pending source', async (t) => {
       },
     }),
     /docs\/launch\.md: Mermaid browser launch failed before block 1 at line 1: browser unavailable/,
+  );
+});
+
+test('Documentation discovery excludes private session inputs while rejecting broken source links', async (t) => {
+  const root = await temporaryRepository(t);
+  await writeFixture(root, 'README.md', '# Source documentation\n');
+  await writeFixture(
+    root,
+    '.codex-tmp/s047/private.md',
+    '[Private](https://private.invalid/input)\n\n```mermaid\nnot-a-diagram\n```\n',
+  );
+  const observed = [];
+  const checkLinks = async (markdown) => {
+    observed.push(markdown);
+    return markdown.includes('invalid')
+      ? [
+          {
+            link: 'https://source.invalid/broken',
+            status: 'dead',
+            statusCode: 404,
+          },
+        ]
+      : [];
+  };
+  assert.deepEqual(
+    await validateLinks({
+      repositoryRoot: root,
+      configuration: {},
+      checkLinks,
+    }),
+    { fileCount: 1, linkCount: 0 },
+  );
+  assert.equal(observed.length, 1);
+  assert.ok(observed.every((markdown) => !markdown.includes('Private')));
+  assert.deepEqual(
+    await validateMermaid({
+      repositoryRoot: root,
+      launchBrowser: async () => {
+        throw new Error('private_diagram_must_not_launch_browser');
+      },
+    }),
+    { diagramCount: 0, fileCount: 1 },
+  );
+  await writeFixture(
+    root,
+    'docs/broken.md',
+    '[Source](https://source.invalid/broken)\n',
+  );
+  await assert.rejects(
+    validateLinks({ repositoryRoot: root, configuration: {}, checkLinks }),
+    /docs\/broken\.md: dead link/,
   );
 });
 
@@ -318,12 +434,129 @@ test('Android delivery instrumentation gets a bounded clean-state retry without 
     'utf8',
   );
 
+  const topology = (await import('yaml')).parse(workflow);
+  const runtime = topology.jobs['android-instrumentation'];
+  const sourceExpression =
+    '${{ github.event.pull_request.head.sha || github.sha }}';
+  const manual = topology.on.workflow_dispatch?.inputs?.android_runtime;
+  assert.equal(manual?.type, 'choice');
+  assert.equal(
+    manual?.default,
+    'full',
+    'manual dispatch must retain full native qualification by default',
+  );
+  assert.deepEqual(manual?.options, ['full', 'source_only', 'back_diagnostic']);
+  assert.equal(
+    runtime.if,
+    "github.event_name != 'workflow_dispatch' || inputs.android_runtime != 'source_only'",
+  );
+  assert.equal(
+    runtime.steps.find((step) => step.name === 'Checkout').with.ref,
+    sourceExpression,
+  );
+  assert.equal(runtime.env.GLITCHPAD_BUILD_COMMIT, sourceExpression);
+  assert.equal(runtime.env.VITE_GLITCHPAD_BUILD_COMMIT, sourceExpression);
+  assert.ok(
+    runtime.strategy.matrix.includes(
+      "github.event_name == 'workflow_dispatch' && inputs.android_runtime == 'back_diagnostic'",
+    ),
+  );
+  const matrices = [...runtime.strategy.matrix.matchAll(/'(\{[^']+\})'/gu)].map(
+    (match) => JSON.parse(match[1]),
+  );
+  assert.deepEqual(matrices, [
+    { 'api-level': [36], role: ['ordinary'] },
+    { 'api-level': [24, 36], role: ['ordinary', 'fault_probe'] },
+  ]);
+  assert.equal(
+    topology.jobs['ci-ok'].name,
+    "${{ github.event_name == 'workflow_dispatch' && inputs.android_runtime != 'full' && format('{0}-ci', inputs.android_runtime) || 'ci-ok' }}",
+  );
+  assert.ok(
+    runtime.steps
+      .find((step) =>
+        step.uses?.startsWith('ReactiveCircus/android-emulator-runner@'),
+      )
+      .with.script.includes('"$GLITCHPAD_BUILD_COMMIT"'),
+  );
+
   assert.match(runner, /for attempt in 1 2; do/u);
   assert.match(
     runner,
-    /ANDROID_INSTRUMENTATION_RESET_APP_DATA:-false.*pm clear com\.shruggietech\.glitchpad/su,
+    /ANDROID_INSTRUMENTATION_RESET_APP_DATA:-false.*prepare_attempt_app_data.*\|\| exit 1/su,
   );
-  assert.match(workflow, /bash scripts\/run-android-s046-journeys\.sh/u);
+  const setup = await readFile(
+    join(repositoryRoot, 'scripts', 'prepare-android-instrumentation.mjs'),
+    'utf8',
+  );
+  assert.match(runner, /node[^\n]+prepare-android-instrumentation\.mjs/u);
+  assert.match(setup, /com\.shruggietech\.glitchpad'/u);
+  assert.match(setup, /com\.shruggietech\.glitchpad\.test'/u);
+  assert.match(setup, /timeout: timeoutMs/u);
+  assert.match(setup, /killSignal: 'SIGKILL'/u);
+  assert.match(setup, /windowsHide: true/u);
+  assert.match(setup, /'pm', 'clear', packageName/u);
+  assert.doesNotMatch(runner, /pm clear[^\n]+\|\| true/u);
+  assert.match(workflow, /bash scripts\/run-android-s047-journeys\.sh/u);
+  const campaign = await readFile(
+    join(repositoryRoot, 'scripts', 'run-android-s047-journeys.sh'),
+    'utf8',
+  );
+  const native = await readFile(
+    join(
+      repositoryRoot,
+      'crates',
+      'glitchpad-host',
+      'gen',
+      'android',
+      'app',
+      'src',
+      'androidTest',
+      'java',
+      'com',
+      'shruggietech',
+      'glitchpad',
+      'source',
+      'AndroidDeliveryInstrumentedTest.kt',
+    ),
+    'utf8',
+  );
+  assert.match(
+    campaign,
+    /run_task authoring standaloneAuthoringAndDiagnosticJourneys/u,
+  );
+  assert.match(
+    campaign,
+    /if ANDROID_INSTRUMENTATION_RESET_APP_DATA=true[^\n]+draftRecoveryAcrossProcessBoundary[^\n]+seed; then[\s\S]+ANDROID_INSTRUMENTATION_RESET_APP_DATA=false[^\n]+draftRecoveryAcrossProcessBoundary[^\n]+verify/u,
+  );
+  assert.match(
+    native,
+    /fun s047MarkdownJourney\(\)[\s\S]+governedMarkdownDeliveryRoutes\(\)/u,
+  );
+  assert.match(
+    native,
+    /fun s047ImageJourney\(\)[\s\S]+resolvedIntentDisplaysColdAndWarmProviderDocuments\(\)/u,
+  );
+  assert.match(
+    native,
+    /fun s047FaultJourney\(\)[\s\S]+verifyRootFailureRetainsDraft\(scenario\)[\s\S]+verifyMarkdownFailures\(scenario, corpus\)/u,
+  );
+  assert.match(
+    native,
+    /val deadline = deadlineOverride \?: \(SystemClock\.elapsedRealtime\(\) \+ 30_000L\)/u,
+  );
+  assert.match(
+    runner,
+    /adb_exit_status == 0 && marker_present == 1 && junit_success == 1 && instrumentation_failure == 0/u,
+  );
+  assert.match(
+    runner,
+    /INSTRUMENTATION_\(FAILED\|ABORTED\)[\s\S]+INSTRUMENTATION_CODE:/u,
+  );
+  assert.match(
+    runner,
+    /attempt_output="\$\{output%\.txt\}-attempt-\$\{attempt\}\.txt"/u,
+  );
   assert.doesNotMatch(
     workflow,
     /ANDROID_INSTRUMENTATION_RESET_APP_DATA=true[^\n]+RestorationInstrumentedTest/u,

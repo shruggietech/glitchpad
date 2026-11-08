@@ -1,0 +1,54 @@
+.diagram-viewer .diagram-controls {
+  display: grid;
+  grid-template-columns: 48px 48px minmax(0, 1fr) 48px 48px;
+  gap: 4px;
+  padding: 4px;
+  background: var(--gl-panel);
+  border-color: var(--gl-border);
+}
+.diagram-viewer .diagram-controls button,
+.diagram-tools button {
+  min-width: 48px;
+  min-height: 48px;
+  white-space: normal;
+}
+.diagram-viewer .diagram-controls output {
+  flex: 0 0 auto;
+  font-size: 0.875rem;
+}
+.diagram-viewer .diagram-controls button:last-child {
+  margin-inline-start: 0;
+  min-width: 48px;
+  overflow-wrap: anywhere;
+}
+.diagram-viewer .diagram-canvas {
+  position: relative;
+  display: block;
+  background: var(--gl-bg);
+}
+.diagram-viewer .diagram-image {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  max-width: none;
+  max-height: none;
+}
+.diagram-tools .task-surface-body,
+.diagram-tools [role='group'] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.diagram-viewer .diagram-controls button,
+.diagram-tools button {
+  border-color: var(--gl-border);
+  background: var(--gl-panel-raised);
+  color: var(--gl-fg);
+  border-radius: 8px;
+}
+
+.diagram-viewer .diagram-controls button {
+  line-height: 1;
+  padding: 4px;
+}

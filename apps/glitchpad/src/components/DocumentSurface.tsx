@@ -16,7 +16,11 @@ import type {
   MarkdownLocalAssetGateway,
 } from '../domain/markdown-gateway';
 import { MarkdownSurface } from './MarkdownSurface';
-import { TextEditorSurface, type TextEditorHandle } from './TextEditorSurface';
+import {
+  TextEditorSurface,
+  type TextEditorHandle,
+  type EditorCommandState,
+} from './TextEditorSurface';
 import { LargeTextSurface } from './LargeTextSurface';
 import { MermaidSurface } from './MermaidSurface';
 import { ImageSurface } from './ImageSurface';
@@ -26,6 +30,7 @@ import { DocumentErrorBoundary } from './DocumentErrorBoundary';
 
 interface DocumentSurfaceProps {
   session: ShellSession | null;
+  onCommandStateChange?: (state: EditorCommandState) => void;
   onFailure?: RecoveryFailureReporter;
   markdownFailureProbe?: boolean;
   recoveryProbeGeneration?: number;
@@ -76,6 +81,7 @@ export const DocumentSurface = forwardRef<
     canOpen = false,
     onOpen,
     labelledByTab = false,
+    onCommandStateChange,
     onDocumentChange,
     onLanguageChange,
     onMarkdownChange,
@@ -193,6 +199,7 @@ export const DocumentSurface = forwardRef<
       ref={ref}
       key={session.id}
       session={session}
+      recoveryProbeGeneration={recoveryProbeGeneration}
       onImageChange={onImageChange}
       onOpenMetadata={onOpenMetadata}
     />
@@ -218,6 +225,7 @@ export const DocumentSurface = forwardRef<
           </div>
         )}
         <MarkdownSurface
+          onCommandStateChange={onCommandStateChange}
           onFailure={onFailure}
           key={`${session.id}:${recoveryAttempt}:${recoveryProbeGeneration}`}
           ref={ref}
@@ -239,6 +247,7 @@ export const DocumentSurface = forwardRef<
       </div>
     ) : session.renderer.id === 'mermaid' ? (
       <MermaidSurface
+        onCommandStateChange={onCommandStateChange}
         key={session.id}
         ref={ref}
         session={session}
@@ -250,6 +259,7 @@ export const DocumentSurface = forwardRef<
       />
     ) : (
       <TextEditorSurface
+        onCommandStateChange={onCommandStateChange}
         ref={ref}
         session={session}
         onDocumentChange={onDocumentChange}

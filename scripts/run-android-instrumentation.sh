@@ -2,6 +2,15 @@
 
 set -u
 
+# Keep instrumentation itself on its existing completion contract; bound supporting transport only.
+adb() {
+  if [[ "${1:-} ${2:-} ${3:-}" == "shell am instrument" ]]; then
+    command adb "$@"
+  else
+    node "${BASH_SOURCE[0]%/*}/bounded-android-adb.mjs" "$@"
+  fi
+}
+
 if (( $# < 3 )); then
   echo "usage: run-android-instrumentation.sh OUTPUT MARKER INSTRUMENTATION_ARGS..." >&2
   exit 2
@@ -11,21 +20,36 @@ output="$1"
 marker="$2"
 shift 2
 
-if [[ "${ANDROID_INSTRUMENTATION_RESET_APP_DATA:-false}" == "true" ]]; then
-  adb shell pm clear com.shruggietech.glitchpad || exit 1
-  adb shell pm clear com.shruggietech.glitchpad.test || exit 1
-fi
 
 screenshot=""
 case "$*" in
   *#standaloneAuthoringAndDiagnosticJourneys*) screenshot="s046-authoring" ;;
+  *#s047BackJourney*) screenshot="s046-authoring" ;;
   *#addDocumentAtMaximumFontScale*) screenshot="s046-font-scale" ;;
   *#rootFailureRetainsDraft*) screenshot="s046-root-recovery" ;;
   *#governedMarkdownDeliveryRoutes*) screenshot="s046-markdown-delivery-failure" ;;
   *#resolvedIntentDisplaysColdAndWarmProviderDocuments*) screenshot="s046-markdown-delivery-failure" ;;
 esac
 
+capture_png() {
+  local remote="$1" screenshot_output="$2"
+  local capture_error="${screenshot_output%.png}-capture-error.txt" capture_status=0 signature
+  adb exec-out run-as com.shruggietech.glitchpad cat "files/$remote.png" > "$screenshot_output" 2>"$capture_error" || capture_status=$?
+  signature=$(od -An -tx1 -N8 "$screenshot_output" | tr -d ' \n')
+  if (( capture_status != 0 )) || [[ "$signature" != 89504e470d0a1a0a ]]; then
+    mv "$screenshot_output" "${screenshot_output%.png}-capture-output.txt"
+    printf 'capture_status=%s; png_signature_valid=false\n' "$capture_status" >> "$capture_error"
+  elif [[ ! -s "$capture_error" ]]; then rm -f "$capture_error"; fi
+}
+
+prepare_attempt_app_data() {
+  node "${BASH_SOURCE[0]%/*}/prepare-android-instrumentation.mjs" "$1"
+}
+
 for attempt in 1 2; do
+  if [[ "${ANDROID_INSTRUMENTATION_RESET_APP_DATA:-false}" == "true" ]]; then
+    prepare_attempt_app_data "${output%.txt}-attempt-${attempt}-setup.txt" || exit 1
+  fi
   adb shell am force-stop com.shruggietech.glitchpad || true
   if [[ "${ANDROID_INSTRUMENTATION_PRESERVE_TEST_INPUT_METHOD:-false}" != "true" ]]; then
     adb shell am force-stop com.shruggietech.glitchpad.test || true
@@ -33,6 +57,8 @@ for attempt in 1 2; do
   if [[ -n "$screenshot" ]]; then
     adb shell run-as com.shruggietech.glitchpad rm -f "files/${screenshot}.png" >/dev/null 2>&1 || true
   fi
+  if [[ " $* " == *" -e s047 true "* ]]; then for row in {1..10}; do adb shell run-as com.shruggietech.glitchpad rm -f "files/s047-row-$row.png" "files/s047-row-$row.json" >/dev/null 2>&1 || true; done; fi
+  adb shell run-as com.shruggietech.glitchpad rm -f files/s047-editor-input-failure.png files/s047-editor-input-failure.json >/dev/null 2>&1 || true
   adb logcat -c || true
   attempt_output="${output%.txt}-attempt-${attempt}.txt"
   adb_exit_status=0
@@ -40,21 +66,22 @@ for attempt in 1 2; do
   cp "$attempt_output" "$output"
   cat "$attempt_output"
   logcat_output="${output%.txt}-attempt-${attempt}-logcat.txt"
-  adb logcat -d -t 2000 > "$logcat_output" 2>&1 || true
-  if [[ -n "$screenshot" ]]; then
-    screenshot_output="${output%.txt}-attempt-${attempt}-${screenshot}.png"
-    capture_error="${screenshot_output%.png}-capture-error.txt"
-    capture_status=0
-    adb exec-out run-as com.shruggietech.glitchpad cat "files/${screenshot}.png" > "$screenshot_output" 2>"$capture_error" || capture_status=$?
-    signature=$(od -An -tx1 -N8 "$screenshot_output" | tr -d ' \n')
-    # Some older adb/run-as combinations return success with a remote cat error
-    # on stdout. Such text is diagnostic output, never screenshot evidence.
-    if (( capture_status != 0 )) || [[ "$signature" != 89504e470d0a1a0a ]]; then
-      mv "$screenshot_output" "${screenshot_output%.png}-capture-output.txt"
-      printf 'capture_status=%s; png_signature_valid=false\n' "$capture_status" >> "$capture_error"
-    elif [[ ! -s "$capture_error" ]]; then
-      rm -f "$capture_error"
+  logcat_exit_status=0
+  adb logcat -d -t 2000 > "$logcat_output" 2>&1 || logcat_exit_status=$?
+  if (( logcat_exit_status == 0 )); then
+    if [[ -n "$screenshot" ]]; then capture_png "$screenshot" "${output%.txt}-attempt-${attempt}-$screenshot.png"; fi
+    if [[ " $* " == *" -e s047 true "* ]]; then
+      for row in {1..10}; do
+        capture_png "s047-row-$row" "${output%.txt}-attempt-${attempt}-s047-row-$row.png"
+        adb exec-out run-as com.shruggietech.glitchpad cat "files/s047-row-$row.json" > "${output%.txt}-attempt-${attempt}-s047-row-$row.json" 2> "${output%.txt}-attempt-${attempt}-s047-row-$row-json-capture-error.txt" || true
+      done
     fi
+    if grep -Fq 'native_editor_focus_failure=' "$logcat_output"; then
+      capture_png "s047-editor-input-failure" "${output%.txt}-attempt-${attempt}-s047-editor-input-failure.png"
+      adb exec-out run-as com.shruggietech.glitchpad cat files/s047-editor-input-failure.json > "${output%.txt}-attempt-${attempt}-s047-editor-input-failure.json" 2> "${output%.txt}-attempt-${attempt}-s047-editor-input-failure-json-capture-error.txt" || true
+    fi
+  else
+    echo "::warning::Android supporting transport failed; required captures remain unavailable."
   fi
   # A functional marker before teardown cannot replace a clean runner result.
   marker_present=0
@@ -65,18 +92,16 @@ for attempt in 1 2; do
   if grep -Eq 'INSTRUMENTATION_(FAILED|ABORTED)|INSTRUMENTATION_RESULT:.*shortMsg=|INSTRUMENTATION_STATUS:[[:space:]]*(Error|stack)=|FAILURES!!!|^[[:space:]]*FAILURE:' "$output"; then instrumentation_failure=1; fi
   if grep -F 'INSTRUMENTATION_CODE:' "$output" | grep -Ev 'INSTRUMENTATION_CODE:[[:space:]]*-1[[:space:]]*$' >/dev/null; then instrumentation_failure=1; fi
   attempt_status="${output%.txt}-attempt-${attempt}-status.txt"
-  printf 'adb_exit_status=%s\nmarker_present=%s\njunit_success=%s\ninstrumentation_failure=%s\n' "$adb_exit_status" "$marker_present" "$junit_success" "$instrumentation_failure" > "$attempt_status"
-  if (( adb_exit_status == 0 && marker_present == 1 && junit_success == 1 && instrumentation_failure == 0 )); then
+  printf 'adb_exit_status=%s\nmarker_present=%s\njunit_success=%s\ninstrumentation_failure=%s\nlogcat_exit_status=%s\n' "$adb_exit_status" "$marker_present" "$junit_success" "$instrumentation_failure" "$logcat_exit_status" > "$attempt_status"
+  if (( adb_exit_status == 0 && marker_present == 1 && junit_success == 1 && instrumentation_failure == 0 && logcat_exit_status == 0 )); then
     exit 0
   fi
   if (( attempt < 2 )); then
     echo "::warning::Android instrumentation did not satisfy clean completion checks on attempt ${attempt}; resetting the test processes before retrying."
-    if [[ "${ANDROID_INSTRUMENTATION_RESET_APP_DATA:-false}" == "true" ]]; then
-      adb shell pm clear com.shruggietech.glitchpad || true
-      adb shell pm clear com.shruggietech.glitchpad.test || true
+    if [[ "${ANDROID_INSTRUMENTATION_RESET_APP_DATA:-false}" != "true" ]]; then
+      adb wait-for-device
+      sleep 3
     fi
-    adb wait-for-device
-    sleep 3
   fi
 done
 

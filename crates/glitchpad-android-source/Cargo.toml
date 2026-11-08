@@ -13,6 +13,7 @@ links = "glitchpad-android-source"
 tauri-plugin = { workspace = true, features = ["build"] }
 
 [dependencies]
+base64.workspace = true
 serde.workspace = true
 tauri.workspace = true
 

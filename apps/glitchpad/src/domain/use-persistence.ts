@@ -24,6 +24,7 @@ import {
 const WRITE_DELAY_MS = 250;
 
 export interface PersistenceController {
+  ready: boolean;
   preferences: PreferenceState;
   restoredSession: import('./persistence').SessionState | null;
   warning: string | null;
@@ -39,6 +40,7 @@ export const usePersistence = (
   gateway: PersistenceGateway | null,
   recoveryRecordIds: ReadonlyMap<string, string> = new Map(),
 ): PersistenceController => {
+  const [ready, setReady] = useState(gateway === null);
   const [preferences, setPreferences] = useState(defaultPreferences);
   const [restoredSession, setRestoredSession] = useState<
     import('./persistence').SessionState | null
@@ -75,9 +77,11 @@ export const usePersistence = (
 
   useEffect(() => {
     loaded.current = false;
+    setReady(false);
     setRestoredSession(null);
     if (!gateway) {
       loaded.current = true;
+      setReady(true);
       return;
     }
     let active = true;
@@ -93,6 +97,7 @@ export const usePersistence = (
             : null,
         );
         loaded.current = true;
+        setReady(true);
         const loadWarning =
           preferenceResult.warning_code ?? sessionResult.warning_code;
         appendDiagnostic({
@@ -107,6 +112,7 @@ export const usePersistence = (
       .catch(() => {
         if (!active) return;
         loaded.current = true;
+        setReady(true);
         setWarning(
           'Local application state is unavailable. Safe defaults are active.',
         );
@@ -280,6 +286,7 @@ export const usePersistence = (
 
   return useMemo(
     () => ({
+      ready,
       preferences,
       restoredSession,
       warning,
@@ -288,6 +295,7 @@ export const usePersistence = (
       previewDiagnostics,
     }),
     [
+      ready,
       preferences,
       previewDiagnostics,
       reset,

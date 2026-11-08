@@ -192,25 +192,28 @@ fn read_bytes(
     cancel: &AtomicBool,
     probe: bool,
 ) -> Result<Vec<u8>, CoreError> {
-    #[cfg(not(mobile))]
-    {
-        app.state::<crate::source::DesktopSourceHost>()
-            .read_image_bytes(source, revision, cancel, probe)
-    }
-    #[cfg(target_os = "android")]
-    {
-        app.state::<crate::android_source::AndroidSourceHost>()
-            .read_image_bytes(source, revision, cancel, probe)
-    }
-    #[cfg(all(mobile, not(target_os = "android")))]
-    {
-        let _ = (app, source, revision, cancel, probe);
-        Err(safe(
-            CoreErrorCategory::Unavailable,
-            "Image source is unavailable",
-            false,
-        ))
-    }
+    let result = {
+        #[cfg(not(mobile))]
+        {
+            app.state::<crate::source::DesktopSourceHost>()
+                .read_image_bytes(source, revision, cancel, probe)
+        }
+        #[cfg(target_os = "android")]
+        {
+            app.state::<crate::android_source::AndroidSourceHost>()
+                .read_image_bytes(source, revision, cancel, probe)
+        }
+        #[cfg(all(mobile, not(target_os = "android")))]
+        {
+            let _ = (app, source, revision, cancel, probe);
+            Err(safe(
+                CoreErrorCategory::Unavailable,
+                "Image source is unavailable",
+                false,
+            ))
+        }
+    };
+    result.map_err(|error| error.with_context("image_stage", "source_read"))
 }
 
 fn current_revision(
@@ -366,6 +369,35 @@ fn prepare_preview(
     })
 }
 
+fn failed_family_state(
+    container: Option<ImageContainer>,
+    icon_entries: Option<Vec<glitchpad_core::images::ImageEntry>>,
+    selected: u32,
+    failure: ImageFailure,
+) -> Option<ImageFamilyState> {
+    icon_entries
+        .map(|mut entries| {
+            if let Some(entry) = entries.get_mut(selected as usize) {
+                entry.failure = Some(failure);
+                entry.preview = glitchpad_core::images::ImagePreviewKind::Unavailable;
+            }
+            ImageFamilyState::Ico {
+                entries,
+                selected_entry: u16::try_from(selected).ok(),
+                selected_entry_export: false,
+            }
+        })
+        .or_else(|| {
+            (container == Some(ImageContainer::Svg)).then_some(ImageFamilyState::Svg {
+                output: glitchpad_core::images::SvgPreviewOutput::Unavailable,
+                external_resources: false,
+                scripts: false,
+                max_nodes: 50_000,
+                max_depth: 128,
+            })
+        })
+}
+
 #[tauri::command]
 pub(crate) async fn render_image_source(
     app: tauri::AppHandle,
@@ -406,17 +438,7 @@ pub(crate) async fn render_image_source(
             Err(failure) => (
                 None,
                 Some(failure),
-                icon_entries.map(|mut entries| {
-                    if let Some(entry) = entries.get_mut(selected as usize) {
-                        entry.failure = Some(failure);
-                        entry.preview = glitchpad_core::images::ImagePreviewKind::Unavailable;
-                    }
-                    ImageFamilyState::Ico {
-                        entries,
-                        selected_entry: u16::try_from(selected).ok(),
-                        selected_entry_export: false,
-                    }
-                }),
+                failed_family_state(container, icon_entries, selected, failure),
             ),
         };
         let _active_guard = permit
@@ -663,6 +685,39 @@ pub(crate) fn cancel_image_render(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn svg_refusal_projection_preserves_finite_reason_without_a_raster_capability() {
+        for failure in [
+            ImageFailure::SvgUnsupported,
+            ImageFailure::SvgExternalReference,
+            ImageFailure::SvgCyclicReference,
+            ImageFailure::SvgMissingReference,
+            ImageFailure::Malformed,
+            ImageFailure::Oversized,
+        ] {
+            let state = failed_family_state(Some(ImageContainer::Svg), None, 0, failure).unwrap();
+            assert!(matches!(
+                state,
+                ImageFamilyState::Svg {
+                    output: glitchpad_core::images::SvgPreviewOutput::Unavailable,
+                    external_resources: false,
+                    scripts: false,
+                    max_nodes: 50_000,
+                    max_depth: 128
+                }
+            ));
+            assert_eq!(
+                serde_json::from_value::<ImageFailure>(serde_json::to_value(failure).unwrap())
+                    .unwrap(),
+                failure
+            );
+        }
+        assert!(
+            failed_family_state(Some(ImageContainer::Png), None, 0, ImageFailure::Malformed)
+                .is_none()
+        );
+    }
 
     #[test]
     fn idle_decoder_and_icon_selection_eviction_reject_stale_owners() {

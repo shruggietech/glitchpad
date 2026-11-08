@@ -153,5 +153,10 @@
   ],
   "forbidden_actions": ["android.intent.action.SEND_MULTIPLE"],
   "forbidden_schemes": ["file"],
-  "forbidden_media_types": ["*/*", "application/*", "text/*"]
+  "forbidden_media_types": ["*/*", "application/*", "text/*"],
+  "source_exported_components": ["com.shruggietech.glitchpad.MainActivity"],
+  "exported_components": [
+    "com.shruggietech.glitchpad.MainActivity",
+    "com.shruggietech.glitchpad.source.LegacyClipboardTextProvider"
+  ]
 }

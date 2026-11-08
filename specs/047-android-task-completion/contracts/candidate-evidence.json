@@ -1,0 +1,2263 @@
+{
+  "schema_version": 1,
+  "evidence_class": "implementation_qualification_checkpoint_with_final_head_confirmation",
+  "checkpoint_source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+  "checkpoint_full_ci_run": 42380870423,
+  "exact_branch_source_ci_run": 42380900478,
+  "status": "qualified_implementation_checkpoint_with_final_head_confirmation_on_pr",
+  "scope": "Installed ordinary and fault-probe debug APKs are separate. These checkpoint bytes do not qualify different final-head or signed/minified release bytes. The PR handoff records final-head checks and artifact identities after record publication.",
+  "source_reference_scope": "Hashes/lines in control-ledger.json describe the sources in the record revision. The checkpoint APKs use their own source commit and instrumentation digest. The extra complete recovered-text assertion is separately proven below and must pass final-head ordinary campaigns.",
+  "native_evidence": {
+    "N_ordinary_24_1": {
+      "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+      "role": "ordinary",
+      "api_level": 24,
+      "artifact_id": 13577748940,
+      "journey": 1,
+      "status": "pass",
+      "attempt": 1,
+      "profile": {
+        "css_width": 320,
+        "css_height": 640,
+        "native_visible": {
+          "left": 0,
+          "top": 24,
+          "right": 320,
+          "bottom": 592
+        },
+        "font_scale": 1,
+        "navigation_mode": "three_button"
+      },
+      "variants": [
+        {
+          "id": "choices",
+          "status": "pass"
+        },
+        {
+          "id": "close",
+          "status": "pass"
+        },
+        {
+          "id": "outside",
+          "status": "pass"
+        },
+        {
+          "id": "button_back",
+          "status": "pass"
+        },
+        {
+          "id": "shell_keyboard",
+          "status": "pass"
+        },
+        {
+          "id": "tab_activation_close_reorder",
+          "status": "pass"
+        }
+      ],
+      "readbacks": [],
+      "log": "s047-cold-attempt-1.txt",
+      "screenshot": "s047-cold-attempt-1-s047-row-1.png"
+    },
+    "N_ordinary_24_2": {
+      "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+      "role": "ordinary",
+      "api_level": 24,
+      "artifact_id": 13577748940,
+      "journey": 2,
+      "status": "pass",
+      "attempt": 1,
+      "profile": {
+        "css_width": 320,
+        "css_height": 640,
+        "native_visible": {
+          "left": 0,
+          "top": 24,
+          "right": 320,
+          "bottom": 592
+        },
+        "font_scale": 1,
+        "navigation_mode": "three_button"
+      },
+      "variants": [
+        {
+          "id": "cold_view",
+          "status": "pass"
+        },
+        {
+          "id": "warm_view",
+          "status": "pass"
+        },
+        {
+          "id": "warm_send",
+          "status": "pass"
+        },
+        {
+          "id": "in_app",
+          "status": "pass"
+        },
+        {
+          "id": "corpus",
+          "status": "pass"
+        },
+        {
+          "id": "empty",
+          "status": "pass"
+        },
+        {
+          "id": "malformed",
+          "status": "pass"
+        }
+      ],
+      "readbacks": [],
+      "log": "s047-markdown-attempt-1.txt",
+      "screenshot": "s047-markdown-attempt-1-s047-row-2.png"
+    },
+    "N_ordinary_24_3": {
+      "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+      "role": "ordinary",
+      "api_level": 24,
+      "artifact_id": 13577748940,
+      "journey": 3,
+      "status": "pass",
+      "attempt": 1,
+      "profile": {
+        "css_width": 320,
+        "css_height": 640,
+        "native_visible": {
+          "left": 0,
+          "top": 24,
+          "right": 320,
+          "bottom": 592
+        },
+        "font_scale": 1,
+        "navigation_mode": "three_button"
+      },
+      "variants": [
+        {
+          "id": "provider_denial",
+          "status": "pass"
+        }
+      ],
+      "readbacks": [],
+      "log": "s047-source-failure-attempt-1.txt",
+      "screenshot": "s047-source-failure-attempt-1-s047-row-3.png"
+    },
+    "N_ordinary_24_4": {
+      "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+      "role": "ordinary",
+      "api_level": 24,
+      "artifact_id": 13577748940,
+      "journey": 4,
+      "status": "pass",
+      "attempt": 1,
+      "profile": {
+        "css_width": 320,
+        "css_height": 640,
+        "native_visible": {
+          "left": 0,
+          "top": 24,
+          "right": 320,
+          "bottom": 592
+        },
+        "font_scale": 1,
+        "navigation_mode": "three_button"
+      },
+      "variants": [
+        {
+          "id": "new_markdown",
+          "status": "pass"
+        },
+        {
+          "id": "new_text",
+          "status": "pass"
+        },
+        {
+          "id": "exact_utf8",
+          "status": "pass"
+        },
+        {
+          "id": "reopen",
+          "status": "pass"
+        },
+        {
+          "id": "cancel",
+          "status": "pass"
+        },
+        {
+          "id": "failed_write",
+          "status": "pass"
+        },
+        {
+          "id": "dirty_receipt",
+          "status": "pass"
+        }
+      ],
+      "readbacks": [
+        {
+          "kind": "utf8",
+          "expected_sha256": "244a37ace46f495b40f1a3d060d3c1428929f192f27fdfe031db5d18bed6205d",
+          "actual_sha256": "244a37ace46f495b40f1a3d060d3c1428929f192f27fdfe031db5d18bed6205d",
+          "verified": true
+        },
+        {
+          "kind": "utf8",
+          "expected_sha256": "1319b9fbeb970a7c9c0c3bafa53c6103a321ebfa5d35a234569eff9722411ae1",
+          "actual_sha256": "1319b9fbeb970a7c9c0c3bafa53c6103a321ebfa5d35a234569eff9722411ae1",
+          "verified": true
+        }
+      ],
+      "log": "s047-authoring-attempt-1.txt",
+      "screenshot": "s047-authoring-attempt-1-s047-row-4.png"
+    },
+    "N_ordinary_24_5": {
+      "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+      "role": "ordinary",
+      "api_level": 24,
+      "artifact_id": 13577748940,
+      "journey": 5,
+      "status": "pass",
+      "attempt": 1,
+      "profile": {
+        "css_width": 320,
+        "css_height": 640,
+        "native_visible": {
+          "left": 0,
+          "top": 24,
+          "right": 320,
+          "bottom": 592
+        },
+        "font_scale": 1,
+        "navigation_mode": "three_button"
+      },
+      "variants": [
+        {
+          "id": "edit_copy",
+          "status": "pass"
+        },
+        {
+          "id": "original_unchanged",
+          "status": "pass"
+        },
+        {
+          "id": "in_place_unavailable",
+          "status": "pass"
+        }
+      ],
+      "readbacks": [
+        {
+          "kind": "utf8",
+          "expected_sha256": "1cfc54746614b9a0756a350082ddc8d18e1ef3d72102824e39186df45f73058d",
+          "actual_sha256": "1cfc54746614b9a0756a350082ddc8d18e1ef3d72102824e39186df45f73058d",
+          "verified": true
+        }
+      ],
+      "log": "s047-authoring-attempt-1.txt",
+      "screenshot": "s047-authoring-attempt-1-s047-row-5.png"
+    },
+    "N_ordinary_24_6": {
+      "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+      "role": "ordinary",
+      "api_level": 24,
+      "artifact_id": 13577748940,
+      "journey": 6,
+      "status": "pass",
+      "attempt": 1,
+      "profile": {
+        "css_width": 320,
+        "css_height": 640,
+        "native_visible": {
+          "left": 0,
+          "top": 24,
+          "right": 320,
+          "bottom": 592
+        },
+        "font_scale": 1,
+        "navigation_mode": "three_button"
+      },
+      "variants": [
+        {
+          "id": "svg_supported",
+          "status": "pass"
+        },
+        {
+          "id": "svg_unsupported",
+          "status": "pass"
+        },
+        {
+          "id": "svg_malformed",
+          "status": "pass"
+        },
+        {
+          "id": "svg_external",
+          "status": "pass"
+        },
+        {
+          "id": "svg_cycle",
+          "status": "pass"
+        },
+        {
+          "id": "svg_missing",
+          "status": "pass"
+        },
+        {
+          "id": "svg_resource",
+          "status": "pass"
+        },
+        {
+          "id": "source_read",
+          "status": "pass"
+        },
+        {
+          "id": "local_zoom_fit",
+          "status": "pass"
+        },
+        {
+          "id": "menu_zoom_fit",
+          "status": "pass"
+        },
+        {
+          "id": "keyboard_zoom_fit",
+          "status": "pass"
+        },
+        {
+          "id": "gesture_pan",
+          "status": "pass"
+        },
+        {
+          "id": "reset_state",
+          "status": "pass"
+        },
+        {
+          "id": "animation",
+          "status": "pass"
+        },
+        {
+          "id": "icon_selection",
+          "status": "pass"
+        },
+        {
+          "id": "png_export",
+          "status": "pass"
+        },
+        {
+          "id": "frame_buttons",
+          "status": "pass"
+        },
+        {
+          "id": "background_all",
+          "status": "pass"
+        },
+        {
+          "id": "embedded_metadata",
+          "status": "pass"
+        }
+      ],
+      "readbacks": [
+        {
+          "kind": "png_pixels",
+          "expected_sha256": "dd388b3e476b216a3177825ba31165939fcf8e398f7acd7fc113517602cc02c5",
+          "actual_sha256": "dd388b3e476b216a3177825ba31165939fcf8e398f7acd7fc113517602cc02c5",
+          "verified": true
+        }
+      ],
+      "log": "s047-images-attempt-1.txt",
+      "screenshot": "s047-images-attempt-1-s047-row-6.png"
+    },
+    "N_ordinary_24_7": {
+      "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+      "role": "ordinary",
+      "api_level": 24,
+      "artifact_id": 13577748940,
+      "journey": 7,
+      "status": "pass",
+      "attempt": 1,
+      "profile": {
+        "css_width": 320,
+        "css_height": 640,
+        "native_visible": {
+          "left": 0,
+          "top": 24,
+          "right": 320,
+          "bottom": 592
+        },
+        "font_scale": 1,
+        "navigation_mode": "three_button"
+      },
+      "variants": [
+        {
+          "id": "frozen_redacted",
+          "status": "pass"
+        },
+        {
+          "id": "save_readback",
+          "status": "pass"
+        },
+        {
+          "id": "cancel",
+          "status": "pass"
+        },
+        {
+          "id": "failed_write",
+          "status": "pass"
+        },
+        {
+          "id": "share_cancel",
+          "status": "pass"
+        },
+        {
+          "id": "share_receiver",
+          "status": "pass"
+        },
+        {
+          "id": "runtime_facts",
+          "status": "pass"
+        },
+        {
+          "id": "diagnostic_clear",
+          "status": "pass"
+        }
+      ],
+      "readbacks": [
+        {
+          "kind": "json_save",
+          "expected_sha256": "e01f3bc7a91bb643be5ec57c843ce0330c1c5de4ce850397215bb01cc80a0178",
+          "actual_sha256": "e01f3bc7a91bb643be5ec57c843ce0330c1c5de4ce850397215bb01cc80a0178",
+          "verified": true
+        },
+        {
+          "kind": "json_receiver",
+          "expected_sha256": "e01f3bc7a91bb643be5ec57c843ce0330c1c5de4ce850397215bb01cc80a0178",
+          "actual_sha256": "e01f3bc7a91bb643be5ec57c843ce0330c1c5de4ce850397215bb01cc80a0178",
+          "verified": true
+        }
+      ],
+      "log": "s047-authoring-attempt-1.txt",
+      "screenshot": "s047-authoring-attempt-1-s047-row-7.png"
+    },
+    "N_ordinary_24_8": {
+      "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+      "role": "ordinary",
+      "api_level": 24,
+      "artifact_id": 13577748940,
+      "journey": 8,
+      "status": "pass",
+      "attempt": 1,
+      "profile": {
+        "css_width": 320,
+        "css_height": 640,
+        "native_visible": {
+          "left": 0,
+          "top": 24,
+          "right": 320,
+          "bottom": 592
+        },
+        "font_scale": 1.3,
+        "navigation_mode": "three_button"
+      },
+      "variants": [
+        {
+          "id": "portrait",
+          "status": "pass"
+        },
+        {
+          "id": "landscape",
+          "status": "pass"
+        },
+        {
+          "id": "short",
+          "status": "pass"
+        },
+        {
+          "id": "ime",
+          "status": "pass"
+        },
+        {
+          "id": "default_font",
+          "status": "pass"
+        },
+        {
+          "id": "font_max",
+          "status": "pass"
+        },
+        {
+          "id": "targets",
+          "status": "pass"
+        },
+        {
+          "id": "semantics",
+          "status": "pass"
+        },
+        {
+          "id": "focus",
+          "status": "pass"
+        },
+        {
+          "id": "keyboard",
+          "status": "pass"
+        },
+        {
+          "id": "contrast",
+          "status": "pass"
+        },
+        {
+          "id": "editor_search_history",
+          "status": "pass"
+        },
+        {
+          "id": "markdown_mermaid",
+          "status": "pass"
+        },
+        {
+          "id": "large_text",
+          "status": "pass"
+        },
+        {
+          "id": "large_pending_cancel",
+          "status": "pass"
+        },
+        {
+          "id": "metadata_copy",
+          "status": "pass"
+        },
+        {
+          "id": "preferences_validation",
+          "status": "pass"
+        },
+        {
+          "id": "editor_aliases",
+          "status": "pass"
+        },
+        {
+          "id": "details_language",
+          "status": "pass"
+        },
+        {
+          "id": "metadata_sha",
+          "status": "pass"
+        },
+        {
+          "id": "preferences_wrap",
+          "status": "pass"
+        },
+        {
+          "id": "diagram_controls",
+          "status": "pass"
+        },
+        {
+          "id": "external_intent",
+          "status": "pass"
+        }
+      ],
+      "readbacks": [],
+      "log": "s047-layout-attempt-1.txt",
+      "screenshot": "s047-layout-attempt-1-s047-row-8.png"
+    },
+    "N_ordinary_24_9": {
+      "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+      "role": "ordinary",
+      "api_level": 24,
+      "artifact_id": 13577748940,
+      "journey": 9,
+      "status": "pass",
+      "attempt": 1,
+      "profile": {
+        "css_width": 320,
+        "css_height": 640,
+        "native_visible": {
+          "left": 0,
+          "top": 24,
+          "right": 320,
+          "bottom": 592
+        },
+        "font_scale": 1,
+        "navigation_mode": "three_button"
+      },
+      "variants": [
+        {
+          "id": "button_back",
+          "status": "pass"
+        },
+        {
+          "id": "modal_background",
+          "status": "pass"
+        },
+        {
+          "id": "rotation_resume",
+          "status": "pass"
+        },
+        {
+          "id": "picker_cancel",
+          "status": "pass"
+        },
+        {
+          "id": "dirty_close",
+          "status": "pass"
+        }
+      ],
+      "readbacks": [],
+      "log": "s047-back-attempt-1.txt",
+      "screenshot": "s047-back-attempt-1-s047-row-9.png"
+    },
+    "N_ordinary_24_10": {
+      "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+      "role": "ordinary",
+      "api_level": 24,
+      "artifact_id": 13577748940,
+      "journey": 10,
+      "status": "pass",
+      "attempt": 1,
+      "profile": {
+        "css_width": 320,
+        "css_height": 640,
+        "native_visible": {
+          "left": 0,
+          "top": 24,
+          "right": 320,
+          "bottom": 592
+        },
+        "font_scale": 1,
+        "navigation_mode": "three_button"
+      },
+      "variants": [
+        {
+          "id": "installed_facts",
+          "status": "pass"
+        },
+        {
+          "id": "explicit_destinations",
+          "status": "pass"
+        },
+        {
+          "id": "offline_notices",
+          "status": "pass"
+        },
+        {
+          "id": "after_failure",
+          "status": "pass"
+        }
+      ],
+      "readbacks": [],
+      "log": "s047-about-attempt-1.txt",
+      "screenshot": "s047-about-attempt-1-s047-row-10.png"
+    },
+    "N_ordinary_24_PROCESS_DRAFT_RECOVERY": {
+      "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+      "role": "ordinary",
+      "api_level": 24,
+      "artifact_id": 13577748940,
+      "phases": [
+        {
+          "phase": "seed",
+          "attempts": [
+            {
+              "status_file": "_temp/s047-draft-seed-attempt-1-status.txt",
+              "clean": true
+            }
+          ]
+        },
+        {
+          "phase": "verify",
+          "attempts": [
+            {
+              "status_file": "_temp/s047-draft-verify-attempt-1-status.txt",
+              "clean": true
+            }
+          ]
+        }
+      ],
+      "checkpoint_observation": "Marker/body and editability after process restart. Full-string comparison is the separately bound diagnostic and the final-head ordinary campaign assertion."
+    },
+    "N_fault_probe_36_1": {
+      "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+      "role": "fault_probe",
+      "api_level": 36,
+      "artifact_id": 13577467264,
+      "journey": 1,
+      "status": "not_applicable",
+      "reason": "ordinary_tasks_qualified_separately"
+    },
+    "N_fault_probe_36_2": {
+      "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+      "role": "fault_probe",
+      "api_level": 36,
+      "artifact_id": 13577467264,
+      "journey": 2,
+      "status": "not_applicable",
+      "reason": "ordinary_tasks_qualified_separately"
+    },
+    "N_fault_probe_36_3": {
+      "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+      "role": "fault_probe",
+      "api_level": 36,
+      "artifact_id": 13577467264,
+      "journey": 3,
+      "status": "pass",
+      "attempt": 1,
+      "profile": {
+        "css_width": 320,
+        "css_height": 640,
+        "native_visible": {
+          "left": 0,
+          "top": 48,
+          "right": 320,
+          "bottom": 592
+        },
+        "font_scale": 1,
+        "navigation_mode": "three_button"
+      },
+      "variants": [
+        {
+          "id": "worker",
+          "status": "pass"
+        },
+        {
+          "id": "parser",
+          "status": "pass"
+        },
+        {
+          "id": "projection",
+          "status": "pass"
+        },
+        {
+          "id": "root",
+          "status": "pass"
+        },
+        {
+          "id": "bootstrap_import",
+          "status": "pass"
+        },
+        {
+          "id": "host_transport",
+          "status": "pass"
+        },
+        {
+          "id": "source_retained",
+          "status": "pass"
+        },
+        {
+          "id": "draft_recovered",
+          "status": "pass"
+        },
+        {
+          "id": "recovery_decisions",
+          "status": "pass"
+        }
+      ],
+      "readbacks": [],
+      "log": "s047-faults-attempt-1.txt",
+      "screenshot": "s047-faults-attempt-1-s047-row-3.png"
+    },
+    "N_fault_probe_36_4": {
+      "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+      "role": "fault_probe",
+      "api_level": 36,
+      "artifact_id": 13577467264,
+      "journey": 4,
+      "status": "not_applicable",
+      "reason": "ordinary_tasks_qualified_separately"
+    },
+    "N_fault_probe_36_5": {
+      "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+      "role": "fault_probe",
+      "api_level": 36,
+      "artifact_id": 13577467264,
+      "journey": 5,
+      "status": "not_applicable",
+      "reason": "ordinary_tasks_qualified_separately"
+    },
+    "N_fault_probe_36_6": {
+      "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+      "role": "fault_probe",
+      "api_level": 36,
+      "artifact_id": 13577467264,
+      "journey": 6,
+      "status": "not_applicable",
+      "reason": "ordinary_tasks_qualified_separately"
+    },
+    "N_fault_probe_36_7": {
+      "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+      "role": "fault_probe",
+      "api_level": 36,
+      "artifact_id": 13577467264,
+      "journey": 7,
+      "status": "pass",
+      "attempt": 1,
+      "profile": {
+        "css_width": 320,
+        "css_height": 640,
+        "native_visible": {
+          "left": 0,
+          "top": 48,
+          "right": 320,
+          "bottom": 592
+        },
+        "font_scale": 1,
+        "navigation_mode": "three_button"
+      },
+      "variants": [
+        {
+          "id": "injected_failure_record",
+          "status": "pass"
+        },
+        {
+          "id": "frozen_redacted",
+          "status": "pass"
+        },
+        {
+          "id": "runtime_facts",
+          "status": "pass"
+        },
+        {
+          "id": "diagnostic_clear",
+          "status": "pass"
+        }
+      ],
+      "readbacks": [
+        {
+          "kind": "json_save",
+          "expected_sha256": "bb53268a3453346833bfb7fb7ad2f6a5ce45c887c425616ccd08830ced515a2f",
+          "actual_sha256": "bb53268a3453346833bfb7fb7ad2f6a5ce45c887c425616ccd08830ced515a2f",
+          "verified": true
+        },
+        {
+          "kind": "json_receiver",
+          "expected_sha256": "bb53268a3453346833bfb7fb7ad2f6a5ce45c887c425616ccd08830ced515a2f",
+          "actual_sha256": "bb53268a3453346833bfb7fb7ad2f6a5ce45c887c425616ccd08830ced515a2f",
+          "verified": true
+        }
+      ],
+      "log": "s047-faults-attempt-1.txt",
+      "screenshot": "s047-faults-attempt-1-s047-row-7.png"
+    },
+    "N_fault_probe_36_8": {
+      "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+      "role": "fault_probe",
+      "api_level": 36,
+      "artifact_id": 13577467264,
+      "journey": 8,
+      "status": "not_applicable",
+      "reason": "ordinary_tasks_qualified_separately"
+    },
+    "N_fault_probe_36_9": {
+      "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+      "role": "fault_probe",
+      "api_level": 36,
+      "artifact_id": 13577467264,
+      "journey": 9,
+      "status": "not_applicable",
+      "reason": "ordinary_tasks_qualified_separately"
+    },
+    "N_fault_probe_36_10": {
+      "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+      "role": "fault_probe",
+      "api_level": 36,
+      "artifact_id": 13577467264,
+      "journey": 10,
+      "status": "not_applicable",
+      "reason": "ordinary_tasks_qualified_separately"
+    },
+    "N_fault_probe_24_1": {
+      "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+      "role": "fault_probe",
+      "api_level": 24,
+      "artifact_id": 13577024031,
+      "journey": 1,
+      "status": "not_applicable",
+      "reason": "ordinary_tasks_qualified_separately"
+    },
+    "N_fault_probe_24_2": {
+      "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+      "role": "fault_probe",
+      "api_level": 24,
+      "artifact_id": 13577024031,
+      "journey": 2,
+      "status": "not_applicable",
+      "reason": "ordinary_tasks_qualified_separately"
+    },
+    "N_fault_probe_24_3": {
+      "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+      "role": "fault_probe",
+      "api_level": 24,
+      "artifact_id": 13577024031,
+      "journey": 3,
+      "status": "pass",
+      "attempt": 1,
+      "profile": {
+        "css_width": 320,
+        "css_height": 640,
+        "native_visible": {
+          "left": 0,
+          "top": 24,
+          "right": 320,
+          "bottom": 592
+        },
+        "font_scale": 1,
+        "navigation_mode": "three_button"
+      },
+      "variants": [
+        {
+          "id": "worker",
+          "status": "pass"
+        },
+        {
+          "id": "parser",
+          "status": "pass"
+        },
+        {
+          "id": "projection",
+          "status": "pass"
+        },
+        {
+          "id": "root",
+          "status": "pass"
+        },
+        {
+          "id": "bootstrap_import",
+          "status": "pass"
+        },
+        {
+          "id": "host_transport",
+          "status": "pass"
+        },
+        {
+          "id": "source_retained",
+          "status": "pass"
+        },
+        {
+          "id": "draft_recovered",
+          "status": "pass"
+        },
+        {
+          "id": "recovery_decisions",
+          "status": "pass"
+        }
+      ],
+      "readbacks": [],
+      "log": "s047-faults-attempt-1.txt",
+      "screenshot": "s047-faults-attempt-1-s047-row-3.png"
+    },
+    "N_fault_probe_24_4": {
+      "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+      "role": "fault_probe",
+      "api_level": 24,
+      "artifact_id": 13577024031,
+      "journey": 4,
+      "status": "not_applicable",
+      "reason": "ordinary_tasks_qualified_separately"
+    },
+    "N_fault_probe_24_5": {
+      "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+      "role": "fault_probe",
+      "api_level": 24,
+      "artifact_id": 13577024031,
+      "journey": 5,
+      "status": "not_applicable",
+      "reason": "ordinary_tasks_qualified_separately"
+    },
+    "N_fault_probe_24_6": {
+      "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+      "role": "fault_probe",
+      "api_level": 24,
+      "artifact_id": 13577024031,
+      "journey": 6,
+      "status": "not_applicable",
+      "reason": "ordinary_tasks_qualified_separately"
+    },
+    "N_fault_probe_24_7": {
+      "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+      "role": "fault_probe",
+      "api_level": 24,
+      "artifact_id": 13577024031,
+      "journey": 7,
+      "status": "pass",
+      "attempt": 1,
+      "profile": {
+        "css_width": 320,
+        "css_height": 640,
+        "native_visible": {
+          "left": 0,
+          "top": 24,
+          "right": 320,
+          "bottom": 592
+        },
+        "font_scale": 1,
+        "navigation_mode": "three_button"
+      },
+      "variants": [
+        {
+          "id": "injected_failure_record",
+          "status": "pass"
+        },
+        {
+          "id": "frozen_redacted",
+          "status": "pass"
+        },
+        {
+          "id": "runtime_facts",
+          "status": "pass"
+        },
+        {
+          "id": "diagnostic_clear",
+          "status": "pass"
+        }
+      ],
+      "readbacks": [
+        {
+          "kind": "json_save",
+          "expected_sha256": "13adde5a7fe58555913b2011321e2831dcbed64c684a99026c56ab1e57cc834d",
+          "actual_sha256": "13adde5a7fe58555913b2011321e2831dcbed64c684a99026c56ab1e57cc834d",
+          "verified": true
+        },
+        {
+          "kind": "json_receiver",
+          "expected_sha256": "13adde5a7fe58555913b2011321e2831dcbed64c684a99026c56ab1e57cc834d",
+          "actual_sha256": "13adde5a7fe58555913b2011321e2831dcbed64c684a99026c56ab1e57cc834d",
+          "verified": true
+        }
+      ],
+      "log": "s047-faults-attempt-1.txt",
+      "screenshot": "s047-faults-attempt-1-s047-row-7.png"
+    },
+    "N_fault_probe_24_8": {
+      "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+      "role": "fault_probe",
+      "api_level": 24,
+      "artifact_id": 13577024031,
+      "journey": 8,
+      "status": "not_applicable",
+      "reason": "ordinary_tasks_qualified_separately"
+    },
+    "N_fault_probe_24_9": {
+      "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+      "role": "fault_probe",
+      "api_level": 24,
+      "artifact_id": 13577024031,
+      "journey": 9,
+      "status": "not_applicable",
+      "reason": "ordinary_tasks_qualified_separately"
+    },
+    "N_fault_probe_24_10": {
+      "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+      "role": "fault_probe",
+      "api_level": 24,
+      "artifact_id": 13577024031,
+      "journey": 10,
+      "status": "not_applicable",
+      "reason": "ordinary_tasks_qualified_separately"
+    },
+    "N_ordinary_36_1": {
+      "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+      "role": "ordinary",
+      "api_level": 36,
+      "artifact_id": 13578225503,
+      "journey": 1,
+      "status": "pass",
+      "attempt": 1,
+      "profile": {
+        "css_width": 320,
+        "css_height": 640,
+        "native_visible": {
+          "left": 0,
+          "top": 48,
+          "right": 320,
+          "bottom": 584
+        },
+        "font_scale": 1,
+        "navigation_mode": "three_button"
+      },
+      "variants": [
+        {
+          "id": "choices",
+          "status": "pass"
+        },
+        {
+          "id": "close",
+          "status": "pass"
+        },
+        {
+          "id": "outside",
+          "status": "pass"
+        },
+        {
+          "id": "button_back",
+          "status": "pass"
+        },
+        {
+          "id": "shell_keyboard",
+          "status": "pass"
+        },
+        {
+          "id": "tab_activation_close_reorder",
+          "status": "pass"
+        }
+      ],
+      "readbacks": [],
+      "log": "s047-cold-attempt-1.txt",
+      "screenshot": "s047-cold-attempt-1-s047-row-1.png"
+    },
+    "N_ordinary_36_2": {
+      "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+      "role": "ordinary",
+      "api_level": 36,
+      "artifact_id": 13578225503,
+      "journey": 2,
+      "status": "pass",
+      "attempt": 1,
+      "profile": {
+        "css_width": 320,
+        "css_height": 640,
+        "native_visible": {
+          "left": 0,
+          "top": 48,
+          "right": 320,
+          "bottom": 584
+        },
+        "font_scale": 1,
+        "navigation_mode": "three_button"
+      },
+      "variants": [
+        {
+          "id": "cold_view",
+          "status": "pass"
+        },
+        {
+          "id": "warm_view",
+          "status": "pass"
+        },
+        {
+          "id": "warm_send",
+          "status": "pass"
+        },
+        {
+          "id": "in_app",
+          "status": "pass"
+        },
+        {
+          "id": "corpus",
+          "status": "pass"
+        },
+        {
+          "id": "empty",
+          "status": "pass"
+        },
+        {
+          "id": "malformed",
+          "status": "pass"
+        }
+      ],
+      "readbacks": [],
+      "log": "s047-markdown-attempt-1.txt",
+      "screenshot": "s047-markdown-attempt-1-s047-row-2.png"
+    },
+    "N_ordinary_36_3": {
+      "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+      "role": "ordinary",
+      "api_level": 36,
+      "artifact_id": 13578225503,
+      "journey": 3,
+      "status": "pass",
+      "attempt": 1,
+      "profile": {
+        "css_width": 320,
+        "css_height": 640,
+        "native_visible": {
+          "left": 0,
+          "top": 48,
+          "right": 320,
+          "bottom": 584
+        },
+        "font_scale": 1,
+        "navigation_mode": "three_button"
+      },
+      "variants": [
+        {
+          "id": "provider_denial",
+          "status": "pass"
+        }
+      ],
+      "readbacks": [],
+      "log": "s047-source-failure-attempt-1.txt",
+      "screenshot": "s047-source-failure-attempt-1-s047-row-3.png"
+    },
+    "N_ordinary_36_4": {
+      "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+      "role": "ordinary",
+      "api_level": 36,
+      "artifact_id": 13578225503,
+      "journey": 4,
+      "status": "pass",
+      "attempt": 1,
+      "profile": {
+        "css_width": 320,
+        "css_height": 640,
+        "native_visible": {
+          "left": 0,
+          "top": 48,
+          "right": 320,
+          "bottom": 584
+        },
+        "font_scale": 1,
+        "navigation_mode": "three_button"
+      },
+      "variants": [
+        {
+          "id": "new_markdown",
+          "status": "pass"
+        },
+        {
+          "id": "new_text",
+          "status": "pass"
+        },
+        {
+          "id": "exact_utf8",
+          "status": "pass"
+        },
+        {
+          "id": "reopen",
+          "status": "pass"
+        },
+        {
+          "id": "cancel",
+          "status": "pass"
+        },
+        {
+          "id": "failed_write",
+          "status": "pass"
+        },
+        {
+          "id": "dirty_receipt",
+          "status": "pass"
+        }
+      ],
+      "readbacks": [
+        {
+          "kind": "utf8",
+          "expected_sha256": "244a37ace46f495b40f1a3d060d3c1428929f192f27fdfe031db5d18bed6205d",
+          "actual_sha256": "244a37ace46f495b40f1a3d060d3c1428929f192f27fdfe031db5d18bed6205d",
+          "verified": true
+        },
+        {
+          "kind": "utf8",
+          "expected_sha256": "1319b9fbeb970a7c9c0c3bafa53c6103a321ebfa5d35a234569eff9722411ae1",
+          "actual_sha256": "1319b9fbeb970a7c9c0c3bafa53c6103a321ebfa5d35a234569eff9722411ae1",
+          "verified": true
+        }
+      ],
+      "log": "s047-authoring-attempt-1.txt",
+      "screenshot": "s047-authoring-attempt-1-s047-row-4.png"
+    },
+    "N_ordinary_36_5": {
+      "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+      "role": "ordinary",
+      "api_level": 36,
+      "artifact_id": 13578225503,
+      "journey": 5,
+      "status": "pass",
+      "attempt": 1,
+      "profile": {
+        "css_width": 320,
+        "css_height": 640,
+        "native_visible": {
+          "left": 0,
+          "top": 48,
+          "right": 320,
+          "bottom": 584
+        },
+        "font_scale": 1,
+        "navigation_mode": "three_button"
+      },
+      "variants": [
+        {
+          "id": "edit_copy",
+          "status": "pass"
+        },
+        {
+          "id": "original_unchanged",
+          "status": "pass"
+        },
+        {
+          "id": "in_place_unavailable",
+          "status": "pass"
+        }
+      ],
+      "readbacks": [
+        {
+          "kind": "utf8",
+          "expected_sha256": "1cfc54746614b9a0756a350082ddc8d18e1ef3d72102824e39186df45f73058d",
+          "actual_sha256": "1cfc54746614b9a0756a350082ddc8d18e1ef3d72102824e39186df45f73058d",
+          "verified": true
+        }
+      ],
+      "log": "s047-authoring-attempt-1.txt",
+      "screenshot": "s047-authoring-attempt-1-s047-row-5.png"
+    },
+    "N_ordinary_36_6": {
+      "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+      "role": "ordinary",
+      "api_level": 36,
+      "artifact_id": 13578225503,
+      "journey": 6,
+      "status": "pass",
+      "attempt": 1,
+      "profile": {
+        "css_width": 320,
+        "css_height": 640,
+        "native_visible": {
+          "left": 0,
+          "top": 48,
+          "right": 320,
+          "bottom": 584
+        },
+        "font_scale": 1,
+        "navigation_mode": "three_button"
+      },
+      "variants": [
+        {
+          "id": "svg_supported",
+          "status": "pass"
+        },
+        {
+          "id": "svg_unsupported",
+          "status": "pass"
+        },
+        {
+          "id": "svg_malformed",
+          "status": "pass"
+        },
+        {
+          "id": "svg_external",
+          "status": "pass"
+        },
+        {
+          "id": "svg_cycle",
+          "status": "pass"
+        },
+        {
+          "id": "svg_missing",
+          "status": "pass"
+        },
+        {
+          "id": "svg_resource",
+          "status": "pass"
+        },
+        {
+          "id": "source_read",
+          "status": "pass"
+        },
+        {
+          "id": "local_zoom_fit",
+          "status": "pass"
+        },
+        {
+          "id": "menu_zoom_fit",
+          "status": "pass"
+        },
+        {
+          "id": "keyboard_zoom_fit",
+          "status": "pass"
+        },
+        {
+          "id": "gesture_pan",
+          "status": "pass"
+        },
+        {
+          "id": "reset_state",
+          "status": "pass"
+        },
+        {
+          "id": "animation",
+          "status": "pass"
+        },
+        {
+          "id": "icon_selection",
+          "status": "pass"
+        },
+        {
+          "id": "png_export",
+          "status": "pass"
+        },
+        {
+          "id": "frame_buttons",
+          "status": "pass"
+        },
+        {
+          "id": "background_all",
+          "status": "pass"
+        },
+        {
+          "id": "embedded_metadata",
+          "status": "pass"
+        }
+      ],
+      "readbacks": [
+        {
+          "kind": "png_pixels",
+          "expected_sha256": "dd388b3e476b216a3177825ba31165939fcf8e398f7acd7fc113517602cc02c5",
+          "actual_sha256": "dd388b3e476b216a3177825ba31165939fcf8e398f7acd7fc113517602cc02c5",
+          "verified": true
+        }
+      ],
+      "log": "s047-images-attempt-1.txt",
+      "screenshot": "s047-images-attempt-1-s047-row-6.png"
+    },
+    "N_ordinary_36_7": {
+      "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+      "role": "ordinary",
+      "api_level": 36,
+      "artifact_id": 13578225503,
+      "journey": 7,
+      "status": "pass",
+      "attempt": 1,
+      "profile": {
+        "css_width": 320,
+        "css_height": 640,
+        "native_visible": {
+          "left": 0,
+          "top": 48,
+          "right": 320,
+          "bottom": 584
+        },
+        "font_scale": 1,
+        "navigation_mode": "three_button"
+      },
+      "variants": [
+        {
+          "id": "frozen_redacted",
+          "status": "pass"
+        },
+        {
+          "id": "save_readback",
+          "status": "pass"
+        },
+        {
+          "id": "cancel",
+          "status": "pass"
+        },
+        {
+          "id": "failed_write",
+          "status": "pass"
+        },
+        {
+          "id": "share_cancel",
+          "status": "pass"
+        },
+        {
+          "id": "share_receiver",
+          "status": "pass"
+        },
+        {
+          "id": "runtime_facts",
+          "status": "pass"
+        },
+        {
+          "id": "diagnostic_clear",
+          "status": "pass"
+        }
+      ],
+      "readbacks": [
+        {
+          "kind": "json_save",
+          "expected_sha256": "bcc8d7657c33e1e5c4778b52f27afa6dd96a75848bab8322e2878f2323bf3a0c",
+          "actual_sha256": "bcc8d7657c33e1e5c4778b52f27afa6dd96a75848bab8322e2878f2323bf3a0c",
+          "verified": true
+        },
+        {
+          "kind": "json_receiver",
+          "expected_sha256": "bcc8d7657c33e1e5c4778b52f27afa6dd96a75848bab8322e2878f2323bf3a0c",
+          "actual_sha256": "bcc8d7657c33e1e5c4778b52f27afa6dd96a75848bab8322e2878f2323bf3a0c",
+          "verified": true
+        }
+      ],
+      "log": "s047-authoring-attempt-1.txt",
+      "screenshot": "s047-authoring-attempt-1-s047-row-7.png"
+    },
+    "N_ordinary_36_8": {
+      "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+      "role": "ordinary",
+      "api_level": 36,
+      "artifact_id": 13578225503,
+      "journey": 8,
+      "status": "pass",
+      "attempt": 1,
+      "profile": {
+        "css_width": 320,
+        "css_height": 640,
+        "native_visible": {
+          "left": 0,
+          "top": 48,
+          "right": 320,
+          "bottom": 592
+        },
+        "font_scale": 2,
+        "navigation_mode": "three_button"
+      },
+      "variants": [
+        {
+          "id": "portrait",
+          "status": "pass"
+        },
+        {
+          "id": "landscape",
+          "status": "pass"
+        },
+        {
+          "id": "short",
+          "status": "pass"
+        },
+        {
+          "id": "ime",
+          "status": "pass"
+        },
+        {
+          "id": "default_font",
+          "status": "pass"
+        },
+        {
+          "id": "font_max",
+          "status": "pass"
+        },
+        {
+          "id": "targets",
+          "status": "pass"
+        },
+        {
+          "id": "semantics",
+          "status": "pass"
+        },
+        {
+          "id": "focus",
+          "status": "pass"
+        },
+        {
+          "id": "keyboard",
+          "status": "pass"
+        },
+        {
+          "id": "contrast",
+          "status": "pass"
+        },
+        {
+          "id": "editor_search_history",
+          "status": "pass"
+        },
+        {
+          "id": "markdown_mermaid",
+          "status": "pass"
+        },
+        {
+          "id": "large_text",
+          "status": "pass"
+        },
+        {
+          "id": "large_pending_cancel",
+          "status": "pass"
+        },
+        {
+          "id": "metadata_copy",
+          "status": "pass"
+        },
+        {
+          "id": "preferences_validation",
+          "status": "pass"
+        },
+        {
+          "id": "editor_aliases",
+          "status": "pass"
+        },
+        {
+          "id": "details_language",
+          "status": "pass"
+        },
+        {
+          "id": "metadata_sha",
+          "status": "pass"
+        },
+        {
+          "id": "preferences_wrap",
+          "status": "pass"
+        },
+        {
+          "id": "diagram_controls",
+          "status": "pass"
+        },
+        {
+          "id": "external_intent",
+          "status": "pass"
+        },
+        {
+          "id": "font_200",
+          "status": "pass"
+        }
+      ],
+      "readbacks": [],
+      "log": "s047-layout-attempt-1.txt",
+      "screenshot": "s047-layout-attempt-1-s047-row-8.png"
+    },
+    "N_ordinary_36_9": {
+      "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+      "role": "ordinary",
+      "api_level": 36,
+      "artifact_id": 13578225503,
+      "journey": 9,
+      "status": "pass",
+      "attempt": 1,
+      "profile": {
+        "css_width": 320,
+        "css_height": 640,
+        "native_visible": {
+          "left": 0,
+          "top": 48,
+          "right": 320,
+          "bottom": 616
+        },
+        "font_scale": 1,
+        "navigation_mode": "gestural"
+      },
+      "variants": [
+        {
+          "id": "button_back",
+          "status": "pass"
+        },
+        {
+          "id": "modal_background",
+          "status": "pass"
+        },
+        {
+          "id": "rotation_resume",
+          "status": "pass"
+        },
+        {
+          "id": "picker_cancel",
+          "status": "pass"
+        },
+        {
+          "id": "dirty_close",
+          "status": "pass"
+        },
+        {
+          "id": "predictive_cancel",
+          "status": "pass"
+        },
+        {
+          "id": "predictive_commit",
+          "status": "pass"
+        }
+      ],
+      "readbacks": [],
+      "log": "s047-back-attempt-1.txt",
+      "screenshot": "s047-back-attempt-1-s047-row-9.png"
+    },
+    "N_ordinary_36_10": {
+      "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+      "role": "ordinary",
+      "api_level": 36,
+      "artifact_id": 13578225503,
+      "journey": 10,
+      "status": "pass",
+      "attempt": 1,
+      "profile": {
+        "css_width": 320,
+        "css_height": 640,
+        "native_visible": {
+          "left": 0,
+          "top": 48,
+          "right": 320,
+          "bottom": 592
+        },
+        "font_scale": 1,
+        "navigation_mode": "three_button"
+      },
+      "variants": [
+        {
+          "id": "installed_facts",
+          "status": "pass"
+        },
+        {
+          "id": "explicit_destinations",
+          "status": "pass"
+        },
+        {
+          "id": "offline_notices",
+          "status": "pass"
+        },
+        {
+          "id": "after_failure",
+          "status": "pass"
+        }
+      ],
+      "readbacks": [],
+      "log": "s047-about-attempt-1.txt",
+      "screenshot": "s047-about-attempt-1-s047-row-10.png"
+    },
+    "N_ordinary_36_PROCESS_DRAFT_RECOVERY": {
+      "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+      "role": "ordinary",
+      "api_level": 36,
+      "artifact_id": 13578225503,
+      "phases": [
+        {
+          "phase": "seed",
+          "attempts": [
+            {
+              "status_file": "_temp/s047-draft-seed-attempt-1-status.txt",
+              "clean": true
+            }
+          ]
+        },
+        {
+          "phase": "verify",
+          "attempts": [
+            {
+              "status_file": "_temp/s047-draft-verify-attempt-1-status.txt",
+              "clean": true
+            }
+          ]
+        }
+      ],
+      "checkpoint_observation": "Marker/body and editability after process restart. Full-string comparison is the separately bound diagnostic and the final-head ordinary campaign assertion."
+    },
+    "DX_EXACT_DRAFT_24": {
+      "evidence_class": "separate_debug_resigned_retained_product_diagnostic",
+      "candidate_qualified": false,
+      "run": 42381419982,
+      "artifact_id": 13577489417,
+      "archive_sha256": "0bcba8e870e7961d294f166df4029355bfe248a46bf221e3519cb2f7e8e1760a",
+      "product_source": "bd04f6e78f31426b86ddb7dc4e8728b7172425e9",
+      "fixture_source": "3c3dfff5050995d2a204923eeebd58e4c152f0a9",
+      "fixture_sha256": "e62d87b2c002dffba3b0590d4139811fe0a6da635c2340c382bbcfb0aca30e7f",
+      "original_application_sha256": "b27c8a4eccfa09a97c42f03cee2c2ff102de049823b9b39a9272a17f58448396",
+      "diagnostic_application_sha256": "8dfe1766d34048b8de9f58810419d6196e7fe84b56e9877bdef8dded2de74136",
+      "instrumentation_sha256": "f2fd9aa594914a5c745942441fc005bd9e406d894f696338738fe360a08e3183",
+      "observations": [
+        {
+          "method": "draftRecoveryAcrossProcessBoundary",
+          "phase": "seed",
+          "status": "pass"
+        },
+        {
+          "method": "draftRecoveryAcrossProcessBoundary",
+          "phase": "verify",
+          "status": "pass"
+        }
+      ],
+      "limit": "API24 targeted seed/force-stop/verify compares every recovered character. It does not qualify different APK bytes. Final-head ordinary campaigns run the same stronger assertion on API24 and API36."
+    },
+    "SOURCE_CURRENT_UNMOUNTED_COMMAND_BAR": {
+      "scope": "production_source_composition_only",
+      "paths": ["apps/glitchpad/src/App.tsx", "apps/glitchpad/src/main.tsx"],
+      "limit": "No installed absence or interactive pass is claimed."
+    },
+    "SOURCE_CURRENT_CAPABILITY_ABSENCE": {
+      "scope": "current_command_contract_and_unit_tests",
+      "paths": [
+        "apps/glitchpad/src/domain/commands.ts",
+        "apps/glitchpad/src/domain/commands.test.ts"
+      ],
+      "limit": "No usable native page provider is advertised; unsupported command variants remain absent."
+    }
+  },
+  "native_artifacts": [
+    {
+      "role": "ordinary",
+      "api_level": 24,
+      "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+      "workflow_run": 42380870423,
+      "artifact_id": 13577748940,
+      "artifact_url": "https://github.com/shruggietech/glitchpad/actions/runs/42380870423/artifacts/13577748940",
+      "archive_bytes": 67421926,
+      "archive_sha256": "46a2a90768ab4ba1dc02bb2e9ff34875d90060c6f4a9d47dfa4255bda6a653a4",
+      "identity": {
+        "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+        "native_source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+        "frontend_source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+        "application_sha256": "856c650a145e4f2b020b1f5ab029f338d38b4e5505e6a19ed4469aa1eb9796e2",
+        "instrumentation_sha256": "6406427b4278951b8dcf153e7534765c2b2058159b2ee12dcd117e8eb3013527",
+        "package_identifier": "com.shruggietech.glitchpad",
+        "instrumentation_package": "com.shruggietech.glitchpad.test",
+        "clipboard_provider": {
+          "legacy_authority": "com.shruggietech.glitchpad.clipboard",
+          "legacy_declared_exported": true,
+          "legacy_enabled": true,
+          "legacy_resolvable": true,
+          "legacy_grant_uri_permissions": false,
+          "file_provider_private": true
+        },
+        "version": "0.2.0",
+        "version_code": 2000,
+        "channel": "debug",
+        "build_variant": "ordinary",
+        "api_level": 24,
+        "android_version": "7.0",
+        "webview_package": "com.android.chrome",
+        "webview_version": "69.0.3497.100"
+      },
+      "independent_apk_readbacks": [
+        {
+          "kind": "application",
+          "bytes": 231141538,
+          "sha256": "856c650a145e4f2b020b1f5ab029f338d38b4e5505e6a19ed4469aa1eb9796e2",
+          "capture_method": "adb_shell_v2_run_as_cat"
+        },
+        {
+          "kind": "instrumentation",
+          "bytes": 830291,
+          "sha256": "6406427b4278951b8dcf153e7534765c2b2058159b2ee12dcd117e8eb3013527",
+          "capture_method": "adb_shell_v2_run_as_cat"
+        }
+      ],
+      "qualification": {
+        "qualified": true,
+        "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+        "role": "ordinary",
+        "api_level": 24,
+        "journeys": 10
+      },
+      "retained_attempt_files": 449
+    },
+    {
+      "role": "fault_probe",
+      "api_level": 36,
+      "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+      "workflow_run": 42380870423,
+      "artifact_id": 13577467264,
+      "artifact_url": "https://github.com/shruggietech/glitchpad/actions/runs/42380870423/artifacts/13577467264",
+      "archive_bytes": 67055583,
+      "archive_sha256": "fd4f22f0053845f3a25f6d3c747114262409ef062bfe40b9e0c68dd85e3d7c25",
+      "identity": {
+        "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+        "native_source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+        "frontend_source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+        "application_sha256": "bf37c9e5eb04c6e67c8301619896b1608d0bfa900e4b7277a686476ddc74b3bb",
+        "instrumentation_sha256": "ec3c6ef9d3bf4206f0af8c552d65840546a8f378a6a76f397a14a58fe0bd742e",
+        "package_identifier": "com.shruggietech.glitchpad",
+        "instrumentation_package": "com.shruggietech.glitchpad.test",
+        "clipboard_provider": {
+          "legacy_authority": "com.shruggietech.glitchpad.clipboard",
+          "legacy_declared_exported": true,
+          "legacy_enabled": false,
+          "legacy_resolvable": false,
+          "legacy_grant_uri_permissions": false,
+          "file_provider_private": true
+        },
+        "version": "0.2.0",
+        "version_code": 2000,
+        "channel": "debug",
+        "build_variant": "fault_probe",
+        "api_level": 36,
+        "android_version": "16",
+        "webview_package": "com.android.webview",
+        "webview_version": "133.0.6943.137"
+      },
+      "independent_apk_readbacks": [
+        {
+          "kind": "application",
+          "bytes": 231142434,
+          "sha256": "bf37c9e5eb04c6e67c8301619896b1608d0bfa900e4b7277a686476ddc74b3bb",
+          "capture_method": "adb_pull"
+        },
+        {
+          "kind": "instrumentation",
+          "bytes": 830291,
+          "sha256": "ec3c6ef9d3bf4206f0af8c552d65840546a8f378a6a76f397a14a58fe0bd742e",
+          "capture_method": "adb_pull"
+        }
+      ],
+      "qualification": {
+        "qualified": true,
+        "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+        "role": "fault_probe",
+        "api_level": 36,
+        "journeys": 10
+      },
+      "retained_attempt_files": 56
+    },
+    {
+      "role": "fault_probe",
+      "api_level": 24,
+      "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+      "workflow_run": 42380870423,
+      "artifact_id": 13577024031,
+      "artifact_url": "https://github.com/shruggietech/glitchpad/actions/runs/42380870423/artifacts/13577024031",
+      "archive_bytes": 66898496,
+      "archive_sha256": "d4ae1b88a7fc964e1f4c1dabaa7140941c493c80fb28ff2c17dd22d666f37e9b",
+      "identity": {
+        "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+        "native_source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+        "frontend_source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+        "application_sha256": "518784b71ed2017da40641f3d5cd649f908516bed64aead5804d00dbe28c2452",
+        "instrumentation_sha256": "581b4f90eeab7c17e6ee4314878558351fd592b832ce4ce0b0912773f0bf5873",
+        "package_identifier": "com.shruggietech.glitchpad",
+        "instrumentation_package": "com.shruggietech.glitchpad.test",
+        "clipboard_provider": {
+          "legacy_authority": "com.shruggietech.glitchpad.clipboard",
+          "legacy_declared_exported": true,
+          "legacy_enabled": true,
+          "legacy_resolvable": true,
+          "legacy_grant_uri_permissions": false,
+          "file_provider_private": true
+        },
+        "version": "0.2.0",
+        "version_code": 2000,
+        "channel": "debug",
+        "build_variant": "fault_probe",
+        "api_level": 24,
+        "android_version": "7.0",
+        "webview_package": "com.android.chrome",
+        "webview_version": "69.0.3497.100"
+      },
+      "independent_apk_readbacks": [
+        {
+          "kind": "application",
+          "bytes": 231142434,
+          "sha256": "518784b71ed2017da40641f3d5cd649f908516bed64aead5804d00dbe28c2452",
+          "capture_method": "adb_shell_v2_run_as_cat"
+        },
+        {
+          "kind": "instrumentation",
+          "bytes": 830291,
+          "sha256": "581b4f90eeab7c17e6ee4314878558351fd592b832ce4ce0b0912773f0bf5873",
+          "capture_method": "adb_shell_v2_run_as_cat"
+        }
+      ],
+      "qualification": {
+        "qualified": true,
+        "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+        "role": "fault_probe",
+        "api_level": 24,
+        "journeys": 10
+      },
+      "retained_attempt_files": 59
+    },
+    {
+      "role": "ordinary",
+      "api_level": 36,
+      "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+      "workflow_run": 42380870423,
+      "artifact_id": 13578225503,
+      "artifact_url": "https://github.com/shruggietech/glitchpad/actions/runs/42380870423/artifacts/13578225503",
+      "archive_bytes": 67902608,
+      "archive_sha256": "fa9f5779706591b8ecb78ed81c75074d3d289b4888bf6a0c8fabdca2049ec8e6",
+      "identity": {
+        "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+        "native_source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+        "frontend_source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+        "application_sha256": "d59d703efc7b18e0bbfee6c34393a174331083acf27a9d28596f5bada26ae42b",
+        "instrumentation_sha256": "60614641d6639012715b189d156374a87a4872107ece7a113c107fc778da1233",
+        "package_identifier": "com.shruggietech.glitchpad",
+        "instrumentation_package": "com.shruggietech.glitchpad.test",
+        "clipboard_provider": {
+          "legacy_authority": "com.shruggietech.glitchpad.clipboard",
+          "legacy_declared_exported": true,
+          "legacy_enabled": false,
+          "legacy_resolvable": false,
+          "legacy_grant_uri_permissions": false,
+          "file_provider_private": true
+        },
+        "version": "0.2.0",
+        "version_code": 2000,
+        "channel": "debug",
+        "build_variant": "ordinary",
+        "api_level": 36,
+        "android_version": "16",
+        "webview_package": "com.android.webview",
+        "webview_version": "133.0.6943.137"
+      },
+      "independent_apk_readbacks": [
+        {
+          "kind": "application",
+          "bytes": 231141538,
+          "sha256": "d59d703efc7b18e0bbfee6c34393a174331083acf27a9d28596f5bada26ae42b",
+          "capture_method": "adb_pull"
+        },
+        {
+          "kind": "instrumentation",
+          "bytes": 830291,
+          "sha256": "60614641d6639012715b189d156374a87a4872107ece7a113c107fc778da1233",
+          "capture_method": "adb_pull"
+        }
+      ],
+      "qualification": {
+        "qualified": true,
+        "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+        "role": "ordinary",
+        "api_level": 36,
+        "journeys": 10
+      },
+      "retained_attempt_files": 446
+    }
+  ],
+  "supplemental_catalog_scope": "Catalog entries retain their source/preparation provenance. Current source/unit/browser qualification is provided by the checkpoint CI and aggregate. Case-level evidence/disposition defines scope; no supplemental variant is promoted to an individually executed native action.",
+  "source_bindings": {
+    "hashes": 42,
+    "unresolved": 0,
+    "reference_drift": 0,
+    "source_only_run": 42381421941,
+    "native_fixture_sha256": "e62d87b2c002dffba3b0590d4139811fe0a6da635c2340c382bbcfb0aca30e7f"
+  },
+  "exact_recovered_text_diagnostic": {
+    "evidence_class": "separate_debug_resigned_retained_product_diagnostic",
+    "candidate_qualified": false,
+    "run": 42381419982,
+    "artifact_id": 13577489417,
+    "archive_sha256": "0bcba8e870e7961d294f166df4029355bfe248a46bf221e3519cb2f7e8e1760a",
+    "product_source": "bd04f6e78f31426b86ddb7dc4e8728b7172425e9",
+    "fixture_source": "3c3dfff5050995d2a204923eeebd58e4c152f0a9",
+    "fixture_sha256": "e62d87b2c002dffba3b0590d4139811fe0a6da635c2340c382bbcfb0aca30e7f",
+    "original_application_sha256": "b27c8a4eccfa09a97c42f03cee2c2ff102de049823b9b39a9272a17f58448396",
+    "diagnostic_application_sha256": "8dfe1766d34048b8de9f58810419d6196e7fe84b56e9877bdef8dded2de74136",
+    "instrumentation_sha256": "f2fd9aa594914a5c745942441fc005bd9e406d894f696338738fe360a08e3183",
+    "observations": [
+      {
+        "method": "draftRecoveryAcrossProcessBoundary",
+        "phase": "seed",
+        "status": "pass"
+      },
+      {
+        "method": "draftRecoveryAcrossProcessBoundary",
+        "phase": "verify",
+        "status": "pass"
+      }
+    ],
+    "limit": "API24 targeted seed/force-stop/verify compares every recovered character. It does not qualify different APK bytes. Final-head ordinary campaigns run the same stronger assertion on API24 and API36."
+  },
+  "review": {
+    "rounds_authorized": 2,
+    "rounds_used": 2,
+    "round2_source": "988818c57efba8c611074c193d6ec5c560987cae",
+    "round2_result": "no findings",
+    "unresolved_threads_at_last_read": 0,
+    "later_changes": "automated qualification; no additional external round"
+  },
+  "limits": [
+    "Original incident bytes/hash/trace are unavailable and not replayed.",
+    "Physical-device/manual-screen-reader/reference-hardware prerequisites remain waived.",
+    "Manual macOS/Linux GUI and VoiceOver checks are unrun.",
+    "Installed debug evidence, signed assembly, publication and physical-device evidence remain separate.",
+    "No merge, release, tag or deployment; auto-merge is off."
+  ],
+  "aggregate": {
+    "source_commit": "7cb7788dfe96fc0860d07c15d16659e260fec32c",
+    "aggregate_exit": 0,
+    "scope": "exact_source_linux_container_not_installed_android",
+    "run": 42380901998,
+    "artifact_id": 13578466289,
+    "archive_bytes": 2144944,
+    "archive_sha256": "385e40c835add3e1202c5f88f17b35d63d91163cdaeeaebe77a71700a0a9a6e2",
+    "modern": {
+      "browser": "HeadlessChrome/156.0.8078.47",
+      "cases": 96,
+      "failures": 0
+    },
+    "legacy": {
+      "browser": "HeadlessChrome/69.0.3497.0",
+      "cases": 96,
+      "failures": 0
+    },
+    "independent_observed_source_hashes": [
+      {
+        "path": "apps/glitchpad/src/App.tsx",
+        "observed": "60c4bc01c847a4e6cb2a20f4f937dc1e1ea5aa3c48935870c12ea591ac886a34",
+        "remote": "60c4bc01c847a4e6cb2a20f4f937dc1e1ea5aa3c48935870c12ea591ac886a34",
+        "matched": true
+      },
+      {
+        "path": "apps/glitchpad/src/styles.css",
+        "observed": "37fef20ea4acb3e15738cb96a13e5d6e3571c3e94c2a053b69520504d10d1d58",
+        "remote": "37fef20ea4acb3e15738cb96a13e5d6e3571c3e94c2a053b69520504d10d1d58",
+        "matched": true
+      },
+      {
+        "path": "apps/glitchpad/src/components/TaskSurface.tsx",
+        "observed": "99cc920d5a9e4fa5bd0b55c54f0338ab467e06b83713c7e2f93c7d0d85a54746",
+        "remote": "99cc920d5a9e4fa5bd0b55c54f0338ab467e06b83713c7e2f93c7d0d85a54746",
+        "matched": true
+      },
+      {
+        "path": "apps/glitchpad/src/components/TaskSurface.css",
+        "observed": "7ab5ea338b1d5c0290640bc1a358f38c8b168f6a1fd2ec4af3c71fc0c0f397ee",
+        "remote": "7ab5ea338b1d5c0290640bc1a358f38c8b168f6a1fd2ec4af3c71fc0c0f397ee",
+        "matched": true
+      },
+      {
+        "path": "apps/glitchpad/src/components/RecoveryResolution.tsx",
+        "observed": "946bf25b1e1ea8c125abb870969c6477199ddd6d45e0b92b01fcab300483c938",
+        "remote": "946bf25b1e1ea8c125abb870969c6477199ddd6d45e0b92b01fcab300483c938",
+        "matched": true
+      },
+      {
+        "path": "apps/glitchpad/src/components/AppFrameHostBridge.tsx",
+        "observed": "7a1903ff9c3a2ed2d3f1241f4ae89ef8040f6e8161099762660f19bc3fb23400",
+        "remote": "7a1903ff9c3a2ed2d3f1241f4ae89ef8040f6e8161099762660f19bc3fb23400",
+        "matched": true
+      },
+      {
+        "path": "apps/glitchpad/src/components/TextEditorSurface.tsx",
+        "observed": "0a8cb476f1badc556fbfe55ed549cb985440f0ac94e3b4d17f81d467279d5e37",
+        "remote": "0a8cb476f1badc556fbfe55ed549cb985440f0ac94e3b4d17f81d467279d5e37",
+        "matched": true
+      },
+      {
+        "path": "apps/glitchpad/src/components/MarkdownSurface.tsx",
+        "observed": "a6dca073cd39c8c0cd515bc98fba2d74aed5d29a033271a5a30d6b6f67861f43",
+        "remote": "a6dca073cd39c8c0cd515bc98fba2d74aed5d29a033271a5a30d6b6f67861f43",
+        "matched": true
+      },
+      {
+        "path": "apps/glitchpad/src/components/MermaidSurface.tsx",
+        "observed": "45ad757e695553132d9b81905c9581d1ed0597c4d5e4d2aaf5b8e6b0f2fb8a4f",
+        "remote": "45ad757e695553132d9b81905c9581d1ed0597c4d5e4d2aaf5b8e6b0f2fb8a4f",
+        "matched": true
+      },
+      {
+        "path": "apps/glitchpad/src/components/LargeTextSurface.tsx",
+        "observed": "deb4319564d4ff1f5034fce35ac5092009e647f0f8a6ea197f2d649c2f8ea4ec",
+        "remote": "deb4319564d4ff1f5034fce35ac5092009e647f0f8a6ea197f2d649c2f8ea4ec",
+        "matched": true
+      },
+      {
+        "path": "apps/glitchpad/src/components/MetadataInspector.tsx",
+        "observed": "1c5a7e4bbd44fe26ddda48bb3c0d97006e50e307d3c3358c469884af4d94b709",
+        "remote": "1c5a7e4bbd44fe26ddda48bb3c0d97006e50e307d3c3358c469884af4d94b709",
+        "matched": true
+      },
+      {
+        "path": "apps/glitchpad/src/components/PreferencesPanel.tsx",
+        "observed": "6eac1894e92b6a1667eaefdfdbaaced579902bebd1394aabb966d83d06506977",
+        "remote": "6eac1894e92b6a1667eaefdfdbaaced579902bebd1394aabb966d83d06506977",
+        "matched": true
+      },
+      {
+        "path": "apps/glitchpad/src/components/DocumentTools.css",
+        "observed": "d7044fd9b83c4fb8e00d9839c6328bb465065ac0acb4c47adb688839be6ca7bb",
+        "remote": "d7044fd9b83c4fb8e00d9839c6328bb465065ac0acb4c47adb688839be6ca7bb",
+        "matched": true
+      },
+      {
+        "path": "apps/glitchpad/src/domain/commands.ts",
+        "observed": "e1b02e626e32ef1688adc00e07f572bfbf5cbd25b5fb2344c16881abe6504f2b",
+        "remote": "e1b02e626e32ef1688adc00e07f572bfbf5cbd25b5fb2344c16881abe6504f2b",
+        "matched": true
+      },
+      {
+        "path": "apps/glitchpad/src/domain/drafts.ts",
+        "observed": "64b8e9bf78348a38087fc1d733d59546592054c6a83c87f4c857c101db2ff420",
+        "remote": "64b8e9bf78348a38087fc1d733d59546592054c6a83c87f4c857c101db2ff420",
+        "matched": true
+      },
+      {
+        "path": "apps/glitchpad/src/domain/metadata.ts",
+        "observed": "aac3e4b74d6bad527c2780771d0520ef6983f13b29d7a5c9f365e9626f6deb5f",
+        "remote": "aac3e4b74d6bad527c2780771d0520ef6983f13b29d7a5c9f365e9626f6deb5f",
+        "matched": true
+      },
+      {
+        "path": "apps/glitchpad/src/runtime-polyfills.ts",
+        "observed": "9b0b6efd19491fca58b77a7e46ebc788326e791ec35cfbf4300313f06d82df81",
+        "remote": "9b0b6efd19491fca58b77a7e46ebc788326e791ec35cfbf4300313f06d82df81",
+        "matched": true
+      },
+      {
+        "path": "scripts/check-app-layout.mjs",
+        "observed": "484d5e335024e0d76e7ddb845fe0528b406a67672c283c0dc8ec20a917d5da3a",
+        "remote": "484d5e335024e0d76e7ddb845fe0528b406a67672c283c0dc8ec20a917d5da3a",
+        "matched": true
+      },
+      {
+        "path": "crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt",
+        "observed": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07",
+        "remote": "40d52a4d30ee3cf09e106dcc2dca54471fbec192bf4c88666d024bc9574eff07",
+        "matched": true
+      }
+    ]
+  },
+  "case_counts": {
+    "passed_installed_assertion": 345,
+    "passed_supplemental_assertion": 98,
+    "passed_installed_absence": 2,
+    "not_applicable_native": 4,
+    "passed_installed_unavailable_feedback": 2,
+    "reconciled_conditional_native_profiles": 3,
+    "source_inventory_unmounted": 2,
+    "passed_installed_passive_state": 3
+  },
+  "checkpoint_workflows": [
+    {
+      "id": 42380900478,
+      "name": "ci",
+      "event": "workflow_dispatch",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 42380870449,
+      "name": "codeql",
+      "event": "pull_request",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 42380870418,
+      "name": "linux-package",
+      "event": "pull_request",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 42380870478,
+      "name": "windows-package",
+      "event": "pull_request",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 42380870414,
+      "name": "docs",
+      "event": "pull_request",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 42380870442,
+      "name": "android-package",
+      "event": "pull_request",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 42380870423,
+      "name": "ci",
+      "event": "pull_request",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 42380870428,
+      "name": "macos-package",
+      "event": "pull_request",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 42380865561,
+      "name": "windows-package",
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 42380865666,
+      "name": "linux-package",
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 42380865704,
+      "name": "macos-package",
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success"
+    }
+  ],
+  "remaining_checkpoint_workflow_gates": []
+}

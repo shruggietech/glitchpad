@@ -5,6 +5,12 @@ on:
   schedule:
     - cron: '17 7 * * *'
   workflow_dispatch:
+    inputs:
+      android_runtime:
+        description: Android runtime scope (diagnostics do not qualify a candidate)
+        type: choice
+        default: full
+        options: [full, source_only, back_diagnostic]
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -57,6 +63,20 @@ jobs:
 
       - name: Validate documentation
         run: cargo xtask docs
+
+      - name: Retain composed task geometry receipts
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: composed-task-geometry
+          path: |
+            artifacts/android-task-layout/**
+            artifacts/android-authoring-layout/**
+            artifacts/image-layout/result.json
+            artifacts/image-layout/failed.json
+            artifacts/image-layout/failed.png
+          if-no-files-found: warn
+          retention-days: 7
 
   shared:
     name: Shared native and frontend checks
@@ -259,21 +279,26 @@ jobs:
           retention-days: 7
 
   android-instrumentation:
+    if: github.event_name != 'workflow_dispatch' || inputs.android_runtime != 'source_only'
     env:
-      GLITCHPAD_BUILD_COMMIT: ${{ github.sha }}
-    name: Android provider lifecycle (API ${{ matrix.api-level }})
-    # Android emulator installation repeatedly stalls without hardware acceleration
-    # on Linux-hosted runners. The Intel macOS image provides accelerated x86_64
-    # emulation for the required API 24 and API 36 lifecycle evidence.
-    runs-on: macos-15-intel
-    timeout-minutes: 60
+      ANDROID_S047_BACK_DIAGNOSTIC: ${{ github.event_name == 'workflow_dispatch' && inputs.android_runtime == 'back_diagnostic' && 'true' || 'false' }}
+      GLITCHPAD_BUILD_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+      VITE_GLITCHPAD_BUILD_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+    name: ${{ github.event_name == 'workflow_dispatch' && inputs.android_runtime == 'back_diagnostic' && 'Android Back diagnostic' || 'Android task journeys' }} (${{ matrix.role }}, API ${{ matrix.api-level }})
+    # Explicit KVM access keeps the guest Android versions and test budgets unchanged.
+    # Focused API 24/API 36 diagnostics completed on this accelerated Linux host.
+    runs-on: ubuntu-latest
+    # Retain the full composed campaign after the observed build/emulator setup cost.
+    # Per-action and per-process attempt limits remain enforced by their runners.
+    timeout-minutes: 90
     strategy:
       fail-fast: false
-      matrix:
-        api-level: [24, 36]
+      matrix: ${{ fromJSON(github.event_name == 'workflow_dispatch' && inputs.android_runtime == 'back_diagnostic' && '{"api-level":[36],"role":["ordinary"]}' || '{"api-level":[24,36],"role":["ordinary","fault_probe"]}') }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Setup Java 17
         uses: actions/setup-java@v6
@@ -302,6 +327,10 @@ jobs:
           node-version-file: .node-version
           cache: pnpm
 
+      - name: Verify hosted offline controller before the APK build
+        if: matrix.api-level == 24 && matrix.role == 'ordinary'
+        run: node --test scripts/android-offline-mode.test.mjs
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
@@ -312,19 +341,29 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           shared-key: android-x86_64-api-${{ matrix.api-level }}
+          cache-on-failure: true
 
       - name: Build emulator APK and provider unit tests
         env:
-          VITE_GLITCHPAD_RECOVERY_PROBES: '1'
+          VITE_GLITCHPAD_RECOVERY_PROBES: ${{ matrix.role == 'fault_probe' && '1' || '0' }}
         run: |
           export NDK_HOME="${ANDROID_SDK_ROOT}/ndk/28.2.13676358"
           pnpm tauri android build --debug --apk --target x86_64 --ci
+          node scripts/check-android-build-role.mjs "${{ matrix.role }}"
+          node --test scripts/configure-android-task-avd.test.mjs
           ./crates/glitchpad-host/gen/android/gradlew --project-dir crates/glitchpad-host/gen/android :glitchpad-android-source:testDebugUnitTest --no-daemon
           ./crates/glitchpad-host/gen/android/gradlew --project-dir crates/glitchpad-host/gen/android :app:assembleUniversalDebugAndroidTest -PabiList=x86_64 -ParchList=x86_64 -PtargetList=x86_64 -x :app:rustBuildUniversalDebug -x :app:rustBuildX86_64Debug --no-daemon
 
+      - name: Enable emulator KVM access
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
       - name: Run provider, resolver, delivery, and restoration evidence
         env:
-          GLITCHPAD_RECOVERY_PROBE_VARIANT: compiled_test_only
+          GLITCHPAD_RECOVERY_PROBE_VARIANT: ${{ matrix.role == 'fault_probe' && 'compiled_test_only' || 'none' }}
+          GLITCHPAD_CANDIDATE_ROLE: ${{ matrix.role }}
         uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2
         with:
           api-level: ${{ matrix.api-level }}
@@ -339,44 +378,51 @@ jobs:
           # governed API levels. Use Android's supported software renderer and keep
           # Vulkan disabled for this headless GLES test workload.
           emulator-options: -no-window -no-audio -no-snapshot -no-boot-anim -gpu swiftshader -feature -Vulkan
+          # Set hardware before boot; emulator-generated properties override -prop.
+          pre-emulator-launch-script: node scripts/configure-android-task-avd.mjs "$ANDROID_AVD_HOME/test.avd/config.ini"
           script: |
             # These offline tests do not need Google services. Avoid their first-boot
             # work starving instrumentation on the disposable hosted emulator.
-            set -e; for package in com.google.android.gms com.google.android.googlequicksearchbox; do if adb shell pm list packages "$package" | grep -Fq "package:$package"; then adb shell pm disable-user --user 0 "$package"; fi; done
+            set -e; for package in com.google.android.gms com.google.android.googlequicksearchbox; do if node scripts/bounded-android-adb.mjs shell pm list packages "$package" | grep -Fq "package:$package"; then node scripts/bounded-android-adb.mjs shell pm disable-user --user 0 "$package"; fi; done
             # The API 36 system Bluetooth service can crash and leave its error dialog above
             # the AppFrame activity, stealing input focus from the WebView under test.
-            if [ "${{ matrix.api-level }}" = "36" ]; then adb shell svc power stayon true && adb shell svc bluetooth disable; fi
+            node scripts/capture-android-navigation.mjs "$RUNNER_TEMP/s047-navigation-environment.json"
+            node scripts/bounded-android-adb.mjs shell svc power stayon true
+            node scripts/bounded-android-adb.mjs shell input keyevent 224
+            if [ "${{ matrix.api-level }}" = "36" ]; then node scripts/bounded-android-adb.mjs shell svc bluetooth disable; fi
             # Follow AOSP CTS input-test setup: suppress later system crash/ANR dialogs and
             # close any dialog already present before testing the foreground WebView.
-            if [ "${{ matrix.api-level }}" = "36" ]; then adb shell settings put global hide_error_dialogs 1 && adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS; fi
+            if [ "${{ matrix.api-level }}" = "36" ]; then node scripts/bounded-android-adb.mjs shell settings put global hide_error_dialogs 1 && node scripts/bounded-android-adb.mjs shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS; fi
             bash scripts/run-android-connected-tests.sh
-            adb install -r "$RUNNER_TEMP/android-tested-candidate/application.apk"
-            adb install -r "$RUNNER_TEMP/android-tested-candidate/instrumentation.apk"
-            adb shell settings put secure show_ime_with_hard_keyboard 1
-            if [ "${{ matrix.api-level }}" = "36" ]; then adb shell cmd overlay list | grep -F 'com.android.internal.display.cutout.emulation.corner' && adb shell cmd overlay enable --user 0 com.android.internal.display.cutout.emulation.corner && adb shell cmd overlay list | grep -F '[x] com.android.internal.display.cutout.emulation.corner'; fi
+            apkanalyzer manifest print "$RUNNER_TEMP/android-tested-candidate/application.apk" > "$RUNNER_TEMP/s047-application-manifest.xml"
+            grep -Eq 'android:enableOnBackInvokedCallback="true"' "$RUNNER_TEMP/s047-application-manifest.xml"
+            node scripts/bounded-android-adb.mjs shell settings put secure show_ime_with_hard_keyboard 1
+            if [ "${{ matrix.api-level }}" = "36" ]; then node scripts/bounded-android-adb.mjs shell cmd overlay list | grep -F 'com.android.internal.display.cutout.emulation.corner' && node scripts/bounded-android-adb.mjs shell cmd overlay enable --user 0 com.android.internal.display.cutout.emulation.corner && node scripts/bounded-android-adb.mjs shell cmd overlay list | grep -F '[x] com.android.internal.display.cutout.emulation.corner'; fi
             # Exercise API 36 AppFrame on a fresh emulator, before long provider suites.
-            if [ "${{ matrix.api-level }}" = "36" ]; then adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS && adb shell input keyevent KEYCODE_WAKEUP && adb shell wm dismiss-keyguard; fi
-            if [ "${{ matrix.api-level }}" = "36" ]; then ime_id='com.shruggietech.glitchpad.test/com.shruggietech.glitchpad.shell.FixtureInputMethodService'; for attempt in $(seq 1 30); do if adb shell ime list -s -a | grep -Fq "$ime_id"; then break; fi; sleep 1; done; adb shell ime list -s -a | grep -Fq "$ime_id" && adb shell ime enable "$ime_id" && adb shell ime set "$ime_id" && adb shell settings get secure default_input_method | grep -Fqx "$ime_id"; fi
-            if [ "${{ matrix.api-level }}" = "36" ]; then ANDROID_INSTRUMENTATION_PRESERVE_TEST_INPUT_METHOD=true bash scripts/run-android-instrumentation.sh "$RUNNER_TEMP/appframe-evidence.txt" 'appframe_evidence=' -e waitForActivitiesToComplete false -e class com.shruggietech.glitchpad.shell.BrandBuilderAppFrameInstrumentedTest; fi
-            if [ "${{ matrix.api-level }}" = "36" ]; then adb shell ime reset; fi
-            bash scripts/run-android-s046-journeys.sh "${{ matrix.api-level }}" "${{ github.sha }}"
-            bash scripts/run-android-instrumentation.sh "$RUNNER_TEMP/restoration-seed.txt" 'OK (1 test)' -e class com.shruggietech.glitchpad.source.RestorationInstrumentedTest#privateRestorationRecordSurvivesProcessBoundary -e restorationPhase seed
-            bash scripts/run-android-instrumentation.sh "$RUNNER_TEMP/restoration-verify.txt" 'OK (1 test)' -e class com.shruggietech.glitchpad.source.RestorationInstrumentedTest#privateRestorationRecordSurvivesProcessBoundary -e restorationPhase verify
-            bash scripts/run-android-instrumentation.sh "$RUNNER_TEMP/performance-evidence.txt" 'performance_evidence=' -e waitForActivitiesToComplete false -e class com.shruggietech.glitchpad.performance.PerformanceInstrumentedTest
-            node scripts/check-performance.mjs --android-instrumentation-output "$RUNNER_TEMP/performance-evidence.txt" --api-level "${{ matrix.api-level }}"
-            if [ "${{ matrix.api-level }}" != "36" ]; then adb shell ime enable 'com.shruggietech.glitchpad.test/com.shruggietech.glitchpad.shell.FixtureInputMethodService' && adb shell ime set 'com.shruggietech.glitchpad.test/com.shruggietech.glitchpad.shell.FixtureInputMethodService' && adb shell settings get secure default_input_method | grep -Fqx 'com.shruggietech.glitchpad.test/com.shruggietech.glitchpad.shell.FixtureInputMethodService'; fi
-            if [ "${{ matrix.api-level }}" != "36" ]; then ANDROID_INSTRUMENTATION_PRESERVE_TEST_INPUT_METHOD=true bash scripts/run-android-instrumentation.sh "$RUNNER_TEMP/appframe-evidence.txt" 'appframe_evidence=' -e waitForActivitiesToComplete false -e class com.shruggietech.glitchpad.shell.BrandBuilderAppFrameInstrumentedTest; fi
+            if [ "${{ matrix.api-level }}" = "36" ]; then node scripts/bounded-android-adb.mjs shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS && node scripts/bounded-android-adb.mjs shell input keyevent KEYCODE_WAKEUP && node scripts/bounded-android-adb.mjs shell wm dismiss-keyguard; fi
+            if [ "${{ matrix.api-level }}" = "36" ]; then ime_id='com.shruggietech.glitchpad.test/com.shruggietech.glitchpad.shell.FixtureInputMethodService'; for attempt in $(seq 1 30); do if node scripts/bounded-android-adb.mjs shell ime list -s -a | grep -Fq "$ime_id"; then break; fi; sleep 1; done; node scripts/bounded-android-adb.mjs shell ime list -s -a | grep -Fq "$ime_id" && node scripts/bounded-android-adb.mjs shell ime enable "$ime_id" && node scripts/bounded-android-adb.mjs shell ime set "$ime_id" && node scripts/bounded-android-adb.mjs shell settings get secure default_input_method | grep -Fqx "$ime_id"; fi
+            if [ "${{ matrix.api-level }}" = "36" ]; then ANDROID_INSTRUMENTATION_RESET_APP_DATA=true ANDROID_INSTRUMENTATION_PRESERVE_TEST_INPUT_METHOD=true bash scripts/run-android-instrumentation.sh "$RUNNER_TEMP/appframe-evidence.txt" 'appframe_evidence=' -e waitForActivitiesToComplete false -e class com.shruggietech.glitchpad.shell.BrandBuilderAppFrameInstrumentedTest; fi
+            if [ "${{ matrix.api-level }}" = "36" ]; then node scripts/bounded-android-adb.mjs shell ime reset; fi
+            bash scripts/run-android-s047-journeys.sh "${{ matrix.api-level }}" "$GLITCHPAD_BUILD_COMMIT" "${{ matrix.role }}"
+            if [ "$ANDROID_S047_BACK_DIAGNOSTIC" != true ]; then bash scripts/run-android-instrumentation.sh "$RUNNER_TEMP/restoration-seed.txt" 'OK (1 test)' -e class com.shruggietech.glitchpad.source.RestorationInstrumentedTest#privateRestorationRecordSurvivesProcessBoundary -e restorationPhase seed; fi
+            if [ "$ANDROID_S047_BACK_DIAGNOSTIC" != true ]; then bash scripts/run-android-instrumentation.sh "$RUNNER_TEMP/restoration-verify.txt" 'OK (1 test)' -e class com.shruggietech.glitchpad.source.RestorationInstrumentedTest#privateRestorationRecordSurvivesProcessBoundary -e restorationPhase verify; fi
+            if [ "$ANDROID_S047_BACK_DIAGNOSTIC" != true ]; then bash scripts/run-android-instrumentation.sh "$RUNNER_TEMP/performance-evidence.txt" 'performance_evidence=' -e waitForActivitiesToComplete false -e class com.shruggietech.glitchpad.performance.PerformanceInstrumentedTest; fi
+            if [ "$ANDROID_S047_BACK_DIAGNOSTIC" != true ]; then node scripts/check-performance.mjs --android-instrumentation-output "$RUNNER_TEMP/performance-evidence.txt" --api-level "${{ matrix.api-level }}"; fi
+            if [ "${{ matrix.api-level }}" != "36" ]; then node scripts/bounded-android-adb.mjs shell ime enable 'com.shruggietech.glitchpad.test/com.shruggietech.glitchpad.shell.FixtureInputMethodService' && node scripts/bounded-android-adb.mjs shell ime set 'com.shruggietech.glitchpad.test/com.shruggietech.glitchpad.shell.FixtureInputMethodService' && node scripts/bounded-android-adb.mjs shell settings get secure default_input_method | grep -Fqx 'com.shruggietech.glitchpad.test/com.shruggietech.glitchpad.shell.FixtureInputMethodService'; fi
+            if [ "${{ matrix.api-level }}" != "36" ]; then ANDROID_INSTRUMENTATION_RESET_APP_DATA=true ANDROID_INSTRUMENTATION_PRESERVE_TEST_INPUT_METHOD=true bash scripts/run-android-instrumentation.sh "$RUNNER_TEMP/appframe-evidence.txt" 'appframe_evidence=' -e waitForActivitiesToComplete false -e class com.shruggietech.glitchpad.shell.BrandBuilderAppFrameInstrumentedTest; fi
 
       - name: Upload Android instrumentation reports
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: android-provider-lifecycle-api-${{ matrix.api-level }}
+          name: ${{ github.event_name == 'workflow_dispatch' && inputs.android_runtime == 'back_diagnostic' && 'android-back-diagnostic' || 'android-task-journeys' }}-${{ matrix.role }}-api-${{ matrix.api-level }}
           path: |
             crates/glitchpad-host/gen/android/app/build/reports/androidTests/**
             crates/glitchpad-host/gen/android/app/build/outputs/androidTest-results/**
             ${{ runner.temp }}/*.txt
             ${{ runner.temp }}/*.png
+            ${{ runner.temp }}/*.json
+            ${{ runner.temp }}/*.xml
             ${{ runner.temp }}/android-tested-candidate/**
           if-no-files-found: warn
           retention-days: 7
@@ -427,7 +473,7 @@ jobs:
         uses: actions/labeler@v7
 
   ci-ok:
-    name: ci-ok
+    name: ${{ github.event_name == 'workflow_dispatch' && inputs.android_runtime != 'full' && format('{0}-ci', inputs.android_runtime) || 'ci-ok' }}
     needs:
       [
         docs,
@@ -477,7 +523,11 @@ jobs:
           rustup toolchain install nightly-2026-10-31 --profile minimal
           cargo install cargo-fuzz --version 0.13.2 --locked
       - name: Verify valid seeds reach pixel decoding
-        run: cargo test --manifest-path fuzz/Cargo.toml --lib --locked
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .tmp/s043-fuzz
+          cargo test --manifest-path fuzz/Cargo.toml --lib --locked 2>&1 | tee .tmp/s043-fuzz/seed-check.log
       - name: Run bounded original-corpus campaign
         shell: bash
         run: |

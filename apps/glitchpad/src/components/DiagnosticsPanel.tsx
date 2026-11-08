@@ -7,6 +7,8 @@ interface DiagnosticsPanelProps {
   exporter: DiagnosticExportGateway;
   onReset: () => Promise<void>;
   onClose: () => void;
+  embedded?: boolean;
+  onBusyChange?: (busy: boolean) => void;
 }
 const freeze = (value: DiagnosticBundle): DiagnosticBundle => {
   const copy = JSON.parse(JSON.stringify(value)) as DiagnosticBundle;
@@ -24,6 +26,8 @@ export function DiagnosticsPanel({
   exporter,
   onReset,
   onClose,
+  embedded = false,
+  onBusyChange,
 }: DiagnosticsPanelProps) {
   const [bundle, setBundle] = useState<DiagnosticBundle | null>(null);
   const [status, setStatus] = useState('Loading redacted diagnostics');
@@ -31,9 +35,9 @@ export function DiagnosticsPanel({
   const busy = useRef(false);
   const closeRef = useRef<HTMLButtonElement>(null);
   const sheetRef = useRef<HTMLElement>(null);
-  useDiagnosticViewport(sheetRef, exporter.viewport);
+  useDiagnosticViewport(sheetRef, embedded ? undefined : exporter.viewport);
   useEffect(() => {
-    closeRef.current?.focus();
+    if (!embedded) closeRef.current?.focus();
     let active = true;
     void load()
       .then((value) => {
@@ -48,11 +52,12 @@ export function DiagnosticsPanel({
     return () => {
       active = false;
     };
-  }, [load]);
+  }, [load, embedded]);
   const run = async (kind: 'save' | 'share' | 'clear') => {
     if (busy.current || !bundle) return;
     busy.current = true;
     setPending(true);
+    onBusyChange?.(true);
     setStatus(
       kind === 'clear'
         ? 'Clearing stored diagnostics…'
@@ -88,6 +93,7 @@ export function DiagnosticsPanel({
     } finally {
       busy.current = false;
       setPending(false);
+      onBusyChange?.(false);
     }
   };
   return (
@@ -97,22 +103,24 @@ export function DiagnosticsPanel({
       aria-label="Diagnostics"
       aria-busy={pending}
       onKeyDown={(event) => {
-        if (event.key === 'Escape' && !pending) onClose();
+        if (!embedded && event.key === 'Escape' && !pending) onClose();
       }}
     >
       <header className="application-sheet-header">
         <div>
-          <h2>Diagnostics</h2>
+          {!embedded && <h2>Diagnostics</h2>}
           <p>Preview the exact redacted bundle before export.</p>
         </div>
-        <button
-          ref={closeRef}
-          type="button"
-          disabled={pending}
-          onClick={onClose}
-        >
-          Close diagnostics
-        </button>
+        {!embedded && (
+          <button
+            ref={closeRef}
+            type="button"
+            disabled={pending}
+            onClick={onClose}
+          >
+            Close diagnostics
+          </button>
+        )}
       </header>
       <p role="status">{status}</p>
       {bundle && (

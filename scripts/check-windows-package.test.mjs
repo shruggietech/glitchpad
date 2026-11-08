@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -218,7 +219,21 @@ test('Windows lifecycle policy rejects removal of content-first release assertio
   assert.throws(
     () =>
       validatePortableSmokeContract(
-        lifecycle.replace("Invoke-MenuCommand $Process 'Save' 'Ctrl+S'", ''),
+        lifecycle.replace(
+          "Invoke-DocumentCommand $Process 'Save' 'Ctrl+S'",
+          '',
+        ),
+        workflow,
+      ),
+    /Windows Markdown lifecycle omits/u,
+  );
+  assert.throws(
+    () =>
+      validatePortableSmokeContract(
+        lifecycle.replace(
+          "Invoke-NamedButton $Process 'Document tools'",
+          "Invoke-NamedButton $Process 'Menu'",
+        ),
         workflow,
       ),
     /Windows Markdown lifecycle omits/u,
@@ -256,62 +271,66 @@ test('Windows lifecycle policy rejects removal of content-first release assertio
   );
 });
 
-test('desktop menu geometry reserves shell chrome and keeps its popup independently positioned', async () => {
-  const [app, menu, styles] = await Promise.all([
+test('desktop lifecycle observes the active modal and preserves document action routing', async () => {
+  const [lifecycle, menu, app] = await Promise.all([
     readFile(
-      join(repositoryRoot, 'apps', 'glitchpad', 'src', 'App.tsx'),
+      join(repositoryRoot, 'scripts/windows/test-portable-lifecycle.ps1'),
       'utf8',
     ),
     readFile(
-      join(
-        repositoryRoot,
-        'apps',
-        'glitchpad',
-        'src',
-        'components',
-        'ApplicationMenu.tsx',
-      ),
+      join(repositoryRoot, 'apps/glitchpad/src/components/ApplicationMenu.tsx'),
       'utf8',
     ),
-    readFile(
-      join(repositoryRoot, 'apps', 'glitchpad', 'src', 'styles.css'),
-      'utf8',
-    ),
+    readFile(join(repositoryRoot, 'apps/glitchpad/src/App.tsx'), 'utf8'),
   ]);
-  const chrome = styles.match(/\.shell-chrome\s*\{([^}]*)\}/su)?.[1] ?? '';
-  const shell =
-    styles.match(/\.application-menu-shell\s*\{([^}]*)\}/su)?.[1] ?? '';
-  const trigger =
-    styles.match(/\.application-menu-trigger\s*\{([^}]*)\}/su)?.[1] ?? '';
-  const popup = styles.match(/\.application-menu\s*\{([^}]*)\}/su)?.[1] ?? '';
-  assert.match(app, /className="shell-chrome"/u);
-  assert.match(app, /<ApplicationMenu[\s\S]*<TabStrip/u);
-  assert.match(menu, /application-menu-shell application-toolbar/u);
-  assert.match(chrome, /display:\s*grid/u);
-  assert.match(
-    chrome,
-    /grid-template-columns:\s*var\(--application-toolbar-size\) minmax\(0, 1fr\)/u,
+  assert.match(menu, /title="Application menu"/u);
+  assert.match(menu, /title="Document tools"/u);
+  assert.ok(app.includes('inert={'));
+  assert.ok(
+    lifecycle.includes(
+      'Wait-WindowText $Process $pausedText -Seconds 20 -PollMilliseconds 250',
+    ),
   );
-  assert.match(shell, /position:\s*relative/u);
-  assert.doesNotMatch(shell, /position:\s*absolute/u);
-  assert.match(trigger, /width:\s*100%/u);
-  assert.match(styles, /--application-toolbar-size:\s*32px/u);
-  assert.match(styles, /--application-toolbar-size:\s*44px/u);
-  assert.match(
-    styles,
-    /\.application-menu-glyph\s*\{[\s\S]*width:\s*18px[\s\S]*height:\s*18px/u,
+  assert.ok(
+    !lifecycle.includes(
+      '[System.Windows.Automation.AutomationElement]::Compare',
+    ),
+    'Compare is declared on Automation, not AutomationElement',
   );
-  assert.match(popup, /position:\s*absolute/u);
-  assert.match(popup, /left:\s*0/u);
-  assert.match(
-    popup,
-    /max-height:\s*calc\(100vh - var\(--shell-row-height\) - 0\.5rem\)/u,
+  assert.ok(
+    lifecycle.includes('[System.Windows.Automation.Automation]::Compare'),
+  );
+  const geometry = lifecycle.slice(
+    lifecycle.indexOf('function Assert-MenuGeometry('),
+    lifecycle.indexOf('function Wait-DeviceScaleMarker('),
+  );
+  const disclosed = geometry.slice(
+    geometry.indexOf("Invoke-NamedButton $Process 'Menu'"),
+    geometry.indexOf("SendWait('{ESC}')"),
+  );
+  assert.ok(!disclosed.includes("Wait-NamedButton $Process 'Menu'"));
+  assert.ok(!disclosed.includes(' $DocumentName'));
+  assert.ok(
+    disclosed.includes("Find-LargestNamedElement $window 'Application menu'"),
+  );
+  assert.ok(
+    disclosed.includes("Wait-NamedButton $Process 'Close Application menu'"),
+  );
+  const output = execFileSync(
+    'pwsh',
+    [
+      '-NoLogo',
+      '-NoProfile',
+      '-NonInteractive',
+      '-File',
+      join(repositoryRoot, 'scripts/windows/test-portable-menu.ps1'),
+    ],
+    { encoding: 'utf8', windowsHide: true },
   );
   assert.match(
-    styles,
-    /@media \(forced-colors: active\)[\s\S]*\.application-menu-trigger/u,
+    output,
+    /Portable modal coordinator and document route fixtures passed/u,
   );
-  assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/u);
 });
 
 test('Markdown recovery stays intrinsic and avoids unsupported Chrome 69 globals', async () => {

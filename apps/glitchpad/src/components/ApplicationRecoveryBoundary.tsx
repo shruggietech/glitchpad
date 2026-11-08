@@ -1,3 +1,4 @@
+import {RecoveryHelp} from './RecoveryHelp';
 import {
   consumeRecoveryProbe,
   installRecoveryProbeListener,
@@ -116,6 +117,7 @@ export class ApplicationRecoveryBoundary extends Component<
             </button>
           </>
         )}
+        <RecoveryHelp/>
       </main>
     );
   }

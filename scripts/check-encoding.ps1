@@ -4,9 +4,9 @@ param()
 $ErrorActionPreference = 'Stop'
 $repositoryRoot = Split-Path -Parent $PSScriptRoot
 $strictUtf8 = [System.Text.UTF8Encoding]::new($false, $true)
-$textExtensions = @('.css', '.gradle', '.html', '.js', '.json', '.jsonc', '.kt', '.kts', '.lock', '.md', '.mjs', '.properties', '.ps1', '.rs', '.svg', '.toml', '.ts', '.tsx', '.txt', '.xml', '.yaml', '.yml')
+$textExtensions = @('.css', '.gradle', '.html', '.js', '.json', '.jsonc', '.kt', '.kts', '.lock', '.md', '.mjs', '.patch', '.properties', '.ps1', '.rs', '.svg', '.toml', '.ts', '.tsx', '.txt', '.xml', '.yaml', '.yml')
 $textNames = @('.editorconfig', '.gitattributes', '.gitignore', '.node-version', '.prettierignore', 'gradlew')
-$excludedDirectories = @('.git', 'node_modules', 'target', 'dist', 'coverage', '.gradle', 'build', '.next', '.source', 'out', 'playwright-report', 'test-results')
+$excludedDirectories = @('.git', '.codex-tmp', '.codex-attachments', '.pnpm-store', '.tmp', 'node_modules', 'target', 'dist', 'coverage', '.gradle', 'build', '.next', '.source', 'out', 'playwright-report', 'test-results')
 $corruptionMarkers = @(
     "$([char]0x00C3)$([char]0x00A2)",
     "$([char]0x00C3)$([char]0x00A9)",
@@ -16,11 +16,22 @@ $corruptionMarkers = @(
 )
 $failures = [System.Collections.Generic.List[string]]::new()
 
-$files = Get-ChildItem -LiteralPath $repositoryRoot -File -Recurse -Force | Where-Object {
-    $relative = [System.IO.Path]::GetRelativePath($repositoryRoot, $_.FullName)
-    $parts = $relative -split '[\\/]'
-    -not ($parts | Where-Object { $_ -in $excludedDirectories }) -and ($_.Extension -in $textExtensions -or $_.Name -in $textNames)
+function Get-SourceTextFiles {
+    param([Parameter(Mandatory = $true)][string]$Directory)
+
+    foreach ($entry in Get-ChildItem -LiteralPath $Directory -Force) {
+        if ($entry.PSIsContainer) {
+            if ($entry.Name -notin $excludedDirectories -and -not ($entry.Attributes -band [System.IO.FileAttributes]::ReparsePoint)) {
+                Get-SourceTextFiles -Directory $entry.FullName
+            }
+        }
+        elseif ($entry.Extension -in $textExtensions -or $entry.Name -in $textNames) {
+            $entry
+        }
+    }
 }
+
+$files = @(Get-SourceTextFiles -Directory $repositoryRoot)
 
 foreach ($file in $files) {
     $bytes = [System.IO.File]::ReadAllBytes($file.FullName)

@@ -1,3 +1,4 @@
+import { appendRecoveryHelp } from './recovery-help';
 export type RecoveryFailureComponent =
   'bootstrap' | 'application' | 'document' | 'markdown';
 export type RecoveryFailureReporter = (
@@ -89,7 +90,10 @@ const showBootstrapFailure = (
     });
   });
   surface.append(title, explanation, code, restart, status);
-  root.replaceChildren(surface);
+  appendRecoveryHelp(surface);
+  // Bootstrap recovery must work before application code or DOM shims load.
+  while (root.firstChild) root.removeChild(root.firstChild);
+  root.appendChild(surface);
   restart.focus();
 };
 

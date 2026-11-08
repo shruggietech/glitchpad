@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import test from 'node:test';
 
-import { activatePerformanceTab, collectPerformance, collectWithHardFailureConfirmation, isAllowedRequest, measureNavigation, parseArguments } from './run-performance.mjs';
+import { activatePerformanceEdit, isCurrentPerformanceMermaidPreview, activatePerformanceTab, collectPerformance, collectWithHardFailureConfirmation, isAllowedRequest, measureNavigation, parseArguments } from './run-performance.mjs';
 
 test('collector arguments are explicit and bounded', () => {
   assert.deepEqual(parseArguments(['--profile', 'hosted_windows_smoke_v1', '--build-id', 'abc', '--skip-build']), {
@@ -162,4 +162,64 @@ test('fixture activation keeps a missing target terminal and never clicks anothe
     $eval: async () => { assert.fail('a missing target must not be clicked'); },
   };
   await assert.rejects(activatePerformanceTab(page, '.missing-tab'), /target_tab_timeout/u);
+});
+
+
+test('edit metric activates only the current enabled Edit command in Document tools', async () => {
+  const calls = [];
+  const makeButton = (label, disabled = false) => ({ tagName: 'BUTTON', disabled, querySelector: () => ({ textContent: label }), click: () => calls.push(label) });
+  const page = {
+    $eval: async (selector, activate) => { assert.equal(selector, '.document-tools-trigger'); activate({ click: () => calls.push('Document tools') }); },
+    waitForSelector: async (selector, options) => { calls.push([selector, options]); },
+    $$eval: async (selector, choose) => {
+      assert.equal(selector, '.document-tools-menu [role="menuitem"]');
+      return choose([makeButton('View source'), makeButton('Edit a copy'), makeButton('Edit source'), makeButton('Edit', true), makeButton('Edit')]);
+    },
+  };
+  await activatePerformanceEdit(page);
+  assert.deepEqual(calls, ['Document tools', ['.document-tools-menu', undefined], 'Edit', ['.document-tools-menu', { hidden: true }]]);
+});
+
+test('edit metric never treats read-only source or a disabled Edit command as writable', async () => {
+  for (const labels of [['View source', 'Edit a copy'], ['Edit']]) {
+    let clicked = 0;
+    const page = {
+      $eval: async (_selector, activate) => activate({ click: () => {} }),
+      waitForSelector: async (_selector, options) => { assert.equal(options, undefined); },
+      $$eval: async (_selector, choose) => choose(labels.map((label) => ({ tagName: 'BUTTON', disabled: label === 'Edit', querySelector: () => ({ textContent: label }), click: () => { clicked += 1; } }))),
+    };
+    await assert.rejects(activatePerformanceEdit(page), /performance_edit_source_command_missing/u);
+    assert.equal(clicked, 0);
+  }
+});
+
+test('edit readiness requires exact edited bytes and the current panel revision, ignoring other retained editors', () => {
+  const previousDocument = globalThis.document;
+  const previousWindow = globalThis.window;
+  const before = 'flowchart TB\n  A --> B\n';
+  let text = before + '\n%% edit';
+  let surfaceRevision = 2;
+  let writablePane = true;
+  const panel = {
+    getAttribute: () => '2',
+    querySelector: (selector) => selector.startsWith('.mermaid-surface')
+      ? { getAttribute: () => String(surfaceRevision) }
+      : writablePane ? { querySelectorAll: () => text.split('\n').map((textContent) => ({ textContent })) } : null,
+  };
+  globalThis.window = { __glitchpadPerformanceMermaidSourceBefore: before };
+  globalThis.document = { querySelector: (selector) => { assert.equal(selector, '#panel-performance-mermaid-edit'); return panel; } };
+  try {
+    assert.equal(isCurrentPerformanceMermaidPreview(), true);
+    surfaceRevision = 1;
+    assert.equal(isCurrentPerformanceMermaidPreview(), false);
+    surfaceRevision = 2;
+    text = before;
+    assert.equal(isCurrentPerformanceMermaidPreview(), false);
+    text = before + '\n%% edit';
+    writablePane = false;
+    assert.equal(isCurrentPerformanceMermaidPreview(), false);
+  } finally {
+    if (previousDocument === undefined) delete globalThis.document; else globalThis.document = previousDocument;
+    if (previousWindow === undefined) delete globalThis.window; else globalThis.window = previousWindow;
+  }
 });

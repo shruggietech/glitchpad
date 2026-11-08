@@ -91,7 +91,8 @@ impl<R: Runtime> AndroidSource<R> {
         offset: u64,
         length: u64,
     ) -> Result<ReadResponse, String> {
-        self.0
+        let encoded: crate::models::EncodedReadResponse = self
+            .0
             .run_mobile_plugin(
                 "readRange",
                 ReadRequest {
@@ -100,7 +101,8 @@ impl<R: Runtime> AndroidSource<R> {
                     length,
                 },
             )
-            .map_err(|error| error.to_string())
+            .map_err(|error| error.to_string())?;
+        encoded.decode(length).map_err(str::to_owned)
     }
 
     /// Refreshes one registered source.
@@ -248,6 +250,31 @@ impl<R: Runtime> AndroidSource<R> {
                 "diagnosticEnvironment",
                 crate::models::DiagnosticEnvironmentRequest { include_viewport },
             )
+            .map_err(|error| error.to_string())
+    }
+
+    /// Writes text to the actual Android clipboard.
+    ///
+    /// # Errors
+    ///
+    /// Returns the bridge failure if the clipboard service cannot complete the write.
+    pub fn write_clipboard(&self, text: &str) -> Result<(), String> {
+        self.0
+            .run_mobile_plugin(
+                "writeClipboard",
+                crate::models::ClipboardTextRequest { text },
+            )
+            .map_err(|error| error.to_string())
+    }
+
+    /// Reads installed package identity without accepting caller-supplied facts.
+    ///
+    /// # Errors
+    ///
+    /// Returns a bridge failure when the package manager query is unavailable.
+    pub fn application_info(&self) -> Result<crate::models::InstalledApplicationInfo, String> {
+        self.0
+            .run_mobile_plugin("applicationInfo", ())
             .map_err(|error| error.to_string())
     }
 

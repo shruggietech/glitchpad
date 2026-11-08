@@ -1,6 +1,7 @@
 import 'core-js/stable';
 import { getDocument, PDFWorker, PDFDataRangeTransport, TextLayer, type PDFDocumentLoadingTask, type PDFDocumentProxy, type RenderTask } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { PdfBinaryDataFactory } from './pdf-resources';
+import { normalizePdfPostMessage } from './pdf-compatibility';
 import { assertPdfPages, assertPdfSource, classifyPdfFailure, initialPdfState, pdfCapabilities, pdfSurfaceBytes, PDF_ENGINE_VERSION, PDF_LIMITS, PdfFailure, type PdfDocumentState, type PdfSourceLease } from './pdf-contract';
 
 export interface PdfPageSurface { width:number; height:number; bytes:number; dispose():void; }
@@ -62,7 +63,7 @@ export class PdfController {
     this.publish({state:'loading',error:null});
     try {
       assertPdfSource(source.length,source.platform);
-      const worker=new Worker(new URL('./pdf-worker.ts',import.meta.url),{name:'glitchpad-pdf'});this.nativeWorker=worker;
+      const worker=new Worker(new URL('./pdf-worker.ts',import.meta.url),{name:'glitchpad-pdf'});normalizePdfPostMessage(worker);this.nativeWorker=worker;
       await new Promise<void>((resolve,reject)=>{
         const timeout=setTimeout(()=>{worker.removeEventListener('message',ready);reject(new PdfFailure('worker_failure'));},10000);
         const ready=(event:MessageEvent<unknown>)=>{

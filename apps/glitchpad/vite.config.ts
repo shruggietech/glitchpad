@@ -1,9 +1,10 @@
 import react from '@vitejs/plugin-react';
+import { pdfWorkerCompatibility } from '../../scripts/lib/pdf-worker-compatibility.mjs';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [pdfWorkerCompatibility(), react()],
   build: {
     // The API 24 validation image ships Chromium 69. Keep application and
     // dependency syntax executable on the oldest supported Android WebView.
@@ -24,6 +25,7 @@ export default defineConfig({
   worker: {
     // Vite supplies module workers in dev and classic bundled workers in production.
     format: 'iife',
+    plugins: () => [pdfWorkerCompatibility()],
   },
   clearScreen: false,
   server: {

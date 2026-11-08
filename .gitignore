@@ -62,3 +62,6 @@ crates/glitchpad-android-source/android/build/
 # Python validation helpers
 __pycache__/
 *.py[cod]
+
+# Generated, pinned PDF resource module
+/apps/glitchpad/src/pdf-generated/

@@ -32,7 +32,7 @@ Independent test: actual source-to-canvas/selectable-text journey, limits/passwo
 - [ ] T012 [US1] Add minimal readable canvas/text PdfSurface and DocumentSurface integration in apps/glitchpad/src/components/PdfSurface.tsx and DocumentSurface.tsx. (FR-004,007,016)
 - [ ] T013 [US1] Run actual installed ordinary API24 worker/load/render/isolation/cancel preflight through AndroidDeliveryInstrumentedTest and scripts/run-android-connected-tests.sh, then API36; retain attempts in specs/049-pdf-viewer-foundation/validation.md before broad UI. (FR-019,020)
 - [ ] T014 [US1] Complete virtualized visible/adjacent canvas/text layers, fit/zoom/rotation/layout/labels/page controls and compact state in apps/glitchpad/src/components/PdfSurface.tsx and apps/glitchpad/src/domain/pdf-controller.ts. (FR-004,005,007,012)
-- [ ] T015 [US1] Wire suspend/resume/close/revision cleanup and session-only navigation through apps/glitchpad/src/App.tsx and domain/session.ts using actual worker/canvas cancellation before resource accounting. (FR-008,009,017)
+- [ ] T015 [US1] Wire suspend/resume/close/revision cleanup and session-only navigation through apps/glitchpad/src/App.tsx and domain/tabs.ts using actual worker/canvas cancellation before resource accounting. (FR-008,009,017)
 - [ ] T016 [US1] Verify source/page/surface boundaries, reduced-cache/refusal, encrypted/malformed/revoked and stale work in apps/glitchpad/src/domain/pdf-controller.test.ts and scripts/check-pdf-runtime.mjs. (FR-005,008,009,020)
 
 ## Phase 4: US2 - Find and navigate PDF content
@@ -60,7 +60,7 @@ Independent test: known metadata facts, no automatic network/execution/opener ca
 
 Independent test: reconcile all16 issue criteria, unchanged source/session contracts, actual four-platform candidate evidence, package/license/brand and owner PR boundary.
 
-- [ ] T028 [P] [US4] Extend actual Windows/macOS/Linux package probes to await PDF canvas/text/navigation/metadata/isolation and source identity in scripts/ package qualification probes. (FR-004,017,020; SC-002)
+- [ ] T028 [P] [US4] Extend actual Windows/macOS/Linux package probes to await PDF canvas/text/navigation/metadata/isolation and source identity in scripts/windows/test-portable-lifecycle.ps1, scripts/macos/test-package-lifecycle.mjs, scripts/linux/test-package-lifecycle.mjs and apps/glitchpad/src/domain/package-workflow-probe.ts. (FR-004,017,020; SC-002)
 - [ ] T029 [US4] Complete Android PDF keyboard/touch/navigation/metadata/links/lifecycle/print candidate journeys on API24/API36 in AndroidDeliveryInstrumentedTest and scripts/run-android-connected-tests.sh. (FR-004,020,021; SC-002)
 - [ ] T030 [US4] Run full contract/source/session/text/image regression and hostile-input/budget/accessibility/compatibility suites, binding source/run/attempt/artifact/runtime facts in specs/049-pdf-viewer-foundation/validation.md. (FR-017,019,020; SC-003,004,005)
 - [ ] T031 [US4] Verify package resources/notices/security/dependency/brand gates and exact delivered kit conformance in existing CI/scripts and specs/049-pdf-viewer-foundation/validation.md. (FR-018,020,021; SC-005)

@@ -526,6 +526,7 @@ try {
     await semantics('go_to_page');
     await activate('Go to page');
     await rendered(3);
+    await page.waitForFunction("document.activeElement.getAttribute('aria-label') === 'Go to page'", { timeout: 5000 });
     const focusRestored = await page.evaluate(function () {
       return document.activeElement.getAttribute('aria-label') === 'Go to page';
     });
@@ -905,6 +906,7 @@ try {
               })
               .catch(() => [])
           : [],
+        focus: page ? await page.evaluate(function () { return document.activeElement.outerHTML.slice(0,1024); }).catch(() => null) : null,
         body: page
           ? await page.$eval('body', (node) => node.innerText).catch(() => null)
           : null,

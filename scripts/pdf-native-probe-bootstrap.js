@@ -1,5 +1,10 @@
 (function () {
   var deadline = Date.now() + 90000;
+  var readingResult = null;
+  var diagnostics = function () {
+    var root = document.querySelector('.pdf-layout');
+    return { body: document.body.innerText.slice(0,3072), state: root ? root.getAttribute('data-pdf-state') : null, error: root ? root.getAttribute('data-pdf-error') : null };
+  };
   var timer = setInterval(function () {
     var documentRoot = document.querySelector(
       '[data-pdf-ready=true][data-pdf-worker=true]',
@@ -11,7 +16,7 @@
           window.__TAURI_INTERNALS__
             .invoke('record_desktop_pdf_probe', {
               owner: '',
-              proof: { error: 'PDF startup timeout' },
+              proof: { error: 'PDF startup timeout', diagnostics: diagnostics() },
             })
             .catch(function () {});
       }
@@ -22,6 +27,7 @@
     window
       .runGlitchpadPdfReadingJourney()
       .then(async function (proof) {
+        readingResult = proof;
         var wait = async function (predicate, label) {
           var until = Date.now() + 45000;
           while (Date.now() < until) {
@@ -140,7 +146,7 @@
         window.__TAURI_INTERNALS__
           .invoke('record_desktop_pdf_probe', {
             owner: owner,
-            proof: { error: String(error).slice(0, 1024) },
+            proof: { error: String(error).slice(0, 1024), reading: readingResult, diagnostics: diagnostics() },
           })
           .catch(function () {});
       });

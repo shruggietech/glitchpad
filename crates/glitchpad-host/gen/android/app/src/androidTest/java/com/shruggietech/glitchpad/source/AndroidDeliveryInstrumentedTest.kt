@@ -2971,23 +2971,21 @@ class AndroidDeliveryInstrumentedTest {
 
   @Test fun releaseStartupIdentityAndCapture() {
     assertTrue("dedicated release startup runner required", isReleaseRuntimeEvidence())
-    val scenario = launchS047()
-    retainReleaseEvidence(scenario, "startup", includePackages = true)
-  }
-
-  @Test fun releaseBackAboutAndCapture() {
-    assertTrue("dedicated release-runtime runner required", isReleaseRuntimeEvidence())
     shellCommandTransportPreservesFixtureBytesAndExitStatus()
     val scenario = launchS047()
+    retainReleaseEvidence(scenario, "startup", includePackages = true, observations = verifyReleaseBackAbout(scenario))
+  }
+
+  private fun verifyReleaseBackAbout(scenario: ActivityScenario<MainActivity>): JSONObject {
     val draft = "S048_RELEASE_BACK_RETAINED_Ω\n"
     createNewDraftForInput(scenario, "New text file", "Untitled.txt")
     replaceEditorText(scenario, draft)
     val imeDismissed = dismissObservedAppIme(scenario)
     assertEquals("keyboard dismissal must retain every draft character", draft, editableSourceText(scenario))
-    menuAction(scenario, "File information")
-    waitForBodyText(scenario, "File information", "Untitled.txt")
+    menuAction(scenario, "Preferences")
+    waitForCondition(scenario, "Array.from(document.querySelectorAll('[role=dialog]')).some(n=>n.querySelector('h2')&&n.querySelector('h2').textContent==='Preferences')", "Preferences must be visibly open before native Back")
     taskKey(KeyEvent.KEYCODE_BACK)
-    waitForCondition(scenario, "!document.querySelector('[aria-label=\"File information\"]')", "native Back must dismiss the current task")
+    waitForCondition(scenario, "!Array.from(document.querySelectorAll('[role=dialog]')).some(n=>n.querySelector('h2')&&n.querySelector('h2').textContent==='Preferences')", "native Back must dismiss the actually opened Preferences task")
     assertEquals("native Back must retain every draft character", draft, editableSourceText(scenario))
     recordJourneyReadback(9, "back_retained_utf8", draft.toByteArray(Charsets.UTF_8), editableSourceText(scenario).toByteArray(Charsets.UTF_8))
     menuAction(scenario, "About Glitchpad")
@@ -3001,7 +2999,14 @@ class AndroidDeliveryInstrumentedTest {
     assertEquals("android", displayed.getString("Platform"))
     assertEquals(source, displayed.getString("Build"))
     val offline = verifyOfflineNotices(scenario)
-    retainReleaseEvidence(scenario, "back_about", observations = JSONObject().put("about", displayed).put("back_retained", true).put("ime_observed_dismissed", imeDismissed).put("offline_notices", offline))
+    return JSONObject().put("about", displayed).put("back_retained", true).put("ime_observed_dismissed", imeDismissed).put("offline_notices", offline)
+  }
+
+  @Test fun releaseBackAboutAndCapture() {
+    assertTrue("dedicated release-runtime runner required", isReleaseRuntimeEvidence())
+    shellCommandTransportPreservesFixtureBytesAndExitStatus()
+    val scenario = launchS047()
+    retainReleaseEvidence(scenario, "back_about", observations = verifyReleaseBackAbout(scenario))
   }
 
   private fun isS047Evidence(): Boolean = InstrumentationRegistry.getArguments().getString("s047") == "true"

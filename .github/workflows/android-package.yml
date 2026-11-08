@@ -332,6 +332,15 @@ jobs:
             node scripts/bounded-android-adb.mjs shell svc power stayon true
             node scripts/bounded-android-adb.mjs shell input keyevent 224
             if [ "${{ matrix.api }}" = 36 ]; then node scripts/bounded-android-adb.mjs shell svc bluetooth disable; node scripts/bounded-android-adb.mjs shell settings put global hide_error_dialogs 1; node scripts/bounded-android-adb.mjs shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS; fi
+            mkdir -p "$RUNNER_TEMP/s048-release-runtime"
+            node scripts/bounded-android-adb.mjs shell settings put secure show_ime_with_hard_keyboard 1
+            node scripts/bounded-android-adb.mjs shell settings get secure show_ime_with_hard_keyboard > "$RUNNER_TEMP/s048-release-runtime/ime-environment.txt"
+            grep -Fxq 1 "$RUNNER_TEMP/s048-release-runtime/ime-environment.txt"
+            node scripts/bounded-android-adb.mjs shell settings get secure default_input_method >> "$RUNNER_TEMP/s048-release-runtime/ime-environment.txt"
+            if [ "${{ inputs.runtime_scope || 'full' }}" = full ]; then
+              bash scripts/run-android-release-tests.sh "${{ matrix.api }}" "$GITHUB_SHA" "$RUNNER_TEMP/canonical-android/glitchpad-0.2.1-android-universal.apk" "$RUNNER_TEMP/android-release-inputs/instrumentation.apk" "$RUNNER_TEMP/s048-release-startup" startup
+              mv "$RUNNER_TEMP/s048-release-startup/release-runtime.json" "$RUNNER_TEMP/s048-release-startup/startup-diagnostic.json"
+            fi
             bash scripts/run-android-release-tests.sh "${{ matrix.api }}" "$GITHUB_SHA" "$RUNNER_TEMP/canonical-android/glitchpad-0.2.1-android-universal.apk" "$RUNNER_TEMP/android-release-inputs/instrumentation.apk" "$RUNNER_TEMP/s048-release-runtime" "${{ inputs.runtime_scope || 'full' }}"
       - name: Retain every release-runtime attempt
         if: always()
@@ -340,6 +349,7 @@ jobs:
           name: ${{ inputs.runtime_scope == 'startup' && 'android-minified-release-startup' || 'android-minified-release-runtime' }}-api-${{ matrix.api }}
           path: |
             ${{ runner.temp }}/s048-release-runtime/**
+            ${{ runner.temp }}/s048-release-startup/**
             ${{ runner.temp }}/android-release-inputs/identity.json
           if-no-files-found: error
           retention-days: 30

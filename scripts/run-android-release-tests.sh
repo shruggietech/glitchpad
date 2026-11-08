@@ -79,7 +79,7 @@ groups=(delivery authoring recovery back_about)
 if [[ "$mode" == startup ]]; then groups=(startup); fi
 for group in "${groups[@]}"; do
   completed=false
-  if [[ "$group" == back_about ]]; then
+  if [[ "$group" == back_about || "$group" == startup ]]; then
     offline_pending=true
     bash "$scripts/android-offline-mode.sh" setup "$evidence/offline" "$source"
   fi
@@ -88,7 +88,7 @@ for group in "${groups[@]}"; do
     mkdir "$directory"
     node "$scripts/prepare-android-instrumentation.mjs" "$directory/setup.txt"
     case "$group" in
-      startup) if run_phase "$directory" startup releaseStartupIdentityAndCapture; then completed=true; fi ;;
+      startup) if run_phase "$directory" startup releaseStartupIdentityAndCapture -e offlineSetup hosted_controller; then completed=true; fi ;;
       delivery) if run_phase "$directory" delivery resolvedIntentDisplaysColdAndWarmProviderDocuments; then completed=true; fi ;;
       authoring) if run_phase "$directory" authoring standaloneAuthoringAndDiagnosticJourneys; then completed=true; fi ;;
       recovery)
@@ -98,7 +98,7 @@ for group in "${groups[@]}"; do
     esac
     if [[ "$completed" == true ]]; then break; fi
   done
-  if [[ "$group" == back_about ]]; then
+  if [[ "$group" == back_about || "$group" == startup ]]; then
     bash "$scripts/android-offline-mode.sh" restore "$evidence/offline" "$source"
     offline_pending=false
   fi

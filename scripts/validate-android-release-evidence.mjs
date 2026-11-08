@@ -125,7 +125,7 @@ export function validateReleaseRow(row, expected) {
         row.observations.recovery_phase === 'verify',
       'process recovery was not verified',
     );
-  if (expected.caseId === 'back_about') {
+  if (['back_about', 'startup'].includes(expected.caseId)) {
     required(
       row.observations?.back_retained === true &&
         row.readbacks.some((entry) => entry.kind === 'back_retained_utf8'),
@@ -314,7 +314,7 @@ export async function validateReleaseDirectory({
     selected,
     scope:
       mode === 'startup'
-        ? 'Startup/identity diagnostic only; no release campaign qualification.'
+        ? 'Startup/identity/Back/About diagnostic only; no release campaign qualification.'
         : 'Five bounded release-runtime cases. Separate debug ordinary/fault campaigns qualify the S047 ten-journey matrix; physical/manual conformance remains waived under #66.',
   };
 }

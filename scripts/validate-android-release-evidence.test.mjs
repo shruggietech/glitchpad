@@ -287,11 +287,12 @@ test('required recovery, Diagnostics, export and offline About observations cann
     'authoring',
     'recovery_verify',
     'back_about',
+    'startup',
   ]) {
     const changed = row(caseId);
     if (caseId === 'recovery_verify')
       changed.observations.exact_text_verified = false;
-    else if (caseId === 'back_about')
+    else if (['back_about', 'startup'].includes(caseId))
       changed.observations.offline_notices.default_network_none = false;
     else changed.readbacks = [];
     assert.throws(() => validateReleaseRow(changed, { ...expected, caseId }));

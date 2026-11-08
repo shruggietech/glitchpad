@@ -20,7 +20,15 @@ export const pdfViewKey = (
   width: number,
   height: number,
   reduced: boolean,
-) => [view.fit, view.zoom, view.rotation, width, view.fit === 'page' ? height : 0, reduced].join(':');
+) =>
+  [
+    view.fit,
+    view.zoom,
+    view.rotation,
+    width,
+    view.fit === 'page' ? height : 0,
+    reduced,
+  ].join(':');
 interface Props {
   controller: PdfController;
   index: number;
@@ -33,7 +41,12 @@ interface Props {
   reduced: boolean;
   platform: PdfPlatform;
   onMetrics: (page: number, key: string, metrics: PdfPageMetrics) => void;
-  onReady: (page: number, key: string, ready: boolean, error?:PdfErrorCode) => void;
+  onReady: (
+    page: number,
+    key: string,
+    ready: boolean,
+    error?: PdfErrorCode,
+  ) => void;
 }
 export function PdfPageCanvas({
   controller,
@@ -96,7 +109,7 @@ export function PdfPageCanvas({
     void render().catch((reason) => {
       if (!abort.signal.aborted) {
         setError(classifyPdfFailure(reason));
-        onReady(index, key, false,classifyPdfFailure(reason));
+        onReady(index, key, false, classifyPdfFailure(reason));
       }
     });
     return () => {
@@ -132,7 +145,7 @@ export function PdfPageCanvas({
       <div ref={text} className="pdf-text-layer" />
       {error && (
         <p className="pdf-page-error" role="status">
-          {pdfFailureMessage(error,platform)}
+          {pdfFailureMessage(error, platform)}
         </p>
       )}
     </div>

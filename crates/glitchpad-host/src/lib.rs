@@ -312,12 +312,24 @@ pub fn run() {
                 .iter()
                 .find(|window| window.label == "main")
                 .ok_or_else(|| std::io::Error::other("The configured main window is missing"))?;
-            let main_builder=tauri::WebviewWindowBuilder::from_config(app, main)?;
+            let main_builder = tauri::WebviewWindowBuilder::from_config(app, main)?;
             #[cfg(not(mobile))]
-            let main_builder=if app.state::<lifecycle_probe::LifecycleProbeState>().pdf_probe_root().map_err(|_| std::io::Error::other("The PDF probe request is invalid"))?.is_some(){
-                main_builder.initialization_script(concat!(include_str!("../../../scripts/pdf-reading-journey.js"),"\n",include_str!("../../../scripts/pdf-native-probe-bootstrap.js")))
-            }else{main_builder};
-            main_builder.on_web_resource_request(|request, response| {
+            let main_builder = if app
+                .state::<lifecycle_probe::LifecycleProbeState>()
+                .pdf_probe_root()
+                .map_err(|_| std::io::Error::other("The PDF probe request is invalid"))?
+                .is_some()
+            {
+                main_builder.initialization_script(concat!(
+                    include_str!("../../../scripts/pdf-reading-journey.js"),
+                    "\n",
+                    include_str!("../../../scripts/pdf-native-probe-bootstrap.js")
+                ))
+            } else {
+                main_builder
+            };
+            main_builder
+                .on_web_resource_request(|request, response| {
                     if pdf::is_pdf_worker_path(request.uri().path()) {
                         response.headers_mut().insert(
                             tauri::http::header::CONTENT_SECURITY_POLICY,

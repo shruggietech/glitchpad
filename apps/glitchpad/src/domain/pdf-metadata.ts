@@ -36,8 +36,26 @@ export function pdfMetadataFacts(
   integer('pdf.pages', pages);
   bool('pdf.encrypted', typeof info.EncryptFilterName === 'string');
   text('pdf.encryption_filter', info.EncryptFilterName);
-  const permissionNames:Record<number,string>={4:'Print',8:'Modify contents',16:'Copy',32:'Annotate',256:'Fill forms',512:'Accessibility copy',1024:'Assemble',2048:'High quality print'};
-  text('pdf.permissions', permissions === null ? null : permissions.length?permissions.map(value=>permissionNames[value]??String(value)).join(', '):'No permitted operations listed (informational)');
+  const permissionNames: Record<number, string> = {
+    4: 'Print',
+    8: 'Modify contents',
+    16: 'Copy',
+    32: 'Annotate',
+    256: 'Fill forms',
+    512: 'Accessibility copy',
+    1024: 'Assemble',
+    2048: 'High quality print',
+  };
+  text(
+    'pdf.permissions',
+    permissions === null
+      ? null
+      : permissions.length
+        ? permissions
+            .map((value) => permissionNames[value] ?? String(value))
+            .join(', ')
+        : 'No permitted operations listed (informational)',
+  );
   for (const [key, source] of [
     ['title', 'Title'],
     ['author', 'Author'],

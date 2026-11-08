@@ -88,7 +88,9 @@ export const PdfSurface = forwardRef<TextEditorHandle, Props>(
       document.visibilityState !== 'hidden',
     );
     const [failure, setFailure] = useState<PdfErrorCode | null>(null);
-    const [pageFailures,setPageFailures]=useState(new Map<number,{key:string;error:PdfErrorCode}>());
+    const [pageFailures, setPageFailures] = useState(
+      new Map<number, { key: string; error: PdfErrorCode }>(),
+    );
     const [preparation, setPreparation] = useState<string | null>(null);
     const [password, setPassword] = useState('');
     const [retry, setRetry] = useState(0);
@@ -190,8 +192,26 @@ export const PdfSurface = forwardRef<TextEditorHandle, Props>(
       [],
     );
     const onReady = useCallback(
-      (page: number, renderKey: string, value: boolean, error?:PdfErrorCode) => {
-        setPageFailures(previous=>{const known=previous.get(page);if(error){if(known?.key===renderKey&&known.error===error)return previous;const next=new Map(previous);next.set(page,{key:renderKey,error});return next;}if(known?.key!==renderKey)return previous;const next=new Map(previous);next.delete(page);return next;});
+      (
+        page: number,
+        renderKey: string,
+        value: boolean,
+        error?: PdfErrorCode,
+      ) => {
+        setPageFailures((previous) => {
+          const known = previous.get(page);
+          if (error) {
+            if (known?.key === renderKey && known.error === error)
+              return previous;
+            const next = new Map(previous);
+            next.set(page, { key: renderKey, error });
+            return next;
+          }
+          if (known?.key !== renderKey) return previous;
+          const next = new Map(previous);
+          next.delete(page);
+          return next;
+        });
         setReady((previous) => {
           if (
             (value && previous.get(page) === renderKey) ||
@@ -476,15 +496,25 @@ export const PdfSurface = forwardRef<TextEditorHandle, Props>(
       session.id,
       session.revision,
     ]);
-    const pageFailure=pageFailures.get(view.page);const renderError=pageFailure?.key===key?pageFailure.error:null;
-    const errorCode=failure??state.error??renderError;
-    const status=errorCode?pdfFailureMessage(errorCode,platform):preparation??(state.state==='loading'?'Loading PDF…':state.state==='cancelled'?'PDF viewing paused.':state.capabilities.view&&!currentReady?'Rendering PDF page…':'Waiting for PDF…');
+    const pageFailure = pageFailures.get(view.page);
+    const renderError = pageFailure?.key === key ? pageFailure.error : null;
+    const errorCode = failure ?? state.error ?? renderError;
+    const status = errorCode
+      ? pdfFailureMessage(errorCode, platform)
+      : (preparation ??
+        (state.state === 'loading'
+          ? 'Loading PDF…'
+          : state.state === 'cancelled'
+            ? 'PDF viewing paused.'
+            : state.capabilities.view && !currentReady
+              ? 'Rendering PDF page…'
+              : 'Waiting for PDF…'));
     return (
       <div
         className="pdf-layout"
         data-pdf-owner={state.owner_id}
         data-pdf-state={state.state}
-        data-pdf-error={errorCode??undefined}
+        data-pdf-error={errorCode ?? undefined}
         data-pdf-ready={currentReady}
         data-pdf-worker={controller.workerReady}
         data-pdf-engine="6.5.438"
@@ -507,9 +537,28 @@ export const PdfSurface = forwardRef<TextEditorHandle, Props>(
             aria-label="Go to page"
             aria-describedby="pdf-current-page"
           >
-            <span className="pdf-page-counter">{count ? String(view.page + 1) + ' / ' + String(count)+(labels[view.page]?' ('+labels[view.page]+')':'') : 'PDF'}</span>
+            <span className="pdf-page-counter">
+              {count
+                ? String(view.page + 1) +
+                  ' / ' +
+                  String(count) +
+                  (labels[view.page] ? ' (' + labels[view.page] + ')' : '')
+                : 'PDF'}
+            </span>
           </Button>
-          <span id="pdf-current-page" className="visually-hidden" aria-live="polite">{count?'Page '+String(view.page+1)+' of '+String(count)+(labels[view.page]?', label '+labels[view.page]:''):'PDF loading'}</span>
+          <span
+            id="pdf-current-page"
+            className="visually-hidden"
+            aria-live="polite"
+          >
+            {count
+              ? 'Page ' +
+                String(view.page + 1) +
+                ' of ' +
+                String(count) +
+                (labels[view.page] ? ', label ' + labels[view.page] : '')
+              : 'PDF loading'}
+          </span>
           <Button
             variant="ghost"
             disabled={!state.capabilities.navigate || view.page + 1 >= count}
@@ -540,16 +589,26 @@ export const PdfSurface = forwardRef<TextEditorHandle, Props>(
           tabIndex={0}
           role="region"
           aria-label="PDF pages"
-          onWheel={()=>{scrollIntent.current=true;}}
-          onTouchStart={()=>{scrollIntent.current=true;}}
-          onPointerDown={()=>{scrollIntent.current=true;}}
+          onWheel={() => {
+            scrollIntent.current = true;
+          }}
+          onTouchStart={() => {
+            scrollIntent.current = true;
+          }}
+          onPointerDown={() => {
+            scrollIntent.current = true;
+          }}
           onScroll={() => {
             if (scrollFrame.current !== null) return;
             scrollFrame.current = requestAnimationFrame(() => {
               scrollFrame.current = null;
               const top = pane.current?.scrollTop ?? 0;
               setScrollTop(top);
-              if (scrollIntent.current && !single && state.capabilities.navigate) {
+              if (
+                scrollIntent.current &&
+                !single &&
+                state.capabilities.navigate
+              ) {
                 const page = pageAtOffset(offsets, top);
                 if (page !== view.page) controller.navigate(page, 'scroll');
               }
@@ -561,7 +620,8 @@ export const PdfSurface = forwardRef<TextEditorHandle, Props>(
               !state.capabilities.navigate
             )
               return;
-            if (['ArrowDown','ArrowUp',' '].includes(event.key))scrollIntent.current=true;
+            if (['ArrowDown', 'ArrowUp', ' '].includes(event.key))
+              scrollIntent.current = true;
             if (event.key === 'PageDown') {
               event.preventDefault();
               go(Math.min(count - 1, view.page + 1));
@@ -610,9 +670,22 @@ export const PdfSurface = forwardRef<TextEditorHandle, Props>(
           <div className="pdf-status" role="status">
             {!currentReady || failure || state.error ? status : ''}
             {state.reduced_cache && ' Reduced cache; thumbnails paused.'}
-            {state.reduced_cache && (!fits || tooMany) && ' Showing one page to stay within this WebView’s scroll and page-work limits.'}
-            {(state.state === 'loading' || preparation) && <Button variant="secondary" onClick={cancel}>Cancel PDF</Button>}
-            {(state.state === 'failed' || state.state === 'cancelled') && <Button variant="secondary" onClick={()=>setRetry(value=>value+1)}>Retry PDF</Button>}
+            {state.reduced_cache &&
+              (!fits || tooMany) &&
+              ' Showing one page to stay within this WebView’s scroll and page-work limits.'}
+            {(state.state === 'loading' || preparation) && (
+              <Button variant="secondary" onClick={cancel}>
+                Cancel PDF
+              </Button>
+            )}
+            {(state.state === 'failed' || state.state === 'cancelled') && (
+              <Button
+                variant="secondary"
+                onClick={() => setRetry((value) => value + 1)}
+              >
+                Retry PDF
+              </Button>
+            )}
           </div>
         )}
         <TaskSurface

@@ -162,8 +162,12 @@
   body.pdf-print-active > .pdf-print-document {
     display: block !important;
   }
-  @page glitchpad-pdf-snapshot { margin:0; }
-  .pdf-print-document { page:glitchpad-pdf-snapshot; }
+  @page glitchpad-pdf-snapshot {
+    margin: 0;
+  }
+  .pdf-print-document {
+    page: glitchpad-pdf-snapshot;
+  }
   .pdf-print-document img {
     display: block;
     break-after: page;
@@ -181,6 +185,16 @@
   }
 }
 
-.pdf-thumbnail .bb-control { display:flex;flex-direction:column;gap:4px;height:auto; }
+.pdf-thumbnail .bb-control {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  height: auto;
+}
 
-.pdf-page-counter { display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.pdf-page-counter {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

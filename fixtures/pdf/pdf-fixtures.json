@@ -3,15 +3,36 @@
   "fixtures": [
     {
       "name": "s049-compatibility.pdf",
-      "bytes": 1053890,
-      "sha256": "eef48ae38011f7e8ce5661dfdc0f508c46a0444a7146c260ad7961ddbf63a5af",
+      "bytes": 1124436,
+      "sha256": "8e826935273b7ab605a28a30bade3e3c5c419a7446f3ad61c4a7026279a4fec8",
+      "author": "Glitchpad contributors",
+      "license": "Apache-2.0 AND OFL-1.1"
+    },
+    {
+      "name": "s049-small.pdf",
+      "bytes": 75781,
+      "sha256": "31e981793bd0f7a5a6e10331fda1f7a4f7dd23186d71cdc68ed81400b85a7f47",
+      "author": "Glitchpad contributors",
+      "license": "Apache-2.0 AND OFL-1.1"
+    },
+    {
+      "name": "s049-large.pdf",
+      "bytes": 969178,
+      "sha256": "ed542a8be63c1ce135c1cb6c659c86c4bcf727f3040e11546618c21ca5050649",
       "author": "Glitchpad contributors",
       "license": "Apache-2.0"
     },
     {
-      "name": "s049-small.pdf",
-      "bytes": 5235,
-      "sha256": "7b66b4b31414b17d1285b960215c5757ebb8bb8a86c9c844c6b4d3df61c6ba2e",
+      "name": "s049-page-limit.pdf",
+      "bytes": 948572,
+      "sha256": "c94a8fff75911d76e0fc58aa2fbc96cc86ee5265bd237b5804382b39542cce00",
+      "author": "Glitchpad contributors",
+      "license": "Apache-2.0"
+    },
+    {
+      "name": "s049-unsupported-encryption.pdf",
+      "bytes": 2592,
+      "sha256": "1942d619567b1e76ccdfbfea0af53495f1f6bb6252df90668262e51f2b3dce98",
       "author": "Glitchpad contributors",
       "license": "Apache-2.0"
     },
@@ -21,6 +42,15 @@
       "sha256": "411511bdb3d98354a77bbe6b72c97b6b3cb18feb9c90302ad7f221ed2ec5ea91",
       "author": "Glitchpad contributors",
       "license": "Apache-2.0"
+    },
+    {
+      "name": "s049-encrypted.pdf",
+      "bytes": 43187,
+      "sha256": "cb34298e5a7b12a784f71c7007f55dad59c44bdeb6f483723367d528c047b15d",
+      "author": "Glitchpad contributors",
+      "license": "Apache-2.0 AND OFL-1.1",
+      "password": "fixture-open",
+      "generator": "qpdf static test encryption of original s049-small.pdf"
     }
   ]
 }

@@ -5,11 +5,7 @@ import type {
 } from './contracts';
 
 export type MetadataGroup =
-  | 'source'
-  | 'content'
-  | 'embedded'
-  | 'derived'
-  | 'renderer';
+  'source' | 'content' | 'embedded' | 'derived' | 'renderer';
 export type MetadataAvailability =
   | 'available'
   | 'not_provided'
@@ -18,19 +14,11 @@ export type MetadataAvailability =
   | 'pending'
   | 'errored';
 export type MetadataProducer =
-  | 'host'
-  | 'text_profile'
-  | 'detection'
-  | 'renderer'
-  | 'integrity';
+  'host' | 'text_profile' | 'detection' | 'renderer' | 'integrity';
 export type MetadataSensitivity = 'public' | 'sensitive' | 'protected';
 export type MetadataCopyPolicy = 'direct' | 'explicit_confirmation' | 'denied';
 export type MetadataValueKind =
-  | 'text'
-  | 'integer'
-  | 'decimal'
-  | 'boolean'
-  | 'timestamp_unix_nanos';
+  'text' | 'integer' | 'decimal' | 'boolean' | 'timestamp_unix_nanos';
 
 export type MetadataValue =
   | { kind: 'text'; value: string }
@@ -101,34 +89,100 @@ const entry = (
 });
 
 export const METADATA_CATALOG: readonly MetadataCatalogEntry[] = [
-  entry('pdf.inspection_status','renderer','PDF inspection status','text','pdf'),
+  entry(
+    'pdf.inspection_status',
+    'renderer',
+    'PDF inspection status',
+    'text',
+    'pdf',
+  ),
   entry('pdf.version', 'content', 'PDF version', 'text', 'pdf'),
   entry('pdf.pages', 'content', 'PDF pages', 'integer', 'pdf'),
   entry('pdf.encrypted', 'content', 'Encrypted', 'boolean', 'pdf'),
   entry('pdf.encryption_filter', 'content', 'Encryption filter', 'text', 'pdf'),
-  entry('pdf.permissions', 'embedded', 'Stored permission flags (informational)', 'text', 'pdf'),
+  entry(
+    'pdf.permissions',
+    'embedded',
+    'Stored permission flags (informational)',
+    'text',
+    'pdf',
+  ),
   entry('pdf.title', 'embedded', 'PDF title', 'text', 'pdf'),
   entry('pdf.author', 'embedded', 'PDF author', 'text', 'pdf'),
   entry('pdf.subject', 'embedded', 'PDF subject', 'text', 'pdf'),
   entry('pdf.keywords', 'embedded', 'PDF keywords', 'text', 'pdf'),
   entry('pdf.creator', 'embedded', 'Creating application', 'text', 'pdf'),
   entry('pdf.producer', 'embedded', 'PDF producer', 'text', 'pdf'),
-  entry('pdf.created', 'embedded', 'PDF creation date (as stored)', 'text', 'pdf'),
-  entry('pdf.modified', 'embedded', 'PDF modification date (as stored)', 'text', 'pdf'),
-  entry('pdf.current_page_dimensions', 'renderer', 'Current page dimensions', 'text', 'pdf'),
-  entry('pdf.outline_entries', 'derived', 'Outline entries inspected', 'integer', 'pdf'),
-  entry('pdf.outline_limited', 'renderer', 'Outline inspection limited', 'boolean', 'pdf'),
+  entry(
+    'pdf.created',
+    'embedded',
+    'PDF creation date (as stored)',
+    'text',
+    'pdf',
+  ),
+  entry(
+    'pdf.modified',
+    'embedded',
+    'PDF modification date (as stored)',
+    'text',
+    'pdf',
+  ),
+  entry(
+    'pdf.current_page_dimensions',
+    'renderer',
+    'Current page dimensions',
+    'text',
+    'pdf',
+  ),
+  entry(
+    'pdf.outline_entries',
+    'derived',
+    'Outline entries inspected',
+    'integer',
+    'pdf',
+  ),
+  entry(
+    'pdf.outline_limited',
+    'renderer',
+    'Outline inspection limited',
+    'boolean',
+    'pdf',
+  ),
   entry('pdf.forms_present', 'content', 'AcroForm present', 'boolean', 'pdf'),
   entry('pdf.xfa_present', 'content', 'XFA present', 'boolean', 'pdf'),
-  entry('pdf.signatures_present', 'content', 'Signatures present (not validated)', 'boolean', 'pdf'),
-  entry('pdf.collection_present', 'content', 'Portfolio present', 'boolean', 'pdf'),
+  entry(
+    'pdf.signatures_present',
+    'content',
+    'Signatures present (not validated)',
+    'boolean',
+    'pdf',
+  ),
+  entry(
+    'pdf.collection_present',
+    'content',
+    'Portfolio present',
+    'boolean',
+    'pdf',
+  ),
   entry('pdf.feature_policy', 'renderer', 'PDF feature policy', 'text', 'pdf'),
   entry('pdf.display_policy', 'renderer', 'PDF display policy', 'text', 'pdf'),
-  entry('pdf.current_page_label', 'renderer', 'Current page label', 'text', 'pdf'),
+  entry(
+    'pdf.current_page_label',
+    'renderer',
+    'Current page label',
+    'text',
+    'pdf',
+  ),
   entry('image.camera_make', 'embedded', 'Camera make', 'text', 'image'),
   entry('image.camera_model', 'embedded', 'Camera model', 'text', 'image'),
   entry('image.software', 'embedded', 'Image software', 'text', 'image'),
-  entry('image.captured', 'embedded', 'Capture time (as stored)', 'text', 'image'),
+  entry(
+    'image.captured',
+    'embedded',
+    'Capture time (as stored)',
+    'text',
+    'image',
+  ),
   entry('image.artist', 'embedded', 'Artist', 'text', 'image'),
   entry('image.title', 'embedded', 'Image title', 'text', 'image'),
   entry('image.description', 'embedded', 'Image description', 'text', 'image'),
@@ -137,10 +191,36 @@ export const METADATA_CATALOG: readonly MetadataCatalogEntry[] = [
   entry('image.f_number', 'embedded', 'F-number', 'decimal', 'image'),
   entry('image.focal_length', 'embedded', 'Focal length', 'decimal', 'image'),
   entry('image.iso', 'embedded', 'ISO sensitivity', 'integer', 'image'),
-  entry('image.location', 'embedded', 'Location', 'text', 'image', 'sensitive', 'denied'),
-  entry('image.orientation', 'embedded', 'Stored orientation', 'integer', 'image'),
-  entry('image.embedded_width', 'embedded', 'Embedded width', 'integer', 'image'),
-  entry('image.embedded_height', 'embedded', 'Embedded height', 'integer', 'image'),
+  entry(
+    'image.location',
+    'embedded',
+    'Location',
+    'text',
+    'image',
+    'sensitive',
+    'denied',
+  ),
+  entry(
+    'image.orientation',
+    'embedded',
+    'Stored orientation',
+    'integer',
+    'image',
+  ),
+  entry(
+    'image.embedded_width',
+    'embedded',
+    'Embedded width',
+    'integer',
+    'image',
+  ),
+  entry(
+    'image.embedded_height',
+    'embedded',
+    'Embedded height',
+    'integer',
+    'image',
+  ),
   entry('image.container', 'content', 'Image container', 'text', 'image'),
   entry('image.width', 'content', 'Pixel width', 'integer', 'image'),
   entry('image.height', 'content', 'Pixel height', 'integer', 'image'),
@@ -148,14 +228,50 @@ export const METADATA_CATALOG: readonly MetadataCatalogEntry[] = [
   entry('image.profile', 'embedded', 'Embedded color profile', 'text', 'image'),
   entry('image.alpha', 'content', 'Transparency', 'boolean', 'image'),
   entry('image.bit_depth', 'content', 'Bits per pixel', 'integer', 'image'),
-  entry('image.metadata_status', 'renderer', 'Image metadata status', 'text', 'image'),
+  entry(
+    'image.metadata_status',
+    'renderer',
+    'Image metadata status',
+    'text',
+    'image',
+  ),
   entry('image.frame_count', 'content', 'Animation frames', 'integer', 'image'),
-  entry('image.selected_frame', 'renderer', 'Selected frame', 'integer', 'image'),
-  entry('image.frame_duration', 'content', 'Frame duration', 'integer', 'image'),
-  entry('image.loop_count', 'content', 'Animation loops (zero means unlimited)', 'integer', 'image'),
+  entry(
+    'image.selected_frame',
+    'renderer',
+    'Selected frame',
+    'integer',
+    'image',
+  ),
+  entry(
+    'image.frame_duration',
+    'content',
+    'Frame duration',
+    'integer',
+    'image',
+  ),
+  entry(
+    'image.loop_count',
+    'content',
+    'Animation loops (zero means unlimited)',
+    'integer',
+    'image',
+  ),
   entry('image.entry_count', 'content', 'Icon entries', 'integer', 'image'),
-  entry('image.selected_entry', 'renderer', 'Selected icon entry', 'integer', 'image'),
-  entry('image.svg_policy', 'renderer', 'SVG rendering policy', 'text', 'image'),
+  entry(
+    'image.selected_entry',
+    'renderer',
+    'Selected icon entry',
+    'integer',
+    'image',
+  ),
+  entry(
+    'image.svg_policy',
+    'renderer',
+    'SVG rendering policy',
+    'text',
+    'image',
+  ),
   entry('host.display_name', 'source', 'File name', 'text'),
   entry('host.source_kind', 'source', 'Source kind', 'text'),
   entry('host.byte_length', 'source', 'Size', 'integer'),
@@ -164,45 +280,182 @@ export const METADATA_CATALOG: readonly MetadataCatalogEntry[] = [
   entry('host.accessed', 'source', 'Accessed', 'timestamp_unix_nanos'),
   entry('host.write_state', 'source', 'Write state', 'text'),
   entry('host.identity_confidence', 'source', 'Identity confidence', 'text'),
-  entry('host.external_revision', 'source', 'External revision', 'text', 'all', 'sensitive', 'explicit_confirmation'),
+  entry(
+    'host.external_revision',
+    'source',
+    'External revision',
+    'text',
+    'all',
+    'sensitive',
+    'explicit_confirmation',
+  ),
   entry('text.encoding', 'content', 'Encoding', 'text', 'text'),
   entry('text.bom', 'content', 'Byte-order mark', 'text', 'text'),
   entry('text.newline_pattern', 'content', 'Newlines', 'text', 'text'),
-  entry('text.terminal_newline', 'content', 'Terminal newline', 'boolean', 'text'),
+  entry(
+    'text.terminal_newline',
+    'content',
+    'Terminal newline',
+    'boolean',
+    'text',
+  ),
   entry('text.line_count', 'content', 'Lines', 'integer', 'text'),
   entry('text.character_count', 'content', 'Characters', 'integer', 'text'),
   entry('text.language', 'content', 'Language', 'text', 'text'),
-  entry('text.round_trip_safe', 'content', 'Round-trip safe', 'boolean', 'text'),
+  entry(
+    'text.round_trip_safe',
+    'content',
+    'Round-trip safe',
+    'boolean',
+    'text',
+  ),
   entry('derived.media_type', 'derived', 'Media type', 'text'),
   entry('derived.detection_status', 'derived', 'Detection status', 'text'),
-  entry('derived.detection_confidence', 'derived', 'Detection confidence', 'text'),
+  entry(
+    'derived.detection_confidence',
+    'derived',
+    'Detection confidence',
+    'text',
+  ),
   entry('derived.format_evidence', 'derived', 'Format evidence', 'text'),
   entry('derived.format_conflicts', 'derived', 'Format conflicts', 'text'),
-  entry('derived.warnings', 'derived', 'Warnings', 'text', 'all', 'protected', 'denied'),
+  entry(
+    'derived.warnings',
+    'derived',
+    'Warnings',
+    'text',
+    'all',
+    'protected',
+    'denied',
+  ),
   entry('derived.sha256', 'derived', 'SHA-256', 'text'),
-  entry('derived.sha256_progress', 'derived', 'SHA-256 progress', 'integer', 'all', 'public', 'denied'),
+  entry(
+    'derived.sha256_progress',
+    'derived',
+    'SHA-256 progress',
+    'integer',
+    'all',
+    'public',
+    'denied',
+  ),
   entry('renderer.name', 'renderer', 'Renderer', 'text'),
   entry('renderer.status', 'renderer', 'Renderer status', 'text'),
-  entry('markdown.sanitizer_version', 'renderer', 'Sanitizer version', 'integer', 'markdown'),
-  entry('markdown.source_bytes', 'renderer', 'Source bytes', 'integer', 'markdown'),
+  entry(
+    'markdown.sanitizer_version',
+    'renderer',
+    'Sanitizer version',
+    'integer',
+    'markdown',
+  ),
+  entry(
+    'markdown.source_bytes',
+    'renderer',
+    'Source bytes',
+    'integer',
+    'markdown',
+  ),
   entry('markdown.node_count', 'renderer', 'Nodes', 'integer', 'markdown'),
-  entry('markdown.heading_count', 'renderer', 'Headings', 'integer', 'markdown'),
-  entry('markdown.search_entry_count', 'renderer', 'Search entries', 'integer', 'markdown'),
-  entry('markdown.parse_duration', 'renderer', 'Parse duration', 'decimal', 'markdown'),
+  entry(
+    'markdown.heading_count',
+    'renderer',
+    'Headings',
+    'integer',
+    'markdown',
+  ),
+  entry(
+    'markdown.search_entry_count',
+    'renderer',
+    'Search entries',
+    'integer',
+    'markdown',
+  ),
+  entry(
+    'markdown.parse_duration',
+    'renderer',
+    'Parse duration',
+    'decimal',
+    'markdown',
+  ),
   entry('diagram.type', 'renderer', 'Diagram type', 'text', 'mermaid'),
-  entry('diagram.parser_version', 'renderer', 'Parser version', 'text', 'mermaid'),
-  entry('diagram.sanitizer_version', 'renderer', 'Sanitizer version', 'integer', 'mermaid'),
-  entry('diagram.preview_revision', 'renderer', 'Preview revision', 'integer', 'mermaid'),
-  entry('diagram.preview_stale', 'renderer', 'Preview stale', 'boolean', 'mermaid'),
-  entry('diagram.source_bytes', 'renderer', 'Source bytes', 'integer', 'mermaid'),
+  entry(
+    'diagram.parser_version',
+    'renderer',
+    'Parser version',
+    'text',
+    'mermaid',
+  ),
+  entry(
+    'diagram.sanitizer_version',
+    'renderer',
+    'Sanitizer version',
+    'integer',
+    'mermaid',
+  ),
+  entry(
+    'diagram.preview_revision',
+    'renderer',
+    'Preview revision',
+    'integer',
+    'mermaid',
+  ),
+  entry(
+    'diagram.preview_stale',
+    'renderer',
+    'Preview stale',
+    'boolean',
+    'mermaid',
+  ),
+  entry(
+    'diagram.source_bytes',
+    'renderer',
+    'Source bytes',
+    'integer',
+    'mermaid',
+  ),
   entry('diagram.edge_count', 'renderer', 'Edges', 'integer', 'mermaid'),
-  entry('diagram.output_bytes', 'renderer', 'Output bytes', 'integer', 'mermaid'),
-  entry('diagram.parse_duration', 'renderer', 'Parse duration', 'decimal', 'mermaid'),
-  entry('diagram.render_duration', 'renderer', 'Render duration', 'decimal', 'mermaid'),
-  entry('diagram.total_duration', 'renderer', 'Total duration', 'decimal', 'mermaid'),
+  entry(
+    'diagram.output_bytes',
+    'renderer',
+    'Output bytes',
+    'integer',
+    'mermaid',
+  ),
+  entry(
+    'diagram.parse_duration',
+    'renderer',
+    'Parse duration',
+    'decimal',
+    'mermaid',
+  ),
+  entry(
+    'diagram.render_duration',
+    'renderer',
+    'Render duration',
+    'decimal',
+    'mermaid',
+  ),
+  entry(
+    'diagram.total_duration',
+    'renderer',
+    'Total duration',
+    'decimal',
+    'mermaid',
+  ),
   entry('diagram.active_limit', 'renderer', 'Active limit', 'text', 'mermaid'),
-  entry('diagram.accessible_title', 'renderer', 'Accessible title', 'text', 'mermaid'),
-  entry('diagram.accessible_description', 'renderer', 'Accessible description', 'text', 'mermaid'),
+  entry(
+    'diagram.accessible_title',
+    'renderer',
+    'Accessible title',
+    'text',
+    'mermaid',
+  ),
+  entry(
+    'diagram.accessible_description',
+    'renderer',
+    'Accessible description',
+    'text',
+    'mermaid',
+  ),
 ] as const;
 
 const catalogByKey = new Map(METADATA_CATALOG.map((item) => [item.key, item]));
@@ -212,11 +465,15 @@ const SAFE_CODE = /^[a-z][a-z0-9_]{0,63}$/u;
 
 export const metadataCatalogEntry = (key: string): MetadataCatalogEntry => {
   const result = catalogByKey.get(key);
-  if (!result) throw new Error(`Metadata key is not registered in the catalog: ${key}`);
+  if (!result)
+    throw new Error(`Metadata key is not registered in the catalog: ${key}`);
   return result;
 };
 
-const appliesTo = (item: MetadataCatalogEntry, session: ShellSession): boolean =>
+const appliesTo = (
+  item: MetadataCatalogEntry,
+  session: ShellSession,
+): boolean =>
   item.applies === 'all' ||
   (item.applies === 'text' && Boolean(session.text_document)) ||
   item.applies === session.renderer.id;
@@ -255,7 +512,9 @@ const missing = (
   external_revision: session.external_revision ?? null,
 });
 
-const sourceRevisionLabel = (revision: ExternalRevision | null | undefined): string | null => {
+const sourceRevisionLabel = (
+  revision: ExternalRevision | null | undefined,
+): string | null => {
   if (!revision) return null;
   // Native identity and change tokens are comparison authority, never display data.
   const pieces = [revision.byte_length, revision.modified_unix_nanos]
@@ -264,73 +523,336 @@ const sourceRevisionLabel = (revision: ExternalRevision | null | undefined): str
   return pieces.length ? pieces.join(' · ') : null;
 };
 
-export const projectSessionMetadata = (session: ShellSession): MetadataSnapshot => {
+export const projectSessionMetadata = (
+  session: ShellSession,
+): MetadataSnapshot => {
   const facts = new Map<string, MetadataFact>();
   for (const item of METADATA_CATALOG) {
-    if (appliesTo(item, session)) facts.set(item.key, missing(item.key, producerFor(item.key), session));
+    if (appliesTo(item, session))
+      facts.set(item.key, missing(item.key, producerFor(item.key), session));
   }
   const put = (fact: MetadataFact) => facts.set(fact.key, fact);
-  put(available('host.display_name', textValue(session.source.display_name), 'host', session));
-  put(available('host.source_kind', textValue(session.source.kind.replaceAll('_', ' ')), 'host', session));
+  put(
+    available(
+      'host.display_name',
+      textValue(session.source.display_name),
+      'host',
+      session,
+    ),
+  );
+  put(
+    available(
+      'host.source_kind',
+      textValue(session.source.kind.replaceAll('_', ' ')),
+      'host',
+      session,
+    ),
+  );
   if (session.source.byte_length !== null)
-    put(available('host.byte_length', integerValue(session.source.byte_length), 'host', session, 'bytes'));
+    put(
+      available(
+        'host.byte_length',
+        integerValue(session.source.byte_length),
+        'host',
+        session,
+        'bytes',
+      ),
+    );
   if (session.source.modified_unix_ms !== null)
-    put(available('host.modified', { kind: 'timestamp_unix_nanos', value: `${session.source.modified_unix_ms}000000` }, 'host', session));
-  put(available('host.write_state', textValue(session.source.capabilities.write ? 'Writable' : 'Read only'), 'host', session));
-  put(available('host.identity_confidence', textValue(session.source.identity.strength.replaceAll('_', ' ')), 'host', session));
+    put(
+      available(
+        'host.modified',
+        {
+          kind: 'timestamp_unix_nanos',
+          value: `${session.source.modified_unix_ms}000000`,
+        },
+        'host',
+        session,
+      ),
+    );
+  put(
+    available(
+      'host.write_state',
+      textValue(session.source.capabilities.write ? 'Writable' : 'Read only'),
+      'host',
+      session,
+    ),
+  );
+  put(
+    available(
+      'host.identity_confidence',
+      textValue(session.source.identity.strength.replaceAll('_', ' ')),
+      'host',
+      session,
+    ),
+  );
   const revision = sourceRevisionLabel(session.external_revision);
-  if (revision) put(available('host.external_revision', textValue(revision), 'host', session));
+  if (revision)
+    put(
+      available('host.external_revision', textValue(revision), 'host', session),
+    );
   if (session.text_document) {
     const document = session.text_document;
-    put(available('text.encoding', textValue(document.profile.encoding.replaceAll('_', ' ')), 'text_profile', session));
-    put(available('text.bom', textValue(document.profile.bom), 'text_profile', session));
-    put(available('text.newline_pattern', textValue(document.profile.newline_pattern), 'text_profile', session));
+    put(
+      available(
+        'text.encoding',
+        textValue(document.profile.encoding.replaceAll('_', ' ')),
+        'text_profile',
+        session,
+      ),
+    );
+    put(
+      available(
+        'text.bom',
+        textValue(document.profile.bom),
+        'text_profile',
+        session,
+      ),
+    );
+    put(
+      available(
+        'text.newline_pattern',
+        textValue(document.profile.newline_pattern),
+        'text_profile',
+        session,
+      ),
+    );
     if (document.profile.terminal_newline !== null)
-      put(available('text.terminal_newline', { kind: 'boolean', value: document.profile.terminal_newline }, 'text_profile', session));
-    put(available('text.line_count', integerValue(document.normalized_text.length ? document.normalized_text.split('\n').length : 0), 'text_profile', session));
-    put(available('text.character_count', integerValue(Array.from(document.normalized_text).length), 'text_profile', session));
-    put(available('text.language', textValue(document.language.language.replaceAll('_', ' ')), 'text_profile', session));
-    put(available('text.round_trip_safe', { kind: 'boolean', value: document.profile.round_trip_safe }, 'text_profile', session));
+      put(
+        available(
+          'text.terminal_newline',
+          { kind: 'boolean', value: document.profile.terminal_newline },
+          'text_profile',
+          session,
+        ),
+      );
+    put(
+      available(
+        'text.line_count',
+        integerValue(
+          document.normalized_text.length
+            ? document.normalized_text.split('\n').length
+            : 0,
+        ),
+        'text_profile',
+        session,
+      ),
+    );
+    put(
+      available(
+        'text.character_count',
+        integerValue(Array.from(document.normalized_text).length),
+        'text_profile',
+        session,
+      ),
+    );
+    put(
+      available(
+        'text.language',
+        textValue(document.language.language.replaceAll('_', ' ')),
+        'text_profile',
+        session,
+      ),
+    );
+    put(
+      available(
+        'text.round_trip_safe',
+        { kind: 'boolean', value: document.profile.round_trip_safe },
+        'text_profile',
+        session,
+      ),
+    );
   }
   if (session.source.claimed_media_type)
-    put(available('derived.media_type', textValue(session.source.claimed_media_type), 'detection', session));
+    put(
+      available(
+        'derived.media_type',
+        textValue(session.source.claimed_media_type),
+        'detection',
+        session,
+      ),
+    );
   if (session.image_document) {
     const image = session.image_document;
-    put(available('image.container', textValue(image.codec.toUpperCase()), 'renderer', session));
+    put(
+      available(
+        'image.container',
+        textValue(image.codec.toUpperCase()),
+        'renderer',
+        session,
+      ),
+    );
     const family = image.family_state;
     if (family?.family === 'animation') {
-      if (family.frame_count !== null) put(available('image.frame_count', integerValue(family.frame_count), 'renderer', session));
-      put(available('image.selected_frame', integerValue(family.selected_frame + 1), 'renderer', session));
-      if (family.frame_duration_ms !== null) put(available('image.frame_duration', integerValue(family.frame_duration_ms), 'renderer', session, 'ms'));
-      if (family.loop_count !== null) put(available('image.loop_count', integerValue(family.loop_count), 'renderer', session));
+      if (family.frame_count !== null)
+        put(
+          available(
+            'image.frame_count',
+            integerValue(family.frame_count),
+            'renderer',
+            session,
+          ),
+        );
+      put(
+        available(
+          'image.selected_frame',
+          integerValue(family.selected_frame + 1),
+          'renderer',
+          session,
+        ),
+      );
+      if (family.frame_duration_ms !== null)
+        put(
+          available(
+            'image.frame_duration',
+            integerValue(family.frame_duration_ms),
+            'renderer',
+            session,
+            'ms',
+          ),
+        );
+      if (family.loop_count !== null)
+        put(
+          available(
+            'image.loop_count',
+            integerValue(family.loop_count),
+            'renderer',
+            session,
+          ),
+        );
     }
     if (family?.family === 'ico') {
-      put(available('image.entry_count', integerValue(family.entries.length), 'renderer', session));
-      if (family.selected_entry !== null) put(available('image.selected_entry', integerValue(family.selected_entry + 1), 'renderer', session));
+      put(
+        available(
+          'image.entry_count',
+          integerValue(family.entries.length),
+          'renderer',
+          session,
+        ),
+      );
+      if (family.selected_entry !== null)
+        put(
+          available(
+            'image.selected_entry',
+            integerValue(family.selected_entry + 1),
+            'renderer',
+            session,
+          ),
+        );
     }
-    if (family?.family === 'svg') put(available('image.svg_policy', textValue('Native inert pixels; bundled Geist font; external resources and scripts refused'), 'renderer', session));
+    if (family?.family === 'svg')
+      put(
+        available(
+          'image.svg_policy',
+          textValue(
+            'Native inert pixels; bundled Geist font; external resources and scripts refused',
+          ),
+          'renderer',
+          session,
+        ),
+      );
     if (image.descriptor) {
       const descriptor = image.descriptor;
-      put(available('image.width', integerValue(descriptor.width), 'renderer', session, 'px'));
-      put(available('image.height', integerValue(descriptor.height), 'renderer', session, 'px'));
-      put(available('image.color', textValue('RGBA8; sRGB assumed; embedded profiles are not applied'), 'renderer', session));
-      put(available('image.alpha', { kind: 'boolean', value: descriptor.alpha }, 'renderer', session));
-      put(available('image.bit_depth', integerValue(descriptor.bits_per_pixel), 'renderer', session));
+      put(
+        available(
+          'image.width',
+          integerValue(descriptor.width),
+          'renderer',
+          session,
+          'px',
+        ),
+      );
+      put(
+        available(
+          'image.height',
+          integerValue(descriptor.height),
+          'renderer',
+          session,
+          'px',
+        ),
+      );
+      put(
+        available(
+          'image.color',
+          textValue('RGBA8; sRGB assumed; embedded profiles are not applied'),
+          'renderer',
+          session,
+        ),
+      );
+      put(
+        available(
+          'image.alpha',
+          { kind: 'boolean', value: descriptor.alpha },
+          'renderer',
+          session,
+        ),
+      );
+      put(
+        available(
+          'image.bit_depth',
+          integerValue(descriptor.bits_per_pixel),
+          'renderer',
+          session,
+        ),
+      );
     }
     if (image.metadata) {
-      const profile = !image.metadata.profile_present ? 'Not provided' : image.metadata.statuses.includes('icc_profile_invalid') ? 'Invalid; not applied' : image.metadata.statuses.some(s => s.includes('icc') && (s.includes('unsupported') || s.includes('limit'))) ? 'Unsupported; not applied' : 'Present; not applied';
+      const profile = !image.metadata.profile_present
+        ? 'Not provided'
+        : image.metadata.statuses.includes('icc_profile_invalid')
+          ? 'Invalid; not applied'
+          : image.metadata.statuses.some(
+                (s) =>
+                  s.includes('icc') &&
+                  (s.includes('unsupported') || s.includes('limit')),
+              )
+            ? 'Unsupported; not applied'
+            : 'Present; not applied';
       put(available('image.profile', textValue(profile), 'renderer', session));
-      put(available('image.metadata_status', textValue((image.metadata.statuses.join('; ').replaceAll('_', ' ') || 'Extracted').slice(0, 1024)), 'renderer', session));
+      put(
+        available(
+          'image.metadata_status',
+          textValue(
+            (
+              image.metadata.statuses.join('; ').replaceAll('_', ' ') ||
+              'Extracted'
+            ).slice(0, 1024),
+          ),
+          'renderer',
+          session,
+        ),
+      );
       const seen = new Set<string>();
       for (const observation of image.metadata.observations) {
         if (seen.has(observation.key)) continue;
         seen.add(observation.key);
-        put({ key: observation.key, availability: observation.availability, value: observation.value ?? undefined, provenance: 'renderer', session_revision: session.revision, external_revision: session.external_revision });
+        put({
+          key: observation.key,
+          availability: observation.availability,
+          value: observation.value ?? undefined,
+          provenance: 'renderer',
+          session_revision: session.revision,
+          external_revision: session.external_revision,
+        });
       }
     }
   }
-  put(available('renderer.name', textValue(session.renderer.label), 'renderer', session));
-  put(available('renderer.status', textValue(rendererStatus(session)), 'renderer', session));
+  put(
+    available(
+      'renderer.name',
+      textValue(session.renderer.label),
+      'renderer',
+      session,
+    ),
+  );
+  put(
+    available(
+      'renderer.status',
+      textValue(rendererStatus(session)),
+      'renderer',
+      session,
+    ),
+  );
   const projected: MetadataSnapshot = {
     session_id: session.id,
     source_id: session.source_id ?? null,
@@ -380,11 +902,18 @@ export const markSourceMetadataUnavailable = (
   ),
 });
 
-const mergeSnapshots = (base: MetadataSnapshot, cached: MetadataSnapshot): MetadataSnapshot => {
-  if (cached.session_id !== base.session_id || cached.session_revision !== base.session_revision)
+const mergeSnapshots = (
+  base: MetadataSnapshot,
+  cached: MetadataSnapshot,
+): MetadataSnapshot => {
+  if (
+    cached.session_id !== base.session_id ||
+    cached.session_revision !== base.session_revision
+  )
     return base;
   const facts = new Map(base.facts.map((fact) => [fact.key, fact]));
-  for (const fact of cached.facts) if (catalogByKey.has(fact.key)) facts.set(fact.key, fact);
+  for (const fact of cached.facts)
+    if (catalogByKey.has(fact.key)) facts.set(fact.key, fact);
   return { ...base, facts: [...facts.values()] };
 };
 
@@ -393,33 +922,50 @@ export const mergeMetadataContribution = (
   snapshot: MetadataSnapshot,
   contribution: MetadataContribution,
 ): MetadataSnapshot | null => {
-  const expectedExternalRevision = contribution.producer === 'integrity'
-    ? snapshot.external_revision
-    : session.external_revision ?? null;
+  const expectedExternalRevision =
+    contribution.producer === 'integrity'
+      ? snapshot.external_revision
+      : (session.external_revision ?? null);
   if (
     contribution.session_id !== session.id ||
     contribution.expected_session_revision !== session.revision ||
     snapshot.session_id !== session.id ||
     (contribution.expected_external_revision !== undefined &&
-      !sameRevision(contribution.expected_external_revision, expectedExternalRevision))
-  ) return null;
-  if (contribution.facts.length > MAX_FACTS) throw new Error('Metadata contribution exceeds fact limit');
+      !sameRevision(
+        contribution.expected_external_revision,
+        expectedExternalRevision,
+      ))
+  )
+    return null;
+  if (contribution.facts.length > MAX_FACTS)
+    throw new Error('Metadata contribution exceeds fact limit');
   const updates = new Map<string, MetadataFact>();
   for (const observation of contribution.facts) {
     const policy = metadataCatalogEntry(observation.key);
-    if (!appliesTo(policy, session)) throw new Error('Metadata catalog key does not apply to this session');
+    if (!appliesTo(policy, session))
+      throw new Error('Metadata catalog key does not apply to this session');
     validateObservation(observation, policy, contribution.producer);
     updates.set(observation.key, {
       ...observation,
-      value: observation.availability === 'available' ? observation.value : undefined,
-      error_code: observation.availability === 'errored' ? observation.error_code : undefined,
+      value:
+        observation.availability === 'available'
+          ? observation.value
+          : undefined,
+      error_code:
+        observation.availability === 'errored'
+          ? observation.error_code
+          : undefined,
       provenance: contribution.producer,
       session_revision: session.revision,
-      external_revision: contribution.expected_external_revision ?? session.external_revision ?? null,
+      external_revision:
+        contribution.expected_external_revision ??
+        session.external_revision ??
+        null,
       renderer_revision: contribution.renderer_revision,
     });
   }
-  if (updates.size !== contribution.facts.length) throw new Error('Metadata contribution contains duplicate keys');
+  if (updates.size !== contribution.facts.length)
+    throw new Error('Metadata contribution contains duplicate keys');
   const facts = new Map(snapshot.facts.map((fact) => [fact.key, fact]));
   for (const [key, fact] of updates) facts.set(key, fact);
   return {
@@ -435,28 +981,36 @@ const validateObservation = (
   policy: MetadataCatalogEntry,
   producer: MetadataProducer,
 ) => {
-  if (producer !== producerFor(observation.key)) throw new Error('Metadata producer cannot write this catalog key');
+  if (producer !== producerFor(observation.key))
+    throw new Error('Metadata producer cannot write this catalog key');
   if (observation.availability === 'available') {
     if (!observation.value || observation.value.kind !== policy.value_kind)
       throw new Error('Metadata value does not match catalog kind');
-    if (!validMetadataValue(observation.value)) throw new Error('Metadata value exceeds limit or is malformed');
+    if (!validMetadataValue(observation.value))
+      throw new Error('Metadata value exceeds limit or is malformed');
   } else if (observation.value !== undefined) {
     throw new Error('Unavailable metadata cannot retain a value');
   }
-  if (observation.availability === 'errored' && (!observation.error_code || !SAFE_CODE.test(observation.error_code)))
+  if (
+    observation.availability === 'errored' &&
+    (!observation.error_code || !SAFE_CODE.test(observation.error_code))
+  )
     throw new Error('Metadata error code is not safe');
 };
 
 const validMetadataValue = (value: MetadataValue): boolean => {
-  if (value.kind === 'text') return Array.from(value.value).length <= MAX_VALUE_LENGTH;
+  if (value.kind === 'text')
+    return Array.from(value.value).length <= MAX_VALUE_LENGTH;
   if (value.kind === 'boolean') return true;
   if (value.kind === 'integer' || value.kind === 'timestamp_unix_nanos')
     return /^(?:0|[1-9]\d{0,19})$/u.test(value.value);
   return value.value.length <= 64 && /^-?\d+(?:\.\d+)?$/u.test(value.value);
 };
 
-const sameRevision = (left: ExternalRevision | null, right: ExternalRevision | null): boolean =>
-  JSON.stringify(left) === JSON.stringify(right);
+const sameRevision = (
+  left: ExternalRevision | null,
+  right: ExternalRevision | null,
+): boolean => JSON.stringify(left) === JSON.stringify(right);
 
 export const contributionFromSourceSnapshot = (
   session: ShellSession,
@@ -467,17 +1021,44 @@ export const contributionFromSourceSnapshot = (
   expected_external_revision: source.external_revision,
   producer: 'host',
   facts: [
-    { key: 'host.display_name', availability: 'available', value: textValue(source.display_name) },
-    { key: 'host.source_kind', availability: 'available', value: textValue(source.source_kind.replaceAll('_', ' ')) },
+    {
+      key: 'host.display_name',
+      availability: 'available',
+      value: textValue(source.display_name),
+    },
+    {
+      key: 'host.source_kind',
+      availability: 'available',
+      value: textValue(source.source_kind.replaceAll('_', ' ')),
+    },
     source.byte_length === null
       ? { key: 'host.byte_length', availability: 'not_provided' }
-      : { key: 'host.byte_length', availability: 'available', value: integerValue(source.byte_length), unit: 'bytes' },
+      : {
+          key: 'host.byte_length',
+          availability: 'available',
+          value: integerValue(source.byte_length),
+          unit: 'bytes',
+        },
     timestampObservation('host.modified', source.modified_unix_nanos),
     timestampObservation('host.created', source.created_unix_nanos),
     timestampObservation('host.accessed', source.accessed_unix_nanos),
-    { key: 'host.write_state', availability: 'available', value: textValue(source.write_state.replaceAll('_', ' ')) },
-    { key: 'host.identity_confidence', availability: 'available', value: textValue(source.identity_confidence.replaceAll('_', ' ')) },
-    { key: 'host.external_revision', availability: 'available', value: textValue(sourceRevisionLabel(source.external_revision) ?? 'Observed') },
+    {
+      key: 'host.write_state',
+      availability: 'available',
+      value: textValue(source.write_state.replaceAll('_', ' ')),
+    },
+    {
+      key: 'host.identity_confidence',
+      availability: 'available',
+      value: textValue(source.identity_confidence.replaceAll('_', ' ')),
+    },
+    {
+      key: 'host.external_revision',
+      availability: 'available',
+      value: textValue(
+        sourceRevisionLabel(source.external_revision) ?? 'Observed',
+      ),
+    },
   ],
 });
 
@@ -490,27 +1071,39 @@ export const mergeSourceMetadataSnapshot = (
     source.source_id !== session.source_id ||
     snapshot.session_id !== session.id ||
     snapshot.session_revision !== session.revision
-  ) return null;
-  const revisionChanged = !sameRevision(snapshot.external_revision, source.external_revision);
+  )
+    return null;
+  const revisionChanged = !sameRevision(
+    snapshot.external_revision,
+    source.external_revision,
+  );
   const facts = new Map(snapshot.facts.map((fact) => [fact.key, fact]));
   if (revisionChanged) {
     for (const [key, fact] of facts) {
-      if (fact.provenance === 'integrity') facts.set(key, {
-        key,
-        availability: 'not_provided',
-        provenance: 'integrity',
-        session_revision: session.revision,
-        external_revision: source.external_revision,
-      });
+      if (fact.provenance === 'integrity')
+        facts.set(key, {
+          key,
+          availability: 'not_provided',
+          provenance: 'integrity',
+          session_revision: session.revision,
+          external_revision: source.external_revision,
+        });
     }
   }
-  for (const observation of contributionFromSourceSnapshot(session, source).facts) {
+  for (const observation of contributionFromSourceSnapshot(session, source)
+    .facts) {
     const policy = metadataCatalogEntry(observation.key);
     validateObservation(observation, policy, 'host');
     facts.set(observation.key, {
       ...observation,
-      value: observation.availability === 'available' ? observation.value : undefined,
-      error_code: observation.availability === 'errored' ? observation.error_code : undefined,
+      value:
+        observation.availability === 'available'
+          ? observation.value
+          : undefined,
+      error_code:
+        observation.availability === 'errored'
+          ? observation.error_code
+          : undefined,
       provenance: 'host',
       session_revision: session.revision,
       external_revision: source.external_revision,
@@ -524,10 +1117,17 @@ export const mergeSourceMetadataSnapshot = (
   };
 };
 
-const timestampObservation = (key: string, value: string | null): MetadataObservation =>
+const timestampObservation = (
+  key: string,
+  value: string | null,
+): MetadataObservation =>
   value === null
     ? { key, availability: 'not_provided' }
-    : { key, availability: 'available', value: { kind: 'timestamp_unix_nanos', value } };
+    : {
+        key,
+        availability: 'available',
+        value: { kind: 'timestamp_unix_nanos', value },
+      };
 
 export interface FormattedMetadataFact {
   label: string;
@@ -537,19 +1137,22 @@ export interface FormattedMetadataFact {
   sensitivity: MetadataSensitivity;
 }
 
-export const formatMetadataFact = (fact: MetadataFact): FormattedMetadataFact => {
+export const formatMetadataFact = (
+  fact: MetadataFact,
+): FormattedMetadataFact => {
   const policy = metadataCatalogEntry(fact.key);
-  const value = fact.availability === 'available' && fact.value
-    ? formatValue(fact.value, fact.unit)
-    : fact.availability === 'not_provided'
-      ? 'Not provided'
-      : fact.availability === 'unsupported'
-        ? 'Unsupported'
-        : fact.availability === 'redacted'
-          ? 'Redacted'
-          : fact.availability === 'pending'
-            ? 'Pending'
-            : `Unavailable (${fact.error_code ?? 'metadata_error'})`;
+  const value =
+    fact.availability === 'available' && fact.value
+      ? formatValue(fact.value, fact.unit)
+      : fact.availability === 'not_provided'
+        ? 'Not provided'
+        : fact.availability === 'unsupported'
+          ? 'Unsupported'
+          : fact.availability === 'redacted'
+            ? 'Redacted'
+            : fact.availability === 'pending'
+              ? 'Pending'
+              : `Unavailable (${fact.error_code ?? 'metadata_error'})`;
   return {
     label: policy.label,
     value,
@@ -561,28 +1164,37 @@ export const formatMetadataFact = (fact: MetadataFact): FormattedMetadataFact =>
 
 const formatValue = (value: MetadataValue, unit?: string): string => {
   switch (value.kind) {
-    case 'text': return value.value;
+    case 'text':
+      return value.value;
     case 'integer': {
       if (!/^-?\d+$/u.test(value.value)) return value.value;
       try {
         const number = BigInt(value.value);
-        return new Intl.NumberFormat(undefined, unitFormat(unit, 0)).format(number);
+        return new Intl.NumberFormat(undefined, unitFormat(unit, 0)).format(
+          number,
+        );
       } catch {
         return exactNumericFallback(value.value, unit);
       }
     }
     case 'decimal': {
       try {
-        return new Intl.NumberFormat(undefined, unitFormat(unit, 3)).format(Number(value.value));
+        return new Intl.NumberFormat(undefined, unitFormat(unit, 3)).format(
+          Number(value.value),
+        );
       } catch {
         return exactNumericFallback(value.value, unit);
       }
     }
-    case 'boolean': return value.value ? 'Yes' : 'No';
+    case 'boolean':
+      return value.value ? 'Yes' : 'No';
     case 'timestamp_unix_nanos': {
       try {
         const milliseconds = BigInt(value.value) / 1_000_000n;
-        return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'medium' }).format(new Date(Number(milliseconds)));
+        return new Intl.DateTimeFormat(undefined, {
+          dateStyle: 'medium',
+          timeStyle: 'medium',
+        }).format(new Date(Number(milliseconds)));
       } catch {
         return 'Invalid timestamp';
       }
@@ -594,10 +1206,17 @@ const formatValue = (value: MetadataValue, unit?: string): string => {
 const exactNumericFallback = (value: string, unit?: string): string =>
   value +
   (unit === 'bytes'
-    ? value === '1' || value === '-1' ? ' byte' : ' bytes'
-    : unit === 'ms' ? ' ms' : '');
+    ? value === '1' || value === '-1'
+      ? ' byte'
+      : ' bytes'
+    : unit === 'ms'
+      ? ' ms'
+      : '');
 
-const unitFormat = (unit: string | undefined, maximumFractionDigits: number): Intl.NumberFormatOptions => ({
+const unitFormat = (
+  unit: string | undefined,
+  maximumFractionDigits: number,
+): Intl.NumberFormatOptions => ({
   maximumFractionDigits,
   ...(unit === 'bytes'
     ? { style: 'unit', unit: 'byte', unitDisplay: 'long' }
@@ -606,27 +1225,36 @@ const unitFormat = (unit: string | undefined, maximumFractionDigits: number): In
       : {}),
 });
 
-const provenanceLabel = (producer: MetadataProducer): string => ({
-  host: 'Host source',
-  text_profile: 'Text profile',
-  detection: 'Format detection',
-  renderer: 'Renderer',
-  integrity: 'Integrity check',
-})[producer];
+const provenanceLabel = (producer: MetadataProducer): string =>
+  ({
+    host: 'Host source',
+    text_profile: 'Text profile',
+    detection: 'Format detection',
+    renderer: 'Renderer',
+    integrity: 'Integrity check',
+  })[producer];
 
-export const groupMetadataFacts = (snapshot: MetadataSnapshot): Array<{
+export const groupMetadataFacts = (
+  snapshot: MetadataSnapshot,
+): Array<{
   group: MetadataGroup;
   label: string;
   facts: MetadataFact[];
 }> => {
   const labels: Record<MetadataGroup, string> = {
-    source: 'Source', content: 'Content', embedded: 'Embedded', derived: 'Derived', renderer: 'Renderer',
+    source: 'Source',
+    content: 'Content',
+    embedded: 'Embedded',
+    derived: 'Derived',
+    renderer: 'Renderer',
   };
   return (['source', 'content', 'embedded', 'derived', 'renderer'] as const)
     .map((group) => ({
       group,
       label: labels[group],
-      facts: snapshot.facts.filter((fact) => metadataCatalogEntry(fact.key).group === group),
+      facts: snapshot.facts.filter(
+        (fact) => metadataCatalogEntry(fact.key).group === group,
+      ),
     }))
     .filter(({ facts }) => facts.length > 0);
 };
@@ -635,7 +1263,11 @@ export const bulkCopyText = (snapshot: MetadataSnapshot): string =>
   groupMetadataFacts(snapshot)
     .map(({ label, facts }) => {
       const rows = facts
-        .filter((fact) => fact.availability === 'available' && metadataCatalogEntry(fact.key).copy_policy === 'direct')
+        .filter(
+          (fact) =>
+            fact.availability === 'available' &&
+            metadataCatalogEntry(fact.key).copy_policy === 'direct',
+        )
         .map((fact) => {
           const formatted = formatMetadataFact(fact);
           return `${formatted.label}: ${formatted.value}`;

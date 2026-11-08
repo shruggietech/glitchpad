@@ -622,14 +622,26 @@ fn checked_workflow_root(root: &Path) -> Result<PathBuf, CoreError> {
 impl LifecycleProbeState {
     /// Opts in only for the fixed local PDF journey fixture and explicit request marker.
     pub(crate) fn pdf_probe_root(&self) -> Result<Option<PathBuf>, CoreError> {
-        let Some(root)=self.root.as_deref() else{return Ok(None)};
-        if absent(&root.join("pdf-journey-request.marker"))? {return Ok(None)}
-        regular_exact(&root.join("enabled.marker"),PROBE_ENABLE_MARKER)?;
-        regular_exact(&root.join("pdf-journey-request.marker"),b"requested\n")?;
-        let metadata=fs::symlink_metadata(root).map_err(|_|workflow_error())?;
-        let fixture=fs::symlink_metadata(root.join("s049-compatibility.pdf")).map_err(|_|workflow_error())?;
-        if !metadata.is_dir() || metadata.file_type().is_symlink() || !fixture.is_file() || fixture.file_type().is_symlink() || fixture.len()>2*1024*1024 {return Err(workflow_error())}
-        Ok(Some(fs::canonicalize(root).map_err(|_|workflow_error())?))
+        let Some(root) = self.root.as_deref() else {
+            return Ok(None);
+        };
+        if absent(&root.join("pdf-journey-request.marker"))? {
+            return Ok(None);
+        }
+        regular_exact(&root.join("enabled.marker"), PROBE_ENABLE_MARKER)?;
+        regular_exact(&root.join("pdf-journey-request.marker"), b"requested\n")?;
+        let metadata = fs::symlink_metadata(root).map_err(|_| workflow_error())?;
+        let fixture = fs::symlink_metadata(root.join("s049-compatibility.pdf"))
+            .map_err(|_| workflow_error())?;
+        if !metadata.is_dir()
+            || metadata.file_type().is_symlink()
+            || !fixture.is_file()
+            || fixture.file_type().is_symlink()
+            || fixture.len() > 2 * 1024 * 1024
+        {
+            return Err(workflow_error());
+        }
+        Ok(Some(fs::canonicalize(root).map_err(|_| workflow_error())?))
     }
     /// Selects isolated recovery storage only for a fully prepared, native-owned proof request.
     pub(crate) fn document_workflow_root(&self) -> Result<Option<PathBuf>, CoreError> {
@@ -762,24 +774,65 @@ pub(crate) fn complete_desktop_document_workflow_probe(
 /// Records the fixed opt-in PDF journey and independently re-reads its native source bytes.
 #[tauri::command]
 #[allow(clippy::needless_pass_by_value)]
-pub(crate) fn record_desktop_pdf_probe(state:tauri::State<'_,LifecycleProbeState>,host:tauri::State<'_,DesktopSourceHost>,owner:String,proof:serde_json::Value)->Result<(),CoreError>{
-    use sha2::{Digest,Sha256};
-    let root=state.pdf_probe_root()?.ok_or_else(workflow_error)?;
-    if serde_json::to_vec(&proof).map_err(|_|workflow_error())?.len()>8192{return Err(workflow_error())}
-    let path=root.join("pdf-journey-result.json");
-    let mut output=serde_json::json!({"schema_version":1,"source_commit":option_env!("GLITCHPAD_BUILD_COMMIT"),"platform":std::env::consts::OS,"evidence_class":"actual_built_webview","journey":proof});
-    if proof.get("error").is_none(){
-        let source=SourceId(owner.strip_prefix("desktop-").ok_or_else(workflow_error)?.to_owned());
-        let expected=fs::read(root.join("s049-compatibility.pdf")).map_err(|_|workflow_error())?;
-        let length=host.query_metadata(&source)?.byte_length.ok_or_else(workflow_error)?;
-        if length!=expected.len() as u64{return Err(workflow_error())}
-        let mut actual=Sha256::new();let mut offset=0;
-        while offset<length{let size=(length-offset).min(262144);let chunk=host.read_range(&source,offset,size,262144)?;if chunk.bytes.len() as u64!=size{return Err(workflow_error())}actual.update(&chunk.bytes);offset+=size;}
-        let expected_hash=format!("{:x}",Sha256::digest(&expected));let actual_hash=format!("{:x}",actual.finalize());
-        if expected_hash!=actual_hash{return Err(workflow_error())}
-        output["source_sha256"]=serde_json::json!(actual_hash);output["source_unchanged"]=serde_json::json!(true);
+pub(crate) fn record_desktop_pdf_probe(
+    state: tauri::State<'_, LifecycleProbeState>,
+    host: tauri::State<'_, DesktopSourceHost>,
+    owner: String,
+    proof: serde_json::Value,
+) -> Result<(), CoreError> {
+    use sha2::{Digest, Sha256};
+    let root = state.pdf_probe_root()?.ok_or_else(workflow_error)?;
+    if serde_json::to_vec(&proof)
+        .map_err(|_| workflow_error())?
+        .len()
+        > 8192
+    {
+        return Err(workflow_error());
     }
-    let mut file=OpenOptions::new().write(true).create_new(true).open(path).map_err(|_|workflow_error())?;
-    file.write_all(&serde_json::to_vec_pretty(&output).map_err(|_|workflow_error())?).map_err(|_|workflow_error())?;file.sync_all().map_err(|_|workflow_error())?;
+    let path = root.join("pdf-journey-result.json");
+    let mut output = serde_json::json!({"schema_version":1,"source_commit":option_env!("GLITCHPAD_BUILD_COMMIT"),"platform":std::env::consts::OS,"evidence_class":"actual_built_webview","journey":proof});
+    if proof.get("error").is_none() {
+        let source = SourceId(
+            owner
+                .strip_prefix("desktop-")
+                .ok_or_else(workflow_error)?
+                .to_owned(),
+        );
+        let expected =
+            fs::read(root.join("s049-compatibility.pdf")).map_err(|_| workflow_error())?;
+        let length = host
+            .query_metadata(&source)?
+            .byte_length
+            .ok_or_else(workflow_error)?;
+        if length != expected.len() as u64 {
+            return Err(workflow_error());
+        }
+        let mut actual = Sha256::new();
+        let mut offset = 0;
+        while offset < length {
+            let size = (length - offset).min(262144);
+            let chunk = host.read_range(&source, offset, size, 262144)?;
+            if chunk.bytes.len() as u64 != size {
+                return Err(workflow_error());
+            }
+            actual.update(&chunk.bytes);
+            offset += size;
+        }
+        let expected_hash = format!("{:x}", Sha256::digest(&expected));
+        let actual_hash = format!("{:x}", actual.finalize());
+        if expected_hash != actual_hash {
+            return Err(workflow_error());
+        }
+        output["source_sha256"] = serde_json::json!(actual_hash);
+        output["source_unchanged"] = serde_json::json!(true);
+    }
+    let mut file = OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(path)
+        .map_err(|_| workflow_error())?;
+    file.write_all(&serde_json::to_vec_pretty(&output).map_err(|_| workflow_error())?)
+        .map_err(|_| workflow_error())?;
+    file.sync_all().map_err(|_| workflow_error())?;
     Ok(())
 }

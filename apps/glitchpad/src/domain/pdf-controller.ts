@@ -42,7 +42,13 @@ export interface PdfPageSurface {
   dispose(): void;
 }
 type Listener = (state: PdfDocumentState) => void;
-interface PdfNavigationIndex {rows:import('./pdf-navigation').PdfOutlineRow[];limited:boolean;labels:string[];outlineError:boolean;labelsError:boolean;}
+interface PdfNavigationIndex {
+  rows: import('./pdf-navigation').PdfOutlineRow[];
+  limited: boolean;
+  labels: string[];
+  outlineError: boolean;
+  labelsError: boolean;
+}
 
 class SourceRangeTransport extends PDFDataRangeTransport {
   private inFlight = 0;
@@ -190,7 +196,8 @@ export class PdfController {
           worker.removeEventListener('message', ready);
           if (
             data.version !== PDF_ENGINE_VERSION ||
-            data.native_bridge !== false || data.code_evaluation_allowed !== false
+            data.native_bridge !== false ||
+            data.code_evaluation_allowed !== false
           )
             reject(new PdfFailure('worker_failure'));
           else resolve();
@@ -215,7 +222,15 @@ export class PdfController {
       });
       this.current(generation);
       this.workerReady = true;
-      worker.addEventListener('error',event=>{if(generation!==this.generation)return;event.preventDefault();this.fail(new PdfFailure('worker_failure'));},{once:true});
+      worker.addEventListener(
+        'error',
+        (event) => {
+          if (generation !== this.generation) return;
+          event.preventDefault();
+          this.fail(new PdfFailure('worker_failure'));
+        },
+        { once: true },
+      );
       const parserWorker = PDFWorker.create({ port: worker });
       this.parserWorker = parserWorker;
       await parserWorker.promise;
@@ -231,7 +246,9 @@ export class PdfController {
         source,
         initial,
         this.aborter.signal,
-        (error) => {if(generation===this.generation)this.fail(error);},
+        (error) => {
+          if (generation === this.generation) this.fail(error);
+        },
       );
       this.documentResources = createPdfDocumentResources(globalThis.document);
       const loading = getDocument({
@@ -449,29 +466,161 @@ export class PdfController {
       releaseSlot();
     }
   }
-  async metadata(index:number):Promise<import('./metadata').MetadataObservation[]>{
-    const generation=this.generation;const doc=this.document;if(!doc)throw new PdfFailure('unavailable');
-    const [metadata,permissions,dimensions,navigation]=await Promise.allSettled([doc.getMetadata(),doc.getPermissions(),this.pageSize(index,0),this.navigationIndex()]);this.current(generation);
-    const info:Record<string,unknown>=metadata.status==='fulfilled'?{...metadata.value.info as Record<string,unknown>}:{};
-    if(metadata.status==='fulfilled'&&metadata.value.metadata){for(const [target,key] of [['Title','dc:title'],['Author','dc:creator'],['Subject','dc:description'],['Keywords','pdf:Keywords'],['Producer','pdf:Producer'],['Creator','xmp:CreatorTool'],['CreationDate','xmp:CreateDate'],['ModDate','xmp:ModifyDate']]){if(typeof info[target]==='string'&&info[target])continue;const value:unknown=metadata.value.metadata.get(key);if(typeof value==='string')info[target]=value;else if(Array.isArray(value))info[target]=value.filter((part):part is string=>typeof part==='string').join('; ');}}
-    const nav=navigation.status==='fulfilled'?navigation.value:null;
-    const facts=pdfMetadataFacts(info,doc.numPages,permissions.status==='fulfilled'&&permissions.value?[...permissions.value]:null,dimensions.status==='fulfilled'?dimensions.value:{width:0,height:0},{count:nav?.rows.length??0,limited:nav?.limited??false});
-    facts.push(nav?.labels[index]?{key:'pdf.current_page_label',availability:'available',value:{kind:'text',value:nav.labels[index]}}:{key:'pdf.current_page_label',availability:'not_provided'});
-    const failed=new Set<string>();const failures:string[]=[];
-    if(metadata.status==='rejected'){failures.push('Document information unavailable');for(const key of ['version','encrypted','encryption_filter','title','author','subject','keywords','creator','producer','created','modified','forms_present','xfa_present','signatures_present','collection_present'])failed.add('pdf.'+key);}
-    if(permissions.status==='rejected'){failed.add('pdf.permissions');failures.push('Stored permissions unavailable');}
-    if(dimensions.status==='rejected'){failed.add('pdf.current_page_dimensions');failures.push('Page dimensions unavailable');}
-    if(!nav||nav.outlineError){failed.add('pdf.outline_entries');failed.add('pdf.outline_limited');failures.push('Outline unavailable');}
-    if(!nav||nav.labelsError){failed.add('pdf.current_page_label');failures.push('Page labels unavailable');}
-    return[...facts.map(fact=>failed.has(fact.key)?{key:fact.key,availability:'errored' as const,error_code:'pdf_inspection_unavailable'}:fact),{key:'pdf.inspection_status',availability:'available',value:{kind:'text',value:failures.join('; ')||'Bounded document information inspected'}}];
+  async metadata(
+    index: number,
+  ): Promise<import('./metadata').MetadataObservation[]> {
+    const generation = this.generation;
+    const doc = this.document;
+    if (!doc) throw new PdfFailure('unavailable');
+    const [metadata, permissions, dimensions, navigation] =
+      await Promise.allSettled([
+        doc.getMetadata(),
+        doc.getPermissions(),
+        this.pageSize(index, 0),
+        this.navigationIndex(),
+      ]);
+    this.current(generation);
+    const info: Record<string, unknown> =
+      metadata.status === 'fulfilled'
+        ? { ...(metadata.value.info as Record<string, unknown>) }
+        : {};
+    if (metadata.status === 'fulfilled' && metadata.value.metadata) {
+      for (const [target, key] of [
+        ['Title', 'dc:title'],
+        ['Author', 'dc:creator'],
+        ['Subject', 'dc:description'],
+        ['Keywords', 'pdf:Keywords'],
+        ['Producer', 'pdf:Producer'],
+        ['Creator', 'xmp:CreatorTool'],
+        ['CreationDate', 'xmp:CreateDate'],
+        ['ModDate', 'xmp:ModifyDate'],
+      ]) {
+        if (typeof info[target] === 'string' && info[target]) continue;
+        const value: unknown = metadata.value.metadata.get(key);
+        if (typeof value === 'string') info[target] = value;
+        else if (Array.isArray(value))
+          info[target] = value
+            .filter((part): part is string => typeof part === 'string')
+            .join('; ');
+      }
+    }
+    const nav = navigation.status === 'fulfilled' ? navigation.value : null;
+    const facts = pdfMetadataFacts(
+      info,
+      doc.numPages,
+      permissions.status === 'fulfilled' && permissions.value
+        ? [...permissions.value]
+        : null,
+      dimensions.status === 'fulfilled'
+        ? dimensions.value
+        : { width: 0, height: 0 },
+      { count: nav?.rows.length ?? 0, limited: nav?.limited ?? false },
+    );
+    facts.push(
+      nav?.labels[index]
+        ? {
+            key: 'pdf.current_page_label',
+            availability: 'available',
+            value: { kind: 'text', value: nav.labels[index] },
+          }
+        : { key: 'pdf.current_page_label', availability: 'not_provided' },
+    );
+    const failed = new Set<string>();
+    const failures: string[] = [];
+    if (metadata.status === 'rejected') {
+      failures.push('Document information unavailable');
+      for (const key of [
+        'version',
+        'encrypted',
+        'encryption_filter',
+        'title',
+        'author',
+        'subject',
+        'keywords',
+        'creator',
+        'producer',
+        'created',
+        'modified',
+        'forms_present',
+        'xfa_present',
+        'signatures_present',
+        'collection_present',
+      ])
+        failed.add('pdf.' + key);
+    }
+    if (permissions.status === 'rejected') {
+      failed.add('pdf.permissions');
+      failures.push('Stored permissions unavailable');
+    }
+    if (dimensions.status === 'rejected') {
+      failed.add('pdf.current_page_dimensions');
+      failures.push('Page dimensions unavailable');
+    }
+    if (!nav || nav.outlineError) {
+      failed.add('pdf.outline_entries');
+      failed.add('pdf.outline_limited');
+      failures.push('Outline unavailable');
+    }
+    if (!nav || nav.labelsError) {
+      failed.add('pdf.current_page_label');
+      failures.push('Page labels unavailable');
+    }
+    return [
+      ...facts.map((fact) =>
+        failed.has(fact.key)
+          ? {
+              key: fact.key,
+              availability: 'errored' as const,
+              error_code: 'pdf_inspection_unavailable',
+            }
+          : fact,
+      ),
+      {
+        key: 'pdf.inspection_status',
+        availability: 'available',
+        value: {
+          kind: 'text',
+          value:
+            failures.join('; ') || 'Bounded document information inspected',
+        },
+      },
+    ];
   }
-  navigationIndex():Promise<PdfNavigationIndex>{return this.navigationCache??=this.loadNavigationIndex();}
-  private async loadNavigationIndex():Promise<PdfNavigationIndex>{
-    const generation=this.generation;const doc=this.document;if(!doc)throw new PdfFailure('unavailable');
-    const [outline,labels]=await Promise.allSettled([doc.getOutline(),doc.getPageLabels()]);this.current(generation);
-    let parsed:ReturnType<typeof boundedOutline>={rows:[],limited:false};let outlineError=outline.status==='rejected';
-    if(outline.status==='fulfilled'){try{parsed=boundedOutline(outline.value);}catch{outlineError=true;}}
-    return{...parsed,outlineError,labelsError:labels.status==='rejected',labels:labels.status==='fulfilled'&&Array.isArray(labels.value)?labels.value.slice(0,doc.numPages).map(label=>String(label).slice(0,128)):[]};
+  navigationIndex(): Promise<PdfNavigationIndex> {
+    return (this.navigationCache ??= this.loadNavigationIndex());
+  }
+  private async loadNavigationIndex(): Promise<PdfNavigationIndex> {
+    const generation = this.generation;
+    const doc = this.document;
+    if (!doc) throw new PdfFailure('unavailable');
+    const [outline, labels] = await Promise.allSettled([
+      doc.getOutline(),
+      doc.getPageLabels(),
+    ]);
+    this.current(generation);
+    let parsed: ReturnType<typeof boundedOutline> = {
+      rows: [],
+      limited: false,
+    };
+    let outlineError = outline.status === 'rejected';
+    if (outline.status === 'fulfilled') {
+      try {
+        parsed = boundedOutline(outline.value);
+      } catch {
+        outlineError = true;
+      }
+    }
+    return {
+      ...parsed,
+      outlineError,
+      labelsError: labels.status === 'rejected',
+      labels:
+        labels.status === 'fulfilled' && Array.isArray(labels.value)
+          ? labels.value
+              .slice(0, doc.numPages)
+              .map((label) => String(label).slice(0, 128))
+          : [],
+    };
   }
   async destination(value: unknown): Promise<PdfInternalTarget> {
     const generation = this.generation;
@@ -529,16 +678,15 @@ export class PdfController {
     const point = viewport.convertToViewportPoint(
       target.x ?? bounds[0],
       target.y ?? bounds[3],
-    ) as [number,number];
-    if(!point.every(Number.isFinite))throw new PdfFailure('invalid_destination');
+    ) as [number, number];
+    if (!point.every(Number.isFinite))
+      throw new PdfFailure('invalid_destination');
     return {
       x: Math.max(0, Math.min(viewport.width, point[0])),
       y: Math.max(0, Math.min(viewport.height, point[1])),
     };
   }
-  async pageLinks(
-    index: number,
-  ): Promise<
+  async pageLinks(index: number): Promise<
     Array<{
       label: string;
       destination?: unknown;
@@ -574,7 +722,8 @@ export class PdfController {
       };
       if (annotation.subtype !== 'Link') continue;
       const label =
-        typeof annotation.contentsObj?.str === 'string' && annotation.contentsObj.str.trim().length > 0
+        typeof annotation.contentsObj?.str === 'string' &&
+        annotation.contentsObj.str.trim().length > 0
           ? annotation.contentsObj.str.slice(0, 256)
           : 'Link ' + String(links.length + 1);
       if (annotation.dest !== undefined)
@@ -623,7 +772,9 @@ export class PdfController {
           this.current(generation);
           if (signal.aborted) throw new PdfFailure('cancelled');
           if (chunk.done) break;
-          for (const item of (chunk.value as {items:Array<{str?:string;hasEOL?:boolean}>}).items) {
+          for (const item of (
+            chunk.value as { items: Array<{ str?: string; hasEOL?: boolean }> }
+          ).items) {
             if (typeof item.str !== 'string') continue;
             const value = item.str + (item.hasEOL ? '\n' : ' ');
             if (text.length + value.length > PDF_LIMITS.textPageCharacters) {

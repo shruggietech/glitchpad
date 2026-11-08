@@ -21,7 +21,14 @@ test('reviewed worker pins static decoder and bounded inspection boundaries', as
       "import __glitchpadOpenJpeg from 'pdfjs-dist/wasm/openjpeg_nowasm_fallback.js'",
     ),
   );
-  for(const name of ['outline','labels','destination','metadata','annotations'])assert.ok(transformed.includes('__glitchpadBoundPdfReply("'+name+'"'));
+  for (const name of [
+    'outline',
+    'labels',
+    'destination',
+    'metadata',
+    'annotations',
+  ])
+    assert.ok(transformed.includes('__glitchpadBoundPdfReply("' + name + '"'));
   assert.ok(transformed.includes('sink: __glitchpadBoundPdfTextSink(sink)'));
   assert.ok(!/\bimport\s*\(/.test(transformed));
   assert.throws(() => transformPdfWorker(code + '\n'), /unreviewed input/);

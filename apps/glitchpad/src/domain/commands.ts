@@ -91,7 +91,12 @@ export const commandSetFor = (
     [renderer.search, 'search', 'Search', 'Ctrl+F'],
     [renderer.search, 'find_next', 'Find next', 'F3'],
     [renderer.search, 'find_previous', 'Find previous', 'Shift+F3'],
-    [renderer.search, 'go_to_line', session.pdf_document ? 'Go to page' : 'Go to line', 'Ctrl+G'],
+    [
+      renderer.search,
+      'go_to_line',
+      session.pdf_document ? 'Go to page' : 'Go to line',
+      'Ctrl+G',
+    ],
     [canEditSource, 'undo', 'Undo', 'Ctrl+Z'],
     [canEditSource, 'redo', 'Redo', 'Ctrl+Shift+Z'],
     [canEditSource, 'indent', 'Indent', 'Tab'],
@@ -139,22 +144,40 @@ export const commandSetFor = (
       'Save As…',
     ],
     [
-      (renderer.inspect_metadata && source.metadata) || Boolean(session.pdf_document?.capabilities.inspect_metadata),
+      (renderer.inspect_metadata && source.metadata) ||
+        Boolean(session.pdf_document?.capabilities.inspect_metadata),
       'metadata',
       'File information',
     ],
     [
       Boolean(
-        session.pdf_document?.capabilities.outline || (session.markdown_document &&
-        documentMode === 'rendered' &&
-        session.markdown_document.outline_count > 0),
+        session.pdf_document?.capabilities.outline ||
+        (session.markdown_document &&
+          documentMode === 'rendered' &&
+          session.markdown_document.outline_count > 0),
       ),
       'outline',
       'Outline',
     ],
-    [Boolean(session.markdown_document?.printable || session.pdf_document?.capabilities.print==='available'), 'print', 'Print', 'Ctrl+P'],
-    [Boolean(session.pdf_document?.capabilities.navigate), 'previous_page', 'Previous page'],
-    [Boolean(session.pdf_document?.capabilities.navigate), 'next_page', 'Next page'],
+    [
+      Boolean(
+        session.markdown_document?.printable ||
+        session.pdf_document?.capabilities.print === 'available',
+      ),
+      'print',
+      'Print',
+      'Ctrl+P',
+    ],
+    [
+      Boolean(session.pdf_document?.capabilities.navigate),
+      'previous_page',
+      'Previous page',
+    ],
+    [
+      Boolean(session.pdf_document?.capabilities.navigate),
+      'next_page',
+      'Next page',
+    ],
   ];
 
   return definitions
@@ -166,8 +189,11 @@ export const commandSetFor = (
       enabled:
         session.lifecycle === 'active' &&
         session.destination_save_revision == null &&
-        (id !== 'previous_page' || (session.pdf_document?.navigation.page ?? 0) > 0) &&
-        (id !== 'next_page' || (session.pdf_document?.navigation.page ?? 0) + 1 < (session.pdf_document?.page_count ?? 0)) &&
+        (id !== 'previous_page' ||
+          (session.pdf_document?.navigation.page ?? 0) > 0) &&
+        (id !== 'next_page' ||
+          (session.pdf_document?.navigation.page ?? 0) + 1 <
+            (session.pdf_document?.page_count ?? 0)) &&
         (id !== 'undo' || editorState?.undo !== false) &&
         (id !== 'redo' || editorState?.redo !== false),
       role: id === 'save' ? 'primary' : 'secondary',

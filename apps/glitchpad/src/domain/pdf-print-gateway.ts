@@ -49,7 +49,7 @@ export function parsePdfPrintRange(value: string, count: number): number[] {
   }
   return [...pages].sort((left, right) => left - right);
 }
-let desktopPrintOwner:string|null=null;
+let desktopPrintOwner: string | null = null;
 export function nativePdfPrintGateway(session: ShellSession): PdfPrintGateway {
   const id = createRequestId();
   const android = session.source.kind === 'document_uri';
@@ -93,15 +93,24 @@ export function nativePdfPrintGateway(session: ShellSession): PdfPrintGateway {
     return reply;
   };
   const release = () => {
-    window.removeEventListener('afterprint',finishDesktop);
-    if(desktopPrintOwner===id){desktopPrintOwner=null;document.body.classList.remove('pdf-print-active');}
+    window.removeEventListener('afterprint', finishDesktop);
+    if (desktopPrintOwner === id) {
+      desktopPrintOwner = null;
+      document.body.classList.remove('pdf-print-active');
+    }
     owner?.remove();
     owner = null;
     for (const url of urls) URL.revokeObjectURL(url);
     urls.length = 0;
   };
-  const finishDesktop=()=>{afterPrint=true;release();};
-  const dispose=()=>{if(!android&&handedOff&&!afterPrint)return;release();};
+  const finishDesktop = () => {
+    afterPrint = true;
+    release();
+  };
+  const dispose = () => {
+    if (!android && handedOff && !afterPrint) return;
+    release();
+  };
   return {
     async available() {
       return (
@@ -116,8 +125,8 @@ export function nativePdfPrintGateway(session: ShellSession): PdfPrintGateway {
         await operation('begin', { pageCount: pages });
         return;
       }
-      if(desktopPrintOwner!==null)throw new Error('print_pending');
-      desktopPrintOwner=id;
+      if (desktopPrintOwner !== null) throw new Error('print_pending');
+      desktopPrintOwner = id;
       owner = document.createElement('div');
       owner.className = 'pdf-print-document';
       owner.setAttribute('aria-hidden', 'true');
@@ -156,12 +165,21 @@ export function nativePdfPrintGateway(session: ShellSession): PdfPrintGateway {
         image.style.width = String(page.width) + 'pt';
         image.style.height = String(page.height) + 'pt';
         const loaded = new Promise<void>((resolve, reject) => {
-          const abort=()=>{cleanup();reject(new Error('print_cancelled'));};
-          const cleanup=()=>signal.removeEventListener('abort',abort);
-          image.onload = () => {cleanup();resolve();};
-          image.onerror = () => {cleanup();reject(new Error('print_page_unavailable'));};
-          signal.addEventListener('abort',abort,{once:true});
-          if(signal.aborted)abort();
+          const abort = () => {
+            cleanup();
+            reject(new Error('print_cancelled'));
+          };
+          const cleanup = () => signal.removeEventListener('abort', abort);
+          image.onload = () => {
+            cleanup();
+            resolve();
+          };
+          image.onerror = () => {
+            cleanup();
+            reject(new Error('print_page_unavailable'));
+          };
+          signal.addEventListener('abort', abort, { once: true });
+          if (signal.aborted) abort();
         });
         owner!.append(image);
         await loaded;
@@ -178,8 +196,14 @@ export function nativePdfPrintGateway(session: ShellSession): PdfPrintGateway {
       }
       handedOff = true;
       document.body.classList.add('pdf-print-active');
-      window.addEventListener('afterprint',finishDesktop,{once:true});
-      try{await invoke<void>('request_pdf_desktop_print', source);}catch(error){handedOff=false;release();throw error;}
+      window.addEventListener('afterprint', finishDesktop, { once: true });
+      try {
+        await invoke<void>('request_pdf_desktop_print', source);
+      } catch (error) {
+        handedOff = false;
+        release();
+        throw error;
+      }
       return { request_id: id, status: 'handed_off', pages_written: 0 };
     },
     async inspect() {

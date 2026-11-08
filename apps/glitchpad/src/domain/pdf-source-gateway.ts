@@ -131,7 +131,7 @@ export interface PdfSourcePreparation {
   signal?: AbortSignal;
   onProgress?: (processed: number, total: number | null) => void;
 }
-let cacheClosing:Promise<void> = Promise.resolve();
+let cacheClosing: Promise<void> = Promise.resolve();
 async function createCachedPdfSourceLease(
   session: ShellSession,
   call: NativeInvoke,
@@ -144,9 +144,12 @@ async function createCachedPdfSourceLease(
   let closing: Promise<void> | null = null;
   const close = (): Promise<void> => {
     closed = true;
-    if(!closing){
+    if (!closing) {
       closing = call('cancel_pdf_cache', { requestId }).then(() => undefined);
-      cacheClosing = Promise.all([cacheClosing,closing.catch(()=>undefined)]).then(()=>undefined);
+      cacheClosing = Promise.all([
+        cacheClosing,
+        closing.catch(() => undefined),
+      ]).then(() => undefined);
     }
     return closing;
   };
@@ -174,7 +177,7 @@ async function createCachedPdfSourceLease(
   };
   try {
     await cacheClosing;
-    if(closed || options.signal?.aborted)throw new PdfFailure('cancelled');
+    if (closed || options.signal?.aborted) throw new PdfFailure('cancelled');
     let status = validate(
       await call('begin_pdf_cache', {
         sourceId,

@@ -1,7 +1,8 @@
 import { spawn } from 'node:child_process';
 /** Cancels observed native print dialogs only on the isolated hosted candidate runner. */
 export function startPdfPrintDialogProbe(pid) {
-  if (process.env.GITHUB_ACTIONS !== 'true') throw new Error('Native print probe requires isolated hosted CI');
+  if (process.env.GITHUB_ACTIONS !== 'true')
+    throw new Error('Native print probe requires isolated hosted CI');
   let executable, args;
   if (process.platform === 'win32') {
     executable = 'powershell.exe';
@@ -33,8 +34,21 @@ while ([DateTime]::UtcNow -lt $until -and $round -lt 2) {
 }
 `;
     // The script body is fixed; the sole interpolated argument is a validated numeric child PID.
-    const encoded = Buffer.from(code.replace('param([int]$CandidatePid)', '$CandidatePid = ' + String(pid)), 'utf16le').toString('base64');
-    args = ['-NoProfile', '-NonInteractive', '-WindowStyle', 'Hidden', '-EncodedCommand', encoded];
+    const encoded = Buffer.from(
+      code.replace(
+        'param([int]$CandidatePid)',
+        '$CandidatePid = ' + String(pid),
+      ),
+      'utf16le',
+    ).toString('base64');
+    args = [
+      '-NoProfile',
+      '-NonInteractive',
+      '-WindowStyle',
+      'Hidden',
+      '-EncodedCommand',
+      encoded,
+    ];
   } else if (process.platform === 'darwin') {
     executable = 'osascript';
     const code = `set rounds to 0
@@ -78,5 +92,8 @@ while time.monotonic()<until and rounds<2:
     time.sleep(0.25)`;
     args = ['-u', '-c', code];
   }
-  return spawn(executable, args, { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
+  return spawn(executable, args, {
+    windowsHide: true,
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
 }

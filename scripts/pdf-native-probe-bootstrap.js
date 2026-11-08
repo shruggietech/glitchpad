@@ -27,46 +27,114 @@
           while (Date.now() < until) {
             var value = predicate();
             if (value) return value;
-            await new Promise(function (resolve) { setTimeout(resolve, 50); });
+            await new Promise(function (resolve) {
+              setTimeout(resolve, 50);
+            });
           }
           throw new Error('Native print timeout: ' + label);
         };
         var button = function (label) {
-          return Array.from(document.querySelectorAll('button')).reverse().find(function (node) {
-            return !node.disabled && node.textContent.trim() === label && node.getBoundingClientRect().height > 0;
-          });
+          return Array.from(document.querySelectorAll('button'))
+            .reverse()
+            .find(function (node) {
+              return (
+                !node.disabled &&
+                node.textContent.trim() === label &&
+                node.getBoundingClientRect().height > 0
+              );
+            });
         };
         proof.prints = [];
         for (var range of ['2,4', 'all']) {
           document.querySelector('button[aria-label="More PDF tools"]').click();
-          (await wait(function () { return button('Print'); }, 'Print control')).click();
-          var field = await wait(function () { return document.getElementById('pdf-print-range'); }, 'range');
-          Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(field, range);
+          (
+            await wait(function () {
+              return button('Print');
+            }, 'Print control')
+          ).click();
+          var field = await wait(function () {
+            return document.getElementById('pdf-print-range');
+          }, 'range');
+          Object.getOwnPropertyDescriptor(
+            HTMLInputElement.prototype,
+            'value',
+          ).set.call(field, range);
           field.dispatchEvent(new Event('input', { bubbles: true }));
           var snapshot = null;
           var after = false;
           var observe = function () {
             if (!document.body.classList.contains('pdf-print-active')) return;
-            var images = Array.from(document.querySelectorAll('.pdf-print-document img'));
-            snapshot = { pages: images.length, decoded: images.every(function (image) { return image.complete && image.naturalWidth > 0; }) };
+            var images = Array.from(
+              document.querySelectorAll('.pdf-print-document img'),
+            );
+            snapshot = {
+              pages: images.length,
+              decoded: images.every(function (image) {
+                return image.complete && image.naturalWidth > 0;
+              }),
+            };
           };
           var observer = new MutationObserver(observe);
-          observer.observe(document.body, { attributes: true, subtree: true, childList: true, attributeFilter: ['class'] });
-          var completed = function () { after = true; };
+          observer.observe(document.body, {
+            attributes: true,
+            subtree: true,
+            childList: true,
+            attributeFilter: ['class'],
+          });
+          var completed = function () {
+            after = true;
+          };
           window.addEventListener('afterprint', completed, { once: true });
-          (await wait(function () { return button('Open system print dialog'); }, 'submit')).click();
-          await wait(function () { return after; }, 'actual afterprint event');
-          await wait(function () { return !document.body.classList.contains('pdf-print-active') && !document.querySelector('.pdf-print-document'); }, 'snapshot cleanup');
+          (
+            await wait(function () {
+              return button('Open system print dialog');
+            }, 'submit')
+          ).click();
+          await wait(function () {
+            return after;
+          }, 'actual afterprint event');
+          await wait(function () {
+            return (
+              !document.body.classList.contains('pdf-print-active') &&
+              !document.querySelector('.pdf-print-document')
+            );
+          }, 'snapshot cleanup');
           observer.disconnect();
           window.removeEventListener('afterprint', completed);
-          if (!snapshot || snapshot.pages !== (range === 'all' ? 4 : 2) || !snapshot.decoded) throw new Error('Native print snapshot mismatch');
-          proof.prints.push({ range: range, snapshot: snapshot, afterprint: after, cleaned: true, paper_completion: false });
-          document.querySelector('button[aria-label="Close Print PDF"]').click();
-          await wait(function () { return !document.querySelector('button[aria-label="Close Print PDF"]'); }, 'close print task');
-          document.querySelector('button[aria-label="Close PDF tools"]').click();
-          await wait(function () { return !document.querySelector('button[aria-label="Close PDF tools"]'); }, 'close tools');
+          if (
+            !snapshot ||
+            snapshot.pages !== (range === 'all' ? 4 : 2) ||
+            !snapshot.decoded
+          )
+            throw new Error('Native print snapshot mismatch');
+          proof.prints.push({
+            range: range,
+            snapshot: snapshot,
+            afterprint: after,
+            cleaned: true,
+            paper_completion: false,
+          });
+          document
+            .querySelector('button[aria-label="Close Print PDF"]')
+            .click();
+          await wait(function () {
+            return !document.querySelector(
+              'button[aria-label="Close Print PDF"]',
+            );
+          }, 'close print task');
+          document
+            .querySelector('button[aria-label="Close PDF tools"]')
+            .click();
+          await wait(function () {
+            return !document.querySelector(
+              'button[aria-label="Close PDF tools"]',
+            );
+          }, 'close tools');
         }
-        return window.__TAURI_INTERNALS__.invoke('record_desktop_pdf_probe', { owner: owner, proof: proof });
+        return window.__TAURI_INTERNALS__.invoke('record_desktop_pdf_probe', {
+          owner: owner,
+          proof: proof,
+        });
       })
       .catch(function (error) {
         window.__TAURI_INTERNALS__

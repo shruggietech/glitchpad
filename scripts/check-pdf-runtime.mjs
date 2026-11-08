@@ -399,38 +399,157 @@ try {
     return window.runGlitchpadPdfReadingJourney();
   });
   const inputFlows = [];
-  if (!legacy) await page.addScriptTag({ path: require.resolve('axe-core/axe.min.js') });
+  if (!legacy)
+    await page.addScriptTag({ path: require.resolve('axe-core/axe.min.js') });
   for (const mode of ['keyboard', 'touch']) {
     const activate = async (name) => {
-      await page.waitForFunction(function (label) {
-        return Array.from(document.querySelectorAll('button')).some(function (node) { return !node.disabled && (node.getAttribute('aria-label') || node.textContent.trim()) === label && node.getBoundingClientRect().height > 0 && !node.closest('[aria-hidden=true],[inert]'); });
-      }, { timeout: 30000 }, name);
+      await page.waitForFunction(
+        function (label) {
+          return Array.from(document.querySelectorAll('button')).some(
+            function (node) {
+              return (
+                !node.disabled &&
+                (node.getAttribute('aria-label') || node.textContent.trim()) ===
+                  label &&
+                node.getBoundingClientRect().height > 0 &&
+                !node.closest('[aria-hidden=true],[inert]')
+              );
+            },
+          );
+        },
+        { timeout: 30000 },
+        name,
+      );
       const box = await page.evaluate(function (label) {
-        var node = Array.from(document.querySelectorAll('button')).reverse().find(function (item) { return !item.disabled && (item.getAttribute('aria-label') || item.textContent.trim()) === label && item.getBoundingClientRect().height > 0 && !item.closest('[aria-hidden=true],[inert]'); });
-        node.scrollIntoView({ block: 'nearest' }); node.focus();
-        var rect = node.getBoundingClientRect(); return { x: (rect.left + rect.right) / 2, y: (rect.top + rect.bottom) / 2, width: rect.width, height: rect.height };
+        var node = Array.from(document.querySelectorAll('button'))
+          .reverse()
+          .find(function (item) {
+            return (
+              !item.disabled &&
+              (item.getAttribute('aria-label') || item.textContent.trim()) ===
+                label &&
+              item.getBoundingClientRect().height > 0 &&
+              !item.closest('[aria-hidden=true],[inert]')
+            );
+          });
+        node.scrollIntoView({ block: 'nearest' });
+        node.focus();
+        var rect = node.getBoundingClientRect();
+        return {
+          x: (rect.left + rect.right) / 2,
+          y: (rect.top + rect.bottom) / 2,
+          width: rect.width,
+          height: rect.height,
+        };
       }, name);
       if (mode === 'keyboard') await page.keyboard.press('Enter');
-      else { assert.ok(box.width >= 48 && box.height >= 48, name + ' touch target'); await page.touchscreen.tap(box.x, box.y); }
+      else {
+        assert.ok(box.width >= 48 && box.height >= 48, name + ' touch target');
+        await page.touchscreen.tap(box.x, box.y);
+      }
     };
-    const fill = async (selector, value) => { await page.waitForSelector(selector); await page.focus(selector); await page.keyboard.down('Control'); await page.keyboard.press('A'); await page.keyboard.up('Control'); await page.type(selector, value); };
-    const rendered = async (number) => page.waitForFunction(function (target) { var node = document.querySelector('.pdf-page[data-current=true]'); return node && Number(node.getAttribute('data-pdf-page')) === target && node.querySelector('.pdf-text-layer').textContent.includes('page ' + String(target + 1)); }, { timeout: 30000 }, number);
+    const fill = async (selector, value) => {
+      await page.waitForSelector(selector);
+      await page.focus(selector);
+      await page.keyboard.down('Control');
+      await page.keyboard.press('A');
+      await page.keyboard.up('Control');
+      await page.type(selector, value);
+    };
+    const rendered = async (number) =>
+      page.waitForFunction(
+        function (target) {
+          var node = document.querySelector('.pdf-page[data-current=true]');
+          return (
+            node &&
+            Number(node.getAttribute('data-pdf-page')) === target &&
+            node
+              .querySelector('.pdf-text-layer')
+              .textContent.includes('page ' + String(target + 1))
+          );
+        },
+        { timeout: 30000 },
+        number,
+      );
     const semanticChecks = [];
     const semantics = async (task) => {
       if (legacy) return;
-      const result = await page.evaluate(async function () { var result = await window.axe.run({ include: [['.pdf-layout'], ['.task-surface']] }, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] } }); return result.violations.map(function (item) { return { id: item.id, nodes: item.nodes.map(function (node) { return node.target; }) }; }); });
-      assert.deepEqual(result, [], task + ' accessibility'); semanticChecks.push(task);
+      const result = await page.evaluate(async function () {
+        var result = await window.axe.run(
+          { include: [['.pdf-layout'], ['.task-surface']] },
+          {
+            runOnly: {
+              type: 'tag',
+              values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'],
+            },
+          },
+        );
+        return result.violations.map(function (item) {
+          return {
+            id: item.id,
+            nodes: item.nodes.map(function (node) {
+              return node.target;
+            }),
+          };
+        });
+      });
+      assert.deepEqual(result, [], task + ' accessibility');
+      semanticChecks.push(task);
     };
-    await activate('More PDF tools'); await activate('Outline'); await semantics('outline'); await activate('Second chapter'); await rendered(1);
-    await activate('Search'); await fill('#pdf-search', 'cats'); await activate('Search PDF');
-    await page.waitForFunction("document.body.innerText.includes('4 matches')", { timeout: 30000 }); await semantics('search');
-    await activate('Next match'); await activate('Close Search PDF'); await rendered(0);
-    await activate('Thumbnails'); await page.waitForFunction("document.querySelector('.pdf-thumbnail canvas').width>0", { timeout: 30000 }); await semantics('thumbnails'); await activate('Go to page 2'); await rendered(1);
-    await activate('Close PDF tools'); await activate('Go to page'); await fill('#pdf-page-number', '4'); await semantics('go_to_page'); await activate('Go to page'); await rendered(3);
-    const focusRestored = await page.evaluate(function () { return document.activeElement.getAttribute('aria-label') === 'Go to page'; }); assert.ok(focusRestored, mode + ' page dialog restores focus');
-    await activate('More PDF tools'); await activate('Page links'); await semantics('internal_link'); await activate('Link 1'); await rendered(1); await activate('Close PDF tools');
-    await page.focus('.pdf-pane'); await page.keyboard.press('Home'); await rendered(0);
-    inputFlows.push({ mode, search: true, outline: true, thumbnail: true, go_to_page: true, internal_link: true, focus_restored: focusRestored, semantic_checks: semanticChecks, manual_screen_reader: 'owner_waiver_retained' });
+    await activate('More PDF tools');
+    await activate('Outline');
+    await semantics('outline');
+    await activate('Second chapter');
+    await rendered(1);
+    await activate('Search');
+    await fill('#pdf-search', 'cats');
+    await activate('Search PDF');
+    await page.waitForFunction(
+      "document.body.innerText.includes('4 matches')",
+      { timeout: 30000 },
+    );
+    await semantics('search');
+    await activate('Next match');
+    await activate('Close Search PDF');
+    await rendered(0);
+    await activate('Thumbnails');
+    await page.waitForFunction(
+      "document.querySelector('.pdf-thumbnail canvas').width>0",
+      { timeout: 30000 },
+    );
+    await semantics('thumbnails');
+    await activate('Go to page 2');
+    await rendered(1);
+    await activate('Close PDF tools');
+    await activate('Go to page');
+    await fill('#pdf-page-number', '4');
+    await semantics('go_to_page');
+    await activate('Go to page');
+    await rendered(3);
+    const focusRestored = await page.evaluate(function () {
+      return document.activeElement.getAttribute('aria-label') === 'Go to page';
+    });
+    assert.ok(focusRestored, mode + ' page dialog restores focus');
+    await activate('More PDF tools');
+    await activate('Page links');
+    await semantics('internal_link');
+    await activate('Link 1');
+    await rendered(1);
+    await activate('Close PDF tools');
+    await page.focus('.pdf-pane');
+    await page.keyboard.press('Home');
+    await rendered(0);
+    inputFlows.push({
+      mode,
+      search: true,
+      outline: true,
+      thumbnail: true,
+      go_to_page: true,
+      internal_link: true,
+      focus_restored: focusRestored,
+      semantic_checks: semanticChecks,
+      manual_screen_reader: 'owner_waiver_retained',
+    });
   }
   const actualWorker = page
     .workers()
@@ -620,18 +739,69 @@ try {
   await closeCase();
   await openCase('s049-security.pdf');
   await page.waitForSelector('[data-pdf-ready=true]');
-  assert.equal(await page.evaluate(function () { return document.querySelectorAll('.pdf-page input,.pdf-page textarea,.pdf-page select,.pdf-page iframe,.pdf-page object').length; }), 0);
+  assert.equal(
+    await page.evaluate(function () {
+      return document.querySelectorAll(
+        '.pdf-page input,.pdf-page textarea,.pdf-page select,.pdf-page iframe,.pdf-page object',
+      ).length;
+    }),
+    0,
+  );
   await page.click('button[aria-label="More PDF tools"]');
-  await page.evaluate(function () { Array.from(document.querySelectorAll('button')).reverse().find(function (node) { return node.textContent.trim() === 'Page links'; }).click(); });
-  await page.waitForFunction("Array.from(document.querySelectorAll('.pdf-tools button')).some(function(node){return node.textContent.includes('javascript:');})", { timeout: 30000 });
-  await page.evaluate(function () { Array.from(document.querySelectorAll('.pdf-tools button')).find(function (node) { return node.textContent.includes('javascript:'); }).click(); });
-  await page.waitForFunction("document.body.innerText.includes('This link cannot be opened.')", { timeout: 30000 });
-  await page.evaluate(function () { Array.from(document.querySelectorAll('.pdf-tools button')).find(function (node) { return node.textContent.trim() === 'Invalid destination'; }).click(); });
-  await page.waitForFunction("document.body.innerText.includes('This destination is unavailable in this document.')", { timeout: 30000 });
-  assert.equal(await page.evaluate(function () { return window.__s049PdfExecuted === true; }), false);
-  assert.deepEqual(await page.evaluate(function () { return window.__pdfForbiddenCalls; }), []);
-  assert.ok(!requests.some(url => url.includes('example.invalid')), 'Document links/actions/resources must never request the network automatically');
-  corpus.push({ name: 's049-security.pdf', outcome: 'inert_actions_readonly_forms_attachments_and_invalid_destination' });
+  await page.evaluate(function () {
+    Array.from(document.querySelectorAll('button'))
+      .reverse()
+      .find(function (node) {
+        return node.textContent.trim() === 'Page links';
+      })
+      .click();
+  });
+  await page.waitForFunction(
+    "Array.from(document.querySelectorAll('.pdf-tools button')).some(function(node){return node.textContent.includes('javascript:');})",
+    { timeout: 30000 },
+  );
+  await page.evaluate(function () {
+    Array.from(document.querySelectorAll('.pdf-tools button'))
+      .find(function (node) {
+        return node.textContent.includes('javascript:');
+      })
+      .click();
+  });
+  await page.waitForFunction(
+    "document.body.innerText.includes('This link cannot be opened.')",
+    { timeout: 30000 },
+  );
+  await page.evaluate(function () {
+    Array.from(document.querySelectorAll('.pdf-tools button'))
+      .find(function (node) {
+        return node.textContent.trim() === 'Invalid destination';
+      })
+      .click();
+  });
+  await page.waitForFunction(
+    "document.body.innerText.includes('This destination is unavailable in this document.')",
+    { timeout: 30000 },
+  );
+  assert.equal(
+    await page.evaluate(function () {
+      return window.__s049PdfExecuted === true;
+    }),
+    false,
+  );
+  assert.deepEqual(
+    await page.evaluate(function () {
+      return window.__pdfForbiddenCalls;
+    }),
+    [],
+  );
+  assert.ok(
+    !requests.some((url) => url.includes('example.invalid')),
+    'Document links/actions/resources must never request the network automatically',
+  );
+  corpus.push({
+    name: 's049-security.pdf',
+    outcome: 'inert_actions_readonly_forms_attachments_and_invalid_destination',
+  });
   await page.click('button[aria-label="Close Page links"]');
   await page.click('button[aria-label="Close PDF tools"]');
   await closeCase();

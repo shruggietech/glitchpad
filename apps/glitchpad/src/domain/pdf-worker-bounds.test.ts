@@ -46,9 +46,9 @@ it('keeps text streams cancellable and bounds the entire page across chunks', ()
   expect(sink.ready).toBe(2);
   sink.enqueue({ items: [{ str: 'x'.repeat(500000) }], styles: {} });
   sink.enqueue({ items: [{ str: 'y'.repeat(500000) }], styles: {} });
-  expect(() => sink.enqueue({ items: [{ str: 'z' }], styles: {} })).toThrow(
-    'PDF text limit',
-  );
+  expect(() => {
+    sink.enqueue({ items: [{ str: 'z' }], styles: {} });
+  }).toThrow('PDF text limit');
   expect(target.enqueue).toHaveBeenCalledTimes(2);
   sink.cancel();
   expect(target.value).toBe(0);

@@ -55,11 +55,24 @@ export function lockPdfWorkerExternalResources(scope: typeof globalThis): void {
   const rejectResource = function (): never {
     throw new Error('PDF worker external resources are disabled');
   };
-  for (const name of ['importScripts', 'Worker', 'SharedWorker', 'XMLHttpRequest', 'WebSocket', 'EventSource', 'WebTransport']) {
-    Object.defineProperty(scope, name, { value: rejectResource, writable: false, configurable: false });
+  for (const name of [
+    'importScripts',
+    'Worker',
+    'SharedWorker',
+    'XMLHttpRequest',
+    'WebSocket',
+    'EventSource',
+    'WebTransport',
+  ]) {
+    Object.defineProperty(scope, name, {
+      value: rejectResource,
+      writable: false,
+      configurable: false,
+    });
   }
   Object.defineProperty(scope, 'fetch', {
-    value: () => Promise.reject(new Error('PDF worker external resources are disabled')),
+    value: () =>
+      Promise.reject(new Error('PDF worker external resources are disabled')),
     writable: false,
     configurable: false,
   });

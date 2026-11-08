@@ -267,3 +267,15 @@ sensitivity_review = "Synthetic text and metadata only; test passwords are publi
 format = "PDF"
 purpose = "Password-required, incorrect-password and decrypted rendering"
 expected_result = "Bounded explicit state without source mutation or executable document actions"
+
+[[fixture]]
+path = "fixtures/pdf/s049-security.pdf"
+source = "Original Glitchpad S049 PDF fixture generator"
+author = "Glitchpad contributors"
+license = "Apache-2.0"
+redistribution = true
+sha256 = "4b182d721e79b18f4ddec6c02da330f641948173426c199b6bbeb4c25c987c09"
+sensitivity_review = "Original synthetic form, attachment and inert action strings only"
+format = "PDF"
+purpose = "JavaScript, launch, submit, remote action, attachment, read-only form, unsafe links and malformed destination corpus"
+expected_result = "No automatic native navigation, network, script, form submission or attachment launch; invalid destinations refuse without losing readable content"

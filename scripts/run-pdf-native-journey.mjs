@@ -13,7 +13,7 @@ import {
 import { tmpdir } from 'node:os';
 import { resolve, join } from 'node:path';
 import { createHash } from 'node:crypto';
-const sha256 = bytes => createHash('sha256').update(bytes).digest('hex');
+const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex');
 let binary = resolve(process.argv[2] || '');
 if (!process.argv[2]) throw new Error('Native binary path required');
 let packageProof = null;
@@ -66,17 +66,32 @@ if (process.argv.includes('--packaged')) {
   }
   const sourceBytes = await readFile(originalBinary),
     deliveredBytes = await readFile(binary);
-  let comparison = sha256(deliveredBytes) === sha256(sourceBytes) ? 'exact_bytes' : 'packaged_bytes_differ';
+  let comparison =
+    sha256(deliveredBytes) === sha256(sourceBytes)
+      ? 'exact_bytes'
+      : 'packaged_bytes_differ';
   let matchedBuiltCode = comparison === 'exact_bytes';
   if (process.platform === 'darwin') {
-    const unsignedBuilt = join(staging, 'unsigned-built'), unsignedDelivered = join(staging, 'unsigned-delivered');
-    await copyFile(originalBinary, unsignedBuilt); await copyFile(binary, unsignedDelivered);
+    const unsignedBuilt = join(staging, 'unsigned-built'),
+      unsignedDelivered = join(staging, 'unsigned-delivered');
+    await copyFile(originalBinary, unsignedBuilt);
+    await copyFile(binary, unsignedDelivered);
     for (const path of [unsignedBuilt, unsignedDelivered]) {
-      try { await execute('codesign', ['--remove-signature', path], { windowsHide: true, timeout: 30000 }); }
-      catch (error) { if (!String(error.stderr).includes('not signed at all')) throw error; }
+      try {
+        await execute('codesign', ['--remove-signature', path], {
+          windowsHide: true,
+          timeout: 30000,
+        });
+      } catch (error) {
+        if (!String(error.stderr).includes('not signed at all')) throw error;
+      }
     }
-    matchedBuiltCode = sha256(await readFile(unsignedBuilt)) === sha256(await readFile(unsignedDelivered));
-    comparison = matchedBuiltCode ? 'signing_normalized_macho' : 'packaged_bytes_differ';
+    matchedBuiltCode =
+      sha256(await readFile(unsignedBuilt)) ===
+      sha256(await readFile(unsignedDelivered));
+    comparison = matchedBuiltCode
+      ? 'signing_normalized_macho'
+      : 'packaged_bytes_differ';
   }
   packageArtifactPath = artifact;
   const packageBytes = await readFile(artifact);
@@ -126,9 +141,15 @@ const child = spawn(binary, [join(probe, 's049-compatibility.pdf')], {
 });
 const printProbe = startPdfPrintDialogProbe(child.pid);
 let printDialogLog = '';
-printProbe.stdout.on('data', bytes => { printDialogLog = (printDialogLog + bytes).slice(-65536); });
-printProbe.stderr.on('data', bytes => { printDialogLog = (printDialogLog + bytes).slice(-65536); });
-printProbe.on('error', error => { printDialogLog += String(error); });
+printProbe.stdout.on('data', (bytes) => {
+  printDialogLog = (printDialogLog + bytes).slice(-65536);
+});
+printProbe.stderr.on('data', (bytes) => {
+  printDialogLog = (printDialogLog + bytes).slice(-65536);
+});
+printProbe.on('error', (error) => {
+  printDialogLog += String(error);
+});
 let stdout = '',
   stderr = '';
 child.stdout.on('data', (bytes) => {
@@ -186,11 +207,26 @@ try {
     assert.equal(result.journey.checks[key], true, key);
   assert.ok(result.journey.checks.canvas_ink > 500);
   assert.equal(result.journey.prints.length, 2);
-  assert.deepEqual(result.journey.prints.map(item => item.snapshot.pages), [2, 4]);
-  assert.ok(result.journey.prints.every(item => item.afterprint && item.cleaned && !item.paper_completion));
-  await new Promise(resolve => setTimeout(resolve, 200));
-  const observedDialogs = process.platform === 'darwin' ? (printDialogLog.match(/NATIVE_PRINT_CANCEL/g) || []).length : (printDialogLog.match(/"observed_native_dialog"\s*:\s*true/g) || []).length;
-  assert.equal(observedDialogs, 2, 'Both actual native print dialogs must be observed and cancelled');
+  assert.deepEqual(
+    result.journey.prints.map((item) => item.snapshot.pages),
+    [2, 4],
+  );
+  assert.ok(
+    result.journey.prints.every(
+      (item) => item.afterprint && item.cleaned && !item.paper_completion,
+    ),
+  );
+  await new Promise((resolve) => setTimeout(resolve, 200));
+  const observedDialogs =
+    process.platform === 'darwin'
+      ? (printDialogLog.match(/NATIVE_PRINT_CANCEL/g) || []).length
+      : (printDialogLog.match(/"observed_native_dialog"\s*:\s*true/g) || [])
+          .length;
+  assert.equal(
+    observedDialogs,
+    2,
+    'Both actual native print dialogs must be observed and cancelled',
+  );
   assert.deepEqual(
     await readFile(join(probe, 's049-compatibility.pdf')),
     original,

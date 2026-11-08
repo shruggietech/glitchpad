@@ -158,13 +158,23 @@ export const usePersistence = (
 
   useEffect(() => {
     const root = document.documentElement;
-    const media = typeof window.matchMedia === 'function' ? window.matchMedia('(prefers-color-scheme: light)') : null;
-    const syncBrandTheme = () => root.classList.toggle('bb-light', preferences.theme === 'light' || (preferences.theme === 'system' && media?.matches === true));
+    const media =
+      typeof window.matchMedia === 'function'
+        ? window.matchMedia('(prefers-color-scheme: light)')
+        : null;
+    const syncBrandTheme = () =>
+      root.classList.toggle(
+        'bb-light',
+        preferences.theme === 'light' ||
+          (preferences.theme === 'system' && media?.matches === true),
+      );
     syncBrandTheme();
-    if (media?.addEventListener) media.addEventListener('change', syncBrandTheme);
+    if (media?.addEventListener)
+      media.addEventListener('change', syncBrandTheme);
     else media?.addListener(syncBrandTheme);
     return () => {
-      if (media?.removeEventListener) media.removeEventListener('change', syncBrandTheme);
+      if (media?.removeEventListener)
+        media.removeEventListener('change', syncBrandTheme);
       else media?.removeListener(syncBrandTheme);
     };
   }, [preferences.theme]);

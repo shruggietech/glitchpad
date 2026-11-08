@@ -1,7 +1,10 @@
 // Compatibility APIs must initialize in this realm before the pinned engine.
 import 'core-js/stable';
 import { normalizePdfPostMessage } from './pdf-compatibility';
-import { lockPdfWorkerDynamicCode, lockPdfWorkerExternalResources } from './pdf-worker-policy';
+import {
+  lockPdfWorkerDynamicCode,
+  lockPdfWorkerExternalResources,
+} from './pdf-worker-policy';
 import 'pdfjs-dist/legacy/build/pdf.worker.mjs';
 
 normalizePdfPostMessage(self);

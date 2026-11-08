@@ -498,7 +498,10 @@ export const PdfSurface = forwardRef<TextEditorHandle, Props>(
       session.revision,
     ]);
     useEffect(() => {
-      if (!state.capabilities.view) { setTask(null); setSelectedMatch(null); }
+      if (!state.capabilities.view) {
+        setTask(null);
+        setSelectedMatch(null);
+      }
     }, [state.capabilities.view]);
     const pageFailure = pageFailures.get(view.page);
     const renderError = pageFailure?.key === key ? pageFailure.error : null;

@@ -79,10 +79,32 @@ export function createPdfFixture({
   let attachment = null;
   let widget = null;
   if (securityCorpus) {
-    const attachmentBytes = add(stream('Synthetic inert attachment. globalThis.__s049PdfExecuted=true;','/Type /EmbeddedFile /Subtype /application#2Fjavascript'));
-    attachment = add('<< /Type /Filespec /F (s049-attachment.js) /EF << /F ' + ref(attachmentBytes) + ' >> >>');
-    const appearance = add(stream('BT /F1 12 Tf 2 8 Td (Read-only synthetic form) Tj ET','/Type /XObject /Subtype /Form /BBox [0 0 220 24] /Resources << /Font << /F1 ' + ref(regular) + ' >> >>'));
-    widget = add('<< /Type /Annot /Subtype /Widget /FT /Tx /T (s049-field) /V (Read-only synthetic form) /Ff 1 /Rect [48 360 268 384] /AP << /N ' + ref(appearance) + ' >> /AA << /K ' + ref(action) + ' >> >>');
+    const attachmentBytes = add(
+      stream(
+        'Synthetic inert attachment. globalThis.__s049PdfExecuted=true;',
+        '/Type /EmbeddedFile /Subtype /application#2Fjavascript',
+      ),
+    );
+    attachment = add(
+      '<< /Type /Filespec /F (s049-attachment.js) /EF << /F ' +
+        ref(attachmentBytes) +
+        ' >> >>',
+    );
+    const appearance = add(
+      stream(
+        'BT /F1 12 Tf 2 8 Td (Read-only synthetic form) Tj ET',
+        '/Type /XObject /Subtype /Form /BBox [0 0 220 24] /Resources << /Font << /F1 ' +
+          ref(regular) +
+          ' >> >>',
+      ),
+    );
+    widget = add(
+      '<< /Type /Annot /Subtype /Widget /FT /Tx /T (s049-field) /V (Read-only synthetic form) /Ff 1 /Rect [48 360 268 384] /AP << /N ' +
+        ref(appearance) +
+        ' >> /AA << /K ' +
+        ref(action) +
+        ' >> >>',
+    );
     securityAnnotations.push(widget);
     for (const expression of [
       '/A << /S /Launch /F (s049-attachment.js) >>',
@@ -91,8 +113,25 @@ export function createPdfFixture({
       '/A << /S /URI /URI (file:///synthetic-s049) >>',
       '/A << /S /URI /URI (data:text/html,synthetic-s049) >>',
       '/Dest [99 /Fit]',
-    ]) securityAnnotations.push(add('<< /Type /Annot /Subtype /Link /Rect [48 300 268 324] /Contents (' + (expression.startsWith('/Dest') ? 'Invalid destination' : 'Security action') + ') ' + expression + ' >>'));
-    securityAnnotations.push(add('<< /Type /Annot /Subtype /FileAttachment /Rect [280 300 304 324] /FS ' + ref(attachment) + ' >>'));
+    ])
+      securityAnnotations.push(
+        add(
+          '<< /Type /Annot /Subtype /Link /Rect [48 300 268 324] /Contents (' +
+            (expression.startsWith('/Dest')
+              ? 'Invalid destination'
+              : 'Security action') +
+            ') ' +
+            expression +
+            ' >>',
+        ),
+      );
+    securityAnnotations.push(
+      add(
+        '<< /Type /Annot /Subtype /FileAttachment /Rect [280 300 304 324] /FS ' +
+          ref(attachment) +
+          ' >>',
+      ),
+    );
   }
   const pagesIds = [];
   for (let index = 0; index < pages; index++) {
@@ -152,9 +191,15 @@ export function createPdfFixture({
     ref(outline) +
     ' /Names << /Dests ' +
     ref(destinations) +
-    (attachment ? ' /EmbeddedFiles << /Names [(s049-attachment.js) ' + ref(attachment) + '] >>' : '') +
+    (attachment
+      ? ' /EmbeddedFiles << /Names [(s049-attachment.js) ' +
+        ref(attachment) +
+        '] >>'
+      : '') +
     ' >>' +
-    (widget ? ' /AcroForm << /Fields [' + ref(widget) + '] /NeedAppearances false >>' : '') +
+    (widget
+      ? ' /AcroForm << /Fields [' + ref(widget) + '] /NeedAppearances false >>'
+      : '') +
     (hostile ? ' /OpenAction ' + ref(action) : '') +
     ' >>';
   objects[tree - 1] =
@@ -287,7 +332,11 @@ if (
       unsupportedEncryption: true,
     }),
     's049-malformed.pdf': Buffer.from('%PDF-1.7\ninvalid\n', 'ascii'),
-    's049-security.pdf': createPdfFixture({ pages: 1, padding: 0, securityCorpus: true }),
+    's049-security.pdf': createPdfFixture({
+      pages: 1,
+      padding: 0,
+      securityCorpus: true,
+    }),
   };
   await copyFile(
     new URL('pdf-reading-journey.js', import.meta.url),

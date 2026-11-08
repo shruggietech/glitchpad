@@ -30,7 +30,15 @@ it('normalizes absent transfer lists while preserving the actual port, payload a
 });
 
 it('reads print blobs using the actual minimum-compatible FileReader path and honors cancellation', async () => {
-  expect(await readPdfBlob(new Blob([Uint8Array.from([0, 127, 255])]), new AbortController().signal)).toEqual(Uint8Array.from([0, 127, 255]));
-  const abort = new AbortController(); abort.abort();
-  await expect(readPdfBlob(new Blob(['cancelled']), abort.signal)).rejects.toThrow('print_cancelled');
+  expect(
+    await readPdfBlob(
+      new Blob([Uint8Array.from([0, 127, 255])]),
+      new AbortController().signal,
+    ),
+  ).toEqual(Uint8Array.from([0, 127, 255]));
+  const abort = new AbortController();
+  abort.abort();
+  await expect(
+    readPdfBlob(new Blob(['cancelled']), abort.signal),
+  ).rejects.toThrow('print_cancelled');
 });

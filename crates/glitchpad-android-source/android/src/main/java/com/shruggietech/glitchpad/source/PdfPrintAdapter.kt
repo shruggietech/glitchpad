@@ -48,7 +48,7 @@ internal class PdfPrintAdapter(private val context: Context, private val store: 
         ParcelFileDescriptor.AutoCloseOutputStream(destination).use { output -> pdf.writeTo(output); output.flush() }
         store.observe(job, "written", written.size); callback.onWriteFinished(written.toTypedArray())
       } catch (_: java.util.concurrent.CancellationException) { store.observe(job, "cancelled"); callback.onWriteCancelled() }
-      catch (_: Exception) { store.observe(job, "failed"); callback.onWriteFailed("PDF print output failed") }
+      catch (error: Exception) { android.util.Log.w("GlitchpadPdfPrint", "stage=write failure="+error.javaClass.simpleName); store.observe(job, "failed"); callback.onWriteFailed("PDF print output failed") }
       finally { document?.close(); runCatching { destination.close() } }
     }
   }

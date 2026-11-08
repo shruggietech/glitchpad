@@ -31,7 +31,7 @@ function deferred<T>() {
   const promise = new Promise<T>((yes, no) => { resolve = yes; reject = no; });
   return { promise, resolve, reject };
 }
-function lease(read = vi.fn(async (_offset: number, length: number) => new Uint8Array(length))): PdfSourceLease {
+function lease(read: PdfSourceLease['read'] = vi.fn(async (_offset: number, length: number) => new Uint8Array(length))): PdfSourceLease {
   return { length: 8192, platform: 'desktop', revision: null, read, close: vi.fn() };
 }
 function doc() {

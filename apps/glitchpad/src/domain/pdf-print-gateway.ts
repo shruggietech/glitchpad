@@ -1,3 +1,4 @@
+import { readPdfBlob } from './pdf-compatibility';
 import { invoke } from '@tauri-apps/api/core';
 import type { ShellSession } from './contracts';
 import { createRequestId } from './request-id';
@@ -140,7 +141,7 @@ export function nativePdfPrintGateway(session: ShellSession): PdfPrintGateway {
         throw new Error('print_cache_limit');
       encoded += page.blob.size;
       if (android) {
-        const bytes = new Uint8Array(await page.blob.arrayBuffer());
+        const bytes = await readPdfBlob(page.blob, signal);
         for (let offset = 0; offset < bytes.length; offset += 262144) {
           if (signal.aborted) throw new Error('print_cancelled');
           await operation('append', {

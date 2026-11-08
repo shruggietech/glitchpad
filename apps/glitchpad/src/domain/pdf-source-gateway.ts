@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import { createNativeLargeTextGateway } from './large-text-gateway';
+import { createNativeLargeTextGateway, type LargeTextGateway } from './large-text-gateway';
 import { externalRevisionMatches, noRendererCapabilities, type ExternalRevision, type RevalidationResult, type ShellSession, type SourceDescriptor } from './contracts';
 import { assertPdfRange, assertPdfSource, initialPdfState, PdfFailure, type PdfSourceLease } from './pdf-contract';
 
@@ -13,7 +13,7 @@ export function createPdfSession(source: SourceDescriptor, sourceId: string, rev
   const id = prefix + '-' + sourceId;
   return { id, source, source_id: sourceId, external_revision: revision, renderer: { id:'pdf',label:'PDF',capabilities:{...noRendererCapabilities(),view:true,navigate:true,search:true,zoom:true,copy:true,inspect_metadata:true} }, lifecycle:'background',source_state:'available',saved_revision:1,dirty:false,revision:1,content:'',text_document:null,pdf_document:initialPdfState(id) };
 }
-export async function createPdfSourceLease(session: ShellSession, call: NativeInvoke = invoke): Promise<PdfSourceLease> {
+export async function createPdfSourceLease(session: ShellSession, call: NativeInvoke = invoke, rangeGateway?: LargeTextGateway): Promise<PdfSourceLease> {
   const sourceId = session.source_id;
   const revision = session.external_revision;
   if (!sourceId || !revision) throw new PdfFailure('unavailable');
@@ -22,7 +22,7 @@ export async function createPdfSourceLease(session: ShellSession, call: NativeIn
   const length = session.source.byte_length;
   if (length === null || !session.source.capabilities.seek) throw new PdfFailure('unavailable'); // Replaced by the private spool adapter before candidate qualification.
   assertPdfSource(length, platform);
-  const gateway = createNativeLargeTextGateway(android);
+  const gateway = rangeGateway ?? createNativeLargeTextGateway(android);
   let closed = false;
   return {
     length, platform, revision,

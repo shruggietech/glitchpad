@@ -29,3 +29,9 @@ Run42521961498 passed againsta88e684b91b3794e297900133c5c33258e56699c. Artifact1
 ## 2026-11-08: Minimum-browser diagnostic attempt1
 
 Run42522365871 againstfb89a7dbaa5f4b132e94a45d185f1393f15d8d8e passed current production-browser rendering but failed to reach the initial Add control in actual Chromium69. The failed archive13633987201 independently hashedeadc3c58bddba169a4457c32875e5b1fc94b25881c30f6058610db3b649b5a20. The first probe captured failure details only after opening PDF, which missed this earlier bootstrap failure. Extended capture to all phases and isolated PDF loading behind React lazy/Suspense so a PDF module failure cannot disable unrelated source views. Minimum-browser/native compatibility is not established.
+
+## 2026-11-08: Early diagnostic causes isolated
+
+Run42522681349 against4f83a7f15ec4a09c1c9c0775e5e8009210da7820 retained the early browser failure. Artifact13633678960 independently hasheda0efc14da5c9743a1cd022a49ab4bea60a3db01e6708de75dd94c61020b3822e. Chromium69 reported Unexpected token ? in the injected native-boundary seam, followed by absent invoke. The shared seam contains nullish-coalescing and requires the same ES2018 transpilation already used by the existing composed-layout harness. This was a harness parse failure, not evidence of a PDF engine incompatibility. Added explicit seam transpilation. Lazy PDF loading remains a proportional renderer-failure containment improvement.
+
+Ordinary API24 run42522367508 againstfb89a7d built the native application successfully but failed Android test-asset merging: fixtures/images/manifest.json and fixtures/pdf/manifest.json had the same asset name. No installed/native PDF observation occurred. Renamed only the new PDF manifest to pdf-fixtures.json. Both failed runs remain diagnostic; rerun the focused checks before any complete matrix.

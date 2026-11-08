@@ -43,5 +43,5 @@ if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
   const files={ 's049-compatibility.pdf':createPdfFixture(), 's049-small.pdf':createPdfFixture({padding:0}), 's049-malformed.pdf':Buffer.from('%PDF-1.7\ninvalid\n','ascii') };
   const manifest=[];
   for(const [name,bytes] of Object.entries(files)){await writeFile(new URL(name,directory),bytes);manifest.push({name,bytes:bytes.length,sha256:createHash('sha256').update(bytes).digest('hex'),author:'Glitchpad contributors',license:'Apache-2.0'});}
-  await writeFile(new URL('manifest.json',directory),JSON.stringify({generator:'scripts/generate-pdf-fixtures.mjs',fixtures:manifest},null,2)+'\n','utf8');
+  await writeFile(new URL('pdf-fixtures.json',directory),JSON.stringify({generator:'scripts/generate-pdf-fixtures.mjs',fixtures:manifest},null,2)+'\n','utf8');
 }

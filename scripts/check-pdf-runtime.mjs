@@ -5,6 +5,7 @@ import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { extname, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
+import { createRequire } from 'node:module';
 import { installNativeSeams } from './check-android-authoring-layout.mjs';
 
 const root=fileURLToPath(new URL('../',import.meta.url));
@@ -35,7 +36,10 @@ try {
   page.on('pageerror',error=>errors.push(String(error)));
   page.on('console',message=>consoleMessages.push(message.text()));
   page.on('request',request=>requests.push(request.url()));
-  await page.evaluateOnNewDocument(installNativeSeams);
+  const require=createRequire(new URL('../apps/glitchpad/package.json',import.meta.url));
+  const ts=require('typescript');
+  const nativeSeam=ts.transpileModule('('+installNativeSeams.toString()+')()',{compilerOptions:{target:ts.ScriptTarget.ES2018,module:ts.ModuleKind.ESNext}}).outputText;
+  await page.evaluateOnNewDocument(nativeSeam);
   await page.evaluateOnNewDocument(function(encoded){
     var binary=atob(encoded),bytes=new Uint8Array(binary.length);for(var i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
     var original=window.__TAURI_INTERNALS__.invoke;

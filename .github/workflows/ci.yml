@@ -152,6 +152,10 @@ jobs:
           node scripts/run-performance.mjs --profile hosted_windows_smoke_v1 --build-id "pr-${{ github.event.pull_request.head.sha || github.sha }}" --confirm-hard-failure
 
   platform:
+    env:
+      SOURCE_REF: ${{ github.sha }}
+      GLITCHPAD_BUILD_COMMIT: ${{ github.sha }}
+      VITE_GLITCHPAD_BUILD_COMMIT: ${{ github.sha }}
     name: Desktop host (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
@@ -166,7 +170,7 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
-          sudo apt-get install --yes libwebkit2gtk-4.1-dev libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+          sudo apt-get install --yes libwebkit2gtk-4.1-dev libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev patchelf xvfb
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -217,8 +221,34 @@ jobs:
       - name: Run desktop source adapter conformance
         run: cargo test -p glitchpad-host --test desktop_source_conformance --locked
 
-      - name: Build desktop foundation host
-        run: pnpm tauri build --debug
+      - name: Generate original PDF journey fixture
+        run: node scripts/generate-pdf-fixtures.mjs
+      - name: Build Windows candidate package
+        if: runner.os == 'Windows'
+        run: pnpm tauri build --debug --config tauri.s019-windows.conf.json --bundles nsis --ci
+      - name: Build macOS candidate app
+        if: runner.os == 'macOS'
+        run: pnpm tauri build --debug --config tauri.s020-macos.conf.json --bundles app --ci
+      - name: Build Linux candidate package
+        if: runner.os == 'Linux'
+        run: pnpm tauri build --debug --config tauri.s021-linux.conf.json --bundles deb --ci
+      - name: Actual packaged Windows PDF reading journey
+        if: runner.os == 'Windows'
+        run: node scripts/run-pdf-native-journey.mjs target/debug/glitchpad.exe --packaged
+      - name: Actual packaged macOS PDF reading journey
+        if: runner.os == 'macOS'
+        run: node scripts/run-pdf-native-journey.mjs target/debug/glitchpad --packaged
+      - name: Actual packaged Linux PDF reading journey
+        if: runner.os == 'Linux'
+        run: xvfb-run -a node scripts/run-pdf-native-journey.mjs target/debug/glitchpad --packaged
+      - name: Retain native PDF runtime evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: pdf-native-${{ matrix.os }}
+          path: artifacts/pdf-native/
+          if-no-files-found: warn
+          retention-days: 30
 
   android:
     name: Android debug APK
@@ -343,6 +373,9 @@ jobs:
           shared-key: android-x86_64-api-${{ matrix.api-level }}
           cache-on-failure: true
 
+      - name: Generate original PDF instrumentation fixtures
+        run: node scripts/generate-pdf-fixtures.mjs
+
       - name: Build emulator APK and provider unit tests
         env:
           VITE_GLITCHPAD_RECOVERY_PROBES: ${{ matrix.role == 'fault_probe' && '1' || '0' }}
@@ -394,6 +427,7 @@ jobs:
             # close any dialog already present before testing the foreground WebView.
             if [ "${{ matrix.api-level }}" = "36" ]; then node scripts/bounded-android-adb.mjs shell settings put global hide_error_dialogs 1 && node scripts/bounded-android-adb.mjs shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS; fi
             bash scripts/run-android-connected-tests.sh
+            if [ "${{ matrix.role }}" = ordinary ] && [ "$ANDROID_S047_BACK_DIAGNOSTIC" != true ]; then GLITCHPAD_ANDROID_PDF_PREFLIGHT=true bash scripts/run-android-connected-tests.sh; fi
             apkanalyzer manifest print "$RUNNER_TEMP/android-tested-candidate/application.apk" > "$RUNNER_TEMP/s047-application-manifest.xml"
             grep -Eq 'android:enableOnBackInvokedCallback="true"' "$RUNNER_TEMP/s047-application-manifest.xml"
             node scripts/bounded-android-adb.mjs shell settings put secure show_ime_with_hard_keyboard 1
@@ -479,6 +513,7 @@ jobs:
         docs,
         shared,
         performance,
+        pdf,
         image-fuzz,
         platform,
         android,
@@ -495,6 +530,7 @@ jobs:
           DOCS_RESULT: ${{ needs.docs.result }}
           SHARED_RESULT: ${{ needs.shared.result }}
           PERFORMANCE_RESULT: ${{ needs.performance.result }}
+          PDF_RESULT: ${{ needs.pdf.result }}
           IMAGE_FUZZ_RESULT: ${{ needs.image-fuzz.result }}
           PLATFORM_RESULT: ${{ needs.platform.result }}
           ANDROID_RESULT: ${{ needs.android.result }}
@@ -503,7 +539,7 @@ jobs:
           SECURITY_RESULT: ${{ needs.security.result }}
           LABELER_RESULT: ${{ needs.labeler.result }}
         run: |
-          results="$DOCS_RESULT $SHARED_RESULT $PERFORMANCE_RESULT $IMAGE_FUZZ_RESULT $PLATFORM_RESULT $ANDROID_RESULT $ANDROID_INSTRUMENTATION_RESULT $DEPENDENCY_RESULT $SECURITY_RESULT $LABELER_RESULT"
+          results="$DOCS_RESULT $SHARED_RESULT $PERFORMANCE_RESULT $PDF_RESULT $IMAGE_FUZZ_RESULT $PLATFORM_RESULT $ANDROID_RESULT $ANDROID_INSTRUMENTATION_RESULT $DEPENDENCY_RESULT $SECURITY_RESULT $LABELER_RESULT"
           echo "Job results: $results"
           for result in $results; do
             if [ "$result" = "failure" ] || [ "$result" = "cancelled" ]; then
@@ -542,3 +578,42 @@ jobs:
           name: image-fuzz-qualification
           path: .tmp/s043-fuzz/
           if-no-files-found: error
+
+  pdf:
+    name: PDF worker and reading compatibility
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SOURCE_REF: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.28.2
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: node scripts/generate-pdf-fixtures.mjs
+      - run: node --test scripts/prepare-pdf-assets.test.mjs
+      - run: pnpm --filter @shruggietech/glitchpad exec vitest run src/domain/pdf-
+      - run: pnpm build
+      - run: pnpm exec puppeteer browsers install chrome-headless-shell
+      - run: node scripts/check-pdf-runtime.mjs
+      - name: Install the actual minimum Chromium
+        run: |
+          mkdir -p /tmp/glitchpad-browser-compat/chromium/linux-576753 /tmp/glitchpad-browser-compat/client
+          curl --fail --location --retry 2 https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/576753/chrome-linux.zip --output /tmp/glitchpad-browser-compat/chrome-linux.zip
+          unzip -q /tmp/glitchpad-browser-compat/chrome-linux.zip -d /tmp/glitchpad-browser-compat/chromium/linux-576753
+          npm install --prefix /tmp/glitchpad-browser-compat/client --ignore-scripts --no-audit --no-fund puppeteer-core@1.7.0
+      - run: node scripts/check-pdf-runtime.mjs --legacy
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: pdf-worker-reading-compatibility
+          path: artifacts/pdf-runtime/
+          if-no-files-found: warn
+          retention-days: 30

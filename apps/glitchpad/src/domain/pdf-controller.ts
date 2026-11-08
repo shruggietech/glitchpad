@@ -182,13 +182,14 @@ export class PdfController {
             type?: unknown;
             version?: unknown;
             native_bridge?: unknown;
+            code_evaluation_allowed?: unknown;
           };
           if (data?.type !== 'glitchpad-pdf-worker-ready') return;
           clearTimeout(timeout);
           worker.removeEventListener('message', ready);
           if (
             data.version !== PDF_ENGINE_VERSION ||
-            data.native_bridge !== false
+            data.native_bridge !== false || data.code_evaluation_allowed !== false
           )
             reject(new PdfFailure('worker_failure'));
           else resolve();

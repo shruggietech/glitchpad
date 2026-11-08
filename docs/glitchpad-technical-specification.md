@@ -998,3 +998,7 @@ Shortcuts MUST yield to platform-reserved behavior and remain discoverable in co
 - Set the canonical product version and every validated mirror, including this specification.
 - Produce and review the machine-readable documentation-pass receipt.
 - Run `cargo xtask release-check` before creating the release tag.
+
+## Unreleased S049 implementation note
+
+The [S049 PDF candidate](operations/pdf-candidate.md) implements the first bundled PDF reading/navigation/metadata/print increment under the existing source/session contracts. Its bounded implementation and validation do not change the published 0.2.1 release authority, stable format registry, PDF associations or Android PDF intent activation. The [slice acceptance map](../specs/049-pdf-viewer-foundation/contracts/issue-acceptance.md) retains all included issue criteria; #81 exhaustive conformance and #82 stable activation remain separate.

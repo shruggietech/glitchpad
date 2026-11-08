@@ -99,6 +99,7 @@ export const PdfSurface = forwardRef<TextEditorHandle, Props>(
     const [viewport, setViewport] = useState({ width: 640, height: 480 });
     const [scrollTop, setScrollTop] = useState(0);
     const scrollFrame = useRef<number | null>(null);
+    const scrollIntent = useRef(false);
     const [maximumScroll, setMaximumScroll] = useState(8_000_000);
     const [metrics, setMetrics] = useState(
       new Map<number, { key: string; value: PdfPageMetrics }>(),
@@ -293,9 +294,10 @@ export const PdfSurface = forwardRef<TextEditorHandle, Props>(
     }, [controller, state.capabilities.view, fits, tooMany, view.layout]);
     useEffect(() => {
       if (!pane.current || !state.capabilities.view) return;
+      scrollIntent.current = false;
       const target = single ? 0 : offsets[view.page];
       pane.current.scrollTop = target;
-      setScrollTop(target);
+      setScrollTop(pane.current.scrollTop);
     }, [
       controller,
       view.request,
@@ -535,13 +537,16 @@ export const PdfSurface = forwardRef<TextEditorHandle, Props>(
           ref={pane}
           tabIndex={0}
           aria-label="PDF pages"
+          onWheel={()=>{scrollIntent.current=true;}}
+          onTouchStart={()=>{scrollIntent.current=true;}}
+          onPointerDown={()=>{scrollIntent.current=true;}}
           onScroll={() => {
             if (scrollFrame.current !== null) return;
             scrollFrame.current = requestAnimationFrame(() => {
               scrollFrame.current = null;
               const top = pane.current?.scrollTop ?? 0;
               setScrollTop(top);
-              if (!single && state.capabilities.navigate) {
+              if (scrollIntent.current && !single && state.capabilities.navigate) {
                 const page = pageAtOffset(offsets, top);
                 if (page !== view.page) controller.navigate(page, 'scroll');
               }
@@ -553,6 +558,7 @@ export const PdfSurface = forwardRef<TextEditorHandle, Props>(
               !state.capabilities.navigate
             )
               return;
+            if (['ArrowDown','ArrowUp',' '].includes(event.key))scrollIntent.current=true;
             if (event.key === 'PageDown') {
               event.preventDefault();
               go(Math.min(count - 1, view.page + 1));

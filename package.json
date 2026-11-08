@@ -64,7 +64,7 @@
     "check:app-layout": "node --test scripts/check-app-layout.test.mjs && node scripts/check-app-layout.mjs --receipt artifacts/android-task-layout/receipt.json"
   },
   "devDependencies": {
-    "@mermaid-js/mermaid-cli": "11.17.0",
+    "@mermaid-js/mermaid-cli": "12.2.0",
     "@taplo/cli": "0.7.0",
     "@tauri-apps/cli": "2.11.5",
     "@types/react": "19.3.0",

@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import {spawn} from 'node:child_process';
+import {mkdtemp,mkdir,copyFile,readFile,writeFile} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {resolve,join} from 'node:path';
+import {createHash} from 'node:crypto';
+const binary=resolve(process.argv[2]||'');if(!process.argv[2])throw new Error('Native binary path required');
+const output=resolve('artifacts/pdf-native');await mkdir(output,{recursive:true});const probe=await mkdtemp(join(tmpdir(),'glitchpad-pdf-'));
+const fixture=resolve('fixtures/pdf/s049-compatibility.pdf');const original=await readFile(fixture);await copyFile(fixture,join(probe,'s049-compatibility.pdf'));await writeFile(join(probe,'enabled.marker'),'enabled\n');await writeFile(join(probe,'pdf-journey-request.marker'),'requested\n');
+const child=spawn(binary,[join(probe,'s049-compatibility.pdf')],{env:{...process.env,GLITCHPAD_LIFECYCLE_PROBE_DIR:probe},windowsHide:true,stdio:['ignore','pipe','pipe']});let stdout='',stderr='';child.stdout.on('data',bytes=>{stdout=(stdout+bytes).slice(-131072);});child.stderr.on('data',bytes=>{stderr=(stderr+bytes).slice(-131072);});child.on('error',error=>{stderr+=String(error);});
+try{let result;const deadline=Date.now()+150000;while(Date.now()<deadline){let data=await readFile(join(probe,'pdf-journey-result.json'),'utf8').catch(()=>null);if(data){result=JSON.parse(data);break;}if(child.exitCode!==null)throw new Error('Native PDF process exited '+child.exitCode);await new Promise(resolve=>setTimeout(resolve,100));}assert.ok(result,'Native PDF journey did not return evidence');await writeFile(join(output,'result.json'),JSON.stringify(result,null,2)+'\n');assert.equal(result.source_commit,process.env.SOURCE_REF);assert.equal(result.source_unchanged,true);assert.equal(result.source_sha256,createHash('sha256').update(original).digest('hex'));assert.ok(!result.journey.error,result.journey.error);assert.equal(result.journey.worker,'true');for(const key of ['outline_named_destination','search','thumbnail','internal_link','external_link_disclosure','rotation','go_to_page','keyboard','metadata'])assert.equal(result.journey.checks[key],true,key);assert.ok(result.journey.checks.canvas_ink>500);assert.deepEqual(await readFile(join(probe,'s049-compatibility.pdf')),original);console.log('Actual native PDF reading journey passed on '+process.platform);}
+finally{if(child.exitCode===null)child.kill();await writeFile(join(output,'stdout.log'),stdout);await writeFile(join(output,'stderr.log'),stderr);}

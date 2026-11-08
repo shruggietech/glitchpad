@@ -168,6 +168,7 @@ pub fn run() {
         desktop_delivery::drain_desktop_deliveries,
         desktop_delivery::save_desktop_source_as,
         lifecycle_probe::record_desktop_lifecycle_probe,
+        lifecycle_probe::record_desktop_pdf_probe,
         lifecycle_probe::record_desktop_device_scale_probe,
         lifecycle_probe::consume_desktop_markdown_failure_probe,
         lifecycle_probe::begin_desktop_document_workflow_probe,
@@ -311,8 +312,12 @@ pub fn run() {
                 .iter()
                 .find(|window| window.label == "main")
                 .ok_or_else(|| std::io::Error::other("The configured main window is missing"))?;
-            tauri::WebviewWindowBuilder::from_config(app, main)?
-                .on_web_resource_request(|request, response| {
+            let main_builder=tauri::WebviewWindowBuilder::from_config(app, main)?;
+            #[cfg(not(mobile))]
+            let main_builder=if app.state::<lifecycle_probe::LifecycleProbeState>().pdf_probe_root()?.is_some(){
+                main_builder.initialization_script(concat!(include_str!("../../../scripts/pdf-reading-journey.js"),"\n",include_str!("../../../scripts/pdf-native-probe-bootstrap.js")))
+            }else{main_builder};
+            main_builder.on_web_resource_request(|request, response| {
                     if pdf::is_pdf_worker_path(request.uri().path()) {
                         response.headers_mut().insert(
                             tauri::http::header::CONTENT_SECURITY_POLICY,

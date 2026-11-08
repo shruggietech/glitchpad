@@ -40,7 +40,7 @@
 - [x] T013 [US2] Add release identity/capture and visible Back/About checks around reused ordinary delivery/authoring/Diagnostics/exact recovery flows in crates/glitchpad-host/gen/android/app/src/androidTest/java/com/shruggietech/glitchpad/source/AndroidDeliveryInstrumentedTest.kt (FR-005/009/010/013).
 - [x] T014 [US2] Add a bounded release-runtime runner/validator and source/role/byte/missing-attempt rejection tests in scripts/run-android-release-tests.sh, scripts/validate-android-release-evidence.mjs and their regression fixtures (FR-009/010/011/013).
 - [x] T015 [US2] Add manual stable-key staging, exact native/frontend source env, matching AndroidTest artifact and API24/API36 release-runtime jobs to .github/workflows/android-package.yml; retain ordinary PR disposable signing (FR-005/008/009/011/015).
-- [ ] T016 [US2] Prove release variant/signature/capture/Back/About compatibility on each required API before that API's full campaign, using the same canonical build and retaining every attempt in .codex-tmp/s048/ and specs/048-v021-recovery-release/validation.md (FR-009/010/013).
+- [x] T016 [US2] Prove release variant/signature/capture/Back/About compatibility on each required API before that API's full campaign, using the same canonical build and retaining every attempt in .codex-tmp/s048/ and specs/048-v021-recovery-release/validation.md (FR-009/010/013).
 
 ## Phase 5: User Story 3 - Review a complete release handoff (Priority: P1)
 

@@ -5,9 +5,12 @@ on:
   push:
     branches:
       - '**'
-    tags:
-      - 'v0.2.1'
   workflow_dispatch:
+    inputs:
+      stage_release:
+        description: Prepare unpublished accepted release inputs (no publication)
+        type: boolean
+        default: false
 
 concurrency:
   group: linux-package-${{ github.ref }}
@@ -28,6 +31,17 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
+      - name: Validate preparation authority
+        shell: bash
+        env:
+          STAGE_RELEASE: ${{ inputs.stage_release || false }}
+        run: |
+          test "$GITHUB_REF_TYPE" = branch
+          if [ "$STAGE_RELEASE" = true ]; then
+            test "$GITHUB_EVENT_NAME" = workflow_dispatch
+            test "$GITHUB_REPOSITORY" = shruggietech/glitchpad
+          fi
+
       - name: Checkout
         uses: actions/checkout@v7
 
@@ -123,34 +137,21 @@ jobs:
       - name: Restore runner ownership of Linux evidence
         run: sudo chown --recursive "$(id --user):$(id --group)" artifacts/linux
 
-      - name: Exercise release promotion mutation before merge
-        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
-        run: |
-          set -euo pipefail
-          candidate_backup="$(mktemp -d)"
-          trap 'rm -rf "$candidate_backup"' EXIT
-          cp artifacts/linux/linux-package-manifest.json artifacts/linux/provenance.json "$candidate_backup/"
-          node scripts/promote-community-package.mjs --platform linux --directory artifacts/linux --source-commit '${{ github.sha }}'
-          test -f artifacts/linux/community-trust-evidence.json
-          cp "$candidate_backup/linux-package-manifest.json" artifacts/linux/linux-package-manifest.json
-          cp "$candidate_backup/provenance.json" artifacts/linux/provenance.json
-          rm artifacts/linux/community-trust-evidence.json
-
       - name: Upload governed Linux package
-        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+        if: ${{ !inputs.stage_release }}
         uses: actions/upload-artifact@v7
         with:
-          name: ${{ startsWith(github.ref, 'refs/tags/') && 'glitchpad-0.2.1-linux-x86_64-community-release' || 'glitchpad-0.2.1-linux-x86_64-non-official-candidate' }}
+          name: ${{ inputs.stage_release && 'glitchpad-0.2.1-linux-x86_64-community-release' || 'glitchpad-0.2.1-linux-x86_64-non-official-candidate' }}
           path: artifacts/linux/**
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 30
 
       - name: Promote truthful community evidence
-        if: startsWith(github.ref, 'refs/tags/')
+        if: inputs.stage_release
         run: node scripts/promote-community-package.mjs --platform linux --directory artifacts/linux --source-commit '${{ github.sha }}'
 
       - name: Attest final Linux community artifacts
-        if: startsWith(github.ref, 'refs/tags/')
+        if: inputs.stage_release
         id: attest
         uses: actions/attest-build-provenance@v4
         with:
@@ -159,17 +160,17 @@ jobs:
             artifacts/linux/glitchpad-0.2.1-linux-x86_64.deb
 
       - name: Preserve repository attestation evidence
-        if: startsWith(github.ref, 'refs/tags/')
+        if: inputs.stage_release
         run: cp '${{ steps.attest.outputs.bundle-path }}' artifacts/linux/repository-attestation.json
 
       - name: Upload governed Linux community package
-        if: startsWith(github.ref, 'refs/tags/')
+        if: inputs.stage_release
         uses: actions/upload-artifact@v7
         with:
           name: glitchpad-0.2.1-linux-x86_64-community-release
           path: artifacts/linux/**
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 30
 
   clean-environment:
     name: Clean Ubuntu ${{ matrix.release }} ${{ matrix.package_form }} lifecycle
@@ -205,7 +206,7 @@ jobs:
       - name: Download candidate
         uses: actions/download-artifact@v8
         with:
-          name: ${{ startsWith(github.ref, 'refs/tags/') && 'glitchpad-0.2.1-linux-x86_64-community-release' || 'glitchpad-0.2.1-linux-x86_64-non-official-candidate' }}
+          name: ${{ inputs.stage_release && 'glitchpad-0.2.1-linux-x86_64-community-release' || 'glitchpad-0.2.1-linux-x86_64-non-official-candidate' }}
           path: artifacts/linux
 
       - name: Build clean lifecycle environment
@@ -222,7 +223,7 @@ jobs:
               --receipt 'clean-ubuntu-${{ matrix.release }}-${{ matrix.package_form }}.json' \
               --package-form '${{ matrix.package_form }}' \
               --release '${{ matrix.release }}' \
-              ${{ startsWith(github.ref, 'refs/tags/') && '--official' || '' }}
+              ${{ inputs.stage_release && '--official' || '' }}
 
       - name: Upload content-free clean-environment receipt
         uses: actions/upload-artifact@v7
@@ -230,4 +231,4 @@ jobs:
           name: glitchpad-linux-clean-ubuntu-${{ matrix.release }}-${{ matrix.package_form }}
           path: clean-ubuntu-${{ matrix.release }}-${{ matrix.package_form }}.json
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 30

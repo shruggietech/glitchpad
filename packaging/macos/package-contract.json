@@ -72,7 +72,7 @@
     "staple_status": "not_applicable_candidate"
   },
   "official": {
-    "authorized_event": "push_tag",
+    "authorized_event": "workflow_dispatch_stage",
     "tag_pattern": "v0.2.1",
     "trust_state": "adhoc_non_notarized_community",
     "required_application_signature_status": "ad_hoc",
@@ -86,6 +86,7 @@
       "glitchpad-macos.cdx.json",
       "provenance.json",
       "community-trust-evidence.json"
-    ]
+    ],
+    "publication_context": "staged_unpublished"
   }
 }

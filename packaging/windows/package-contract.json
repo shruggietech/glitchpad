@@ -25,7 +25,7 @@
   },
   "candidate_signature_status": "not_applicable_unsigned_candidate",
   "official": {
-    "authorized_event": "push_tag",
+    "authorized_event": "workflow_dispatch_stage",
     "tag_pattern": "v0.2.1",
     "trust_state": "unsigned_community",
     "required_signature_status": "not_signed",
@@ -39,6 +39,7 @@
       "installer-lifecycle-receipt.json",
       "installed-markdown-lifecycle-receipt.json",
       "portable-lifecycle-receipt.json"
-    ]
+    ],
+    "publication_context": "staged_unpublished"
   }
 }

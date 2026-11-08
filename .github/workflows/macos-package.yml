@@ -5,9 +5,12 @@ on:
   push:
     branches:
       - '**'
-    tags:
-      - 'v0.2.1'
   workflow_dispatch:
+    inputs:
+      stage_release:
+        description: Prepare unpublished accepted release inputs (no publication)
+        type: boolean
+        default: false
 
 concurrency:
   group: macos-package-${{ github.ref }}
@@ -26,6 +29,17 @@ jobs:
     runs-on: macos-15
     timeout-minutes: 45
     steps:
+      - name: Validate preparation authority
+        shell: bash
+        env:
+          STAGE_RELEASE: ${{ inputs.stage_release || false }}
+        run: |
+          test "$GITHUB_REF_TYPE" = branch
+          if [ "$STAGE_RELEASE" = true ]; then
+            test "$GITHUB_EVENT_NAME" = workflow_dispatch
+            test "$GITHUB_REPOSITORY" = shruggietech/glitchpad
+          fi
+
       - name: Checkout
         uses: actions/checkout@v7
 
@@ -81,16 +95,16 @@ jobs:
           node scripts/run-performance.mjs --profile desktop_reference_v1 --build-id "macos-${{ github.sha }}" --metric desktop_installer_size --artifact artifacts/macos/glitchpad-0.2.1-macos-universal.dmg --output artifacts/macos/dmg-size-evidence
 
       - name: Promote truthful community evidence
-        if: startsWith(github.ref, 'refs/tags/')
+        if: inputs.stage_release
         run: node scripts/promote-community-package.mjs --platform macos --directory artifacts/macos --source-commit '${{ github.sha }}'
 
       - name: Upload governed macOS package
         uses: actions/upload-artifact@v7
         with:
-          name: ${{ startsWith(github.ref, 'refs/tags/') && 'glitchpad-0.2.1-macos-universal-community-release' || 'glitchpad-0.2.1-macos-universal-non-notarized-candidate' }}
+          name: ${{ inputs.stage_release && 'glitchpad-0.2.1-macos-universal-community-release' || 'glitchpad-0.2.1-macos-universal-non-notarized-candidate' }}
           path: artifacts/macos/**
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 30
 
   native-lifecycle:
     name: Native lifecycle (${{ matrix.architecture }})
@@ -137,7 +151,7 @@ jobs:
       - name: Download universal candidate
         uses: actions/download-artifact@v8
         with:
-          name: ${{ startsWith(github.ref, 'refs/tags/') && 'glitchpad-0.2.1-macos-universal-community-release' || 'glitchpad-0.2.1-macos-universal-non-notarized-candidate' }}
+          name: ${{ inputs.stage_release && 'glitchpad-0.2.1-macos-universal-community-release' || 'glitchpad-0.2.1-macos-universal-non-notarized-candidate' }}
           path: artifacts/macos
 
       - name: Verify exact published baseline and compare native startup
@@ -153,7 +167,7 @@ jobs:
       - name: Exercise native install, launch, delivery, and removal
         run: |
           node scripts/macos/test-package-lifecycle.mjs --dmg artifacts/macos/glitchpad-0.2.1-macos-universal.dmg --manifest artifacts/macos/macos-package-manifest.json --receipt "clean-host-${{ matrix.architecture }}.json" --architecture '${{ matrix.architecture }}' \
-            ${{ startsWith(github.ref, 'refs/tags/') && '--official' || '' }}
+            ${{ inputs.stage_release && '--official' || '' }}
 
       - name: Upload content-free clean-host receipt
         if: always()
@@ -166,4 +180,4 @@ jobs:
             clean-host-${{ matrix.architecture }}.json.startup.json
             startup-comparison-${{ matrix.architecture }}.json
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 30

@@ -329,9 +329,7 @@ export async function checkMacosConfiguration(
   )
     fail('branch and pull-request package workflow must not publish');
   if (
-    !releaseWorkflow.includes(
-      'glitchpad-' + releaseIdentity.version + '-macos-universal-community-release',
-    )
+    !releaseWorkflow.includes('scripts/accepted-release-inputs.mjs')
   )
     fail('release workflow omits the macOS community package');
   if (contract.official.trust_state !== 'adhoc_non_notarized_community')
@@ -358,7 +356,7 @@ function validateMacosEvidenceShape(evidence, contract, official) {
       'application',
       'application_inventory',
       'document_extensions',
-      ...(official ? ['event', 'tag', 'evidence_files'] : []),
+      ...(official ? ['event', 'tag', 'publication_context', 'evidence_files'] : []),
     ],
     'package evidence',
   );
@@ -532,6 +530,7 @@ function validateMacosEvidenceShape(evidence, contract, official) {
     evidence.official !== true ||
     evidence.gate_status !== 'official_valid' ||
     evidence.event !== contract.official.authorized_event ||
+    evidence.publication_context !== 'staged_unpublished' ||
     evidence.tag !== contract.official.tag_pattern ||
     !same(evidence.evidence_files ?? [], contract.official.required_evidence)
   )

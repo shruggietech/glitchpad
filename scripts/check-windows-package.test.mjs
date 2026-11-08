@@ -447,7 +447,8 @@ test('a self-asserted official manifest cannot bypass live verification', () => 
   const evidence = candidate();
   evidence.official = true;
   evidence.gate_status = 'official_valid';
-  evidence.event = 'push_tag';
+  evidence.event = contract.official.authorized_event;
+    evidence.publication_context = 'staged_unpublished';
   evidence.tag = 'v0.2.1';
   evidence.evidence_files = [...contract.official.required_evidence];
   evidence.artifacts = evidence.artifacts.map((artifact) => ({
@@ -469,7 +470,8 @@ test('official community mode binds unsigned final bytes and recorded trust evid
     const evidence = candidate();
     evidence.official = true;
     evidence.gate_status = 'official_valid';
-    evidence.event = 'push_tag';
+    evidence.event = contract.official.authorized_event;
+    evidence.publication_context = 'staged_unpublished';
     evidence.tag = 'v0.2.1';
     evidence.evidence_files = [...contract.official.required_evidence];
     for (const artifact of evidence.artifacts) {

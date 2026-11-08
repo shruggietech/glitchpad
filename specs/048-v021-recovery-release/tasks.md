@@ -26,10 +26,10 @@
 
 **Independent Test**: Current source/public documentation, generated preview and installed identity match the recovery release definition; latest-published links remain valid without publishing.
 
-- [ ] T007 [US1] Reconcile README.md, CHANGELOG.md, docs/glitchpad-technical-specification.md, current packaging READMEs and docs/releases/v0.2.1.md with S046/S047 behavior and explicit limits (FR-001/002/003/004/014).
-- [ ] T008 [US1] Separate preview and authorized published deployment metadata in site/scripts/prebuild.mjs, site/scripts/postbuild.mjs, current homepage/introduction and site contract tests; regenerate only existing tracked outputs (FR-002/003/004).
-- [ ] T009 [US1] Align native/frontend About/version/source metadata and current test expectations in crates/glitchpad-core/src/lib.rs, crates/glitchpad-host/src/application_info.rs and affected build workflows (FR-001/005).
-- [ ] T010 [US1] Run focused public/config/version/site checks and record actual results in specs/048-v021-recovery-release/validation.md (FR-007; SC-001).
+- [x] T007 [US1] Reconcile README.md, CHANGELOG.md, docs/glitchpad-technical-specification.md, current packaging READMEs and docs/releases/v0.2.1.md with S046/S047 behavior and explicit limits (FR-001/002/003/004/014).
+- [x] T008 [US1] Separate preview and authorized published deployment metadata in site/scripts/prebuild.mjs, site/scripts/postbuild.mjs, current homepage/introduction and site contract tests; regenerate only existing tracked outputs (FR-002/003/004).
+- [x] T009 [US1] Align native/frontend About/version/source metadata and current test expectations in crates/glitchpad-core/src/lib.rs, crates/glitchpad-host/src/application_info.rs and affected build workflows (FR-001/005).
+- [x] T010 [US1] Run focused public/config/version/site checks and record actual results in specs/048-v021-recovery-release/validation.md (FR-007; SC-001).
 
 ## Phase 4: User Story 2 - Operate the identified recovery candidate (Priority: P1)
 

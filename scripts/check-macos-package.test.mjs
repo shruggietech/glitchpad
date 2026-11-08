@@ -109,6 +109,7 @@ function officialLifecycleEvidence() {
     official: true,
     gate_status: 'official_valid',
     event: contract.official.authorized_event,
+    publication_context: "staged_unpublished",
     tag: contract.official.tag_pattern,
     evidence_files: [...contract.official.required_evidence],
     artifact: {
@@ -529,7 +530,8 @@ test('official community mode binds final bytes and truthful macOS trust', async
     const evidence = candidate();
     evidence.official = true;
     evidence.gate_status = 'official_valid';
-    evidence.event = 'push_tag';
+    evidence.event = contract.official.authorized_event;
+    evidence.publication_context = 'staged_unpublished';
     evidence.tag = 'v0.2.1';
     evidence.evidence_files = [...contract.official.required_evidence];
     evidence.artifact.signature_status = 'not_signed';

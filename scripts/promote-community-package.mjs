@@ -1,3 +1,4 @@
+import { releaseIdentity } from './lib/release-identity.mjs';
 import { readFile, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -14,6 +15,7 @@ export async function promoteCommunityPackage({
   platform,
   directory,
   sourceCommit,
+  sourceRef = process.env.GITHUB_REF,
   contractPath = join(
     repositoryRoot,
     'packaging',
@@ -25,6 +27,7 @@ export async function promoteCommunityPackage({
     throw new Error('platform must be windows, macos, or linux');
   if (!/^[a-f0-9]{40}$/u.test(sourceCommit))
     throw new Error('source commit is invalid');
+  if (!/^refs\/heads\/[A-Za-z0-9_./-]+$/u.test(sourceRef ?? "")) throw new Error("staging requires the actual branch source ref");
   const root = resolve(directory);
   const manifestPath = join(root, manifests[platform]);
   const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
@@ -32,6 +35,8 @@ export async function promoteCommunityPackage({
   const provenance = JSON.parse(await readFile(provenancePath, 'utf8'));
   if (
     manifest.source_commit !== sourceCommit ||
+    manifest.workflow_identity?.split('@').at(-1) !== sourceRef ||
+    manifest.version !== releaseIdentity.version ||
     provenance.source_commit !== sourceCommit ||
     manifest.official !== false ||
     manifest.gate_status !== 'candidate_valid'
@@ -39,11 +44,14 @@ export async function promoteCommunityPackage({
     throw new Error('candidate evidence is not eligible for promotion');
   manifest.official = true;
   manifest.gate_status = 'official_valid';
-  manifest.event = 'push_tag';
-  manifest.tag = 'v0.2.0';
+  manifest.event = 'workflow_dispatch_stage';
+  // tag identifies the intended release; publication_context records that no tag was published.
+  manifest.tag = releaseIdentity.tag;
+  manifest.publication_context = 'staged_unpublished';
   const packageContract = JSON.parse(await readFile(contractPath, 'utf8'));
   manifest.evidence_files = packageContract.official.required_evidence;
   provenance.candidate_only = false;
+  provenance.publication_context = "staged_unpublished";
   const trust = { schema_version: 1, source_commit: sourceCommit };
   if (platform === 'windows') {
     trust.trust_state = 'unsigned_community';
@@ -70,7 +78,7 @@ export async function promoteCommunityPackage({
   } else {
     trust.trust_state = 'repository_attested';
     trust.attestation_provider = 'github_actions';
-    manifest.repository_attestation_status = 'generated_by_tag_workflow';
+    manifest.repository_attestation_status = 'generated_by_staging_workflow';
   }
   await writeFile(
     manifestPath,

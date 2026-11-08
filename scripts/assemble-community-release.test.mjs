@@ -119,7 +119,12 @@ async function releaseFixture() {
       platform === 'android'
         ? { authority: 'official', publication_status: 'eligible_official' }
         : { official: true, gate_status: 'official_valid' };
+    const ranges = {windows:[0,2],macos:[2,3],linux:[3,5],android:[5,8]};
+    const payloads = artifacts.slice(...ranges[platform]).map(name=>({name,bytes:Buffer.byteLength(name),size_bytes:Buffer.byteLength(name),sha256:createHash("sha256").update(name).digest("hex")}));
     const manifestBytes = JSON.stringify({
+      version: "0.2.1",
+      publication_context: "staged_unpublished",
+      ...(platform === "macos" ? {artifact:payloads[0]} : {artifacts:payloads}),
       source_commit: sourceCommit,
       ...identity,
     });
@@ -320,3 +325,9 @@ for (const platform of ['linux', 'macos'])
         );
       },
     );
+
+test("rejects final payload changes even when native manifest receipts remain valid", async()=>{
+  const fixture=await releaseFixture();
+  await writeFile(join(fixture.input,fixture.artifacts[0]),"different payload bytes");
+  await assert.rejects(assembleCommunityRelease({...fixture,sourceCommit}),/differ from the staged platform manifest/u);
+});

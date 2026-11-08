@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 import { releaseIdentity } from './lib/release-identity.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -155,140 +157,40 @@ test('rejects paid desktop credentials', () =>
     /paid desktop/u,
   ));
 
-test('requires every tag-only package input and persisted attestation', () => {
-  const workflows = {
-    androidWorkflow:
-      '- name: Inspect raw signed packages\n  env:\n    ANDROID_SIGNING_CERT_SHA256: ${{ secrets.ANDROID_SIGNING_CERT_SHA256 }}\n  run: |',
-    macosWorkflow:
-      "${{ startsWith(github.ref, 'refs/tags/') && '--official' || '' }}",
-    linuxWorkflow: `
-- name: Assemble final-byte candidate and evidence
-sudo chown --recursive "$(id --user):$(id --group)" artifacts/linux
-- name: Exercise release promotion mutation before merge
-if: \${{ !startsWith(github.ref, 'refs/tags/') }}
-node scripts/promote-community-package.mjs --platform linux --directory artifacts/linux --source-commit '\${{ github.sha }}'
-- name: Upload governed Linux package
-if: \${{ !startsWith(github.ref, 'refs/tags/') }}
-- name: Promote truthful community evidence
-node scripts/promote-community-package.mjs --platform linux --directory artifacts/linux --source-commit '\${{ github.sha }}'
-id: attest
-\${{ steps.attest.outputs.bundle-path }}
-artifacts/linux/repository-attestation.json
-\${{ startsWith(github.ref, 'refs/tags/') && '--official' || '' }}
-`,
-  };
-  assert.equal(validateTagPackageWorkflows(workflows), true);
-  assert.throws(
-    () => validateTagPackageWorkflows({ ...workflows, androidWorkflow: '' }),
-    /Android official raw inspection/u,
-  );
-  assert.throws(
-    () => validateTagPackageWorkflows({ ...workflows, linuxWorkflow: '' }),
-    /Linux tag lifecycle/u,
-  );
-  assert.throws(
-    () =>
-      validateTagPackageWorkflows({
-        ...workflows,
-        linuxWorkflow: workflows.linuxWorkflow.replace(
-          'sudo chown --recursive "$(id --user):$(id --group)" artifacts/linux',
-          '',
-        ),
-      }),
-    /exercise runner-side promotion/u,
-  );
-  assert.throws(
-    () =>
-      validateTagPackageWorkflows({
-        ...workflows,
-        linuxWorkflow: workflows.linuxWorkflow.replace(
-          '- name: Exercise release promotion mutation before merge',
-          '- name: Candidate-only shortcut',
-        ),
-      }),
-    /exercise runner-side promotion/u,
-  );
-  assert.throws(
-    () =>
-      validateTagPackageWorkflows({
-        ...workflows,
-        linuxWorkflow: workflows.linuxWorkflow.replace(
-          "if: ${{ !startsWith(github.ref, 'refs/tags/') }}",
-          '',
-        ),
-      }),
-    /exercise runner-side promotion/u,
-  );
+const releaseAuthorityWorkflow = readFileSync(new URL('../.github/workflows/release.yml',import.meta.url),'utf8');
+const packageWorkflows = Object.fromEntries(['android','windows','macos','linux'].map(platform=>[
+  platform+'Workflow', readFileSync(new URL('../.github/workflows/'+platform+'-package.yml',import.meta.url),'utf8')
+]));
+test('explicit staging preserves signed authority, native bindings and later accepted-input publication',()=>{
+  assert.equal(validateTagPackageWorkflows(packageWorkflows),true);
+  assert.equal(validateReleaseAuthorityGate(releaseAuthorityWorkflow),true);
 });
-
-const releaseAuthorityWorkflow = `
-- name: Confirm stable Android release authority
-  env:
-    ANDROID_KEYSTORE_BASE64: \${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-    ANDROID_KEYSTORE_PASSWORD: \${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-    ANDROID_KEY_ALIAS: \${{ secrets.ANDROID_KEY_ALIAS }}
-    ANDROID_KEY_PASSWORD: \${{ secrets.ANDROID_KEY_PASSWORD }}
-    ANDROID_SIGNING_CERT_SHA256: \${{ secrets.ANDROID_SIGNING_CERT_SHA256 }}
-  run: |
-    required=(ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD ANDROID_SIGNING_CERT_SHA256)
-    for name in "\${required[@]}"; do
-      if [[ -z "\${!name:-}" ]]; then
-        echo "::error title=Missing release authority::$name is not configured."
-        exit 1
-      fi
-    done
-- name: Confirm manual readiness source
-  if: github.event_name == 'workflow_dispatch'
-  run: |
-    if [[ "$GITHUB_REF" != 'refs/heads/main' ]]; then
-      echo '::error title=Invalid readiness source::Manual release readiness must run from current main.'
-      exit 1
-    fi
-`;
-
-test('accepts the complete fail-closed Android release authority gate', () =>
-  assert.equal(validateReleaseAuthorityGate(releaseAuthorityWorkflow), true));
-
-for (const name of [
-  'ANDROID_KEYSTORE_BASE64',
-  'ANDROID_KEYSTORE_PASSWORD',
-  'ANDROID_KEY_ALIAS',
-  'ANDROID_KEY_PASSWORD',
-  'ANDROID_SIGNING_CERT_SHA256',
-]) {
-  test(`rejects a release authority gate without ${name}`, () =>
-    assert.throws(
-      () =>
-        validateReleaseAuthorityGate(
-          releaseAuthorityWorkflow.replace(
-            `    ${name}: \${{ secrets.${name} }}\n`,
-            '',
-          ),
-        ),
-      new RegExp(name, 'u'),
-    ));
-}
-
-test('rejects a release authority gate that does not fail on empty values', () =>
-  assert.throws(
-    () =>
-      validateReleaseAuthorityGate(
-        releaseAuthorityWorkflow.replace('[[ -z "\${!name:-}" ]]', 'false'),
-      ),
-    /fail closed/u,
-  ));
-
-test('rejects manual readiness that is not restricted to main', () =>
-  assert.throws(
-    () =>
-      validateReleaseAuthorityGate(
-        releaseAuthorityWorkflow.replace(
-          `if [[ "$GITHUB_REF" != 'refs/heads/main' ]]; then`,
-          'if false; then',
-        ),
-      ),
-    /fail closed/u,
-  ));
+test('stable Android authority cannot be omitted from staging or final readback',()=>{
+  assert.throws(()=>validateTagPackageWorkflows({...packageWorkflows,androidWorkflow:packageWorkflows.androidWorkflow.replace('ANDROID_SIGNING_CERT_SHA256: ${{ secrets.ANDROID_SIGNING_CERT_SHA256 }}','')}),/signing authority|omits/u);
+  assert.throws(()=>validateReleaseAuthorityGate(releaseAuthorityWorkflow.replace('ANDROID_SIGNING_CERT_SHA256: ${{ secrets.ANDROID_SIGNING_CERT_SHA256 }}','')),/ANDROID_SIGNING_CERT_SHA256/u);
+});
+test('manual readiness and stable staging fail closed',()=>{
+  assert.throws(()=>validateReleaseAuthorityGate(releaseAuthorityWorkflow.replace('if [[ ! "$ANDROID_SIGNING_CERT_SHA256" =~','if [[ "$ANDROID_SIGNING_CERT_SHA256" =~')),/fail closed/u);
+  assert.throws(()=>validateReleaseAuthorityGate(releaseAuthorityWorkflow.replace('if [[ "$GITHUB_REF" != \'refs/heads/main\' ]]; then','if false; then')),/fail closed/u);
+  assert.throws(()=>validateTagPackageWorkflows({...packageWorkflows,androidWorkflow:packageWorkflows.androidWorkflow.replace('test "$GITHUB_EVENT_NAME" = workflow_dispatch','true')}),/authority/u);
+});
+test('tag rebuilds, automatic publication and post-qualification manifest changes are rejected',()=>{
+  const automatic=parseYaml(releaseAuthorityWorkflow);
+  automatic.jobs.publish.if='always()';
+  assert.throws(()=>validateReleaseAuthorityGate(stringifyYaml(automatic)),/later owner tag/u);
+  const rebuild=parseYaml(releaseAuthorityWorkflow);
+  rebuild.jobs.publish.steps.push({run:'pnpm tauri android build --apk'});
+  assert.throws(()=>validateReleaseAuthorityGate(stringifyYaml(rebuild)),/without rebuilding/u);
+  const tagBuild=parseYaml(packageWorkflows.linuxWorkflow);
+  tagBuild.on.push.tags=['v0.2.1'];
+  assert.throws(()=>validateTagPackageWorkflows({...packageWorkflows,linuxWorkflow:stringifyYaml(tagBuild)}),/without tag rebuilds/u);
+  const lateManifest=parseYaml(packageWorkflows.windowsWorkflow);
+  const steps=lateManifest.jobs.candidate.steps;
+  const index=steps.findIndex(step=>step.name==='Promote truthful community evidence');
+  const [promotion]=steps.splice(index,1);steps.push(promotion);
+  assert.throws(()=>validateTagPackageWorkflows({...packageWorkflows,windowsWorkflow:stringifyYaml(lateManifest)}),/precede native receipt/u);
+  assert.throws(()=>validateTagPackageWorkflows({...packageWorkflows,linuxWorkflow:packageWorkflows.linuxWorkflow.replace('sudo chown --recursive "$(id --user):$(id --group)" artifacts/linux','true')}),/ownership/u);
+});
 
 const releaseReadinessScript = `
 $requiredEvidence = @(

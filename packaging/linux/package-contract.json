@@ -107,8 +107,8 @@
     "publication_status": "blocked_candidate"
   },
   "official": {
-    "authorized_event": "push_tag",
-    "attestation_build_trigger": "push",
+    "authorized_event": "workflow_dispatch_stage",
+    "attestation_build_trigger": "workflow_dispatch",
     "tag_pattern": "v0.2.1",
     "repository": "shruggietech/glitchpad",
     "required_attestation_status": "verified",
@@ -124,6 +124,7 @@
       "clean-ubuntu-24.04-appimage.json",
       "clean-ubuntu-24.04-deb.json",
       "repository-attestation.json"
-    ]
+    ],
+    "publication_context": "staged_unpublished"
   }
 }

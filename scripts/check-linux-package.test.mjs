@@ -85,7 +85,7 @@ function verifiedAttestation(evidence) {
     repository: contract.official.repository,
     authorized_event: contract.official.authorized_event,
     build_trigger: contract.official.attestation_build_trigger,
-    source_ref: `refs/tags/${contract.official.tag_pattern}`,
+    source_ref: evidence.workflow_identity.split('@').at(-1),
     signer_workflow: `${contract.official.repository}/.github/workflows/linux-package.yml`,
     source_commit: evidence.source_commit,
     version: evidence.version,
@@ -100,9 +100,10 @@ function officialLifecycleEvidence() {
     official: true,
     gate_status: 'official_valid',
     event: contract.official.authorized_event,
+    publication_context: "staged_unpublished",
     tag: contract.official.tag_pattern,
     evidence_files: [...contract.official.required_evidence],
-    repository_attestation_status: 'generated_by_tag_workflow',
+    repository_attestation_status: 'generated_by_staging_workflow',
   };
 }
 
@@ -497,7 +498,7 @@ test('live attestation verification pins repository, workflow, tag, and source d
                   certificate: {
                     buildTrigger: contract.official.attestation_build_trigger,
                     runnerEnvironment: 'github-hosted',
-                    sourceRepositoryRef: `refs/tags/${contract.official.tag_pattern}`,
+                    sourceRepositoryRef: evidence.workflow_identity.split('@').at(-1),
                     sourceRepositoryDigest: evidence.source_commit,
                     githubWorkflowRepository: contract.official.repository,
                   },
@@ -514,7 +515,7 @@ test('live attestation verification pins repository, workflow, tag, and source d
   for (const { file, args } of calls) {
     assert.equal(file, 'gh');
     assert.ok(args.includes(contract.official.repository));
-    assert.ok(args.includes(`refs/tags/${contract.official.tag_pattern}`));
+    assert.ok(args.includes(evidence.workflow_identity.split('@').at(-1)));
     assert.ok(args.includes(evidence.source_commit));
     assert.ok(args.includes('--deny-self-hosted-runners'));
   }

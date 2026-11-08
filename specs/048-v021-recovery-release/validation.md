@@ -19,3 +19,11 @@ Three unnecessary preimplementation package builds were cancelled and retained d
 ## 2026-11-08: Focused release foundation
 
 Run42486824838 passes on actual public source8599e87b4577d0f23e040b7838c7013a82cc0d53. The isolated job installs frozen inputs, executes25release-identity/community-policy tests with25passes/0failures/0cancellations/0skips, checks current public/config/platform JavaScript syntax and parses both PowerShell version/public-surface scripts. Retained artifact13620215298 is independently read back. ZIP SHA25600091644a7b505eb7fe8bd7231e5b54ca079d3e6d7a4f2fbb9d217586bc5449c independently matches its declared digest and source.json. This does not qualify new package/runtime bytes or the unfinished documentation pass. Intermediate source commits defer automatic heavy pipelines; explicit focused dispatches validate them, and the final unskipped candidate receives every required gate.
+
+## Focused public and release-evidence checks (2026-11-08)
+
+Source 1555a1bfb197c4138ea4e6f80350bd8f6bb09b41 passed all 61 public/site contract tests plus current public, configuration, version and public-surface guards in run 42489460920. Artifact 13621071994 independently read back as ZIP SHA-256 8d2cdb7aa14bc12ea9baeec6c722dab94c6bb0e77b3a9d47a8feaac9fb178461. The three existing tracked generated documentation outputs were regenerated on hosted Linux and applied only after before/after hash checks; unchanged outputs were left unchanged.
+
+The earlier public run 42489310881 retained two stale test-expectation failures and its artifact 13620997054 (ZIP SHA-256 9e0cf4f0914dfa751bed6099410c9fda5a4420e23b33b826a8f7c00dc9e8980e). They were corrected before rerunning. No full site build or native runtime qualification is inferred from this focused pass.
+
+Source 00a215e16c292813e1524e29d26764fef10837b5 passed all 30 release-policy/identity/runtime-evidence tests and JavaScript, PowerShell and bounded-runner syntax checks in run 42490018905. Artifact 13621356427 independently read back as ZIP SHA-256 1db15a1c61605d3a303186ce0d9dff2e6a61bf09e3137ef58538d54e39d091b0. Actual minified API24/API36 instrumentation remains pending the focused package/runtime run; this unit result does not qualify installed release bytes.

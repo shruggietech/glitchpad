@@ -582,6 +582,7 @@ function validateWindowsEvidenceShape(evidence, contract, official) {
     fail('official evidence is not explicitly authorized');
   if (
     evidence.event !== contract.official.authorized_event ||
+    evidence.publication_context !== 'staged_unpublished' ||
     evidence.tag !== contract.official.tag_pattern
   )
     fail('official evidence came from an unauthorized context');

@@ -278,7 +278,7 @@ export function validateLinuxEvidence(
     attestation.repository !== contract.official.repository ||
     attestation.authorized_event !== contract.official.authorized_event ||
     attestation.build_trigger !== contract.official.attestation_build_trigger ||
-    attestation.source_ref !== `refs/tags/${contract.official.tag_pattern}` ||
+    attestation.source_ref !== evidence.workflow_identity.split('@').at(-1) ||
     attestation.signer_workflow !==
       `${contract.official.repository}/.github/workflows/linux-package.yml` ||
     attestation.source_commit !== evidence.source_commit ||
@@ -314,8 +314,9 @@ export function validateLinuxLifecycleEvidence(
     evidence.official !== true ||
     evidence.gate_status !== 'official_valid' ||
     evidence.event !== contract.official.authorized_event ||
+    evidence.publication_context !== 'staged_unpublished' ||
     evidence.tag !== contract.official.tag_pattern ||
-    evidence.repository_attestation_status !== 'generated_by_tag_workflow' ||
+    evidence.repository_attestation_status !== 'generated_by_staging_workflow' ||
     !same(evidence.evidence_files ?? [], contract.official.required_evidence)
   )
     fail('official lifecycle evidence is unauthorized or incomplete');
@@ -664,8 +665,8 @@ export async function checkLinuxConfiguration(
       fail(`Linux package workflow is missing ${required}`);
   if (
     !packageWorkflow.includes('actions/attest-build-provenance@v4') ||
-    !packageWorkflow.includes("tags:\n      - '" + releaseIdentity.tag + "'") ||
-    !releaseWorkflow.includes('glitchpad-' + releaseIdentity.version + '-linux-x86_64-community-release')
+    !packageWorkflow.includes('stage_release:') ||
+    !releaseWorkflow.includes('scripts/accepted-release-inputs.mjs')
   )
     fail('release path omits repository-attested Linux authority');
   if (
@@ -757,7 +758,8 @@ export async function verifyRepositoryAttestations(
   { runner = execFileAsync } = {},
 ) {
   const repository = contract.official.repository;
-  const sourceRef = `refs/tags/${contract.official.tag_pattern}`;
+  const sourceRef = evidence.workflow_identity.split('@').at(-1);
+  if (!/^refs\/heads\/[A-Za-z0-9_./-]+$/u.test(sourceRef)) fail("staging attestation must bind the actual branch ref");
   const signerWorkflow = `${repository}/.github/workflows/linux-package.yml`;
   for (const artifact of evidence.artifacts) {
     let output;
@@ -853,7 +855,7 @@ function validateProvenance(provenance, evidence, contract) {
   if (
     provenance.schema_version !== 1 ||
     provenance.predicate_type !== 'https://slsa.dev/provenance/v1' ||
-    provenance.candidate_only !== true ||
+    provenance.candidate_only !== !evidence.official ||
     provenance.repository !== contract.official.repository ||
     provenance.source_commit !== evidence.source_commit ||
     provenance.workflow_identity !== evidence.workflow_identity ||

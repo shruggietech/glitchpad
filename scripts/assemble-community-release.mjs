@@ -234,6 +234,7 @@ export async function assembleCommunityRelease({
     artifacts,
     trust_states: contract.trust_states,
     practical_use_evidence: practicalUseEvidence,
+    accepted_staging_evidence: contract.accepted_staging_evidence,
     practical_use_required_passes: practicalUseRequiredPasses,
     evidence_bundles: Object.keys(contract.trust_states).map(
       (platform) => `glitchpad-${contract.version}-${platform}-evidence.tar.gz`,

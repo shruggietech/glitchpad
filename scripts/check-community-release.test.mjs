@@ -36,6 +36,7 @@ const contract = () => ({
   tag: releaseIdentity.tag,
   repository: 'shruggietech/glitchpad',
   artifacts: [...releaseIdentity.artifacts],
+  accepted_staging_evidence: ["accepted-staging.json","accepted-input-receipt.json"],
   trust_states: {
     windows: 'unsigned_community',
     macos: 'adhoc_non_notarized_community',
@@ -255,4 +256,8 @@ test('requires complete locked offline Linux provenance across container boundar
       /Linux offline provenance/u,
     );
   }
+});
+
+test("accepted staging evidence remains a separate complete asset inventory",()=>{
+  assert.throws(()=>validateReleaseContract({...contract(),accepted_staging_evidence:[]}),/staging evidence asset inventory/u);
 });

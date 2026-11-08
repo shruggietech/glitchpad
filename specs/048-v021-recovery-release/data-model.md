@@ -2,7 +2,7 @@
 
 ## Target release identity
 
-The existing packaging/release/package-contract.json owns version0.2.1, target tagv0.2.1, repository, eight payload names, platform trust states and required practical-use receipts. Product manifests and platform contracts remain independent checked projections. This record describes the target and grants no publication permission.
+The existing packaging/release/package-contract.json owns version 0.2.1, target tag v0.2.1, repository, eight payload names, platform trust states and required practical-use receipts. Product manifests and platform contracts remain independent checked projections. This record describes the target and grants no publication permission.
 
 ## Candidate source
 
@@ -26,8 +26,8 @@ A versioned JSON record carried by a later owner-authorized annotated tag identi
 
 ## Handoff and reviews
 
-A tracked checkpoint receipt may name its already-existing implementation source. The final PR confirmation binds the eventual current head and all fresh final artifacts after record publication. Review state records maximum2, rounds_used, exact reviewed source, findings/resolved threads, subsequent qualified changes and owner boundary. This session ends PR-ready/unmerged/auto-merge-off, with #244/#255 open.
+A tracked checkpoint receipt may name its already-existing implementation source. The final PR confirmation binds the eventual current head and all fresh final artifacts after record publication. Review state records maximum 2, rounds_used, exact reviewed source, findings/resolved threads, subsequent qualified changes and owner boundary. This session ends PR-ready/unmerged/auto-merge-off, with #244/#255 open.
 
 ## Historical scope
 
-S047's immutable ledger retains119 controls/459 scoped cases and its exact implementation/final-PR identities. S048 references its dispositions and adds current campaigns separately;98 supplemental cases are not individual installed passes. Existing waivers, unavailable incident data, #66/#239 and unrun manual GUI/VoiceOver observations keep their literal state.
+S047's immutable ledger retains 119 controls/459 scoped cases and its exact implementation/final-PR identities. S048 references its dispositions and adds current campaigns separately;98 supplemental cases are not individual installed passes. Existing waivers, unavailable incident data, #66/#239 and unrun manual GUI/VoiceOver observations keep their literal state.

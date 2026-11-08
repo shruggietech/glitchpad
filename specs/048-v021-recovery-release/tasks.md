@@ -17,7 +17,7 @@
 ## Phase 2: Foundational
 
 - [x] T004 Add target-release identity loading and consistency regressions in scripts/lib/release-identity.mjs and its test, using packaging/release/package-contract.json (FR-001/002).
-- [x] T005 Synchronize product manifests, own Cargo/fuzz lock entries, Android fallback and packaging/*/package-contract.json to0.2.1 without third-party/history changes (FR-001/004/005).
+- [x] T005 Synchronize product manifests, own Cargo/fuzz lock entries, Android fallback and packaging/*/package-contract.json to 0.2.1 without third-party/history changes (FR-001/004/005).
 - [x] T006 Replace historical S045 current authority with the S048 preparation boundary in scripts/check-community-release.mjs, scripts/check-public-release.mjs, version/config/public guards and their meaningful negative tests (FR-002/007/012/015).
 
 **Checkpoint**: Current release identity and preparation authority are coherent before story implementation.
@@ -46,20 +46,20 @@
 
 **Independent Test**: Staged payload/manifest/native evidence binds one actual source, all selected artifacts independently read back, and the handoff preserves historical scopes/limits.
 
-- [ ] T017 [US3] Stage desktop community metadata before manifest-bound native receipts in .github/workflows/{windows,macos,linux}-package.yml, scripts/promote-community-package.mjs and applicable package validators/tests (FR-007/011/012/017).
-- [ ] T018 [US3] Derive actual target SBOM/promotion identity, preserve signing/trust distinctions and update current licensing/package guards in scripts/generate-{windows,android}-sbom.mjs and packaging/release/package-contract.json (FR-001/006/012).
-- [ ] T019 [US3] Write the current preparation receipt, campaign/index schema and issue acceptance map in docs/releases/v0.2.1-receipt.md and specs/048-v021-recovery-release/contracts/, referencing immutable S047 dispositions and #66/#239 limits (FR-012/013/014).
-- [ ] T020 [US3] Preserve and exercise exact-source/non-official/wrong-manifest/native-receipt rejection in scripts/assemble-community-release.mjs and its tests; add only necessary staged-unpublished semantics (FR-011/012/017).
-- [ ] T021 [US3] Run focused platform/release policy checks and exact pinned BrandBuilder probe/verifier/glyph checks through scripts/verify-brandbuilder.py; retain actual results and skips in specs/048-v021-recovery-release/validation.md (FR-006/007/014).
+- [x] T017 [US3] Stage desktop community metadata before manifest-bound native receipts in .github/workflows/{windows,macos,linux}-package.yml, scripts/promote-community-package.mjs and applicable package validators/tests (FR-007/011/012/017).
+- [x] T018 [US3] Derive actual target SBOM/promotion identity, preserve signing/trust distinctions and update current licensing/package guards in scripts/generate-{windows,android}-sbom.mjs and packaging/release/package-contract.json (FR-001/006/012).
+- [x] T019 [US3] Write the current preparation receipt, campaign/index schema and issue acceptance map in docs/releases/v0.2.1-receipt.md and specs/048-v021-recovery-release/contracts/, referencing immutable S047 dispositions and #66/#239 limits (FR-012/013/014).
+- [x] T020 [US3] Preserve and exercise exact-source/non-official/wrong-manifest/native-receipt rejection in scripts/assemble-community-release.mjs and its tests; add only necessary staged-unpublished semantics (FR-011/012/017).
+- [x] T021 [US3] Run focused platform/release policy checks and exact pinned BrandBuilder probe/verifier/glyph checks through scripts/verify-brandbuilder.py; retain actual results and skips in specs/048-v021-recovery-release/validation.md (FR-006/007/014).
 
 ## Phase 6: User Story 4 - Retain owner finalization control (Priority: P1)
 
 **Independent Test**: Future publication resolves explicit accepted immutable staging inputs without rebuilding, while this session cannot publish, merge or close the release issues.
 
 - [ ] T022 [US4] Implement strict accepted-source/platform-run/artifact/payload validation in scripts/accepted-release-inputs.mjs and meaningful negative/positive tests, then consume it in .github/workflows/release.yml without a rebuild path (FR-011/015/017).
-- [ ] T023 [US4] Document future owner-authorized annotated tag/staging-input publication and accepted-source-versus-squash-merge rules in docs/releases/v0.2.1-operator-runbook.md (FR-012/015/017).
-- [ ] T024 [US4] Exercise preparation-only/manual/tag/site authorization gates and staging-input selection without tag/release/deployment side effects in scripts/check-community-release.test.mjs, scripts/check-public-release.test.mjs and accepted-release-input tests (FR-002/015/017).
-- [ ] T025 [US4] Prepare current PR/review/issue/project handoff state and a two-round review counter in specs/048-v021-recovery-release/handoff.md; keep #244/#255 open and avoid closing references (FR-012/014/015).
+- [x] T023 [US4] Document future owner-authorized annotated tag/staging-input publication and accepted-source-versus-squash-merge rules in docs/releases/v0.2.1-operator-runbook.md (FR-012/015/017).
+- [x] T024 [US4] Exercise preparation-only/manual/tag/site authorization gates and staging-input selection without tag/release/deployment side effects in scripts/check-community-release.test.mjs, scripts/check-public-release.test.mjs and accepted-release-input tests (FR-002/015/017).
+- [x] T025 [US4] Prepare current PR/review/issue/project handoff state and a two-round review counter in specs/048-v021-recovery-release/handoff.md; keep #244/#255 open and avoid closing references (FR-012/014/015).
 
 ## Phase 7: Polish and final qualification
 

@@ -1,3 +1,4 @@
+import { verifyRepositoryAttestations } from './check-linux-package.mjs';
 import assert from 'node:assert/strict';
 import { createWriteStream } from 'node:fs';
 import { mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promises';
@@ -189,8 +190,13 @@ export async function consumeAcceptedInputs({record,source,directory,token}) {
   }
   const files=await verifyAcceptedPayloads(directory,record);
   await verifyAndroidRuntime(files,record);
+  const linuxManifests = files.filter(path=>path.split(/[\\/]/u).at(-1) === "linux-package-manifest.json");
+  required(linuxManifests.length === 1, "accepted Linux manifest missing/duplicated");
+  const linuxEvidence = JSON.parse(await readFile(linuxManifests[0],"utf8"));
+  const linuxContract = JSON.parse(await readFile(new URL("../packaging/linux/package-contract.json",import.meta.url),"utf8"));
+  const linuxAttestation = await verifyRepositoryAttestations(linuxEvidence,linuxContract,dirname(linuxManifests[0]));
   return {schema:1,status:'accepted_bytes_verified',source_commit:source,version:releaseIdentity.version,tag:releaseIdentity.tag,
-    platform_runs:Object.fromEntries(Object.entries(record.platforms).map(([platform,input])=>[platform,{run_id:input.run_id,run_attempt:input.run_attempt,artifact_ids:input.artifacts.map(row=>row.id)}])),payloads:record.payloads};
+    linux_attestation_verification:linuxAttestation,platform_runs:Object.fromEntries(Object.entries(record.platforms).map(([platform,input])=>[platform,{run_id:input.run_id,run_attempt:input.run_attempt,artifact_ids:input.artifacts.map(row=>row.id)}])),payloads:record.payloads};
 }
 async function main() {
   const args=process.argv.slice(2);

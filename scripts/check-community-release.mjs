@@ -23,6 +23,8 @@ export function validateReleaseContract(contract) {
   )
     throw new Error('release must declare exactly eight unique artifacts');
   targetReleaseIdentity(contract);
+  if (JSON.stringify(contract.accepted_staging_evidence) !== JSON.stringify(["accepted-staging.json","accepted-input-receipt.json"]))
+    throw new Error("accepted staging evidence asset inventory is incomplete");
   const expectedTrust = {
     windows: 'unsigned_community',
     macos: 'adhoc_non_notarized_community',
@@ -137,6 +139,7 @@ export function validateReleaseAuthorityGate(releaseWorkflow) {
     throw new Error('only a later owner tag push may publish');
   const commands = (publisher.steps ?? []).map(step=>step.run ?? '').join('\n');
   if (!commands.includes('scripts/accepted-release-inputs.mjs --accepted accepted-staging.json') ||
+    !commands.includes('cp accepted-staging.json accepted-input-receipt.json release-assets/') ||
     !commands.includes('git cat-file -t "$GITHUB_REF"') || !commands.includes('origin/main^{tree}') ||
     /(?:cargo|tauri)\s+(?:android\s+)?build|pnpm\s+(?:run\s+)?build|actions\/workflows\/.*dispatches/u.test(commands))
     throw new Error('publication must consume accepted staged bytes without rebuilding');

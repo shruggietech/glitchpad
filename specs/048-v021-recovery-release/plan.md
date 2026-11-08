@@ -10,15 +10,15 @@ Reconcile merged S046/S047 behavior into one v0.2.1 release definition, qualify 
 
 ## Technical Context
 
-**Language/Version**: Existing Rust1.96.0, Node24.11.0, pnpm10.28.2, PowerShell7, TypeScript/React/Tauri and Android Kotlin/Java authorities. No incidental dependency/toolchain upgrade.
+**Language/Version**: Existing Rust 1.96.0, Node 24.11.0, pnpm 10.28.2, PowerShell 7, TypeScript/React/Tauri and Android Kotlin/Java authorities. No incidental dependency/toolchain upgrade.
 
-**Primary Dependencies**: Current lockfiles, pinned Tauri/Radix/Mermaid/WebView compatibility patches, AGP8.11 and Android SDK36/NDK28.2.13676358. BrandBuilder2.0.3 and brand1.1.1 remain independently pinned.
+**Primary Dependencies**: Current lockfiles, pinned Tauri/Radix/Mermaid/WebView compatibility patches, AGP 8.11 and Android SDK 36/NDK 28.2.13676358. BrandBuilder 2.0.3 and brand 1.1.1 remain independently pinned.
 
 **Storage**: Existing source/draft/preference stores unchanged. Release evidence uses retained Actions artifacts and a small S048 index. Existing package-contract.json is the target version/tag authority, not publication authorization.
 
 **Testing**: Focused current release/public/package/version/metadata tests, exact source compatibility/geometry aggregate, normal four-role/API Android matrix, additional actual minified release-runtime API24/API36 campaign, all affected native/package lifecycle suites and independent archive/payload readback.
 
-**Target Platform**: Windows11x86_64, macOS13+universal, Ubuntu22.04/24.04x86_64, AndroidAPI24/API36 with the existing minimum WebView contract.
+**Target Platform**: Windows 11 x86_64, macOS 13+ universal, Ubuntu 22.04/24.04 x86_64, Android API24/API36 with the existing minimum WebView contract.
 
 **Project Type**: Shared Tauri desktop/Android product and existing GitHub release pipeline.
 
@@ -30,11 +30,11 @@ Reconcile merged S046/S047 behavior into one v0.2.1 release definition, qualify 
 
 ## Constitution Check
 
-Initial and post-design gates pass. P1: no new permanent product chrome. P2: core local/offline behavior and explicit outbound actions retained. P3: shared contracts, native/source authority and all four platforms retained. P4: no production debuggability/permissions/keep rules added for tests; existing parsed-input/write bounds unchanged. P5: product/specification candidate version0.2.1 reconciled on an unmerged preparation branch; published v0.2.0 records remain immutable, and publication remains separately authorized. P6: exact source/actual installed package/byte evidence precedes claims; incomplete required evidence blocks handoff. P7: narrow release identity, staging and runtime additions, with decisions in research.md. P8: current compatible pins, source notices, actual SBOM version and exact delivered brand verification. No constitution exception or amendment.
+Initial and post-design gates pass. P1: no new permanent product chrome. P2: core local/offline behavior and explicit outbound actions retained. P3: shared contracts, native/source authority and all four platforms retained. P4: no production debuggability/permissions/keep rules added for tests; existing parsed-input/write bounds unchanged. P5: product/specification candidate version 0.2.1 reconciled on an unmerged preparation branch; published v0.2.0 records remain immutable, and publication remains separately authorized. P6: exact source/actual installed package/byte evidence precedes claims; incomplete required evidence blocks handoff. P7: narrow release identity, staging and runtime additions, with decisions in research.md. P8: current compatible pins, source notices, actual SBOM version and exact delivered brand verification. No constitution exception or amendment.
 
 ## Phase 0: Research decisions
 
-R1-R12 in [research.md](research.md) resolve all technical unknowns. Three read-only research agents inventoried current release identity, Android release instrumentation/capture and evidence/publication authority under the plan skill. Findings are grounded in current repository code and official Android test/signature documentation. The hosted plan wrapper's unset PowerShell native exit variable caused one infrastructure failure after successful template creation; initialize it before invocation, retain that failed log, and make no product/test relaxation.
+R1-R13 in [research.md](research.md) resolve all technical unknowns. Three read-only research agents inventoried current release identity, Android release instrumentation/capture and evidence/publication authority under the plan skill. Findings are grounded in current repository code and official Android test/signature documentation. The hosted plan wrapper's unset PowerShell native exit variable caused one infrastructure failure after successful template creation; initialize it before invocation, retain that failed log, and make no product/test relaxation.
 
 ## Phase 1: Architecture and contracts
 
@@ -54,9 +54,11 @@ Preserve every accepted payload byte. Record actual manifest/provenance source, 
 
 Keep existing ci.yml four debug ordinary/fault-probe campaigns. Add a separate release-runtime path to android-package.yml that downloads the canonical staged minified universal APK and matching AndroidTest APK. Opt into the release AndroidTest variant using a validated Gradle property (default debug). Sign test and target with the same staged keystore. The production release stays nondebuggable and minified; only the test application is explicitly debuggable/test-only.
 
+A release-test-only ALL-scoped CLASSES transform isolates Kotlin/tracing callers and complete runtime seeds from AGP's unfiltered compile classpath before app mapping. A standalone ABI regression and separately named startup diagnostics precede complete campaigns; product keep rules and artifacts remain untouched.
+
 Reuse existing cold/warm delivery/images/ICO-export, standalone authoring/save/copy/Diagnostics and exact seed/verify process recovery flows. Add observable Back/About/source/channel assertions without reflecting R8-private plugin fields. Keep required timeouts, bounded two process attempts, strict JUnit/marker/crash gates and actual destination readback. The release campaign's scope is explicit and separate from full S047 debug geometry/native counter coverage.
 
-Release target run-as is unavailable. Stream installed target/test APK bytes, JSON and PNGs through the existing test-owned FixtureDocumentsProvider and descriptors, with fixed evidence APK MIME/name allowance. Capture from the debuggable test package through the existing framed ADB route, before reset. No production storage permission, debug flag, external upload or unbounded Binder payload. Independently hash the captured installed bytes and compare with the canonical accepted package.
+Release target run-as is unavailable. Stream installed target/test APK bytes, JSON and PNGs through the existing test-owned FixtureDocumentsProvider and descriptors, with fixed evidence APK MIME/name allowance. Capture from the debuggable test package through bounded ADB streaming with independent capture-byte validation, before reset. No production storage permission, debug flag, external upload or unbounded Binder payload. Independently hash the captured installed bytes and compare with the canonical accepted package.
 
 ### Future publisher and owner boundary
 

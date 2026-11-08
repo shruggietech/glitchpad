@@ -779,7 +779,7 @@ export async function verifyRepositoryAttestations(
         '--deny-self-hosted-runners',
         '--format',
         'json',
-      ]));
+      ], {windowsHide:true,timeout:60000}));
     } catch {
       fail(
         `live repository attestation verification failed for ${artifact.name}`,

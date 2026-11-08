@@ -85,5 +85,9 @@
       "automated.document_preservation"
     ]
   },
-  "manual_validation": "physical_and_screen_reader_unavailable_owner_2026_11_02"
+  "manual_validation": "physical_and_screen_reader_unavailable_owner_2026_11_02",
+  "accepted_staging_evidence": [
+    "accepted-staging.json",
+    "accepted-input-receipt.json"
+  ]
 }

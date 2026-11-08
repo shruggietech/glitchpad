@@ -4,7 +4,7 @@ All decisions below are dated 2026-11-08 and precede product implementation.
 
 | ID | Decision | Rationale | Alternatives considered |
 | --- | --- | --- | --- |
-| R1 | Existing release/package contract is target version/tag authority; independent manifests remain checked. | Current scripts duplicate0.2.0 and S045 authority, including stale SBOM/promotion defaults. | Global replacement would corrupt history and third-party pins; another independent version source would drift. |
+| R1 | Existing release/package contract is target version/tag authority; independent manifests remain checked. | Current scripts duplicate 0.2.0 and S045 authority, including stale SBOM/promotion defaults. | Global replacement would corrupt history and third-party pins; another independent version source would drift. |
 | R2 | Phase-neutral current copy, latest-published user links and explicit authorized deployment metadata. | Existing postbuild derives an unpublished tag destination; current source must stay true after identical bytes publish. | A permanent published=v0.2.0 constant becomes stale; promoting unsupported capability claims is false. |
 | R3 | False-by-default manual staging uses existing project signing authority without publication. | Disposable Android candidates cannot be promised identical to future stable-signed bytes. Existing certificate validation/assembly supports official signing before a tag. | Rebuild later would need new acceptance and duplicate campaigns. No key is exposed or changed. |
 | R4 | Opt-in release AndroidTest, unchanged canonical minified target and observable ordinary task flows. | Existing four-role campaigns test debug APKs only, and release R8 can rename private fixture-reflected fields. | Making production debuggable or adding keep rules for tests would change the qualified product. |
@@ -27,7 +27,7 @@ packaging/release/package-contract.json defines the eight payloads and trust sta
 
 ## Brand decision
 
-Implementation mode consumes the exact existing contract at brand/enforcement/consumer-contract.json and IMPLEMENTATION.md. BrandBuilder2.0.3/brand1.1.1 and generated identity bytes remain unchanged. Run the pinned probe/verification/glyph checks on isolated Linux; no creative approval or upstream recipe request is needed.
+Implementation mode consumes the exact existing contract at brand/enforcement/consumer-contract.json and IMPLEMENTATION.md. BrandBuilder 2.0.3/brand 1.1.1 and generated identity bytes remain unchanged. Run the pinned probe/verification/glyph checks on isolated Linux; no creative approval or upstream recipe request is needed.
 
 ## D013: Isolate the release test runtime from optimized app ABIs
 

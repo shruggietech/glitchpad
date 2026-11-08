@@ -183,6 +183,7 @@ export function installDocumentToolsSeams(mode = 'system') {
     if (command === 'open_external_link') return null;
     if (command === 'open_android_document')
       return source(window.__toolsChoice);
+    if (command === 'identify_pdf_source') return false;
     if (command === 'identify_image_source') return null;
     if (command === 'read_android_range') {
       const value = sources.get(args.sourceId);

@@ -82,6 +82,7 @@ const bridge = (failAt = '', disabled = false, invalidResponse = '') => {
               source,
               error: null,
             };
+      if (command === 'identify_pdf_source') return false;
       if (command === 'identify_image_source') return null;
       if (command === 'read_source_range') {
         readCount += 1;
@@ -229,6 +230,7 @@ test('uses actual production read/edit/save/metadata/recovery bridges before com
 
 for (const command of [
   'identify_image_source',
+  'identify_pdf_source',
   'read_source_range',
   'query_source_metadata',
   'persist_recovery',

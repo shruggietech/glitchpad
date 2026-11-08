@@ -101,7 +101,7 @@ export class PdfController {
     if(this.surfaceBytes+bytes>PDF_LIMITS[this.source.platform].surfaceBytes){this.publish({state:'limited',reduced_cache:true});throw new PdfFailure('surface_limit');}
     this.surfaceBytes+=bytes;canvas.width=width;canvas.height=height;
     let render:RenderTask|null=null;let text:TextLayer|null=null;let disposed=false;
-    const dispose=()=>{if(disposed)return;disposed=true;signal?.removeEventListener('abort',dispose);render?.cancel();text?.cancel();canvas.width=0;canvas.height=0;textContainer.replaceChildren();this.surfaceBytes-=bytes;this.surfaces.delete(dispose);page.cleanup();};this.surfaces.add(dispose);signal?.addEventListener('abort',dispose,{once:true});
+    const dispose=()=>{if(disposed)return;disposed=true;signal?.removeEventListener('abort',dispose);render?.cancel();text?.cancel();canvas.width=0;canvas.height=0;textContainer.textContent='';this.surfaceBytes-=bytes;this.surfaces.delete(dispose);page.cleanup();};this.surfaces.add(dispose);signal?.addEventListener('abort',dispose,{once:true});
     try {
       const context=canvas.getContext('2d');if(!context)throw new PdfFailure('unavailable');
       render=page.render({canvas,canvasContext:context,viewport});await render.promise;this.current(generation);if(disposed)throw new PdfFailure('cancelled');

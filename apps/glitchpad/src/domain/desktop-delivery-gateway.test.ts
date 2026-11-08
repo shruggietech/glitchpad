@@ -170,6 +170,7 @@ test('native Markdown failure probes expose no document data', async () => {
 
 test('materializes a bounded path-free native summary', async () => {
   const call = vi.fn((command: string, args?: Record<string, unknown>) => {
+    if (command === 'identify_pdf_source') return Promise.resolve(false);
     if (command === 'identify_image_source') return Promise.resolve(null);
     if (command !== 'read_source_range')
       throw new Error(`unexpected ${command}`);
@@ -210,6 +211,7 @@ test('materializes exact TXT content without injecting shell fixtures', async ()
     },
   };
   const call = vi.fn((_command: string, args?: Record<string, unknown>) => {
+    if (_command === 'identify_pdf_source') return Promise.resolve(false);
     if (_command === 'identify_image_source') return Promise.resolve(null);
     const offset = args?.offset as number;
     const length = args?.length as number;
@@ -236,7 +238,9 @@ test('detects a large desktop source BOM from a bounded prefix', async () => {
     descriptor: { ...source.descriptor, byte_length: 32 * 1024 * 1024 + 2 },
   };
   const call = vi.fn((command: string) =>
-    command === 'identify_image_source'
+    command === 'identify_pdf_source'
+      ? Promise.resolve(false)
+      : command === 'identify_image_source'
       ? Promise.resolve(null)
       : Promise.resolve({
           source_id: source.source_id,
@@ -318,6 +322,7 @@ test('Save As serializes exact text bytes and reports native cancellation', asyn
   );
   const sourceGateway = createDesktopDeliveryGateway(
     (command, args) => {
+      if (command === 'identify_pdf_source') return Promise.resolve(false);
       if (command === 'identify_image_source') return Promise.resolve(null);
       if (command !== 'read_source_range')
         throw new Error('unexpected command');
@@ -348,6 +353,7 @@ test.each([true, false])(
   async (outcome) => {
     const sourceGateway = createDesktopDeliveryGateway(
       (command, args) => {
+        if (command === 'identify_pdf_source') return Promise.resolve(false);
         if (command === 'identify_image_source') return Promise.resolve(null);
         if (command !== 'read_source_range')
           throw new Error('unexpected command');
@@ -406,6 +412,7 @@ test.each([true, false])(
 test('Save sends exact bytes and revision guards to the native source command', async () => {
   const sourceGateway = createDesktopDeliveryGateway(
     (command, args) => {
+      if (command === 'identify_pdf_source') return Promise.resolve(false);
       if (command === 'identify_image_source') return Promise.resolve(null);
       if (command !== 'read_source_range')
         throw new Error('unexpected command');

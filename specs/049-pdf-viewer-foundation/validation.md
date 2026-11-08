@@ -49,3 +49,9 @@ API24 run42522942818 against39c8aaa completed with two retained failed PDF-read 
 ## 2026-11-08: Exact old-WebView port failure and fix
 
 Run42524061027 against4929225bed15612e894e062743773908a0e737e4 retained Worker ready6.5.438/no-native-bridge,4096source bytes read, then an actual GetDocRequest postMessage TypeError: explicit null could not convert to a sequence. Artifact13634677035 independently hashedb524a7809ffef445a5ca985a98ea23da826aaf152695706fcdd958adf614275a. Implemented narrow real-port null/undefined-to-empty-transfer normalization in both PDF realms with payload/receiver/transfer-preservation tests. Compatibility remains pending the rerun; no baseline, worker isolation or source limit was relaxed.
+
+## 2026-11-08: Real Chromium69 reading reached; legacy cleanup corrected
+
+Run42524535880 againstf1cbc43a13b63cb24343cc8c5fbff32f96952870 passed source/resource contracts and current-browser reading. The null-transfer fix let actual Chromium69 render selectable content and navigate to page2. The run remained failed because subsequent page disposal called Node.replaceChildren, absent in this WebView. Replaced that empty-container operation with textContent assignment, preserving cancellation before cleanup. This is partial diagnostic evidence, not a passing compatibility result.
+
+Source cache run42524305265 against7af7b2fcb6bf0eb879dd530d36306bbda5ac124c passed the five real-file Rust private cache ownership, quota, cancellation and restart-cleanup tests. Full frontend regression ran632tests:617passed and15failed because four existing text/source mock suites did not supply the new identify_pdf_source reply. Added explicit negative PDF-identification replies to those text fixtures and the composed source seam, plus the new probe in failure cleanup coverage. Production identification still requires a typed native boolean; no undefined/error fallback was added. Type/lint steps were skipped after the failed regression gate.

@@ -2,6 +2,7 @@ import 'core-js/stable';
 import { getDocument, PDFWorker, PDFDataRangeTransport, TextLayer, type PDFDocumentLoadingTask, type PDFDocumentProxy, type RenderTask } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { PdfBinaryDataFactory } from './pdf-resources';
 import { normalizePdfPostMessage } from './pdf-compatibility';
+import { createPdfDocumentResources } from './pdf-document-resources';
 import { assertPdfPages, assertPdfSource, classifyPdfFailure, initialPdfState, pdfCapabilities, pdfSurfaceBytes, PDF_ENGINE_VERSION, PDF_LIMITS, PdfFailure, type PdfDocumentState, type PdfSourceLease } from './pdf-contract';
 
 export interface PdfPageSurface { width:number; height:number; bytes:number; dispose():void; }
@@ -45,6 +46,7 @@ export class PdfController {
   private parserWorker:PDFWorker|null=null;
   private loading:PDFDocumentLoadingTask|null=null;
   private source:PdfSourceLease|null=null;
+  private documentResources:ReturnType<typeof createPdfDocumentResources>|null=null;
   private aborter=new AbortController();
   private generation=0;
   private listeners=new Set<Listener>();
@@ -81,13 +83,15 @@ export class PdfController {
       if(parserWorker.port!==worker)throw new PdfFailure('worker_failure');
       const initial=await source.read(0,Math.min(source.length,4096),this.aborter.signal);this.current(generation);
       const range=new SourceRangeTransport(source,initial,this.aborter.signal,(error)=>this.fail(error));
-      const loading=getDocument({range,worker:parserWorker,rangeChunkSize:65536,disableAutoFetch:true,disableStream:true,disableWorkerRendering:true,enableXfa:false,useWorkerFetch:false,useWasm:false,useSystemFonts:true,disableFontFace:false,isOffscreenCanvasSupported:false,isImageDecoderSupported:false,BinaryDataFactory:PdfBinaryDataFactory,maxImageSize:source.platform==='android'?24_000_000:50_000_000,stopAtErrors:false});
+      this.documentResources=createPdfDocumentResources(globalThis.document);
+      const loading=getDocument({ownerDocument:this.documentResources.document,range,worker:parserWorker,rangeChunkSize:65536,disableAutoFetch:true,disableStream:true,disableWorkerRendering:true,enableXfa:false,useWorkerFetch:false,useWasm:false,useSystemFonts:true,disableFontFace:false,isOffscreenCanvasSupported:false,isImageDecoderSupported:false,BinaryDataFactory:PdfBinaryDataFactory,maxImageSize:source.platform==='android'?24_000_000:50_000_000,stopAtErrors:false});
       this.loading=loading;
       loading.onPassword=(update:(password:string)=>void,reason:number)=>{if(generation!==this.generation)return;this.passwordContinuation=update;this.publish({state:'password_required',error:reason===2?'incorrect_password':null});};
       const document=await loading.promise;this.current(generation);assertPdfPages(document.numPages);this.document=document;
       this.publish({state:'ready',page_count:document.numPages,error:null});
     } catch(error) {if(generation!==this.generation)return;this.fail(error);}
   }
+  sourceFailed(error:unknown):void {this.release();this.publish({state:'failed',error:classifyPdfFailure(error)});}
   password(value:string):void {const continuation=this.passwordContinuation;this.passwordContinuation=null;if(continuation){this.publish({state:'loading',error:null});continuation(value);}}
   navigate(page:number):void {if(!this.document || !Number.isSafeInteger(page) || page<0 || page>=this.document.numPages)throw new PdfFailure('invalid_destination');this.publish({navigation:{...this.state.navigation,page}});}
 
@@ -117,9 +121,10 @@ export class PdfController {
     ++this.generation;this.aborter.abort();this.passwordContinuation=null;
     for(const dispose of [...this.surfaces])dispose();
     this.nativeWorker?.terminate();this.nativeWorker=null;this.workerReady=false;
+    this.documentResources?.dispose();this.documentResources=null;
     const loading=this.loading;this.loading=null;if(loading)void loading.destroy().catch(()=>undefined);
     this.parserWorker?.destroy();this.parserWorker=null;this.document=null;
     const source=this.source;this.source=null;if(source)void Promise.resolve(source.close()).catch(()=>undefined);
-    if(terminated && typeof window!=='undefined')window.dispatchEvent(new CustomEvent('glitchpad-pdf-disposed',{detail:{owner_id:this.state.owner_id,worker_terminated:true,...this.resourceCounts,elapsed_ms:performance.now()-started}}));
+    if(terminated)queueMicrotask(()=>{TextLayer.cleanup();if(typeof window!=='undefined')window.dispatchEvent(new CustomEvent('glitchpad-pdf-disposed',{detail:{owner_id:this.state.owner_id,worker_terminated:true,...this.resourceCounts,elapsed_ms:performance.now()-started}}));});
   }
 }

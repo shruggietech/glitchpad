@@ -212,7 +212,7 @@ describe('Android startup restoration', () => {
       (await materializeAndroidSource(call, original, 'markdown', 'android'))
         .text_document?.mode,
     ).toBe('large_read_only');
-    expect(call).toHaveBeenCalledOnce();
+    expect(call.mock.calls.map(([command]) => command)).toEqual(['identify_image_source', 'identify_pdf_source']);
     await expect(
       materializeAndroidSource(
         call,

@@ -78,6 +78,7 @@ try {
     };
   },fixture.toString('base64'));
   await page.goto('http://127.0.0.1:'+server.address().port,{waitUntil:'networkidle0'});
+  const baselineFonts=await page.evaluate(function(){return Array.from(document.fonts).map(function(face){return face.family;});});
   await page.waitForSelector('.add-document-trigger');await page.click('.add-document-trigger');
   await page.evaluate(function(){var button=Array.from(document.querySelectorAll('.add-document-menu button')).find(function(node){return /Open/.test(node.textContent);});if(!button)throw new Error('Open picker action missing');button.click();});
   try{await page.waitForFunction("document.querySelector('[data-pdf-ready=true][data-pdf-worker=true]')",{timeout:60000});}
@@ -90,7 +91,13 @@ try {
   assert.ok(facts.ink>500,'Actual canvas needs representative text ink');assert.match(facts.text,/Glitchpad PDF compatibility page 1/);assert.match(facts.selected,/Glitchpad PDF compatibility/);assert.equal(facts.engine,'6.5.438');assert.equal(facts.frames,1);assert.equal(facts.executed,false);assert.deepEqual(facts.forbidden,[]);assert.ok(facts.reads.reduce((sum,r)=>sum+r.length,0)<fixture.length,'First content must not require whole-source reads');assert.ok(!requests.some(url=>url.includes('example.invalid')));
   await page.click('button[aria-label="Next page"]');await page.waitForFunction("document.querySelector('[data-pdf-ready=true]') && document.querySelector('.pdf-text-layer').textContent.includes('page 2')",{timeout:30000});
   await page.screenshot({path:resolve(output,'page.png')});
-  await writeFile(resolve(output,'result.json'),JSON.stringify({schema_version:1,diagnostic_only:true,candidate_qualified:false,evidence_class:'production_browser_synthetic_native_boundary',source:process.env.SOURCE_REF||null,browser:version,fixture_sha256:createHash('sha256').update(fixture).digest('hex'),facts,errors,consoleMessages,requests,second_page:true},null,2)+'\n');
+  const pdfFonts=await page.evaluate(function(){return Array.from(document.fonts).map(function(face){return face.family;});});
+  const addedFonts=pdfFonts.filter(family=>!baselineFonts.includes(family));assert.ok(addedFonts.length>0,'Representative font cleanup must exercise actual installed PDF font faces');
+  await page.click('.add-document-trigger');await page.evaluate(function(){var button=Array.from(document.querySelectorAll('.add-document-menu button')).find(function(node){return node.textContent.trim()==='New text file';});if(!button)throw new Error('New text action missing');button.click();});
+  await page.waitForFunction("!document.querySelector('.pdf-layout')&&document.querySelector('.cm-editor')",{timeout:30000});
+  const remainingFonts=await page.evaluate(function(){return Array.from(document.fonts).map(function(face){return face.family;});});
+  assert.deepEqual(addedFonts.filter(family=>remainingFonts.includes(family)),[],'Closing PDF must remove only its actual registered font faces');
+  await writeFile(resolve(output,'result.json'),JSON.stringify({schema_version:1,diagnostic_only:true,candidate_qualified:false,evidence_class:'production_browser_synthetic_native_boundary',source:process.env.SOURCE_REF||null,browser:version,fixture_sha256:createHash('sha256').update(fixture).digest('hex'),facts,errors,consoleMessages,requests,second_page:true,display_resources:{baseline_fonts:baselineFonts,pdf_fonts:addedFonts,remaining_pdf_fonts:addedFonts.filter(family=>remainingFonts.includes(family))}},null,2)+'\n');
   assert.deepEqual(errors,[]);console.log('PDF production browser read/navigation passed: '+version);
 }catch(error){
   await writeFile(resolve(output,'failure.json'),JSON.stringify({version,error:String(error),errors,consoleMessages,requests,worker_events:page?await page.evaluate(function(){return window.__pdfWorkerEvents||[];}).catch(()=>[]):[],source_reads:page?await page.evaluate(function(){return window.__pdfReads||[];}).catch(()=>[]):[],body:page?await page.$eval('body',node=>node.innerText).catch(()=>null):null},null,2)+'\n');

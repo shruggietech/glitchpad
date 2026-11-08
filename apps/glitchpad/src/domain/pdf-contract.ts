@@ -87,6 +87,12 @@ export function initialPdfState(ownerId: string): PdfDocumentState {
 }
 export function classifyPdfFailure(error: unknown): PdfErrorCode {
   if (error instanceof PdfFailure) return error.code;
+  if (error && typeof error === 'object' && 'category' in error) {
+    if (error.category === 'permission_revoked') return 'permission_revoked';
+    if (error.category === 'conflict') return 'source_changed';
+    if (error.category === 'stale_session') return 'cancelled';
+    if (['not_found', 'unavailable', 'capability_denied'].includes(String(error.category))) return 'unavailable';
+  }
   const name = error instanceof Error ? error.name : '';
   if (name === 'PasswordException') return 'incorrect_password';
   if (name === 'InvalidPDFException' || name === 'MissingPDFException') return 'malformed';

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { assertPdfSource, assertPdfPages, assertPdfRange, pdfSurfaceBytes, pdfCapabilities, PDF_LIMITS } from './pdf-contract';
+import { assertPdfSource, assertPdfPages, assertPdfRange, pdfSurfaceBytes, pdfCapabilities, classifyPdfFailure, PDF_LIMITS } from './pdf-contract';
 
 describe('PDF contract boundaries', () => {
   it.each(['desktop', 'android'] as const)('accepts exact %s source threshold and refuses the next byte', (platform) => {
@@ -25,4 +25,8 @@ describe('PDF contract boundaries', () => {
     expect(pdfCapabilities('limited',true,true)).toMatchObject({ navigate:true,thumbnails:false,print:'available' });
     expect(pdfCapabilities('ready',false,false).print).toBe('unavailable');
   });
+});
+
+it.each([['permission_revoked','permission_revoked'],['conflict','source_changed'],['stale_session','cancelled'],['not_found','unavailable'],['capability_denied','unavailable']])('preserves native source failure %s as %s',(category,expected)=>{
+  expect(classifyPdfFailure({category,summary:'Private provider diagnostic'})).toBe(expected);
 });

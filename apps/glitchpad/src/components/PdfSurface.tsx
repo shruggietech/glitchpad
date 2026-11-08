@@ -16,6 +16,7 @@ interface Props {
 export const PdfSurface=forwardRef<TextEditorHandle,Props>(function PdfSurface({session,onPdfChange,onOpenMetadata},handleRef){
   const controller=useMemo(()=>new PdfController(session.id),[session.id,session.revision]);
   const [state,setState]=useState(controller.state);
+  const [visible,setVisible]=useState(document.visibilityState!=='hidden');
   const [pageReady,setPageReady]=useState(false);
   const [pageError,setPageError]=useState<string|null>(null);
   const [preparation,setPreparation]=useState<string|null>(null);
@@ -29,11 +30,13 @@ export const PdfSurface=forwardRef<TextEditorHandle,Props>(function PdfSurface({
   const pane=useRef<HTMLDivElement>(null);
   const callbacks=useRef({onPdfChange,onOpenMetadata});callbacks.current={onPdfChange,onOpenMetadata};
   useEffect(()=>controller.subscribe(next=>{setState(next);callbacks.current.onPdfChange?.(session.id,session.revision,next);}),[controller,session.id,session.revision]);
+  useEffect(()=>{const update=()=>setVisible(document.visibilityState!=='hidden');document.addEventListener('visibilitychange',update);return()=>document.removeEventListener('visibilitychange',update);},[]);
   useEffect(()=>{
+    if(!visible){controller.cancel();return;}
     let active=true;const preparationAbort=new AbortController();setPreparation(null);
-    void createPdfSourceLease(session,undefined,undefined,{signal:preparationAbort.signal,onProgress(processed,total){if(active)setPreparation('Preparing PDF: '+(processed/1048576).toFixed(1)+' MiB'+(total===null?'':' of '+(total/1048576).toFixed(1)+' MiB'));}}).then(lease=>{if(!active){void lease.close();return;}setPreparation(null);return controller.open(lease);}).catch(error=>{if(active){setPreparation(null);setPageError(classifyPdfFailure(error));}});
+    void createPdfSourceLease(session,undefined,undefined,{signal:preparationAbort.signal,onProgress(processed,total){if(active)setPreparation('Preparing PDF: '+(processed/1048576).toFixed(1)+' MiB'+(total===null?'':' of '+(total/1048576).toFixed(1)+' MiB'));}}).then(lease=>{if(!active){void lease.close();return;}setPreparation(null);return controller.open(lease);}).catch(error=>{if(active){setPreparation(null);setPageError(classifyPdfFailure(error));controller.sourceFailed(error);}});
     return()=>{active=false;preparationAbort.abort();controller.dispose();};
-  },[controller,session.source_state,retry]);
+  },[controller,session.source_state,retry,visible]);
   useEffect(()=>{
     const element=pane.current;if(!element)return;
     const measure=()=>setWidth(Math.max(48,element.clientWidth-16));measure();

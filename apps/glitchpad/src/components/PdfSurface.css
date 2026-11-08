@@ -24,3 +24,6 @@
 .pdf-thumbnails { display:flex;flex-wrap:wrap;gap:8px; }
 .pdf-thumbnail { display:flex;flex-direction:column;gap:4px; }
 .pdf-link-target { overflow-wrap:anywhere;user-select:text; }
+
+.pdf-print-document { display:none; }
+@media print { body > * { display:none !important; } body > .pdf-print-document { display:block !important; } .pdf-print-document img { display:block;break-after:page;page-break-after:always;max-width:100%;max-height:100vh;object-fit:contain;margin:auto; } .pdf-print-document img:last-child { break-after:auto;page-break-after:auto; } }

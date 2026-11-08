@@ -271,3 +271,24 @@ mod range_transport_tests {
         assert!(reply(&[1, 2], false).decode(3).is_err());
     }
 }
+
+/// Narrow PDF raster-print operations. Paths and output destinations are never caller supplied.
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PdfPrintRequest {
+    pub operation: String,
+    pub request_id: String,
+    pub owner: String,
+    #[serde(default)] pub page_count: u32,
+    #[serde(default)] pub page_index: u32,
+    #[serde(default)] pub width: f64,
+    #[serde(default)] pub height: f64,
+    #[serde(default)] pub bytes: Vec<u8>,
+    #[serde(default)] pub sha256: String,
+}
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct PdfPrintResponse {
+    pub request_id: String,
+    pub status: String,
+    pub pages_written: u32,
+}

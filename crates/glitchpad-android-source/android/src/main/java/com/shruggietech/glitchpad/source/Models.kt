@@ -105,3 +105,16 @@ class AndroidBackArgs { lateinit var requestId: String; var handled: Boolean = t
 
 @InvokeArg
 class ClipboardTextArgs { lateinit var text: String }
+
+@InvokeArg
+class PdfPrintArgs {
+  lateinit var operation: String
+  lateinit var requestId: String
+  lateinit var owner: String
+  var pageCount: Int = 0
+  var pageIndex: Int = 0
+  var width: Double = 0.0
+  var height: Double = 0.0
+  var bytes: IntArray = intArrayOf()
+  var sha256: String = ""
+}

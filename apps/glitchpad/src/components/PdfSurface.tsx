@@ -9,6 +9,7 @@ import type { TextEditorHandle } from './TextEditorSurface';
 import { PdfPageCanvas, pdfViewKey, type PdfPageMetrics } from './PdfPageCanvas';
 import { TaskSurface } from './TaskSurface';
 import { PdfNavigationTools,type PdfNavigationHandle } from './PdfNavigationTools';
+import { PdfPrintTools,type PdfPrintHandle } from './PdfPrintTools';
 import type { PdfSearchMatch } from '../domain/pdf-contract';
 import { rendererContribution,type MetadataContribution } from '../domain/metadata';
 import type { MarkdownExternalLinkGateway } from '../domain/markdown-gateway';
@@ -18,7 +19,7 @@ import './PdfSurface.css';
 interface Props {externalLinkGateway?:MarkdownExternalLinkGateway;onMetadataContribution?:(value:MetadataContribution)=>void;session:ShellSession;onPdfChange?:(id:string,expectedRevision:number,state:PdfDocumentState)=>void;onOpenMetadata?:(opener:HTMLElement)=>void;}
 export const PdfSurface=forwardRef<TextEditorHandle,Props>(function PdfSurface({session,onPdfChange,onOpenMetadata,externalLinkGateway,onMetadataContribution},handleRef){
   const resume=useRef(session.pdf_document?.navigation);resume.current=session.pdf_document?.navigation;
-  const navigationTools=useRef<PdfNavigationHandle>(null);const [labels,setLabels]=useState<string[]>([]);const [selectedMatch,setSelectedMatch]=useState<PdfSearchMatch|null>(null);
+  const navigationTools=useRef<PdfNavigationHandle>(null);const printTools=useRef<PdfPrintHandle>(null);const [labels,setLabels]=useState<string[]>([]);const [selectedMatch,setSelectedMatch]=useState<PdfSearchMatch|null>(null);
   const controller=useMemo(()=>new PdfController(session.id,resume.current),[session.id,session.revision]);
   const [state,setState]=useState(controller.state);const [visible,setVisible]=useState(document.visibilityState!=='hidden');
   const [failure,setFailure]=useState<string|null>(null);const [preparation,setPreparation]=useState<string|null>(null);const [password,setPassword]=useState('');const [retry,setRetry]=useState(0);
@@ -76,7 +77,7 @@ export const PdfSurface=forwardRef<TextEditorHandle,Props>(function PdfSurface({
   const go=(page:number)=>{try{controller.navigate(page);return true;}catch{return false;}};
   const cancel=()=>{preparationAbort.current?.abort();setPreparation(null);controller.cancel();};
   useImperativeHandle(handleRef,()=>({
-    invoke(command,target){if(navigationTools.current?.invoke(command,target))return true;if(command==='copy'){const selection=window.getSelection()?.toString();if(!selection)return false;return writeClipboardText(selection).then(()=>true).catch(()=>false);}if(command==='metadata'&&target){callbacks.current.onOpenMetadata?.(target);return true;}if(!state.capabilities.view)return false;if(command==='zoom_in')return zoom(1.25);if(command==='zoom_out')return zoom(0.8);if(command==='fit'){controller.setView({fit:'page'});return true;}if(command==='previous_page')return go(view.page-1);if(command==='next_page')return go(view.page+1);if(command==='go_to_line'){openTask('page',target);return true;}return false;},
+    invoke(command,target){if(command==='print'&&target)return printTools.current?.open(target)??false;if(navigationTools.current?.invoke(command,target))return true;if(command==='copy'){const selection=window.getSelection()?.toString();if(!selection)return false;return writeClipboardText(selection).then(()=>true).catch(()=>false);}if(command==='metadata'&&target){callbacks.current.onOpenMetadata?.(target);return true;}if(!state.capabilities.view)return false;if(command==='zoom_in')return zoom(1.25);if(command==='zoom_out')return zoom(0.8);if(command==='fit'){controller.setView({fit:'page'});return true;}if(command==='previous_page')return go(view.page-1);if(command==='next_page')return go(view.page+1);if(command==='go_to_line'){openTask('page',target);return true;}return false;},
     selectRange(){return false;},dismissModal(){if(task){setTask(null);return true;}if(state.state==='password_required'){setPassword('');cancel();return true;}return false;},
   }));
   useEffect(()=>{if(!state.capabilities.inspect_metadata)return;let active=true;void controller.metadata(view.page).then(facts=>{if(active)callbacks.current.onMetadataContribution?.(rendererContribution(session,facts,session.revision));}).catch(()=>undefined);return()=>{active=false;};},[controller,state.capabilities.inspect_metadata,view.page,session.id,session.revision]);
@@ -103,11 +104,13 @@ export const PdfSurface=forwardRef<TextEditorHandle,Props>(function PdfSurface({
       <form onSubmit={event=>{event.preventDefault();const value=Number(zoomDraft)/100;if(value>=0.1&&value<=8)controller.setView({fit:'custom',zoom:value});}}><Field id="pdf-zoom" label="Custom zoom percent (10–800)" control={<TextInput type="number" min="10" max="800" value={zoomDraft} onChange={event=>setZoomDraft(event.target.value)}/>}/><Button type="submit">Apply zoom</Button></form>
       <Field id="pdf-layout" label="Page layout" control={<Select value={view.layout} onChange={event=>controller.setView({layout:event.target.value as typeof view.layout})}><option value="continuous">Continuous</option><option value="single">Single page</option></Select>}/>
       <div className="pdf-tool-actions"><Button variant="secondary" onClick={event=>navigationTools.current?.open('search',event.currentTarget)}>Search</Button><Button variant="secondary" onClick={event=>navigationTools.current?.open('outline',event.currentTarget)}>Outline</Button><Button variant="secondary" onClick={event=>navigationTools.current?.open('thumbnails',event.currentTarget)} disabled={!state.capabilities.thumbnails}>Thumbnails</Button><Button variant="secondary" onClick={event=>navigationTools.current?.open('links',event.currentTarget)}>Page links</Button></div>
+      <Button variant="secondary" disabled={state.capabilities.print!=='available'} onClick={event=>printTools.current?.open(event.currentTarget)}>Print</Button>
       <Button variant="secondary" onClick={event=>callbacks.current.onOpenMetadata?.(event.currentTarget)}>File information</Button>
     </TaskSurface>
     <TaskSurface open={task==='page'} onOpenChange={open=>{if(!open)setTask(null);}} title="Go to PDF page" opener={opener.current} className="pdf-tools">
       <form onSubmit={event=>{event.preventDefault();const page=Number(pageDraft);if(!/^\d+$/.test(pageDraft.trim())||!go(page-1)){setPageError('Enter a page number from 1 to '+String(count)+'.');return;}setTask(null);}}><Field id="pdf-page-number" label="Page number" error={pageError??undefined} control={<TextInput type="number" inputMode="numeric" min="1" max={count} value={pageDraft} onChange={event=>setPageDraft(event.target.value)}/>}/><Button type="submit">Go to page</Button></form>
     </TaskSurface>
+    <PdfPrintTools ref={printTools} controller={controller} session={session}/>
     <PdfNavigationTools ref={navigationTools} controller={controller} state={state} externalLinkGateway={externalLinkGateway} onLabels={setLabels} onMatch={match=>{setSelectedMatch(match);controller.navigate(match.page);}}/>
     <TaskSurface open={state.state==='password_required'} onOpenChange={open=>{if(!open){setPassword('');cancel();}}} title="PDF password" className="pdf-tools"><form onSubmit={event=>{event.preventDefault();controller.password(password);setPassword('');}}><Field id="pdf-password" label="Password" error={state.error==='incorrect_password'?'The password was not accepted.':undefined} control={<TextInput type="password" autoComplete="off" value={password} onChange={event=>setPassword(event.target.value)}/>}/><Button type="submit">Open PDF</Button></form></TaskSurface>
   </div>;

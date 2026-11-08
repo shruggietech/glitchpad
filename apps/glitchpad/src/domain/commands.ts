@@ -152,7 +152,7 @@ export const commandSetFor = (
       'outline',
       'Outline',
     ],
-    [Boolean(session.markdown_document?.printable), 'print', 'Print', 'Ctrl+P'],
+    [Boolean(session.markdown_document?.printable || session.pdf_document?.capabilities.print==='available'), 'print', 'Print', 'Ctrl+P'],
     [Boolean(session.pdf_document?.capabilities.navigate), 'previous_page', 'Previous page'],
     [Boolean(session.pdf_document?.capabilities.navigate), 'next_page', 'Next page'],
   ];

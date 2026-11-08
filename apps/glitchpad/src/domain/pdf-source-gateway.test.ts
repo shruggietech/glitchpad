@@ -15,7 +15,7 @@ describe('PDF source authority and ownership',()=>{
   });
   it('keeps writable source authority out of the read-only PDF renderer',()=>{
     const pdf=session();pdf.source.capabilities.write=true;
-    expect(pdf.renderer.capabilities).toMatchObject({edit:false,save:false,view:true});expect(pdf.content).toBe('');expect(pdf.text_document).toBeNull();
+    expect(pdf.renderer.capabilities).toMatchObject({edit:false,save:false,view:false,search:false,zoom:false});expect(pdf.content).toBe('');expect(pdf.text_document).toBeNull();
   });
   it('revalidates exact source/revision before each bounded read',async()=>{
     const call=vi.fn().mockResolvedValue(valid());const ranges=new MemoryLargeTextGateway('source',new Uint8Array(16));

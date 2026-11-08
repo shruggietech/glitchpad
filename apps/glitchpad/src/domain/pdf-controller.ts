@@ -46,6 +46,7 @@ export class PdfController {
   state:PdfDocumentState;
   document:PDFDocumentProxy|null=null;
   workerReady = false;
+  private printAvailable=false;
   private nativeWorker:Worker|null=null;
   private parserWorker:PDFWorker|null=null;
   private loading:PDFDocumentLoadingTask|null=null;
@@ -61,7 +62,7 @@ export class PdfController {
 
   constructor(ownerId:string,navigation?:PdfNavigation) { this.state=initialPdfState(ownerId);if(navigation)this.state.navigation={...navigation}; }
   subscribe(listener:Listener):()=>void {this.listeners.add(listener);listener(this.state);return()=>this.listeners.delete(listener);}
-  private publish(patch:Partial<PdfDocumentState>):void {this.state={...this.state,...patch};this.state.capabilities=pdfCapabilities(this.state.state,this.state.reduced_cache);for(const listener of this.listeners)listener(this.state);}
+  private publish(patch:Partial<PdfDocumentState>):void {this.state={...this.state,...patch};this.state.capabilities=pdfCapabilities(this.state.state,this.state.reduced_cache,this.printAvailable);for(const listener of this.listeners)listener(this.state);}
   private current(generation:number):void {if(generation!==this.generation || this.aborter.signal.aborted)throw new PdfFailure('cancelled');}
   private fail(error:unknown):void {if(this.aborter.signal.aborted)return;const code=classifyPdfFailure(error);this.release();this.publish({state:code==='cancelled'?'cancelled':'failed',error:code});}
 
@@ -108,6 +109,7 @@ export class PdfController {
     if(view.rotation!==undefined&&![0,90,180,270].includes(view.rotation))throw new PdfFailure('invalid_destination');
     this.publish({navigation:{...this.state.navigation,...view}});
   }
+  setPrintAvailable(value:boolean):void{if(this.printAvailable!==value){this.printAvailable=value;this.publish({});}}
   reduceCache():void {if(!this.state.reduced_cache)this.publish({state:'limited',reduced_cache:true});}
   async pageSize(index:number,rotation:number):Promise<{width:number;height:number}>{
     const generation=this.generation;const document=this.document;if(!document)throw new PdfFailure('unavailable');

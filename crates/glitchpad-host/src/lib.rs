@@ -14,6 +14,7 @@ pub mod images;
 pub mod lifecycle_probe;
 pub mod performance;
 pub mod pdf;
+mod pdf_print;
 #[cfg(any(target_os = "android", test))]
 mod pdf_cache;
 pub mod recovery;
@@ -132,6 +133,7 @@ pub fn run() {
         application_notices,
         images::identify_image_source,
         pdf::identify_pdf_source,
+        pdf_print::pdf_print_available,
         images::render_image_source,
         images::cancel_image_render,
         images::export_image_entry,
@@ -160,6 +162,7 @@ pub fn run() {
         source::note_source_session_revision,
         source::save_source,
         source::close_source,
+        pdf_print::request_pdf_desktop_print,
         desktop_delivery::close_desktop_source,
         desktop_delivery::choose_desktop_sources,
         desktop_delivery::drain_desktop_deliveries,
@@ -176,6 +179,7 @@ pub fn run() {
         application_notices,
         images::identify_image_source,
         pdf::identify_pdf_source,
+        pdf_print::pdf_print_available,
         images::render_image_source,
         images::cancel_image_render,
         images::export_image_entry,
@@ -201,6 +205,7 @@ pub fn run() {
         advance_android_integrity,
         cancel_android_integrity,
         revalidate_android_source,
+        pdf_print::pdf_print_operation,
         pdf_cache::begin_pdf_cache,
         pdf_cache::advance_pdf_cache,
         pdf_cache::read_pdf_cache,

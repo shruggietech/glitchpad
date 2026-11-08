@@ -3,7 +3,7 @@
   "platform": "android",
   "candidate_version": "0.2.1",
   "application_id": "com.shruggietech.glitchpad",
-  "version_code": 1004,
+  "version_code": 1005,
   "min_sdk": 24,
   "target_sdk": 36,
   "build_tools_version": "36.0.0",

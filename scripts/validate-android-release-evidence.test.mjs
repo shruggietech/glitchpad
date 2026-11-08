@@ -42,7 +42,7 @@ function row(caseId) {
       application_sha256: expected.applicationSha,
       instrumentation_sha256: expected.instrumentationSha,
       version: '0.2.1',
-      version_code: 1004,
+      version_code: 1005,
       api_level: 24,
       build_variant: 'ordinary',
       channel: 'release',

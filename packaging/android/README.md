@@ -1,6 +1,6 @@
 # Android packaging
 
-S022 produces a universal APK, an ARM64 APK, and an Android App Bundle for the v0.2.1 candidate. The universal and Play artifacts contain ARM64 and x86_64 application libraries; the smaller direct-install APK contains ARM64 only. All three share application identifier `com.shruggietech.glitchpad`, version `0.2.1`/code `1004`, minimum API 24, and target API 36.
+S022 produces a universal APK, an ARM64 APK, and an Android App Bundle for the v0.2.1 candidate. The universal and Play artifacts contain ARM64 and x86_64 application libraries; the smaller direct-install APK contains ARM64 only. All three share application identifier `com.shruggietech.glitchpad`, version `0.2.1`/code `1005`, minimum API 24, and target API 36.
 
 The merged package manifest advertises only stable Markdown, Mermaid, plain-text, and approved source-document MIME types. External viewing uses content-provider URIs, single-item sharing is supported, and broad storage permissions, wildcard MIME types, file-scheme delivery, multi-item sharing, and planned document families are prohibited.
 

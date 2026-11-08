@@ -23,6 +23,11 @@ $specification = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'docs/
 if (-not $specification.StartsWith("# Glitchpad Technical Specification v$expectedVersion")) { $failures.Add('Technical specification heading differs from the target release.') }
 $readme = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'README.md')
 if (-not $readme.Contains("version-$expectedVersion-")) { $failures.Add('README version badge differs from the target release.') }
+$androidContract = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'packaging/android/package-contract.json') | ConvertFrom-Json
+$androidOverlay = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'crates/glitchpad-host/tauri.s022-android.conf.json') | ConvertFrom-Json
+Assert-VersionValue -Label 'Android package contract' -Actual $androidContract.candidate_version
+Assert-VersionValue -Label 'Android overlay' -Actual $androidOverlay.version
+if ($androidOverlay.bundle.android.versionCode -ne $androidContract.version_code) { $failures.Add('Android overlay and package contract version codes differ.') }
 $android = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'crates/glitchpad-host/gen/android/app/build.gradle.kts')
 $fallback = 'versionName = tauriProperties.getProperty("tauri.android.versionName", "' + $expectedVersion + '")'
 if (-not $android.Contains($fallback)) { $failures.Add('Android fallback version differs from the target release.') }

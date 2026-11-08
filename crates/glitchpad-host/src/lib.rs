@@ -13,6 +13,7 @@ pub mod images;
 #[cfg(not(mobile))]
 pub mod lifecycle_probe;
 pub mod performance;
+pub mod pdf;
 pub mod recovery;
 #[cfg(not(mobile))]
 pub mod source;
@@ -128,6 +129,7 @@ pub fn run() {
         application_info,
         application_notices,
         images::identify_image_source,
+        pdf::identify_pdf_source,
         images::render_image_source,
         images::cancel_image_render,
         images::export_image_entry,
@@ -171,6 +173,7 @@ pub fn run() {
         application_info,
         application_notices,
         images::identify_image_source,
+        pdf::identify_pdf_source,
         images::render_image_source,
         images::cancel_image_render,
         images::export_image_entry,
@@ -288,6 +291,19 @@ pub fn run() {
                     app.android_source().inner().clone(),
                 ));
             }
+            // Preserve the configured main WebView, created once after all managed state.
+            let main = app.config().app.windows.iter().find(|window| window.label == "main")
+                .ok_or_else(|| std::io::Error::other("The configured main window is missing"))?;
+            tauri::WebviewWindowBuilder::from_config(app, main)?
+                .on_web_resource_request(|request, response| {
+                    if pdf::is_pdf_worker_path(request.uri().path()) {
+                        response.headers_mut().insert(
+                            tauri::http::header::CONTENT_SECURITY_POLICY,
+                            tauri::http::HeaderValue::from_static(pdf::WORKER_CSP),
+                        );
+                    }
+                })
+                .build()?;
             Ok(())
         })
         .build(tauri::generate_context!())

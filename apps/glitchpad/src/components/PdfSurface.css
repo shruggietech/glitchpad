@@ -1,0 +1,14 @@
+.pdf-layout { display:flex;flex-direction:column;width:100%;height:100%;min-height:0;min-width:0; }
+.pdf-controls { display:flex;align-items:center;flex:0 0 auto;gap:4px;padding:4px;background:var(--gl-panel);color:var(--gl-fg);border-bottom:1px solid var(--gl-border); }
+.pdf-controls .bb-control,.pdf-tools .bb-control,.pdf-tools .bb-field__control { min-width:48px;min-height:48px; }
+.pdf-controls output { flex:1 1 auto;text-align:center;overflow-wrap:anywhere; }
+.pdf-pane { flex:1 1 auto;overflow:auto;min-height:0;min-width:0;padding:8px; }
+.pdf-page { position:relative;width:max-content;margin-inline:auto; }
+.pdf-page canvas { display:block;max-width:none; }
+.pdf-text-layer { position:absolute;inset:0;overflow:hidden;text-align:initial;line-height:1;letter-spacing:normal;word-spacing:normal;transform-origin:0 0;-webkit-text-size-adjust:none;--min-font-size:1;--text-scale-factor:calc(var(--total-scale-factor) * var(--min-font-size));--min-font-size-inv:calc(1 / var(--min-font-size)); }
+.pdf-text-layer span,.pdf-text-layer br { color:transparent;position:absolute;white-space:pre;cursor:text;transform-origin:0 0;-webkit-user-select:text;user-select:text; }
+.pdf-text-layer > :not(.markedContent),.pdf-text-layer .markedContent span:not(.markedContent) { --font-height:0;font-size:calc(var(--text-scale-factor) * var(--font-height));--scale-x:1;--rotate:0deg;transform:rotate(var(--rotate)) scaleX(var(--scale-x)) scale(var(--min-font-size-inv)); }
+.pdf-text-layer .markedContent { display:contents; }
+.pdf-text-layer ::selection { background:var(--bb-action-primary);color:transparent; }
+.pdf-status { flex:0 0 auto;padding:4px 8px;margin:0;overflow-wrap:anywhere; }
+.pdf-tools form { display:flex;flex-direction:column;gap:8px; }

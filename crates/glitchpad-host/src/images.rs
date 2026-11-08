@@ -216,6 +216,15 @@ fn read_bytes(
     result.map_err(|error| error.with_context("image_stage", "source_read"))
 }
 
+/// Bounded source signature bytes shared by non-image candidate detection.
+pub(crate) fn document_prefix(
+    app: &tauri::AppHandle,
+    source: &SourceId,
+    revision: &ExternalRevision,
+) -> Result<Vec<u8>, CoreError> {
+    read_bytes(app, source, revision, &AtomicBool::new(false), true)
+}
+
 fn current_revision(
     app: &tauri::AppHandle,
     source: &SourceId,

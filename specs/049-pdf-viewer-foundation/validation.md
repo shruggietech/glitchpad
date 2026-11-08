@@ -13,3 +13,7 @@ Task setup run42520436826 invoked setup-tasks once againsta5f339bbb99867a4df7140
 Blocking read-only analysis initialized in successful run42520574336 against9c866cc975cb2defd6eab6f1380cb2d24cb6753a. Artifact13632943729 independently hashed95e129b4c0b8dd9fe73ca82e2949f7c04f8e7f4829f086e02813f02841140372. Coverage:24FR,6buildable SC,16story scenarios,16issue criteria,8constitution principles,36mapped tasks;0critical/high findings,0ambiguities/duplications. Two medium task-path findings were corrected during implementation setup: the existing session reducer is domain/tabs.ts and desktop proof now names concrete existing probe files. No contract/scope change.
 
 Implementation prerequisite run42520672883 passed against9c866c. Checklist requirements.md remains reviewer/spec-owned and16/16checked; no markers were changed during implementation. Required current proof remains pending, including actual Android compatibility and native four-platform/print observations.
+
+## 2026-11-08: Initial worker foundation
+
+Isolated preparation run42521116684 passed againstcb5419df3b875c70e6370dc6117b45d3ede51180. Exact pdfjs-dist6.5.438 package resource/static-decoder tests, PDF contract tests, frontend typecheck and production frontend build passed. Artifact13633024507 independently hasheda01c063d777169ff0c57a4f56741a1c9d9f7d459b7108223e014c1b39935d360; its generated dependency lock was read back. The PDF display/controller is not connected yet, so this build does not establish emitted-worker or native runtime compatibility.

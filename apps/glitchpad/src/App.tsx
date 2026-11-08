@@ -1749,6 +1749,7 @@ export function App({
               localAssetGateway={localAssetGateway}
               onOpenMetadata={openMetadata}
               onMetadataContribution={publishMetadata}
+              onPdfChange={(id, expectedRevision, pdf) => dispatch({ type: 'update_pdf', id, expectedRevision, pdf })}
               onImageChange={(id, expectedRevision, image) =>
                 dispatch({ type: 'update_image', id, expectedRevision, image })
               }

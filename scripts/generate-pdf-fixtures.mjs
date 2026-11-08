@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile, copyFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
 import { createHash } from 'node:crypto';
@@ -163,6 +163,7 @@ if (
     's049-small.pdf': createPdfFixture({ padding: 0 }),
     's049-malformed.pdf': Buffer.from('%PDF-1.7\ninvalid\n', 'ascii'),
   };
+  await copyFile(new URL('pdf-reading-journey.js',import.meta.url),new URL('pdf-reading-journey.js',directory));
   const manifest = [];
   for (const [name, bytes] of Object.entries(files)) {
     await writeFile(new URL(name, directory), bytes);

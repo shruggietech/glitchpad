@@ -592,7 +592,7 @@ export class PdfController {
       };
       if (annotation.subtype !== 'Link') continue;
       const label =
-        typeof annotation.contentsObj?.str === 'string'
+        typeof annotation.contentsObj?.str === 'string' && annotation.contentsObj.str.trim().length > 0
           ? annotation.contentsObj.str.slice(0, 256)
           : 'Link ' + String(links.length + 1);
       if (annotation.dest !== undefined)

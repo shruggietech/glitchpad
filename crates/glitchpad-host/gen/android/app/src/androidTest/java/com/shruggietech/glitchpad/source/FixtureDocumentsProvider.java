@@ -141,6 +141,7 @@ public final class FixtureDocumentsProvider extends DocumentsProvider {
     writeFixture(directory, "metadata-omitted.txt", "metadata omission payload");
     writeFixture(directory, "\u05e9\u05dc\u05d5\u05dd-e\u0301-\ud83e\uddea.txt", "unicode metadata payload");
     writeFixture(directory, "pipe.txt", "pipe fixture payload");
+    try { FixtureCanonicalFiles.initialize(new File(directory,"s049-stream.pdf"), () -> new FileInputStream(new File(directory,"s049-compatibility.pdf")), false); } catch(IOException error) { throw new IllegalStateException("pdf_stream_fixture_copy_failed",error); }
     writeFixture(directory, "diagram.mmd", "flowchart LR\nSource --> Session\n");
     writeFixture(directory, "resolver-cold.md", "# S031 cold delivery\n\nS031_COLD_MARKER_4F2A\n");
     writeFixture(directory, "resolver-warm.txt", "S031_WARM_MARKER_7C9D\n");
@@ -232,7 +233,7 @@ public final class FixtureDocumentsProvider extends DocumentsProvider {
     if (mode.contains("w") && ("recovery-readonly.md".equals(documentId) || documentId.startsWith("s046-write-refused-"))) {
       throw new FileNotFoundException("fixture_write_refused");
     }
-    if ("pipe.txt".equals(documentId) && !mode.contains("w")) {
+    if (("pipe.txt".equals(documentId) || "s049-stream.pdf".equals(documentId)) && !mode.contains("w")) {
       return openPipe(file);
     }
     if (mode.contains("w")) awaitHeldWrite(documentId);
@@ -247,7 +248,7 @@ public final class FixtureDocumentsProvider extends DocumentsProvider {
   public String createDocument(String parentDocumentId, String mimeType, String displayName)
       throws FileNotFoundException {
     boolean releaseCapture = "application/vnd.android.package-archive".equals(mimeType) && ("s048-installed-application.apk".equals(displayName) || "s048-installed-instrumentation.apk".equals(displayName));
-    if (!ROOT_ID.equals(parentDocumentId) || !(releaseCapture || "text/plain".equals(mimeType) || "text/markdown".equals(mimeType) || "application/json".equals(mimeType) || "image/png".equals(mimeType))) {
+    if (!ROOT_ID.equals(parentDocumentId) || !(releaseCapture || "text/plain".equals(mimeType) || "text/markdown".equals(mimeType) || "application/json".equals(mimeType) || "image/png".equals(mimeType) || "application/pdf".equals(mimeType))) {
       throw new FileNotFoundException(parentDocumentId);
     }
     String safeName = safeName(displayName);
@@ -364,7 +365,7 @@ public final class FixtureDocumentsProvider extends DocumentsProvider {
         ("recovery-readonly.md".equals(documentId) ? 0 : Document.FLAG_SUPPORTS_WRITE)
             | Document.FLAG_SUPPORTS_RENAME
             | Document.FLAG_SUPPORTS_DELETE);
-    if (!"unknown-size.txt".equals(file.getName())
+    if (!"s049-stream.pdf".equals(file.getName()) && !"unknown-size.txt".equals(file.getName())
         && !"metadata-omitted.txt".equals(file.getName())) {
       row.add(Document.COLUMN_SIZE, file.getName().startsWith("s040-misreported-") ? 0L : file.length());
     }

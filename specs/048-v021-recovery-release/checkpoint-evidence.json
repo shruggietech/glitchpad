@@ -62,10 +62,7 @@
       "conclusion": "success"
     }
   ],
-  "expected_ci_skips": [
-    "Pull request labels",
-    "Dependency review"
-  ],
+  "expected_ci_skips": ["Pull request labels", "Dependency review"],
   "staging_archives": [
     {
       "artifact": {
@@ -1392,10 +1389,7 @@
       "signing_certificate_sha256": "c60df04bb87b65f2721c404b37ae138944998eaa2a284ebef518d462eca83cbd",
       "application_debuggable": false,
       "minified": true,
-      "test_runtime_isolation": [
-        "kotlin",
-        "androidx.tracing"
-      ],
+      "test_runtime_isolation": ["kotlin", "androidx.tracing"],
       "test_dex_inventory_sha256": "a438bb64b56658c34f0d86e2e96f4deb307cef3dce2e331ba2809d6ab06cd3ea"
     },
     "independent_proof": [
@@ -1616,16 +1610,7 @@
             "readbacks": 2
           }
         ],
-        "not_applicable": [
-          1,
-          2,
-          4,
-          5,
-          6,
-          8,
-          9,
-          10
-        ],
+        "not_applicable": [1, 2, 4, 5, 6, 8, 9, 10],
         "unselected_missing_row_diagnostics": 8
       },
       {
@@ -1850,16 +1835,7 @@
             "readbacks": 2
           }
         ],
-        "not_applicable": [
-          1,
-          2,
-          4,
-          5,
-          6,
-          8,
-          9,
-          10
-        ],
+        "not_applicable": [1, 2, 4, 5, 6, 8, 9, 10],
         "unselected_missing_row_diagnostics": 8
       }
     ],
@@ -1904,13 +1880,7 @@
         },
         "performance": {
           "startup_evidence_class": "hosted_smoke",
-          "startup_samples_ms": [
-            457,
-            457,
-            459,
-            459,
-            459
-          ],
+          "startup_samples_ms": [457, 457, 459, 459, 459],
           "startup_p95_ms": 459,
           "startup_classification": "pass",
           "artifact_size_classification": "pass"
@@ -1939,13 +1909,7 @@
         },
         "performance": {
           "startup_evidence_class": "hosted_smoke",
-          "startup_samples_ms": [
-            959,
-            961,
-            1060,
-            956,
-            962
-          ],
+          "startup_samples_ms": [959, 961, 1060, 956, 962],
           "startup_p95_ms": 1060,
           "startup_classification": "pass",
           "artifact_size_classification": "pass"
@@ -1974,13 +1938,7 @@
         },
         "performance": {
           "startup_evidence_class": "hosted_smoke",
-          "startup_samples_ms": [
-            1061,
-            1165,
-            963,
-            911,
-            958
-          ],
+          "startup_samples_ms": [1061, 1165, 963, 911, 958],
           "startup_p95_ms": 1165,
           "startup_classification": "pass",
           "artifact_size_classification": "pass"
@@ -2009,13 +1967,7 @@
         },
         "performance": {
           "startup_evidence_class": "hosted_smoke",
-          "startup_samples_ms": [
-            405,
-            405,
-            405,
-            406,
-            460
-          ],
+          "startup_samples_ms": [405, 405, 405, 406, 460],
           "startup_p95_ms": 460,
           "startup_classification": "pass",
           "artifact_size_classification": "pass"
@@ -2044,13 +1996,7 @@
         },
         "performance": {
           "cold_startup_evidence_class": "hosted_smoke",
-          "cold_startup_samples_ms": [
-            2336,
-            2028,
-            1800,
-            1713,
-            1702
-          ],
+          "cold_startup_samples_ms": [2336, 2028, 1800, 1713, 1702],
           "cold_startup_p95_ms": 2336,
           "cold_startup_classification": "warning",
           "dmg_size_classification": "pass"
@@ -2080,10 +2026,7 @@
             "product_version": "15.7.9",
             "build_version": "24G830",
             "hardware_architecture": "x86_64",
-            "application_architectures": [
-              "arm64",
-              "x86_64"
-            ],
+            "application_architectures": ["arm64", "x86_64"],
             "wkwebview_version": "20621"
           },
           "document_workflow": {
@@ -2137,13 +2080,7 @@
           },
           "performance": {
             "cold_startup_evidence_class": "hosted_smoke",
-            "cold_startup_samples_ms": [
-              1683,
-              1182,
-              1297,
-              1332,
-              1440
-            ],
+            "cold_startup_samples_ms": [1683, 1182, 1297, 1332, 1440],
             "cold_startup_p95_ms": 1683,
             "cold_startup_classification": "warning",
             "dmg_size_classification": "pass"
@@ -2468,14 +2405,7 @@
           "campaign": "pass",
           "attempted": 6,
           "successful": 6,
-          "samples_ms": [
-            5153,
-            1376,
-            1253,
-            1224,
-            1181,
-            1248
-          ],
+          "samples_ms": [5153, 1376, 1253, 1224, 1181, 1248],
           "p95_ms": 5153,
           "reference_classification": "failure",
           "hosted_smoke": "pass",
@@ -2488,14 +2418,7 @@
           "campaign": "pass",
           "attempted": 6,
           "successful": 6,
-          "samples_ms": [
-            1655,
-            2010,
-            1335,
-            1311,
-            1276,
-            1566
-          ],
+          "samples_ms": [1655, 2010, 1335, 1311, 1276, 1566],
           "p95_ms": 2010,
           "reference_classification": "warning",
           "hosted_smoke": "pass",
@@ -2545,39 +2468,24 @@
         "windows": {
           "run_id": 42504650140,
           "run_attempt": 1,
-          "artifact_ids": [
-            13626873341
-          ]
+          "artifact_ids": [13626873341]
         },
         "macos": {
           "run_id": 42504651936,
           "run_attempt": 1,
-          "artifact_ids": [
-            13627102666,
-            13627531341,
-            13627855533
-          ]
+          "artifact_ids": [13627102666, 13627531341, 13627855533]
         },
         "linux": {
           "run_id": 42504653433,
           "run_attempt": 1,
           "artifact_ids": [
-            13627700842,
-            13626977681,
-            13626399752,
-            13626544385,
-            13626904612
+            13627700842, 13626977681, 13626399752, 13626544385, 13626904612
           ]
         },
         "android": {
           "run_id": 42504648395,
           "run_attempt": 1,
-          "artifact_ids": [
-            13627281021,
-            13626839556,
-            13627406723,
-            13626344248
-          ]
+          "artifact_ids": [13627281021, 13626839556, 13627406723, 13626344248]
         }
       },
       "payloads": [
@@ -2700,10 +2608,7 @@
     "incident": "Original incident bytes, APK hash and trace unavailable.",
     "physical_manual_reference": "Existing physical-device/manual-screen-reader/reference-hardware waivers unchanged; no physical device claim.",
     "manual_desktop": "macOS/Linux GUI and VoiceOver observations unrun, receipt dispositions preserved.",
-    "separate_issues": [
-      66,
-      239
-    ],
+    "separate_issues": [66, 239],
     "security_review": "No separate external security-review receipt; passing CI security gates are a separate claim.",
     "browser_geometry": "96 task-layout cases (source field null; workflow source and observed source hashes separately retained), 10 authoring cases and 80 image-layout cases are supplemental composed-browser evidence, not installed APK/native IME/Back/screen-reader proof."
   },
@@ -2712,10 +2617,7 @@
     "ready": true,
     "unmerged": true,
     "auto_merge": false,
-    "issues_open": [
-      244,
-      255
-    ],
+    "issues_open": [244, 255],
     "project_status": "In Progress",
     "project_stage": "PR review",
     "tag_created": false,

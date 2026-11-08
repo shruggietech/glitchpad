@@ -14,11 +14,11 @@ describe('PDF contract boundaries', () => {
   });
   it('rejects overflow, negative, oversized and escaping source ranges', () => {
     expect(() => assertPdfRange(8, 8, 16)).not.toThrow();
-    for (const [offset, length, total] of [[-1,1,16],[0,0,16],[16,1,16],[0,PDF_LIMITS.rangeBytes+1,PDF_LIMITS.rangeBytes+1],[Number.MAX_SAFE_INTEGER,1,16]]) expect(() => assertPdfRange(offset!, length!, total!)).toThrow();
+    for (const [offset, length, total] of [[-1,1,16],[0,0,16],[16,1,16],[0,PDF_LIMITS.rangeBytes+1,PDF_LIMITS.rangeBytes+1],[Number.MAX_SAFE_INTEGER,1,16]]) expect(() => assertPdfRange(offset, length, total)).toThrow();
   });
   it('refuses huge/nonfinite surfaces before allocation', () => {
     expect(pdfSurfaceBytes(1024, 768, 'android')).toBe(3_145_728);
-    for (const [w,h] of [[Infinity,1],[0,1],[32768,1],[10000,10000]]) expect(() => pdfSurfaceBytes(w!,h!,'android')).toThrow('surface_limit');
+    for (const [w,h] of [[Infinity,1],[0,1],[32768,1],[10000,10000]]) expect(() => pdfSurfaceBytes(w,h,'android')).toThrow('surface_limit');
   });
   it('disables inert and degraded controls while retaining navigation', () => {
     expect(pdfCapabilities('password_required',false,true)).toMatchObject({ view:false,print:'unavailable',search:false });

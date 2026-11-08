@@ -10,8 +10,7 @@ export function createPdfDocumentResources(document:Document):{
   const listeners=new Set<{type:string;listener:EventListenerOrEventListenerObject;capture:boolean}>();
   const inactive=()=>inert??=document.implementation.createHTMLDocument('');
   const nativeFonts=document.fonts;
-  let ownedFonts:FontFaceSet|undefined;
-  ownedFonts=nativeFonts?new Proxy(nativeFonts,{
+  const ownedFonts:FontFaceSet|undefined=nativeFonts?new Proxy(nativeFonts,{
     get(target,key){
       if(key==='add')return(face:FontFace)=>{if(!disposed){fonts.add(face);target.add(face);}return ownedFonts;};
       if(key==='delete')return(face:FontFace)=>{fonts.delete(face);return target.delete(face);};
@@ -30,7 +29,7 @@ export function createPdfDocumentResources(document:Document):{
         return new Proxy(adopted,{get(array,property){if(property==='push')return(...added:CSSStyleSheet[])=>{for(const sheet of added)sheets.add(sheet);return array.push(...added);};const value:unknown=Reflect.get(array,property,array);return typeof value==='function'?(value as (...args:unknown[])=>unknown).bind(array):value;}});
       }
       if(key==='addEventListener')return(type:string,listener:EventListenerOrEventListenerObject|null,options?:boolean|AddEventListenerOptions)=>{if(!listener||disposed)return;const capture=typeof options==='boolean'?options:options?.capture??false;listeners.add({type,listener,capture});target.addEventListener(type,listener,options);};
-      if(key==='removeEventListener')return(type:string,listener:EventListenerOrEventListenerObject|null,options?:boolean|EventListenerOptions)=>{const capture=typeof options==='boolean'?options:options?.capture??false;target.removeEventListener(type,listener,options);for(const owned of listeners)if(owned.type===type&&owned.listener===listener&&owned.capture===capture)listeners.delete(owned);};
+      if(key==='removeEventListener')return(type:string,listener:EventListenerOrEventListenerObject|null,options?:boolean|EventListenerOptions)=>{if(!listener)return;const capture=typeof options==='boolean'?options:options?.capture??false;target.removeEventListener(type,listener,options);for(const owned of listeners)if(owned.type===type&&owned.listener===listener&&owned.capture===capture)listeners.delete(owned);};
       const value:unknown=Reflect.get(target,key,target);return typeof value==='function'?(value as (...args:unknown[])=>unknown).bind(target):value;
     },
     set(target,key,value){if(disposed&&key==='adoptedStyleSheets')return true;return Reflect.set(target,key,value,target);},

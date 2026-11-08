@@ -597,32 +597,11 @@ export const PdfSurface = forwardRef<TextEditorHandle, Props>(
             ))}
           </div>
         </div>
-        {(!currentReady || failure || state.error) && (
+        {(!currentReady || failure || state.error || state.reduced_cache) && (
           <p className="pdf-status" role="status">
-            {status}
-            {(state.state === 'loading' || preparation) && (
-              <Button variant="secondary" onClick={cancel}>
-                Cancel PDF
-              </Button>
-            )}
-            {(state.state === 'failed' || state.state === 'cancelled') && (
-              <Button
-                variant="secondary"
-                onClick={() => setRetry((value) => value + 1)}
-              >
-                Retry PDF
-              </Button>
-            )}
-          </p>
-        )}
-        {state.reduced_cache && (
-          <p className="pdf-status" role="status">
-            Reduced cache; thumbnails paused.
-            {(!fits || tooMany) &&
-              ' Showing one page to stay within this WebView’s scroll and page-work limits.'}
-          </p>
-        )}
-        <TaskSurface
+            {!currentReady || failure || state.error ? status : ''}
+            {state.reduced_cache && ' Reduced cache; thumbnails paused.'}
+            <TaskSurface
           open={task === 'view'}
           onOpenChange={(open) => {
             if (!open) setTask(null);

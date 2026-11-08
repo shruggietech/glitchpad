@@ -18,7 +18,7 @@ export const pdfViewKey = (
   width: number,
   height: number,
   reduced: boolean,
-) => [view.fit, view.zoom, view.rotation, width, height, reduced].join(':');
+) => [view.fit, view.zoom, view.rotation, width, view.fit === 'page' ? height : 0, reduced].join(':');
 interface Props {
   controller: PdfController;
   index: number;

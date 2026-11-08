@@ -1,4 +1,5 @@
 .pdf-layout {
+  position: relative;
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -89,7 +90,12 @@
   color: transparent;
 }
 .pdf-status {
-  flex: 0 0 auto;
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 2;
+  background: var(--gl-panel);
+  color: var(--gl-fg);
   padding: 4px 8px;
   margin: 0;
   overflow-wrap: anywhere;

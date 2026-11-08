@@ -23,11 +23,13 @@ const fixture = await readFile(
 const errors = [];
 const consoleMessages = [];
 const requests = [];
+const workerDenialRequests = [];
 let page;
 let version;
 const server = createServer(async (request, response) => {
   try {
     const url = new URL(request.url, 'http://127.0.0.1');
+    if(url.pathname.includes('__pdf_denial_probe__'))workerDenialRequests.push(url.pathname);
     const path = resolve(
       dist,
       '.' +
@@ -339,6 +341,20 @@ try {
     "document.querySelector('[data-pdf-ready=true]') && document.querySelector('.pdf-page[data-current=true] .pdf-text-layer').textContent.includes('page 2')",
     { timeout: 30000 },
   );
+  await page.click('button[aria-label="Previous page"]');
+  await page.waitForFunction("document.querySelector('.pdf-page[data-current=true] .pdf-text-layer').textContent.includes('page 1')",{timeout:30000});
+  await page.addScriptTag({content:await readFile(resolve(root,'scripts/pdf-reading-journey.js'),'utf8')});
+  const readingJourney=await page.evaluate(function(){return window.runGlitchpadPdfReadingJourney();});
+  const actualWorker=page.workers().find(worker=>worker.url().includes('pdf-worker-'));assert.ok(actualWorker,'Actual parser worker must be inspectable');
+  const workerAuthority=await actualWorker.evaluate(async function(){
+    var nativeBridge='__TAURI_INTERNALS__' in self||'__TAURI__' in self;var scriptDenied=false;var evalDenied=false;var fetchDenied=false;var childDenied=false;
+    try{importScripts(self.location.origin+'/__pdf_denial_probe__-script.js');}catch{scriptDenied=true;}
+    try{new Function('return 1')();}catch{evalDenied=true;}
+    try{await fetch(self.location.origin+'/__pdf_denial_probe__-fetch');}catch{fetchDenied=true;}
+    try{var child=new Worker(self.location.origin+'/__pdf_denial_probe__-worker.js');await new Promise(function(resolve){child.onerror=function(){childDenied=true;resolve();};setTimeout(resolve,1000);});child.terminate();}catch{childDenied=true;}
+    return{nativeBridge:nativeBridge,scriptDenied:scriptDenied,evalDenied:evalDenied,fetchDenied:fetchDenied,childDenied:childDenied};
+  });
+  assert.deepEqual(workerAuthority,{nativeBridge:false,scriptDenied:true,evalDenied:true,fetchDenied:true,childDenied:true});assert.deepEqual(workerDenialRequests,[]);
   await page.screenshot({ path: resolve(output, 'page.png') });
   const pdfFonts = await page.evaluate(function () {
     return Array.from(document.fonts).map(function (face) {
@@ -392,6 +408,8 @@ try {
         consoleMessages,
         requests,
         second_page: true,
+      reading_journey: readingJourney,
+      worker_authority: workerAuthority,
         display_resources: {
           baseline_fonts: baselineFonts,
           pdf_fonts: addedFonts,

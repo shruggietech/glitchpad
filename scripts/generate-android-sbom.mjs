@@ -1,3 +1,4 @@
+import { releaseIdentity } from './lib/release-identity.mjs';
 import { readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -32,7 +33,7 @@ export function generateAndroidSbom(
   sourceCommit,
   gradleReport,
   artifactDigests,
-  { version = '0.2.0' } = {},
+  { version = releaseIdentity.version } = {},
 ) {
   const base = generateDesktopSbom(metadata, pnpmListing, sourceCommit, {
     platform: 'Android',

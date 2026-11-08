@@ -10,9 +10,9 @@
 
 ## Phase 1: Setup
 
-- [ ] T001 Verify accepted S048 branch, dependency closure, live release/tag state and exact feature pointer in specs/048-v021-recovery-release/spec.md and .specify/feature.json (FR-002/015).
-- [ ] T002 Reconcile specification, resolved plan/research/contracts and the sixteen-item quality checklist in specs/048-v021-recovery-release/ (FR-012/015).
-- [ ] T003 Verify scoped ignore/configuration and approved hidden/hosted execution; retain phase contexts and failed wrapper evidence in .codex-tmp/s048/ (FR-016).
+- [x] T001 Verify accepted S048 branch, dependency closure, live release/tag state and exact feature pointer in specs/048-v021-recovery-release/spec.md and .specify/feature.json (FR-002/015).
+- [x] T002 Reconcile specification, resolved plan/research/contracts and the sixteen-item quality checklist in specs/048-v021-recovery-release/ (FR-012/015).
+- [x] T003 Verify scoped ignore/configuration and approved hidden/hosted execution; retain phase contexts and failed wrapper evidence in .codex-tmp/s048/ (FR-016).
 
 ## Phase 2: Foundational
 

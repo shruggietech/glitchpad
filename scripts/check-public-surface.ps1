@@ -6,11 +6,12 @@ $repositoryRoot = Split-Path -Parent $PSScriptRoot
 $failures = [System.Collections.Generic.List[string]]::new()
 $readmePath = Join-Path $repositoryRoot 'README.md'
 $readme = Get-Content -Raw -LiteralPath $readmePath
+$release = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'packaging/release/package-contract.json') | ConvertFrom-Json
 
 $requiredReadmeText = @(
     'Glitchpad',
     'actions/workflows/ci.yml/badge.svg',
-    'version-0.2.0',
+    ("version-" + $release.version),
     'license-Apache--2.0',
     '## Status',
     '## Current and planned capabilities',

@@ -1,3 +1,4 @@
+import { releaseIdentity } from './lib/release-identity.mjs';
 import { readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -9,7 +10,7 @@ export function generateDesktopSbom(
   metadata,
   pnpmListing,
   sourceCommit,
-  { platform, version = '0.2.0' } = {},
+  { platform, version = releaseIdentity.version } = {},
 ) {
   if (!/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/u.test(sourceCommit))
     throw new Error('Desktop SBOM requires the exact source commit');

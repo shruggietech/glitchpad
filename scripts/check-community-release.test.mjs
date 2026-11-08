@@ -1,3 +1,4 @@
+import { releaseIdentity } from './lib/release-identity.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -11,80 +12,28 @@ import {
 } from './check-community-release.mjs';
 
 const finalHandoff = () => ({
-  releaseNotes:
-    'S043 imports BrandBuilder with image activation. Stable images wait for #75 and #76.',
-  releaseReceipt:
-    '| Brand slice | S043 BrandBuilder and image activation |\n| Deferred image gates | #75 and #76 |',
-  operatorRunbook:
-    '1. Pin the exact reviewed and qualified S045 source commit for v0.2.0, including S043 BrandBuilder and image activation. The owner explicitly authorizes publication before final PR merge; leave the S045 pull request open for owner review and merge.\n5. Create the annotated tag `v0.2.0` on the exact reviewed and qualified S045 source commit and push only that tag.',
-  changelog: 'S043 adopted BrandBuilder and image activation before release.',
+  releaseNotes: 'S046 and S047 product recovery for #244 and #255; issue #66 and #239 remain open. unsigned not notarized SHA-256',
+  releaseReceipt: 'S046 and S047 product recovery for #244 and #255. Preparation is unpublished; final source/package evidence is confirmed in the PR handoff. issue #66 and #239 remain open.',
+  operatorRunbook: 'Stop unmerged with auto-merge disabled. Tagging and publication require later owner authorization. Use the accepted candidate SHA and accepted staging inputs; consume accepted payloads without rebuilding. S046 S047 product recovery #244 #255.',
+  changelog: 'S046 and S047 product recovery.',
 });
 
-test('accepts the final v0.2.0 release handoff', () =>
-  assert.equal(validateFinalReleaseHandoff(finalHandoff()), true));
-
+test('accepts the S048 preparation handoff without publication authority', () => assert.equal(validateFinalReleaseHandoff(finalHandoff()), true));
 for (const [name, mutate, expected] of [
-  [
-    'stale release authority',
-    (handoff) => {
-      handoff.operatorRunbook = handoff.operatorRunbook.replaceAll(
-        'reviewed and qualified S045 source commit',
-        'unqualified source commit',
-      );
-    },
-    /v0.2.0 release authority/u,
-  ],
-  [
-    'tag instruction targeting another commit',
-    (handoff) => {
-      handoff.operatorRunbook = handoff.operatorRunbook.replace(
-        'on the exact reviewed and qualified S045 source commit and push only that tag',
-        'on an unqualified source commit and push only that tag',
-      );
-    },
-    /tag instruction does not target v0.2.0/u,
-  ],
-  [
-    'missing S043 traceability',
-    (handoff) => {
-      handoff.releaseNotes = handoff.releaseNotes.replace('S043', 'S041');
-    },
-    /S043 qualification/u,
-  ],
-  [
-    'missing image traceability',
-    (handoff) => {
-      handoff.releaseReceipt = handoff.releaseReceipt.replace(
-        'image activation',
-        'shell',
-      );
-    },
-    /image activation/u,
-  ],
-  [
-    'missing image conformance boundary',
-    (handoff) => {
-      handoff.releaseNotes = handoff.releaseNotes.replace('#75', '#74');
-    },
-    /tracked image gate #75/u,
-  ],
-]) {
-  test(`rejects a final handoff with ${name}`, () => {
-    const handoff = finalHandoff();
-    mutate(handoff);
-    assert.throws(() => validateFinalReleaseHandoff(handoff), expected);
-  });
-}
+  ['premature publication authority', h => { h.operatorRunbook += ' The owner explicitly authorizes publication before final PR merge.'; }, /publication authority/u],
+  ['missing later owner authorization', h => { h.operatorRunbook = h.operatorRunbook.replace('later owner authorization','automatic publication'); }, /owner authorization/u],
+  ['wrong future source binding', h => { h.operatorRunbook = h.operatorRunbook.replace('accepted candidate SHA','current main SHA'); }, /accepted candidate/u],
+  ['payload rebuild', h => { h.operatorRunbook = h.operatorRunbook.replace('consume accepted payloads without rebuilding','rebuild packages after tagging'); }, /accepted payloads/u],
+  ['missing recovery traceability', h => { h.releaseNotes = h.releaseNotes.replace('S047','S043'); }, /S047/u],
+  ['missing tracked recovery gate', h => { h.releaseReceipt = h.releaseReceipt.replace('#255','#75'); }, /#255/u],
+]) test('rejects handoff with ' + name, () => { const h = finalHandoff(); mutate(h); assert.throws(() => validateFinalReleaseHandoff(h),expected); });
 
 const contract = () => ({
   schema_version: 1,
-  version: '0.2.0',
-  tag: 'v0.2.0',
+  version: releaseIdentity.version,
+  tag: releaseIdentity.tag,
   repository: 'shruggietech/glitchpad',
-  artifacts: Array.from(
-    { length: 8 },
-    (_, index) => `glitchpad-0.2.0-${index}`,
-  ),
+  artifacts: [...releaseIdentity.artifacts],
   trust_states: {
     windows: 'unsigned_community',
     macos: 'adhoc_non_notarized_community',
@@ -182,7 +131,7 @@ test('rejects paid desktop credentials', () =>
   assert.throws(
     () =>
       validateGovernedClaims({
-        releaseWorkflow: "workflow_dispatch:\n- 'v0.2.0'\nAPPLE_API_KEY",
+        releaseWorkflow: "workflow_dispatch:\n- 'v0.2.1'\nAPPLE_API_KEY",
         windowsContract: {
           official: {
             trust_state: 'unsigned_community',

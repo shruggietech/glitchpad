@@ -1,3 +1,4 @@
+import { releaseIdentity, targetReleaseIdentity } from './lib/release-identity.mjs';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
@@ -9,8 +10,8 @@ const text = async (path) => readFile(path, 'utf8');
 export function validateReleaseContract(contract) {
   if (
     contract.schema_version !== 1 ||
-    contract.version !== '0.2.0' ||
-    contract.tag !== 'v0.2.0' ||
+    contract.version !== releaseIdentity.version ||
+    contract.tag !== releaseIdentity.tag ||
     contract.repository !== 'shruggietech/glitchpad'
   )
     throw new Error('release identity is invalid');
@@ -20,8 +21,7 @@ export function validateReleaseContract(contract) {
     new Set(contract.artifacts).size !== 8
   )
     throw new Error('release must declare exactly eight unique artifacts');
-  if (contract.artifacts.some((name) => !name.includes('0.2.0')))
-    throw new Error('artifact version is stale');
+  targetReleaseIdentity(contract);
   const expectedTrust = {
     windows: 'unsigned_community',
     macos: 'adhoc_non_notarized_community',
@@ -153,45 +153,16 @@ export function validateReleaseReadinessEvidence(readinessScript) {
   return true;
 }
 
-export function validateFinalReleaseHandoff({
-  releaseNotes,
-  releaseReceipt,
-  operatorRunbook,
-  changelog,
-}) {
-  const tagInstruction = operatorRunbook.match(/^5\.\s+(.+)$/mu)?.[1] ?? '';
-  if (
-    !operatorRunbook.includes(
-      'exact reviewed and qualified S045 source commit',
-    ) ||
-    !operatorRunbook.includes(
-      'owner explicitly authorizes publication before final PR merge',
-    ) ||
-    !operatorRunbook.includes(
-      'leave the S045 pull request open for owner review and merge',
-    )
-  )
-    throw new Error('final handoff omits the v0.2.0 release authority');
-  if (
-    tagInstruction !==
-    'Create the annotated tag `v0.2.0` on the exact reviewed and qualified S045 source commit and push only that tag.'
-  )
-    throw new Error('final handoff tag instruction does not target v0.2.0');
-  for (const [source, content] of [
-    ['release notes', releaseNotes],
-    ['release receipt', releaseReceipt],
-    ['operator runbook', operatorRunbook],
-    ['changelog', changelog],
-  ]) {
-    if (!content.includes('S043'))
-      throw new Error(`${source} omits S043 qualification`);
-    if (!content.includes('image activation'))
-      throw new Error(`${source} omits image activation`);
+export function validateFinalReleaseHandoff({ releaseNotes, releaseReceipt, operatorRunbook, changelog }) {
+  if (/authorizes publication before final PR merge|owner publication is already authorized/iu.test(operatorRunbook)) throw new Error('Preparation cannot grant publication authority');
+  for (const phrase of ['later owner authorization','Stop unmerged','auto-merge disabled']) if (!operatorRunbook.includes(phrase)) throw new Error('Preparation handoff omits owner authorization boundary: ' + phrase);
+  if (!operatorRunbook.includes('accepted candidate SHA') || !operatorRunbook.includes('accepted staging inputs')) throw new Error('Future publication must bind the accepted candidate and staging inputs');
+  if (!operatorRunbook.includes('consume accepted payloads without rebuilding')) throw new Error('Future publication must consume accepted payloads without rebuilding');
+  for (const [source, content] of [['release notes',releaseNotes],['release receipt',releaseReceipt],['operator runbook',operatorRunbook],['changelog',changelog]]) {
+    for (const phrase of ['S046','S047','product recovery']) if (!content.includes(phrase)) throw new Error(source + ' omits ' + phrase);
   }
-  for (const issue of ['#75', '#76']) {
-    if (!releaseNotes.includes(issue) || !releaseReceipt.includes(issue))
-      throw new Error(`release handoff omits tracked image gate ${issue}`);
-  }
+  for (const issue of ['#244','#255']) if (!releaseNotes.includes(issue) || !releaseReceipt.includes(issue)) throw new Error('Release handoff omits tracked recovery gate ' + issue);
+  for (const issue of ['#66','#239']) if (!releaseNotes.includes(issue) || !releaseReceipt.includes(issue)) throw new Error('Release handoff omits separate follow-up ' + issue);
   return true;
 }
 
@@ -212,7 +183,7 @@ export function validateGovernedClaims({
   if (forbidden.some((value) => releaseWorkflow.includes(value)))
     throw new Error('paid desktop authority remains in the release workflow');
   if (
-    !releaseWorkflow.includes("- 'v0.2.0'") ||
+    !releaseWorkflow.includes("- '" + releaseIdentity.tag + "'") ||
     !releaseWorkflow.includes('workflow_dispatch:')
   )
     throw new Error('release event guards are incomplete');
@@ -362,9 +333,9 @@ export async function checkCommunityRelease(repositoryRoot = root) {
     loadJson(join(repositoryRoot, 'packaging/android/package-contract.json')),
     text(join(repositoryRoot, '.github/workflows/release.yml')),
     text(join(repositoryRoot, 'scripts/check-release-readiness.ps1')),
-    text(join(repositoryRoot, 'docs/releases/v0.2.0.md')),
-    text(join(repositoryRoot, 'docs/releases/v0.2.0-receipt.md')),
-    text(join(repositoryRoot, 'docs/releases/v0.2.0-operator-runbook.md')),
+    text(join(repositoryRoot, 'docs/releases/' + releaseIdentity.tag + '.md')),
+    text(join(repositoryRoot, 'docs/releases/' + releaseIdentity.tag + '-receipt.md')),
+    text(join(repositoryRoot, 'docs/releases/' + releaseIdentity.tag + '-operator-runbook.md')),
     text(join(repositoryRoot, 'CHANGELOG.md')),
     text(join(repositoryRoot, '.github/workflows/android-package.yml')),
     text(join(repositoryRoot, '.github/workflows/macos-package.yml')),
@@ -406,5 +377,5 @@ export async function checkCommunityRelease(repositoryRoot = root) {
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   await checkCommunityRelease();
-  console.log('v0.2.0 community release policy is internally consistent.');
+  console.log(releaseIdentity.tag + ' community release preparation policy is internally consistent.');
 }

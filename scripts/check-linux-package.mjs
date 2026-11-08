@@ -1,3 +1,4 @@
+import { releaseIdentity } from './lib/release-identity.mjs';
 import { validateDocumentWorkflowProof } from './lib/package-document-workflow.mjs';
 
 import { createHash } from 'node:crypto';
@@ -555,8 +556,8 @@ export async function checkLinuxConfiguration(
       'utf8',
     ),
   ]);
-  if (capabilities.schema_version !== 1 || capabilities.release !== '0.2.0')
-    fail('capability inventory version is not v0.2.0 schema 1');
+  if (capabilities.schema_version !== 1 || capabilities.release !== releaseIdentity.version)
+    fail('capability inventory version differs from the target release schema 1');
   const capabilityExtensions = uniqueExtensions(capabilities);
   const mimeFacts = mimeMapFacts(mimeMap);
   const packageOwnedTypes = sorted(mimeMap.package_owned_types ?? []);
@@ -663,8 +664,8 @@ export async function checkLinuxConfiguration(
       fail(`Linux package workflow is missing ${required}`);
   if (
     !packageWorkflow.includes('actions/attest-build-provenance@v4') ||
-    !packageWorkflow.includes("tags:\n      - 'v0.2.0'") ||
-    !releaseWorkflow.includes('glitchpad-0.2.0-linux-x86_64-community-release')
+    !packageWorkflow.includes("tags:\n      - '" + releaseIdentity.tag + "'") ||
+    !releaseWorkflow.includes('glitchpad-' + releaseIdentity.version + '-linux-x86_64-community-release')
   )
     fail('release path omits repository-attested Linux authority');
   if (

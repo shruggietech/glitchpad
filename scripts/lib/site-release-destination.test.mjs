@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { verifyHomepageReleaseDestination } from './site-release-destination.mjs';
 const latest = 'https://github.com/ShruggieTech/glitchpad/releases/latest';
-const tag = 'https://github.com/shruggietech/glitchpad/releases/tag/v0.2.0';
+const tag = 'https://github.com/shruggietech/glitchpad/releases/tag/v0.2.1';
 const page = (url) => '<a href="' + url + '">Download</a>';
 const fetcher =
   (url = tag, ok = true) =>
@@ -14,7 +14,7 @@ const fetcher =
   });
 test('approved latest anchor resolves to exact published version', async () => {
   assert.equal(
-    await verifyHomepageReleaseDestination(page(latest), '0.2.0', fetcher()),
+    await verifyHomepageReleaseDestination(page(latest), '0.2.1', fetcher()),
     tag,
   );
 });
@@ -22,7 +22,7 @@ test('exact tag anchor accepts repository casing', async () => {
   assert.equal(
     await verifyHomepageReleaseDestination(
       page(tag.replace('/shruggietech/', '/ShruggieTech/')),
-      '0.2.0',
+      '0.2.1',
       fetcher(),
     ),
     tag,
@@ -32,15 +32,15 @@ test('unquoted HTML anchor remains an actual destination', async () => {
   assert.equal(
     await verifyHomepageReleaseDestination(
       '<a href=' + latest + '>Download</a>',
-      '0.2.0',
+      '0.2.1',
       fetcher(),
     ),
     tag,
   );
 });
 for (const [label, url, ok] of [
-  ['older version', tag.replace('0.2.0', '0.1.4'), true],
-  ['external redirect', 'https://example.com/releases/tag/v0.2.0', true],
+  ['older version', tag.replace('0.2.1', '0.1.4'), true],
+  ['external redirect', 'https://example.com/releases/tag/v0.2.1', true],
   ['failed HTTP response', tag, false],
 ])
   test('rejects ' + label, async () => {
@@ -48,7 +48,7 @@ for (const [label, url, ok] of [
       () =>
         verifyHomepageReleaseDestination(
           page(latest),
-          '0.2.0',
+          '0.2.1',
           fetcher(url, ok),
         ),
       /release destination/u,
@@ -66,7 +66,7 @@ for (const [label, html] of [
   ['script URL', '<a href="javascript:alert(1)">Download</a>'],
   [
     'plain text',
-    '<p>https://github.com/shruggietech/glitchpad/releases/tag/v0.2.0</p>',
+    '<p>https://github.com/shruggietech/glitchpad/releases/tag/v0.2.1</p>',
   ],
   [
     'quoted attribute fake',
@@ -105,7 +105,7 @@ for (const [label, html] of [
     let called = false;
     await assert.rejects(
       () =>
-        verifyHomepageReleaseDestination(html, '0.2.0', async () => {
+        verifyHomepageReleaseDestination(html, '0.2.1', async () => {
           called = true;
           return fetcher()();
         }),

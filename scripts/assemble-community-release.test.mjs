@@ -96,7 +96,7 @@ async function releaseFixture() {
   await mkdir(input);
   const artifacts = Array.from(
     { length: 8 },
-    (_, index) => `glitchpad-0.2.0-${index}.bin`,
+    (_, index) => `glitchpad-0.2.1-${index}.bin`,
   );
   for (const name of artifacts) await writeFile(join(input, name), name);
   const trustStates = {
@@ -152,8 +152,8 @@ async function releaseFixture() {
   await writeFile(
     contractPath,
     JSON.stringify({
-      version: '0.2.0',
-      tag: 'v0.2.0',
+      version: '0.2.1',
+      tag: 'v0.2.1',
       repository: 'shruggietech/glitchpad',
       artifacts,
       trust_states: trustStates,
@@ -185,8 +185,8 @@ test('rejects a missing practical-use receipt', async () => {
   await writeFile(
     fixture.contractPath,
     JSON.stringify({
-      version: '0.2.0',
-      tag: 'v0.2.0',
+      version: '0.2.1',
+      tag: 'v0.2.1',
       repository: 'shruggietech/glitchpad',
       artifacts: fixture.artifacts,
       trust_states: {

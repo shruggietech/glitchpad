@@ -35,11 +35,11 @@ test('GitHub Pages markers are complete', async () => {
   await access('out/.nojekyll');
   assert.equal(await readFile('out/CNAME', 'utf8'), 'glitchpad.com\n');
   const deployment = JSON.parse(await readFile('out/deployment.json', 'utf8'));
-  assert.equal(deployment.productVersion, '0.2.0');
+  assert.equal(deployment.productVersion, '0.2.1');
   assert.match(deployment.sourceRevision, /^(?:local|[0-9a-f]{40})$/);
   assert.equal(
     deployment.releaseUrl,
-    'https://github.com/ShruggieTech/glitchpad/releases/tag/v0.2.0',
+    'https://github.com/ShruggieTech/glitchpad/releases/tag/v0.2.1',
   );
   assert.ok(Number.isFinite(Date.parse(deployment.builtAt)));
 });

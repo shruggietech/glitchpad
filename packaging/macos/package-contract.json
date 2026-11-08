@@ -2,10 +2,10 @@
   "schema_version": 1,
   "platform": "macos",
   "architecture": "universal",
-  "candidate_version": "0.2.0",
+  "candidate_version": "0.2.1",
   "artifact": {
     "kind": "dmg",
-    "name": "glitchpad-0.2.0-macos-universal.dmg"
+    "name": "glitchpad-0.2.1-macos-universal.dmg"
   },
   "document_extensions": [
     "bmp",
@@ -45,7 +45,10 @@
     "identifier": "com.shruggietech.glitchpad",
     "minimum_system_version": "13.0",
     "executable": "Contents/MacOS/glitchpad-host",
-    "required_architectures": ["arm64", "x86_64"],
+    "required_architectures": [
+      "arm64",
+      "x86_64"
+    ],
     "required_files": [
       "Contents/Info.plist",
       "Contents/MacOS/glitchpad-host",
@@ -70,7 +73,7 @@
   },
   "official": {
     "authorized_event": "push_tag",
-    "tag_pattern": "v0.2.0",
+    "tag_pattern": "v0.2.1",
     "trust_state": "adhoc_non_notarized_community",
     "required_application_signature_status": "ad_hoc",
     "required_dmg_signature_status": "not_signed",

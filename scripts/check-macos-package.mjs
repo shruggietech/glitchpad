@@ -1,3 +1,4 @@
+import { releaseIdentity } from './lib/release-identity.mjs';
 import { validateDocumentWorkflowProof } from './lib/package-document-workflow.mjs';
 
 import { createHash } from 'node:crypto';
@@ -190,8 +191,8 @@ export async function checkMacosConfiguration(
     ),
   ]);
 
-  if (capabilities.schema_version !== 1 || capabilities.release !== '0.2.0')
-    fail('capability inventory version is not v0.2.0 schema 1');
+  if (capabilities.schema_version !== 1 || capabilities.release !== releaseIdentity.version)
+    fail('capability inventory version differs from the target release schema 1');
   const configured = uniqueExtensions(capabilities.families);
   if (!same(contract.document_extensions ?? [], configured))
     fail(
@@ -329,7 +330,7 @@ export async function checkMacosConfiguration(
     fail('branch and pull-request package workflow must not publish');
   if (
     !releaseWorkflow.includes(
-      'glitchpad-0.2.0-macos-universal-community-release',
+      'glitchpad-' + releaseIdentity.version + '-macos-universal-community-release',
     )
   )
     fail('release workflow omits the macOS community package');

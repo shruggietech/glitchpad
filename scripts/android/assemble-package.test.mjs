@@ -31,22 +31,22 @@ test('assembly copies exact final bytes and emits canonical checksums and manife
   const output = join(root, 'out');
   const result = await assembleAndroidPackage({
     contract: {
-      candidate_version: '0.2.0',
+      candidate_version: '0.2.1',
       artifacts: [
         {
           role: 'universal',
           kind: 'apk',
-          name: 'glitchpad-0.2.0-android-universal.apk',
+          name: 'glitchpad-0.2.1-android-universal.apk',
         },
         {
           role: 'arm64',
           kind: 'apk',
-          name: 'glitchpad-0.2.0-android-arm64.apk',
+          name: 'glitchpad-0.2.1-android-arm64.apk',
         },
         {
           role: 'play',
           kind: 'aab',
-          name: 'glitchpad-0.2.0-android-universal.aab',
+          name: 'glitchpad-0.2.1-android-universal.aab',
         },
       ],
       candidate_trust: { publication_status: 'blocked_candidate' },

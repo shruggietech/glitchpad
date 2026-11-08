@@ -360,7 +360,14 @@ function validateMacosEvidenceShape(evidence, contract, official) {
       'application_inventory',
       'document_extensions',
       ...(official
-        ? ['event', 'tag', ...(contract.official.publication_context ? ['publication_context'] : []), 'evidence_files']
+        ? [
+            'event',
+            'tag',
+            ...(contract.official.publication_context
+              ? ['publication_context']
+              : []),
+            'evidence_files',
+          ]
         : []),
     ],
     'package evidence',
@@ -535,7 +542,8 @@ function validateMacosEvidenceShape(evidence, contract, official) {
     evidence.official !== true ||
     evidence.gate_status !== 'official_valid' ||
     evidence.event !== contract.official.authorized_event ||
-    (contract.official.publication_context !== undefined && evidence.publication_context !== contract.official.publication_context) ||
+    (contract.official.publication_context !== undefined &&
+      evidence.publication_context !== contract.official.publication_context) ||
     evidence.tag !== contract.official.tag_pattern ||
     !same(evidence.evidence_files ?? [], contract.official.required_evidence)
   )

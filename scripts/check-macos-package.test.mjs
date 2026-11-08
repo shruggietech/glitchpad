@@ -266,16 +266,51 @@ test('tag lifecycle validates promoted community trust without paid Apple author
 });
 
 test('published startup baseline retains its historical schema while current staging requires context', async () => {
-  const historicalContract = JSON.parse(await readFile(new URL('../fixtures/macos-startup/v0.1.4-package-contract.json', import.meta.url), 'utf8'));
-  const historicalBytes = await readFile(new URL('../fixtures/macos-startup/v0.1.4-package-manifest.json', import.meta.url));
-  assert.equal(createHash('sha256').update(historicalBytes).digest('hex'), '7d8c8b409117542605ad26fe69b54aae0150466433cfd1a385663dc525f5d1ff');
+  const historicalContract = JSON.parse(
+    await readFile(
+      new URL(
+        '../fixtures/macos-startup/v0.1.4-package-contract.json',
+        import.meta.url,
+      ),
+      'utf8',
+    ),
+  );
+  const historicalBytes = await readFile(
+    new URL(
+      '../fixtures/macos-startup/v0.1.4-package-manifest.json',
+      import.meta.url,
+    ),
+  );
+  assert.equal(
+    createHash('sha256').update(historicalBytes).digest('hex'),
+    '7d8c8b409117542605ad26fe69b54aae0150466433cfd1a385663dc525f5d1ff',
+  );
   const historical = JSON.parse(historicalBytes);
-  assert.equal(validateMacosLifecycleEvidence(historical, historicalContract, { official: true }), true);
-  assert.throws(() => validateMacosLifecycleEvidence({ ...historical, publication_context: 'staged_unpublished' }, historicalContract, { official: true }));
+  assert.equal(
+    validateMacosLifecycleEvidence(historical, historicalContract, {
+      official: true,
+    }),
+    true,
+  );
+  assert.throws(() =>
+    validateMacosLifecycleEvidence(
+      { ...historical, publication_context: 'staged_unpublished' },
+      historicalContract,
+      { official: true },
+    ),
+  );
   const current = officialLifecycleEvidence();
   delete current.publication_context;
-  assert.throws(() => validateMacosLifecycleEvidence(current, contract, { official: true }));
-  assert.throws(() => validateMacosLifecycleEvidence({ ...officialLifecycleEvidence(), publication_context: 'published' }, contract, { official: true }));
+  assert.throws(() =>
+    validateMacosLifecycleEvidence(current, contract, { official: true }),
+  );
+  assert.throws(() =>
+    validateMacosLifecycleEvidence(
+      { ...officialLifecycleEvidence(), publication_context: 'published' },
+      contract,
+      { official: true },
+    ),
+  );
 });
 
 test('candidate mode binds staged application, DMG, supply chain, and notices', async () => {

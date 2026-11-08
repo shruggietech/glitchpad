@@ -1,0 +1,13 @@
+# S049 PDF worker/source contract
+
+The public PDF document contract is version1 beside the existing source/session contract. It defines capability-driven view/navigation/search/zoom/metadata/print behavior and read-only PDF source integrity. No generic native API, path, provider URI or external URL is given to the PDF worker. The parent owns source access and only answers validated document-owned bounded range requests.
+
+Use exactly matched pdfjs-dist6.5.438 display/worker code, a caller-owned classic Worker port, display/worker compatibility imports and no fake worker fallback. Disable worker-side rendering, XFA, worker fetch and WASM initially. The reviewed static map supplies the two packaged JavaScript decoder factories; its upstream replacement is version/hash/occurrence checked. Unsupported dynamic imports, unresolved import.meta and unsupported emitted regex semantics fail the compatibility gate.
+
+The exact emitted worker response has an inserted default-deny CSP, connect-src none, no further scripts/subworkers or eval. Main WebView creation preserves the current configured main window after host-managed state setup. Tests prove real worker startup/version, absent native bridge globals and denied fetch/XHR/WebSocket/IPC attempts in actual native WebViews. Dev server and headless browser policy observations remain supplemental.
+
+PDFDataRangeTransport uses source length/initial bounded bytes, disableAutoFetch:true and disableStream:true for range-driven input. Source/page/surface limits are512MiB/10000/200MiB desktop and256MiB/10000/96MiB Android. The adapter validates integer offsets/length/ownership/revision, bounds concurrency and tears down current reads on cancellation. Nonseekable sources may need complete private-disk spooling before their index is available; expose progress and cancellation rather than whole-source RAM buffering.
+
+Resource BinaryDataFactory accepts only cMapUrl, standardFontDataUrl and wasmUrl kinds with fixed manifest names. No arbitrary path/URL is constructed. Bundled bytes and licenses are deterministically generated from locked package inputs. Use system/generic substitution for ordinary missing fonts with useSystemFonts:true and standardFontDataUrl unset; serve the BSD Symbol/Dingbats resources. GPL Liberation TTFs, QuickJS and generic viewer assets are excluded. Embedded fonts remain supported; unembedded font appearance and disabled qcms ICC are explicit limitations.
+
+The controller cancels real render/loading/search/text tasks and terminates the worker before releasing bookkeeping. Every response is captured to one owner/revision; stale and cross-document results are rejected. Existing250ms cancellation acknowledgement and UI work/deadline policies remain unchanged.

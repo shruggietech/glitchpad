@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { delimiter, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
+import { parse as parseYaml } from 'yaml';
 
 test(
   'supporting ADB failure cannot enter instrumentation or qualify a release attempt',
@@ -98,3 +99,19 @@ test(
     }
   },
 );
+
+test('emulator action script lines are complete independent shell commands', { skip: process.platform !== 'linux' }, async () => {
+  const workflow = parseYaml(await readFile(new URL('../.github/workflows/android-package.yml', import.meta.url), 'utf8'));
+  const steps = Object.values(workflow.jobs).flatMap(job => job.steps ?? []).filter(step => step.uses?.startsWith('ReactiveCircus/android-emulator-runner@'));
+  assert.ok(steps.length > 0, 'the actual emulator invocation must be exercised');
+  for (const step of steps) {
+    for (const [index, raw] of step.with.script.split('\n').entries()) {
+      const line = raw.trim();
+      if (!line || line.startsWith('#')) continue;
+      const command = line.replace(/\$\{\{[\s\S]*?\}\}/gu, 'fixture');
+      const result = spawnSync('sh', ['-n', '-c', command], { encoding: 'utf8', windowsHide: true, timeout: 5000 });
+      assert.equal(result.error, undefined);
+      assert.equal(result.status, 0, 'emulator script line ' + (index + 1) + ': ' + result.stderr);
+    }
+  }
+});

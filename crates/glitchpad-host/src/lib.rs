@@ -12,11 +12,11 @@ pub mod external_link;
 pub mod images;
 #[cfg(not(mobile))]
 pub mod lifecycle_probe;
-pub mod performance;
 pub mod pdf;
-mod pdf_print;
 #[cfg(any(target_os = "android", test))]
 mod pdf_cache;
+mod pdf_print;
+pub mod performance;
 pub mod recovery;
 #[cfg(not(mobile))]
 pub mod source;
@@ -304,7 +304,12 @@ pub fn run() {
                 ));
             }
             // Preserve the configured main WebView, created once after all managed state.
-            let main = app.config().app.windows.iter().find(|window| window.label == "main")
+            let main = app
+                .config()
+                .app
+                .windows
+                .iter()
+                .find(|window| window.label == "main")
                 .ok_or_else(|| std::io::Error::other("The configured main window is missing"))?;
             tauri::WebviewWindowBuilder::from_config(app, main)?
                 .on_web_resource_request(|request, response| {

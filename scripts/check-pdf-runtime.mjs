@@ -8,100 +8,442 @@ import { createHash } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { installNativeSeams } from './check-android-authoring-layout.mjs';
 
-const root=fileURLToPath(new URL('../',import.meta.url));
-const dist=resolve(root,'apps/glitchpad/dist');
-const legacy=process.argv.includes('--legacy');
-const output=resolve(root,'artifacts/pdf-runtime',legacy?'chrome69':'current');
-await mkdir(output,{recursive:true});
-const fixture=await readFile(resolve(root,'fixtures/pdf/s049-compatibility.pdf'));
-const errors=[];const consoleMessages=[];const requests=[];
-let page;let version;
-const server=createServer(async(request,response)=>{
+const root = fileURLToPath(new URL('../', import.meta.url));
+const dist = resolve(root, 'apps/glitchpad/dist');
+const legacy = process.argv.includes('--legacy');
+const output = resolve(
+  root,
+  'artifacts/pdf-runtime',
+  legacy ? 'chrome69' : 'current',
+);
+await mkdir(output, { recursive: true });
+const fixture = await readFile(
+  resolve(root, 'fixtures/pdf/s049-compatibility.pdf'),
+);
+const errors = [];
+const consoleMessages = [];
+const requests = [];
+let page;
+let version;
+const server = createServer(async (request, response) => {
   try {
-    const url=new URL(request.url,'http://127.0.0.1');
-    const path=resolve(dist,'.'+(url.pathname==='/'?'/index.html':decodeURIComponent(url.pathname)));
-    if(!path.startsWith(dist+sep)){response.writeHead(403);response.end();return;}
-    const headers={'Content-Type':{'.html':'text/html','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.woff2':'font/woff2'}[extname(path)]||'application/octet-stream'};
-    if(/^\/assets\/pdf-worker-[A-Za-z0-9_-]+\.js$/.test(url.pathname))headers['Content-Security-Policy']="default-src 'none'; connect-src 'none'; script-src 'none'; worker-src 'none'; child-src 'none'; object-src 'none'; base-uri 'none'";
-    response.writeHead(200,headers);response.end(await readFile(path));
-  }catch{response.writeHead(404);response.end();}
+    const url = new URL(request.url, 'http://127.0.0.1');
+    const path = resolve(
+      dist,
+      '.' +
+        (url.pathname === '/'
+          ? '/index.html'
+          : decodeURIComponent(url.pathname)),
+    );
+    if (!path.startsWith(dist + sep)) {
+      response.writeHead(403);
+      response.end();
+      return;
+    }
+    const headers = {
+      'Content-Type':
+        {
+          '.html': 'text/html',
+          '.js': 'text/javascript',
+          '.css': 'text/css',
+          '.svg': 'image/svg+xml',
+          '.woff2': 'font/woff2',
+        }[extname(path)] || 'application/octet-stream',
+    };
+    if (/^\/assets\/pdf-worker-[A-Za-z0-9_-]+\.js$/.test(url.pathname))
+      headers['Content-Security-Policy'] =
+        "default-src 'none'; connect-src 'none'; script-src 'none'; worker-src 'none'; child-src 'none'; object-src 'none'; base-uri 'none'";
+    response.writeHead(200, headers);
+    response.end(await readFile(path));
+  } catch {
+    response.writeHead(404);
+    response.end();
+  }
 });
-server.listen(0,'127.0.0.1');await once(server,'listening');
-const implementation=legacy?await import('/tmp/glitchpad-browser-compat/client/node_modules/puppeteer-core/index.js'):await import('puppeteer');
-const browser=await implementation.default.launch({headless:legacy?true:'shell',...(legacy?{executablePath:'/tmp/glitchpad-browser-compat/chromium/linux-576753/chrome-linux/chrome'}:{}),args:['--no-sandbox','--disable-dev-shm-usage']});
+server.listen(0, '127.0.0.1');
+await once(server, 'listening');
+const implementation = legacy
+  ? await import('/tmp/glitchpad-browser-compat/client/node_modules/puppeteer-core/index.js')
+  : await import('puppeteer');
+const browser = await implementation.default.launch({
+  headless: legacy ? true : 'shell',
+  ...(legacy
+    ? {
+        executablePath:
+          '/tmp/glitchpad-browser-compat/chromium/linux-576753/chrome-linux/chrome',
+      }
+    : {}),
+  args: ['--no-sandbox', '--disable-dev-shm-usage'],
+});
 try {
-  version=await browser.version();if(legacy)assert.match(version,/69\.0\.3497\.0/);
-  page=await browser.newPage();await page.setViewport({width:480,height:800});
-  await page.setUserAgent('Mozilla/5.0 (Linux; Android 7.0) AppleWebKit/537.36 Chrome/69.0.3497.0 Mobile Safari/537.36');
-  page.on('pageerror',error=>errors.push(String(error)));
-  page.on('console',message=>consoleMessages.push(message.text()));
-  page.on('request',request=>requests.push(request.url()));
-  const require=createRequire(new URL('../apps/glitchpad/package.json',import.meta.url));
-  const ts=require('typescript');
-  const nativeSeam=ts.transpileModule('('+installNativeSeams.toString()+')()',{compilerOptions:{target:ts.ScriptTarget.ES2018,module:ts.ModuleKind.ESNext}}).outputText;
+  version = await browser.version();
+  if (legacy) assert.match(version, /69\.0\.3497\.0/);
+  page = await browser.newPage();
+  await page.setViewport({ width: 480, height: 800 });
+  await page.setUserAgent(
+    'Mozilla/5.0 (Linux; Android 7.0) AppleWebKit/537.36 Chrome/69.0.3497.0 Mobile Safari/537.36',
+  );
+  page.on('pageerror', (error) => errors.push(String(error)));
+  page.on('console', (message) => consoleMessages.push(message.text()));
+  page.on('request', (request) => requests.push(request.url()));
+  const require = createRequire(
+    new URL('../apps/glitchpad/package.json', import.meta.url),
+  );
+  const ts = require('typescript');
+  const nativeSeam = ts.transpileModule(
+    '(' + installNativeSeams.toString() + ')()',
+    {
+      compilerOptions: {
+        target: ts.ScriptTarget.ES2018,
+        module: ts.ModuleKind.ESNext,
+      },
+    },
+  ).outputText;
   await page.evaluateOnNewDocument(nativeSeam);
-  await page.evaluateOnNewDocument(function(encoded){
-    var binary=atob(encoded),bytes=new Uint8Array(binary.length);for(var i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
-    var original=window.__TAURI_INTERNALS__.invoke;
-    var identity={authority:'synthetic',scope:'s049-browser',token:'pdf-fixture',strength:'strong'};
-    var revision={identity:identity,byte_length:bytes.length,modified_unix_nanos:'1',change_token:null};
-    var summary={source_id:'pdf-fixture',descriptor:{identity:identity,restoration_reference:null,display_name:'s049-compatibility.pdf',claimed_media_type:'application/pdf',byte_length:bytes.length,modified_unix_ms:1,kind:'document_uri',capabilities:{read:true,seek:true,stream:true,metadata:true,observe_revision:true,revalidate:true,watch:false,write:false,replace_atomically:false,persistent_permission:false,rename:false,observe_deletion:false,reopen:true,reveal_location:false}},external_revision:revision,delivery_kind:'open_result',grant:{read:true,write:false,persisted_read:false,persisted_write:false,restorable:false}};
-    window.__pdfReads=[];window.__pdfForbiddenCalls=[];window.__pdfWorkerEvents=[];
-    var NativeWorker=window.Worker;
-    function ObservedWorker(url,options){
+  await page.evaluateOnNewDocument(function (encoded) {
+    var binary = atob(encoded),
+      bytes = new Uint8Array(binary.length);
+    for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    var original = window.__TAURI_INTERNALS__.invoke;
+    var identity = {
+      authority: 'synthetic',
+      scope: 's049-browser',
+      token: 'pdf-fixture',
+      strength: 'strong',
+    };
+    var revision = {
+      identity: identity,
+      byte_length: bytes.length,
+      modified_unix_nanos: '1',
+      change_token: null,
+    };
+    var summary = {
+      source_id: 'pdf-fixture',
+      descriptor: {
+        identity: identity,
+        restoration_reference: null,
+        display_name: 's049-compatibility.pdf',
+        claimed_media_type: 'application/pdf',
+        byte_length: bytes.length,
+        modified_unix_ms: 1,
+        kind: 'document_uri',
+        capabilities: {
+          read: true,
+          seek: true,
+          stream: true,
+          metadata: true,
+          observe_revision: true,
+          revalidate: true,
+          watch: false,
+          write: false,
+          replace_atomically: false,
+          persistent_permission: false,
+          rename: false,
+          observe_deletion: false,
+          reopen: true,
+          reveal_location: false,
+        },
+      },
+      external_revision: revision,
+      delivery_kind: 'open_result',
+      grant: {
+        read: true,
+        write: false,
+        persisted_read: false,
+        persisted_write: false,
+        restorable: false,
+      },
+    };
+    window.__pdfReads = [];
+    window.__pdfForbiddenCalls = [];
+    window.__pdfWorkerEvents = [];
+    var NativeWorker = window.Worker;
+    function ObservedWorker(url, options) {
       var worker;
-      try{worker=new NativeWorker(url,options);}catch(error){window.__pdfWorkerEvents.push({stage:'constructor',message:String(error)});throw error;}
-      var nativePost=worker.postMessage;
-      worker.postMessage=function(message,transfer){
-        try{return nativePost.apply(this,arguments);}
-        catch(error){window.__pdfWorkerEvents.push({stage:'postMessage',action:message&&message.action,message:String(error),transfer_kind:transfer===null?'null':typeof transfer});throw error;}
+      try {
+        worker = new NativeWorker(url, options);
+      } catch (error) {
+        window.__pdfWorkerEvents.push({
+          stage: 'constructor',
+          message: String(error),
+        });
+        throw error;
+      }
+      var nativePost = worker.postMessage;
+      worker.postMessage = function (message, transfer) {
+        try {
+          return nativePost.apply(this, arguments);
+        } catch (error) {
+          window.__pdfWorkerEvents.push({
+            stage: 'postMessage',
+            action: message && message.action,
+            message: String(error),
+            transfer_kind: transfer === null ? 'null' : typeof transfer,
+          });
+          throw error;
+        }
       };
-      worker.addEventListener('error',function(event){window.__pdfWorkerEvents.push({stage:'error',message:event.message,filename:event.filename,line:event.lineno,column:event.colno});});
-      worker.addEventListener('messageerror',function(){window.__pdfWorkerEvents.push({stage:'messageerror'});});
-      worker.addEventListener('message',function(event){if(event.data&&event.data.type==='glitchpad-pdf-worker-ready')window.__pdfWorkerEvents.push({stage:'ready',version:event.data.version,native_bridge:event.data.native_bridge});});
+      worker.addEventListener('error', function (event) {
+        window.__pdfWorkerEvents.push({
+          stage: 'error',
+          message: event.message,
+          filename: event.filename,
+          line: event.lineno,
+          column: event.colno,
+        });
+      });
+      worker.addEventListener('messageerror', function () {
+        window.__pdfWorkerEvents.push({ stage: 'messageerror' });
+      });
+      worker.addEventListener('message', function (event) {
+        if (event.data && event.data.type === 'glitchpad-pdf-worker-ready')
+          window.__pdfWorkerEvents.push({
+            stage: 'ready',
+            version: event.data.version,
+            native_bridge: event.data.native_bridge,
+          });
+      });
       return worker;
     }
-    ObservedWorker.prototype=NativeWorker.prototype;Object.setPrototypeOf(ObservedWorker,NativeWorker);window.Worker=ObservedWorker;
-    window.__TAURI_INTERNALS__.invoke=async function(command,args){
-      args=args||{};
-      if(command==='open_android_document')return summary;
-      if(command==='identify_image_source')return null;
-      if(command==='identify_pdf_source')return true;
-      if(command==='revalidate_android_source')return {source_id:'pdf-fixture',expected:revision,current:revision,status:'match'};
-      if(command==='read_android_range'){
-        if(args.sourceId!=='pdf-fixture'||args.length>262144||args.offset<0||args.offset+args.length>bytes.length)throw new Error('Invalid bounded source read');
-        window.__pdfReads.push({offset:args.offset,length:args.length});var chunk=Array.from(bytes.slice(args.offset,args.offset+args.length));
-        return args.binary?[args.offset+args.length>=bytes.length?1:0].concat(chunk):{source_id:'pdf-fixture',offset:args.offset,bytes:chunk,end_of_source:args.offset+args.length>=bytes.length};
+    ObservedWorker.prototype = NativeWorker.prototype;
+    Object.setPrototypeOf(ObservedWorker, NativeWorker);
+    window.Worker = ObservedWorker;
+    window.__TAURI_INTERNALS__.invoke = async function (command, args) {
+      args = args || {};
+      if (command === 'open_android_document') return summary;
+      if (command === 'identify_image_source') return null;
+      if (command === 'identify_pdf_source') return true;
+      if (command === 'revalidate_android_source')
+        return {
+          source_id: 'pdf-fixture',
+          expected: revision,
+          current: revision,
+          status: 'match',
+        };
+      if (command === 'read_android_range') {
+        if (
+          args.sourceId !== 'pdf-fixture' ||
+          args.length > 262144 ||
+          args.offset < 0 ||
+          args.offset + args.length > bytes.length
+        )
+          throw new Error('Invalid bounded source read');
+        window.__pdfReads.push({ offset: args.offset, length: args.length });
+        var chunk = Array.from(
+          bytes.slice(args.offset, args.offset + args.length),
+        );
+        return args.binary
+          ? [args.offset + args.length >= bytes.length ? 1 : 0].concat(chunk)
+          : {
+              source_id: 'pdf-fixture',
+              offset: args.offset,
+              bytes: chunk,
+              end_of_source: args.offset + args.length >= bytes.length,
+            };
       }
-      if(/save|write|open_external/.test(command))window.__pdfForbiddenCalls.push(command);
-      return original(command,args);
+      if (/save|write|open_external/.test(command))
+        window.__pdfForbiddenCalls.push(command);
+      return original(command, args);
     };
-  },fixture.toString('base64'));
-  await page.goto('http://127.0.0.1:'+server.address().port,{waitUntil:'networkidle0'});
-  const baselineFonts=await page.evaluate(function(){return Array.from(document.fonts).map(function(face){return face.family;});});
-  await page.waitForSelector('.add-document-trigger');await page.click('.add-document-trigger');
-  await page.evaluate(function(){var button=Array.from(document.querySelectorAll('.add-document-menu button')).find(function(node){return /Open/.test(node.textContent);});if(!button)throw new Error('Open picker action missing');button.click();});
-  try{await page.waitForFunction("document.querySelector('[data-pdf-ready=true][data-pdf-worker=true]')",{timeout:60000});}
-  catch(error){await writeFile(resolve(output,'failure.json'),JSON.stringify({version,errors,consoleMessages,body:await page.$eval('body',node=>node.innerText)},null,2)+'\n');await page.screenshot({path:resolve(output,'failure.png')});throw error;}
-  await page.waitForFunction("document.querySelector('.pdf-page[data-current=true] .pdf-text-layer') && document.querySelector('.pdf-page[data-current=true] .pdf-text-layer').textContent.includes('page 1')",{timeout:30000});
-  const facts=await page.evaluate(function(){
-    var canvas=document.querySelector('.pdf-page[data-current=true] canvas');var pixels=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;var ink=0;for(var i=0;i<pixels.length;i+=4)if(pixels[i]<200&&pixels[i+1]<200&&pixels[i+2]<200)ink++;
-    var text=document.querySelector('.pdf-page[data-current=true] .pdf-text-layer');var content=text.textContent;var selection=window.getSelection();selection.selectAllChildren(text);var selected=selection.toString();selection.removeAllRanges();
-    return {width:canvas.width,height:canvas.height,ink:ink,text:content,selected:selected,reads:window.__pdfReads,forbidden:window.__pdfForbiddenCalls,executed:window.__s049PdfExecuted===true,engine:document.querySelector('.pdf-layout').getAttribute('data-pdf-engine'),frames:document.querySelectorAll('[data-bb-app-frame]').length};
+  }, fixture.toString('base64'));
+  await page.goto('http://127.0.0.1:' + server.address().port, {
+    waitUntil: 'networkidle0',
   });
-  assert.ok(facts.ink>500,'Actual canvas needs representative text ink');assert.match(facts.text,/Glitchpad PDF compatibility page 1/);assert.match(facts.selected,/Glitchpad PDF compatibility/);assert.equal(facts.engine,'6.5.438');assert.equal(facts.frames,1);assert.equal(facts.executed,false);assert.deepEqual(facts.forbidden,[]);assert.ok(facts.reads.reduce((sum,r)=>sum+r.length,0)<fixture.length,'First content must not require whole-source reads');assert.ok(!requests.some(url=>url.includes('example.invalid')));
-  await page.click('button[aria-label="Next page"]');await page.waitForFunction("document.querySelector('[data-pdf-ready=true]') && document.querySelector('.pdf-page[data-current=true] .pdf-text-layer').textContent.includes('page 2')",{timeout:30000});
-  await page.screenshot({path:resolve(output,'page.png')});
-  const pdfFonts=await page.evaluate(function(){return Array.from(document.fonts).map(function(face){return face.family;});});
-  const addedFonts=pdfFonts.filter(family=>!baselineFonts.includes(family));assert.ok(addedFonts.length>0,'Representative font cleanup must exercise actual installed PDF font faces');
-  await page.click('.add-document-trigger');await page.evaluate(function(){var button=Array.from(document.querySelectorAll('.add-document-menu button')).find(function(node){return node.textContent.trim()==='New text file';});if(!button)throw new Error('New text action missing');button.click();});
-  await page.waitForFunction("!document.querySelector('.pdf-layout')&&document.querySelector('.cm-editor')",{timeout:30000});
-  const remainingFonts=await page.evaluate(function(){return Array.from(document.fonts).map(function(face){return face.family;});});
-  assert.deepEqual(addedFonts.filter(family=>remainingFonts.includes(family)),[],'Closing PDF must remove only its actual registered font faces');
-  await writeFile(resolve(output,'result.json'),JSON.stringify({schema_version:1,diagnostic_only:true,candidate_qualified:false,evidence_class:'production_browser_synthetic_native_boundary',source:process.env.SOURCE_REF||null,browser:version,fixture_sha256:createHash('sha256').update(fixture).digest('hex'),facts,errors,consoleMessages,requests,second_page:true,display_resources:{baseline_fonts:baselineFonts,pdf_fonts:addedFonts,remaining_pdf_fonts:addedFonts.filter(family=>remainingFonts.includes(family))}},null,2)+'\n');
-  assert.deepEqual(errors,[]);console.log('PDF production browser read/navigation passed: '+version);
-}catch(error){
-  await writeFile(resolve(output,'failure.json'),JSON.stringify({version,error:String(error),errors,consoleMessages,requests,worker_events:page?await page.evaluate(function(){return window.__pdfWorkerEvents||[];}).catch(()=>[]):[],source_reads:page?await page.evaluate(function(){return window.__pdfReads||[];}).catch(()=>[]):[],body:page?await page.$eval('body',node=>node.innerText).catch(()=>null):null},null,2)+'\n');
-  if(page)await page.screenshot({path:resolve(output,'failure.png')}).catch(()=>undefined);
+  const baselineFonts = await page.evaluate(function () {
+    return Array.from(document.fonts).map(function (face) {
+      return face.family;
+    });
+  });
+  await page.waitForSelector('.add-document-trigger');
+  await page.click('.add-document-trigger');
+  await page.evaluate(function () {
+    var button = Array.from(
+      document.querySelectorAll('.add-document-menu button'),
+    ).find(function (node) {
+      return /Open/.test(node.textContent);
+    });
+    if (!button) throw new Error('Open picker action missing');
+    button.click();
+  });
+  try {
+    await page.waitForFunction(
+      "document.querySelector('[data-pdf-ready=true][data-pdf-worker=true]')",
+      { timeout: 60000 },
+    );
+  } catch (error) {
+    await writeFile(
+      resolve(output, 'failure.json'),
+      JSON.stringify(
+        {
+          version,
+          errors,
+          consoleMessages,
+          body: await page.$eval('body', (node) => node.innerText),
+        },
+        null,
+        2,
+      ) + '\n',
+    );
+    await page.screenshot({ path: resolve(output, 'failure.png') });
+    throw error;
+  }
+  await page.waitForFunction(
+    "document.querySelector('.pdf-page[data-current=true] .pdf-text-layer') && document.querySelector('.pdf-page[data-current=true] .pdf-text-layer').textContent.includes('page 1')",
+    { timeout: 30000 },
+  );
+  const facts = await page.evaluate(function () {
+    var canvas = document.querySelector('.pdf-page[data-current=true] canvas');
+    var pixels = canvas
+      .getContext('2d')
+      .getImageData(0, 0, canvas.width, canvas.height).data;
+    var ink = 0;
+    for (var i = 0; i < pixels.length; i += 4)
+      if (pixels[i] < 200 && pixels[i + 1] < 200 && pixels[i + 2] < 200) ink++;
+    var text = document.querySelector(
+      '.pdf-page[data-current=true] .pdf-text-layer',
+    );
+    var content = text.textContent;
+    var selection = window.getSelection();
+    selection.selectAllChildren(text);
+    var selected = selection.toString();
+    selection.removeAllRanges();
+    return {
+      width: canvas.width,
+      height: canvas.height,
+      ink: ink,
+      text: content,
+      selected: selected,
+      reads: window.__pdfReads,
+      forbidden: window.__pdfForbiddenCalls,
+      executed: window.__s049PdfExecuted === true,
+      engine: document
+        .querySelector('.pdf-layout')
+        .getAttribute('data-pdf-engine'),
+      frames: document.querySelectorAll('[data-bb-app-frame]').length,
+    };
+  });
+  assert.ok(facts.ink > 500, 'Actual canvas needs representative text ink');
+  assert.match(facts.text, /Glitchpad PDF compatibility page 1/);
+  assert.match(facts.selected, /Glitchpad PDF compatibility/);
+  assert.equal(facts.engine, '6.5.438');
+  assert.equal(facts.frames, 1);
+  assert.equal(facts.executed, false);
+  assert.deepEqual(facts.forbidden, []);
+  assert.ok(
+    facts.reads.reduce((sum, r) => sum + r.length, 0) < fixture.length,
+    'First content must not require whole-source reads',
+  );
+  assert.ok(!requests.some((url) => url.includes('example.invalid')));
+  await page.click('button[aria-label="Next page"]');
+  await page.waitForFunction(
+    "document.querySelector('[data-pdf-ready=true]') && document.querySelector('.pdf-page[data-current=true] .pdf-text-layer').textContent.includes('page 2')",
+    { timeout: 30000 },
+  );
+  await page.screenshot({ path: resolve(output, 'page.png') });
+  const pdfFonts = await page.evaluate(function () {
+    return Array.from(document.fonts).map(function (face) {
+      return face.family;
+    });
+  });
+  const addedFonts = pdfFonts.filter(
+    (family) => !baselineFonts.includes(family),
+  );
+  assert.ok(
+    addedFonts.length > 0,
+    'Representative font cleanup must exercise actual installed PDF font faces',
+  );
+  await page.click('.add-document-trigger');
+  await page.evaluate(function () {
+    var button = Array.from(
+      document.querySelectorAll('.add-document-menu button'),
+    ).find(function (node) {
+      return node.textContent.trim() === 'New text file';
+    });
+    if (!button) throw new Error('New text action missing');
+    button.click();
+  });
+  await page.waitForFunction(
+    "!document.querySelector('.pdf-layout')&&document.querySelector('.cm-editor')",
+    { timeout: 30000 },
+  );
+  const remainingFonts = await page.evaluate(function () {
+    return Array.from(document.fonts).map(function (face) {
+      return face.family;
+    });
+  });
+  assert.deepEqual(
+    addedFonts.filter((family) => remainingFonts.includes(family)),
+    [],
+    'Closing PDF must remove only its actual registered font faces',
+  );
+  await writeFile(
+    resolve(output, 'result.json'),
+    JSON.stringify(
+      {
+        schema_version: 1,
+        diagnostic_only: true,
+        candidate_qualified: false,
+        evidence_class: 'production_browser_synthetic_native_boundary',
+        source: process.env.SOURCE_REF || null,
+        browser: version,
+        fixture_sha256: createHash('sha256').update(fixture).digest('hex'),
+        facts,
+        errors,
+        consoleMessages,
+        requests,
+        second_page: true,
+        display_resources: {
+          baseline_fonts: baselineFonts,
+          pdf_fonts: addedFonts,
+          remaining_pdf_fonts: addedFonts.filter((family) =>
+            remainingFonts.includes(family),
+          ),
+        },
+      },
+      null,
+      2,
+    ) + '\n',
+  );
+  assert.deepEqual(errors, []);
+  console.log('PDF production browser read/navigation passed: ' + version);
+} catch (error) {
+  await writeFile(
+    resolve(output, 'failure.json'),
+    JSON.stringify(
+      {
+        version,
+        error: String(error),
+        errors,
+        consoleMessages,
+        requests,
+        worker_events: page
+          ? await page
+              .evaluate(function () {
+                return window.__pdfWorkerEvents || [];
+              })
+              .catch(() => [])
+          : [],
+        source_reads: page
+          ? await page
+              .evaluate(function () {
+                return window.__pdfReads || [];
+              })
+              .catch(() => [])
+          : [],
+        body: page
+          ? await page.$eval('body', (node) => node.innerText).catch(() => null)
+          : null,
+      },
+      null,
+      2,
+    ) + '\n',
+  );
+  if (page)
+    await page
+      .screenshot({ path: resolve(output, 'failure.png') })
+      .catch(() => undefined);
   throw error;
-}finally{await browser.close();await new Promise(resolve=>server.close(resolve));}
+} finally {
+  await browser.close();
+  await new Promise((resolve) => server.close(resolve));
+}

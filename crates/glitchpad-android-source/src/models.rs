@@ -279,12 +279,18 @@ pub struct PdfPrintRequest {
     pub operation: String,
     pub request_id: String,
     pub owner: String,
-    #[serde(default)] pub page_count: u32,
-    #[serde(default)] pub page_index: u32,
-    #[serde(default)] pub width: f64,
-    #[serde(default)] pub height: f64,
-    #[serde(default)] pub bytes: Vec<u8>,
-    #[serde(default)] pub sha256: String,
+    #[serde(default)]
+    pub page_count: u32,
+    #[serde(default)]
+    pub page_index: u32,
+    #[serde(default)]
+    pub width: f64,
+    #[serde(default)]
+    pub height: f64,
+    #[serde(default)]
+    pub bytes: Vec<u8>,
+    #[serde(default)]
+    pub sha256: String,
 }
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct PdfPrintResponse {

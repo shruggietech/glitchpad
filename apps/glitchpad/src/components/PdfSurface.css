@@ -1,29 +1,174 @@
-.pdf-layout { display:flex;flex-direction:column;width:100%;height:100%;min-height:0;min-width:0; }
-.pdf-controls { display:flex;align-items:center;flex:0 0 auto;gap:4px;padding:4px;background:var(--gl-panel);color:var(--gl-fg);border-bottom:1px solid var(--gl-border); }
-.pdf-controls .bb-control,.pdf-tools .bb-control,.pdf-tools .bb-field__control { min-width:48px;min-height:48px; }
-.pdf-controls output { flex:1 1 auto;text-align:center;overflow-wrap:anywhere; }
-.pdf-pane { flex:1 1 auto;overflow:auto;min-height:0;min-width:0;padding:8px; }
-.pdf-virtual-pages { position:relative;min-width:100%; }
-.pdf-page { position:absolute;width:max-content;left:50%;transform:translateX(-50%); }
-.pdf-page canvas { display:block;max-width:none; }
-.pdf-text-layer { position:absolute;inset:0;overflow:hidden;text-align:initial;line-height:1;letter-spacing:normal;word-spacing:normal;transform-origin:0 0;-webkit-text-size-adjust:none;--min-font-size:1;--text-scale-factor:calc(var(--total-scale-factor) * var(--min-font-size));--min-font-size-inv:calc(1 / var(--min-font-size)); }
-.pdf-text-layer span,.pdf-text-layer br { color:transparent;position:absolute;white-space:pre;cursor:text;transform-origin:0 0;-webkit-user-select:text;user-select:text; }
-.pdf-text-layer > :not(.markedContent),.pdf-text-layer .markedContent span:not(.markedContent) { --font-height:0;font-size:calc(var(--text-scale-factor) * var(--font-height));--scale-x:1;--rotate:0deg;transform:rotate(var(--rotate)) scaleX(var(--scale-x)) scale(var(--min-font-size-inv)); }
-.pdf-text-layer .markedContent { display:contents; }
-.pdf-text-layer ::selection { background:var(--bb-action-primary);color:transparent; }
-.pdf-status { flex:0 0 auto;padding:4px 8px;margin:0;overflow-wrap:anywhere; }
-.pdf-tools form { display:flex;flex-direction:column;gap:8px; }
+.pdf-layout {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+}
+.pdf-controls {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 4px;
+  padding: 4px;
+  background: var(--gl-panel);
+  color: var(--gl-fg);
+  border-bottom: 1px solid var(--gl-border);
+}
+.pdf-controls .bb-control,
+.pdf-tools .bb-control,
+.pdf-tools .bb-field__control {
+  min-width: 48px;
+  min-height: 48px;
+}
+.pdf-controls output {
+  flex: 1 1 auto;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.pdf-pane {
+  flex: 1 1 auto;
+  overflow: auto;
+  min-height: 0;
+  min-width: 0;
+  padding: 8px;
+}
+.pdf-virtual-pages {
+  position: relative;
+  min-width: 100%;
+}
+.pdf-page {
+  position: absolute;
+  width: max-content;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.pdf-page canvas {
+  display: block;
+  max-width: none;
+}
+.pdf-text-layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  text-align: initial;
+  line-height: 1;
+  letter-spacing: normal;
+  word-spacing: normal;
+  transform-origin: 0 0;
+  -webkit-text-size-adjust: none;
+  --min-font-size: 1;
+  --text-scale-factor: calc(var(--total-scale-factor) * var(--min-font-size));
+  --min-font-size-inv: calc(1 / var(--min-font-size));
+}
+.pdf-text-layer span,
+.pdf-text-layer br {
+  color: transparent;
+  position: absolute;
+  white-space: pre;
+  cursor: text;
+  transform-origin: 0 0;
+  -webkit-user-select: text;
+  user-select: text;
+}
+.pdf-text-layer > :not(.markedContent),
+.pdf-text-layer .markedContent span:not(.markedContent) {
+  --font-height: 0;
+  font-size: calc(var(--text-scale-factor) * var(--font-height));
+  --scale-x: 1;
+  --rotate: 0deg;
+  transform: rotate(var(--rotate)) scaleX(var(--scale-x))
+    scale(var(--min-font-size-inv));
+}
+.pdf-text-layer .markedContent {
+  display: contents;
+}
+.pdf-text-layer ::selection {
+  background: var(--bb-action-primary);
+  color: transparent;
+}
+.pdf-status {
+  flex: 0 0 auto;
+  padding: 4px 8px;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.pdf-tools form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 
-.pdf-controls [aria-label="Go to page"] { flex:1 1 auto;min-width:0; }
-.pdf-tool-actions { display:flex;flex-wrap:wrap;gap:8px; }
-.pdf-page-error { max-width:80vw;padding:8px;color:var(--gl-fg);background:var(--gl-panel); }
-.pdf-tools .bb-field { margin-block:8px; }
+.pdf-controls [aria-label='Go to page'] {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.pdf-tool-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pdf-page-error {
+  max-width: 80vw;
+  padding: 8px;
+  color: var(--gl-fg);
+  background: var(--gl-panel);
+}
+.pdf-tools .bb-field {
+  margin-block: 8px;
+}
 
-.pdf-task-list { padding:0;list-style:none; }
-.pdf-task-list .bb-control { width:100%;height:auto;white-space:normal;text-align:start;justify-content:start;overflow-wrap:anywhere; }
-.pdf-thumbnails { display:flex;flex-wrap:wrap;gap:8px; }
-.pdf-thumbnail { display:flex;flex-direction:column;gap:4px; }
-.pdf-link-target { overflow-wrap:anywhere;user-select:text; }
+.pdf-task-list {
+  padding: 0;
+  list-style: none;
+}
+.pdf-task-list .bb-control {
+  width: 100%;
+  height: auto;
+  white-space: normal;
+  text-align: start;
+  justify-content: start;
+  overflow-wrap: anywhere;
+}
+.pdf-thumbnails {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pdf-thumbnail {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.pdf-link-target {
+  overflow-wrap: anywhere;
+  user-select: text;
+}
 
-.pdf-print-document { display:none; }
-@media print { body > * { display:none !important; } body > .pdf-print-document { display:block !important; } .pdf-print-document img { display:block;break-after:page;page-break-after:always;max-width:100%;max-height:100vh;object-fit:contain;margin:auto; } .pdf-print-document img:last-child { break-after:auto;page-break-after:auto; } }
+.pdf-print-document {
+  display: none;
+}
+@media print {
+  body > * {
+    display: none !important;
+  }
+  body > .pdf-print-document {
+    display: block !important;
+  }
+  .pdf-print-document img {
+    display: block;
+    break-after: page;
+    page-break-after: always;
+    max-width: 100%;
+    max-height: 100vh;
+    object-fit: contain;
+    margin: auto;
+  }
+  .pdf-print-document img:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+}
+
+.pdf-thumbnail .bb-control { display:flex;flex-direction:column;gap:4px;height:auto; }

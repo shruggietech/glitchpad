@@ -3,7 +3,7 @@
 Every issue remains open until its included criteria are satisfied and the owner merges. This table names required evidence; it is not a passing result. Current observations and artifact identities belong in validation.md.
 
 | Issue criterion | Story | Required behavior | Verification |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | #77.1 | US1/US4 | Versioned renderer contracts | Contract tests and unchanged source/session/metadata regression |
 | #77.2 | US1/US3 | No worker native/network authority | Production-worker CSP/bridge probes on actual WebViews |
 | #77.3 | US1/US3 | Capability-driven controls | Controller/UI capability matrix tests |

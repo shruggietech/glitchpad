@@ -86,7 +86,9 @@ pub enum FormatCandidate {
     Markdown,
     Mermaid,
     PlainText,
-    SourceCode { language: String },
+    SourceCode {
+        language: String,
+    },
     /// Unreleased PDF worker candidate; stable activation remains a separate release gate.
     Pdf,
     Binary,
@@ -726,7 +728,10 @@ mod tests {
         assert_eq!(pdf.confidence, Some(DetectionConfidence::High));
         assert!(pdf.text_profile.is_none());
         assert!(pdf.truncated);
-        assert_ne!(detected("fake.pdf", b"ordinary text", None).candidate, Some(FormatCandidate::Pdf));
+        assert_ne!(
+            detected("fake.pdf", b"ordinary text", None).candidate,
+            Some(FormatCandidate::Pdf)
+        );
     }
 
     #[test]

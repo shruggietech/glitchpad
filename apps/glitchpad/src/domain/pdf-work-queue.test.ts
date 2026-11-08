@@ -1,8 +1,30 @@
 import { expect, it } from 'vitest';
 import { PdfWorkQueue } from './pdf-work-queue';
-it('bounds active work, cancels queued work and ignores late releases from a cancelled runtime',async()=>{
-  const queue=new PdfWorkQueue(2);const abort=new AbortController();const a=await queue.acquire([]);const b=await queue.acquire([]);const waiting=queue.acquire([abort.signal]);expect(queue.counts()).toEqual({active:2,queued:1});abort.abort();await expect(waiting).rejects.toThrow('cancelled');queue.cancelledRuntime();expect(queue.counts()).toEqual({active:0,queued:0});const current=await queue.acquire([]);a();b();expect(queue.counts().active).toBe(1);current();expect(queue.counts().active).toBe(0);
+it('bounds active work, cancels queued work and ignores late releases from a cancelled runtime', async () => {
+  const queue = new PdfWorkQueue(2);
+  const abort = new AbortController();
+  const a = await queue.acquire([]);
+  const b = await queue.acquire([]);
+  const waiting = queue.acquire([abort.signal]);
+  expect(queue.counts()).toEqual({ active: 2, queued: 1 });
+  abort.abort();
+  await expect(waiting).rejects.toThrow('cancelled');
+  queue.cancelledRuntime();
+  expect(queue.counts()).toEqual({ active: 0, queued: 0 });
+  const current = await queue.acquire([]);
+  a();
+  b();
+  expect(queue.counts().active).toBe(1);
+  current();
+  expect(queue.counts().active).toBe(0);
 });
-it('admits the next real operation only after a running slot releases',async()=>{
-  const queue=new PdfWorkQueue(1,1);const first=await queue.acquire([]);const pending=queue.acquire([]);await expect(queue.acquire([])).rejects.toThrow('surface_limit');first();const next=await pending;expect(queue.counts()).toEqual({active:1,queued:0});next();
+it('admits the next real operation only after a running slot releases', async () => {
+  const queue = new PdfWorkQueue(1, 1);
+  const first = await queue.acquire([]);
+  const pending = queue.acquire([]);
+  await expect(queue.acquire([])).rejects.toThrow('surface_limit');
+  first();
+  const next = await pending;
+  expect(queue.counts()).toEqual({ active: 1, queued: 0 });
+  next();
 });

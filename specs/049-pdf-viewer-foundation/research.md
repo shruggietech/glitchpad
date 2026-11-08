@@ -24,7 +24,7 @@ Decision: create the same configured main WebView once after host state setup, w
 
 ## R6. Source handles, ranges and stream-only providers
 
-Decision: recognize %PDF- before current whole-text materializers in desktop and Android gateways. Keep source identity/revision in the parent/native adapter; the PDF worker receives only document-owned bytes/length. Use bounded ranges for seekable sources. Add a PDF-specific native private disk spool for nonseekable Android providers with source-size/quota/revision/cancellation cleanup. Such a source may need its tail/index before rendering; report bounded spool progress instead of promising first-page content before required bytes arrive. Do not retain an entire large source in JavaScript memory. Existing picker */* can acquire a PDF without changing stable associations/intents.
+Decision: recognize %PDF- before current whole-text materializers in desktop and Android gateways. Keep source identity/revision in the parent/native adapter; the PDF worker receives only document-owned bytes/length. Use bounded ranges for seekable sources. Add a PDF-specific native private disk spool for nonseekable Android providers with source-size/quota/revision/cancellation cleanup. Such a source may need its tail/index before rendering; report bounded spool progress instead of promising first-page content before required bytes arrive. Do not retain an entire large source in JavaScript memory. Existing picker _/_ can acquire a PDF without changing stable associations/intents.
 
 ## R7. Lifecycle and actual resource disposal
 

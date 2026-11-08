@@ -32,8 +32,13 @@ impl<R: Runtime> AndroidSource<R> {
     ///
     /// # Errors
     /// Returns a bridge failure when validation or the platform print service fails.
-    pub fn pdf_print(&self, request: crate::models::PdfPrintRequest) -> Result<crate::models::PdfPrintResponse, String> {
-        self.0.run_mobile_plugin("pdfPrint", request).map_err(|error| error.to_string())
+    pub fn pdf_print(
+        &self,
+        request: crate::models::PdfPrintRequest,
+    ) -> Result<crate::models::PdfPrintResponse, String> {
+        self.0
+            .run_mobile_plugin("pdfPrint", request)
+            .map_err(|error| error.to_string())
     }
 
     /// Opens the bounded native PNG export flow.

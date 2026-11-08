@@ -6,6 +6,7 @@ import {
   identifyPdfSource,
 } from './pdf-source-gateway';
 import { MemoryLargeTextGateway } from './large-text-gateway';
+import { projectSessionState } from './persistence';
 
 const identity = {
   authority: 'synthetic' as const,
@@ -48,6 +49,15 @@ const valid = () => ({
 });
 
 describe('PDF source authority and ownership', () => {
+  it('keeps PDF navigation, extracted content and password state out of persisted session projections', () => {
+    const pdf = session();
+    pdf.source.restoration_reference = 'opaque-restore-key';
+    pdf.pdf_document!.navigation = { ...pdf.pdf_document!.navigation, page: 3, zoom: 2.5, rotation: 90 };
+    const persisted = projectSessionState([pdf], pdf.id, 'closed');
+    expect(persisted.sessions[0]).toMatchObject({ renderer_id: 'pdf', source_reference: 'opaque-restore-key' });
+    expect(JSON.stringify(persisted)).not.toMatch(/navigation|page_count|password|fixture-open|surface|pdf_document|zoom|rotation/);
+    expect(pdf.content).toBe('');
+  });
   it('requires content identification and rejects malformed native replies', async () => {
     await expect(
       identifyPdfSource(vi.fn().mockResolvedValue(true), 'source', revision),

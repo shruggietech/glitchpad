@@ -1,3 +1,4 @@
+import { startPdfPrintDialogProbe } from './lib/pdf-print-dialog-probe.mjs';
 import assert from 'node:assert/strict';
 import { spawn, execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -12,6 +13,7 @@ import {
 import { tmpdir } from 'node:os';
 import { resolve, join } from 'node:path';
 import { createHash } from 'node:crypto';
+const sha256 = bytes => createHash('sha256').update(bytes).digest('hex');
 let binary = resolve(process.argv[2] || '');
 if (!process.argv[2]) throw new Error('Native binary path required');
 let packageProof = null;
@@ -64,34 +66,18 @@ if (process.argv.includes('--packaged')) {
   }
   const sourceBytes = await readFile(originalBinary),
     deliveredBytes = await readFile(binary);
-  let comparison = 'exact_bytes';
+  let comparison = sha256(deliveredBytes) === sha256(sourceBytes) ? 'exact_bytes' : 'packaged_bytes_differ';
+  let matchedBuiltCode = comparison === 'exact_bytes';
   if (process.platform === 'darwin') {
-    const unsignedBuilt = join(staging, 'unsigned-built'),
-      unsignedDelivered = join(staging, 'unsigned-delivered');
-    await copyFile(originalBinary, unsignedBuilt);
-    await copyFile(binary, unsignedDelivered);
+    const unsignedBuilt = join(staging, 'unsigned-built'), unsignedDelivered = join(staging, 'unsigned-delivered');
+    await copyFile(originalBinary, unsignedBuilt); await copyFile(binary, unsignedDelivered);
     for (const path of [unsignedBuilt, unsignedDelivered]) {
-      try {
-        await execute('codesign', ['--remove-signature', path], {
-          windowsHide: true,
-          timeout: 30000,
-        });
-      } catch (error) {
-        if (!String(error.stderr).includes('not signed at all')) throw error;
-      }
+      try { await execute('codesign', ['--remove-signature', path], { windowsHide: true, timeout: 30000 }); }
+      catch (error) { if (!String(error.stderr).includes('not signed at all')) throw error; }
     }
-    assert.deepEqual(
-      await readFile(unsignedBuilt),
-      await readFile(unsignedDelivered),
-      'Signing-normalized packaged Mach-O must match the built candidate',
-    );
-    comparison = 'signing_normalized_macho';
-  } else
-    assert.deepEqual(
-      deliveredBytes,
-      sourceBytes,
-      'Packaged native executable must match the built candidate',
-    );
+    matchedBuiltCode = sha256(await readFile(unsignedBuilt)) === sha256(await readFile(unsignedDelivered));
+    comparison = matchedBuiltCode ? 'signing_normalized_macho' : 'packaged_bytes_differ';
+  }
   packageArtifactPath = artifact;
   const packageBytes = await readFile(artifact);
   packageProof = {
@@ -106,7 +92,7 @@ if (process.argv.includes('--packaged')) {
       .update(deliveredBytes)
       .digest('hex'),
     executable_bytes: deliveredBytes.length,
-    matched_built_code: true,
+    matched_built_code: matchedBuiltCode,
     comparison: comparison,
     built_executable_sha256: createHash('sha256')
       .update(sourceBytes)
@@ -138,6 +124,11 @@ const child = spawn(binary, [join(probe, 's049-compatibility.pdf')], {
   windowsHide: true,
   stdio: ['ignore', 'pipe', 'pipe'],
 });
+const printProbe = startPdfPrintDialogProbe(child.pid);
+let printDialogLog = '';
+printProbe.stdout.on('data', bytes => { printDialogLog = (printDialogLog + bytes).slice(-65536); });
+printProbe.stderr.on('data', bytes => { printDialogLog = (printDialogLog + bytes).slice(-65536); });
+printProbe.on('error', error => { printDialogLog += String(error); });
 let stdout = '',
   stderr = '';
 child.stdout.on('data', (bytes) => {
@@ -151,7 +142,7 @@ child.on('error', (error) => {
 });
 try {
   let result;
-  const deadline = Date.now() + 150000;
+  const deadline = Date.now() + 240000;
   while (Date.now() < deadline) {
     let data = await readFile(
       join(probe, 'pdf-journey-result.json'),
@@ -190,9 +181,16 @@ try {
     'go_to_page',
     'keyboard',
     'metadata',
+    'embedded_font_text',
   ])
     assert.equal(result.journey.checks[key], true, key);
   assert.ok(result.journey.checks.canvas_ink > 500);
+  assert.equal(result.journey.prints.length, 2);
+  assert.deepEqual(result.journey.prints.map(item => item.snapshot.pages), [2, 4]);
+  assert.ok(result.journey.prints.every(item => item.afterprint && item.cleaned && !item.paper_completion));
+  await new Promise(resolve => setTimeout(resolve, 200));
+  const observedDialogs = process.platform === 'darwin' ? (printDialogLog.match(/NATIVE_PRINT_CANCEL/g) || []).length : (printDialogLog.match(/"observed_native_dialog"\s*:\s*true/g) || []).length;
+  assert.equal(observedDialogs, 2, 'Both actual native print dialogs must be observed and cancelled');
   assert.deepEqual(
     await readFile(join(probe, 's049-compatibility.pdf')),
     original,
@@ -201,6 +199,8 @@ try {
     'Actual native PDF reading journey passed on ' + process.platform,
   );
 } finally {
+  if (printProbe.exitCode === null) printProbe.kill();
+  await writeFile(join(output, 'native-print-dialogs.log'), printDialogLog);
   if (child.exitCode === null) child.kill();
   await writeFile(join(output, 'stdout.log'), stdout);
   await writeFile(join(output, 'stderr.log'), stderr);

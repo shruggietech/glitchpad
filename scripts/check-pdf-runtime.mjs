@@ -83,7 +83,7 @@ try {
   version = await browser.version();
   if (legacy) assert.match(version, /69\.0\.3497\.0/);
   page = await browser.newPage();
-  await page.setViewport({ width: 480, height: 800 });
+  await page.setViewport({ width: 480, height: 800, hasTouch: true });
   await page.setUserAgent(
     'Mozilla/5.0 (Linux; Android 7.0) AppleWebKit/537.36 Chrome/69.0.3497.0 Mobile Safari/537.36',
   );
@@ -398,6 +398,40 @@ try {
   const readingJourney = await page.evaluate(function () {
     return window.runGlitchpadPdfReadingJourney();
   });
+  const inputFlows = [];
+  if (!legacy) await page.addScriptTag({ path: require.resolve('axe-core/axe.min.js') });
+  for (const mode of ['keyboard', 'touch']) {
+    const activate = async (name) => {
+      await page.waitForFunction(function (label) {
+        return Array.from(document.querySelectorAll('button')).some(function (node) { return !node.disabled && (node.getAttribute('aria-label') || node.textContent.trim()) === label && node.getBoundingClientRect().height > 0 && !node.closest('[aria-hidden=true],[inert]'); });
+      }, { timeout: 30000 }, name);
+      const box = await page.evaluate(function (label) {
+        var node = Array.from(document.querySelectorAll('button')).reverse().find(function (item) { return !item.disabled && (item.getAttribute('aria-label') || item.textContent.trim()) === label && item.getBoundingClientRect().height > 0 && !item.closest('[aria-hidden=true],[inert]'); });
+        node.scrollIntoView({ block: 'nearest' }); node.focus();
+        var rect = node.getBoundingClientRect(); return { x: (rect.left + rect.right) / 2, y: (rect.top + rect.bottom) / 2, width: rect.width, height: rect.height };
+      }, name);
+      if (mode === 'keyboard') await page.keyboard.press('Enter');
+      else { assert.ok(box.width >= 48 && box.height >= 48, name + ' touch target'); await page.touchscreen.tap(box.x, box.y); }
+    };
+    const fill = async (selector, value) => { await page.waitForSelector(selector); await page.focus(selector); await page.keyboard.down('Control'); await page.keyboard.press('A'); await page.keyboard.up('Control'); await page.type(selector, value); };
+    const rendered = async (number) => page.waitForFunction(function (target) { var node = document.querySelector('.pdf-page[data-current=true]'); return node && Number(node.getAttribute('data-pdf-page')) === target && node.querySelector('.pdf-text-layer').textContent.includes('page ' + String(target + 1)); }, { timeout: 30000 }, number);
+    const semanticChecks = [];
+    const semantics = async (task) => {
+      if (legacy) return;
+      const result = await page.evaluate(async function () { var result = await window.axe.run({ include: [['.pdf-layout'], ['.task-surface']] }, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] } }); return result.violations.map(function (item) { return { id: item.id, nodes: item.nodes.map(function (node) { return node.target; }) }; }); });
+      assert.deepEqual(result, [], task + ' accessibility'); semanticChecks.push(task);
+    };
+    await activate('More PDF tools'); await activate('Outline'); await semantics('outline'); await activate('Second chapter'); await rendered(1);
+    await activate('Search'); await fill('#pdf-search', 'cats'); await activate('Search PDF');
+    await page.waitForFunction("document.body.innerText.includes('4 matches')", { timeout: 30000 }); await semantics('search');
+    await activate('Next match'); await activate('Close Search PDF'); await rendered(0);
+    await activate('Thumbnails'); await page.waitForFunction("document.querySelector('.pdf-thumbnail canvas').width>0", { timeout: 30000 }); await semantics('thumbnails'); await activate('Go to page 2'); await rendered(1);
+    await activate('Close PDF tools'); await activate('Go to page'); await fill('#pdf-page-number', '4'); await semantics('go_to_page'); await activate('Go to page'); await rendered(3);
+    const focusRestored = await page.evaluate(function () { return document.activeElement.getAttribute('aria-label') === 'Go to page'; }); assert.ok(focusRestored, mode + ' page dialog restores focus');
+    await activate('More PDF tools'); await activate('Page links'); await semantics('internal_link'); await activate('Link 1'); await rendered(1); await activate('Close PDF tools');
+    await page.focus('.pdf-pane'); await page.keyboard.press('Home'); await rendered(0);
+    inputFlows.push({ mode, search: true, outline: true, thumbnail: true, go_to_page: true, internal_link: true, focus_restored: focusRestored, semantic_checks: semanticChecks, manual_screen_reader: 'owner_waiver_retained' });
+  }
   const actualWorker = page
     .workers()
     .find((worker) => worker.url().includes('pdf-worker-'));
@@ -625,7 +659,7 @@ try {
     ...responsiveness,
   });
   await closeCase();
-  await page.setViewport({ width: 480, height: 800 });
+  await page.setViewport({ width: 480, height: 800, hasTouch: true });
   await writeFile(
     resolve(output, 'result.json'),
     JSON.stringify(
@@ -643,6 +677,7 @@ try {
         requests,
         second_page: true,
         reading_journey: readingJourney,
+        input_flows: inputFlows,
         state_limit_corpus: corpus,
         worker_authority: workerAuthority,
         display_resources: {

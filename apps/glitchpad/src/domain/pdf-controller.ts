@@ -674,7 +674,7 @@ export class PdfController {
       scale,
       rotation: (page.rotate + rotation) % 360,
     });
-    const bounds = page.view as number[];
+    const bounds = page.view;
     const point = viewport.convertToViewportPoint(
       target.x ?? bounds[0],
       target.y ?? bounds[3],

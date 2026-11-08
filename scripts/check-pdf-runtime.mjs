@@ -156,6 +156,13 @@ try {
         restorable: false,
       },
     };
+    var fixtureSequence=0;
+    window.__setPdfFixture=function(base64,name,declaredLength){
+      bytes=Uint8Array.from(atob(base64),function(character){return character.charCodeAt(0);});fixtureSequence++;
+      identity={authority:'synthetic',scope:'s049-browser',token:'pdf-fixture-'+fixtureSequence,strength:'strong'};
+      revision={identity:identity,byte_length:declaredLength===undefined?bytes.length:declaredLength,modified_unix_nanos:'1',change_token:null};
+      summary=JSON.parse(JSON.stringify(summary));summary.source_id=identity.token;summary.descriptor.identity=identity;summary.descriptor.display_name=name;summary.descriptor.byte_length=revision.byte_length;summary.external_revision=revision;
+    };
     window.__pdfReads = [];
     window.__pdfForbiddenCalls = [];
     window.__pdfWorkerEvents = [];
@@ -218,14 +225,14 @@ try {
       if (command === 'identify_pdf_source') return true;
       if (command === 'revalidate_android_source')
         return {
-          source_id: 'pdf-fixture',
+          source_id: summary.source_id,
           expected: revision,
           current: revision,
           status: 'match',
         };
       if (command === 'read_android_range') {
         if (
-          args.sourceId !== 'pdf-fixture' ||
+          args.sourceId !== summary.source_id ||
           args.length > 262144 ||
           args.offset < 0 ||
           args.offset + args.length > bytes.length
@@ -238,7 +245,7 @@ try {
         return args.binary
           ? [args.offset + args.length >= bytes.length ? 1 : 0].concat(chunk)
           : {
-              source_id: 'pdf-fixture',
+              source_id: summary.source_id,
               offset: args.offset,
               bytes: chunk,
               end_of_source: args.offset + args.length >= bytes.length,
@@ -394,6 +401,20 @@ try {
     [],
     'Closing PDF must remove only its actual registered font faces',
   );
+  const corpus=[];
+  const openCase=async(name,declaredLength)=>{
+    await page.evaluate(function(base64,name,length){window.__setPdfFixture(base64,name,length);},(await readFile(resolve(root,'fixtures/pdf/'+name))).toString('base64'),name,declaredLength);
+    await page.click('.add-document-trigger');await page.evaluate(function(){var open=Array.from(document.querySelectorAll('.add-document-menu button')).find(function(node){return /Open/.test(node.textContent);});if(!open)throw new Error('Open action missing');open.click();});
+  };
+  const closeCase=async()=>{await page.click('.add-document-trigger');await page.evaluate(function(){Array.from(document.querySelectorAll('.add-document-menu button')).find(function(node){return node.textContent.trim()==='New text file';}).click();});await page.waitForFunction("!document.querySelector('.pdf-layout')",{timeout:30000});};
+  for(const [name,error] of [['s049-malformed.pdf','malformed'],['s049-page-limit.pdf','page_limit'],['s049-unsupported-encryption.pdf','unsupported_encryption']]){
+    await openCase(name);await page.waitForFunction(function(code){var root=document.querySelector('[data-pdf-state=failed]');return root&&root.innerText.includes(code);},{timeout:30000},error);corpus.push({name:name,outcome:error});await closeCase();
+  }
+  await openCase('s049-small.pdf',268435457);await page.waitForFunction("document.querySelector('[data-pdf-state=failed]').innerText.includes('source_limit')",{timeout:30000});corpus.push({name:'android_source_above_256MiB',outcome:'source_limit'});await closeCase();
+  await openCase('s049-encrypted.pdf');await page.waitForSelector('#pdf-password');await page.type('#pdf-password','wrong');await page.evaluate(function(){document.getElementById('pdf-password').form.requestSubmit?document.getElementById('pdf-password').form.requestSubmit():document.getElementById('pdf-password').form.querySelector('button[type=submit]').click();});
+  await page.waitForFunction("document.body.innerText.includes('The password was not accepted.')",{timeout:30000});await page.evaluate(function(){document.getElementById('pdf-password').value='';});await page.type('#pdf-password','fixture-open');await page.evaluate(function(){document.getElementById('pdf-password').form.querySelector('button[type=submit]').click();});await page.waitForSelector('[data-pdf-ready=true]');corpus.push({name:'s049-encrypted.pdf',outcome:'wrong_password_then_decrypted'});await closeCase();
+  await openCase('s049-large.pdf');await page.waitForSelector('[data-pdf-ready=true]');await page.setViewport({width:3600,height:1800});await page.waitForFunction("document.querySelector('.pdf-layout').innerText.includes('Reduced cache; thumbnails paused.')",{timeout:30000});
+  const responsiveness=await page.evaluate(async function(){var samples=[];var prior=performance.now();for(var index=0;index<30;index++){await new Promise(requestAnimationFrame);var now=performance.now();samples.push(now-prior);prior=now;}samples.sort(function(a,b){return a-b;});return{raf_p95_ms:samples[Math.ceil(samples.length*0.95)-1],surfaces:Number(document.querySelector('.pdf-layout').getAttribute('data-pdf-surfaces')),reduced:document.querySelector('.pdf-layout').innerText.includes('Reduced cache; thumbnails paused.')};});assert.ok(responsiveness.reduced);assert.ok(responsiveness.surfaces<=16);assert.ok(responsiveness.raf_p95_ms<250,'Reduced-cache UI frame response must remain under 250ms');corpus.push({name:'s049-large.pdf',outcome:'reduced_cache',...responsiveness});await closeCase();await page.setViewport({width:480,height:800});
   await writeFile(
     resolve(output, 'result.json'),
     JSON.stringify(
@@ -411,6 +432,7 @@ try {
         requests,
         second_page: true,
       reading_journey: readingJourney,
+      state_limit_corpus: corpus,
       worker_authority: workerAuthority,
         display_resources: {
           baseline_fonts: baselineFonts,

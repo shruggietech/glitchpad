@@ -240,4 +240,16 @@ describe('stream-only PDF source preparation', () => {
       call.mock.calls.filter(([name]) => name === 'cancel_pdf_cache'),
     ).toHaveLength(1);
   });
+  it('waits for the previous native cache close before admitting the next source lease',async()=>{
+    const pdf=session();pdf.source.kind='document_uri';pdf.source.capabilities.seek=false;
+    let completeClose!:()=>void;let beginCount=0;let closeCount=0;
+    const call=vi.fn((command:string,args?:Record<string,unknown>)=>{
+      if(command==='begin_pdf_cache'){beginCount++;return Promise.resolve({request_id:args?.requestId,source_id:'source',state:'ready',processed_bytes:16,sha256:'a'.repeat(64)});}
+      if(command==='cancel_pdf_cache'){closeCount++;return closeCount===1?new Promise<void>(resolve=>{completeClose=resolve;}):Promise.resolve();}
+      throw new Error('Unexpected cache transition');
+    });
+    const first=await createPdfSourceLease(pdf,call);const closed=first.close();const second=createPdfSourceLease(pdf,call);
+    await Promise.resolve();expect(beginCount).toBe(1);completeClose();await closed;const next=await second;expect(beginCount).toBe(2);await next.close();
+  });
+
 });

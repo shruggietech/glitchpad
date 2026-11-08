@@ -1,13 +1,18 @@
-import { mkdir, writeFile, copyFile } from 'node:fs/promises';
+import { mkdir, writeFile, copyFile, readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
 import { createHash } from 'node:crypto';
+import {execFile} from 'node:child_process';
+import {promisify} from 'node:util';
 
-/** Original Apache-2.0 fixture. No third-party document content or fonts. */
+/** Original document content; optional embedded Courier Prime retains its OFL-1.1 license. */
 export function createPdfFixture({
   pages = 4,
   padding = 1024 * 1024,
   hostile = true,
+  font = null,
+  jpeg = null,
+  unsupportedEncryption = false,
 } = {}) {
   const objects = [];
   const add = (value) => {
@@ -15,12 +20,7 @@ export function createPdfFixture({
     return objects.length;
   };
   const ref = (id) => String(id) + ' 0 R';
-  const stream = (text) =>
-    '<< /Length ' +
-    Buffer.byteLength(text, 'ascii') +
-    ' >>\nstream\n' +
-    text +
-    '\nendstream';
+  const stream = (input, dictionary='') => { const data=Buffer.isBuffer(input)?input:Buffer.from(input,'ascii');return Buffer.concat([Buffer.from('<< /Length '+data.length+' '+dictionary+' >>\nstream\n','ascii'),data,Buffer.from('\nendstream','ascii')]); };
   const catalog = add('');
   const tree = add('');
   const regular = add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
@@ -40,13 +40,16 @@ export function createPdfFixture({
   const action = add(
     '<< /S /JavaScript /JS (globalThis.__s049PdfExecuted = true;) >>',
   );
+  let embedded=null;
+  if(font){const file=add(stream(font));const descriptor=add('<< /Type /FontDescriptor /FontName /CourierPrime-Regular /Flags 33 /FontBBox [-200 -300 1300 1000] /ItalicAngle 0 /Ascent 800 /Descent -200 /CapHeight 700 /StemV 80 /FontFile2 '+ref(file)+' >>');embedded=add('<< /Type /Font /Subtype /TrueType /BaseFont /CourierPrime-Regular /Encoding /WinAnsiEncoding /FirstChar 32 /LastChar 126 /Widths ['+Array(95).fill(600).join(' ')+'] /FontDescriptor '+ref(descriptor)+' >>');}
+  const image=jpeg?add(stream(jpeg,'/Type /XObject /Subtype /Image /Width 4 /Height 3 /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode')):null;
   const pagesIds = [];
   for (let index = 0; index < pages; index++) {
     const content = add(
       stream(
         'BT /F1 18 Tf 48 720 Td (Glitchpad PDF compatibility page ' +
           (index + 1) +
-          ') Tj 0 -32 Td /F2 14 Tf (Search cats and dogs. Local document only.) Tj 0 -28 Td /F3 14 Tf (Readable italic text.) Tj 0 -28 Td /F4 14 Tf (abc) Tj ET',
+          ') Tj 0 -32 Td /F2 14 Tf (Search cats and dogs. Local document only.) Tj 0 -28 Td /F3 14 Tf (Readable italic text.) Tj 0 -28 Td /F4 14 Tf (abc) Tj'+(embedded?' 0 -28 Td /F5 14 Tf (Embedded Courier Prime text.) Tj':'')+' ET'+(image?' q 140 0 0 105 360 460 cm /Image1 Do Q':''),
       ),
     );
     const link = add(
@@ -70,7 +73,7 @@ export function createPdfFixture({
           ref(italic) +
           ' /F4 ' +
           ref(symbol) +
-          ' >> >> /Contents ' +
+          (embedded?' /F5 '+ref(embedded):'')+' >>'+(image?' /XObject << /Image1 '+ref(image)+' >>':'')+' >> /Contents ' +
           ref(content) +
           ' /Annots [' +
           ref(link) +
@@ -112,6 +115,7 @@ export function createPdfFixture({
     '<< /Names [(chapter-two) [' +
     ref(pagesIds[Math.min(1, pagesIds.length - 1)]) +
     ' /XYZ null null null]] >>';
+  const encryption=unsupportedEncryption?add('<< /Filter /UnsupportedS049SecurityHandler /V 9 /R 99 /Length 256 >>'):null;
   if (padding) add(stream(' '.repeat(padding)));
   const parts = [
     Buffer.from('%PDF-1.7\n% Original Glitchpad fixture\n', 'ascii'),
@@ -120,10 +124,7 @@ export function createPdfFixture({
   let length = parts[0].length;
   for (let index = 0; index < objects.length; index++) {
     offsets.push(length);
-    const bytes = Buffer.from(
-      String(index + 1) + ' 0 obj\n' + objects[index] + '\nendobj\n',
-      'ascii',
-    );
+    const bytes = Buffer.concat([Buffer.from(String(index+1)+' 0 obj\n','ascii'),Buffer.isBuffer(objects[index])?objects[index]:Buffer.from(objects[index],'ascii'),Buffer.from('\nendobj\n','ascii')]);
     parts.push(bytes);
     length += bytes.length;
   }
@@ -142,7 +143,7 @@ export function createPdfFixture({
         ' /Root ' +
         ref(catalog) +
         ' /Info ' +
-        ref(info) +
+        ref(info) + (encryption?' /Encrypt '+ref(encryption)+' /ID [<00112233445566778899aabbccddeeff> <00112233445566778899aabbccddeeff>]':'')+
         ' >>\nstartxref\n' +
         xref +
         '\n%%EOF\n',
@@ -158,9 +159,15 @@ if (
 ) {
   const directory = new URL('../fixtures/pdf/', import.meta.url);
   await mkdir(directory, { recursive: true });
+  const font=await readFile(new URL('../brand/fonts/ttf/CourierPrime-Regular.ttf',import.meta.url));
+  const jpeg=await readFile(new URL('../fixtures/images/original.jpg',import.meta.url));
+  await copyFile(new URL('../brand/fonts/licenses/OFL-Courier-Prime.txt',import.meta.url),new URL('OFL-Courier-Prime.txt',directory));
   const files = {
-    's049-compatibility.pdf': createPdfFixture(),
-    's049-small.pdf': createPdfFixture({ padding: 0 }),
+    's049-compatibility.pdf': createPdfFixture({font,jpeg}),
+    's049-small.pdf': createPdfFixture({ padding: 0,font,jpeg }),
+    's049-large.pdf':createPdfFixture({pages:1000,padding:0,hostile:false}),
+    's049-page-limit.pdf':createPdfFixture({pages:10001,padding:0,hostile:false}),
+    's049-unsupported-encryption.pdf':createPdfFixture({pages:1,padding:0,unsupportedEncryption:true}),
     's049-malformed.pdf': Buffer.from('%PDF-1.7\ninvalid\n', 'ascii'),
   };
   await copyFile(new URL('pdf-reading-journey.js',import.meta.url),new URL('pdf-reading-journey.js',directory));
@@ -172,8 +179,13 @@ if (
       bytes: bytes.length,
       sha256: createHash('sha256').update(bytes).digest('hex'),
       author: 'Glitchpad contributors',
-      license: 'Apache-2.0',
+      license: name==='s049-compatibility.pdf'||name==='s049-small.pdf'?'Apache-2.0 AND OFL-1.1':'Apache-2.0',
     });
+  }
+  if(process.argv.includes('--extended')){
+    const encrypted=new URL('s049-encrypted.pdf',directory);
+    await promisify(execFile)('qpdf',['--static-id','--static-aes-iv','--encrypt','fixture-open','fixture-owner','128','--use-aes=y','--',fileURLToPath(new URL('s049-small.pdf',directory)),fileURLToPath(encrypted)],{windowsHide:true,timeout:30000});
+    const bytes=await readFile(encrypted);manifest.push({name:'s049-encrypted.pdf',bytes:bytes.length,sha256:createHash('sha256').update(bytes).digest('hex'),author:'Glitchpad contributors',license:'Apache-2.0 AND OFL-1.1',password:'fixture-open',generator:'qpdf static test encryption of original s049-small.pdf'});
   }
   await writeFile(
     new URL('pdf-fixtures.json', directory),

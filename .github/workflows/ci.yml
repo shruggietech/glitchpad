@@ -597,7 +597,8 @@ jobs:
           node-version-file: .node-version
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: node scripts/generate-pdf-fixtures.mjs
+      - run: sudo apt-get update && sudo apt-get install --yes qpdf
+      - run: node scripts/generate-pdf-fixtures.mjs --extended
       - run: node --test scripts/prepare-pdf-assets.test.mjs
       - run: pnpm --filter @shruggietech/glitchpad exec vitest run src/domain/pdf-
       - run: pnpm build

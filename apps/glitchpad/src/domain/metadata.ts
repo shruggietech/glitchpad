@@ -47,7 +47,7 @@ export interface MetadataCatalogEntry {
   value_kind: MetadataValueKind;
   sensitivity: MetadataSensitivity;
   copy_policy: MetadataCopyPolicy;
-  applies: 'all' | 'text' | 'markdown' | 'mermaid' | 'image';
+  applies: 'all' | 'text' | 'markdown' | 'mermaid' | 'image' | 'pdf';
 }
 
 export interface MetadataFact {
@@ -101,6 +101,29 @@ const entry = (
 });
 
 export const METADATA_CATALOG: readonly MetadataCatalogEntry[] = [
+  entry('pdf.version', 'content', 'PDF version', 'text', 'pdf'),
+  entry('pdf.pages', 'content', 'PDF pages', 'integer', 'pdf'),
+  entry('pdf.encrypted', 'content', 'Encrypted', 'boolean', 'pdf'),
+  entry('pdf.encryption_filter', 'content', 'Encryption filter', 'text', 'pdf'),
+  entry('pdf.permissions', 'embedded', 'Stored permission flags (informational)', 'text', 'pdf'),
+  entry('pdf.title', 'embedded', 'PDF title', 'text', 'pdf'),
+  entry('pdf.author', 'embedded', 'PDF author', 'text', 'pdf'),
+  entry('pdf.subject', 'embedded', 'PDF subject', 'text', 'pdf'),
+  entry('pdf.keywords', 'embedded', 'PDF keywords', 'text', 'pdf'),
+  entry('pdf.creator', 'embedded', 'Creating application', 'text', 'pdf'),
+  entry('pdf.producer', 'embedded', 'PDF producer', 'text', 'pdf'),
+  entry('pdf.created', 'embedded', 'PDF creation date (as stored)', 'text', 'pdf'),
+  entry('pdf.modified', 'embedded', 'PDF modification date (as stored)', 'text', 'pdf'),
+  entry('pdf.current_page_dimensions', 'renderer', 'Current page dimensions', 'text', 'pdf'),
+  entry('pdf.outline_entries', 'derived', 'Outline entries inspected', 'integer', 'pdf'),
+  entry('pdf.outline_limited', 'renderer', 'Outline inspection limited', 'boolean', 'pdf'),
+  entry('pdf.forms_present', 'content', 'AcroForm present', 'boolean', 'pdf'),
+  entry('pdf.xfa_present', 'content', 'XFA present', 'boolean', 'pdf'),
+  entry('pdf.signatures_present', 'content', 'Signatures present (not validated)', 'boolean', 'pdf'),
+  entry('pdf.collection_present', 'content', 'Portfolio present', 'boolean', 'pdf'),
+  entry('pdf.feature_policy', 'renderer', 'PDF feature policy', 'text', 'pdf'),
+  entry('pdf.display_policy', 'renderer', 'PDF display policy', 'text', 'pdf'),
+  entry('pdf.current_page_label', 'renderer', 'Current page label', 'text', 'pdf'),
   entry('image.camera_make', 'embedded', 'Camera make', 'text', 'image'),
   entry('image.camera_model', 'embedded', 'Camera model', 'text', 'image'),
   entry('image.software', 'embedded', 'Image software', 'text', 'image'),
@@ -320,6 +343,7 @@ export const projectSessionMetadata = (session: ShellSession): MetadataSnapshot 
 };
 
 const rendererStatus = (session: ShellSession): string =>
+  session.pdf_document?.state ??
   session.mermaid_document?.render_status ??
   session.markdown_document?.render_status ??
   session.lifecycle;

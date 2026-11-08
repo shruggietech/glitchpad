@@ -18,3 +18,9 @@
 .pdf-tool-actions { display:flex;flex-wrap:wrap;gap:8px; }
 .pdf-page-error { max-width:80vw;padding:8px;color:var(--gl-fg);background:var(--gl-panel); }
 .pdf-tools .bb-field { margin-block:8px; }
+
+.pdf-task-list { padding:0;list-style:none; }
+.pdf-task-list .bb-control { width:100%;height:auto;white-space:normal;text-align:start;justify-content:start;overflow-wrap:anywhere; }
+.pdf-thumbnails { display:flex;flex-wrap:wrap;gap:8px; }
+.pdf-thumbnail { display:flex;flex-direction:column;gap:4px; }
+.pdf-link-target { overflow-wrap:anywhere;user-select:text; }

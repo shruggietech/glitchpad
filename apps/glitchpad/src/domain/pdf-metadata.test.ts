@@ -1,0 +1,3 @@
+import { expect,it } from 'vitest';
+import { pdfMetadataFacts } from './pdf-metadata';
+it('keeps absent fields absent and bounds authored strings with renderer provenance inputs',()=>{const facts=pdfMetadataFacts({PDFFormatVersion:'1.7',Title:'x'.repeat(3000),EncryptFilterName:'Standard',IsAcroFormPresent:true},4,null,{width:612,height:792},{count:2,limited:false});expect(facts.find(value=>value.key==='pdf.title')?.value).toEqual({kind:'text',value:'x'.repeat(1024)});expect(facts.find(value=>value.key==='pdf.author')).toEqual({key:'pdf.author',availability:'not_provided'});expect(facts.find(value=>value.key==='pdf.encrypted')?.value).toEqual({kind:'boolean',value:true});expect(facts.some(value=>value.key.startsWith('host.'))).toBe(false);});

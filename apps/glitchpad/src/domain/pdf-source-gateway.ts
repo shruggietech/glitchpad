@@ -12,7 +12,7 @@ export async function identifyPdfSource(call: NativeInvoke, sourceId: string, re
 }
 export function createPdfSession(source: SourceDescriptor, sourceId: string, revision: ExternalRevision, prefix: string): ShellSession {
   const id = prefix + '-' + sourceId;
-  return { id, source, source_id: sourceId, external_revision: revision, renderer: { id:'pdf',label:'PDF',capabilities:{...noRendererCapabilities(),view:true,navigate:true,search:true,zoom:true,copy:true,inspect_metadata:true} }, lifecycle:'background',source_state:'available',saved_revision:1,dirty:false,revision:1,content:'',text_document:null,pdf_document:initialPdfState(id) };
+  return { id, source, source_id: sourceId, external_revision: revision, renderer: { id:'pdf',label:'PDF',capabilities:{...noRendererCapabilities(),inspect_metadata:true} }, lifecycle:'background',source_state:'available',saved_revision:1,dirty:false,revision:1,content:'',text_document:null,pdf_document:initialPdfState(id) };
 }
 export async function createPdfSourceLease(session: ShellSession, call: NativeInvoke = invoke, rangeGateway?: LargeTextGateway, options: PdfSourcePreparation = {}): Promise<PdfSourceLease> {
   const sourceId = session.source_id;

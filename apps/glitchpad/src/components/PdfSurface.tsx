@@ -8,11 +8,17 @@ import { continuousFits, measurePdfScrollCeiling, pageAtOffset, pageOffsets } fr
 import type { TextEditorHandle } from './TextEditorSurface';
 import { PdfPageCanvas, pdfViewKey, type PdfPageMetrics } from './PdfPageCanvas';
 import { TaskSurface } from './TaskSurface';
+import { PdfNavigationTools,type PdfNavigationHandle } from './PdfNavigationTools';
+import type { PdfSearchMatch } from '../domain/pdf-contract';
+import { rendererContribution,type MetadataContribution } from '../domain/metadata';
+import type { MarkdownExternalLinkGateway } from '../domain/markdown-gateway';
+import { writeClipboardText } from '../domain/clipboard-gateway';
 import './PdfSurface.css';
 
-interface Props {session:ShellSession;onPdfChange?:(id:string,expectedRevision:number,state:PdfDocumentState)=>void;onOpenMetadata?:(opener:HTMLElement)=>void;}
-export const PdfSurface=forwardRef<TextEditorHandle,Props>(function PdfSurface({session,onPdfChange,onOpenMetadata},handleRef){
-  const resume=useRef(session.pdf_document?.navigation);
+interface Props {externalLinkGateway?:MarkdownExternalLinkGateway;onMetadataContribution?:(value:MetadataContribution)=>void;session:ShellSession;onPdfChange?:(id:string,expectedRevision:number,state:PdfDocumentState)=>void;onOpenMetadata?:(opener:HTMLElement)=>void;}
+export const PdfSurface=forwardRef<TextEditorHandle,Props>(function PdfSurface({session,onPdfChange,onOpenMetadata,externalLinkGateway,onMetadataContribution},handleRef){
+  const resume=useRef(session.pdf_document?.navigation);resume.current=session.pdf_document?.navigation;
+  const navigationTools=useRef<PdfNavigationHandle>(null);const [labels,setLabels]=useState<string[]>([]);const [selectedMatch,setSelectedMatch]=useState<PdfSearchMatch|null>(null);
   const controller=useMemo(()=>new PdfController(session.id,resume.current),[session.id,session.revision]);
   const [state,setState]=useState(controller.state);const [visible,setVisible]=useState(document.visibilityState!=='hidden');
   const [failure,setFailure]=useState<string|null>(null);const [preparation,setPreparation]=useState<string|null>(null);const [password,setPassword]=useState('');const [retry,setRetry]=useState(0);
@@ -22,7 +28,7 @@ export const PdfSurface=forwardRef<TextEditorHandle,Props>(function PdfSurface({
   const [viewport,setViewport]=useState({width:640,height:480});const [scrollTop,setScrollTop]=useState(0);const scrollFrame=useRef<number|null>(null);
   const [maximumScroll,setMaximumScroll]=useState(8_000_000);
   const [metrics,setMetrics]=useState(new Map<number,{key:string;value:PdfPageMetrics}>());const [ready,setReady]=useState(new Map<number,string>());
-  const callbacks=useRef({onPdfChange,onOpenMetadata});callbacks.current={onPdfChange,onOpenMetadata};
+  const callbacks=useRef({onPdfChange,onOpenMetadata,onMetadataContribution});callbacks.current={onPdfChange,onOpenMetadata,onMetadataContribution};
   const view=state.navigation;const key=pdfViewKey(view,viewport.width,viewport.height,state.reduced_cache);
   const platform=session.source.kind==='document_uri'?'android':'desktop';
   const count=state.page_count??0;
@@ -60,13 +66,20 @@ export const PdfSurface=forwardRef<TextEditorHandle,Props>(function PdfSurface({
     if(!pane.current||!state.capabilities.view)return;
     const target=single?0:offsets[view.page];pane.current.scrollTop=target;setScrollTop(target);
   },[controller,view.request,view.layout,view.fit,view.zoom,view.rotation,single,state.capabilities.view]);
+  useEffect(()=>{
+    if(!currentReady||!pane.current)return;let active=true;
+    if(view.target&&effectiveScale!==null)void controller.targetOffset(view.page,effectiveScale,view.rotation,view.target).then(point=>{if(active&&pane.current){pane.current.scrollTop=(single?0:offsets[view.page])+point.y;pane.current.scrollLeft=point.x;}}).catch(()=>undefined);
+    if(selectedMatch?.page===view.page){const layer=pane.current.querySelector<HTMLElement>('.pdf-page[data-current=true] .pdf-text-layer');if(layer){const walker=document.createTreeWalker(layer,NodeFilter.SHOW_TEXT);const nodes:Text[]=[];let node=walker.nextNode();while(node){nodes.push(node as Text);node=walker.nextNode();}const text=nodes.map(value=>value.data).join('');const offset=text.toLowerCase().indexOf(selectedMatch.text.toLowerCase());if(offset>=0){let from=offset,to=offset+selectedMatch.text.length;const range=document.createRange();let started=false;for(const value of nodes){if(!started){if(from<value.length){range.setStart(value,from);started=true;}else from-=value.length;}if(to<=value.length){range.setEnd(value,to);break;}to-=value.length;}if(started){const selection=window.getSelection();selection?.removeAllRanges();selection?.addRange(range);}}}}
+    return()=>{active=false;};
+  },[controller,currentReady,view.page,view.request,view.rotation,view.target,effectiveScale,selectedMatch,single]);
   const zoom=(factor:number)=>{if(!state.capabilities.zoom)return false;controller.setView({fit:'custom',zoom:Math.min(8,Math.max(0.1,(effectiveScale??view.zoom)*factor))});return true;};
   const go=(page:number)=>{try{controller.navigate(page);return true;}catch{return false;}};
   const cancel=()=>{preparationAbort.current?.abort();setPreparation(null);controller.cancel();};
   useImperativeHandle(handleRef,()=>({
-    invoke(command,target){if(command==='metadata'&&target){callbacks.current.onOpenMetadata?.(target);return true;}if(!state.capabilities.view)return false;if(command==='zoom_in')return zoom(1.25);if(command==='zoom_out')return zoom(0.8);if(command==='fit'){controller.setView({fit:'page'});return true;}if(command==='previous_page')return go(view.page-1);if(command==='next_page')return go(view.page+1);if(command==='go_to_line'){openTask('page',target);return true;}return false;},
+    invoke(command,target){if(navigationTools.current?.invoke(command,target))return true;if(command==='copy'){const selection=window.getSelection()?.toString();if(!selection)return false;return writeClipboardText(selection).then(()=>true).catch(()=>false);}if(command==='metadata'&&target){callbacks.current.onOpenMetadata?.(target);return true;}if(!state.capabilities.view)return false;if(command==='zoom_in')return zoom(1.25);if(command==='zoom_out')return zoom(0.8);if(command==='fit'){controller.setView({fit:'page'});return true;}if(command==='previous_page')return go(view.page-1);if(command==='next_page')return go(view.page+1);if(command==='go_to_line'){openTask('page',target);return true;}return false;},
     selectRange(){return false;},dismissModal(){if(task){setTask(null);return true;}if(state.state==='password_required'){setPassword('');cancel();return true;}return false;},
   }));
+  useEffect(()=>{if(!state.capabilities.inspect_metadata)return;let active=true;void controller.metadata(view.page).then(facts=>{if(active)callbacks.current.onMetadataContribution?.(rendererContribution(session,facts,session.revision));}).catch(()=>undefined);return()=>{active=false;};},[controller,state.capabilities.inspect_metadata,view.page,session.id,session.revision]);
   const status=failure??state.error??preparation??(state.state==='loading'?'Loading PDF…':state.state==='cancelled'?'PDF viewing paused.':state.state);
   return <div className="pdf-layout" data-pdf-owner={state.owner_id} data-pdf-state={state.state} data-pdf-ready={currentReady} data-pdf-worker={controller.workerReady} data-pdf-engine="6.5.438" data-pdf-layout={single?'single':'continuous'} data-pdf-surfaces={rendered.length}>
     <div className="pdf-controls" role="group" aria-label="PDF controls">
@@ -78,7 +91,7 @@ export const PdfSurface=forwardRef<TextEditorHandle,Props>(function PdfSurface({
     </div>
     <div className="pdf-pane" ref={pane} tabIndex={0} aria-label="PDF pages" onScroll={()=>{if(scrollFrame.current!==null)return;scrollFrame.current=requestAnimationFrame(()=>{scrollFrame.current=null;const top=pane.current?.scrollTop??0;setScrollTop(top);if(!single&&state.capabilities.navigate){const page=pageAtOffset(offsets,top);if(page!==view.page)controller.navigate(page,'scroll');}});}} onKeyDown={event=>{if(event.target!==event.currentTarget||!state.capabilities.navigate)return;if(event.key==='PageDown'){event.preventDefault();go(Math.min(count-1,view.page+1));}if(event.key==='PageUp'){event.preventDefault();go(Math.max(0,view.page-1));}if(event.key==='Home'){event.preventDefault();go(0);}if(event.key==='End'){event.preventDefault();go(count-1);}}}>
       <div className="pdf-virtual-pages" style={{height:Math.max(0,contentHeight??0),width:Math.max(viewport.width,...widths)}}>
-        {rendered.map(index=><PdfPageCanvas key={index} controller={controller} index={index} current={index===view.page} label="" top={single?0:offsets[index]} view={view} width={viewport.width} height={viewport.height} reduced={state.reduced_cache} platform={platform} onMetrics={onMetrics} onReady={onReady}/>)}
+        {rendered.map(index=><PdfPageCanvas key={index} controller={controller} index={index} current={index===view.page} label={labels[index]??''} top={single?0:offsets[index]} view={view} width={viewport.width} height={viewport.height} reduced={state.reduced_cache} platform={platform} onMetrics={onMetrics} onReady={onReady}/>)}
       </div>
     </div>
     {(!currentReady||failure||state.error)&&<p className="pdf-status" role="status">{status}{(state.state==='loading'||preparation)&&<Button variant="secondary" onClick={cancel}>Cancel PDF</Button>}{(state.state==='failed'||state.state==='cancelled')&&<Button variant="secondary" onClick={()=>setRetry(value=>value+1)}>Retry PDF</Button>}</p>}
@@ -89,11 +102,13 @@ export const PdfSurface=forwardRef<TextEditorHandle,Props>(function PdfSurface({
       <Field id="pdf-fit" label="Fit" control={<Select value={view.fit} onChange={event=>controller.setView({fit:event.target.value as typeof view.fit})}><option value="page">Fit page</option><option value="width">Fit width</option><option value="custom">Custom zoom</option></Select>}/>
       <form onSubmit={event=>{event.preventDefault();const value=Number(zoomDraft)/100;if(value>=0.1&&value<=8)controller.setView({fit:'custom',zoom:value});}}><Field id="pdf-zoom" label="Custom zoom percent (10–800)" control={<TextInput type="number" min="10" max="800" value={zoomDraft} onChange={event=>setZoomDraft(event.target.value)}/>}/><Button type="submit">Apply zoom</Button></form>
       <Field id="pdf-layout" label="Page layout" control={<Select value={view.layout} onChange={event=>controller.setView({layout:event.target.value as typeof view.layout})}><option value="continuous">Continuous</option><option value="single">Single page</option></Select>}/>
+      <div className="pdf-tool-actions"><Button variant="secondary" onClick={event=>navigationTools.current?.open('search',event.currentTarget)}>Search</Button><Button variant="secondary" onClick={event=>navigationTools.current?.open('outline',event.currentTarget)}>Outline</Button><Button variant="secondary" onClick={event=>navigationTools.current?.open('thumbnails',event.currentTarget)} disabled={!state.capabilities.thumbnails}>Thumbnails</Button><Button variant="secondary" onClick={event=>navigationTools.current?.open('links',event.currentTarget)}>Page links</Button></div>
       <Button variant="secondary" onClick={event=>callbacks.current.onOpenMetadata?.(event.currentTarget)}>File information</Button>
     </TaskSurface>
     <TaskSurface open={task==='page'} onOpenChange={open=>{if(!open)setTask(null);}} title="Go to PDF page" opener={opener.current} className="pdf-tools">
       <form onSubmit={event=>{event.preventDefault();const page=Number(pageDraft);if(!/^\d+$/.test(pageDraft.trim())||!go(page-1)){setPageError('Enter a page number from 1 to '+String(count)+'.');return;}setTask(null);}}><Field id="pdf-page-number" label="Page number" error={pageError??undefined} control={<TextInput type="number" inputMode="numeric" min="1" max={count} value={pageDraft} onChange={event=>setPageDraft(event.target.value)}/>}/><Button type="submit">Go to page</Button></form>
     </TaskSurface>
+    <PdfNavigationTools ref={navigationTools} controller={controller} state={state} externalLinkGateway={externalLinkGateway} onLabels={setLabels} onMatch={match=>{setSelectedMatch(match);controller.navigate(match.page);}}/>
     <TaskSurface open={state.state==='password_required'} onOpenChange={open=>{if(!open){setPassword('');cancel();}}} title="PDF password" className="pdf-tools"><form onSubmit={event=>{event.preventDefault();controller.password(password);setPassword('');}}><Field id="pdf-password" label="Password" error={state.error==='incorrect_password'?'The password was not accepted.':undefined} control={<TextInput type="password" autoComplete="off" value={password} onChange={event=>setPassword(event.target.value)}/>}/><Button type="submit">Open PDF</Button></form></TaskSurface>
   </div>;
 });

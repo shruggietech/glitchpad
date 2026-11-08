@@ -200,7 +200,7 @@ export const DocumentSurface = forwardRef<
 
   const presentation = session.pdf_document ? (
     <Suspense fallback={<p role="status">Loading PDF renderer…</p>}>
-      <PdfSurface ref={ref} key={session.id} session={session} onPdfChange={onPdfChange} onOpenMetadata={onOpenMetadata} />
+      <PdfSurface ref={ref} key={session.id} session={session} onPdfChange={onPdfChange} onOpenMetadata={onOpenMetadata} externalLinkGateway={externalLinkGateway} onMetadataContribution={onMetadataContribution} />
     </Suspense>
   ) : session.image_document ? (
     <ImageSurface

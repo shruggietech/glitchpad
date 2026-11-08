@@ -618,6 +618,23 @@ try {
     outcome: 'wrong_password_then_decrypted',
   });
   await closeCase();
+  await openCase('s049-security.pdf');
+  await page.waitForSelector('[data-pdf-ready=true]');
+  assert.equal(await page.evaluate(function () { return document.querySelectorAll('.pdf-page input,.pdf-page textarea,.pdf-page select,.pdf-page iframe,.pdf-page object').length; }), 0);
+  await page.click('button[aria-label="More PDF tools"]');
+  await page.evaluate(function () { Array.from(document.querySelectorAll('button')).reverse().find(function (node) { return node.textContent.trim() === 'Page links'; }).click(); });
+  await page.waitForFunction("Array.from(document.querySelectorAll('.pdf-tools button')).some(function(node){return node.textContent.includes('javascript:');})", { timeout: 30000 });
+  await page.evaluate(function () { Array.from(document.querySelectorAll('.pdf-tools button')).find(function (node) { return node.textContent.includes('javascript:'); }).click(); });
+  await page.waitForFunction("document.body.innerText.includes('This link cannot be opened.')", { timeout: 30000 });
+  await page.evaluate(function () { Array.from(document.querySelectorAll('.pdf-tools button')).find(function (node) { return node.textContent.trim() === 'Invalid destination'; }).click(); });
+  await page.waitForFunction("document.body.innerText.includes('This destination is unavailable in this document.')", { timeout: 30000 });
+  assert.equal(await page.evaluate(function () { return window.__s049PdfExecuted === true; }), false);
+  assert.deepEqual(await page.evaluate(function () { return window.__pdfForbiddenCalls; }), []);
+  assert.ok(!requests.some(url => url.includes('example.invalid')), 'Document links/actions/resources must never request the network automatically');
+  corpus.push({ name: 's049-security.pdf', outcome: 'inert_actions_readonly_forms_attachments_and_invalid_destination' });
+  await page.click('button[aria-label="Close Page links"]');
+  await page.click('button[aria-label="Close PDF tools"]');
+  await closeCase();
   await openCase('s049-large.pdf');
   await page.waitForSelector('[data-pdf-ready=true]');
   await page.setViewport({ width: 3600, height: 1800 });

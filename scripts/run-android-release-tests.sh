@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 # Linux-hosted installed release qualification. Keep every bounded attempt.
 set -euo pipefail
-api="${1:-}"; source="${2:-}"; app="${3:-}"; test_apk="${4:-}"; evidence="${5:-}"
+api="${1:-}"; source="${2:-}"; app="${3:-}"; test_apk="${4:-}"; evidence="${5:-}"; mode="${6:-full}"
 if [[ "$api" != 24 && "$api" != 36 ]] || [[ ! "$source" =~ ^[0-9a-f]{40}$ ]] || [[ ! -f "$app" || ! -f "$test_apk" || -z "$evidence" ]]; then
   echo 'usage: run-android-release-tests.sh API24_OR_36 SOURCE APPLICATION_APK TEST_APK EVIDENCE_DIRECTORY' >&2
   exit 2
 fi
+[[ "$mode" == full || "$mode" == startup ]] || exit 2
 mkdir -p "$evidence"
 scripts="$(cd "$(dirname "$0")" && pwd)"
 app_sha="$(sha256sum "$app" | cut -d' ' -f1)"
@@ -45,12 +46,15 @@ run_phase() {
       "files/document-provider-fixtures/s048-$case_id.$extension" \
       > "$directory/s048-$case_id.$extension" 2> "$directory/$case_id-$extension-capture-error.txt" || capture_exit=$?
   done
-  if [[ "$case_id" == delivery ]]; then
+  if [[ "$case_id" == delivery || "$case_id" == startup ]]; then
     for package in application instrumentation; do
       adb_bounded exec-out run-as com.shruggietech.glitchpad.test cat \
         "files/document-provider-fixtures/s048-installed-$package.apk" \
         > "$directory/s048-installed-$package.apk" 2> "$directory/$package-capture-error.txt" || capture_exit=$?
     done
+  fi
+  if (( command_exit == 0 && logcat_exit == 0 && capture_exit == 0 )); then
+    node "$scripts/validate-android-release-evidence.mjs" --capture-case "$case_id" --directory "$directory" --source "$source" --api "$api" --application "$app" --instrumentation "$test_apk" > "$directory/$case_id-capture-validation.txt" 2>&1 || capture_exit=$?
   fi
   if (( command_exit == 0 && logcat_exit == 0 && capture_exit == 0 )) &&
     grep -Eq '^[[:space:]]*OK \(1 test\)[[:space:]]*$' "$directory/$case_id-instrumentation.txt" &&
@@ -63,7 +67,9 @@ run_phase() {
     "$command_exit" "$logcat_exit" "$capture_exit" "$pass" > "$directory/$case_id-status.json"
   [[ "$pass" == true ]]
 }
-for group in delivery authoring recovery back_about; do
+groups=(delivery authoring recovery back_about)
+if [[ "$mode" == startup ]]; then groups=(startup); fi
+for group in "${groups[@]}"; do
   completed=false
   if [[ "$group" == back_about ]]; then
     offline_pending=true
@@ -74,6 +80,7 @@ for group in delivery authoring recovery back_about; do
     mkdir "$directory"
     node "$scripts/prepare-android-instrumentation.mjs" "$directory/setup.txt"
     case "$group" in
+      startup) if run_phase "$directory" startup releaseStartupIdentityAndCapture; then completed=true; fi ;;
       delivery) if run_phase "$directory" delivery resolvedIntentDisplaysColdAndWarmProviderDocuments; then completed=true; fi ;;
       authoring) if run_phase "$directory" authoring standaloneAuthoringAndDiagnosticJourneys; then completed=true; fi ;;
       recovery)
@@ -91,4 +98,4 @@ for group in delivery authoring recovery back_about; do
 done
 node "$scripts/validate-android-release-evidence.mjs" \
   --directory "$evidence" --source "$source" --api "$api" \
-  --application "$app" --instrumentation "$test_apk" --output "$evidence/release-runtime.json"
+  --application "$app" --instrumentation "$test_apk" --mode "$mode" --output "$evidence/release-runtime.json"

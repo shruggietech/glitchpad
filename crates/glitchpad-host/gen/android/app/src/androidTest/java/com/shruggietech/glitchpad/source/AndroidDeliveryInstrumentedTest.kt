@@ -2904,7 +2904,7 @@ class AndroidDeliveryInstrumentedTest {
 
   private fun retainReleaseEvidence(scenario: ActivityScenario<MainActivity>, caseId: String, includePackages: Boolean = false, observations: JSONObject = JSONObject()) {
     if (!isReleaseRuntimeEvidence()) return
-    assertTrue("only the bounded release cases may emit evidence", caseId in listOf("delivery", "authoring", "recovery_seed", "recovery_verify", "back_about"))
+    assertTrue("only the bounded release cases may emit evidence", caseId in listOf("startup", "delivery", "authoring", "recovery_seed", "recovery_verify", "back_about"))
     assertS047Role(scenario)
     val identity = candidateIdentity(scenario)
     assertEquals("0.2.1", identity.getString("version"))
@@ -2942,6 +2942,12 @@ class AndroidDeliveryInstrumentedTest {
     val marker = "s048_release_evidence=" + JSONObject().put("case_id", caseId).put("file", name).put("sha256", sha256(receipt))
     println(marker); System.out.flush()
     instrumentation.sendStatus(2, android.os.Bundle().apply { putString(android.app.Instrumentation.REPORT_KEY_STREAMRESULT, marker + "\n") })
+  }
+
+  @Test fun releaseStartupIdentityAndCapture() {
+    assertTrue("dedicated release startup runner required", isReleaseRuntimeEvidence())
+    val scenario = launchS047()
+    retainReleaseEvidence(scenario, "startup", includePackages = true)
   }
 
   @Test fun releaseBackAboutAndCapture() {

@@ -63,12 +63,74 @@ export function validateReleaseAttempt(status, output, marker, caseId, receiptSh
   required(!/INSTRUMENTATION_(?:FAILED|ABORTED)|INSTRUMENTATION_RESULT:.*shortMsg=|INSTRUMENTATION_STATUS:\s*(?:Error|stack)=|FAILURES!!!|^\s*FAILURE:/mu.test(output), 'instrumentation failure cannot be hidden by a marker');
   required(marker.case_id === caseId && marker.file === 's048-' + caseId + '.json' && marker.sha256 === receiptSha, 'release stream marker/readback mismatch');
 }
-export async function validateReleaseDirectory({directory, source, api, application, instrumentation}) {
+export async function validateReleaseCapture({directory,caseId,expected}) {
+  const receipt = await readFile(join(directory, 's048-' + caseId + '.json'));
+  const row = JSON.parse(receipt.toString('utf8'));
+  validateReleaseRow(row,{...expected,caseId});
+  const png = await readFile(join(directory, 's048-' + caseId + '.png'));
+  required(png.subarray(0,8).equals(Buffer.from('89504e470d0a1a0a','hex')) &&
+    row.screenshot?.file === 's048-' + caseId + '.png' &&
+    row.screenshot.sha256 === digest(png), 'release screenshot bytes missing/mismatch');
+  if (caseId === 'delivery' || caseId === 'startup') {
+    required(await hashReleaseFile(join(directory,'s048-installed-application.apk')) === expected.applicationSha, 'captured installed application differs from canonical package');
+    required(await hashReleaseFile(join(directory,'s048-installed-instrumentation.apk')) === expected.instrumentationSha, 'captured installed instrumentation differs from test input');
+  }
+  return {case_id:caseId,receipt_sha256:digest(receipt),screenshot_sha256:digest(png),identity:row.identity,readbacks:row.readbacks};
+}
+
+export async function validateReleaseDirectory({directory, source, api, application, instrumentation, mode = "full"}) {
+  required(["full","startup"].includes(mode), "unknown release campaign mode");
+  const groups = mode === "startup" ? {startup:["startup"]} : releaseCaseGroups;
   required(/^[0-9a-f]{40}$/u.test(source) && [24, 36].includes(api), 'exact release source/API required');
   const expected = { source, api, applicationSha: await hashReleaseFile(application), instrumentationSha: await hashReleaseFile(instrumentation) };
   const names = await readdir(directory);
   for (const name of names.filter((entry) => entry.includes('-attempt-')))
-    required(/^(delivery|authoring|recovery|back_about)-attempt-[12]$/u.test(name), 'unexpected/unbounded release attempt: ' + name);
+    required(Object.keys(groups).some(group=>new RegExp('^'+group+'-attempt-[12]
+  const selected = [];
+  for (const [group, cases] of Object.entries(groups)) {
+    const attempts = names.filter((name) => new RegExp('^' + group + '-attempt-[12]$','u').test(name)).sort();
+    required(attempts.length >= 1 && attempts[0] === group + '-attempt-1' &&
+      attempts.length <= 2, 'missing/noncontiguous bounded release attempts: ' + group);
+    // The latest attempt is authoritative. Never fall back behind a newer failure.
+    const name = attempts.at(-1);
+    const retained = { group, attempt: Number(name.at(-1)), prior_attempts: attempts.slice(0,-1), cases: [] };
+    for (const caseId of cases) {
+      const path = join(directory, name);
+      const capture = await validateReleaseCapture({directory:path,caseId,expected});
+      const status = JSON.parse(await readFile(join(path, caseId + '-status.json'), 'utf8'));
+      const output = await readFile(join(path, caseId + '-instrumentation.txt'), 'utf8');
+      const markers = [...output.matchAll(/s048_release_evidence=(\{[^\r\n]+\})/gu)].map((match) => JSON.parse(match[1]));
+      required(markers.length >= 1 && markers.every((marker) => marker.case_id === caseId), 'release completion marker missing/wrong case');
+      validateReleaseAttempt(status, output, markers.at(-1), caseId, capture.receipt_sha256);
+      retained.cases.push(capture);
+    }
+    selected.push(retained);
+  }
+  const certificates = new Set(selected.flatMap((entry)=>entry.cases.map((row)=>row.identity.signing_certificate_sha256)));
+  required(certificates.size === 1, 'release signer changed across cases');
+  return {schema:1,status:'pass',diagnostic_only:mode === 'startup',candidate_qualified:mode === 'full',evidence_class:'hosted_minified_release_instrumentation',...expected,signing_certificate_sha256:[...certificates][0],selected,
+    scope:mode === 'startup' ? 'Startup/identity diagnostic only; no release campaign qualification.' : 'Five bounded release-runtime cases. Separate debug ordinary/fault campaigns qualify the S047 ten-journey matrix; physical/manual conformance remains waived under #66.'};
+}
+async function main() {
+  const args = process.argv.slice(2);
+  const values = {};
+  for(let index=0;index<args.length;index+=2) {
+    required(args[index]?.startsWith('--') && args[index+1], 'missing release evidence argument');
+    values[args[index].slice(2)] = args[index+1];
+  }
+  if (values["capture-case"]) {
+    const expected = {source:values.source,api:Number(values.api),applicationSha:await hashReleaseFile(values.application),instrumentationSha:await hashReleaseFile(values.instrumentation)};
+    await validateReleaseCapture({directory:values.directory,caseId:values["capture-case"],expected});
+    console.log("Captured release bytes verified.");
+    return;
+  }
+  const result = await validateReleaseDirectory({...values,api:Number(values.api)});
+  await writeFile(values.output,JSON.stringify(result,null,2)+'\n','utf8');
+  console.log('Installed minified release evidence passed on API ' + result.api + '.');
+}
+if(process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url))
+  main().catch((error)=>{console.error(error.message);process.exitCode=1;});
+,'u').test(name)), 'unexpected/unbounded release attempt: ' + name);
   const selected = [];
   for (const [group, cases] of Object.entries(releaseCaseGroups)) {
     const attempts = names.filter((name) => new RegExp('^' + group + '-attempt-[12]$','u').test(name)).sort();

@@ -40,6 +40,11 @@ on:
         description: Prepare stable-key unpublished release inputs (no publication)
         type: boolean
         default: false
+      runtime_scope:
+        description: Full candidate qualification or startup diagnostic only
+        type: choice
+        options: [full, startup]
+        default: full
 
 env:
   GLITCHPAD_BUILD_COMMIT: ${{ github.sha }}
@@ -162,6 +167,7 @@ jobs:
       - name: Build matching release instrumentation without changing canonical inputs
         run: |
           ./crates/glitchpad-host/gen/android/gradlew --project-dir crates/glitchpad-host/gen/android :app:assembleUniversalReleaseAndroidTest -Pglitchpad.testBuildType=release -PabiList=arm64-v8a,x86_64 -ParchList=arm64,x86_64 -PtargetList=aarch64,x86_64 -x :app:rustBuildUniversalRelease -x :app:rustBuildArm64Release -x :app:rustBuildX86_64Release --no-daemon
+          cmp "$RUNNER_TEMP/app-universal-release.apk" crates/glitchpad-host/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk
           mkdir -p artifacts/android-release-inputs
           cp crates/glitchpad-host/gen/android/app/build/outputs/apk/androidTest/universal/release/app-universal-release-androidTest.apk artifacts/android-release-inputs/instrumentation.apk
           cp crates/glitchpad-host/gen/android/app/build/outputs/mapping/universalRelease/mapping.txt artifacts/android-release-inputs/r8-mapping.txt
@@ -253,7 +259,7 @@ jobs:
           retention-days: 30
 
   release-runtime:
-    name: Installed minified release API ${{ matrix.api }}
+    name: ${{ inputs.runtime_scope == 'startup' && 'Release startup diagnostic API' || 'Installed minified release API' }} ${{ matrix.api }}
     needs: candidate
     runs-on: ubuntu-24.04
     timeout-minutes: 45
@@ -317,12 +323,12 @@ jobs:
             node scripts/bounded-android-adb.mjs shell svc power stayon true
             node scripts/bounded-android-adb.mjs shell input keyevent 224
             if [ "${{ matrix.api }}" = 36 ]; then node scripts/bounded-android-adb.mjs shell svc bluetooth disable; node scripts/bounded-android-adb.mjs shell settings put global hide_error_dialogs 1; node scripts/bounded-android-adb.mjs shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS; fi
-            bash scripts/run-android-release-tests.sh "${{ matrix.api }}" "$GITHUB_SHA" "$RUNNER_TEMP/canonical-android/glitchpad-0.2.1-android-universal.apk" "$RUNNER_TEMP/android-release-inputs/instrumentation.apk" "$RUNNER_TEMP/s048-release-runtime"
+            bash scripts/run-android-release-tests.sh "${{ matrix.api }}" "$GITHUB_SHA" "$RUNNER_TEMP/canonical-android/glitchpad-0.2.1-android-universal.apk" "$RUNNER_TEMP/android-release-inputs/instrumentation.apk" "$RUNNER_TEMP/s048-release-runtime" "${{ inputs.runtime_scope || 'full' }}"
       - name: Retain every release-runtime attempt
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: android-minified-release-runtime-api-${{ matrix.api }}
+          name: ${{ inputs.runtime_scope == 'startup' && 'android-minified-release-startup' || 'android-minified-release-runtime' }}-api-${{ matrix.api }}
           path: |
             ${{ runner.temp }}/s048-release-runtime/**
             ${{ runner.temp }}/android-release-inputs/identity.json

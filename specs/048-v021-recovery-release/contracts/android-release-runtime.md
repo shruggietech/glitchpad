@@ -7,3 +7,9 @@ Reuse cold/warm provider delivery/images/ICO-export, standalone New/Open/edit/sa
 Release-runtime coverage is named separately from existing full ordinary/fault-probe debug matrices. The latter retain every required ten-journey/profile assertion. No supplemental or conditional debug row is relabelled as an individual installed-release pass.
 
 Capture installed app/test APKs and JSON/PNG through existing test-owned provider descriptors. Permit APK MIME only for fixed evidence names. Use the existing framed ADB byte protocol and run-as only on the debuggable test package; compare lengths/digests before acceptance. Capture before provider reset; keep evidence out of authoring document cleanup. Preserve two process attempts, current per-action deadlines, clean-positive JUnit/markers/adb/crash checks, failed captures and destination/receiver readbacks.
+
+## Test-runtime ABI isolation and startup gate
+
+Only release AndroidTest receives private Kotlin/tracing runtime copies through the ALL-scoped CLASSES transform. The unfiltered compile classpath supplies complete resolved runtime classes that AGP otherwise subtracts from test runtime inputs. No product keep rules, production debug flags or permissions are added. The standalone ABI regression, actual test APK DEX inventory and unchanged canonical product hash precede startup diagnostics on both APIs.
+
+The startup scope has distinct job/artifact names and sets diagnostic_only true and candidate_qualified false. It cannot satisfy the five-case campaign or accepted release publisher. Full qualification still requires delivery, authoring, process recovery seed/verify and visible Back/About, exact captures and every retained attempt.

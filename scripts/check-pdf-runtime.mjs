@@ -84,12 +84,12 @@ try {
   try{await page.waitForFunction("document.querySelector('[data-pdf-ready=true][data-pdf-worker=true]')",{timeout:60000});}
   catch(error){await writeFile(resolve(output,'failure.json'),JSON.stringify({version,errors,consoleMessages,body:await page.$eval('body',node=>node.innerText)},null,2)+'\n');await page.screenshot({path:resolve(output,'failure.png')});throw error;}
   const facts=await page.evaluate(function(){
-    var canvas=document.querySelector('.pdf-page canvas');var pixels=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;var ink=0;for(var i=0;i<pixels.length;i+=4)if(pixels[i]<200&&pixels[i+1]<200&&pixels[i+2]<200)ink++;
-    var text=document.querySelector('.pdf-text-layer');var selection=window.getSelection();selection.selectAllChildren(text);var selected=selection.toString();selection.removeAllRanges();
+    var canvas=document.querySelector('.pdf-page[data-current=true] canvas');var pixels=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;var ink=0;for(var i=0;i<pixels.length;i+=4)if(pixels[i]<200&&pixels[i+1]<200&&pixels[i+2]<200)ink++;
+    var text=document.querySelector('.pdf-page[data-current=true] .pdf-text-layer');var selection=window.getSelection();selection.selectAllChildren(text);var selected=selection.toString();selection.removeAllRanges();
     return {width:canvas.width,height:canvas.height,ink:ink,text:text.textContent,selected:selected,reads:window.__pdfReads,forbidden:window.__pdfForbiddenCalls,executed:window.__s049PdfExecuted===true,engine:document.querySelector('.pdf-layout').getAttribute('data-pdf-engine'),frames:document.querySelectorAll('[data-bb-app-frame]').length};
   });
   assert.ok(facts.ink>500,'Actual canvas needs representative text ink');assert.match(facts.text,/Glitchpad PDF compatibility page 1/);assert.match(facts.selected,/Glitchpad PDF compatibility/);assert.equal(facts.engine,'6.5.438');assert.equal(facts.frames,1);assert.equal(facts.executed,false);assert.deepEqual(facts.forbidden,[]);assert.ok(facts.reads.reduce((sum,r)=>sum+r.length,0)<fixture.length,'First content must not require whole-source reads');assert.ok(!requests.some(url=>url.includes('example.invalid')));
-  await page.click('button[aria-label="Next page"]');await page.waitForFunction("document.querySelector('[data-pdf-ready=true]') && document.querySelector('.pdf-text-layer').textContent.includes('page 2')",{timeout:30000});
+  await page.click('button[aria-label="Next page"]');await page.waitForFunction("document.querySelector('[data-pdf-ready=true]') && document.querySelector('.pdf-page[data-current=true] .pdf-text-layer').textContent.includes('page 2')",{timeout:30000});
   await page.screenshot({path:resolve(output,'page.png')});
   const pdfFonts=await page.evaluate(function(){return Array.from(document.fonts).map(function(face){return face.family;});});
   const addedFonts=pdfFonts.filter(family=>!baselineFonts.includes(family));assert.ok(addedFonts.length>0,'Representative font cleanup must exercise actual installed PDF font faces');

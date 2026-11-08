@@ -104,14 +104,14 @@ class AndroidDeliveryInstrumentedTest {
       println("s049_pdf_failure=" + runCatching { evaluate(scenario, "JSON.stringify({body:document.body.innerText,state:document.querySelector('.pdf-layout')?document.querySelector('.pdf-layout').outerHTML:null})") }.getOrDefault("unavailable"))
       System.out.flush(); throw failure
     }
-    val facts = JSONObject(evaluate(scenario, "(()=>{const c=document.querySelector('.pdf-page canvas');const d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;let ink=0;for(let i=0;i<d.length;i+=4)if(d[i]<200&&d[i+1]<200&&d[i+2]<200)ink++;const t=document.querySelector('.pdf-text-layer');const s=window.getSelection();s.selectAllChildren(t);const selected=s.toString();s.removeAllRanges();return {width:c.width,height:c.height,ink,text:t.textContent,selected,worker:document.querySelector('.pdf-layout').getAttribute('data-pdf-worker'),engine:document.querySelector('.pdf-layout').getAttribute('data-pdf-engine'),executed:window.__s049PdfExecuted===true,frames:document.querySelectorAll('[data-bb-app-frame]').length};})()"))
+    val facts = JSONObject(evaluate(scenario, "(()=>{const c=document.querySelector('.pdf-page[data-current=true] canvas');const d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;let ink=0;for(let i=0;i<d.length;i+=4)if(d[i]<200&&d[i+1]<200&&d[i+2]<200)ink++;const t=document.querySelector('.pdf-page[data-current=true] .pdf-text-layer');const s=window.getSelection();s.selectAllChildren(t);const selected=s.toString();s.removeAllRanges();return {width:c.width,height:c.height,ink,text:t.textContent,selected,worker:document.querySelector('.pdf-layout').getAttribute('data-pdf-worker'),engine:document.querySelector('.pdf-layout').getAttribute('data-pdf-engine'),executed:window.__s049PdfExecuted===true,frames:document.querySelectorAll('[data-bb-app-frame]').length};})()"))
     assertTrue("PDF canvas must contain real text ink", facts.getInt("ink") > 500)
     assertTrue(facts.getString("text").contains("Glitchpad PDF compatibility page 1"))
     assertTrue("PDF display text must remain selectable", facts.getString("selected").contains("Glitchpad PDF compatibility page 1"))
     assertEquals("true", facts.getString("worker")); assertEquals("6.5.438", facts.getString("engine"))
     assertFalse("PDF OpenAction JavaScript must remain inert", facts.getBoolean("executed"));assertEquals(1, facts.getInt("frames"))
     clickControl(scenario, "Next page")
-    waitForCondition(scenario, "!!document.querySelector('[data-pdf-ready=true]')&&document.querySelector('.pdf-text-layer').textContent.includes('page 2')", "actual PDF page navigation must finish")
+    waitForCondition(scenario, "!!document.querySelector('[data-pdf-ready=true]')&&document.querySelector('.pdf-page[data-current=true] .pdf-text-layer').textContent.includes('page 2')", "actual PDF page navigation must finish")
     evaluate(scenario, "window.__s049PdfDisposals=[];window.addEventListener('glitchpad-pdf-disposed',e=>window.__s049PdfDisposals.push(e.detail));true")
     val warm = grant(documentUri("resolver-warm"))
     clientContext.startActivity(viewIntent(warm, "text/plain").setComponent(component).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))

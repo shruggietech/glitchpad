@@ -3,7 +3,8 @@
 .pdf-controls .bb-control,.pdf-tools .bb-control,.pdf-tools .bb-field__control { min-width:48px;min-height:48px; }
 .pdf-controls output { flex:1 1 auto;text-align:center;overflow-wrap:anywhere; }
 .pdf-pane { flex:1 1 auto;overflow:auto;min-height:0;min-width:0;padding:8px; }
-.pdf-page { position:relative;width:max-content;margin-inline:auto; }
+.pdf-virtual-pages { position:relative;min-width:100%; }
+.pdf-page { position:absolute;width:max-content;left:50%;transform:translateX(-50%); }
 .pdf-page canvas { display:block;max-width:none; }
 .pdf-text-layer { position:absolute;inset:0;overflow:hidden;text-align:initial;line-height:1;letter-spacing:normal;word-spacing:normal;transform-origin:0 0;-webkit-text-size-adjust:none;--min-font-size:1;--text-scale-factor:calc(var(--total-scale-factor) * var(--min-font-size));--min-font-size-inv:calc(1 / var(--min-font-size)); }
 .pdf-text-layer span,.pdf-text-layer br { color:transparent;position:absolute;white-space:pre;cursor:text;transform-origin:0 0;-webkit-user-select:text;user-select:text; }
@@ -12,3 +13,8 @@
 .pdf-text-layer ::selection { background:var(--bb-action-primary);color:transparent; }
 .pdf-status { flex:0 0 auto;padding:4px 8px;margin:0;overflow-wrap:anywhere; }
 .pdf-tools form { display:flex;flex-direction:column;gap:8px; }
+
+.pdf-controls [aria-label="Go to page"] { flex:1 1 auto;min-width:0; }
+.pdf-tool-actions { display:flex;flex-wrap:wrap;gap:8px; }
+.pdf-page-error { max-width:80vw;padding:8px;color:var(--gl-fg);background:var(--gl-panel); }
+.pdf-tools .bb-field { margin-block:8px; }

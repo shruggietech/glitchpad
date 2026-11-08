@@ -9,8 +9,8 @@
 Shared source-bound tooling and dependency preparation.
 
 - [ ] T001 Record source-bound hosted execution and early compatibility phases in .github/workflows/ci.yml and specs/049-pdf-viewer-foundation/validation.md. (FR-019,020,023)
-- [ ] T002 Pin pdfjs-dist6.5.438 without incidental upgrades in apps/glitchpad/package.json and pnpm-lock.yaml; verify existing .gitignore/.dockerignore/format/lint ignores. (FR-018,023)
-- [ ] T003 Generate allowlisted CMaps/BSD symbol resources, version/hash-anchored static decoder transform and shipped notices in scripts/prepare-pdf-assets.mjs, apps/glitchpad/vite.config.ts and THIRD-PARTY-NOTICES.md. (FR-003,018)
+- [X] T002 Pin pdfjs-dist6.5.438 without incidental upgrades in apps/glitchpad/package.json and pnpm-lock.yaml; verify existing .gitignore/.dockerignore/format/lint ignores. (FR-018,023)
+- [X] T003 Generate allowlisted CMaps/BSD symbol resources, version/hash-anchored static decoder transform and shipped notices in scripts/prepare-pdf-assets.mjs, apps/glitchpad/vite.config.ts and THIRD-PARTY-NOTICES.md. (FR-003,018)
 
 ## Phase 2: Foundational
 
@@ -18,7 +18,7 @@ Shared contracts and deterministic inputs precede composed UI.
 
 - [ ] T004 [P] Add self-authored PDF fixture generator/corpus and provenance in scripts/generate-pdf-fixtures.mjs, fixtures/pdf/ and fixtures/provenance.toml, including hostile links/actions, structured navigation, encrypted/malformed and limits. (FR-018,020)
 - [ ] T005 Define versioned document/capability/error/source/lifecycle contracts and conformance tests in apps/glitchpad/src/domain/pdf-contract.ts and pdf-contract.test.ts. (FR-001,003,005,016,017)
-- [ ] T006 Implement classic worker entry, compatibility imports, fixed resource factory and real-worker handshake in apps/glitchpad/src/domain/pdf-worker.ts and pdf-resources.ts; reject fake fallback. (FR-003,004,018,019)
+- [X] T006 Implement classic worker entry, compatibility imports, fixed resource factory and real-worker handshake in apps/glitchpad/src/domain/pdf-worker.ts and pdf-resources.ts; reject fake fallback. (FR-003,004,018,019)
 - [ ] T007 Apply exact emitted worker response CSP and preserve single configured main-window setup in crates/glitchpad-host/src/lib.rs and tauri.conf.json; add isolation assertions. (FR-003,017)
 
 ## Phase 3: US1 - Open and read a local PDF

@@ -39,6 +39,7 @@ export interface PdfNavigation {
   fit: 'page' | 'width' | 'custom';
   rotation: 0 | 90 | 180 | 270;
   layout: 'continuous' | 'single';
+  request?: number;
 }
 export interface PdfDocumentState {
   contract_version: typeof PDF_CONTRACT_VERSION;

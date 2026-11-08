@@ -3,7 +3,8 @@ import { getDocument, PDFWorker, PDFDataRangeTransport, TextLayer, type PDFDocum
 import { PdfBinaryDataFactory } from './pdf-resources';
 import { normalizePdfPostMessage } from './pdf-compatibility';
 import { createPdfDocumentResources } from './pdf-document-resources';
-import { assertPdfPages, assertPdfSource, classifyPdfFailure, initialPdfState, pdfCapabilities, pdfSurfaceBytes, PDF_ENGINE_VERSION, PDF_LIMITS, PdfFailure, type PdfDocumentState, type PdfSourceLease } from './pdf-contract';
+import { PdfWorkQueue } from './pdf-work-queue';
+import { assertPdfPages, assertPdfSource, classifyPdfFailure, initialPdfState, pdfCapabilities, pdfSurfaceBytes, PDF_ENGINE_VERSION, PDF_LIMITS, PdfFailure, type PdfDocumentState, type PdfNavigation, type PdfSourceLease } from './pdf-contract';
 
 export interface PdfPageSurface { width:number; height:number; bytes:number; dispose():void; }
 type Listener = (state: PdfDocumentState) => void;
@@ -52,9 +53,10 @@ export class PdfController {
   private listeners=new Set<Listener>();
   private surfaces=new Set<()=>void>();
   private surfaceBytes=0;
+  private readonly renders=new PdfWorkQueue();
   private passwordContinuation:((password:string)=>void)|null=null;
 
-  constructor(ownerId:string) { this.state=initialPdfState(ownerId); }
+  constructor(ownerId:string,navigation?:PdfNavigation) { this.state=initialPdfState(ownerId);if(navigation)this.state.navigation={...navigation}; }
   subscribe(listener:Listener):()=>void {this.listeners.add(listener);listener(this.state);return()=>this.listeners.delete(listener);}
   private publish(patch:Partial<PdfDocumentState>):void {this.state={...this.state,...patch};this.state.capabilities=pdfCapabilities(this.state.state,this.state.reduced_cache);for(const listener of this.listeners)listener(this.state);}
   private current(generation:number):void {if(generation!==this.generation || this.aborter.signal.aborted)throw new PdfFailure('cancelled');}
@@ -88,19 +90,37 @@ export class PdfController {
       this.loading=loading;
       loading.onPassword=(update:(password:string)=>void,reason:number)=>{if(generation!==this.generation)return;this.passwordContinuation=update;this.publish({state:'password_required',error:reason===2?'incorrect_password':null});};
       const document=await loading.promise;this.current(generation);assertPdfPages(document.numPages);this.document=document;
-      this.publish({state:'ready',page_count:document.numPages,error:null});
+      this.publish({state:'ready',page_count:document.numPages,error:null,navigation:{...this.state.navigation,page:Math.min(this.state.navigation.page,document.numPages-1)}});
     } catch(error) {if(generation!==this.generation)return;this.fail(error);}
   }
   sourceFailed(error:unknown):void {this.release();this.publish({state:'failed',error:classifyPdfFailure(error)});}
   password(value:string):void {const continuation=this.passwordContinuation;this.passwordContinuation=null;if(continuation){this.publish({state:'loading',error:null});continuation(value);}}
-  navigate(page:number):void {if(!this.document || !Number.isSafeInteger(page) || page<0 || page>=this.document.numPages)throw new PdfFailure('invalid_destination');this.publish({navigation:{...this.state.navigation,page}});}
+  navigate(page:number,origin:'command'|'scroll'='command'):void {
+    if(!this.document||!Number.isSafeInteger(page)||page<0||page>=this.document.numPages)throw new PdfFailure('invalid_destination');
+    this.publish({navigation:{...this.state.navigation,page,request:origin==='command'?(this.state.navigation.request??0)+1:this.state.navigation.request}});
+  }
+  setView(view:Partial<Pick<PdfNavigation,'zoom'|'fit'|'rotation'|'layout'>>):void {
+    if(!this.state.capabilities.view)throw new PdfFailure('unavailable');
+    if(view.zoom!==undefined&&(!Number.isFinite(view.zoom)||view.zoom<0.1||view.zoom>8))throw new PdfFailure('surface_limit');
+    if(view.rotation!==undefined&&![0,90,180,270].includes(view.rotation))throw new PdfFailure('invalid_destination');
+    this.publish({navigation:{...this.state.navigation,...view}});
+  }
+  reduceCache():void {if(!this.state.reduced_cache)this.publish({state:'limited',reduced_cache:true});}
+  async pageSize(index:number,rotation:number):Promise<{width:number;height:number}>{
+    const generation=this.generation;const document=this.document;if(!document)throw new PdfFailure('unavailable');
+    const page=await document.getPage(index+1);this.current(generation);const viewport=page.getViewport({scale:1,rotation:(page.rotate+rotation)%360});
+    if(!Number.isFinite(viewport.width)||!Number.isFinite(viewport.height)||viewport.width<=0||viewport.height<=0)throw new PdfFailure('surface_limit');return{width:viewport.width,height:viewport.height};
+  }
 
   async renderPage(index:number,canvas:HTMLCanvasElement,textContainer:HTMLElement,scale:number,rotation:number,signal?:AbortSignal):Promise<PdfPageSurface> {
     const generation=this.generation;this.current(generation);const document=this.document;if(!document || !this.source)throw new PdfFailure('unavailable');
+    const releaseSlot=await this.renders.acquire(signal?[this.aborter.signal,signal]:[this.aborter.signal]);
+    try {
+    this.current(generation);
     if(!Number.isInteger(index)||index<0||index>=document.numPages)throw new PdfFailure('invalid_destination');
     if(signal?.aborted)throw new PdfFailure('cancelled');
     const page=await document.getPage(index+1);this.current(generation);if(signal?.aborted)throw new PdfFailure('cancelled');
-    const viewport=page.getViewport({scale,rotation});const width=Math.ceil(viewport.width),height=Math.ceil(viewport.height);
+    const viewport=page.getViewport({scale,rotation:(page.rotate+rotation)%360});const width=Math.ceil(viewport.width),height=Math.ceil(viewport.height);
     const bytes=pdfSurfaceBytes(width,height,this.source.platform);
     if(this.surfaceBytes+bytes>PDF_LIMITS[this.source.platform].surfaceBytes){this.publish({state:'limited',reduced_cache:true});throw new PdfFailure('surface_limit');}
     this.surfaceBytes+=bytes;canvas.width=width;canvas.height=height;
@@ -112,6 +132,7 @@ export class PdfController {
       text=new TextLayer({textContentSource:page.streamTextContent(),container:textContainer,viewport});await text.render();this.current(generation);if(disposed)throw new PdfFailure('cancelled');
       return {width,height,bytes,dispose};
     } catch(error){dispose();throw error;}
+    } finally {releaseSlot();}
   }
   get resourceCounts():{workers:number;surfaces:number;surfaceBytes:number}{return{workers:this.nativeWorker?1:0,surfaces:this.surfaces.size,surfaceBytes:this.surfaceBytes};}
   cancel():void {this.release();this.publish({state:'cancelled',error:null});}
@@ -122,6 +143,7 @@ export class PdfController {
     for(const dispose of [...this.surfaces])dispose();
     this.nativeWorker?.terminate();this.nativeWorker=null;this.workerReady=false;
     this.documentResources?.dispose();this.documentResources=null;
+    this.renders.cancelledRuntime();
     const loading=this.loading;this.loading=null;if(loading)void loading.destroy().catch(()=>undefined);
     this.parserWorker?.destroy();this.parserWorker=null;this.document=null;
     const source=this.source;this.source=null;if(source)void Promise.resolve(source.close()).catch(()=>undefined);

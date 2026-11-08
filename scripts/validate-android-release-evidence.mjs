@@ -1,9 +1,11 @@
 import { createHash } from 'node:crypto';
-import { createReadStream } from 'node:fs';
+import { createReadStream, readFileSync } from 'node:fs';
 import { readFile, readdir, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { releaseIdentity } from './lib/release-identity.mjs';
+
+const androidPackageContract = JSON.parse(readFileSync(new URL('../packaging/android/package-contract.json', import.meta.url), 'utf8'));
 
 export const releaseCaseGroups = Object.freeze({
   delivery: ['delivery'],
@@ -50,7 +52,7 @@ export function validateReleaseRow(row, expected) {
   );
   required(
     identity.version === releaseIdentity.version &&
-      identity.version_code === 2001,
+      identity.version_code === androidPackageContract.version_code,
     'installed release version mismatch',
   );
   required(identity.api_level === expected.api, 'installed API mismatch');

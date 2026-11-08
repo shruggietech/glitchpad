@@ -175,6 +175,9 @@ jobs:
           cp crates/glitchpad-host/gen/android/app/build/outputs/apk/androidTest/universal/release/app-universal-release-androidTest.apk artifacts/android-release-inputs/instrumentation.apk
           cp crates/glitchpad-host/gen/android/app/build/outputs/mapping/universalRelease/mapping.txt artifacts/android-release-inputs/r8-mapping.txt
           test -s artifacts/android-release-inputs/r8-mapping.txt
+          python3 scripts/android/check-release-test-notices.py --apk artifacts/android-release-inputs/instrumentation.apk
+          ./crates/glitchpad-host/gen/android/gradlew --project-dir crates/glitchpad-host/gen/android :app:dependencies --configuration universalReleaseAndroidTestCompileClasspath -Pglitchpad.testBuildType=release --no-daemon > artifacts/android-release-inputs/test-compile-dependencies.txt
+          ./crates/glitchpad-host/gen/android/gradlew --project-dir crates/glitchpad-host/gen/android :app:dependencies --configuration universalReleaseAndroidTestRuntimeClasspath -Pglitchpad.testBuildType=release --no-daemon > artifacts/android-release-inputs/test-runtime-dependencies.txt
           apkanalyzer dex packages --defined-only artifacts/android-release-inputs/instrumentation.apk > artifacts/android-release-inputs/instrumentation-dex.txt
           grep -Fq com.shruggietech.glitchpad.testisolated.kotlin.jvm.internal.Intrinsics artifacts/android-release-inputs/instrumentation-dex.txt
           grep -Fq com.shruggietech.glitchpad.testisolated.androidx.tracing.Trace artifacts/android-release-inputs/instrumentation-dex.txt

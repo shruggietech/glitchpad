@@ -2935,11 +2935,12 @@ class AndroidDeliveryInstrumentedTest {
     assertEquals("release", identity.getString("channel"))
     assertEquals(InstrumentationRegistry.getArguments().getString("expectedApplicationSha"), identity.getString("application_sha256"))
     assertEquals(InstrumentationRegistry.getArguments().getString("expectedInstrumentationSha"), identity.getString("instrumentation_sha256"))
+    val testApplication = instrumentation.context.packageManager.getApplicationInfo(instrumentation.context.packageName, 0)
     val applicationCertificate = signingCertificate(TARGET_PACKAGE)
     val instrumentationCertificate = signingCertificate(instrumentation.context.packageName)
     assertEquals("instrumentation and target must share the selected signing authority", applicationCertificate, instrumentationCertificate)
     identity.put("signing_certificate_sha256", applicationCertificate).put("instrumentation_certificate_sha256", instrumentationCertificate)
-      .put("application_debuggable", false).put("instrumentation_debuggable", (instrumentation.context.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0)
+      .put("application_debuggable", false).put("instrumentation_debuggable", (testApplication.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0)
     assertTrue("only test-owned storage is debuggable for capture", identity.getBoolean("instrumentation_debuggable"))
     val root = grant(documentUri("fixture-root"))
     fun capture(name: String, mime: String, input: java.io.InputStream) {
@@ -2948,7 +2949,7 @@ class AndroidDeliveryInstrumentedTest {
     }
     if (includePackages) {
       capture("s048-installed-application.apk", "application/vnd.android.package-archive", File(clientContext.applicationInfo.sourceDir).inputStream())
-      capture("s048-installed-instrumentation.apk", "application/vnd.android.package-archive", File(instrumentation.context.applicationInfo.sourceDir).inputStream())
+      capture("s048-installed-instrumentation.apk", "application/vnd.android.package-archive", File(testApplication.sourceDir).inputStream())
     }
     val screenshot = "s048-" + caseId + ".png"
     assertTrue("release case must capture its actual visible result", saveScreenshot(screenshot))
@@ -3249,20 +3250,40 @@ class AndroidDeliveryInstrumentedTest {
       view.getWindowVisibleDisplayFrame(window)
       val visible = android.graphics.Rect(location[0], location[1], location[0] + view.width, location[1] + view.height)
       if (!locallyVisible || !visible.intersect(localOnScreen) || !visible.intersect(window)) visible.setEmpty()
-      val insets = androidx.core.view.ViewCompat.getRootWindowInsets(view)
-      val imeBottom = insets?.getInsets(androidx.core.view.WindowInsetsCompat.Type.ime())?.bottom ?: 0
-      val barsBottom = insets?.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars())?.bottom ?: 0
+      val releaseObservation = isReleaseRuntimeEvidence()
+      val insets = if (releaseObservation) null else androidx.core.view.ViewCompat.getRootWindowInsets(view)
+      val platformInsets = if (releaseObservation) view.rootWindowInsets else null
+      val imeBottom = if (!releaseObservation) insets?.getInsets(androidx.core.view.WindowInsetsCompat.Type.ime())?.bottom ?: 0
+        else if (Build.VERSION.SDK_INT >= 30) platformInsets?.getInsets(android.view.WindowInsets.Type.ime())?.bottom ?: 0
+        else imeWindows.maxOfOrNull { it.height() } ?: 0
+      @Suppress("DEPRECATION")
+      val barsBottom = if (!releaseObservation) insets?.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars())?.bottom ?: 0
+        else if (Build.VERSION.SDK_INT >= 30) platformInsets?.getInsets(android.view.WindowInsets.Type.systemBars())?.bottom ?: 0
+        else platformInsets?.stableInsetBottom ?: 0
+      val imeReportedVisible = if (!releaseObservation) insets?.isVisible(androidx.core.view.WindowInsetsCompat.Type.ime()) == true
+        else if (Build.VERSION.SDK_INT >= 30) platformInsets?.isVisible(android.view.WindowInsets.Type.ime()) == true
+        else imeWindows.isNotEmpty()
+      val tappableBottom = if (!releaseObservation) insets?.getInsets(androidx.core.view.WindowInsetsCompat.Type.tappableElement())?.bottom ?: 0
+        else if (Build.VERSION.SDK_INT >= 30) platformInsets?.getInsets(android.view.WindowInsets.Type.tappableElement())?.bottom ?: 0
+        else barsBottom
+      val gestureBottom = if (!releaseObservation) insets?.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemGestures())?.bottom ?: 0
+        else if (Build.VERSION.SDK_INT >= 30) platformInsets?.getInsets(android.view.WindowInsets.Type.systemGestures())?.bottom ?: 0
+        else 0
+      val mandatoryGestureBottom = if (!releaseObservation) insets?.getInsets(androidx.core.view.WindowInsetsCompat.Type.mandatorySystemGestures())?.bottom ?: 0
+        else if (Build.VERSION.SDK_INT >= 30) platformInsets?.getInsets(android.view.WindowInsets.Type.mandatorySystemGestures())?.bottom ?: 0
+        else 0
+      if (releaseObservation) observed.put("insets_observation", if (Build.VERSION.SDK_INT >= 30) "framework_window_insets" else "legacy_framework_stable_bar_and_native_ime_window")
       val input = activity.getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
       observed.put("activity_window_focus", activity.hasWindowFocus()).put("webview_window_focus", view.hasWindowFocus()).put("shown", view.isShown)
         .put("view_left", location[0]).put("view_top", location[1]).put("view_width", view.width).put("view_height", view.height).put("density", view.resources.displayMetrics.density)
         .put("view_scroll_x", view.scrollX).put("view_scroll_y", view.scrollY)
         .put("local_visible_screen", nativeRectBounds(localOnScreen)).put("window_visible_frame", nativeRectBounds(window)).put("effective_visible_screen", nativeRectBounds(visible))
-        .put("ime_reported_visible", insets?.isVisible(androidx.core.view.WindowInsetsCompat.Type.ime()) == true)
+        .put("ime_reported_visible", imeReportedVisible)
         .put("ime_bottom", imeBottom).put("system_bars_bottom", barsBottom).put("input_method_active", input.isActive(view))
         .put("ime_window_bounds", JSONArray(imeWindows.map { nativeRectBounds(it) }))
-        .put("tappable_element_bottom", insets?.getInsets(androidx.core.view.WindowInsetsCompat.Type.tappableElement())?.bottom ?: 0)
-        .put("system_gesture_bottom", insets?.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemGestures())?.bottom ?: 0)
-        .put("mandatory_system_gesture_bottom", insets?.getInsets(androidx.core.view.WindowInsetsCompat.Type.mandatorySystemGestures())?.bottom ?: 0)
+        .put("tappable_element_bottom", tappableBottom)
+        .put("system_gesture_bottom", gestureBottom)
+        .put("mandatory_system_gesture_bottom", mandatoryGestureBottom)
       if (target?.optBoolean("found") == true && target.optDouble("viewport_width") > 0) {
         // CSS coordinates use one physical scale, including when only height is occluded.
         val scale = view.width / target.getDouble("viewport_width")

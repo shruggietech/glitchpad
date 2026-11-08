@@ -11,3 +11,7 @@ Final-byte evidence under ignored `artifacts/android/` includes canonical artifa
 Local Windows execution must use `scripts/invoke-docker-hidden.ps1` with the reusable `glitchpad-android-package:local` image. The image is built from the `android-package` target in `scripts/docker/validation.Dockerfile`; do not run Java, Gradle, Android, Node.js, Rust, or package tools directly on the Windows desktop.
 
 Physical-device installation and manual TalkBack checks are unavailable and are not required under the 2026-11-02 owner decision. Hosted API 24/36 instrumentation covers touch, rotation, background/restore, low-memory and provider interoperability; no physical-device or manual screen-reader validation is claimed.
+
+## Release instrumentation evidence
+
+The test APK retains five reviewed notice assets from release-test-notices/. The package job and later accepted-input consumer compare those assets with the signed APK byte for byte. Separate test compile/runtime dependency reports record resolved module identities; the product SBOM remains the product runtime graph. JUnit and Hamcrest source/license provenance and the test-only Kotlin/tracing namespace transformation are recorded in the test notices.

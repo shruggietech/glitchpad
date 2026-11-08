@@ -30,10 +30,18 @@ run_phase() {
   local directory="$1" case_id="$2" method="$3"
   shift 3
   local command_exit=0 logcat_exit=0 capture_exit=0 pass=false
-  adb_bounded shell am force-stop com.shruggietech.glitchpad
-  adb_bounded shell am force-stop com.shruggietech.glitchpad.test
-  adb_bounded logcat -c
-  timeout --signal=KILL 360s adb shell am instrument -w \
+  if {
+    adb_bounded shell am force-stop com.shruggietech.glitchpad &&
+    adb_bounded shell am force-stop com.shruggietech.glitchpad.test &&
+    adb_bounded logcat -c
+  } > "$directory/$case_id-support.txt" 2>&1; then
+    :
+  else
+    local support_exit=$?
+    printf '{"command_exit":%s,"logcat_exit":null,"capture_exit":null,"pass":false,"phase":"supporting_setup"}\n' "$support_exit" > "$directory/$case_id-status.json"
+    return 1
+  fi
+  timeout --signal=KILL 360s adb shell am instrument -w -r \
     -e waitForActivitiesToComplete false -e releaseRuntime true \
     -e expectedSource "$source" -e expectedRole ordinary \
     -e expectedApplicationSha "$app_sha" -e expectedInstrumentationSha "$test_sha" \

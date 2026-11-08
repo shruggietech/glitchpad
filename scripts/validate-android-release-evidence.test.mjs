@@ -42,7 +42,7 @@ function row(caseId) {
       application_sha256: expected.applicationSha,
       instrumentation_sha256: expected.instrumentationSha,
       version: '0.2.1',
-      version_code: 2001,
+      version_code: 1004,
       api_level: 24,
       build_variant: 'ordinary',
       channel: 'release',
@@ -89,6 +89,7 @@ test('release rows require independent installed bytes, source, role and actual 
     application_sha256: 'c'.repeat(64),
     instrumentation_sha256: 'c'.repeat(64),
     api_level: 36,
+    version_code: 2001,
     application_debuggable: true,
     build_variant: 'fault_probe',
     channel: 'debug',
@@ -117,6 +118,7 @@ test('a marker or claimed pass cannot hide runner failure or wrong readback byte
   };
   const output = 'OK (1 test)\nINSTRUMENTATION_CODE: -1\n';
   validateReleaseAttempt(clean, output, marker, 'delivery', marker.sha256);
+  assert.throws(() => validateReleaseAttempt(clean, 'OK (1 test)\n', marker, 'delivery', marker.sha256), /instrumentation completion/u);
   assert.throws(() =>
     validateReleaseAttempt(
       { ...clean, command_exit: 137 },

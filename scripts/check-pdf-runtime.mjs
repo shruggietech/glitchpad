@@ -14,6 +14,7 @@ const output=resolve(root,'artifacts/pdf-runtime',legacy?'chrome69':'current');
 await mkdir(output,{recursive:true});
 const fixture=await readFile(resolve(root,'fixtures/pdf/s049-compatibility.pdf'));
 const errors=[];const consoleMessages=[];const requests=[];
+let page;let version;
 const server=createServer(async(request,response)=>{
   try {
     const url=new URL(request.url,'http://127.0.0.1');
@@ -28,8 +29,8 @@ server.listen(0,'127.0.0.1');await once(server,'listening');
 const implementation=legacy?await import('/tmp/glitchpad-browser-compat/client/node_modules/puppeteer-core/index.js'):await import('puppeteer');
 const browser=await implementation.default.launch({headless:legacy?true:'shell',...(legacy?{executablePath:'/tmp/glitchpad-browser-compat/chromium/linux-576753/chrome-linux/chrome'}:{}),args:['--no-sandbox','--disable-dev-shm-usage']});
 try {
-  const version=await browser.version();if(legacy)assert.match(version,/69\.0\.3497\.0/);
-  const page=await browser.newPage();await page.setViewport({width:480,height:800});
+  version=await browser.version();if(legacy)assert.match(version,/69\.0\.3497\.0/);
+  page=await browser.newPage();await page.setViewport({width:480,height:800});
   await page.setUserAgent('Mozilla/5.0 (Linux; Android 7.0) AppleWebKit/537.36 Chrome/69.0.3497.0 Mobile Safari/537.36');
   page.on('pageerror',error=>errors.push(String(error)));
   page.on('console',message=>consoleMessages.push(message.text()));
@@ -72,4 +73,8 @@ try {
   await page.screenshot({path:resolve(output,'page.png')});
   await writeFile(resolve(output,'result.json'),JSON.stringify({schema_version:1,diagnostic_only:true,candidate_qualified:false,evidence_class:'production_browser_synthetic_native_boundary',source:process.env.SOURCE_REF||null,browser:version,fixture_sha256:createHash('sha256').update(fixture).digest('hex'),facts,errors,consoleMessages,requests,second_page:true},null,2)+'\n');
   assert.deepEqual(errors,[]);console.log('PDF production browser read/navigation passed: '+version);
+}catch(error){
+  await writeFile(resolve(output,'failure.json'),JSON.stringify({version,error:String(error),errors,consoleMessages,requests,body:page?await page.$eval('body',node=>node.innerText).catch(()=>null):null},null,2)+'\n');
+  if(page)await page.screenshot({path:resolve(output,'failure.png')}).catch(()=>undefined);
+  throw error;
 }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}

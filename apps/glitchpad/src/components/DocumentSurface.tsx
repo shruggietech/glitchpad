@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useState } from 'react';
+import { forwardRef, lazy, Suspense, useEffect, useState } from 'react';
 import {
   reportRecoveryFailure,
   type RecoveryFailureReporter,
@@ -24,7 +24,7 @@ import {
 import { LargeTextSurface } from './LargeTextSurface';
 import { MermaidSurface } from './MermaidSurface';
 import { ImageSurface } from './ImageSurface';
-import { PdfSurface } from './PdfSurface';
+const PdfSurface = lazy(() => import('./PdfSurface').then(module => ({ default: module.PdfSurface })));
 import type { PdfDocumentState } from '../domain/pdf-contract';
 import type { ImageDocumentState } from '../domain/image-contract';
 import type { MetadataContribution } from '../domain/metadata';
@@ -199,7 +199,9 @@ export const DocumentSurface = forwardRef<
   };
 
   const presentation = session.pdf_document ? (
-    <PdfSurface ref={ref} key={session.id} session={session} onPdfChange={onPdfChange} onOpenMetadata={onOpenMetadata} />
+    <Suspense fallback={<p role="status">Loading PDF renderer…</p>}>
+      <PdfSurface ref={ref} key={session.id} session={session} onPdfChange={onPdfChange} onOpenMetadata={onOpenMetadata} />
+    </Suspense>
   ) : session.image_document ? (
     <ImageSurface
       ref={ref}

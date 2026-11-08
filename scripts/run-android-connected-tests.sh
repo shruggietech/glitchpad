@@ -193,6 +193,19 @@ console.log('tested_apk_evidence=' + JSON.stringify(receipt));
 NODE
 }
 
+# A focused ordinary PDF diagnostic reuses the same installed-byte readback.
+if [[ "${GLITCHPAD_ANDROID_PDF_PREFLIGHT:-false}" == "true" ]]; then
+  [[ "${GLITCHPAD_BUILD_COMMIT:-}" =~ ^[0-9a-f]{40}$ ]] || exit 2
+  adb install --no-streaming -r -t crates/glitchpad-host/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk || exit 1
+  adb install --no-streaming -r -t crates/glitchpad-host/gen/android/app/build/outputs/apk/androidTest/universal/debug/app-universal-debug-androidTest.apk || exit 1
+  preflight_output="${RUNNER_TEMP:-/tmp}/s049-pdf-compatibility.txt"
+  status=0
+  ANDROID_INSTRUMENTATION_RESET_APP_DATA=true bash scripts/run-android-instrumentation.sh "$preflight_output" 's049_pdf_compatibility=' -e waitForActivitiesToComplete false -e expectedSource "$GLITCHPAD_BUILD_COMMIT" -e expectedRole ordinary -e class com.shruggietech.glitchpad.source.AndroidDeliveryInstrumentedTest#pdfCompatibility || status=$?
+  retain_tested_candidate post_direct_suite_existing_install || exit 1
+  adb shell -T -n run-as com.shruggietech.glitchpad cat files/s049-pdf-compatibility.json > "${RUNNER_TEMP:-/tmp}/s049-pdf-compatibility.json" || status=1
+  exit "$status"
+fi
+
 # AGP 8.11 ddmlib repeatedly stalls install-write on API24.
 # Run the identical selected JUnit suite through the strict two-attempt runner.
 api_level=$(adb shell getprop ro.build.version.sdk | tr -d '\r') || exit 1

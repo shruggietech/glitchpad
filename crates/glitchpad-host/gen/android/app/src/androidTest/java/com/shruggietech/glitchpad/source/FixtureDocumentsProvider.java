@@ -132,6 +132,10 @@ public final class FixtureDocumentsProvider extends DocumentsProvider {
     if (!directory.exists() && !directory.mkdirs()) {
       throw new IllegalStateException("fixture_directory_create_failed");
     }
+    for (String name : new String[] {"s049-compatibility.pdf", "s049-small.pdf", "s049-malformed.pdf"}) {
+      try { FixtureCanonicalFiles.initialize(new File(directory, name), () -> getContext().getAssets().open(name), false); }
+      catch (IOException error) { throw new IllegalStateException("pdf_fixture_copy_failed", error); }
+    }
     writeFixture(directory, "seekable.txt", "seekable fixture payload");
     writeFixture(directory, "unknown-size.txt", "unknown size payload");
     writeFixture(directory, "metadata-omitted.txt", "metadata omission payload");
@@ -378,6 +382,7 @@ public final class FixtureDocumentsProvider extends DocumentsProvider {
   }
 
   private static String mimeType(String name) {
+    if (name.endsWith(".pdf")) return "application/pdf";
     if ("s048-installed-application.apk".equals(name) || "s048-installed-instrumentation.apk".equals(name)) return "application/vnd.android.package-archive";
     if (name.endsWith(".png")) return "image/png";
     if (name.startsWith("original.")) {

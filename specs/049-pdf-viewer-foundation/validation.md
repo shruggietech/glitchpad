@@ -21,3 +21,7 @@ Isolated preparation run42521116684 passed againstcb5419df3b875c70e6370dc6117b45
 ## 2026-11-08: Composed build attempt1
 
 Run42521619680 against1c0e2ec75dc403143ffea307dc947b52c2006609 failed typecheck because the minimal PDF surface used inspect_metadata instead of the existing metadata command ID. Resource/decoder and contract tests passed; no emitted worker/native runtime result was produced. Corrected the command ID and added the original structured/hostile PDF fixture generator plus a composed production-browser read probe for the next focused run.
+
+## 2026-11-08: First composed production-browser observation
+
+Run42521961498 passed againsta88e684b91b3794e297900133c5c33258e56699c. Artifact13633339242 independently hashed9cd341c4f1af22bd4b4e7c1b24200c719851ac75be146caa431b1d610a544950. Actual HeadlessChrome156.0.8078.47 loaded the emitted classic worker (1971283bytes, SHA2561d55a00eeba223fa0fc1c6e2c7b9f8f7a9ecc10b17b24a5a6bec1e16f9729cbd), rendered2130dark canvas pixels, exposed selectable expected text including BSD Symbol glyphs, and navigated to page2. First content requested4096+65536+5314bytes from the1053890byte self-authored PDF. No page errors, automatic external request, PDF OpenAction execution or forbidden native write/opener call was observed. The real production bundle uses a synthetic native source boundary in this check; this is diagnostic browser evidence, not installed-device or candidate qualification. Generated fixtures were independently read back and committed with hashes/provenance for the native preflight.

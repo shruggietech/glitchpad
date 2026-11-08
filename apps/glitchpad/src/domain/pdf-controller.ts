@@ -111,11 +111,13 @@ export class PdfController {
   cancel():void {this.release();this.publish({state:'cancelled',error:null});}
   dispose():void {this.release();this.publish({state:'disposed',error:null});this.listeners.clear();}
   private release():void {
+    const started=performance.now();const terminated=this.nativeWorker!==null;
     ++this.generation;this.aborter.abort();this.passwordContinuation=null;
     for(const dispose of [...this.surfaces])dispose();
     this.nativeWorker?.terminate();this.nativeWorker=null;this.workerReady=false;
     const loading=this.loading;this.loading=null;if(loading)void loading.destroy().catch(()=>undefined);
     this.parserWorker?.destroy();this.parserWorker=null;this.document=null;
     const source=this.source;this.source=null;if(source)void Promise.resolve(source.close()).catch(()=>undefined);
+    if(terminated && typeof window!=='undefined')window.dispatchEvent(new CustomEvent('glitchpad-pdf-disposed',{detail:{owner_id:this.state.owner_id,worker_terminated:true,...this.resourceCounts,elapsed_ms:performance.now()-started}}));
   }
 }

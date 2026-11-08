@@ -88,6 +88,45 @@ class AndroidDeliveryInstrumentedTest {
     }
   }
 
+  @Test
+  fun pdfCompatibility() {
+    assertEquals("PDF preflight uses the ordinary composed application", "ordinary", expectedBuildVariant())
+    val scenario = launchS047()
+    val identity = candidateIdentity(scenario)
+    val uri = grant(documentUri("s049-compatibility.pdf"))
+    val original = readBytes(uri)
+    val component = ComponentName(clientContext, MainActivity::class.java)
+    clientContext.startActivity(viewIntent(uri, "application/pdf").setComponent(component).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    waitForDocumentIdentity(scenario, "s049-compatibility.pdf")
+    try {
+      waitForCondition(scenario, "!!document.querySelector('[data-pdf-ready=true][data-pdf-worker=true]')", "actual PDF worker and page content must become ready", deadlineOverride = SystemClock.elapsedRealtime() + 60_000L)
+    } catch (failure: Throwable) {
+      println("s049_pdf_failure=" + runCatching { evaluate(scenario, "JSON.stringify({body:document.body.innerText,state:document.querySelector('.pdf-layout')?document.querySelector('.pdf-layout').outerHTML:null})") }.getOrDefault("unavailable"))
+      System.out.flush(); throw failure
+    }
+    val facts = JSONObject(evaluate(scenario, "(()=>{const c=document.querySelector('.pdf-page canvas');const d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;let ink=0;for(let i=0;i<d.length;i+=4)if(d[i]<200&&d[i+1]<200&&d[i+2]<200)ink++;const t=document.querySelector('.pdf-text-layer');const s=window.getSelection();s.selectAllChildren(t);const selected=s.toString();s.removeAllRanges();return {width:c.width,height:c.height,ink,text:t.textContent,selected,worker:document.querySelector('.pdf-layout').getAttribute('data-pdf-worker'),engine:document.querySelector('.pdf-layout').getAttribute('data-pdf-engine'),executed:window.__s049PdfExecuted===true,frames:document.querySelectorAll('[data-bb-app-frame]').length};})()"))
+    assertTrue("PDF canvas must contain real text ink", facts.getInt("ink") > 500)
+    assertTrue(facts.getString("text").contains("Glitchpad PDF compatibility page 1"))
+    assertTrue("PDF display text must remain selectable", facts.getString("selected").contains("Glitchpad PDF compatibility page 1"))
+    assertEquals("true", facts.getString("worker")); assertEquals("6.5.438", facts.getString("engine"))
+    assertFalse("PDF OpenAction JavaScript must remain inert", facts.getBoolean("executed"));assertEquals(1, facts.getInt("frames"))
+    clickControl(scenario, "Next page")
+    waitForCondition(scenario, "!!document.querySelector('[data-pdf-ready=true]')&&document.querySelector('.pdf-text-layer').textContent.includes('page 2')", "actual PDF page navigation must finish")
+    evaluate(scenario, "window.__s049PdfDisposals=[];window.addEventListener('glitchpad-pdf-disposed',e=>window.__s049PdfDisposals.push(e.detail));true")
+    val warm = grant(documentUri("resolver-warm"))
+    clientContext.startActivity(viewIntent(warm, "text/plain").setComponent(component).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    waitForBodyText(scenario, "resolver-warm.txt", "S031_WARM_MARKER_7C9D")
+    waitForCondition(scenario, "window.__s049PdfDisposals.length>0", "tab switch must dispose the actual PDF worker")
+    val disposal = JSONObject(evaluate(scenario, "window.__s049PdfDisposals[0]"))
+    assertTrue(disposal.getBoolean("worker_terminated"));assertEquals(0, disposal.getInt("workers"));assertEquals(0, disposal.getInt("surfaces"));assertEquals(0, disposal.getInt("surfaceBytes"));assertTrue("actual cancellation acknowledgement must remain within250ms", disposal.getDouble("elapsed_ms") <= 250.0)
+    assertTrue("viewing/navigation must preserve original provider bytes", original.contentEquals(readBytes(uri)))
+    val webview = WebViewCompat.getCurrentWebViewPackage(clientContext)
+    if (Build.VERSION.SDK_INT == 24) assertTrue("minimum profile must retain actual Chrome69", webview?.versionName?.startsWith("69.") == true)
+    val result = JSONObject().put("schema_version",1).put("diagnostic_only",true).put("candidate_qualified",false).put("source_commit",InstrumentationRegistry.getArguments().getString("expectedSource")).put("api_level",Build.VERSION.SDK_INT).put("webview_package",webview?.packageName).put("webview_version",webview?.versionName).put("candidate_identity",identity).put("fixture_sha256",sha256(original)).put("facts",facts).put("second_page",true).put("disposal",disposal).put("source_unchanged",true)
+    File(clientContext.filesDir,"s049-pdf-compatibility.json").writeText(result.toString(2)+"\n",Charsets.UTF_8)
+    println("s049_pdf_compatibility="+result.toString());System.out.flush()
+  }
+
   @Test fun shellCommandTransportPreservesFixtureBytesAndExitStatus() {
     assertEquals("fixture Ω two words", checkedShell("printf '%s' 'fixture Ω two words'"))
     assertEquals("line one\nline two", checkedShell("printf 'line one\\nline two'"))

@@ -183,3 +183,39 @@ sensitivity_review = "Synthetic numeric thresholds, classifications, and stable 
 format = "JSON"
 purpose = "Exact classification boundaries, consecutive-warning history, and malformed evidence validation"
 expected_result = "All policy consumers reject invalid evidence and agree on pass, warning, failure, and follow-up results"
+
+[[fixture]]
+path = "fixtures/pdf/s049-compatibility.pdf"
+source = "Original Glitchpad S049 PDF fixture generator"
+author = "Glitchpad contributors"
+license = "Apache-2.0"
+redistribution = true
+sha256 = "eef48ae38011f7e8ce5661dfdc0f508c46a0444a7146c260ad7961ddbf63a5af"
+sensitivity_review = "Self-authored synthetic PDF text, metadata and inert security strings only"
+format = "PDF"
+purpose = "Offline worker, fonts, range reads, navigation and inert action/link validation"
+expected_result = "Readable selectable content; scripts and automatic links remain inert; source bytes unchanged"
+
+[[fixture]]
+path = "fixtures/pdf/s049-small.pdf"
+source = "Original Glitchpad S049 PDF fixture generator"
+author = "Glitchpad contributors"
+license = "Apache-2.0"
+redistribution = true
+sha256 = "7b66b4b31414b17d1285b960215c5757ebb8bb8a86c9c844c6b4d3df61c6ba2e"
+sensitivity_review = "Self-authored synthetic PDF text, metadata and inert security strings only"
+format = "PDF"
+purpose = "Offline worker, fonts, range reads, navigation and inert action/link validation"
+expected_result = "Readable selectable content; scripts and automatic links remain inert; source bytes unchanged"
+
+[[fixture]]
+path = "fixtures/pdf/s049-malformed.pdf"
+source = "Original Glitchpad S049 PDF fixture generator"
+author = "Glitchpad contributors"
+license = "Apache-2.0"
+redistribution = true
+sha256 = "411511bdb3d98354a77bbe6b72c97b6b3cb18feb9c90302ad7f221ed2ec5ea91"
+sensitivity_review = "Self-authored synthetic PDF text, metadata and inert security strings only"
+format = "PDF"
+purpose = "Bounded malformed parser outcome"
+expected_result = "Stable malformed result without source mutation"

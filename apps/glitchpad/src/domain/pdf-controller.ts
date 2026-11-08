@@ -90,16 +90,17 @@ export class PdfController {
   password(value:string):void {const continuation=this.passwordContinuation;this.passwordContinuation=null;if(continuation){this.publish({state:'loading',error:null});continuation(value);}}
   navigate(page:number):void {if(!this.document || !Number.isSafeInteger(page) || page<0 || page>=this.document.numPages)throw new PdfFailure('invalid_destination');this.publish({navigation:{...this.state.navigation,page}});}
 
-  async renderPage(index:number,canvas:HTMLCanvasElement,textContainer:HTMLElement,scale:number,rotation:number):Promise<PdfPageSurface> {
+  async renderPage(index:number,canvas:HTMLCanvasElement,textContainer:HTMLElement,scale:number,rotation:number,signal?:AbortSignal):Promise<PdfPageSurface> {
     const generation=this.generation;this.current(generation);const document=this.document;if(!document || !this.source)throw new PdfFailure('unavailable');
     if(!Number.isInteger(index)||index<0||index>=document.numPages)throw new PdfFailure('invalid_destination');
-    const page=await document.getPage(index+1);this.current(generation);
+    if(signal?.aborted)throw new PdfFailure('cancelled');
+    const page=await document.getPage(index+1);this.current(generation);if(signal?.aborted)throw new PdfFailure('cancelled');
     const viewport=page.getViewport({scale,rotation});const width=Math.ceil(viewport.width),height=Math.ceil(viewport.height);
     const bytes=pdfSurfaceBytes(width,height,this.source.platform);
     if(this.surfaceBytes+bytes>PDF_LIMITS[this.source.platform].surfaceBytes){this.publish({state:'limited',reduced_cache:true});throw new PdfFailure('surface_limit');}
     this.surfaceBytes+=bytes;canvas.width=width;canvas.height=height;
     let render:RenderTask|null=null;let text:TextLayer|null=null;let disposed=false;
-    const dispose=()=>{if(disposed)return;disposed=true;render?.cancel();text?.cancel();canvas.width=0;canvas.height=0;textContainer.replaceChildren();this.surfaceBytes-=bytes;this.surfaces.delete(dispose);page.cleanup();};this.surfaces.add(dispose);
+    const dispose=()=>{if(disposed)return;disposed=true;signal?.removeEventListener('abort',dispose);render?.cancel();text?.cancel();canvas.width=0;canvas.height=0;textContainer.replaceChildren();this.surfaceBytes-=bytes;this.surfaces.delete(dispose);page.cleanup();};this.surfaces.add(dispose);signal?.addEventListener('abort',dispose,{once:true});
     try {
       const context=canvas.getContext('2d');if(!context)throw new PdfFailure('unavailable');
       render=page.render({canvas,canvasContext:context,viewport});await render.promise;this.current(generation);if(disposed)throw new PdfFailure('cancelled');

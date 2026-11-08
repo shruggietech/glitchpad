@@ -20,6 +20,38 @@ export interface LargeTextGateway {
   ): Promise<RangeReadResult>;
 }
 
+export function decodeNativeRangeFrame(reply: unknown, sourceId: SourceId, offset: number, length: number): RangeReadResult {
+  let frame: Uint8Array;
+  if (reply instanceof ArrayBuffer && reply.byteLength <= length + 1)
+    frame = new Uint8Array(reply);
+  else if (
+    Array.isArray(reply) &&
+    reply.length <= length + 1 &&
+    reply.every(
+      (byte) => Number.isInteger(byte) && byte >= 0 && byte <= 255,
+    )
+  )
+    frame = Uint8Array.from(reply);
+  else
+    throw new RangeError(
+      'Android range reply is outside the bounded transport',
+    );
+  if (
+    !frame.length ||
+    frame[0] > 1 ||
+    (frame[0] === 0 && frame.length - 1 !== length)
+  )
+    throw new RangeError(
+      'Android range reply has an invalid terminal header',
+    );
+  return {
+    source_id: sourceId,
+    offset,
+    bytes: frame.subarray(1),
+    end_of_source: frame[0] === 1,
+  };
+}
+
 export const createNativeLargeTextGateway = (
   android = /android/i.test(navigator.userAgent),
 ): LargeTextGateway => ({
@@ -44,35 +76,7 @@ export const createNativeLargeTextGateway = (
       });
       if (signal?.aborted)
         throw new DOMException('Operation cancelled', 'AbortError');
-      let frame: Uint8Array;
-      if (reply instanceof ArrayBuffer && reply.byteLength <= length + 1)
-        frame = new Uint8Array(reply);
-      else if (
-        Array.isArray(reply) &&
-        reply.length <= length + 1 &&
-        reply.every(
-          (byte) => Number.isInteger(byte) && byte >= 0 && byte <= 255,
-        )
-      )
-        frame = Uint8Array.from(reply);
-      else
-        throw new RangeError(
-          'Android range reply is outside the bounded transport',
-        );
-      if (
-        !frame.length ||
-        frame[0] > 1 ||
-        (frame[0] === 0 && frame.length - 1 !== length)
-      )
-        throw new RangeError(
-          'Android range reply has an invalid terminal header',
-        );
-      return {
-        source_id: sourceId,
-        offset,
-        bytes: frame.subarray(1),
-        end_of_source: frame[0] === 1,
-      };
+      return decodeNativeRangeFrame(reply, sourceId, offset, length);
     }
     const result = await invoke<
       Omit<RangeReadResult, 'bytes'> & { bytes: number[] }

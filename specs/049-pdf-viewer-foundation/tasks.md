@@ -27,7 +27,7 @@ Independent test: actual source-to-canvas/selectable-text journey, limits/passwo
 
 - [ ] T008 [P] [US1] Add range/revision/limit/cancel/error controller tests in apps/glitchpad/src/domain/pdf-controller.test.ts and pdf-source-gateway.test.ts. (FR-002,005,006,008,009)
 - [ ] T009 [US1] Add bounded source gateway and PDF detection/materialization before whole-text allocation in apps/glitchpad/src/domain/pdf-source-gateway.ts, desktop-delivery-gateway.ts, android-restoration-gateway.ts and crates/glitchpad-core/src/detection.rs. (FR-002,006,017)
-- [ ] T010 [US1] Add bounded cancellable revision-bound Android private disk spool in crates/glitchpad-android-source/android/src/main/java/com/shruggietech/glitchpad/source/PdfSourceCache.kt with narrow host/model commands in crates/glitchpad-host/src/android_source/mod.rs. (FR-002,005,006,008,009)
+- [ ] T010 [US1] Add bounded cancellable revision-bound Android private disk spool in crates/glitchpad-host/src/pdf_cache.rs using existing bounded stream leases and narrow cancellation in crates/glitchpad-host/src/android_source/mod.rs. (FR-002,005,006,008,009)
 - [ ] T011 [US1] Implement PDF controller load/password/error, ownership and real task disposal in apps/glitchpad/src/domain/pdf-controller.ts and contracts.ts. (FR-001,005,008,009,016)
 - [ ] T012 [US1] Add minimal readable canvas/text PdfSurface and DocumentSurface integration in apps/glitchpad/src/components/PdfSurface.tsx and DocumentSurface.tsx. (FR-004,007,016)
 - [ ] T013 [US1] Run actual installed ordinary API24 worker/load/render/isolation/cancel preflight through AndroidDeliveryInstrumentedTest and scripts/run-android-connected-tests.sh, then API36; retain attempts in specs/049-pdf-viewer-foundation/validation.md before broad UI. (FR-019,020)

@@ -18,6 +18,7 @@ export const PdfSurface=forwardRef<TextEditorHandle,Props>(function PdfSurface({
   const [state,setState]=useState(controller.state);
   const [pageReady,setPageReady]=useState(false);
   const [pageError,setPageError]=useState<string|null>(null);
+  const [preparation,setPreparation]=useState<string|null>(null);
   const [password,setPassword]=useState('');
   const [retry,setRetry]=useState(0);
   const [scale,setScale]=useState(1);
@@ -29,9 +30,9 @@ export const PdfSurface=forwardRef<TextEditorHandle,Props>(function PdfSurface({
   const callbacks=useRef({onPdfChange,onOpenMetadata});callbacks.current={onPdfChange,onOpenMetadata};
   useEffect(()=>controller.subscribe(next=>{setState(next);callbacks.current.onPdfChange?.(session.id,session.revision,next);}),[controller,session.id,session.revision]);
   useEffect(()=>{
-    let active=true;
-    void createPdfSourceLease(session).then(lease=>{if(!active){void lease.close();return;}return controller.open(lease);}).catch(error=>{if(active)setPageError(classifyPdfFailure(error));});
-    return()=>{active=false;controller.dispose();};
+    let active=true;const preparationAbort=new AbortController();setPreparation(null);
+    void createPdfSourceLease(session,undefined,undefined,{signal:preparationAbort.signal,onProgress(processed,total){if(active)setPreparation('Preparing PDF: '+(processed/1048576).toFixed(1)+' MiB'+(total===null?'':' of '+(total/1048576).toFixed(1)+' MiB'));}}).then(lease=>{if(!active){void lease.close();return;}setPreparation(null);return controller.open(lease);}).catch(error=>{if(active){setPreparation(null);setPageError(classifyPdfFailure(error));}});
+    return()=>{active=false;preparationAbort.abort();controller.dispose();};
   },[controller,session.source_state,retry]);
   useEffect(()=>{
     const element=pane.current;if(!element)return;
@@ -39,17 +40,17 @@ export const PdfSurface=forwardRef<TextEditorHandle,Props>(function PdfSurface({
     const observer=typeof ResizeObserver==='undefined'?null:new ResizeObserver(measure);observer?.observe(element);return()=>observer?.disconnect();
   },[]);
   useEffect(()=>{
-    let active=true;let surface:PdfPageSurface|null=null;setPageReady(false);setPageError(null);
+    let active=true;const renderAbort=new AbortController();let surface:PdfPageSurface|null=null;setPageReady(false);setPageError(null);
     if(!state.capabilities.view || !canvas.current || !text.current || !controller.document)return;
     const render=async()=>{
       const page=await controller.document!.getPage(state.navigation.page+1);if(!active)return;
       const base=page.getViewport({scale:1,rotation});const fit=Math.min(width/base.width,2);const zoom=fit*scale;
       const container=text.current!;container.style.setProperty('--total-scale-factor',String(zoom));
-      const result=await controller.renderPage(state.navigation.page,canvas.current!,container,zoom,rotation);
+      const result=await controller.renderPage(state.navigation.page,canvas.current!,container,zoom,rotation,renderAbort.signal);
       if(!active){result.dispose();return;}surface=result;setPageReady(true);
     };
     void render().catch(error=>{if(active)setPageError(classifyPdfFailure(error));});
-    return()=>{active=false;surface?.dispose();};
+    return()=>{active=false;renderAbort.abort();surface?.dispose();};
   },[controller,state.capabilities.view,state.navigation.page,scale,rotation,width]);
   const go=(offset:number)=>{try{controller.navigate(state.navigation.page+offset);}catch{/* Boundaries are disabled below. */}};
   useImperativeHandle(handleRef,()=>({
@@ -68,7 +69,7 @@ export const PdfSurface=forwardRef<TextEditorHandle,Props>(function PdfSurface({
     <div className="pdf-pane" ref={pane} tabIndex={0} aria-label="PDF pages">
       <div className="pdf-page" aria-label={'Page '+String(state.navigation.page+1)}><canvas ref={canvas} aria-hidden="true"/><div ref={text} className="pdf-text-layer"/></div>
     </div>
-    {(!pageReady||pageError||state.error)&&<p className="pdf-status" role="status">{pageError??state.error??(state.state==='loading'?'Loading PDF…':state.state==='password_required'?'Password required':state.state)}{state.state==='failed'&&<Button variant="secondary" onClick={()=>setRetry(x=>x+1)}>Retry PDF</Button>}</p>}
+    {(!pageReady||pageError||state.error)&&<p className="pdf-status" role="status">{pageError??state.error??preparation??(state.state==='loading'?'Loading PDF…':state.state==='password_required'?'Password required':state.state)}{state.state==='failed'&&<Button variant="secondary" onClick={()=>setRetry(x=>x+1)}>Retry PDF</Button>}</p>}
     <TaskSurface open={state.state==='password_required'} onOpenChange={open=>{if(!open){setPassword('');controller.cancel();}}} title="PDF password" className="pdf-tools">
       <form onSubmit={event=>{event.preventDefault();controller.password(password);setPassword('');}}>
         <Field id="pdf-password" label="Password" error={state.error==='incorrect_password'?'The password was not accepted.':undefined} control={<TextInput type="password" autoComplete="off" value={password} onChange={event=>setPassword(event.target.value)}/>}/>

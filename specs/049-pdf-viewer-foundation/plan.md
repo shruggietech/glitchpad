@@ -56,7 +56,7 @@ Shared domain additions: apps/glitchpad/src/domain/pdf-contract.ts, pdf-controll
 
 Build/security additions: scripts/prepare-pdf-assets.mjs and tests, exact engine compatibility transform in apps/glitchpad/vite.config.ts, native PDF worker response policy and main-window setup in crates/glitchpad-host/src/lib.rs / tauri.conf.json; package/dependency lock and licensing/notices integration.
 
-Native data/print additions: narrow PDF command/model wrappers in crates/glitchpad-host/src/{source,android_source}/ and crates/glitchpad-android-source/src/; Kotlin PdfSourceCache.kt, PdfPrintStore.kt and PdfPrintAdapter.kt beside AndroidSourcePlugin.kt/Models.kt. No general filesystem or print service is exposed to the renderer.
+Native data/print additions: narrow PDF command/model wrappers in crates/glitchpad-host/src/{source,android_source}/ and crates/glitchpad-android-source/src/; Rust pdf_cache.rs plus Kotlin PdfPrintStore.kt and PdfPrintAdapter.kt beside AndroidSourcePlugin.kt/Models.kt. No general filesystem or print service is exposed to the renderer.
 
 Proof additions: fixtures/pdf/ and fixture provenance, scripts/check-pdf-runtime.mjs, focused browser/production-worker evidence, existing Android instrumentation/provider and bounded runners, desktop package/lifecycle probes, applicable CI/package definitions, changelog.d/S049.md and honest unreleased documentation.
 

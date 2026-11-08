@@ -1,4 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
+import { createRequestId as requestId } from './request-id';
 import { consumeRecoveryProbe } from './recovery-probes';
 import type { ExternalRevision, ShellSession } from './contracts';
 import {
@@ -83,13 +84,7 @@ export interface ImageGateway {
   ): Promise<{ status: 'exported' | 'cancelled'; durability: string | null }>;
 }
 
-const requestId = (): string => {
-  const bytes = crypto.getRandomValues(new Uint8Array(16));
-  bytes[6] = (bytes[6] & 15) | 64;
-  bytes[8] = (bytes[8] & 63) | 128;
-  const hex = [...bytes].map((n) => n.toString(16).padStart(2, '0')).join('');
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
-};
+
 
 export const createImageGateway = (
   call: NativeInvoke = invoke,

@@ -14,6 +14,8 @@ pub mod images;
 pub mod lifecycle_probe;
 pub mod performance;
 pub mod pdf;
+#[cfg(any(target_os = "android", test))]
+mod pdf_cache;
 pub mod recovery;
 #[cfg(not(mobile))]
 pub mod source;
@@ -199,6 +201,10 @@ pub fn run() {
         advance_android_integrity,
         cancel_android_integrity,
         revalidate_android_source,
+        pdf_cache::begin_pdf_cache,
+        pdf_cache::advance_pdf_cache,
+        pdf_cache::read_pdf_cache,
+        pdf_cache::cancel_pdf_cache,
         restore_android_sources,
         save_android_source_as,
         create_android_document,
@@ -287,6 +293,7 @@ pub fn run() {
             #[cfg(target_os = "android")]
             {
                 use glitchpad_android_source::AndroidSourceExt;
+                app.manage(pdf_cache::PdfCacheHost::for_app(app));
                 app.manage(android_source::AndroidSourceHost::new(
                     app.android_source().inner().clone(),
                 ));

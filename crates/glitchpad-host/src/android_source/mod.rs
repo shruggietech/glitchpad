@@ -1032,6 +1032,20 @@ impl AndroidSourceHost {
         Ok(lease)
     }
 
+    /// Closes a specific owned stream without holding the registry during bridge I/O.
+    #[cfg(target_os = "android")]
+    pub(crate) fn close_stream_lease(&self, stream_id: &StreamId) -> Result<(), CoreError> {
+        let record = self.lock_registry()?.streams.get(stream_id).cloned();
+        let Some(record) = record else { return Ok(()); };
+        match self.plugin.close_stream(&record.bridge_token) {
+            Ok(()) => {},
+            Err(error) if error.contains("stream_not_found") => {},
+            Err(error) => return Err(plugin_error(&error)),
+        }
+        self.lock_registry()?.streams.remove(stream_id);
+        Ok(())
+    }
+
     #[cfg(target_os = "android")]
     pub fn read_stream(
         &self,

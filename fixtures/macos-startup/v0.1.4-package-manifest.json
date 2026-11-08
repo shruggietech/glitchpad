@@ -1,0 +1,126 @@
+{
+  "schema_version": 1,
+  "version": "0.1.4",
+  "platform": "macos",
+  "architecture": "universal",
+  "source_commit": "1d7dcd46689fb0ea68e4cee5c3d43a06d94bc94b",
+  "workflow_identity": "shruggietech/glitchpad/.github/workflows/macos-package.yml@refs/tags/v0.1.4",
+  "official": true,
+  "gate_status": "official_valid",
+  "artifact": {
+    "kind": "dmg",
+    "name": "glitchpad-0.1.4-macos-universal.dmg",
+    "bytes": 16140901,
+    "sha256": "0d116cf8f8d0528e2d84f54adc934a3368f9d221b07935bb8324d2213a8bfcff",
+    "size_classification": "pass",
+    "signature_status": "not_signed",
+    "notarization_status": "not_submitted",
+    "staple_status": "not_applicable"
+  },
+  "application": {
+    "bundle_name": "Glitchpad.app",
+    "identifier": "com.shruggietech.glitchpad",
+    "version": "0.1.4",
+    "minimum_system_version": "13.0",
+    "executable_path": "Contents/MacOS/glitchpad-host",
+    "executable_sha256": "9e801771ced41194e0072bee150236692596552687e7e9bb9f006feb96a176fd",
+    "bundle_sha256": "1aeb0a1f9b75c962a13f455cc1ecae777ddbf8da6efb891db89db489ff953d8c",
+    "architectures": [
+      "arm64",
+      "x86_64"
+    ],
+    "signature_status": "ad_hoc",
+    "hardened_runtime_status": "not_applicable",
+    "timestamp_status": "not_applicable"
+  },
+  "application_inventory": [
+    {
+      "relative_path": "Contents/_CodeSignature/CodeResources",
+      "kind": "file",
+      "role": "resource",
+      "bytes": 3130,
+      "sha256": "a30c8a1f1841e7caf5b4bd440460a91418f122bdc2ce03250660cc5250170e0e",
+      "executable": false
+    },
+    {
+      "relative_path": "Contents/Info.plist",
+      "kind": "file",
+      "role": "resource",
+      "bytes": 2868,
+      "sha256": "531137d04d8cc8d5c6bf12f5224addbf4854b0e109bb623481abcd81032fc7a3",
+      "executable": false
+    },
+    {
+      "relative_path": "Contents/MacOS/glitchpad-host",
+      "kind": "file",
+      "role": "executable",
+      "bytes": 38192480,
+      "sha256": "9e801771ced41194e0072bee150236692596552687e7e9bb9f006feb96a176fd",
+      "executable": true
+    },
+    {
+      "relative_path": "Contents/Resources/icon.icns",
+      "kind": "file",
+      "role": "resource",
+      "bytes": 46699,
+      "sha256": "8df7821e1c5be2be1e006dc3bb46009c2b453956b8ec17987a8ab69256246da3",
+      "executable": false
+    },
+    {
+      "relative_path": "Contents/Resources/LICENSE",
+      "kind": "file",
+      "role": "resource",
+      "bytes": 11357,
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "executable": false
+    },
+    {
+      "relative_path": "Contents/Resources/NOTICE",
+      "kind": "file",
+      "role": "resource",
+      "bytes": 763,
+      "sha256": "242c5918765ddf8eebdc18a7aee339333b3ef63d76441e0cc66f9ce0de782040",
+      "executable": false
+    },
+    {
+      "relative_path": "Contents/Resources/THIRD_PARTY_NOTICES.txt",
+      "kind": "file",
+      "role": "resource",
+      "bytes": 266995,
+      "sha256": "b503f4c2fee76c0c2e9841b11339dad62cf1925f8be94bc0b878d6b225d7066f",
+      "executable": false
+    }
+  ],
+  "document_extensions": [
+    "cjs",
+    "css",
+    "htm",
+    "html",
+    "js",
+    "json",
+    "jsonc",
+    "jsx",
+    "markdown",
+    "md",
+    "mermaid",
+    "mjs",
+    "mmd",
+    "py",
+    "rs",
+    "toml",
+    "ts",
+    "tsx",
+    "txt",
+    "yaml",
+    "yml"
+  ],
+  "event": "push_tag",
+  "tag": "v0.1.4",
+  "evidence_files": [
+    "SHA256SUMS",
+    "macos-package-manifest.json",
+    "glitchpad-macos.cdx.json",
+    "provenance.json",
+    "community-trust-evidence.json"
+  ]
+}

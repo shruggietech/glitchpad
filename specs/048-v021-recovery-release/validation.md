@@ -51,3 +51,29 @@ Run 42496745516 built the matching signed release/test pair and passed DEX isola
 ### Android upgrade identity correction
 
 The prior main Android contract and v0.2.0 overlay both use version code 1004. The v0.2.1 preparation now increments that code to 1005 in the overlay and package contract, and the installed-evidence validator consumes the current contract. The existing version guard now compares overlay/contract names and codes. Historical receipts remain unchanged; diagnostics already built with code 1004 remain diagnostic evidence only. Fresh v0.2.1 package qualification must observe code 1005.
+
+### Focused transport and formatting checks
+
+At source 92c41db03cfbb5c518f7ca1a97d174e9b6f859a8, focused staging/transport run 42498939271 passed 88 tests with zero failures or skips, including the actual Bash-runner regression that refuses to enter instrumentation after supporting ADB failure. Public run 42499160684 on af67469a91b9ae4cbe6fdac5e1e9f1ed04bb30ba passed 61 public checks and existing configuration/version/public-surface guards. Its three generated documentation outputs were byte-identical to the checked-in files. Scoped formatter run 42499158753 produced six leased outputs; archive 13624727491 was independently hashed as 6e28a8b4611214981c65c562ea7236a8477bdb3b31a6321b76e99c77cf66e19d, and every before/after digest and byte count matched before applying them in f6f162329316374c2fa57d580750d5fe837e6b2e. Public archive 13624837000 independently matched SHA-256 4b69d66b394fa54b1a49190f264c40d8a053e471825781bd613b01633087879c.
+
+Full branch-source CI run 42499313508 uses f6f162329316374c2fa57d580750d5fe837e6b2e with the complete four-role/API debug matrix. PR #263 is draft, unmerged and has auto-merge disabled. External round one was requested explicitly for that source; all complete native and accepted-input evidence remains pending and blocking.
+
+### Startup gate passed on both governed APIs
+
+Stable-key diagnostic run 42498880717 at source 92c41db03cfbb5c518f7ca1a97d174e9b6f859a8 passed both API24 and API36 on attempt one. Independently downloaded archives 13624951605 (SHA-256 51991e385085d566a28ae2eda612340fe5644e722ce309b852f29c09001f4aab) and 13625550830 (SHA-256 1a7bc17d47b65a923551f5beb88b557b6f3f129d6b924e6a3ac2bd1782dbcec2) contain matching installed application SHA-256 20bd58f4e0167eddc88d97c144e4046cc5f39fcdf2fa58880f2e7940b4ff3812 and test SHA-256 10ad551b7a39695dd5486595df35c00e48ff47716f2db88e13bec5c9167a4187. Both were rehashed independently, together with receipt/marker/screenshot bytes and clean raw instrumentation completion. API24 actually loaded Chrome 69.0.3497.100; API36 loaded Android WebView 133.0.6943.137. The product is nondebuggable and the test-owned capture package is debuggable. Input archive 13625022023 independently matched SHA-256 4d54ec97e9cabcad04c6971c744632fb3ad59cce6b72573abf027061bcdf8c71.
+
+These are explicitly diagnostic_only true / candidate_qualified false, version 0.2.1 with the prior diagnostic code 1004. They establish the ABI/startup/capture prerequisite, not full release behavior or current code-1005 bytes. Back/About compatibility remains a required bounded case in the full release campaign, alongside all other declared tasks. T016 sequencing is made explicit accordingly; no coverage is removed. Complete minified qualification now runs on source f6f162329316374c2fa57d580750d5fe837e6b2e with code 1005.
+
+A data-only sanity pass over 106 changed text files found no invalid UTF-8, BOM, mojibake patterns or non-TB Mermaid directions. Current source, full native campaign and accepted-input qualification remain separate gates.
+
+### First review and Windows byte readback
+
+External review round one completed on f6f162329316374c2fa57d580750d5fe837e6b2e with no findings or unresolved findings, as recorded by the Codex review-state receipt in PR #263 comment 6723959593. No second request has been made.
+
+Current-source Windows run 42499454644 passed. Artifact 13624932859 independently matched its 22956221-byte archive and SHA-256 e80eca095e5a7745e2f41d365511d9384088da406ea3bb926bf289e50b8e8176. Installer bytes independently match 6255170 / bb81e03a5574b13da7c6743d0999ad8025ba836629defc0c6b75cd3c810999e4; portable ZIP bytes match 8034738 / 569950d30c46efd88e40b02d2cf1aad8ab09cfdb6bdcdc917e5e2ef44092318c. Both installed and portable native lifecycle receipts identify source f6f162329316374c2fa57d580750d5fe837e6b2e and exact staged manifest SHA-256 8cb14fd0848e3b6fb9f063728ef381d678a4a126c5775b39caaf68da5dc610a4. Required practical-use and four scaling observations passed; community binaries remain unsigned and unpublished.
+
+### macOS historical baseline schema regression
+
+Run 42498942891 built its staged package successfully, but both native jobs stopped before launch and produced no comparison or lifecycle receipt. ARM64 job 128791143847 retained the terminal startup_comparison_failed log; no receipt artifact was available because the failure preceded journal creation. The comparator validates the immutable v0.1.4 published baseline using the shared manifest validator. S048 had made the new publication_context key unconditional for every official manifest, incorrectly applying the current staging schema to that historical contract.
+
+The original published evidence archive was independently downloaded and verified as SHA-256 9fe15e6a216789eae5e595e8aa6a4ef41cd4bace286f23b6b84b799e9c3e681a. Its unmodified 3530-byte manifest has SHA-256 7d8c8b409117542605ad26fe69b54aae0150466433cfd1a385663dc525f5d1ff and no staging-context field. The validator now derives that required key and value from the selected contract. A regression uses the actual historical manifest, refuses added staging context under its old contract, and continues to reject missing or incorrect context in current staging. Historical files are not rewritten. Focused execution and fresh native qualification are pending.

@@ -8,8 +8,8 @@ This is the implementation checkpoint record. The final PR confirmation, after s
 | Branch | codex/048-v021-recovery-release |
 | Target | v0.2.1 product recovery preparation for #255 and the final #244 release criterion |
 | External review cap | Two rounds |
-| External rounds used | Zero |
-| PR | Pending coherent qualification; open automatically when ready |
+| External rounds used | One completed with no findings (f6f162329316374c2fa57d580750d5fe837e6b2e); second round reserved for final ready transition |
+| PR | [#263](https://github.com/shruggietech/glitchpad/pull/263), draft while required qualification runs |
 | Issues | #244 and #255 remain open, project Status In Progress / Stage In progress |
 | Stop boundary | Ready for owner final review, unmerged, auto-merge disabled |
 | Tag/release/site authority | Requires later owner authorization; none executed in this session |

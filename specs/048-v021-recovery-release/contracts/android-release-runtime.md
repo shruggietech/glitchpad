@@ -6,7 +6,7 @@ Reuse cold/warm provider delivery/images/ICO-export, standalone New/Open/edit/sa
 
 Release-runtime coverage is named separately from existing full ordinary/fault-probe debug matrices. The latter retain every required ten-journey/profile assertion. No supplemental or conditional debug row is relabelled as an individual installed-release pass.
 
-Capture installed app/test APKs and JSON/PNG through existing test-owned provider descriptors. Permit APK MIME only for fixed evidence names. Use the existing framed ADB byte protocol and run-as only on the debuggable test package; compare lengths/digests before acceptance. Capture before provider reset; keep evidence out of authoring document cleanup. Preserve two process attempts, current per-action deadlines, clean-positive JUnit/markers/adb/crash checks, failed captures and destination/receiver readbacks.
+Capture installed app/test APKs and JSON/PNG through existing test-owned provider descriptors. Permit APK MIME only for fixed evidence names. Use bounded ADB exec-out streams and run-as only on the debuggable test package; independently validate JSON, screenshot digests and canonical installed APK hashes before acceptance. Capture before provider reset; keep evidence out of authoring document cleanup. Preserve two process attempts, current per-action deadlines, clean-positive JUnit/markers/adb/crash checks, failed captures and destination/receiver readbacks.
 
 ## Test-runtime ABI isolation and startup gate
 

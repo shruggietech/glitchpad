@@ -96,6 +96,7 @@ The owner receives an unmerged PR ready for final review without an unauthorized
 - **FR-014**: Original incident bytes/APK hash/trace MUST remain recorded as unavailable. Existing physical-device/manual-screen-reader/reference-hardware waivers MUST remain unchanged; other unrun manual checks and #66/#239 dispositions MUST remain literal.
 - **FR-015**: This session MUST stop at a ready, unmerged PR with auto-merge disabled after at most two external review rounds. No tag, release or deployment is authorized; #244/#255 MUST remain open until separately authorized publication and release verification are complete.
 - **FR-016**: Local commands MUST obey the hidden/virtualized execution contract, and GUI/native acceptance MUST use isolated hosted environments without taking the owner's desktop focus.
+- **FR-017**: The later separately authorized publisher MUST consume the exact accepted staged payloads and source identity without rebuilding or silently promoting different bytes. Owner merge/content verification MUST NOT relabel the accepted package source as a different merge commit.
 
 ### Key Entities
 

@@ -2907,6 +2907,11 @@ class AndroidDeliveryInstrumentedTest {
     assertTrue("only the bounded release cases may emit evidence", caseId in listOf("startup", "delivery", "authoring", "recovery_seed", "recovery_verify", "back_about"))
     assertS047Role(scenario)
     val identity = candidateIdentity(scenario)
+    val kotlinRuntime = kotlin.jvm.internal.Intrinsics::class.java.name
+    val tracingRuntime = androidx.tracing.Trace::class.java.name
+    assertEquals("com.shruggietech.glitchpad.testisolated.kotlin.jvm.internal.Intrinsics", kotlinRuntime)
+    assertEquals("com.shruggietech.glitchpad.testisolated.androidx.tracing.Trace", tracingRuntime)
+    identity.put("test_kotlin_runtime", kotlinRuntime).put("test_tracing_runtime", tracingRuntime)
     assertEquals("0.2.1", identity.getString("version"))
     assertEquals("release", identity.getString("channel"))
     assertEquals(InstrumentationRegistry.getArguments().getString("expectedApplicationSha"), identity.getString("application_sha256"))

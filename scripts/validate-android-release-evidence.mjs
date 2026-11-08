@@ -33,6 +33,7 @@ export function validateReleaseRow(row, expected) {
   required(identity.api_level === expected.api, 'installed API mismatch');
   required(identity.build_variant === 'ordinary' && identity.channel === 'release' && identity.application_debuggable === false, 'release role/debuggable mismatch');
   required(identity.instrumentation_debuggable === true, 'test-owned capture is unavailable');
+  required(identity.test_kotlin_runtime === 'com.shruggietech.glitchpad.testisolated.kotlin.jvm.internal.Intrinsics' && identity.test_tracing_runtime === 'com.shruggietech.glitchpad.testisolated.androidx.tracing.Trace', 'actual test runtime isolation missing');
   required(identity.package_identifier === 'com.shruggietech.glitchpad' && identity.instrumentation_package === 'com.shruggietech.glitchpad.test', 'installed package mismatch');
   required(/^[a-f0-9]{64}$/u.test(identity.signing_certificate_sha256) &&
     identity.signing_certificate_sha256 === identity.instrumentation_certificate_sha256, 'installed signer mismatch');
@@ -85,7 +86,7 @@ export async function validateReleaseDirectory({directory, source, api, applicat
   const expected = { source, api, applicationSha: await hashReleaseFile(application), instrumentationSha: await hashReleaseFile(instrumentation) };
   const names = await readdir(directory);
   for (const name of names.filter((entry) => entry.includes('-attempt-')))
-    required(Object.keys(groups).some(group=>new RegExp('^'+group+'-attempt-[12]
+    required(Object.keys(groups).some(group=>new RegExp('^'+group+'-attempt-[12]$','u').test(name)), 'unexpected/unbounded release attempt: ' + name);
   const selected = [];
   for (const [group, cases] of Object.entries(groups)) {
     const attempts = names.filter((name) => new RegExp('^' + group + '-attempt-[12]$','u').test(name)).sort();
@@ -123,55 +124,6 @@ async function main() {
     await validateReleaseCapture({directory:values.directory,caseId:values["capture-case"],expected});
     console.log("Captured release bytes verified.");
     return;
-  }
-  const result = await validateReleaseDirectory({...values,api:Number(values.api)});
-  await writeFile(values.output,JSON.stringify(result,null,2)+'\n','utf8');
-  console.log('Installed minified release evidence passed on API ' + result.api + '.');
-}
-if(process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url))
-  main().catch((error)=>{console.error(error.message);process.exitCode=1;});
-,'u').test(name)), 'unexpected/unbounded release attempt: ' + name);
-  const selected = [];
-  for (const [group, cases] of Object.entries(releaseCaseGroups)) {
-    const attempts = names.filter((name) => new RegExp('^' + group + '-attempt-[12]$','u').test(name)).sort();
-    required(attempts.length >= 1 && attempts[0] === group + '-attempt-1' &&
-      attempts.length <= 2, 'missing/noncontiguous bounded release attempts: ' + group);
-    // The latest attempt is authoritative. Never fall back behind a newer failure.
-    const name = attempts.at(-1);
-    const retained = { group, attempt: Number(name.at(-1)), prior_attempts: attempts.slice(0,-1), cases: [] };
-    for (const caseId of cases) {
-      const path = join(directory, name);
-      const receipt = await readFile(join(path, 's048-' + caseId + '.json'));
-      const row = JSON.parse(receipt.toString('utf8'));
-      const status = JSON.parse(await readFile(join(path, caseId + '-status.json'), 'utf8'));
-      const output = await readFile(join(path, caseId + '-instrumentation.txt'), 'utf8');
-      const markers = [...output.matchAll(/s048_release_evidence=(\{[^\r\n]+\})/gu)].map((match) => JSON.parse(match[1]));
-      required(markers.length >= 1 && markers.every((marker) => marker.case_id === caseId), 'release completion marker missing/wrong case');
-      validateReleaseAttempt(status, output, markers.at(-1), caseId, digest(receipt));
-      validateReleaseRow(row, {...expected, caseId});
-      const png = await readFile(join(path, 's048-' + caseId + '.png'));
-      required(png.subarray(0,8).equals(Buffer.from('89504e470d0a1a0a','hex')) &&
-        row.screenshot?.file === 's048-' + caseId + '.png' &&
-        row.screenshot.sha256 === digest(png), 'release screenshot bytes missing/mismatch');
-      if (caseId === 'delivery') {
-        required(await hashReleaseFile(join(path,'s048-installed-application.apk')) === expected.applicationSha, 'captured installed application differs from canonical package');
-        required(await hashReleaseFile(join(path,'s048-installed-instrumentation.apk')) === expected.instrumentationSha, 'captured installed instrumentation differs from test input');
-      }
-      retained.cases.push({case_id:caseId,receipt_sha256:digest(receipt),screenshot_sha256:digest(png),identity:row.identity,readbacks:row.readbacks});
-    }
-    selected.push(retained);
-  }
-  const certificates = new Set(selected.flatMap((entry)=>entry.cases.map((row)=>row.identity.signing_certificate_sha256)));
-  required(certificates.size === 1, 'release signer changed across cases');
-  return {schema:1,status:'pass',evidence_class:'hosted_minified_release_instrumentation',...expected,signing_certificate_sha256:[...certificates][0],selected,
-    scope:'Five bounded release-runtime cases. Separate debug ordinary/fault campaigns qualify the S047 ten-journey matrix; physical/manual conformance remains waived under #66.'};
-}
-async function main() {
-  const args = process.argv.slice(2);
-  const values = {};
-  for(let index=0;index<args.length;index+=2) {
-    required(args[index]?.startsWith('--') && args[index+1], 'missing release evidence argument');
-    values[args[index].slice(2)] = args[index+1];
   }
   const result = await validateReleaseDirectory({...values,api:Number(values.api)});
   await writeFile(values.output,JSON.stringify(result,null,2)+'\n','utf8');

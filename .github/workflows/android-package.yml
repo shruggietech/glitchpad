@@ -157,6 +157,9 @@ jobs:
       - name: Run Android package contract tests
         run: pnpm run check:android-package
 
+      - name: Prove isolated release test runtime ABI
+        run: ./crates/glitchpad-host/gen/android/gradlew --project-dir crates/glitchpad-host/gen/android/buildSrc test --no-daemon --console=plain
+
       - name: Build universal APK and AAB
         run: |
           export NDK_HOME="$ANDROID_SDK_ROOT/ndk/28.2.13676358"
@@ -172,6 +175,9 @@ jobs:
           cp crates/glitchpad-host/gen/android/app/build/outputs/apk/androidTest/universal/release/app-universal-release-androidTest.apk artifacts/android-release-inputs/instrumentation.apk
           cp crates/glitchpad-host/gen/android/app/build/outputs/mapping/universalRelease/mapping.txt artifacts/android-release-inputs/r8-mapping.txt
           test -s artifacts/android-release-inputs/r8-mapping.txt
+          apkanalyzer dex packages --defined-only artifacts/android-release-inputs/instrumentation.apk > artifacts/android-release-inputs/instrumentation-dex.txt
+          grep -Fq com.shruggietech.glitchpad.testisolated.kotlin.jvm.internal.Intrinsics artifacts/android-release-inputs/instrumentation-dex.txt
+          grep -Fq com.shruggietech.glitchpad.testisolated.androidx.tracing.Trace artifacts/android-release-inputs/instrumentation-dex.txt
           apksigner="$ANDROID_SDK_ROOT/build-tools/36.0.0/apksigner"
           "$apksigner" verify --verbose --print-certs "$RUNNER_TEMP/app-universal-release.apk" > artifacts/android-release-inputs/application-signature.txt
           "$apksigner" verify --verbose --print-certs artifacts/android-release-inputs/instrumentation.apk > artifacts/android-release-inputs/instrumentation-signature.txt
@@ -188,7 +194,7 @@ jobs:
           const target=fs.readFileSync(base+'application-manifest.xml','utf8');
           const test=fs.readFileSync(base+'instrumentation-manifest.xml','utf8');
           if(/android:debuggable="true"/.test(target)||!/android:debuggable="true"/.test(test)||!/android:testOnly="true"/.test(test)||!/android:targetPackage="com.shruggietech.glitchpad"/.test(test))throw Error('release/test manifest boundary mismatch');
-          fs.writeFileSync(base+'identity.json',JSON.stringify({schema:1,source_commit:process.env.GITHUB_SHA,application_sha256:hash(process.env.RUNNER_TEMP+'/app-universal-release.apk'),instrumentation_sha256:hash(base+'instrumentation.apk'),r8_mapping_sha256:hash(base+'r8-mapping.txt'),signing_certificate_sha256:applicationCertificate,application_debuggable:false,minified:true},null,2)+'\n');
+          fs.writeFileSync(base+'identity.json',JSON.stringify({schema:1,source_commit:process.env.GITHUB_SHA,application_sha256:hash(process.env.RUNNER_TEMP+'/app-universal-release.apk'),instrumentation_sha256:hash(base+'instrumentation.apk'),r8_mapping_sha256:hash(base+'r8-mapping.txt'),signing_certificate_sha256:applicationCertificate,application_debuggable:false,minified:true,test_runtime_isolation:["kotlin","androidx.tracing"],test_dex_inventory_sha256:hash(base+"instrumentation-dex.txt")},null,2)+'\n');
           NODE
 
       - name: Build ARM64 APK

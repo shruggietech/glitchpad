@@ -16,9 +16,9 @@
 
 ## Phase 2: Foundational
 
-- [ ] T004 Add target-release identity loading and consistency regressions in scripts/lib/release-identity.mjs and its test, using packaging/release/package-contract.json (FR-001/002).
-- [ ] T005 Synchronize product manifests, own Cargo/fuzz lock entries, Android fallback and packaging/*/package-contract.json to0.2.1 without third-party/history changes (FR-001/004/005).
-- [ ] T006 Replace historical S045 current authority with the S048 preparation boundary in scripts/check-community-release.mjs, scripts/check-public-release.mjs, version/config/public guards and their meaningful negative tests (FR-002/007/012/015).
+- [x] T004 Add target-release identity loading and consistency regressions in scripts/lib/release-identity.mjs and its test, using packaging/release/package-contract.json (FR-001/002).
+- [x] T005 Synchronize product manifests, own Cargo/fuzz lock entries, Android fallback and packaging/*/package-contract.json to0.2.1 without third-party/history changes (FR-001/004/005).
+- [x] T006 Replace historical S045 current authority with the S048 preparation boundary in scripts/check-community-release.mjs, scripts/check-public-release.mjs, version/config/public guards and their meaningful negative tests (FR-002/007/012/015).
 
 **Checkpoint**: Current release identity and preparation authority are coherent before story implementation.
 

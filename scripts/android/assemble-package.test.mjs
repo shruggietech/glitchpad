@@ -60,7 +60,7 @@ test('assembly copies exact final bytes and emits canonical checksums and manife
   assert.equal(result.artifacts.length, 3);
   assert.match(
     await readFile(join(output, 'SHA256SUMS'), 'utf8'),
-    /glitchpad-0\.2\.0-android-arm64\.apk/u,
+    /glitchpad-0\.2\.1-android-arm64\.apk/u,
   );
   const manifest = JSON.parse(
     await readFile(join(output, 'android-package-manifest.json'), 'utf8'),

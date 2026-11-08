@@ -13,6 +13,10 @@ concurrency:
   group: windows-package-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  GLITCHPAD_BUILD_COMMIT: ${{ github.sha }}
+  VITE_GLITCHPAD_BUILD_COMMIT: ${{ github.sha }}
+
 permissions:
   contents: read
 

@@ -176,7 +176,7 @@ test('assembles exactly the declared artifact and practical-use evidence set', a
   assert.deepEqual(manifest.practical_use_evidence, practicalUseEvidence);
   assert.match(
     await readFile(join(fixture.output, 'SHA256SUMS'), 'utf8'),
-    /glitchpad-0\.2\.0-7\.bin/u,
+    /glitchpad-0\.2\.1-7\.bin/u,
   );
 });
 

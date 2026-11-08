@@ -1,9 +1,10 @@
+import { deploymentReleaseMetadata } from './release-metadata.mjs';
 import { access, readFile, writeFile } from 'node:fs/promises';
 
 const packageSource = JSON.parse(await readFile('../package.json', 'utf8'));
 const sourceRevision =
   process.env.GLITCHPAD_SOURCE_REVISION ?? process.env.GITHUB_SHA ?? 'local';
-const releaseUrl = `https://github.com/ShruggieTech/glitchpad/releases/tag/v${packageSource.version}`;
+const releaseMetadata = deploymentReleaseMetadata(packageSource.version, process.env.GLITCHPAD_PUBLISHED_RELEASE_TAG ?? '');
 
 await access('out');
 await writeFile('out/.nojekyll', '');
@@ -15,7 +16,7 @@ await writeFile(
       productVersion: packageSource.version,
       sourceRevision,
       builtAt: new Date().toISOString(),
-      releaseUrl,
+      ...releaseMetadata,
     },
     null,
     2,

@@ -184,7 +184,7 @@ test('canonical technical specification produces 38 ordered sections and two leg
   );
   assert.match(
     documentation.files.get('index.mdx'),
-    /\| Updated \| 2026-11-02 \|/,
+    /\| Updated \| 2026-11-08 \|/,
   );
   assert.doesNotMatch(
     [...documentation.files.values()].join('\n'),

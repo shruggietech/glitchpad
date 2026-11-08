@@ -74,14 +74,6 @@ jobs:
       - name: Verify brand integration
         run: pnpm check:brand
 
-      - name: Build and test public site
-        run: pnpm check:site
-        env:
-          GLITCHPAD_SOURCE_REVISION: ${{ steps.source_revision.outputs.revision }}
-
-      - name: Verify generated documentation contracts are committed
-        run: git diff --exit-code -- site/content/docs/index.mdx site/content/docs/meta.json site/lib/generated/documentation.json
-
       - name: Confirm published release authority
         id: release_authority
         if: inputs.deploy && inputs.release_tag == 'v0.2.1'
@@ -102,6 +94,17 @@ jobs:
               throw new Error('Release-site source does not match the published release tag commit.');
             }
             core.setOutput('authorized', 'true');
+
+
+      - name: Build and test public site
+        run: pnpm check:site
+        env:
+          GLITCHPAD_SOURCE_REVISION: ${{ steps.source_revision.outputs.revision }}
+          GLITCHPAD_PUBLISHED_RELEASE_TAG: ${{ steps.release_authority.outputs.authorized == 'true' && inputs.release_tag || '' }}
+
+      - name: Verify generated documentation contracts are committed
+        run: git diff --exit-code -- site/content/docs/index.mdx site/content/docs/meta.json site/lib/generated/documentation.json
+
 
       - name: Upload Pages artifact
         if: inputs.deploy && inputs.release_tag == 'v0.2.1' && steps.release_authority.outputs.authorized == 'true'

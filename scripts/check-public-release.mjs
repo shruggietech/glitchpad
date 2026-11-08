@@ -164,6 +164,11 @@ export function verifyPublicSources(sources) {
     requireText(problems, '.github/workflows/docs.yml', workflow, expected);
   try {
     const parsedWorkflow = parseYaml(workflow);
+    const buildSteps = parsedWorkflow.jobs?.build?.steps ?? [];
+    const publishedAuthorityIndex = buildSteps.findIndex(step => step.name === 'Confirm published release authority');
+    const siteBuildIndex = buildSteps.findIndex(step => step.name === 'Build and test public site');
+    const publishedMetadataAuthority = buildSteps[siteBuildIndex]?.env?.GLITCHPAD_PUBLISHED_RELEASE_TAG;
+    if (publishedAuthorityIndex < 0 || siteBuildIndex <= publishedAuthorityIndex || publishedMetadataAuthority !== "${{ steps.release_authority.outputs.authorized == 'true' && inputs.release_tag || '' }}") problems.push('docs workflow published metadata authority is not checked before building');
     const uploadStep = parsedWorkflow.jobs?.build?.steps?.find(
       (step) => step.name === 'Upload Pages artifact',
     );

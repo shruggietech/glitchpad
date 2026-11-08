@@ -1,14 +1,14 @@
-# Glitchpad Technical Specification v0.2.0
+# Glitchpad Technical Specification v0.2.1
 
 | Field | Value |
 | --- | --- |
-| Status | Normative image-activation candidate |
-| Specification version | 0.2.0 |
-| Product version | 0.2.0 |
-| Release class | Installable community release candidate |
+| Status | Normative product-recovery release definition |
+| Specification version | 0.2.1 |
+| Product version | 0.2.1 |
+| Release class | Installable community release |
 | Audience | Maintainers, contributors, reviewers, release operators, and implementation agents |
 | Issued | 2026-08-30 |
-| Updated | 2026-11-02 |
+| Updated | 2026-11-08 |
 | Repository | `github.com/ShruggieTech/glitchpad` |
 | License | Apache License 2.0 (`Apache-2.0`) |
 
@@ -55,9 +55,9 @@
 
 ## 1. Document Control and Authority
 
-This document is the architecture, behavior, platform, security, development, and delivery contract for Glitchpad v0.2.0, the image-activation release candidate. Its version MUST equal the product version.
+This document is the architecture, behavior, platform, security, development, and delivery contract for Glitchpad v0.2.1 product recovery. Its version MUST equal the product version. This source defines release behavior; actual publication and accepted package identities remain independently evidenced in the release receipt.
 
-The root Rust workspace version becomes the canonical product-version authority when the repository-foundation slice creates application manifests. Tauri configuration, npm package metadata, Android version name, this document, changelog release heading, release tag, artifact filenames, SBOM metadata, and provenance attestations MUST mirror that value. Automated consistency checks MUST reject any mismatch.
+The root Rust workspace version is the canonical product-version authority. packaging/release/package-contract.json independently declares the target release version, tag and payload inventory. Tauri configuration, npm metadata, Android version name, this document, changelog, release tag, artifact filenames, SBOM metadata and provenance MUST agree. Automated consistency checks MUST reject mismatches.
 
 `Issued` records the date this specification was first published. It remains stable across corrective revisions. `Updated` records the effective date of the current specification text and MUST equal the date of the latest revision-history entry.
 
@@ -85,6 +85,7 @@ flowchart TB
 | 0.1.3 | 2026-09-11 | 0.1.3 | Reconciled universal Markdown recovery, reserved shell chrome, sectioned public specification documentation, automated post-merge housekeeping, and exact-package practical-use evidence |
 | 0.1.4 | 2026-09-29 | 0.1.4 | Reconciled the BrandBuilder 2.0.3 kit, AppFrame shell geometry, refreshed web and Android brand assets, and compatible dependency updates while keeping image-format activation at the v0.2.0 gate |
 | 0.2.0 | 2026-11-02 | 0.2.0 | S043 image qualification and stable activation candidate; owner removes unavailable physical-device and manual screen-reader gates; automated accessibility and hosted native qualification retained |
+| 0.2.1 | 2026-11-08 | 0.2.1 | S048 reconciles S046/S047 product recovery, installed Android task evidence, current release identity and exact staged-payload preparation; publication remains separately owner-authorized |
 
 Changes to normative released behavior require a product release and a matching specification version. Typographical corrections that do not alter meaning may be applied to the current version with a dated revision-history note and reviewed pull request.
 
@@ -194,16 +195,16 @@ If a premise becomes false, implementation MUST stop at the affected gate and op
 
 ## 7. Functional Requirements
 
-- **TS-FR-001**: The application MUST open sources from desktop dialogs, drag-and-drop, command-line or association delivery, and Android view, open-document, create-document, and share intents where applicable.
+- **TS-FR-001**: The application MUST open sources from desktop dialogs, drag-and-drop, command-line or association delivery, and Android view, open-document, create-document and share intents where applicable. Android Add document MUST also create independent editable Markdown/text drafts at cold launch and while viewing.
 - **TS-FR-002**: Opening a source with an identity equal to an existing session MUST focus the existing tab; uncertain identities MUST remain separate.
 - **TS-FR-003**: The active document MUST receive at least 90 percent of the application client area at the 1280 by 800 desktop reference viewport when contextual drawers are closed.
 - **TS-FR-004**: Tabs MUST remain compact, show name and dirty state, support reorder and keyboard switching, and provide bounded overflow without adding a workspace surface.
 - **TS-FR-005**: The metadata inspector MUST be dismissible, preserve document context, and distinguish unavailable, unsupported, redacted, pending, and errored facts.
 - **TS-FR-006**: Format detection MUST use bounded content evidence and MUST NOT trust an extension or externally claimed MIME type as sole authority.
 - **TS-FR-007**: Editable text MUST preserve the accepted encoding, BOM, newline pattern, terminal newline, and undecodable-byte decision.
-- **TS-FR-008**: Save MUST revalidate the external revision and MUST reject a stale write as a conflict.
+- **TS-FR-008**: Existing-source Save MUST revalidate the external revision and reject stale writes as conflicts. Source-independent draft saves and exports select their own destination without fabricating an existing source.
 - **TS-FR-009**: Close, reload, source revocation, deletion, rename, and abnormal termination MUST preserve dirty content until the user explicitly saves, discards, or declines recovery.
-- **TS-FR-010**: Renderer controls MUST be derived from the active renderer's advertised capabilities.
+- **TS-FR-010**: Renderer controls MUST derive from advertised capabilities and await the actual operation provider. Availability validation alone MUST NOT report success.
 - **TS-FR-011**: Every renderer MUST support cancellation, deterministic disposal, malformed-input reporting, resource-limit reporting, and metadata provenance.
 - **TS-FR-012**: Markdown MUST render locally, sanitize generated output, disable raw HTML, and prevent remote resource loading.
 - **TS-FR-013**: Text/source editing MUST provide line numbers, undo/redo, find and replace, go-to-line, wrapping, indentation, encoding/newline visibility, and lazy syntax highlighting without IDE services.
@@ -212,8 +213,8 @@ If a premise becomes false, implementation MUST stop at the affected gate and op
 - **TS-FR-016**: DOCX and ODT viewing MUST report unsupported constructs and MUST NOT execute macros, formulas, scripts, or external references.
 - **TS-FR-017**: External links MUST open through the operating system only after scheme validation and explicit user action.
 - **TS-FR-018**: The application MUST remain functional without network access and MUST issue no implicit document-content request.
-- **TS-FR-019**: Crash recovery MUST snapshot dirty editable text, enforce private-storage quotas, expire records after seven days, and remove records after confirmed save or discard.
-- **TS-FR-020**: A malformed, encrypted, oversized, inaccessible, unsupported, or revoked source MUST produce a stable user-visible result without crashing the process.
+- **TS-FR-019**: Crash recovery MUST snapshot dirty editable source text, independent drafts and editable copies, enforce private-storage quotas, expire records after seven days and remove only the matching record after confirmed save or discard. Process recovery preserves exact text without inventing source grants.
+- **TS-FR-020**: Malformed, encrypted, oversized, inaccessible, unsupported or revoked input and contained startup/root/renderer failures MUST produce stable visible recovery without losing shell navigation, available source access or recoverable drafts.
 - **TS-FR-021**: Every official artifact MUST contain license and notice material, expose the exact product version, and pass install/open/core-action/uninstall smoke tests.
 - **TS-FR-022**: Every product change MUST include a documentation-impact declaration and follow the repository-installed Spec Kit workflow.
 - **TS-FR-023**: Mermaid MUST support standalone `.mmd` and `.mermaid` documents plus fenced Markdown blocks through one local renderer contract; standalone source MUST be editable and conflict-safe, each embedded block MUST fail independently, authored source and direction MUST remain unchanged, and scripts, callbacks, automatic links, remote resources, and document-content network requests MUST remain disabled.
@@ -371,9 +372,9 @@ Desktop adapters accept dialog choices, dropped files, command-line arguments, a
 
 Android adapters accept system-delivered `ACTION_VIEW`, `ACTION_OPEN_DOCUMENT`, `ACTION_CREATE_DOCUMENT`, and `ACTION_SEND` intents. The Kotlin bridge uses `ContentResolver` for descriptors, streams, provider metadata, and persistable grants. It MUST NOT derive or require a desktop-style path. Temporary grants remain temporary; persistent grants are requested only when the intent and provider permit them.
 
-The unreleased S011 delta implements this boundary as a private Tauri mobile plugin. `ACTION_VIEW` and `ACTION_SEND` remain inbound deliveries, while Open and Create are application-initiated picker operations whose pending Tauri invoke is their one-use result authorization. Raw provider URIs remain native-private. Public source contracts carry opaque IDs, optional provider size and modification facts, explicit grant state, strong DocumentsContract identity only when authority and durable document ID are available, bounded read and Save As receipts, and stable redacted errors. Unknown provider replacement semantics always use Save As because Android exposes no portable atomic-replacement guarantee.
+Android uses a private native source plugin. View and Share remain inbound deliveries; Open and Create are application-initiated picker operations with one-use result authorization. Add document offers New Markdown, New text file and Open file at cold launch and while viewing. New drafts have unique local identity and editable unsaved contents without an invented external source or grant. Picker cancellation leaves document state unchanged, and revoked access requires fresh selection. Raw provider URIs remain native-private; the renderer receives opaque IDs, bounded read/write receipts and truthful capabilities. Unknown provider replacement semantics use Save As.
 
-Persisted restoration records are bounded application-private state and are written only after the platform confirms a persistable grant. Startup and activity reload reconcile those records against held URI permissions before rebuilding native-private handles. API 24 and API 36 headless x86_64 controlled-provider tests prove metadata omission, descriptor seek, verified writes, and process-boundary restoration independently from the retained ARM64 packaging job.
+Persisted restoration records are bounded application-private state and are written only after the platform confirms a persistable grant. Startup/activity reload reconciles held permissions before rebuilding native-private handles. Grant restoration is distinct from recovery-only text restoration: recovered edits do not restore absent permission or in-place write authority. API24/API36 controlled-provider tests and actual installed task campaigns retain separate package/source identities.
 
 The WebView receives source summaries and opaque IDs. It never receives a reusable native path, content URI grant, unrestricted filesystem scope, or generic read/write command.
 
@@ -407,31 +408,33 @@ Opening creates a source handle, observes an external revision, detects the form
 
 Desktop save writes a sibling temporary file, flushes content, preserves required permissions, atomically replaces the destination, and syncs the parent directory where the platform provides that primitive. If a platform or filesystem cannot atomically replace, Glitchpad MUST disclose the weaker guarantee before writing and retain a recoverable backup until the replacement succeeds.
 
-Android save writes through a provider descriptor only when the source advertises safe write behavior. A read-only or unsafe provider source uses Save As through `ACTION_CREATE_DOCUMENT`. The application never truncates a provider source before a complete save payload and revision check are ready.
+Draft Save and source-independent exports select a native destination without requiring an existing source. Existing-source Save As first validates source authority and external revision. Read-only sources offer Edit a copy; providers without truthful revision, durability and replacement support use Save As. Source aliases and nonempty destinations are rejected before destructive opening. Success requires a durable receipt after exact-byte readback and destination acquisition; only the captured saved revision becomes clean. Cancellation, failure and newer edits retain dirty content, and pending writes prevent conflicting Close or Discard.
 
-Before every save, Rust revalidates the external revision. A mismatch moves the session to `conflicted`, preserves local edits, and offers: compare available metadata, reload and discard local edits, keep local edits and Save As, or explicitly overwrite after a second confirmation. No default action overwrites either revision.
+Before an existing-source write, the host revalidates the external revision. A mismatch preserves local edits and exposes only choices supported by actual source capabilities: inspect available facts, reload with explicit discard, retain edits and Save As, or a separately confirmed overwrite where truthful replacement is supported. No default action overwrites either revision; Android providers without those guarantees cannot acquire overwrite authority through a confirmation.
 
 Rename, deletion, watcher overflow, permission revocation, provider unavailability, storage exhaustion, and partial I/O use stable error categories and preserve dirty content. Save success is recognized only from a durable host receipt carrying the new external revision.
 
 ## 15. Tabs, Windows, Sessions, and Recovery
 
-Desktop uses one application window with one compact tab strip. Android uses one activity; phones show the active title and a tab-count switcher that opens a sheet, while tablets may show the desktop-style strip. v0.2.0 does not support multiple application windows.
+Desktop uses one application window with one compact tab strip. Android uses one activity; compact windows expose a single-document title and an accessible multiple-document switcher, while wide layouts may show the tab strip. v0.2.1 does not support multiple application windows.
 
 Tabs have a 32-pixel desktop height, 96-pixel minimum width, 180-pixel preferred maximum width, filename, dirty indicator, close action, accessible full-location tooltip, and drag reorder. Overflow moves excess tabs into a searchable list without creating persistent navigation. The ordinary limit is 32 sessions; opening the thirty-third requires closing a tab or explicitly increasing the safety limit in a future specification.
 
 `Ctrl+Tab` and `Ctrl+Shift+Tab` cycle tabs; platform-standard close and save shortcuts act on the active tab. A second desktop invocation forwards open requests to the running process and focuses or creates tabs. Android intents delivered to a running activity follow the same identity rule.
 
-Routine session restoration is disabled. A launch with an explicit source opens that source only. A launch without a source shows a minimal open/drop surface. Crash recovery is enabled for dirty text sessions and is separate from session restore.
+Routine session restoration remains disabled. An explicit launch source opens that source; a launch without a source exposes compact Add document choices. Active-document identity, the single-document title, multiple-document switcher and application destinations remain reachable in loaded, empty and contained-failure states. Dirty-text recovery remains independent of routine session restore.
 
 Recovery snapshots use application-private storage, owner-only permissions where supported, atomic writes, a seven-day lifetime, and total quotas of 256 MiB desktop and 128 MiB Android. Snapshots are written after 2 seconds of edit idle time and at least every 30 seconds while dirty. If quota pressure threatens the active document, the application warns immediately. Confirmed save or explicit discard removes the matching record.
 
+
+Bounded recovery includes unsaved drafts and editable copies. Recovery after process restart preserves complete text, including the terminal newline, without fabricating external grants or in-place Save authority. A recovered document whose source is unavailable remains editable and offers Save As. Confirmed save or explicit discard removes only the matching recovery record.
 ## 16. Renderer System
 
 The base renderer contract is `specs/002-v000-technical-specification/contracts/renderer.md`; Mermaid specializes it through `specs/003-mermaid-view-edit/contracts/mermaid-renderer.md`. A renderer registers a stable ID, exact format families and variants, maturity, platform set, operations, limits, worker policy, and lazy module loader. Registration order never decides detection priority.
 
 The open context contains a bounded byte provider, cancellation signal, metadata sink, renderer-scoped asset URL factory, theme and accessibility preferences, and progress sink. It contains no arbitrary Tauri invocation, filesystem API, Android URI, network client, or shell executor.
 
-The shell renders only commands advertised by the active renderer. `edit`, `save`, and `save_as` remain independent. A recovered text buffer can be editable while its original source is unavailable, exposing Save As without Save.
+The shell renders only commands advertised by the active renderer; edit, Save and Save As remain independent. Menu, keyboard and local controls share the captured session/revision and operation provider. Actions await performed, cancelled, failed or unavailable outcomes. Clipboard rejection, empty history, stale targets and unavailable previews cannot report success. Pending ownership prevents duplicate execution, and late completion cannot mutate or focus a newer document or task. A recovered buffer may remain editable with Save As while its source and Save authority are unavailable.
 
 CPU-intensive parsing runs in Web Workers or Rust worker threads. Cancellation MUST stop new work within 250 ms. Background tabs suspend decoded image surfaces, PDF canvases, office trees, object URLs, and other regenerable caches. Disposal is idempotent and releases every worker, lease, observer, subscription, and timer.
 
@@ -441,13 +444,13 @@ Every renderer passes the shared conformance suite for first content, capabiliti
 
 Markdown uses one CommonMark-based unified pipeline with GFM tables, task lists, strikethrough, autolinks, and footnotes. Raw HTML is parsed as inert text and never inserted into the document DOM. Generated HTML is sanitized after the final transform through a versioned allowlist.
 
-Rendered view is the default. Source view is the editing surface. A compact mode action toggles between rendered and source views; split view is deferred until a measured workflow demonstrates that its permanent viewport cost is justified. Preview updates are debounced at 100 ms and cancel superseded work.
+Rendered view is the default and source view is the editing surface. Read/Edit transitions preserve edits, position and focus; split view remains deferred. Preview updates are debounced at 100 ms and cancel superseded work. Markdown startup, root, worker and renderer failures retain visible bounded recovery. Navigation, available source and recoverable drafts remain reachable. Independent Mermaid failures preserve surrounding Markdown and a usable source fallback.
 
 Local relative images resolve through renderer-scoped asset tokens only after path normalization and source-root checks. Remote images, fonts, styles, embeds, and includes remain blocked. External links display the destination host and open through the operating system after scheme validation and explicit action. `file:`, `javascript:`, `data:` navigation, custom executable schemes, and embedded frames are blocked.
 
 Fenced code receives escaped syntax highlighting from lazy language packages. Fenced `mermaid` content renders through the shared Mermaid adapter with strict immutable security configuration, no click callbacks, no native authority, no remote resources, and a final SVG allowlist after generation. Each block has a revision-bound result and bounded fallback so malformed or over-limit source cannot prevent the surrounding Markdown or another block from rendering. Authored direction is preserved.
 
-Markdown editing provides undo/redo, line numbers, find/replace, go-to-line, wrapping, indentation, bracket handling, and round-trip encoding/newline behavior. The renderer does not provide format conversion, selectable parser engines, HTML authoring, or project-wide link validation.
+Markdown editing provides actual CodeMirror undo/redo, line numbers, find/replace, go-to-line, wrapping, indentation, bracket handling and round-trip encoding/newline behavior. Queries, match/no-match/invalid states and history availability are exposed truthfully. Passive rendered task checkboxes remain read-only. Format conversion, selectable parser engines, HTML authoring and project-wide link validation remain outside scope.
 
 ### Mermaid diagram documents
 
@@ -473,18 +476,21 @@ The renderer MUST NOT implement language servers, compilers, build commands, deb
 
 Files through 32 MiB support full editing and syntax highlighting subject to line limits. Files from 32 MiB through 256 MiB open in virtualized large-text read-only mode with search and copy; syntax highlighting is disabled. Files above 256 MiB are refused with size and alternative-tool guidance. A single line above 2 MiB disables syntax parsing for that document and remains viewable in plain-text mode.
 
+
+Large-text navigation, search and go-to-line use user-facing labels and preserve or deliberately move position. Copy completion reflects actual clipboard content within existing bounds. Large Android copies may use a temporary readable UTF-8 content item while preserving complete contents; an inline truncation or placeholder cannot stand in for the copy.
 ## 19. Image Viewing and Inspection
 
 Image support activates in v0.2.0. Required raster formats are PNG, JPEG, GIF, WebP, BMP, and TIFF. SVG and ICO are separate variants under the image renderer family.
 
-The renderer provides fit, actual-size, zoom, pan, background selection for transparency, orientation handling, pixel dimensions, animation pause/resume, frame position, and metadata inspection. It does not modify image pixels or write image containers.
+Local, menu, keyboard and gesture Fit/zoom/pan routes share measured effective scale. Pan from Fit preserves that scale and zoom multiplies it. Reset restores Fit and pan while retaining frame/icon/background selection. Relevant actual-size, animation/frame, ICO entry and background controls remain reachable in compact disclosure. No-preview viewport actions report unavailability. Image content and original containers remain unchanged.
 
 Rust identifies and validates containers before presentation. The `image` crate uses explicit codec features. WebView decoding may provide a display fast path only after native size and format checks. A separate `libwebp` dependency is not part of the baseline because pure-Rust and system decoders satisfy required WebP behavior without a C packaging surface.
 
-ICO inspection lists each directory entry with width, height, bit depth, encoding, byte size, and validity. The user may preview and export one embedded entry as PNG without altering the source.
+ICO inspection lists each bounded directory entry with width, height, bit depth, encoding, byte size and validity. Selected-entry PNG export acts on the current icon and verifies actual destination bytes/pixels while retaining original integrity.
 
-SVG is parsed by `usvg` and rendered by `resvg`. Scripts, event handlers, foreign objects, external styles, fonts, images, links, and network references are discarded or reported. Untrusted SVG is never inserted directly into the application DOM.
+Standalone SVG is validated as a bounded inert profile and rasterized natively by usvg/resvg to checked PNG output; original markup is never inserted into the application DOM. The implemented profile accepts supported SVG namespaces, geometry, bundled-font text, presentation attributes/internal presentation CSS, gradients, clip paths and bounded local-fragment reuse. Active content, external/data/file resources, DTD/entities, foreign content, missing/cyclic references and unsupported constructs receive distinct refusals. Filters, masks, patterns, markers and cursors remain outside the implemented profile. Original bytes and available source/metadata access remain intact.
 
+Malformed, unsupported, external-reference, cyclic/missing-reference, resource/deadline, source-read and host-transport outcomes remain distinct. Deterministic refusal does not offer identical Retry as its remedy. Existing 4 MiB/50,000-node/depth-128 limits remain in force; native five-second checks are cooperative and do not establish hard preemption inside an uninterruptible render call.
 ## 20. PDF Viewing and Navigation
 
 PDF support activates in v0.3.0 and uses the PDF.js display layer in a dedicated worker. Glitchpad supplies its own compact shell rather than embedding the generic PDF.js viewer.
@@ -507,13 +513,13 @@ Office containers are limited to 128 MiB compressed input, 10,000 entries, 512 M
 
 ## 22. Metadata and EXIF Inspector
 
-The metadata inspector is opened by a compact information icon in the active document bar or the platform menu. Desktop uses a dismissible right-side overlay up to 360 pixels wide. Android uses a bottom sheet on phones and a side sheet on tablets. Closing it restores the full document surface.
+Document tools exposes Document details. Phone task surfaces are modal; an explicitly wide inspector may be nonmodal. The inspector remains dismissible, retains current-document identity and restores the valid opener or completion handoff. Closing it restores document space and cancels its owned checksum work.
 
 Facts are grouped as Source, Content, Embedded, Derived, and Renderer. Every fact includes a typed value, source, availability, unit, sensitivity, and copy policy. The interface shows `Not provided`, `Unsupported`, `Redacted`, `Pending`, or a stable error instead of inventing a value.
 
 Source facts include display name, source kind, size, observed modification time, creation/birth time when the host supplies it, permissions or provider write state, identity confidence, and current external revision. Text facts include encoding, BOM, newline pattern, line and character counts, language mode, and round-trip safety. Mermaid facts include detected diagram type, parser version and status, current and preview revisions, stale-preview state, authored accessibility annotation presence, source bytes, edge count, output bytes, timings, and active limit result when available. Image facts include dimensions, frames, color model, orientation, EXIF, IPTC, XMP, and ICO entries. PDF and office facts include title, author, subject, keywords, creator, producer, page or structural counts, and format version when parsable.
 
-EXIF GPS facts are collapsed and marked sensitive by default. Copying coordinates requires an explicit action. Checksums are absent until requested; SHA-256 calculation runs cancellably and reports the external revision it represents.
+EXIF GPS facts are collapsed and marked sensitive by default. Sensitive copying retains explicit confirmation and awaits the actual clipboard result. Current values, scope, availability and completion remain visible. Checksums are absent until requested; SHA-256 calculation is cancellable and reports the external revision it represents.
 
 Metadata extraction obeys the same parser and resource limits as rendering. A metadata failure cannot prevent content viewing unless it proves the source is malformed for the selected renderer.
 
@@ -521,13 +527,15 @@ Metadata extraction obeys the same parser and resource limits as rendering. A me
 
 The file owns the viewport. Permanent UI consists of the platform window frame, one compact document bar, one compact tab surface where space permits, and renderer controls that appear only when the active capability requires them. There is no sidebar, dashboard, project tree, ribbon, status-panel stack, promotional content, or persistent metadata region.
 
-The BrandBuilder AppFrame and its environment bridge own the web shell's safe-area, display-cutout, orientation, text-scale, menu, and on-screen-keyboard geometry. Product controls remain within that single shell boundary. Windows browser geometry checks and Android API 24 and API 36 WebView checks exercise the resulting layout without replacing the document-owned viewport.
+AppFrame remains the single shell inset and global-focus owner. Product task surfaces use its existing overlay root and apply only the remaining intersection with actual native visible bounds, avoiding duplicate insets. Primary controls reflow without sideways toolbar hunting; secondary document disclosure is distinct from application destinations. Modal phone tasks block background activation, remain usable above keyboard/system obstructions and restore a valid opener or completed-document handoff. Wide nonmodal behavior is explicit.
 
 At 1280 by 800 with drawers closed, document content occupies at least 90 percent of client-area pixels. The combined desktop document and tab bars remain at or below 72 pixels. Icons use 16- or 18-pixel artwork inside minimum 32-pixel desktop targets. Android touch targets meet a 48-density-independent-pixel minimum without enlarging the visible icon.
 
-Desktop tabs expose full accessible names, dirty state, close state, and position. Phone layouts expose active title, tab count, open, information, and overflow actions; the tab sheet supports search only when overflow exists. Renderer controls may collapse into overflow before reducing the document below its minimum area.
+Desktop tabs expose full accessible names, dirty/close state and position. Compact layouts retain active title, multiple-document switching, Add document, document tools and application Menu. Renderer controls disclose without horizontal toolbar hunting. Actual usable-frame, orientation, IME and maximum text profiles retain 48 dp-equivalent interactive targets, visible focus and document space.
 
 Keyboard navigation follows platform conventions and maintains a visible focus indicator. Screen readers receive semantic headings, landmarks, tab roles, progress state, error summaries, metadata groups, page counts, and renderer command names. Dynamic updates use restrained live regions and never announce every keystroke or scroll event.
+
+Committed Back dismisses one eligible layer in order: visible IME, native text-edit action mode, highest modal/task/recovery/destructive surface, application destination/inspector/menu, renderer-owned layer/search, then dirty-aware document navigation. The existing single native consumer owns application dispatch. Native text-edit dismissal does not also request JavaScript task dismissal. Cancelled predictive Back leaves document, draft and layer state unchanged.
 
 Mermaid rendered/source mode, fit, zoom, reset, pan, search, stale-preview state, diagnostics, and metadata are exposed through renderer-contextual controls. Generated SVG cannot trap sequential focus. Diagram labels remain searchable, authored accessible titles and descriptions are preserved, and every successful unannotated diagram receives a fallback label and source route.
 
@@ -537,9 +545,9 @@ The initial language is US English. All user-visible strings, dates, units, plur
 
 ## 24. Platform Strategy
 
-All four target families are Tier 1 for v0.2.0. A Tier 1 platform requires an official artifact, native build host, automated shared suite, adapter tests, installation smoke tests, core user-flow evidence, version and license evidence, and a named support baseline.
+All four target families are Tier 1 targets for v0.2.1. Support for an actual release requires its identified artifact, native build host, shared suite, adapter tests, installation/core-flow evidence, version/licensing evidence and declared baseline. A source build or historical package does not establish current runtime qualification.
 
-| Platform | Runtime baseline | Architectures | Official v0.2.0 artifacts | Native WebView |
+| Platform | Runtime baseline | Architectures | v0.2.1 artifact forms | Native WebView |
 | --- | --- | --- | --- | --- |
 | Windows | Windows 11 | x86_64 | NSIS installer, portable ZIP | WebView2 Evergreen |
 | macOS | macOS 13+ | arm64 and x86_64 universal | Ad-hoc-signed application in a non-notarized DMG | WKWebView |
@@ -550,8 +558,7 @@ Windows file associations and command-line delivery route to the running instanc
 
 Windows ARM64 and Linux ARM64 are planned platform expansions after v0.2.0 and require their own build, package, and device evidence. iOS is outside the current platform boundary.
 
-System WebView versions are recorded in diagnostics and test evidence. Glitchpad does not bundle a browser engine to mask obsolete or broken system WebViews; unsupported runtimes receive a precise prerequisite error.
-
+The minimum qualified Android compatibility profile is Chromium 69-class WebView, with actual package/version recorded per run. Android 7/API24 and API36 installed-runtime evidence remain separate from synthetic/browser-only Chrome 69 checks. Glitchpad does not bundle a browser engine; unqualified runtime behavior is not claimed as a passing profile.
 ## 25. Security and Privacy
 
 Every opened source is hostile input. The trust boundary begins at native acquisition and remains in force through detection, parsing, generated markup, metadata, navigation, saving, caching, logs, and packaging.
@@ -589,7 +596,7 @@ Performance tests use small, medium, boundary, and hostile fixtures with stable 
 
 ## 27. Configuration, Persistence, and Diagnostics
 
-The v0.2.0 preference schema contains theme, editor font family and size, line wrapping, tab width, Markdown default mode, and explicit language overrides. It contains no account, synchronization, workspace, telemetry, remote-resource, plugin, or recent-file setting.
+The v0.2.1 preference schema contains theme, editor font family and size, wrapping, tab width, Markdown default mode and explicit language overrides. Current values, validation, scope and completion are exposed. Numeric drafts validate before commit, font fallback is explicit, default changes preserve current unsaved Markdown, and reset applies only its declared scope. Account, synchronization, workspace, telemetry, remote-resource, plugin and recent-file settings remain absent.
 
 Preferences are schema-versioned JSON in the platform application-config directory. Writes are atomic. A migration is deterministic and covered by fixtures; an unreadable future schema is preserved and reported instead of overwritten.
 
@@ -597,8 +604,9 @@ Recovery records and bounded renderer caches live in application-private data/ca
 
 Structured logs include timestamp, level, stable event ID, platform, component, duration, byte count, and stable error code. They exclude content, editor text, passwords, full paths, raw Android URIs, EXIF values, and recovery payloads. Release logs default to information level with bounded rolling retention.
 
-The About/Environment surface shows product version, specification version, platform, architecture, WebView version, Rust core version, renderer versions, capability status, build commit, and license links. An explicit diagnostic export lets the user preview redacted logs and environment facts before saving a local bundle.
+About displays native installed package ID, product version/version code, build commit, channel and platform, using explicit Unavailable states. It provides complete offline LICENSE/NOTICE/third-party notices and explicit documentation, repository, issue-report and ShruggieTech destinations. Help/About remain reachable after contained failures; no document or diagnostic content is attached or uploaded automatically. Broader available runtime facts, including architecture, WebView and core/specification identity, belong to Diagnostics.
 
+Diagnostic export freezes one immutable redacted JSON preview. Native Save verifies those exact bytes; Share grants temporary receiver access and reports handoff or cancellation, while receiver readability is established separately. Pending, saved, failed, cancelled and share-handoff states remain distinct. Duplicate export is blocked, failure retains the frozen payload, and failed Clear retains events. Evidence uses allowlisted correlated stage/reason observations without contents, names, paths, provider URIs or link targets. Viewport observations remain ephemeral and outside the frozen bundle.
 ## 28. Repository Layout and Dependency Governance
 
 ```text
@@ -729,6 +737,8 @@ Size classes are tiny, normal, medium, boundary, over-limit, malformed, truncate
 
 Coverage is a diagnostic, not a success metric. Critical state, save, recovery, detection, permission, and parser-limit branches require direct tests regardless of aggregate percentage.
 
+
+Current ordinary/fault-probe API24/API36 journey evidence binds actual source, installed packages, API/WebView, geometry/font/IME profiles, exact destination/receiver readbacks and every attempt. Missing or failed required rows block qualification. Browser/unit assertions are supplemental and cannot become individual installed assertions. The report inventory retains 119 records, 150 report-declared named controls/variants and 459 scoped cases with explicit distinctions: 98 supplemental-only cases, unmounted CTRL-114, passive CTRL-115, absent unsupported page providers and conditional animation actions. Actual minified release operation requires its own package-bound campaign.
 ## 32. Packaging, Distribution, and Updates
 
 Official artifact names follow `glitchpad-{version}-{platform}-{arch}.{ext}` and contain or accompany `LICENSE`, `NOTICE`, `THIRD_PARTY_NOTICES`, SHA-256 checksums, CycloneDX SBOM, and provenance attestation.
@@ -737,31 +747,30 @@ Windows publishes an unsigned x86_64 NSIS current-user installer and portable ZI
 
 Desktop packages register only stable editable/viewable formats from the release matrix. Android intent filters follow the same rule. Uninstall removes application binaries and registered associations while preserving user-created documents; platform conventions decide whether preferences and recovery data remain, and the uninstaller must disclose any removal option.
 
-v0.2.0 has no in-app updater. Direct-distribution users obtain community releases through the project release channel. A future updater requires a separate threat model, authenticated manifest, rollback policy, channel model, proxy/offline behavior, and recovery test matrix.
+v0.2.1 has no in-app updater. Direct-distribution users obtain community releases through the project release channel. A future updater requires a separately approved specification and corresponding integrity, rollback, offline and recovery evidence.
 
-No artifact is official without its declared trust state, checksum, SBOM, provenance, license notices, source revision, and exact version evidence. Windows is explicitly unsigned, macOS is ad-hoc signed and non-notarized, Linux is repository-attested, and Android uses the stable project-owned update key. S043 removes mandatory physical-device and manual screen-reader testing under the 2026-11-02 owner decision. Automated accessibility and hosted platform qualification remain required; neither physical-device nor manual screen-reader validation is claimed.
-
+No artifact is release-eligible without its declared trust state, checksum, SBOM, provenance, license notices, source revision, version and applicable runtime evidence. Windows remains unsigned, macOS ad-hoc signed/non-notarized, Linux repository-attested and Android stable-project-key signed. Staged signing eligibility remains unpublished. Existing physical-device/manual-screen-reader/reference-hardware owner waivers remain in force; unrun manual macOS/Linux GUI and VoiceOver rows remain literal, with #66 and #239 separately tracked. Original incident bytes/APK hash/trace are unavailable, so exact original incident replay is not claimed.
 ## 33. Release and Versioning Process
 
-Glitchpad follows semantic versioning. Before 1.0.0, a minor release may change unstable application behavior, but save integrity, source privacy, license, and release-evidence guarantees remain compatibility commitments. Patch releases contain compatible fixes and documentation corrections. v0.0.0 is the foundation release, v0.1.0 is the first binary release, v0.1.1 is its first corrective successor, v0.1.2 is its second corrective successor, v0.1.3 is its third corrective successor, and v0.2.0 is its fourth corrective successor.
+Glitchpad follows semantic versioning. Before 1.0.0, minor releases may change unstable behavior, while save integrity, source privacy, licensing and release-evidence guarantees remain commitments. Patch releases contain compatible fixes and documentation reconciliation. v0.0.0 is the foundation, v0.1.0 the first binary release, v0.1.1-v0.1.4 its corrective successors, v0.2.0 activates images and v0.2.1 reconciles S046/S047 product recovery.
 
 Every change reaches the default branch through a reviewed pull request with a green aggregate gate. Changelog entries are contributed as fragments to avoid concurrent edits. The release operator assembles fragments, performs the documentation pass, updates the canonical product version and mirrors, reviews generated notices, commits the release, and pushes `vX.Y.Z`.
 
-The tag pipeline verifies the release contract, runs shared gates, builds the four-platform matrix, validates each platform's declared community trust state, generates checksums/SBOM/provenance, and creates the release only after every automated gate succeeds.
+Release preparation stages the exact declared payloads and trust metadata before native qualification. The owner reviews one source/package-bound handoff; PR readiness is separate from merge, tagging, signed release operation, publication and public/installed verification. A later owner-authorized annotated tag identifies the accepted candidate SHA and validated staging inputs. The publisher downloads those immutable accepted artifact IDs, verifies their source/digests/native receipts and assembles the release without rebuilding payloads. A squash merge may establish equal contents but cannot relabel package source identity. Changed bytes require fresh qualification.
 
 ```mermaid
 flowchart TB
-  slices["Completed Spec Kit slices"] --> reconcile["Documentation and changelog reconciliation"]
-  reconcile --> commit["Reviewed release commit"]
-  commit --> tag["Operator pushes vX.Y.Z"]
-  tag --> verify["Version, docs, tests, security, and license gates"]
-  verify --> builds["Windows, macOS, Linux, and Android builds"]
-  builds --> smoke["Install and core-behavior smoke tests"]
-  smoke --> supply["Sign, checksum, SBOM, and attest"]
-  supply --> publish{"Every required artifact and receipt present?"}
-  publish -->|No| blocked["Publication blocked"]
-  publish -->|Yes| release["Publish official release"]
-  release --> post["Post-release verification"]
+  slices["Completed Spec Kit slices"] --> reconcile["Documentation and version reconciliation"]
+  reconcile --> stage["Stage exact payloads and trust metadata"]
+  stage --> qualify["Source, installed tasks, native receipts and byte readback"]
+  qualify --> review["Owner final PR review and merge"]
+  review --> authorize["Later owner publication authorization"]
+  authorize --> tag["Annotated tag at accepted candidate source"]
+  tag --> verify["Validate accepted staging identities and hashes"]
+  verify --> gate{"Every required accepted artifact and receipt present?"}
+  gate -->|No| blocked["Publication blocked"]
+  gate -->|Yes| publish["Publish accepted bytes unchanged"]
+  publish --> readback["Independent public and site readback"]
 ```
 
 A failed platform leg blocks the release. Partial publication is not promoted as official. Post-release failure halts channel promotion and opens a release-remediation slice; published assets remain clearly marked until corrected or withdrawn.
@@ -870,7 +879,7 @@ Risks with fixed containment and blocking gates are recorded in `specs/002-v000-
 | Previous tab | `Ctrl+Shift+Tab` | `Ctrl+Shift+Tab` | Select from tab sheet |
 | Find | `Ctrl+F` | `Cmd+F` | Find action |
 | Replace | `Ctrl+H` | `Cmd+Option+F` | Replace action when editable |
-| Go to line/page | `Ctrl+G` | `Cmd+G` | Navigate action |
+| Go to line (text) | `Ctrl+G` | `Cmd+G` | Large-text tools / Go to line |
 | Toggle Markdown or Mermaid view/source | `Ctrl+E` | `Cmd+E` | Mode action |
 | Metadata inspector | `Ctrl+I` | `Cmd+I` | Information action |
 | Zoom in/out/reset | `Ctrl++`, `Ctrl+-`, `Ctrl+0` | `Cmd++`, `Cmd+-`, `Cmd+0` | Pinch and zoom actions |

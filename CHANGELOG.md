@@ -1,10 +1,12 @@
 # Changelog
 
-S043 adds image qualification and stable image entry points, retaining S042 BrandBuilder and AppFrame. Automated accessibility and hosted native evidence replace unavailable mandatory physical-device and manual screen-reader checks under the owner decision. S045 publishes v0.2.0 and records exact-source qualification and independent public readback.
+S048 reconciles S046 and S047 product recovery into the v0.2.1 release definition, preserving historical S043-S045 image qualification/publication evidence. Exact staged payloads and current installed-runtime evidence remain distinct from later owner-authorized publication.
 
 All notable changes to Glitchpad are documented in this file. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.2.1]
 
 ### Fixed
 
@@ -25,6 +27,8 @@ All notable changes to Glitchpad are documented in this file. The format follows
 - 2026-11-05 (S047): Keep Mermaid12.0.0 pinned and patch its private stylesheet construction for the minimum Android WebView using a disabled stylesheet in an isolated document. Preserve generated styles, sanitization, bounds and resource ownership; retain the original dependency license and patch provenance.
 
 - 2026-11-06 (S047): Bind the existing Android Back callback to activity lifecycle ownership and retain dispatcher fallback when no application listener is running. Preserve native focus and original action errors in Windows package qualification. Keep actual installed role/API results distinct from source, synthetic-browser and diagnostic evidence.
+
+- 2026-11-08 (S048): Share target-release identity, reconcile product recovery documentation, qualify actual minified Android release operation, and stage accepted payloads before native receipt capture. Later owner-authorized publication consumes the accepted source/artifact identities without rebuilding; preparation stops at an unmerged PR.
 
 ## [0.2.0] - 2026-11-03
 

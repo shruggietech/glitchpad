@@ -37,6 +37,10 @@ on:
       - 'pnpm-lock.yaml'
   workflow_dispatch:
 
+env:
+  GLITCHPAD_BUILD_COMMIT: ${{ github.sha }}
+  VITE_GLITCHPAD_BUILD_COMMIT: ${{ github.sha }}
+
 permissions:
   contents: read
 

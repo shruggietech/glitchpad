@@ -167,9 +167,7 @@ class AndroidDeliveryInstrumentedTest {
       while(pending.isNotEmpty()&&seen++<5000){val node=pending.removeFirst();if(node.isVisibleToUser&&predicate(node))return node;for(index in 0 until node.childCount)node.getChild(index)?.let { pending.add(it) }}
       return null
     }
-    fun awaitNative(label:String,predicate:(android.view.accessibility.AccessibilityNodeInfo)->Boolean):android.view.accessibility.AccessibilityNodeInfo {
-      val deadline=SystemClock.elapsedRealtime()+30000L
-      while(SystemClock.elapsedRealtime()<deadline){findNative(predicate)?.let{return it};SystemClock.sleep(100)}
+    fun nativeFailure(label:String):Nothing {
       val nodes=JSONArray();val pending=java.util.ArrayDeque<android.view.accessibility.AccessibilityNodeInfo>();automation.rootInActiveWindow?.let{pending.add(it)}
       while(pending.isNotEmpty()&&nodes.length()<256){val node=pending.removeFirst();nodes.put(JSONObject().put("id",node.viewIdResourceName).put("class",node.className?.toString()).put("text",node.text?.toString()?.take(256)).put("description",node.contentDescription?.toString()?.take(256)).put("enabled",node.isEnabled));for(index in 0 until node.childCount)node.getChild(index)?.let{pending.add(it)}}
       val body=AtomicReference("unavailable");val latch=CountDownLatch(1);instrumentation.runOnMainSync {retainedView.get()?.evaluateJavascript("document.body.innerText.slice(0,8192)") { value->body.set(value);latch.countDown() }};latch.await(2,TimeUnit.SECONDS)
@@ -177,10 +175,16 @@ class AndroidDeliveryInstrumentedTest {
       File(clientContext.filesDir,"s049-pdf-native-print-failure.json").writeText(details.toString(2),Charsets.UTF_8);println("s049_pdf_native_print_failure="+details.toString());System.out.flush()
       throw AssertionError("Native print control unavailable: $label; package="+automation.rootInActiveWindow?.packageName)
     }
+    fun awaitNative(label:String,predicate:(android.view.accessibility.AccessibilityNodeInfo)->Boolean):android.view.accessibility.AccessibilityNodeInfo {
+      val deadline=SystemClock.elapsedRealtime()+30000L
+      while(SystemClock.elapsedRealtime()<deadline){findNative(predicate)?.let{return it};SystemClock.sleep(100)}
+      nativeFailure(label)
+    }
     fun activate(node:android.view.accessibility.AccessibilityNodeInfo){
       // DocumentsUI rows can expose a non-clickable label inside a touchable row.
       automation.waitForIdle(400L,5000L)
       assertTrue("native control remains attached after UI settles",node.refresh())
+      if(node.isClickable&&node.performAction(android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK))return
       val bounds=android.graphics.Rect();node.getBoundsInScreen(bounds)
       println("s049_native_print_control="+JSONObject().put("text",node.text?.toString()).put("description",node.contentDescription?.toString()).put("bounds",bounds.toShortString()));System.out.flush()
       assertTrue("native control has touch geometry",bounds.width()>0&&bounds.height()>0)
@@ -200,16 +204,21 @@ class AndroidDeliveryInstrumentedTest {
     val printButton=awaitNative("save print output") { it.isEnabled&&(it.viewIdResourceName?.endsWith("/print_button")==true||it.contentDescription?.toString()?.equals("Save to PDF",true)==true) }
     activate(printButton)
     val filename="s049-print-"+UUID.randomUUID().toString()+".pdf"
+    activate(awaitNative("output location roots") { val description=it.contentDescription?.toString();it.isEnabled&&(description?.equals("Show roots",true)==true||description?.startsWith("Show navigation",true)==true) })
+    activate(awaitNative("Downloads output location") { it.isEnabled&&it.text?.toString()?.equals("Downloads",true)==true })
     val name=awaitNative("output filename") { it.isEditable&&it.className?.toString()=="android.widget.EditText" }
     val args=Bundle();args.putCharSequence(android.view.accessibility.AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE,filename)
     assertTrue(name.performAction(android.view.accessibility.AccessibilityNodeInfo.ACTION_SET_TEXT,args))
-    activate(awaitNative("output location roots") { val description=it.contentDescription?.toString();it.isEnabled&&(description?.equals("Show roots",true)==true||description?.startsWith("Show navigation",true)==true) })
-    activate(awaitNative("Downloads output location") { it.isEnabled&&it.text?.toString()?.equals("Downloads",true)==true })
+    awaitNative("final output filename") { it.isEditable&&it.text?.toString()==filename }
     activate(awaitNative("save generated PDF") { it.isEnabled&&it.text?.toString()?.equals("Save",true)==true&&!it.isEditable })
     val path="/sdcard/Download/"+filename
     var output:ByteArray?=null;val deadline=SystemClock.elapsedRealtime()+30000L
     while(SystemClock.elapsedRealtime()<deadline){output=runCatching{android.util.Base64.decode(checkedShell("base64 "+path),android.util.Base64.DEFAULT)}.getOrNull();if(output!=null&&output.size>128)break;SystemClock.sleep(200)}
-    val bytes=requireNotNull(output){"system print must produce readable PDF output"}
+    if(output==null){
+      println("s049_print_output_directory="+checkedShell("ls -la /sdcard/Download").take(4096));System.out.flush()
+      nativeFailure("system print must produce readable PDF output at "+path)
+    }
+    val bytes=requireNotNull(output)
     assertTrue("system output must be PDF",bytes.copyOfRange(0,5).contentEquals("%PDF-".toByteArray(Charsets.US_ASCII)))
     val readback=File(clientContext.filesDir,"s049-print-output-"+receiptName+".pdf");readback.writeBytes(bytes)
     val inks=JSONArray()

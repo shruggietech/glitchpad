@@ -13,3 +13,9 @@ The implementation checklist gate reads16/16 checked,0unchecked; no reviewer-own
 ## 2026-11-09: Execution environment
 
 Docker client is installed but the dockerDesktopLinuxEngine pipe is unavailable. The approved hidden WSL probe found only curl among required tools, with a mirrored-network configuration failure and DNS resolution failure. Its shell pipeline exit0 does not establish a usable toolchain or network. The environment was rejected. Built-in file/data operations and the approved hidden Git/GitHub launcher remain local; all repository tools and native validation use isolated hosted CI. Diagnostic context/failed logs are retained under the ignored S050 evidence directory. Premature planning-only package fan-out was cancelled; it is not qualification evidence.
+
+## Native activation and release PDF regressions (2026-11-09)
+
+Actual hosted regression run42571906010 onab776fc97a14bd7f888af835ad26774489d49e8c failed exactly on absent PDF declarations and the expected31-to32 extension/20-to21 MIME count changes. Run42572365287 exposed missing NSIS backup/restore, Linux desktop-entry MIME and macOS Viewer-role derivation; these were corrected. Run42572562672 proved the missing mandatory PDF release group/mode before implementation and exposed current-authority test factories that still hardcoded0.2.1; those factories now read their contracts, while independent parser/SBOM fixtures retain their original arbitrary versions. All failed logs are preserved under the ignored S050 archive.
+
+Focused run42572861012 oncbc5ffcc8d2ed8b6915c18a9d526822de609641c passed all68 activation, Windows/macOS/Linux/Android package, Android runner and strict release-evidence tests. This is source/validator evidence, not installed-runtime qualification. A separate stable-key/minified PDF preflight was dispatched on that exact source with API24 preceding API36; results are pending. No PR or external review round has started.

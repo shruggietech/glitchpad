@@ -16,17 +16,17 @@
 Independent test: real cold/warm native PDF delivery resolves to the existing viewer, preserves sources and retains unsupported-format/source-policy negatives.
 
 - [x] T004 [US1] Add failing positive-PDF declaration/count/resolver and still-unsupported negative tests in scripts/check-image-activation.test.mjs, package validator tests and AndroidResolverInstrumentedTest.kt. (FR-001,002; US1/AC1-4)
-- [ ] T005 [US1] Promote the canonical PDF family and reconcile generated desktop/Tauri/Linux/Android declarations in packaging/desktop/capabilities.json, native package/intent/MIME contracts and the source AndroidManifest.xml. (FR-001,002)
-- [ ] T006 [US1] Promote governed PDF delivery without duplicate exceptions and cover cold/warm content-based source routing in crates/glitchpad-host/src/desktop_delivery.rs and existing Android instrumentation. (FR-002,003,004,006,007,011)
-- [ ] T007 [US1] Prepare consistent0.3.0 target identities and monotonic Android code1006 across canonical Cargo/package/Tauri/Gradle/package/workflow authorities, retaining published latest links and historical receipts. (FR-017,018,019)
+- [x] T005 [US1] Promote the canonical PDF family and reconcile generated desktop/Tauri/Linux/Android declarations in packaging/desktop/capabilities.json, native package/intent/MIME contracts and the source AndroidManifest.xml. (FR-001,002)
+- [x] T006 [US1] Promote governed PDF delivery without duplicate exceptions and cover cold/warm content-based source routing in crates/glitchpad-host/src/desktop_delivery.rs and existing Android instrumentation. (FR-002,003,004,006,007,011)
+- [x] T007 [US1] Prepare consistent0.3.0 target identities and monotonic Android code1006 across canonical Cargo/package/Tauri/Gradle/package/workflow authorities, retaining published latest links and historical receipts. (FR-017,018,019)
 
 ## Phase 4: US3 - Front-loaded minified Android proof
 
 Independent test: exact canonical signed/minified app and matching test APK complete real PDF open/search/navigation/print/provider disposal on API24/Chrome69 then API36, with independently captured installed/output bytes.
 
-- [ ] T008 [US3] Add failing release PDF case/mode/installed/output validation regressions in scripts/run-android-release-tests.test.mjs and validate-android-release-evidence.test.mjs. (FR-006,014,015,016; US3/AC1-4)
-- [ ] T009 [US3] Make pdfCompatibility release-safe through resolved intents, observedTestWebViewPackage, public print commands, PDF-visible screenshot and test-owned JSON/APK/raw-PDF capture in AndroidDeliveryInstrumentedTest.kt and fixture provider. (FR-002,003,007,010,011,015,016)
-- [ ] T010 [US3] Add diagnostic pdf runtime mode and mandatory PDF full-campaign case with offline setup/clean completion/output bindings in scripts/run-android-release-tests.sh, validate-android-release-evidence.mjs and android-package.yml. (FR-014,015,016,020)
+- [x] T008 [US3] Add failing release PDF case/mode/installed/output validation regressions in scripts/run-android-release-tests.test.mjs and validate-android-release-evidence.test.mjs. (FR-006,014,015,016; US3/AC1-4)
+- [x] T009 [US3] Make pdfCompatibility release-safe through resolved intents, observedTestWebViewPackage, public print commands, PDF-visible screenshot and test-owned JSON/APK/raw-PDF capture in AndroidDeliveryInstrumentedTest.kt and fixture provider. (FR-002,003,007,010,011,015,016)
+- [x] T010 [US3] Add diagnostic pdf runtime mode and mandatory PDF full-campaign case with offline setup/clean completion/output bindings in scripts/run-android-release-tests.sh, validate-android-release-evidence.mjs and android-package.yml. (FR-014,015,016,020)
 - [ ] T011 [US3] Run actual minified API24/Chrome69 then API36 PDF preflights, retain failures and repair demonstrated fixture/transport/R8/native defects before broad campaigns; record exact identities in validation.md. (FR-012,015,016,021)
 
 ## Phase 5: US2 - Complete PDF conformance

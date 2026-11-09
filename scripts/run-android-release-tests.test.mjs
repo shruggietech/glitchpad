@@ -163,16 +163,62 @@ test('release PDF diagnostics retain outputs and cannot replace the full campaig
   );
 });
 
-test('failed installation markers cannot enter instrumentation and both bounded attempts are retained', {skip:process.platform!=='linux'}, async()=>{
-  const root=await mkdtemp(join(tmpdir(),'s050-install-'));
-  try{
-    const bin=join(root,'bin');await mkdir(bin);
-    await writeFile(join(bin,'adb'),'#!/usr/bin/env bash\necho "Failure [INSTALL_FAILED_FIXTURE]"\nexit 0\n',{mode:0o755});
-    const app=join(root,'app.apk'),tests=join(root,'test.apk'),evidence=join(root,'evidence');
-    await writeFile(app,'app');await writeFile(tests,'test');
-    const result=spawnSync('bash',[fileURLToPath(new URL('./run-android-release-tests.sh',import.meta.url)),'24','a'.repeat(40),app,tests,evidence,'pdf'],{env:{...process.env,PATH:bin+delimiter+process.env.PATH},encoding:'utf8',windowsHide:true,timeout:15000});
-    assert.equal(result.status,1,result.stdout+result.stderr);
-    for(const attempt of [1,2]){const status=JSON.parse(await readFile(join(evidence,'setup','install-application-attempt-'+attempt+'.status.json'),'utf8'));assert.equal(status.command_exit,0);assert.equal(status.attempt,attempt);}
-    assert.match(result.stderr,/two bounded attempts/u);
-  } finally{await rm(root,{recursive:true,force:true});}
-});
+test(
+  'failed installation markers cannot enter instrumentation and both bounded attempts are retained',
+  { skip: process.platform !== 'linux' },
+  async () => {
+    const root = await mkdtemp(join(tmpdir(), 's050-install-'));
+    try {
+      const bin = join(root, 'bin');
+      await mkdir(bin);
+      await writeFile(
+        join(bin, 'adb'),
+        '#!/usr/bin/env bash\necho "Failure [INSTALL_FAILED_FIXTURE]"\nexit 0\n',
+        { mode: 0o755 },
+      );
+      const app = join(root, 'app.apk'),
+        tests = join(root, 'test.apk'),
+        evidence = join(root, 'evidence');
+      await writeFile(app, 'app');
+      await writeFile(tests, 'test');
+      const result = spawnSync(
+        'bash',
+        [
+          fileURLToPath(
+            new URL('./run-android-release-tests.sh', import.meta.url),
+          ),
+          '24',
+          'a'.repeat(40),
+          app,
+          tests,
+          evidence,
+          'pdf',
+        ],
+        {
+          env: { ...process.env, PATH: bin + delimiter + process.env.PATH },
+          encoding: 'utf8',
+          windowsHide: true,
+          timeout: 15000,
+        },
+      );
+      assert.equal(result.status, 1, result.stdout + result.stderr);
+      for (const attempt of [1, 2]) {
+        const status = JSON.parse(
+          await readFile(
+            join(
+              evidence,
+              'setup',
+              'install-application-attempt-' + attempt + '.status.json',
+            ),
+            'utf8',
+          ),
+        );
+        assert.equal(status.command_exit, 0);
+        assert.equal(status.attempt, attempt);
+      }
+      assert.match(result.stderr, /two bounded attempts/u);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  },
+);

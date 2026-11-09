@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {checkPdfConformanceCorpus} from './check-pdf-conformance-corpus.mjs';
+import { checkPdfConformanceCorpus } from './check-pdf-conformance-corpus.mjs';
 import { once } from 'node:events';
 import { createServer } from 'node:http';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
@@ -657,7 +657,9 @@ try {
       function (base64, name, length) {
         window.__setPdfFixture(base64, name, length);
       },
-      (suppliedBytes ?? await readFile(resolve(root, 'fixtures/pdf/' + name))).toString('base64'),
+      (
+        suppliedBytes ?? (await readFile(resolve(root, 'fixtures/pdf/' + name)))
+      ).toString('base64'),
       name,
       declaredLength,
     );
@@ -993,8 +995,17 @@ try {
   });
   await closeCase();
   await page.setViewport({ width: 480, height: 800, hasTouch: true });
-  const extendedConformance = await checkPdfConformanceCorpus({page,openCase,closeCase,root});
-  assert.equal(requests.filter(url=>/\.wasm(?:$|[?#])/u.test(url)).length,0,'Static codec paths must not fetch Wasm');
+  const extendedConformance = await checkPdfConformanceCorpus({
+    page,
+    openCase,
+    closeCase,
+    root,
+  });
+  assert.equal(
+    requests.filter((url) => /\.wasm(?:$|[?#])/u.test(url)).length,
+    0,
+    'Static codec paths must not fetch Wasm',
+  );
   await writeFile(
     resolve(output, 'result.json'),
     JSON.stringify(

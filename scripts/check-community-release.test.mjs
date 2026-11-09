@@ -14,7 +14,7 @@ import {
 } from './check-community-release.mjs';
 
 const finalHandoff = () => ({
-  scope: {capability:'pdf',slices:['S049','S050'],issues:[81,82,11]},
+  scope: { capability: 'pdf', slices: ['S049', 'S050'], issues: [81, 82, 11] },
   releaseNotes:
     'S049 and S050 PDF viewing for #81, #82 and #11; issue #66 and #239 remain open. unsigned not notarized SHA-256',
   releaseReceipt:
@@ -88,7 +88,12 @@ for (const [name, mutate, expected] of [
 
 const contract = () => ({
   schema_version: 1,
-  release_scope: JSON.parse(readFileSync(new URL('../packaging/release/package-contract.json',import.meta.url),'utf8')).release_scope,
+  release_scope: JSON.parse(
+    readFileSync(
+      new URL('../packaging/release/package-contract.json', import.meta.url),
+      'utf8',
+    ),
+  ).release_scope,
   version: releaseIdentity.version,
   tag: releaseIdentity.tag,
   repository: 'shruggietech/glitchpad',

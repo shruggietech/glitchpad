@@ -321,8 +321,10 @@ pub fn run() {
                 .map_err(|_| std::io::Error::other("The PDF probe request is invalid"))?
                 .is_some()
             {
-                lifecycle_probe::begin_desktop_pdf_memory(&app.state::<lifecycle_probe::LifecycleProbeState>())
-                    .map_err(|_| std::io::Error::other("The PDF memory baseline is unavailable"))?;
+                lifecycle_probe::begin_desktop_pdf_memory(
+                    &app.state::<lifecycle_probe::LifecycleProbeState>(),
+                )
+                .map_err(|_| std::io::Error::other("The PDF memory baseline is unavailable"))?;
                 main_builder.initialization_script(concat!(
                     include_str!("../../../scripts/pdf-reading-journey.js"),
                     "\n",

@@ -512,10 +512,41 @@ async function main() {
     validateCleanEnvironmentReceipt(receipt, manifestBytes, contract, {
       official: options.official,
     });
-    const pdfProfile='ubuntu_'+options.release.replaceAll('.','_')+'_'+options.packageForm;
-    const pdfOutput=join(resolve(options.receiptPath),'..','pdf-native-'+pdfProfile);
-    const pdfResult=await command(process.execPath,['scripts/run-pdf-native-journey.mjs',installed.executable,'--installed-executable',options.packageForm==='appimage'?join(installed.packageRoot,'usr/bin/glitchpad-host'):installed.executable,'--artifact',packagePath,'--manifest',options.manifestPath,'--profile',pdfProfile,'--output',pdfOutput],{env:environment,timeout:300000});
-    await writeFile(pdfOutput+'-runner.log',pdfResult.stdout+pdfResult.stderr,'utf8');
+    const pdfProfile =
+      'ubuntu_' +
+      options.release.replaceAll('.', '_') +
+      '_' +
+      options.packageForm;
+    const pdfOutput = join(
+      resolve(options.receiptPath),
+      '..',
+      'pdf-native-' + pdfProfile,
+    );
+    const pdfResult = await command(
+      process.execPath,
+      [
+        'scripts/run-pdf-native-journey.mjs',
+        installed.executable,
+        '--installed-executable',
+        options.packageForm === 'appimage'
+          ? join(installed.packageRoot, 'usr/bin/glitchpad-host')
+          : installed.executable,
+        '--artifact',
+        packagePath,
+        '--manifest',
+        options.manifestPath,
+        '--profile',
+        pdfProfile,
+        '--output',
+        pdfOutput,
+      ],
+      { env: environment, timeout: 300000 },
+    );
+    await writeFile(
+      pdfOutput + '-runner.log',
+      pdfResult.stdout + pdfResult.stderr,
+      'utf8',
+    );
     await installed.uninstall();
     installed = undefined;
     await verifyRegistrationCleanup();

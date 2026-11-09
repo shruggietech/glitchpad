@@ -146,17 +146,80 @@ export function validateReleaseRow(row, expected) {
   }
   if (expected.caseId === 'pdf') {
     const pdf = row.observations ?? {};
-    const measured=pdf.measurements;
-    required(typeof identity.architecture==='string' && identity.architecture.length>0,'PDF observed architecture missing');
-    required(measured?.first_page?.method && measured.first_page.samples_ms?.length>=1 && measured.first_page.samples_ms.every(n=>Number.isFinite(n)&&n>=0),'PDF first-page raw measurement missing');
-    required(measured.memory?.method && measured.memory.process_name===identity.package_identifier && measured.memory.scope && measured.memory.samples_bytes?.length>=2 && measured.memory.samples_bytes.every(n=>Number.isFinite(n)&&n>0),'PDF named process memory measurements missing');
-    const readings=measured.reading;
-    for(const metric of ['navigation','search_complete','first_thumbnail']) required(readings?.samples?.some(s=>s.metric===metric && Number.isFinite(s.milliseconds)&&s.milliseconds>=0),'PDF reading measurement missing: '+metric);
-    required(readings.interaction?.scope && readings.interaction.samples_ms?.length>0 && readings.interaction.samples_ms.every(n=>Number.isFinite(n)&&n>=0),'PDF synchronous interaction observations are missing');
-    required(typeof readings.long_tasks?.supported==='boolean' && readings.long_tasks.scope,'PDF main-realm long-task observer scope missing');
-    if(readings.long_tasks.supported) required(Array.isArray(readings.long_tasks.samples_ms)&&readings.long_tasks.samples_ms.every(n=>Number.isFinite(n)&&n>=0),'PDF observed reading task samples invalid');
-    else required(readings.long_tasks.samples_ms===null,'PDF unsupported task observer must remain unmeasured');
-    required(Array.isArray(pdf.resource_phases) && pdf.resource_phases.length>=2 && pdf.resource_phases.every(p=>Number.isFinite(p.peakSurfaceBytes)&&p.peakSurfaceBytes>=0&&p.peakSurfaceBytes<=96*1024*1024&&Number.isFinite(p.range?.maximumRequestBytes)&&p.range.maximumRequestBytes<=262144&&Number.isFinite(p.range.peakConcurrency)&&p.range.peakConcurrency<=2),'PDF actual owned surface/range observations missing or over budget');
+    const measured = pdf.measurements;
+    required(
+      typeof identity.architecture === 'string' &&
+        identity.architecture.length > 0,
+      'PDF observed architecture missing',
+    );
+    required(
+      measured?.first_page?.method &&
+        measured.first_page.samples_ms?.length >= 1 &&
+        measured.first_page.samples_ms.every(
+          (n) => Number.isFinite(n) && n >= 0,
+        ),
+      'PDF first-page raw measurement missing',
+    );
+    required(
+      measured.memory?.method &&
+        measured.memory.process_name === identity.package_identifier &&
+        measured.memory.scope &&
+        measured.memory.samples_bytes?.length >= 2 &&
+        measured.memory.samples_bytes.every((n) => Number.isFinite(n) && n > 0),
+      'PDF named process memory measurements missing',
+    );
+    const readings = measured.reading;
+    for (const metric of ['navigation', 'search_complete', 'first_thumbnail'])
+      required(
+        readings?.samples?.some(
+          (s) =>
+            s.metric === metric &&
+            Number.isFinite(s.milliseconds) &&
+            s.milliseconds >= 0,
+        ),
+        'PDF reading measurement missing: ' + metric,
+      );
+    required(
+      readings.interaction?.scope &&
+        readings.interaction.samples_ms?.length > 0 &&
+        readings.interaction.samples_ms.every(
+          (n) => Number.isFinite(n) && n >= 0,
+        ),
+      'PDF synchronous interaction observations are missing',
+    );
+    required(
+      typeof readings.long_tasks?.supported === 'boolean' &&
+        readings.long_tasks.scope,
+      'PDF main-realm long-task observer scope missing',
+    );
+    if (readings.long_tasks.supported)
+      required(
+        Array.isArray(readings.long_tasks.samples_ms) &&
+          readings.long_tasks.samples_ms.every(
+            (n) => Number.isFinite(n) && n >= 0,
+          ),
+        'PDF observed reading task samples invalid',
+      );
+    else
+      required(
+        readings.long_tasks.samples_ms === null,
+        'PDF unsupported task observer must remain unmeasured',
+      );
+    required(
+      Array.isArray(pdf.resource_phases) &&
+        pdf.resource_phases.length >= 2 &&
+        pdf.resource_phases.every(
+          (p) =>
+            Number.isFinite(p.peakSurfaceBytes) &&
+            p.peakSurfaceBytes >= 0 &&
+            p.peakSurfaceBytes <= 96 * 1024 * 1024 &&
+            Number.isFinite(p.range?.maximumRequestBytes) &&
+            p.range.maximumRequestBytes <= 262144 &&
+            Number.isFinite(p.range.peakConcurrency) &&
+            p.range.peakConcurrency <= 2,
+        ),
+      'PDF actual owned surface/range observations missing or over budget',
+    );
     required(
       pdf.fixture_sha256 ===
         digest(
@@ -194,7 +257,10 @@ export function validateReleaseRow(row, expected) {
         pdf.reading_journey?.checks?.[key] === true,
         'PDF reading check missing: ' + key,
       );
-    required(pdf.reading_journey.checks.canvas_ink > 500, 'PDF embedded reading canvas ink missing');
+    required(
+      pdf.reading_journey.checks.canvas_ink > 500,
+      'PDF embedded reading canvas ink missing',
+    );
     required(
       pdf.reading_journey.native_touch_outline === true &&
         pdf.reading_journey.native_keyboard_home === true,
@@ -443,17 +509,54 @@ export async function validateReleaseDirectory({
   };
 }
 
-export async function createAndroidPdfReleaseRecord({summary, manifestPath, inputIdentityPath, instrumentation, execution}) {
-  required(summary.status==='pass' && summary.candidate_qualified===true && summary.diagnostic_only===false, 'Full release campaign required for PDF qualification');
-  const manifestBytes=await readFile(manifestPath), manifest=JSON.parse(manifestBytes);
-  const input=JSON.parse(await readFile(inputIdentityPath,'utf8'));
-  const universal=manifest.artifacts?.find(row=>row.role==='universal');
-  required(manifest.source_commit===summary.source && input.source_commit===summary.source && universal?.sha256===summary.applicationSha && input.application_sha256===summary.applicationSha, 'PDF canonical Android source/application binding mismatch');
-  required(input.instrumentation_sha256===summary.instrumentationSha && await hashReleaseFile(instrumentation)===summary.instrumentationSha && input.minified===true && input.application_debuggable===false, 'PDF matching minified instrumentation binding mismatch');
-  required(await hashReleaseFile(join(dirname(inputIdentityPath),'r8-mapping.txt'))===input.r8_mapping_sha256, 'PDF actual R8 mapping binding mismatch');
-  const row=summary.selected.flatMap(group=>group.cases).find(row=>row.case_id==='pdf');
-  required(row,'PDF full campaign capture missing');
-  return androidPdfConformanceRecord(row,{campaignComplete:true,minified:true,manifestSha:digest(manifestBytes),artifactSha:summary.applicationSha,execution});
+export async function createAndroidPdfReleaseRecord({
+  summary,
+  manifestPath,
+  inputIdentityPath,
+  instrumentation,
+  execution,
+}) {
+  required(
+    summary.status === 'pass' &&
+      summary.candidate_qualified === true &&
+      summary.diagnostic_only === false,
+    'Full release campaign required for PDF qualification',
+  );
+  const manifestBytes = await readFile(manifestPath),
+    manifest = JSON.parse(manifestBytes);
+  const input = JSON.parse(await readFile(inputIdentityPath, 'utf8'));
+  const universal = manifest.artifacts?.find((row) => row.role === 'universal');
+  required(
+    manifest.source_commit === summary.source &&
+      input.source_commit === summary.source &&
+      universal?.sha256 === summary.applicationSha &&
+      input.application_sha256 === summary.applicationSha,
+    'PDF canonical Android source/application binding mismatch',
+  );
+  required(
+    input.instrumentation_sha256 === summary.instrumentationSha &&
+      (await hashReleaseFile(instrumentation)) === summary.instrumentationSha &&
+      input.minified === true &&
+      input.application_debuggable === false,
+    'PDF matching minified instrumentation binding mismatch',
+  );
+  required(
+    (await hashReleaseFile(
+      join(dirname(inputIdentityPath), 'r8-mapping.txt'),
+    )) === input.r8_mapping_sha256,
+    'PDF actual R8 mapping binding mismatch',
+  );
+  const row = summary.selected
+    .flatMap((group) => group.cases)
+    .find((row) => row.case_id === 'pdf');
+  required(row, 'PDF full campaign capture missing');
+  return androidPdfConformanceRecord(row, {
+    campaignComplete: true,
+    minified: true,
+    manifestSha: digest(manifestBytes),
+    artifactSha: summary.applicationSha,
+    execution,
+  });
 }
 
 async function main() {
@@ -491,8 +594,23 @@ async function main() {
     'utf8',
   );
   if ((values.mode ?? 'full') === 'full') {
-    const record=await createAndroidPdfReleaseRecord({summary:result,manifestPath:values.manifest,inputIdentityPath:values['input-identity'],instrumentation:values.instrumentation,execution:{run_id:Number(process.env.GITHUB_RUN_ID),run_attempt:Number(process.env.GITHUB_RUN_ATTEMPT),job:process.env.GITHUB_JOB,completion:'clean'}});
-    await writeFile(join(values.directory,'pdf-conformance-record.json'),JSON.stringify(record,null,2)+'\n','utf8');
+    const record = await createAndroidPdfReleaseRecord({
+      summary: result,
+      manifestPath: values.manifest,
+      inputIdentityPath: values['input-identity'],
+      instrumentation: values.instrumentation,
+      execution: {
+        run_id: Number(process.env.GITHUB_RUN_ID),
+        run_attempt: Number(process.env.GITHUB_RUN_ATTEMPT),
+        job: process.env.GITHUB_JOB,
+        completion: 'clean',
+      },
+    });
+    await writeFile(
+      join(values.directory, 'pdf-conformance-record.json'),
+      JSON.stringify(record, null, 2) + '\n',
+      'utf8',
+    );
   }
   console.log(
     'Installed minified release evidence passed on API ' + result.api + '.',

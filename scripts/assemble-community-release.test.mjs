@@ -350,10 +350,13 @@ test('rejects final payload changes even when native manifest receipts remain va
   );
 });
 
-test('PDF stable release cannot assemble without the complete native PDF qualification set',async()=>{
- const fixture=await releaseFixture();
- const contract=JSON.parse(await readFile(fixture.contractPath,'utf8'));
- contract.release_scope={capability:'pdf'};
- await writeFile(fixture.contractPath,JSON.stringify(contract));
- await assert.rejects(assembleCommunityRelease({...fixture,sourceCommit}),/all ten native PDF/);
+test('PDF stable release cannot assemble without the complete native PDF qualification set', async () => {
+  const fixture = await releaseFixture();
+  const contract = JSON.parse(await readFile(fixture.contractPath, 'utf8'));
+  contract.release_scope = { capability: 'pdf' };
+  await writeFile(fixture.contractPath, JSON.stringify(contract));
+  await assert.rejects(
+    assembleCommunityRelease({ ...fixture, sourceCommit }),
+    /all ten native PDF/,
+  );
 });

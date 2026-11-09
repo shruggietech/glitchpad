@@ -148,11 +148,42 @@ function row(caseId) {
       print: { selected: print(2), all: print(4) },
     };
   }
-  if(caseId==='pdf') {
-    const resource={peakSurfaceBytes:1000,peakSurfaces:2,range:{maximumRequestBytes:4096,peakConcurrency:2}};
-    result.observations.reading_journey.checks.canvas_ink=800;
-    result.observations.resource_phases=[resource,resource];
-    result.observations.measurements={first_page:{method:'SystemClock_elapsedRealtime',samples_ms:[20]},memory:{method:'Debug_MemoryInfo_totalPss',process_name:'com.shruggietech.glitchpad',scope:'actual app process',samples_bytes:[1000,1500,1100]},reading:{samples:[{metric:'navigation',milliseconds:10},{metric:'search_complete',milliseconds:20},{metric:'first_thumbnail',milliseconds:15}],interaction:{method:'synchronous_event_interval',scope:'handlers only',samples_ms:[1,2]},long_tasks:{method:'PerformanceObserver_longtask',supported:true,scope:'main realm reading only',samples_ms:[]}},resources:resource};
+  if (caseId === 'pdf') {
+    const resource = {
+      peakSurfaceBytes: 1000,
+      peakSurfaces: 2,
+      range: { maximumRequestBytes: 4096, peakConcurrency: 2 },
+    };
+    result.observations.reading_journey.checks.canvas_ink = 800;
+    result.observations.resource_phases = [resource, resource];
+    result.observations.measurements = {
+      first_page: { method: 'SystemClock_elapsedRealtime', samples_ms: [20] },
+      memory: {
+        method: 'Debug_MemoryInfo_totalPss',
+        process_name: 'com.shruggietech.glitchpad',
+        scope: 'actual app process',
+        samples_bytes: [1000, 1500, 1100],
+      },
+      reading: {
+        samples: [
+          { metric: 'navigation', milliseconds: 10 },
+          { metric: 'search_complete', milliseconds: 20 },
+          { metric: 'first_thumbnail', milliseconds: 15 },
+        ],
+        interaction: {
+          method: 'synchronous_event_interval',
+          scope: 'handlers only',
+          samples_ms: [1, 2],
+        },
+        long_tasks: {
+          method: 'PerformanceObserver_longtask',
+          supported: true,
+          scope: 'main realm reading only',
+          samples_ms: [],
+        },
+      },
+      resources: resource,
+    };
   }
   return result;
 }
@@ -471,27 +502,65 @@ test('PDF diagnostics capture raw prints and installed bytes without qualifying 
 });
 
 test('full Android PDF record binds canonical bytes, R8 map and matching instrumentation', async () => {
-  const input=await fixture();
+  const input = await fixture();
   try {
-    const summary=await validateReleaseDirectory(input);
-    const mapping=Buffer.from('actual R8 mapping input');
-    const manifestPath=join(input.directory,'android-package-manifest.json');
-    const inputIdentityPath=join(input.directory,'identity.json');
-    await writeFile(manifestPath,JSON.stringify({source_commit:source,artifacts:[{role:'universal',sha256:expected.applicationSha}]}));
-    await writeFile(join(input.directory,'r8-mapping.txt'),mapping);
-    const identity={source_commit:source,application_sha256:expected.applicationSha,instrumentation_sha256:expected.instrumentationSha,minified:true,application_debuggable:false,r8_mapping_sha256:sha(mapping)};
-    await writeFile(inputIdentityPath,JSON.stringify(identity));
-    const options={summary,manifestPath,inputIdentityPath,instrumentation:input.instrumentation,execution:{run_id:123,run_attempt:1,job:'release-runtime',completion:'clean'}};
-    const record=await createAndroidPdfReleaseRecord(options);
-    assert.equal(record.profile,'android_api24');
-    assert.equal(record.checks.reading,true);
-    assert.equal(record.artifact_sha256,expected.applicationSha);
-    assert.equal(record.execution.run_id,123);
-    await assert.rejects(createAndroidPdfReleaseRecord({...options,summary:{...summary,diagnostic_only:true}}),/Full release campaign/);
-    await writeFile(inputIdentityPath,JSON.stringify({...identity,source_commit:'c'.repeat(40)}));
-    await assert.rejects(createAndroidPdfReleaseRecord(options),/source.application binding/);
-    await writeFile(inputIdentityPath,JSON.stringify(identity));
-    await writeFile(join(input.directory,'r8-mapping.txt'),'changed');
-    await assert.rejects(createAndroidPdfReleaseRecord(options),/R8 mapping/);
-  } finally { await rm(input.directory,{recursive:true,force:true}); }
+    const summary = await validateReleaseDirectory(input);
+    const mapping = Buffer.from('actual R8 mapping input');
+    const manifestPath = join(input.directory, 'android-package-manifest.json');
+    const inputIdentityPath = join(input.directory, 'identity.json');
+    await writeFile(
+      manifestPath,
+      JSON.stringify({
+        source_commit: source,
+        artifacts: [{ role: 'universal', sha256: expected.applicationSha }],
+      }),
+    );
+    await writeFile(join(input.directory, 'r8-mapping.txt'), mapping);
+    const identity = {
+      source_commit: source,
+      application_sha256: expected.applicationSha,
+      instrumentation_sha256: expected.instrumentationSha,
+      minified: true,
+      application_debuggable: false,
+      r8_mapping_sha256: sha(mapping),
+    };
+    await writeFile(inputIdentityPath, JSON.stringify(identity));
+    const options = {
+      summary,
+      manifestPath,
+      inputIdentityPath,
+      instrumentation: input.instrumentation,
+      execution: {
+        run_id: 123,
+        run_attempt: 1,
+        job: 'release-runtime',
+        completion: 'clean',
+      },
+    };
+    const record = await createAndroidPdfReleaseRecord(options);
+    assert.equal(record.profile, 'android_api24');
+    assert.equal(record.checks.reading, true);
+    assert.equal(record.artifact_sha256, expected.applicationSha);
+    assert.equal(record.execution.run_id, 123);
+    await assert.rejects(
+      createAndroidPdfReleaseRecord({
+        ...options,
+        summary: { ...summary, diagnostic_only: true },
+      }),
+      /Full release campaign/,
+    );
+    await writeFile(
+      inputIdentityPath,
+      JSON.stringify({ ...identity, source_commit: 'c'.repeat(40) }),
+    );
+    await assert.rejects(
+      createAndroidPdfReleaseRecord(options),
+      /source.application binding/,
+    );
+    await writeFile(inputIdentityPath, JSON.stringify(identity));
+    await writeFile(join(input.directory, 'r8-mapping.txt'), 'changed');
+    await assert.rejects(createAndroidPdfReleaseRecord(options), /R8 mapping/);
+  } finally {
+    await rm(input.directory, { recursive: true, force: true });
+  }
 });

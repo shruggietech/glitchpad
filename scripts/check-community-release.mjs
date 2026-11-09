@@ -27,8 +27,22 @@ export function validateReleaseContract(contract) {
   )
     throw new Error('release must declare exactly eight unique artifacts');
   targetReleaseIdentity(contract);
-  const scope=contract.release_scope;
-  if(scope?.capability!=='pdf'||!Array.isArray(scope.slices)||scope.slices.length===0||new Set(scope.slices).size!==scope.slices.length||scope.slices.some(s=>!/^S[0-9]{3}$/u.test(s))||!Array.isArray(scope.issues)||scope.issues.length===0||new Set(scope.issues).size!==scope.issues.length||scope.issues.some(n=>!Number.isSafeInteger(n)||n<=0)||!/^\d+[.]\d+[.]\d+$/u.test(scope.prior_version??'')||scope.documentation_pass!=='docs/releases/'+contract.tag+'-documentation-pass.json')throw Error('current release scope is invalid');
+  const scope = contract.release_scope;
+  if (
+    scope?.capability !== 'pdf' ||
+    !Array.isArray(scope.slices) ||
+    scope.slices.length === 0 ||
+    new Set(scope.slices).size !== scope.slices.length ||
+    scope.slices.some((s) => !/^S[0-9]{3}$/u.test(s)) ||
+    !Array.isArray(scope.issues) ||
+    scope.issues.length === 0 ||
+    new Set(scope.issues).size !== scope.issues.length ||
+    scope.issues.some((n) => !Number.isSafeInteger(n) || n <= 0) ||
+    !/^\d+[.]\d+[.]\d+$/u.test(scope.prior_version ?? '') ||
+    scope.documentation_pass !==
+      'docs/releases/' + contract.tag + '-documentation-pass.json'
+  )
+    throw Error('current release scope is invalid');
   if (
     JSON.stringify(contract.accepted_staging_evidence) !==
     JSON.stringify(['accepted-staging.json', 'accepted-input-receipt.json'])
@@ -241,7 +255,7 @@ export function validateFinalReleaseHandoff({
       if (!content.includes(phrase))
         throw new Error(source + ' omits ' + phrase);
   }
-  for (const issue of scope.issues.map(number=>'#'+number))
+  for (const issue of scope.issues.map((number) => '#' + number))
     if (!releaseNotes.includes(issue) || !releaseReceipt.includes(issue))
       throw new Error('Release handoff omits tracked release gate ' + issue);
   for (const issue of ['#66', '#239'])
@@ -523,7 +537,7 @@ export async function checkCommunityRelease(repositoryRoot = root) {
     releaseReceipt,
     operatorRunbook,
     changelog,
-    scope:contract.release_scope,
+    scope: contract.release_scope,
   });
   validateGovernedClaims({
     releaseWorkflow,

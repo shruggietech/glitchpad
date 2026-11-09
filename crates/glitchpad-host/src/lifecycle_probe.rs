@@ -776,14 +776,20 @@ pub(crate) fn begin_desktop_pdf_memory(state: &LifecycleProbeState) -> Result<()
     use std::io::Write;
     let root = state.pdf_probe_root()?.ok_or_else(workflow_error)?;
     let bytes = crate::performance::current_working_set_bytes().map_err(|_| workflow_error())?;
-    let mut file = fs::OpenOptions::new().write(true).create_new(true)
-        .open(root.join("pdf-memory-before.json")).map_err(|_| workflow_error())?;
-    file.write_all(bytes.to_string().as_bytes()).map_err(|_| workflow_error())
+    let mut file = fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(root.join("pdf-memory-before.json"))
+        .map_err(|_| workflow_error())?;
+    file.write_all(bytes.to_string().as_bytes())
+        .map_err(|_| workflow_error())
 }
 
 /// Samples only the named native process for an explicitly enabled PDF probe.
 #[tauri::command]
-pub(crate) fn sample_desktop_pdf_memory(state: tauri::State<'_, LifecycleProbeState>) -> Result<u64, CoreError> {
+pub(crate) fn sample_desktop_pdf_memory(
+    state: tauri::State<'_, LifecycleProbeState>,
+) -> Result<u64, CoreError> {
     state.pdf_probe_root()?.ok_or_else(workflow_error)?;
     crate::performance::current_working_set_bytes().map_err(|_| workflow_error())
 }
@@ -809,15 +815,32 @@ pub(crate) fn record_desktop_pdf_probe(
     let path = root.join("pdf-journey-result.json");
     let mut output = serde_json::json!({"schema_version":1,"source_commit":option_env!("GLITCHPAD_BUILD_COMMIT"),"platform":std::env::consts::OS,"architecture":std::env::consts::ARCH,"evidence_class":"actual_built_webview","journey":proof});
     if proof.get("error").is_none() {
-        let before: u64 = serde_json::from_slice(&fs::read(root.join("pdf-memory-before.json")).map_err(|_| workflow_error())?).map_err(|_| workflow_error())?;
-        let rows = proof.get("memory_samples").and_then(serde_json::Value::as_array).ok_or_else(workflow_error)?;
-        if rows.is_empty() || rows.len() > crate::performance::MAX_MEMORY_SAMPLES.saturating_sub(2) || rows.iter().any(|row| row.as_u64().is_none_or(|value| value == 0)) { return Err(workflow_error()); }
-        let after = crate::performance::current_working_set_bytes().map_err(|_| workflow_error())?;
+        let before: u64 = serde_json::from_slice(
+            &fs::read(root.join("pdf-memory-before.json")).map_err(|_| workflow_error())?,
+        )
+        .map_err(|_| workflow_error())?;
+        let rows = proof
+            .get("memory_samples")
+            .and_then(serde_json::Value::as_array)
+            .ok_or_else(workflow_error)?;
+        if rows.is_empty()
+            || rows.len() > crate::performance::MAX_MEMORY_SAMPLES.saturating_sub(2)
+            || rows
+                .iter()
+                .any(|row| row.as_u64().is_none_or(|value| value == 0))
+        {
+            return Err(workflow_error());
+        }
+        let after =
+            crate::performance::current_working_set_bytes().map_err(|_| workflow_error())?;
         let mut samples = vec![serde_json::json!(before)];
         samples.extend(rows.iter().cloned());
         samples.push(serde_json::json!(after));
         let executable = std::env::current_exe().map_err(|_| workflow_error())?;
-        let name = executable.file_name().and_then(|value| value.to_str()).ok_or_else(workflow_error)?;
+        let name = executable
+            .file_name()
+            .and_then(|value| value.to_str())
+            .ok_or_else(workflow_error)?;
         output["native_memory"] = serde_json::json!({"method":"sysinfo_named_process_rss_before_1000ms_peak_after","scope":"Named application process only; excludes separate WebView processes and worker heap attribution","process_name":name,"pid":std::process::id(),"samples_bytes":samples,"before_bytes":before,"after_bytes":after,"interval_ms":1000});
 
         let source = SourceId(

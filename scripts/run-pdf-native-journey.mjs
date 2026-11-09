@@ -20,18 +20,44 @@ let binary = resolve(process.argv[2] || '');
 if (!process.argv[2]) throw new Error('Native binary path required');
 let packageProof = null;
 let packageArtifactPath = null;
-const option = name => {const index=process.argv.indexOf(name);if(index<0)return null;if(!process.argv[index+1]||process.argv[index+1].startsWith('--'))throw Error('Missing '+name);return process.argv[index+1];};
-const stagedArtifact=option('--artifact'), stagedManifest=option('--manifest'), stagedProfile=option('--profile');
-let expectedSource=process.env.SOURCE_REF;
+const option = (name) => {
+  const index = process.argv.indexOf(name);
+  if (index < 0) return null;
+  if (!process.argv[index + 1] || process.argv[index + 1].startsWith('--'))
+    throw Error('Missing ' + name);
+  return process.argv[index + 1];
+};
+const stagedArtifact = option('--artifact'),
+  stagedManifest = option('--manifest'),
+  stagedProfile = option('--profile');
+let expectedSource = process.env.SOURCE_REF;
 if (stagedArtifact) {
-  assert.ok(stagedManifest && stagedProfile,'Staged PDF proof needs manifest and profile');
-  const bytes=await readFile(stagedArtifact), manifestBytes=await readFile(stagedManifest), manifest=JSON.parse(manifestBytes);
-  const entry=(manifest.artifacts || [manifest.artifact]).find(row=>row && row.name===stagedArtifact.split(/[\\/]/u).at(-1));
-  assert.ok(entry && entry.sha256===sha256(bytes),'Selected staged artifact must match its actual manifest');
-  const delivered=await readFile(option('--installed-executable') || binary);
-  expectedSource=manifest.source_commit;
-  packageArtifactPath=stagedArtifact;
-  packageProof={form:stagedProfile,package_sha256:sha256(bytes),package_bytes:bytes.length,manifest_sha256:sha256(manifestBytes),executable_sha256:sha256(delivered),executable_bytes:delivered.length,source_commit:expectedSource};
+  assert.ok(
+    stagedManifest && stagedProfile,
+    'Staged PDF proof needs manifest and profile',
+  );
+  const bytes = await readFile(stagedArtifact),
+    manifestBytes = await readFile(stagedManifest),
+    manifest = JSON.parse(manifestBytes);
+  const entry = (manifest.artifacts || [manifest.artifact]).find(
+    (row) => row && row.name === stagedArtifact.split(/[\\/]/u).at(-1),
+  );
+  assert.ok(
+    entry && entry.sha256 === sha256(bytes),
+    'Selected staged artifact must match its actual manifest',
+  );
+  const delivered = await readFile(option('--installed-executable') || binary);
+  expectedSource = manifest.source_commit;
+  packageArtifactPath = stagedArtifact;
+  packageProof = {
+    form: stagedProfile,
+    package_sha256: sha256(bytes),
+    package_bytes: bytes.length,
+    manifest_sha256: sha256(manifestBytes),
+    executable_sha256: sha256(delivered),
+    executable_bytes: delivered.length,
+    source_commit: expectedSource,
+  };
 }
 if (process.argv.includes('--packaged')) {
   const originalBinary = binary;
@@ -194,16 +220,42 @@ try {
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
   assert.ok(result, 'Native PDF journey did not return evidence');
-  const observedMemory=result.native_memory;
-  assert.ok(observedMemory && observedMemory.samples_bytes.length>=3 && observedMemory.samples_bytes.every(n=>Number.isFinite(n)&&n>0));
-  result.process_memory=observedMemory;
-  result.execution={run_id:Number(process.env.GITHUB_RUN_ID),run_attempt:Number(process.env.GITHUB_RUN_ATTEMPT),job:process.env.GITHUB_JOB,completion:'pending_validation'};
-  result.runtime={os:os.platform()+'/'+os.release(),architecture:result.architecture,webview:result.journey.runtime,engine:result.journey.engine,api:null,minified:false,debuggable:!stagedArtifact};
-  result.native_first_page={method:'native_process_launch_to_visible_canvas_and_text_50ms_poll',samples_ms:[result.journey.first_visible_epoch_ms-launchEpoch]};
-  assert.ok(Number.isFinite(result.native_first_page.samples_ms[0])&&result.native_first_page.samples_ms[0]>=0);
-  result.status="incomplete";
+  const observedMemory = result.native_memory;
+  assert.ok(
+    observedMemory &&
+      observedMemory.samples_bytes.length >= 3 &&
+      observedMemory.samples_bytes.every((n) => Number.isFinite(n) && n > 0),
+  );
+  result.process_memory = observedMemory;
+  result.execution = {
+    run_id: Number(process.env.GITHUB_RUN_ID),
+    run_attempt: Number(process.env.GITHUB_RUN_ATTEMPT),
+    job: process.env.GITHUB_JOB,
+    completion: 'pending_validation',
+  };
+  result.runtime = {
+    os: os.platform() + '/' + os.release(),
+    architecture: result.architecture,
+    webview: result.journey.runtime,
+    engine: result.journey.engine,
+    api: null,
+    minified: false,
+    debuggable: !stagedArtifact,
+  };
+  result.native_first_page = {
+    method: 'native_process_launch_to_visible_canvas_and_text_50ms_poll',
+    samples_ms: [result.journey.first_visible_epoch_ms - launchEpoch],
+  };
+  assert.ok(
+    Number.isFinite(result.native_first_page.samples_ms[0]) &&
+      result.native_first_page.samples_ms[0] >= 0,
+  );
+  result.status = 'incomplete';
   result.package = packageProof;
-  if (packageProof) result.evidence_class = stagedArtifact ? 'staged_release_native_webview' : 'actual_packaged_webview';
+  if (packageProof)
+    result.evidence_class = stagedArtifact
+      ? 'staged_release_native_webview'
+      : 'actual_packaged_webview';
   await writeFile(
     join(output, 'result.json'),
     JSON.stringify(result, null, 2) + '\n',
@@ -258,10 +310,23 @@ try {
     await readFile(join(probe, 's049-compatibility.pdf')),
     original,
   );
-  result.status='pass';
-  result.execution.completion='clean';
-  await writeFile(join(output,'result.json'),JSON.stringify(result,null,2)+'\n','utf8');
-  if(stagedProfile)await writeFile(join(output,'conformance-record.json'),JSON.stringify(nativePdfConformanceRecord(result,stagedProfile),null,2)+'\n','utf8');
+  result.status = 'pass';
+  result.execution.completion = 'clean';
+  await writeFile(
+    join(output, 'result.json'),
+    JSON.stringify(result, null, 2) + '\n',
+    'utf8',
+  );
+  if (stagedProfile)
+    await writeFile(
+      join(output, 'conformance-record.json'),
+      JSON.stringify(
+        nativePdfConformanceRecord(result, stagedProfile),
+        null,
+        2,
+      ) + '\n',
+      'utf8',
+    );
   console.log(
     'Actual native PDF reading journey passed on ' + process.platform,
   );

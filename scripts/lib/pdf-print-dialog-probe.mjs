@@ -1,7 +1,8 @@
 import { spawn } from 'node:child_process';
 /** Cancels observed native print dialogs only on the isolated hosted candidate runner. */
 export function startPdfPrintDialogProbe(pid) {
-  if(!Number.isSafeInteger(pid)||pid<=0)throw Error('Actual numeric native process ID required');
+  if (!Number.isSafeInteger(pid) || pid <= 0)
+    throw Error('Actual numeric native process ID required');
   if (process.env.GITHUB_ACTIONS !== 'true')
     throw new Error('Native print probe requires isolated hosted CI');
   let executable, args;

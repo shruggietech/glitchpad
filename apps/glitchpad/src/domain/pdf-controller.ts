@@ -133,7 +133,13 @@ export class PdfController {
   private surfaceBytes = 0;
   private peakSurfaceBytes = 0;
   private peakSurfaces = 0;
-  private rangeMeasures = { calls: 0, inFlight: 0, peakConcurrency: 0, maximumRequestBytes: 0, completedBytes: 0 };
+  private rangeMeasures = {
+    calls: 0,
+    inFlight: 0,
+    peakConcurrency: 0,
+    maximumRequestBytes: 0,
+    completedBytes: 0,
+  };
   private readonly renders = new PdfWorkQueue();
   private passwordContinuation: ((password: string) => void) | null = null;
 
@@ -173,17 +179,37 @@ export class PdfController {
     this.release();
     this.peakSurfaceBytes = 0;
     this.peakSurfaces = 0;
-    const observed = { calls: 0, inFlight: 0, peakConcurrency: 0, maximumRequestBytes: 0, completedBytes: 0 };
+    const observed = {
+      calls: 0,
+      inFlight: 0,
+      peakConcurrency: 0,
+      maximumRequestBytes: 0,
+      completedBytes: 0,
+    };
     this.rangeMeasures = observed;
     const measuredSource: PdfSourceLease = {
-      length: source.length, platform: source.platform, revision: source.revision,
+      length: source.length,
+      platform: source.platform,
+      revision: source.revision,
       close: () => source.close(),
       read: async (offset, length, signal) => {
-        observed.calls += 1; observed.inFlight += 1;
-        observed.peakConcurrency = Math.max(observed.peakConcurrency, observed.inFlight);
-        observed.maximumRequestBytes = Math.max(observed.maximumRequestBytes, length);
-        try { const bytes = await source.read(offset, length, signal); observed.completedBytes += bytes.byteLength; return bytes; }
-        finally { observed.inFlight -= 1; }
+        observed.calls += 1;
+        observed.inFlight += 1;
+        observed.peakConcurrency = Math.max(
+          observed.peakConcurrency,
+          observed.inFlight,
+        );
+        observed.maximumRequestBytes = Math.max(
+          observed.maximumRequestBytes,
+          length,
+        );
+        try {
+          const bytes = await source.read(offset, length, signal);
+          observed.completedBytes += bytes.byteLength;
+          return bytes;
+        } finally {
+          observed.inFlight -= 1;
+        }
       },
     };
     this.source = measuredSource;
@@ -457,7 +483,10 @@ export class PdfController {
         page.cleanup();
       };
       this.surfaces.add(dispose);
-      this.peakSurfaceBytes = Math.max(this.peakSurfaceBytes, this.surfaceBytes);
+      this.peakSurfaceBytes = Math.max(
+        this.peakSurfaceBytes,
+        this.surfaceBytes,
+      );
       this.peakSurfaces = Math.max(this.peakSurfaces, this.surfaces.size);
       signal?.addEventListener('abort', dispose, { once: true });
       try {
@@ -835,7 +864,13 @@ export class PdfController {
     return { matches, limited };
   }
   get resourceObservations() {
-    return { range: { ...this.rangeMeasures }, peakSurfaceBytes: this.peakSurfaceBytes, peakSurfaces: this.peakSurfaces, scope: "controller source-read attempts and owned render surfaces; excludes parser heap" };
+    return {
+      range: { ...this.rangeMeasures },
+      peakSurfaceBytes: this.peakSurfaceBytes,
+      peakSurfaces: this.peakSurfaces,
+      scope:
+        'controller source-read attempts and owned render surfaces; excludes parser heap',
+    };
   }
   get resourceCounts(): {
     workers: number;

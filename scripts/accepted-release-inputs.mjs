@@ -79,8 +79,17 @@ export function validateAcceptedInputs(record, source) {
     record.publication_context === 'qualified_preparation_unpublished',
     'accepted inputs must describe qualified unpublished preparation',
   );
-  required(record.documentation_pass?.path==='docs/releases/'+releaseIdentity.tag+'-documentation-pass.json'&&hash(record.documentation_pass.sha256),'accepted documentation-pass digest missing');
-  required(positive(record.implementation_pull_request?.number)&&record.implementation_pull_request.head_sha===source,'accepted implementation PR/source binding missing');
+  required(
+    record.documentation_pass?.path ===
+      'docs/releases/' + releaseIdentity.tag + '-documentation-pass.json' &&
+      hash(record.documentation_pass.sha256),
+    'accepted documentation-pass digest missing',
+  );
+  required(
+    positive(record.implementation_pull_request?.number) &&
+      record.implementation_pull_request.head_sha === source,
+    'accepted implementation PR/source binding missing',
+  );
   required(
     record.ci?.workflow === 'ci.yml' &&
       positive(record.ci.run_id) &&
@@ -367,21 +376,39 @@ export async function consumeAcceptedInputs({
   source,
   directory,
   token,
-  requireMerged=false,
+  requireMerged = false,
 }) {
   validateAcceptedInputs(record, source);
-  required(typeof requireMerged==='boolean','publication merge mode must be boolean');
+  required(
+    typeof requireMerged === 'boolean',
+    'publication merge mode must be boolean',
+  );
   required(
     typeof token === 'string' && token.length > 0,
     'GitHub read token required',
   );
-  const repositoryRoot=fileURLToPath(new URL('../',import.meta.url));
+  const repositoryRoot = fileURLToPath(new URL('../', import.meta.url));
   await checkPreparedDocumentationPass(repositoryRoot);
-  required(await hashReleaseFile(join(repositoryRoot,record.documentation_pass.path))===record.documentation_pass.sha256,'accepted prepared-documentation bytes changed');
-  const githubJson=async path=>(await api(path,token)).json();
-  const observedPr=await githubJson('pulls/'+record.implementation_pull_request.number);
-  required(observedPr.head?.sha===source&&observedPr.base?.repo?.full_name?.toLowerCase()===releaseIdentity.repository.toLowerCase()&&observedPr.base.ref==='main','accepted PR/source lookup mismatch');
-  const observedMerge=requireMerged?await observeAcceptedMerge({accepted:record,githubJson,observedPr}):null;
+  required(
+    (await hashReleaseFile(
+      join(repositoryRoot, record.documentation_pass.path),
+    )) === record.documentation_pass.sha256,
+    'accepted prepared-documentation bytes changed',
+  );
+  const githubJson = async (path) => (await api(path, token)).json();
+  const observedPr = await githubJson(
+    'pulls/' + record.implementation_pull_request.number,
+  );
+  required(
+    observedPr.head?.sha === source &&
+      observedPr.base?.repo?.full_name?.toLowerCase() ===
+        releaseIdentity.repository.toLowerCase() &&
+      observedPr.base.ref === 'main',
+    'accepted PR/source lookup mismatch',
+  );
+  const observedMerge = requireMerged
+    ? await observeAcceptedMerge({ accepted: record, githubJson, observedPr })
+    : null;
   await mkdir(directory, { recursive: true });
   for (const [platform, input] of Object.entries({
     ci: record.ci,
@@ -448,7 +475,11 @@ export async function consumeAcceptedInputs({
   }
   const files = await verifyAcceptedPayloads(directory, record);
   await verifyAndroidRuntime(files, record);
-  const pdfConformance=await collectPdfReleaseEvidence({files,source,platformRuns:record.platforms});
+  const pdfConformance = await collectPdfReleaseEvidence({
+    files,
+    source,
+    platformRuns: record.platforms,
+  });
   const linuxManifests = files.filter(
     (path) => path.split(/[\\/]/u).at(-1) === 'linux-package-manifest.json',
   );
@@ -475,11 +506,13 @@ export async function consumeAcceptedInputs({
     version: releaseIdentity.version,
     tag: releaseIdentity.tag,
     linux_attestation_verification: linuxAttestation,
-    pdf_conformance:pdfConformance,
-    documentation_pass:record.documentation_pass,
-    implementation_pull_request:record.implementation_pull_request,
-    observed_merge:observedMerge,
-    publication_qualification:requireMerged?"observed_merged_pr_verified":"premerge_byte_rehearsal_only",
+    pdf_conformance: pdfConformance,
+    documentation_pass: record.documentation_pass,
+    implementation_pull_request: record.implementation_pull_request,
+    observed_merge: observedMerge,
+    publication_qualification: requireMerged
+      ? 'observed_merged_pr_verified'
+      : 'premerge_byte_rehearsal_only',
     platform_runs: Object.fromEntries(
       Object.entries(record.platforms).map(([platform, input]) => [
         platform,
@@ -500,7 +533,11 @@ async function main() {
     required(index >= 0 && args[index + 1], 'missing ' + name);
     return args[index + 1];
   };
-  if(args.includes("--require-merged")) required(["true","false"].includes(value("--require-merged")),"invalid publication merge mode");
+  if (args.includes('--require-merged'))
+    required(
+      ['true', 'false'].includes(value('--require-merged')),
+      'invalid publication merge mode',
+    );
   const record = JSON.parse(await readFile(value('--accepted'), 'utf8'));
   const source = value('--source');
   const result = await consumeAcceptedInputs({
@@ -508,7 +545,8 @@ async function main() {
     source,
     directory: resolve(value('--directory')),
     token: process.env.GH_TOKEN,
-    requireMerged: args.includes("--require-merged") && value("--require-merged")==="true",
+    requireMerged:
+      args.includes('--require-merged') && value('--require-merged') === 'true',
   });
   await writeFile(
     value('--receipt'),

@@ -45,8 +45,8 @@
     },
     {
       "name": "s050-codecs.pdf",
-      "bytes": 1752,
-      "sha256": "b89fec79798ef0a7c84e176b20f07082b4138af78ec7832ee8a9485c4e5ea831",
+      "bytes": 1766,
+      "sha256": "96f6be4da08f419a6a0e256694daa53bc24e35e5990077e096a2c7c98f787882",
       "author": "Glitchpad contributors",
       "license": "Apache-2.0"
     },
@@ -80,8 +80,8 @@
     },
     {
       "name": "s050-truncated-codecs.pdf",
-      "bytes": 1298,
-      "sha256": "f8c990834d2cd98596e3cf86db061c28173d38a39726bccd543a37bfce87461c",
+      "bytes": 1312,
+      "sha256": "72f45c8cbe5025e34c9897579262cbf3de76cb7d0db6cb37dc7526154238edd5",
       "author": "Glitchpad contributors",
       "license": "Apache-2.0"
     },

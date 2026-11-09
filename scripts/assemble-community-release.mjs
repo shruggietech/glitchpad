@@ -227,7 +227,13 @@ export async function assembleCommunityRelease({
       }
     }
   }
-  const pdfConformance=contract.release_scope?.capability==='pdf'?await collectPdfReleaseEvidence({files:available,source:sourceCommit}):null;
+  const pdfConformance =
+    contract.release_scope?.capability === 'pdf'
+      ? await collectPdfReleaseEvidence({
+          files: available,
+          source: sourceCommit,
+        })
+      : null;
   await mkdir(output, { recursive: true });
   const artifacts = [];
   for (const name of contract.artifacts) {
@@ -266,7 +272,7 @@ export async function assembleCommunityRelease({
     artifacts,
     trust_states: contract.trust_states,
     practical_use_evidence: practicalUseEvidence,
-    ...(pdfConformance?{pdf_conformance:pdfConformance}:{}),
+    ...(pdfConformance ? { pdf_conformance: pdfConformance } : {}),
     accepted_staging_evidence: contract.accepted_staging_evidence,
     practical_use_required_passes: practicalUseRequiredPasses,
     evidence_bundles: Object.keys(contract.trust_states).map(

@@ -1,24 +1,270 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { validatePdfConformance, PDF_RELEASE_PROFILES } from './pdf-conformance.mjs';
-const source='a'.repeat(40), fixture='b'.repeat(64), artifact='c'.repeat(64), manifest='d'.repeat(64);
-const expected={source,fixtureSha:fixture,packages:Object.fromEntries(['windows_installed','windows_portable','macos_arm64','macos_x86_64','ubuntu_22_04_deb','ubuntu_22_04_appimage','ubuntu_24_04_deb','ubuntu_24_04_appimage','android_api24','android_api36'].map(p=>[p,{artifactSha:artifact,manifestSha:manifest}]))};
-function record(profile,attempt=1) {return {schema_version:1,case_id:'native_pdf_reading_print',profile,attempt,status:'pass',source_commit:source,fixture_sha256:fixture,artifact_sha256:artifact,installed_sha256:'e'.repeat(64),manifest_sha256:manifest,runtime:{os:profile.startsWith('android')?'Android/API'+(profile==='android_api24'?24:36):profile.startsWith('windows')?'win32/observed':profile.startsWith('macos')?'darwin/observed':'linux/observed',architecture:profile==='macos_arm64'?'aarch64':'x86_64',engine:'6.5.438',webview:profile==='android_api24'?'com.android.chrome/69.0.3497.100':'actual/1',api:profile==='android_api24'?24:profile==='android_api36'?36:null,minified:profile.startsWith('android'),debuggable:false},execution:{run_id:123,run_attempt:1,job:'actual-job',completion:'clean'},checks:{worker:true,selectable_text:true,reading:true,native_print:true,source_unchanged:true,cache_disposal:true},measurements:{first_page:{method:'native_launch_to_visible_canvas_and_text',samples_ms:[20]},navigation:{method:'performance_now_action_to_visible',samples_ms:[10,12]},search:{method:'performance_now_complete_query',samples_ms:[20]},thumbnail:{method:'performance_now_first_canvas',samples_ms:[15]},disposal:{method:'actual_worker_terminated',samples_ms:[10]},interaction:{method:'capture_to_window_bubble_synchronous_event_interval',scope:'synchronous handlers only',samples_ms:[1,2]},memory:{method:'named_native_process_rss_sampler',scope:'actual application process only; excludes worker heap claims',process_name:'actual-product',samples_bytes:[100,150,110]},resources:{peak_surface_bytes:1024,surface_limit_bytes:(profile.startsWith('android')?96:200)*1024*1024,max_range_bytes:4096,range_limit_bytes:262144,peak_range_concurrency:2,range_concurrency_limit:2,cache_before_bytes:20,cache_after_bytes:0},long_tasks:{method:'PerformanceObserver_longtask',supported:false,scope:'unsupported on this observed engine',samples_ms:null},worker_heap:{status:'not_measured',reason:'process memory does not isolate worker heap'}}};}
-const all=()=>PDF_RELEASE_PROFILES.map(p=>record(p));
-test('release PDF matrix requires all ten actual native profiles and keeps raw measurements',()=>{const result=validatePdfConformance(all(),expected);assert.equal(result.selected.length,10);assert.equal(result.status,'pass');assert.equal(result.selected[0].measurements.navigation.count,2);});
-test('missing, duplicate, stale and changed package/fixture rows fail',()=>{assert.throws(()=>validatePdfConformance(all().slice(1),expected),/missing/u);for(const [field,value] of [['source_commit','f'.repeat(40)],['fixture_sha256','f'.repeat(64)],['artifact_sha256','f'.repeat(64)],['manifest_sha256','f'.repeat(64)],['installed_sha256',null]]){const rows=all();rows[0][field]=value;assert.throws(()=>validatePdfConformance(rows,expected),/identity|installed/u);}assert.throws(()=>validatePdfConformance([...all(),record(PDF_RELEASE_PROFILES[0])],expected),/duplicate/u);});
-test('latest attempt is authoritative and prior failed attempts remain visible',()=>{const rows=all(), failed=record(PDF_RELEASE_PROFILES[0],2);failed.status='fail';assert.throws(()=>validatePdfConformance([...rows,failed],expected),/latest/u);rows[0].status='fail';const result=validatePdfConformance([...rows,record(PDF_RELEASE_PROFILES[0],2)],expected);assert.equal(result.selected[0].prior_attempts[0].status,'fail');assert.throws(()=>validatePdfConformance([...all(),record(PDF_RELEASE_PROFILES[0],3)],expected),/bounded/u);});
-test('claimed passes cannot omit native checks, completion, measurements or actual runtime',()=>{for(const mutate of [r=>r.checks.native_print=false,r=>r.execution.completion='marker_only',r=>r.runtime.webview='',r=>r.runtime.architecture='wrong',r=>r.runtime.os='wrong',r=>r.runtime.debuggable=true,r=>r.measurements.first_page.samples_ms=[],r=>r.measurements.memory.process_name='',r=>r.measurements.resources.cache_after_bytes=5,r=>r.measurements.resources.max_range_bytes=999999,r=>r.measurements.disposal.samples_ms=[251],r=>r.measurements.interaction.samples_ms=[NaN],r=>r.measurements.worker_heap={status:'pass',bytes:0},r=>r.measurements.long_tasks={method:'PerformanceObserver_longtask',supported:true,scope:'main realm reading',samples_ms:[NaN]}]){const rows=all();mutate(rows[0]);assert.throws(()=>validatePdfConformance(rows,expected));}const rows=all();rows[8].runtime.api=36;assert.throws(()=>validatePdfConformance(rows,expected),/API/u);rows[8]=record('android_api24');rows[8].runtime.minified=false;assert.throws(()=>validatePdfConformance(rows,expected),/minified/u);});
-
-test('hosted timings retain over-reference observations without inventing a reference pass',()=>{const rows=all();rows[0].measurements.interaction.samples_ms=[51];rows[0].measurements.long_tasks={method:'PerformanceObserver_longtask',supported:true,scope:'actual hosted main realm',samples_ms:[104]};const result=validatePdfConformance(rows,expected);assert.equal(result.selected[0].measurements.interaction.maximum,51);assert.equal(result.selected[0].measurements.long_tasks.samples_ms[0],104);assert.equal(result.selected[0].reference_performance.status,'not_run_existing_owner_reference_waiver');});
-
-import { validatePdfExecutionBindings, collectPdfReleaseEvidence } from './lib/pdf-release-evidence.mjs';
-test('release PDF proof binds each profile to its accepted platform run and attempt',()=>{
- const runs=Object.fromEntries(['windows','macos','linux','android'].map(p=>[p,{run_id:123,run_attempt:1}]));
- validatePdfExecutionBindings(all(),runs);
- assert.throws(()=>validatePdfExecutionBindings(all(),{...runs,android:{run_id:124,run_attempt:1}}),/stale execution/);
- assert.throws(()=>validatePdfExecutionBindings(all(),{...runs,linux:{run_id:123,run_attempt:2}}),/stale execution/);
+import {
+  validatePdfConformance,
+  PDF_RELEASE_PROFILES,
+} from './pdf-conformance.mjs';
+const source = 'a'.repeat(40),
+  fixture = 'b'.repeat(64),
+  artifact = 'c'.repeat(64),
+  manifest = 'd'.repeat(64);
+const expected = {
+  source,
+  fixtureSha: fixture,
+  packages: Object.fromEntries(
+    [
+      'windows_installed',
+      'windows_portable',
+      'macos_arm64',
+      'macos_x86_64',
+      'ubuntu_22_04_deb',
+      'ubuntu_22_04_appimage',
+      'ubuntu_24_04_deb',
+      'ubuntu_24_04_appimage',
+      'android_api24',
+      'android_api36',
+    ].map((p) => [p, { artifactSha: artifact, manifestSha: manifest }]),
+  ),
+};
+function record(profile, attempt = 1) {
+  return {
+    schema_version: 1,
+    case_id: 'native_pdf_reading_print',
+    profile,
+    attempt,
+    status: 'pass',
+    source_commit: source,
+    fixture_sha256: fixture,
+    artifact_sha256: artifact,
+    installed_sha256: 'e'.repeat(64),
+    manifest_sha256: manifest,
+    runtime: {
+      os: profile.startsWith('android')
+        ? 'Android/API' + (profile === 'android_api24' ? 24 : 36)
+        : profile.startsWith('windows')
+          ? 'win32/observed'
+          : profile.startsWith('macos')
+            ? 'darwin/observed'
+            : 'linux/observed',
+      architecture: profile === 'macos_arm64' ? 'aarch64' : 'x86_64',
+      engine: '6.5.438',
+      webview:
+        profile === 'android_api24'
+          ? 'com.android.chrome/69.0.3497.100'
+          : 'actual/1',
+      api:
+        profile === 'android_api24'
+          ? 24
+          : profile === 'android_api36'
+            ? 36
+            : null,
+      minified: profile.startsWith('android'),
+      debuggable: false,
+    },
+    execution: {
+      run_id: 123,
+      run_attempt: 1,
+      job: 'actual-job',
+      completion: 'clean',
+    },
+    checks: {
+      worker: true,
+      selectable_text: true,
+      reading: true,
+      native_print: true,
+      source_unchanged: true,
+      cache_disposal: true,
+    },
+    measurements: {
+      first_page: {
+        method: 'native_launch_to_visible_canvas_and_text',
+        samples_ms: [20],
+      },
+      navigation: {
+        method: 'performance_now_action_to_visible',
+        samples_ms: [10, 12],
+      },
+      search: { method: 'performance_now_complete_query', samples_ms: [20] },
+      thumbnail: { method: 'performance_now_first_canvas', samples_ms: [15] },
+      disposal: { method: 'actual_worker_terminated', samples_ms: [10] },
+      interaction: {
+        method: 'capture_to_window_bubble_synchronous_event_interval',
+        scope: 'synchronous handlers only',
+        samples_ms: [1, 2],
+      },
+      memory: {
+        method: 'named_native_process_rss_sampler',
+        scope: 'actual application process only; excludes worker heap claims',
+        process_name: 'actual-product',
+        samples_bytes: [100, 150, 110],
+      },
+      resources: {
+        peak_surface_bytes: 1024,
+        surface_limit_bytes:
+          (profile.startsWith('android') ? 96 : 200) * 1024 * 1024,
+        max_range_bytes: 4096,
+        range_limit_bytes: 262144,
+        peak_range_concurrency: 2,
+        range_concurrency_limit: 2,
+        cache_before_bytes: 20,
+        cache_after_bytes: 0,
+      },
+      long_tasks: {
+        method: 'PerformanceObserver_longtask',
+        supported: false,
+        scope: 'unsupported on this observed engine',
+        samples_ms: null,
+      },
+      worker_heap: {
+        status: 'not_measured',
+        reason: 'process memory does not isolate worker heap',
+      },
+    },
+  };
+}
+const all = () => PDF_RELEASE_PROFILES.map((p) => record(p));
+test('release PDF matrix requires all ten actual native profiles and keeps raw measurements', () => {
+  const result = validatePdfConformance(all(), expected);
+  assert.equal(result.selected.length, 10);
+  assert.equal(result.status, 'pass');
+  assert.equal(result.selected[0].measurements.navigation.count, 2);
 });
-test('release collection cannot qualify synthetic aggregate records without raw native captures',async()=>{
- await assert.rejects(collectPdfReleaseEvidence({files:[],source}),/all ten native PDF/);
+test('missing, duplicate, stale and changed package/fixture rows fail', () => {
+  assert.throws(
+    () => validatePdfConformance(all().slice(1), expected),
+    /missing/u,
+  );
+  for (const [field, value] of [
+    ['source_commit', 'f'.repeat(40)],
+    ['fixture_sha256', 'f'.repeat(64)],
+    ['artifact_sha256', 'f'.repeat(64)],
+    ['manifest_sha256', 'f'.repeat(64)],
+    ['installed_sha256', null],
+  ]) {
+    const rows = all();
+    rows[0][field] = value;
+    assert.throws(
+      () => validatePdfConformance(rows, expected),
+      /identity|installed/u,
+    );
+  }
+  assert.throws(
+    () =>
+      validatePdfConformance(
+        [...all(), record(PDF_RELEASE_PROFILES[0])],
+        expected,
+      ),
+    /duplicate/u,
+  );
+});
+test('latest attempt is authoritative and prior failed attempts remain visible', () => {
+  const rows = all(),
+    failed = record(PDF_RELEASE_PROFILES[0], 2);
+  failed.status = 'fail';
+  assert.throws(
+    () => validatePdfConformance([...rows, failed], expected),
+    /latest/u,
+  );
+  rows[0].status = 'fail';
+  const result = validatePdfConformance(
+    [...rows, record(PDF_RELEASE_PROFILES[0], 2)],
+    expected,
+  );
+  assert.equal(result.selected[0].prior_attempts[0].status, 'fail');
+  assert.throws(
+    () =>
+      validatePdfConformance(
+        [...all(), record(PDF_RELEASE_PROFILES[0], 3)],
+        expected,
+      ),
+    /bounded/u,
+  );
+});
+test('claimed passes cannot omit native checks, completion, measurements or actual runtime', () => {
+  for (const mutate of [
+    (r) => (r.checks.native_print = false),
+    (r) => (r.execution.completion = 'marker_only'),
+    (r) => (r.runtime.webview = ''),
+    (r) => (r.runtime.architecture = 'wrong'),
+    (r) => (r.runtime.os = 'wrong'),
+    (r) => (r.runtime.debuggable = true),
+    (r) => (r.measurements.first_page.samples_ms = []),
+    (r) => (r.measurements.memory.process_name = ''),
+    (r) => (r.measurements.resources.cache_after_bytes = 5),
+    (r) => (r.measurements.resources.max_range_bytes = 999999),
+    (r) => (r.measurements.disposal.samples_ms = [251]),
+    (r) => (r.measurements.interaction.samples_ms = [NaN]),
+    (r) => (r.measurements.worker_heap = { status: 'pass', bytes: 0 }),
+    (r) =>
+      (r.measurements.long_tasks = {
+        method: 'PerformanceObserver_longtask',
+        supported: true,
+        scope: 'main realm reading',
+        samples_ms: [NaN],
+      }),
+  ]) {
+    const rows = all();
+    mutate(rows[0]);
+    assert.throws(() => validatePdfConformance(rows, expected));
+  }
+  const rows = all();
+  rows[8].runtime.api = 36;
+  assert.throws(() => validatePdfConformance(rows, expected), /API/u);
+  rows[8] = record('android_api24');
+  rows[8].runtime.minified = false;
+  assert.throws(() => validatePdfConformance(rows, expected), /minified/u);
+});
+
+test('hosted timings retain over-reference observations without inventing a reference pass', () => {
+  const rows = all();
+  rows[0].measurements.interaction.samples_ms = [51];
+  rows[0].measurements.long_tasks = {
+    method: 'PerformanceObserver_longtask',
+    supported: true,
+    scope: 'actual hosted main realm',
+    samples_ms: [104],
+  };
+  const result = validatePdfConformance(rows, expected);
+  assert.equal(result.selected[0].measurements.interaction.maximum, 51);
+  assert.equal(result.selected[0].measurements.long_tasks.samples_ms[0], 104);
+  assert.equal(
+    result.selected[0].reference_performance.status,
+    'not_run_existing_owner_reference_waiver',
+  );
+});
+
+import {
+  validatePdfExecutionBindings,
+  collectPdfReleaseEvidence,
+} from './lib/pdf-release-evidence.mjs';
+test('release PDF proof binds each profile to its accepted platform run and attempt', () => {
+  const runs = Object.fromEntries(
+    ['windows', 'macos', 'linux', 'android'].map((p) => [
+      p,
+      { run_id: 123, run_attempt: 1 },
+    ]),
+  );
+  validatePdfExecutionBindings(all(), runs);
+  assert.throws(
+    () =>
+      validatePdfExecutionBindings(all(), {
+        ...runs,
+        android: { run_id: 124, run_attempt: 1 },
+      }),
+    /stale execution/,
+  );
+  assert.throws(
+    () =>
+      validatePdfExecutionBindings(all(), {
+        ...runs,
+        linux: { run_id: 123, run_attempt: 2 },
+      }),
+    /stale execution/,
+  );
+});
+test('release collection cannot qualify synthetic aggregate records without raw native captures', async () => {
+  await assert.rejects(
+    collectPdfReleaseEvidence({ files: [], source }),
+    /all ten native PDF/,
+  );
 });

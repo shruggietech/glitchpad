@@ -190,6 +190,8 @@ window.runGlitchpadPdfReadingJourney = async function () {
   await close('PDF tools');
   return {
     schema_version: 1,
+    runtime: navigator.userAgent,
+    source_identity: { native: document.querySelector('.app-shell').getAttribute('data-native-source-commit'), frontend: document.querySelector('.app-shell').getAttribute('data-frontend-source-commit') },
     checks: checks,
     worker: document
       .querySelector('.pdf-layout')

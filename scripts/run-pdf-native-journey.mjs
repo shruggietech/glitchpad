@@ -192,6 +192,9 @@ try {
   );
   assert.ok(!result.journey.error, result.journey.error);
   assert.equal(result.journey.worker, 'true');
+  assert.equal(result.journey.source_identity.native, process.env.SOURCE_REF);
+  assert.equal(result.journey.source_identity.frontend, process.env.SOURCE_REF);
+  assert.ok(result.journey.runtime.length > 0);
   for (const key of [
     'outline_named_destination',
     'search',

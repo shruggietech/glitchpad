@@ -808,7 +808,7 @@ try {
   await closeCase();
   await openCase('s049-large.pdf');
   await page.waitForSelector('[data-pdf-ready=true]');
-  await page.setViewport({ width: 3600, height: 1800 });
+  await page.setViewport({ width: 3600, height: 1800, hasTouch: true });
   await page.waitForFunction(
     "document.querySelector('.pdf-layout').innerText.includes('Reduced cache; thumbnails paused.')",
     { timeout: 30000 },

@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "record_kind": "prepared_documentation_pass",
+  "target_version": "0.3.0",
+  "prior_version": "0.2.1",
+  "reviewed_slices": [
+    "S049",
+    "S050"
+  ],
+  "sections_reviewed": [
+    "1",
+    "5",
+    "20",
+    "24",
+    "25",
+    "26",
+    "28",
+    "29",
+    "30",
+    "31",
+    "32",
+    "33",
+    "35",
+    "36",
+    "Appendix A",
+    "Appendix B",
+    "Appendix F",
+    "Appendix K"
+  ],
+  "capability_rows_changed": [
+    "pdf"
+  ],
+  "platform_rows_changed": [
+    "windows",
+    "macos",
+    "linux",
+    "android"
+  ],
+  "security_changes": [
+    "PDF worker/script/form/attachment/network boundaries retained and exercised",
+    "Original static JPX/JBIG2, Hebrew Unicode, malformed and bounded-resource corpus added"
+  ],
+  "contributor_tool_changes": [
+    "Strict current-source native PDF matrix and measurement validation",
+    "Prepared documentation-pass and observed-merge accepted-byte publication bindings"
+  ],
+  "changelog_fragments": [
+    "changelog.d/S049.md",
+    "changelog.d/S050.md"
+  ],
+  "prepared_utc": "2026-11-09T07:10:34.291Z",
+  "approval_state_at_preparation": "pending_owner_review",
+  "approver": null,
+  "approval_evidence": null,
+  "approval_basis": "owner_merge_and_later_publication_authorization"
+}

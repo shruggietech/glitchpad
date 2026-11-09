@@ -24,7 +24,10 @@
       "installed-markdown-lifecycle-receipt.json",
       "portable-lifecycle-receipt.json"
     ],
-    "macos": ["clean-host-arm64.json", "clean-host-x86_64.json"],
+    "macos": [
+      "clean-host-arm64.json",
+      "clean-host-x86_64.json"
+    ],
     "linux": [
       "clean-ubuntu-22.04-appimage.json",
       "clean-ubuntu-22.04-deb.json",
@@ -86,5 +89,19 @@
   "accepted_staging_evidence": [
     "accepted-staging.json",
     "accepted-input-receipt.json"
-  ]
+  ],
+  "release_scope": {
+    "capability": "pdf",
+    "slices": [
+      "S049",
+      "S050"
+    ],
+    "issues": [
+      81,
+      82,
+      11
+    ],
+    "prior_version": "0.2.1",
+    "documentation_pass": "docs/releases/v0.3.0-documentation-pass.json"
+  }
 }

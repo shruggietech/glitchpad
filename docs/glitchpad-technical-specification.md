@@ -2,13 +2,13 @@
 
 | Field | Value |
 | --- | --- |
-| Status | Normative product-recovery release definition |
-| Specification version | 0.2.1 |
-| Product version | 0.2.1 |
+| Status | Normative PDF stable-activation release definition |
+| Specification version | 0.3.0 |
+| Product version | 0.3.0 |
 | Release class | Installable community release |
 | Audience | Maintainers, contributors, reviewers, release operators, and implementation agents |
 | Issued | 2026-08-30 |
-| Updated | 2026-11-08 |
+| Updated | 2026-11-09 |
 | Repository | `github.com/ShruggieTech/glitchpad` |
 | License | Apache License 2.0 (`Apache-2.0`) |
 
@@ -55,7 +55,7 @@
 
 ## 1. Document Control and Authority
 
-This document is the architecture, behavior, platform, security, development, and delivery contract for Glitchpad v0.2.1 product recovery. Its version MUST equal the product version. This source defines release behavior; actual publication and accepted package identities remain independently evidenced in the release receipt.
+This document is the architecture, behavior, platform, security, development, and delivery contract for Glitchpad v0.3.0 PDF viewing and stable activation. Its version MUST equal the product version. This source defines release behavior; actual publication and accepted package identities remain independently evidenced in the release receipt.
 
 The root Rust workspace version is the canonical product-version authority. packaging/release/package-contract.json independently declares the target release version, tag and payload inventory. Tauri configuration, npm metadata, Android version name, this document, changelog, release tag, artifact filenames, SBOM metadata and provenance MUST agree. Automated consistency checks MUST reject mismatches.
 
@@ -86,6 +86,7 @@ flowchart TB
 | 0.1.4 | 2026-09-29 | 0.1.4 | Reconciled the BrandBuilder 2.0.3 kit, AppFrame shell geometry, refreshed web and Android brand assets, and compatible dependency updates while keeping image-format activation at the v0.2.0 gate |
 | 0.2.0 | 2026-11-02 | 0.2.0 | S043 image qualification and stable activation candidate; owner removes unavailable physical-device and manual screen-reader gates; automated accessibility and hosted native qualification retained |
 | 0.2.1 | 2026-11-08 | 0.2.1 | S048 reconciles S046/S047 product recovery, installed Android task evidence, current release identity and exact staged-payload preparation; publication remains separately owner-authorized |
+| 0.3.0 | 2026-11-09 | 0.3.0 | S050 reconciles S049 PDF viewing, full conformance, measured native resource behavior and stable native acquisition; accepted staged bytes, owner merge and later publication remain separate evidence |
 
 Changes to normative released behavior require a product release and a matching specification version. Typographical corrections that do not alter meaning may be applied to the current version with a dated revision-history note and reviewed pull request.
 
@@ -154,17 +155,17 @@ Notes and rationale are non-normative. Tables labeled as matrices are normative 
 
 ## 5. Scope and Capability Status
 
-v0.2.0 retains the text-family capabilities promoted in v0.1.0 and activates bounded raster, animation, SVG and ICO viewing/inspection through S043. Candidate declarations become official release claims only after the release gate and publication. PDF and office formats remain planned.
+v0.3.0 retains the text/image capabilities and Android document tasks, and reconciles the S049 PDF viewer with S050 conformance and stable native activation. Source declarations become official release claims only after the release gate and publication. DOCX and ODT remain planned.
 
-| Format family | Examples | v0.2.0 status | First release | Capabilities | Fidelity boundary |
+| Format family | Examples | v0.3.0 status | First release | Capabilities | Fidelity boundary |
 | --- | --- | --- | --- | --- | --- |
 | Markdown | `.md`, `.markdown` | Stable | v0.1.0 | View, edit, save, search, navigate, inspect, print | CommonMark, GFM, footnotes, independently bounded fenced Mermaid blocks |
 | Mermaid diagrams | `.mmd`, `.mermaid` | Stable | v0.1.0 | View, edit, save, search, zoom, pan, inspect | Local strict rendering; no active links, callbacks, source rewriting, or generated-output export |
 | Plain text and source | `.txt`, recognized language files | Stable | v0.1.0 | View, edit, save, search, inspect, syntax highlight | Text editing without IDE services |
-| Raster images | PNG, JPEG, GIF, WebP, BMP, TIFF | Stable candidate | v0.2.0 | View, zoom, pan, frame navigation, inspect | Bounded decode and metadata; no editing |
-| Vector images | SVG | Stable candidate | v0.2.0 | View, zoom, inspect | Script-free, remote-resource-free rendering |
-| Icon containers | ICO | Stable candidate | v0.2.0 | View, inspect entries, export selected entry | Every embedded entry listed independently |
-| PDF | `.pdf` | Planned | v0.3.0 | View, search, outline navigation, zoom, rotate, print, inspect | Viewing only; no JavaScript, forms submission, or editing |
+| Raster images | PNG, JPEG, GIF, WebP, BMP, TIFF | Stable | v0.2.0 | View, zoom, pan, frame navigation, inspect | Bounded decode and metadata; no editing |
+| Vector images | SVG | Stable | v0.2.0 | View, zoom, inspect | Script-free, remote-resource-free rendering |
+| Icon containers | ICO | Stable | v0.2.0 | View, inspect entries, export selected entry | Every embedded entry listed independently |
+| PDF | `.pdf` | Stable release target | v0.3.0 | View, search, outline navigation, zoom, rotate, print, inspect | Viewing only; no JavaScript, forms submission, or editing |
 | Office Open XML | `.docx` | Planned | v0.4.0 | View, heading navigation, search, inspect | Semantic readability, not page-perfect layout |
 | OpenDocument Text | `.odt` | Planned | v0.5.0 | View, heading navigation, search, inspect | Semantic readability, not office-suite fidelity |
 | Other binary | Executables, archives, unknown containers | Unsupported | None | Inspect basic host and detection facts | No hex editor or archive browser |
@@ -416,7 +417,7 @@ Rename, deletion, watcher overflow, permission revocation, provider unavailabili
 
 ## 15. Tabs, Windows, Sessions, and Recovery
 
-Desktop uses one application window with one compact tab strip. Android uses one activity; compact windows expose a single-document title and an accessible multiple-document switcher, while wide layouts may show the tab strip. v0.2.1 does not support multiple application windows.
+Desktop uses one application window with one compact tab strip. Android uses one activity; compact windows expose a single-document title and an accessible multiple-document switcher, while wide layouts may show the tab strip. v0.3.0 does not support multiple application windows.
 
 Tabs have a 32-pixel desktop height, 96-pixel minimum width, 180-pixel preferred maximum width, filename, dirty indicator, close action, accessible full-location tooltip, and drag reorder. Overflow moves excess tabs into a searchable list without creating persistent navigation. The ordinary limit is 32 sessions; opening the thirty-third requires closing a tab or explicitly increasing the safety limit in a future specification.
 
@@ -494,7 +495,7 @@ Malformed, unsupported, external-reference, cyclic/missing-reference, resource/d
 
 ## 20. PDF Viewing and Navigation
 
-The [S049 PDF candidate](https://github.com/ShruggieTech/glitchpad/blob/74f507b12ab3cd85ac891820360449747f0cee4b/docs/operations/pdf-candidate.md) implements the first bundled PDF reading/navigation/metadata/print increment under the existing source/session contracts. Its bounded implementation and validation do not change the published 0.2.1 release authority, stable format registry, PDF associations or Android PDF intent activation. The [slice acceptance map](https://github.com/ShruggieTech/glitchpad/blob/74f507b12ab3cd85ac891820360449747f0cee4b/specs/049-pdf-viewer-foundation/contracts/issue-acceptance.md) retains all included issue criteria; #81 exhaustive conformance and #82 stable activation remain separate.
+S049 introduced the bundled PDF viewer under the existing source/session contracts. S050 reconciles #81 conformance and #82 stable activation into the v0.3.0 target, including desktop PDF associations and exact Android application/pdf VIEW/SEND delivery. The [PDF operations guide](operations/pdf-candidate.md), [S050 criterion map](../specs/050-pdf-stable-activation/contracts/issue-acceptance.md) and [release preparation receipt](releases/v0.3.0-receipt.md) retain behavior, evidence classes and publication-only open criteria. Source activation does not establish publication.
 
 PDF support activates in v0.3.0 and uses the PDF.js display layer in a dedicated worker. Glitchpad supplies its own compact shell rather than embedding the generic PDF.js viewer.
 
@@ -503,6 +504,8 @@ The renderer provides virtualized page canvases, text selection, search, thumbna
 PDF JavaScript, form submission, embedded-file launch, multimedia, remote resource access, automatic external-link opening, annotations editing, signatures, redaction, and document modification are disabled. Encrypted documents may request a password for in-memory use; passwords are never persisted or logged. Unsupported encryption produces a stable error.
 
 The renderer accepts files through 512 MiB desktop and 256 MiB Android, at most 10,000 pages, and at most 200 MiB of active rendered surfaces desktop or 96 MiB Android. Ranged reads are used when the source supports seek. First content is the first requested page, not complete document parsing.
+
+The conformance corpus preserves original prior fixtures and adds PDF 1.4/1.7 controls, original JPX/JBIG2 pixel patterns, an OFL embedded Hebrew CID/ToUnicode fixture, mixed MediaBox/CropBox rotations, malformed/cyclic/truncated structures and the valid inclusive 10,000-page boundary. Hebrew bidi/extraction coverage does not claim Arabic shaping. Raw first-page/navigation/search/thumbnail/disposal samples, controller-owned render/range counters and named process RSS/PSS have explicit methods and scope; process totals do not establish parser-worker heap bounds. Existing physical/manual/reference waivers remain explicit, and unsupported long-task observers remain unmeasured.
 
 ## 21. Office Open XML and OpenDocument Viewing
 
@@ -548,9 +551,9 @@ The initial language is US English. All user-visible strings, dates, units, plur
 
 ## 24. Platform Strategy
 
-All four target families are Tier 1 targets for v0.2.1. Support for an actual release requires its identified artifact, native build host, shared suite, adapter tests, installation/core-flow evidence, version/licensing evidence and declared baseline. A source build or historical package does not establish current runtime qualification.
+All four target families are Tier 1 targets for v0.3.0. Support for an actual release requires its identified artifact, native build host, shared suite, adapter tests, installation/core-flow evidence, version/licensing evidence and declared baseline. A source build or historical package does not establish current runtime qualification.
 
-| Platform | Runtime baseline | Architectures | v0.2.1 artifact forms | Native WebView |
+| Platform | Runtime baseline | Architectures | v0.3.0 artifact forms | Native WebView |
 | --- | --- | --- | --- | --- |
 | Windows | Windows 11 | x86_64 | NSIS installer, portable ZIP | WebView2 Evergreen |
 | macOS | macOS 13+ | arm64 and x86_64 universal | Ad-hoc-signed application in a non-notarized DMG | WKWebView |
@@ -600,7 +603,7 @@ Performance tests use small, medium, boundary, and hostile fixtures with stable 
 
 ## 27. Configuration, Persistence, and Diagnostics
 
-The v0.2.1 preference schema contains theme, editor font family and size, wrapping, tab width, Markdown default mode and explicit language overrides. Current values, validation, scope and completion are exposed. Numeric drafts validate before commit, font fallback is explicit, default changes preserve current unsaved Markdown, and reset applies only its declared scope. Account, synchronization, workspace, telemetry, remote-resource, plugin and recent-file settings remain absent.
+The v0.3.0 preference schema contains theme, editor font family and size, wrapping, tab width, Markdown default mode and explicit language overrides. Current values, validation, scope and completion are exposed. Numeric drafts validate before commit, font fallback is explicit, default changes preserve current unsaved Markdown, and reset applies only its declared scope. Account, synchronization, workspace, telemetry, remote-resource, plugin and recent-file settings remain absent.
 
 Preferences are schema-versioned JSON in the platform application-config directory. Writes are atomic. A migration is deterministic and covered by fixtures; an unreadable future schema is preserved and reported instead of overwritten.
 
@@ -752,17 +755,19 @@ Windows publishes an unsigned x86_64 NSIS current-user installer and portable ZI
 
 Desktop packages register only stable editable/viewable formats from the release matrix. Android intent filters follow the same rule. Uninstall removes application binaries and registered associations while preserving user-created documents; platform conventions decide whether preferences and recovery data remain, and the uninstaller must disclose any removal option.
 
-v0.2.1 has no in-app updater. Direct-distribution users obtain community releases through the project release channel. A future updater requires a separately approved specification and corresponding integrity, rollback, offline and recovery evidence.
+v0.3.0 has no in-app updater. Direct-distribution users obtain community releases through the project release channel. A future updater requires a separately approved specification and corresponding integrity, rollback, offline and recovery evidence.
 
 No artifact is release-eligible without its declared trust state, checksum, SBOM, provenance, license notices, source revision, version and applicable runtime evidence. Windows remains unsigned, macOS ad-hoc signed/non-notarized, Linux repository-attested and Android stable-project-key signed. Staged signing eligibility remains unpublished. Existing physical-device/manual-screen-reader/reference-hardware owner waivers remain in force; unrun manual macOS/Linux GUI and VoiceOver rows remain literal, with #66 and #239 separately tracked. Original incident bytes/APK hash/trace are unavailable, so exact original incident replay is not claimed.
 
 ## 33. Release and Versioning Process
 
-Glitchpad follows semantic versioning. Before 1.0.0, minor releases may change unstable behavior, while save integrity, source privacy, licensing and release-evidence guarantees remain commitments. Patch releases contain compatible fixes and documentation reconciliation. v0.0.0 is the foundation, v0.1.0 the first binary release, v0.1.1-v0.1.4 its corrective successors, v0.2.0 activates images and v0.2.1 reconciles S046/S047 product recovery.
+Glitchpad follows semantic versioning. Before 1.0.0, minor releases may change unstable behavior, while save integrity, source privacy, licensing and release-evidence guarantees remain commitments. Patch releases contain compatible fixes and documentation reconciliation. v0.0.0 is the foundation, v0.1.0 the first binary release, v0.1.1-v0.1.4 its corrective successors, v0.2.0 activates images and v0.2.1 reconciles S046/S047 product recovery and v0.3.0 activates PDF viewing through S049/S050.
 
 Every change reaches the default branch through a reviewed pull request with a green aggregate gate. Changelog entries are contributed as fragments to avoid concurrent edits. The release operator assembles fragments, performs the documentation pass, updates the canonical product version and mirrors, reviews generated notices, commits the release, and pushes `vX.Y.Z`.
 
 Release preparation stages the exact declared payloads and trust metadata before native qualification. The owner reviews one source/package-bound handoff; PR readiness is separate from merge, tagging, signed release operation, publication and public/installed verification. A later owner-authorized annotated tag identifies the accepted candidate SHA and validated staging inputs. The publisher downloads those immutable accepted artifact IDs, verifies their source/digests/native receipts and assembles the release without rebuilding payloads. A squash merge may establish equal contents but cannot relabel package source identity. Changed bytes require fresh qualification.
+
+The prepared machine-readable documentation pass records its target/prior versions, reviewed S049/S050 scope, sections/claims/platform/security/tooling changes, fragments and UTC preparation time. Owner approval is pending at preparation with no invented actor. Accepted staging binds the receipt digest and PR identity. Later tag publication verifies the actual merged PR, accepted-source/merge-commit tree agreement and merge ancestry, preserving the observed actor/time in an external receipt. Unrelated later main changes do not replace the accepted merge evidence or compiled source identity.
 
 ```mermaid
 flowchart TB

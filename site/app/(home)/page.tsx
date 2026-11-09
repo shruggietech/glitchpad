@@ -3,7 +3,7 @@ import { Footer } from '@/components/footer';
 const features = [
   [
     'Open common files',
-    'A focused home for text, Markdown, images, PDFs, and document formats as each capability earns implementation evidence.',
+    'Open local text, Markdown, supported source files, images and read-only PDFs. PDF tools include search, page navigation, metadata and system printing. DOCX and ODT remain planned.',
   ],
   [
     'Stay local-first',
@@ -22,7 +22,7 @@ export default function HomePage() {
         <div className="hero-inner">
           <div className="hero-copy">
             <p className="eyebrow">
-              Desktop + Android · v0.2.1 product recovery source
+              Desktop + Android · v0.3.0 PDF viewing source
             </p>
             <h1>View your files.</h1>
             <p className="hero-summary">

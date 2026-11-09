@@ -159,6 +159,7 @@ export function pageMatches(
 export function selectPdfMatch(
   layer: HTMLElement,
   match: PdfSearchMatch,
+  pane?: HTMLElement,
 ): boolean {
   const fragments: Array<{ node: Node; start: number; end: number }> = [];
   for (const span of layer.querySelectorAll<HTMLElement>(
@@ -186,5 +187,19 @@ export function selectPdfMatch(
   if (!selection) return false;
   selection.removeAllRanges();
   selection.addRange(range);
+  if (pane) {
+    const bounds = range.getBoundingClientRect();
+    const viewport = pane.getBoundingClientRect();
+    const gap = 8;
+    // Scroll only the PDF pane, preserving the surrounding shell and task focus.
+    if (bounds.top < viewport.top + gap)
+      pane.scrollTop += bounds.top - viewport.top - gap;
+    else if (bounds.bottom > viewport.bottom - gap)
+      pane.scrollTop += bounds.bottom - viewport.bottom + gap;
+    if (bounds.left < viewport.left + gap)
+      pane.scrollLeft += bounds.left - viewport.left - gap;
+    else if (bounds.right > viewport.right - gap)
+      pane.scrollLeft += bounds.right - viewport.right + gap;
+  }
   return true;
 }

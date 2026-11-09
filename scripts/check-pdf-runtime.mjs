@@ -743,7 +743,23 @@ try {
   await closeCase();
   await openCase('s049-security.pdf');
   await page.waitForSelector('[data-pdf-ready=true]');
+  await page.setViewport({ width: 480, height: 400, hasTouch: true });
   await page.click('button[aria-label="More PDF tools"]');
+  await page.evaluate(function () {
+    var field = document.getElementById('pdf-zoom');
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(field, '400');
+    field.dispatchEvent(new Event('input', { bubbles: true }));
+    field.form.querySelector('button[type=submit]').click();
+  });
+  await page.waitForSelector('[data-pdf-ready=true]');
+  await page.waitForFunction(function () {
+    return document.querySelector('.pdf-page[data-current=true] canvas').width > 2000;
+  });
+  const occurrenceInitiallyHidden = await page.evaluate(function () {
+    var text = Array.from(document.querySelectorAll('.pdf-page[data-current=true] [data-pdf-text-offset]')).find(function(node) { return node.textContent.includes('Search cats'); });
+    return text.getBoundingClientRect().top >= document.querySelector('.pdf-pane').getBoundingClientRect().bottom;
+  });
+  assert.ok(occurrenceInitiallyHidden, 'Counterexample must place the searched line below the actual PDF viewport');
   const selectOccurrence = async (open) => {
     await page.evaluate(function () {
       Array.from(document.querySelectorAll('.pdf-tools button'))
@@ -778,6 +794,12 @@ try {
       "window.getSelection().toString().toLowerCase()==='cats'",
       { timeout: 30000 },
     );
+    await page.waitForFunction(function () {
+      var selection = window.getSelection();
+      if (!selection.rangeCount) return false;
+      var match = selection.getRangeAt(0).getBoundingClientRect(), pane = document.querySelector('.pdf-pane').getBoundingClientRect();
+      return match.width > 0 && match.top >= pane.top && match.bottom <= pane.bottom && match.left >= pane.left && match.right <= pane.right;
+    }, { timeout: 30000 });
     return page.evaluate(function () {
       var selection = window.getSelection();
       return (
@@ -796,6 +818,9 @@ try {
     'Next match must move the actual DOM selection to the later occurrence',
   );
   await page.click('button[aria-label="Close PDF tools"]');
+  await page.evaluate(function () { Array.from(document.querySelectorAll('.pdf-controls button')).find(function(node) { return node.textContent.trim() === 'Fit'; }).click(); });
+  await page.setViewport({ width: 480, height: 800, hasTouch: true });
+  await page.waitForSelector('[data-pdf-ready=true]');
   assert.equal(
     await page.evaluate(function () {
       return document.querySelectorAll(

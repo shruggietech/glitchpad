@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { readFile, readdir, writeFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -28,18 +28,19 @@ const manifest = manifestBytes
   : null;
 if (manifest && manifest.source_commit !== sourceCommit)
   throw new Error('scale receipt manifest source commit is stale');
-const assetDirectory = join(
-  repositoryRoot,
-  'apps',
-  'glitchpad',
-  'dist',
-  'assets',
+// Follow the entry HTML. Lazy renderer chunks can contain additional CSS files.
+const builtIndex = await readFile(
+  join(repositoryRoot, 'apps', 'glitchpad', 'dist', 'index.html'),
+  'utf8',
 );
-const cssAsset = (await readdir(assetDirectory)).find((name) =>
-  name.endsWith('.css'),
-);
-assert.ok(cssAsset, 'the production build must contain a CSS asset');
-const css = await readFile(join(assetDirectory, cssAsset), 'utf8');
+const cssAssets = [...builtIndex.matchAll(/<link\b[^>]*>/gu)]
+  .filter(([tag]) => /\brel=["']stylesheet["']/u.test(tag))
+  .map(([tag]) => /\bhref=["']([^"']+)["']/u.exec(tag)?.[1]);
+assert.ok(cssAssets.length > 0, 'production entry must declare its stylesheets');
+const css = (await Promise.all(cssAssets.map((asset) => {
+  assert.match(asset ?? '', /^\/assets\/[A-Za-z0-9_.-]+\.css$/u);
+  return readFile(join(repositoryRoot, 'apps', 'glitchpad', 'dist', asset.slice(1)), 'utf8');
+}))).join('\n');
 const [applicationSource, indexSource] = await Promise.all([
   readFile(join(repositoryRoot, 'apps', 'glitchpad', 'src', 'App.tsx'), 'utf8'),
   readFile(join(repositoryRoot, 'apps', 'glitchpad', 'index.html'), 'utf8'),

@@ -60,7 +60,7 @@ Independent test: known metadata facts, no automatic network/execution/opener ca
 
 Independent test: reconcile all16 issue criteria, unchanged source/session contracts, actual four-platform candidate evidence, package/license/brand and owner PR boundary.
 
-- [ ] T028 [P] [US4] Extend actual Windows/macOS/Linux package probes to await PDF canvas/text/navigation/metadata/isolation and source identity in scripts/run-pdf-native-journey.mjs, scripts/pdf-native-probe-bootstrap.js and crates/glitchpad-host/src/lifecycle_probe.rs. (FR-004,017,020; SC-002)
+- [x] T028 [P] [US4] Extend actual Windows/macOS/Linux package probes to await PDF canvas/text/navigation/metadata/isolation and source identity in scripts/run-pdf-native-journey.mjs, scripts/pdf-native-probe-bootstrap.js and crates/glitchpad-host/src/lifecycle_probe.rs. (FR-004,017,020; SC-002)
 - [ ] T029 [US4] Complete Android PDF keyboard/touch/navigation/metadata/links/lifecycle/print candidate journeys on API24/API36 in AndroidDeliveryInstrumentedTest and scripts/run-android-connected-tests.sh. (FR-004,020,021; SC-002)
 - [ ] T030 [US4] Run full contract/source/session/text/image regression and hostile-input/budget/accessibility/compatibility suites, binding source/run/attempt/artifact/runtime facts in specs/049-pdf-viewer-foundation/validation.md. (FR-017,019,020; SC-003,004,005)
 - [ ] T031 [US4] Verify package resources/notices/security/dependency/brand gates and exact delivered kit conformance in existing CI/scripts and specs/049-pdf-viewer-foundation/validation.md. (FR-018,020,021; SC-005)

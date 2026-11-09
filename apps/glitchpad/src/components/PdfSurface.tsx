@@ -399,7 +399,9 @@ export const PdfSurface = forwardRef<TextEditorHandle, Props>(
           '.pdf-page[data-current=true] .pdf-text-layer',
         );
         if (layer) {
-          selectPdfMatch(layer, selectedMatch);
+          scrollIntent.current = true;
+          if (selectPdfMatch(layer, selectedMatch, pane.current))
+            setScrollTop(pane.current.scrollTop);
         }
       }
       return () => {

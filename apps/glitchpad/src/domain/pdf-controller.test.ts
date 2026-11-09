@@ -255,3 +255,20 @@ describe('PDF controller actual asynchronous ownership', () => {
     });
   });
 });
+
+it('reports actual decoder image failure and ignores an obsolete worker decode event',async()=>{
+ const first=lease(), current=lease();
+ engine.getDocument.mockReturnValue(load(doc()));
+ const value=controller();
+ await value.open(first);
+ const old=ParserWorker.instances[0];
+ await value.open(current);
+ const event=()=>new MessageEvent('message',{data:{type:'glitchpad-pdf-decode-failure'}});
+ old.dispatchEvent(event());
+ expect(value.state.state).toBe('ready');
+ expect(current.close).not.toHaveBeenCalled();
+ ParserWorker.instances[1].dispatchEvent(event());
+ expect(value.state).toMatchObject({state:'failed',error:'malformed'});
+ expect(value.resourceCounts).toEqual({workers:0,surfaces:0,surfaceBytes:0});
+ expect(current.close).toHaveBeenCalledOnce();
+});

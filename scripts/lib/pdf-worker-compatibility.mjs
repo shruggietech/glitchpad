@@ -42,6 +42,10 @@ export function transformPdfWorker(code) {
     '        page.extractTextContent({\n          handler,\n          task,\n          sink,',
     '        page.extractTextContent({\n          handler,\n          task,\n          sink: __glitchpadBoundPdfTextSink(sink),',
   );
+  edit(
+    '  _sendImgData(objId, imgData, cacheGlobally = false) {',
+    '  _sendImgData(objId, imgData, cacheGlobally = false) {\n    if (imgData === null) __glitchpadPdfImageFailure();',
+  );
   const offset = code.indexOf(importBlock);
   if (offset < 0 || code.indexOf(importBlock, offset + 1) >= 0)
     throw new Error('PDF static decoder transform occurrence mismatch');
@@ -54,6 +58,7 @@ export function transformPdfWorker(code) {
     ),
   ).replaceAll('\\', '/');
   return [
+    "function __glitchpadPdfImageFailure() { self.postMessage({ type: 'glitchpad-pdf-decode-failure' }); }",
     'import {boundPdfReply as __glitchpadBoundPdfReply,boundPdfTextSink as __glitchpadBoundPdfTextSink} from ' +
       JSON.stringify(bounds) +
       ';',

@@ -275,6 +275,11 @@ export class PdfController {
         },
         { once: true },
       );
+      worker.addEventListener('message', (event: MessageEvent<unknown>) => {
+        if (generation !== this.generation) return;
+        const data=event.data as {type?:unknown};
+        if(data?.type === 'glitchpad-pdf-decode-failure') this.fail(new PdfFailure('malformed'));
+      });
       const parserWorker = PDFWorker.create({ port: worker });
       this.parserWorker = parserWorker;
       await parserWorker.promise;

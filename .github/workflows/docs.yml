@@ -47,7 +47,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
         with:
-          ref: ${{ inputs.deploy && inputs.release_tag == 'v0.2.1' && inputs.release_tag || github.ref }}
+          ref: ${{ inputs.deploy && inputs.release_tag == 'v0.3.0' && inputs.release_tag || github.ref }}
 
       - name: Capture site source revision
         id: source_revision
@@ -76,7 +76,7 @@ jobs:
 
       - name: Confirm published release authority
         id: release_authority
-        if: inputs.deploy && inputs.release_tag == 'v0.2.1'
+        if: inputs.deploy && inputs.release_tag == 'v0.3.0'
         uses: actions/github-script@v9
         env:
           CANDIDATE_SHA: ${{ steps.source_revision.outputs.revision }}
@@ -105,7 +105,7 @@ jobs:
         run: git diff --exit-code -- site/content/docs/index.mdx site/content/docs/meta.json site/lib/generated/documentation.json
 
       - name: Upload Pages artifact
-        if: inputs.deploy && inputs.release_tag == 'v0.2.1' && steps.release_authority.outputs.authorized == 'true'
+        if: inputs.deploy && inputs.release_tag == 'v0.3.0' && steps.release_authority.outputs.authorized == 'true'
         uses: actions/upload-pages-artifact@v5
         with:
           path: site/out
@@ -113,7 +113,7 @@ jobs:
   deploy:
     name: Deploy to GitHub Pages
     needs: build
-    if: inputs.deploy && inputs.release_tag == 'v0.2.1' && needs.build.outputs.release_authorized == 'true'
+    if: inputs.deploy && inputs.release_tag == 'v0.3.0' && needs.build.outputs.release_authorized == 'true'
     runs-on: ubuntu-latest
     concurrency:
       group: github-pages-production
@@ -138,5 +138,5 @@ jobs:
       - name: Verify production deployment
         run: node scripts/verify-site-deployment.mjs
         env:
-          GLITCHPAD_EXPECTED_VERSION: 0.2.1
+          GLITCHPAD_EXPECTED_VERSION: 0.3.0
           GLITCHPAD_EXPECTED_REVISION: ${{ needs.build.outputs.source_revision }}

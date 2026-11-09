@@ -3,7 +3,7 @@ name: release
 on:
   push:
     tags:
-      - 'v0.2.1'
+      - 'v0.3.0'
   workflow_dispatch:
 
 permissions:
@@ -12,7 +12,7 @@ permissions:
   attestations: read
 
 concurrency:
-  group: release-v0.2.1
+  group: release-v0.3.0
   cancel-in-progress: false
 
 jobs:
@@ -75,7 +75,7 @@ jobs:
       - name: Read owner-accepted annotated tag inputs
         run: |
           set -euo pipefail
-          test "$GITHUB_REF_NAME" = v0.2.1
+          test "$GITHUB_REF_NAME" = v0.3.0
           test "$(git cat-file -t "$GITHUB_REF")" = tag
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           git for-each-ref --format='%(contents)' "$GITHUB_REF" > accepted-staging.json
@@ -90,7 +90,7 @@ jobs:
         run: |
           mkdir release-assets
           for platform in windows macos linux android; do
-            tar -czf "release-assets/glitchpad-0.2.1-${platform}-evidence.tar.gz" -C "gathered/$platform" .
+            tar -czf "release-assets/glitchpad-0.3.0-${platform}-evidence.tar.gz" -C "gathered/$platform" .
           done
           node scripts/assemble-community-release.mjs --input gathered --output release-assets --source-commit "$GITHUB_SHA"
           cp accepted-staging.json accepted-input-receipt.json release-assets/
@@ -113,10 +113,10 @@ jobs:
             echo 'Release already exists; refusing to replace published bytes.' >&2
             exit 1
           fi
-          gh release create "$GITHUB_REF_NAME" release-assets/* --verify-tag --title 'Glitchpad v0.2.1' --notes-file docs/releases/v0.2.1.md
+          gh release create "$GITHUB_REF_NAME" release-assets/* --verify-tag --title 'Glitchpad v0.3.0' --notes-file docs/releases/v0.3.0.md
 
   publish-site:
-    name: Publish v0.2.1 site
+    name: Publish v0.3.0 site
     needs: publish
     permissions:
       contents: read
@@ -125,4 +125,4 @@ jobs:
     uses: ./.github/workflows/docs.yml
     with:
       deploy: true
-      release_tag: v0.2.1
+      release_tag: v0.3.0

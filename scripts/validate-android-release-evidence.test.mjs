@@ -3,6 +3,8 @@ import { createHash } from 'node:crypto';
 import { mkdtemp, mkdir, readFile, rm, writeFile, cp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { releaseIdentity } from './lib/release-identity.mjs';
+const androidContract = JSON.parse(await readFile(new URL('../packaging/android/package-contract.json', import.meta.url), 'utf8')); 
 import test from 'node:test';
 import {
   validateReleaseRow,
@@ -41,8 +43,8 @@ function row(caseId) {
       frontend_source_commit: source,
       application_sha256: expected.applicationSha,
       instrumentation_sha256: expected.instrumentationSha,
-      version: '0.2.1',
-      version_code: 1005,
+      version: releaseIdentity.version,
+      version_code: androidContract.version_code,
       api_level: 24,
       build_variant: 'ordinary',
       channel: 'release',
@@ -315,4 +317,9 @@ test('startup diagnostics cannot qualify the full release campaign', async () =>
   } finally {
     await rm(input.directory, { recursive: true, force: true });
   }
+});
+
+test('PDF is mandatory in full release campaigns', () => {
+  assert.deepEqual(releaseCaseGroups.pdf, ['pdf']);
+  assert.throws(() => validateReleaseRow(row('pdf'), { ...expected, caseId: 'pdf' }), /PDF/u);
 });

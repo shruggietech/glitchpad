@@ -1,4 +1,4 @@
-# Glitchpad Technical Specification v0.2.1
+# Glitchpad Technical Specification v0.3.0
 
 | Field | Value |
 | --- | --- |

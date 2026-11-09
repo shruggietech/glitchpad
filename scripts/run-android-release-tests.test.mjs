@@ -139,3 +139,13 @@ test(
     }
   },
 );
+
+test('release PDF diagnostics retain outputs and cannot replace the full campaign', async () => {
+  const source = await readFile(new URL('./run-android-release-tests.sh', import.meta.url), 'utf8');
+  assert.match(source, /groups=\(delivery authoring recovery back_about pdf\)/u);
+  assert.match(source, /groups=\(pdf\)/u);
+  assert.match(source, /pdfCompatibility/u);
+  assert.match(source, /s049-print-output-/u);
+  const workflow = parseYaml(await readFile(new URL('../.github/workflows/android-package.yml', import.meta.url), 'utf8'));
+  assert.ok(workflow.on.workflow_dispatch.inputs.runtime_scope.options.includes('pdf'));
+});

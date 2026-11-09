@@ -3091,7 +3091,7 @@ class AndroidDeliveryInstrumentedTest {
     assertEquals("com.shruggietech.glitchpad.testisolated.kotlin.jvm.internal.Intrinsics", kotlinRuntime)
     assertEquals("com.shruggietech.glitchpad.testisolated.androidx.tracing.Trace", tracingRuntime)
     identity.put("test_kotlin_runtime", kotlinRuntime).put("test_tracing_runtime", tracingRuntime)
-    assertEquals("0.2.1", identity.getString("version"))
+    assertEquals("0.3.0", identity.getString("version"))
     assertEquals("release", identity.getString("channel"))
     assertEquals(InstrumentationRegistry.getArguments().getString("expectedApplicationSha"), identity.getString("application_sha256"))
     assertEquals(InstrumentationRegistry.getArguments().getString("expectedInstrumentationSha"), identity.getString("instrumentation_sha256"))
@@ -3150,7 +3150,7 @@ class AndroidDeliveryInstrumentedTest {
     recordJourneyReadback(9, "back_retained_utf8", draft.toByteArray(Charsets.UTF_8), editableSourceText(scenario).toByteArray(Charsets.UTF_8))
     menuAction(scenario, "About Glitchpad")
     val source = requireNotNull(InstrumentationRegistry.getArguments().getString("expectedSource"))
-    waitForBodyText(scenario, "0.2.1", TARGET_PACKAGE, source, "ShruggieTech")
+    waitForBodyText(scenario, "0.3.0", TARGET_PACKAGE, source, "ShruggieTech")
     val displayed = JSONObject(evaluate(scenario, "(()=>{const d=document.querySelector('[data-application-info]');const r={};Array.from(d.querySelectorAll('dt')).forEach(n=>r[n.textContent]=n.nextElementSibling.textContent);return r;})()"))
     val info = clientContext.packageManager.getPackageInfo(TARGET_PACKAGE, 0)
     val code = if (Build.VERSION.SDK_INT >= 28) info.longVersionCode else { @Suppress("DEPRECATION") info.versionCode.toLong() }

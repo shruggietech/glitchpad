@@ -1356,7 +1356,7 @@ dependencies = [
 
 [[package]]
 name = "glitchpad-android-source"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "base64 0.22.1",
  "serde",
@@ -1366,7 +1366,7 @@ dependencies = [
 
 [[package]]
 name = "glitchpad-core"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "gif",
  "image",
@@ -1386,7 +1386,7 @@ dependencies = [
 
 [[package]]
 name = "glitchpad-host"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "atomic-write-file",
  "chrono",

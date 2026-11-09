@@ -60,6 +60,7 @@
   !insertmacro GLITCHPAD_BACKUP_ASSOCIATION "gif" "Glitchpad GIF"
   !insertmacro GLITCHPAD_BACKUP_ASSOCIATION "svg" "Glitchpad SVG"
   !insertmacro GLITCHPAD_BACKUP_ASSOCIATION "ico" "Glitchpad ICO"
+  !insertmacro GLITCHPAD_BACKUP_ASSOCIATION "pdf" "Glitchpad PDF"
 !macroend
 
 !macro NSIS_HOOK_POSTUNINSTALL
@@ -94,4 +95,5 @@
   !insertmacro GLITCHPAD_RESTORE_ASSOCIATION "gif" "Glitchpad GIF"
   !insertmacro GLITCHPAD_RESTORE_ASSOCIATION "svg" "Glitchpad SVG"
   !insertmacro GLITCHPAD_RESTORE_ASSOCIATION "ico" "Glitchpad ICO"
+  !insertmacro GLITCHPAD_RESTORE_ASSOCIATION "pdf" "Glitchpad PDF"
 !macroend

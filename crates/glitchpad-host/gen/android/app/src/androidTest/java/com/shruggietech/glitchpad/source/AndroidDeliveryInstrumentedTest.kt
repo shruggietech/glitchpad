@@ -92,12 +92,11 @@ class AndroidDeliveryInstrumentedTest {
   @Test
   fun pdfCompatibility() {
     assertEquals("PDF preflight uses the ordinary composed application", "ordinary", expectedBuildVariant())
-    val scenario = launchS047()
-    val identity = candidateIdentity(scenario)
     val uri = grant(documentUri("s049-compatibility.pdf"))
     val original = readBytes(uri)
-    val component = ComponentName(clientContext, MainActivity::class.java)
-    clientContext.startActivity(viewIntent(uri, "application/pdf").setComponent(component).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    val coldIntent = viewIntent(uri, "application/pdf")
+    val component = requireNotNull(glitchpadComponent(coldIntent)) { "installed PDF VIEW declaration must resolve the cold provider route" }
+    val scenario = ActivityScenario.launch<MainActivity>(coldIntent.setComponent(component)).also { ownedScenario = it }
     waitForDocumentIdentity(scenario, "s049-compatibility.pdf")
     try {
       waitForCondition(scenario, "!!document.querySelector('[data-pdf-ready=true][data-pdf-worker=true]')", "actual PDF worker and page content must become ready", deadlineOverride = SystemClock.elapsedRealtime() + 60_000L)
@@ -128,16 +127,20 @@ class AndroidDeliveryInstrumentedTest {
     instrumentation.sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_MOVE_HOME)
     waitForCondition(scenario,"document.querySelector('.pdf-page[data-current=true]').getAttribute('data-pdf-page')==='0'","actual native keyboard Home navigates")
     reading.put("native_touch_outline",true).put("native_keyboard_home",true)
-    val printStoreProof=PdfPrintNativeStoreChecks.verify(clientContext)
+    val printStoreProof=if (isReleaseRuntimeEvidence()) JSONObject().put("scope", "debug_internal_store_checks_not_executed") else PdfPrintNativeStoreChecks.verify(clientContext)
     val printProof=JSONObject().put("selected",verifyPdfNativePrint(scenario,"2,4",2,"selected")).put("all",verifyPdfNativePrint(scenario,"all",4,"all"))
     val stream = grant(documentUri("s049-stream.pdf"))
-    clientContext.startActivity(viewIntent(stream,"application/pdf").setComponent(component).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    val warmIntent = Intent(Intent.ACTION_SEND).setType("application/pdf").putExtra(Intent.EXTRA_STREAM, stream)
+      .setClipData(android.content.ClipData.newRawUri("PDF fixture", stream)).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    val warmComponent = requireNotNull(glitchpadComponent(warmIntent)) { "installed PDF SEND declaration must resolve the warm provider route" }
+    clientContext.startActivity(warmIntent.setComponent(warmComponent).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     waitForDocumentIdentity(scenario,"s049-stream.pdf")
     waitForCondition(scenario,"!!document.querySelector('[data-pdf-ready=true][data-pdf-worker=true]')&&document.querySelector('.pdf-page[data-current=true] .pdf-text-layer').textContent.includes('page 1')","native stream-only private cache must render",deadlineOverride=SystemClock.elapsedRealtime()+60_000L)
     assertTrue("stream-only cache preserves provider bytes",original.contentEquals(readBytes(stream)))
     val streamCache=File(clientContext.cacheDir,"pdf-source-v1")
     val streamCacheObserved=streamCache.walkTopDown().filter { it.isFile }.map { it.length() }.toList()
     assertEquals("native stream observation must inspect the actual populated private cache",listOf(original.size.toLong()),streamCacheObserved)
+    assertTrue("PDF evidence screenshot must show the actual rendered PDF", saveScreenshot("s050-pdf-visible.png"))
     evaluate(scenario, "window.__s049PdfDisposals=[];window.addEventListener('glitchpad-pdf-disposed',e=>window.__s049PdfDisposals.push(e.detail));true")
     val warm = grant(documentUri("resolver-warm"))
     clientContext.startActivity(viewIntent(warm, "text/plain").setComponent(component).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
@@ -149,10 +152,13 @@ class AndroidDeliveryInstrumentedTest {
     while(streamCache.exists()&&streamCache.walkTopDown().any {it.isFile}&&SystemClock.elapsedRealtime()<cacheDeadline)SystemClock.sleep(50)
     assertFalse("suspended stream-only source cache must release actual private files",streamCache.exists()&&streamCache.walkTopDown().any {it.isFile})
     assertTrue("viewing/navigation must preserve original provider bytes", original.contentEquals(readBytes(uri)))
-    val webview = WebViewCompat.getCurrentWebViewPackage(clientContext)
+    val identity = candidateIdentity(scenario)
+    val webview = observedTestWebViewPackage()
     if (Build.VERSION.SDK_INT == 24) assertTrue("minimum profile must retain actual Chrome69", webview?.versionName?.startsWith("69.") == true)
     val result = JSONObject().put("schema_version",1).put("diagnostic_only",true).put("candidate_qualified",false).put("source_commit",InstrumentationRegistry.getArguments().getString("expectedSource")).put("api_level",Build.VERSION.SDK_INT).put("webview_package",webview?.packageName).put("webview_version",webview?.versionName).put("candidate_identity",identity).put("fixture_sha256",sha256(original)).put("facts",facts).put("reading_journey",reading).put("print",printProof).put("native_print_store",printStoreProof).put("stream_cache_files",JSONArray(streamCacheObserved)).put("stream_rendered",true).put("second_page",true).put("disposal",disposal).put("source_unchanged",true)
     File(clientContext.filesDir,"s049-pdf-compatibility.json").writeText(result.toString(2)+"\n",Charsets.UTF_8)
+    result.put("cold_resolved_view", true).put("warm_resolved_send", true).put("stream_cache_removed", true)
+    retainReleaseEvidence(scenario, "pdf", includePackages = true, observations = result, visibleScreenshot = "s050-pdf-visible.png")
     println("s049_pdf_compatibility="+result.toString());System.out.flush()
   }
 
@@ -3081,9 +3087,9 @@ class AndroidDeliveryInstrumentedTest {
     return sha256(signatures.single().toByteArray())
   }
 
-  private fun retainReleaseEvidence(scenario: ActivityScenario<MainActivity>, caseId: String, includePackages: Boolean = false, observations: JSONObject = JSONObject()) {
+  private fun retainReleaseEvidence(scenario: ActivityScenario<MainActivity>, caseId: String, includePackages: Boolean = false, observations: JSONObject = JSONObject(), visibleScreenshot: String? = null) {
     if (!isReleaseRuntimeEvidence()) return
-    assertTrue("only the bounded release cases may emit evidence", caseId in listOf("startup", "delivery", "authoring", "recovery_seed", "recovery_verify", "back_about"))
+    assertTrue("only the bounded release cases may emit evidence", caseId in listOf("startup", "delivery", "authoring", "recovery_seed", "recovery_verify", "back_about", "pdf"))
     assertS047Role(scenario)
     val identity = candidateIdentity(scenario)
     val kotlinRuntime = kotlin.jvm.internal.Intrinsics::class.java.name
@@ -3112,10 +3118,16 @@ class AndroidDeliveryInstrumentedTest {
       capture("s048-installed-instrumentation.apk", "application/vnd.android.package-archive", File(testApplication.sourceDir).inputStream())
     }
     val screenshot = "s048-" + caseId + ".png"
-    assertTrue("release case must capture its actual visible result", saveScreenshot(screenshot))
-    val screenshotFile = File(clientContext.filesDir, screenshot)
+    if (visibleScreenshot == null) assertTrue("release case must capture its actual visible result", saveScreenshot(screenshot))
+    val screenshotFile = File(clientContext.filesDir, visibleScreenshot ?: screenshot)
     val screenshotHash = sha256(screenshotFile.readBytes())
     capture(screenshot, "image/png", screenshotFile.inputStream())
+    if (caseId == "pdf") {
+      for (range in listOf("selected", "all")) {
+        val name = "s049-print-output-" + range + ".pdf"
+        capture(name, "application/pdf", File(clientContext.filesDir, name).inputStream())
+      }
+    }
     val readbacks = JSONArray()
     journeyReadbacks.toSortedMap().forEach { (journey, rows) -> for (index in 0 until rows.length()) readbacks.put(JSONObject(rows.getJSONObject(index).toString()).put("journey", journey)) }
     val receipt = JSONObject().put("schema", 1).put("case_id", caseId).put("status", "pass")

@@ -580,7 +580,7 @@ test('official community mode binds final bytes and truthful macOS trust', async
     evidence.gate_status = 'official_valid';
     evidence.event = contract.official.authorized_event;
     evidence.publication_context = 'staged_unpublished';
-    evidence.tag = 'v0.2.1';
+    evidence.tag = contract.official.tag_pattern;
     evidence.evidence_files = [...contract.official.required_evidence];
     evidence.artifact.signature_status = 'not_signed';
     evidence.artifact.notarization_status = 'not_submitted';

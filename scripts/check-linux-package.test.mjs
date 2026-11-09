@@ -457,7 +457,7 @@ test('official receipt filenames bind each Ubuntu and package-form matrix slot',
 test('Debian control metadata requires canonical runtime dependency families', () => {
   const valid = [
     'Package: glitchpad',
-    'Version: 0.2.1',
+    'Version: ' + contract.candidate_version,
     'Architecture: amd64',
     'Depends: libwebkit2gtk-4.1-0 (>= 2.40), libgtk-3-0 | libgtk-3-0t64',
   ].join('\n');

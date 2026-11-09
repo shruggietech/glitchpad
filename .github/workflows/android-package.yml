@@ -41,9 +41,9 @@ on:
         type: boolean
         default: false
       runtime_scope:
-        description: Full candidate qualification or startup diagnostic only
+        description: Full candidate qualification or startup/PDF diagnostic only
         type: choice
-        options: [full, startup]
+        options: [full, startup, pdf]
         default: full
 
 env:

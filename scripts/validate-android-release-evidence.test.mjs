@@ -31,8 +31,10 @@ const readback = (kind) => ({
   expected_sha256: sha('expected document'),
   actual_sha256: sha('expected document'),
 });
+const pdfFixtureSha = sha(await readFile(new URL('../fixtures/pdf/s049-compatibility.pdf', import.meta.url)));
+const printedPdf = Buffer.from('%PDF-1.7\n' + 'fixture '.repeat(30) + '\n%%EOF\n');
 function row(caseId) {
-  return {
+  const result = {
     schema: 1,
     status: 'pass',
     case_id: caseId,
@@ -81,6 +83,11 @@ function row(caseId) {
       },
     },
   };
+  if (caseId === 'pdf') {
+    const print = pages => ({ output_pages: pages, output_ink: Array(pages).fill(700), output_sha256: sha(printedPdf), output_bytes: printedPdf.length, private_spool_cleaned: true, physical_output_confirmed: false });
+    result.observations = { fixture_sha256: pdfFixtureSha, cold_resolved_view: true, warm_resolved_send: true, facts: {worker:'true', engine:'6.5.438', ink:800, executed:false, selected:'Glitchpad PDF compatibility page 1'}, reading_journey: { checks: Object.fromEntries(['outline_named_destination','search','thumbnail','internal_link','external_link_disclosure','rotation','go_to_page','keyboard','metadata'].map(k=>[k,true])), native_touch_outline:true, native_keyboard_home:true }, source_unchanged:true, stream_rendered:true, stream_cache_removed:true, stream_cache_files:[1000], disposal:{worker_terminated:true,workers:0,surfaces:0,surfaceBytes:0,elapsed_ms:20}, print:{selected:print(2),all:print(4)}};
+  }
+  return result;
 }
 test('release rows require independent installed bytes, source, role and actual API', () => {
   validateReleaseRow(row('delivery'), { ...expected, caseId: 'delivery' });
@@ -181,7 +188,7 @@ async function fixture(mode = 'full') {
   await writeFile(app, application);
   await writeFile(testApk, instrumentation);
   for (const [group, cases] of Object.entries(
-    mode === 'startup' ? { startup: ['startup'] } : releaseCaseGroups,
+    mode === 'startup' ? { startup: ['startup'] } : mode === 'pdf' ? { pdf: ['pdf'] } : releaseCaseGroups,
   )) {
     const path = join(directory, group + '-attempt-1');
     await mkdir(path);
@@ -195,6 +202,7 @@ async function fixture(mode = 'full') {
       const bytes = Buffer.from(JSON.stringify(receipt));
       await writeFile(join(path, 's048-' + caseId + '.json'), bytes);
       await writeFile(join(path, 's048-' + caseId + '.png'), png);
+      if (caseId === 'pdf') for (const range of ['selected', 'all']) await writeFile(join(path, 's049-print-output-' + range + '.pdf'), printedPdf);
       await writeFile(
         join(path, caseId + '-status.json'),
         JSON.stringify({
@@ -215,7 +223,7 @@ async function fixture(mode = 'full') {
           '\nOK (1 test)\nINSTRUMENTATION_CODE: -1\n',
       );
     }
-    if (group === 'delivery' || group === 'startup') {
+    if (['delivery', 'startup', 'pdf'].includes(group)) {
       await writeFile(
         join(path, 's048-installed-application.apk'),
         application,
@@ -234,11 +242,11 @@ async function fixture(mode = 'full') {
     api: 24,
   };
 }
-test('complete campaign selects all five cases and reads installed APK captures', async () => {
+test('complete campaign selects all six cases and reads installed APK captures', async () => {
   const input = await fixture();
   try {
     const result = await validateReleaseDirectory(input);
-    assert.equal(result.selected.flatMap((entry) => entry.cases).length, 5);
+    assert.equal(result.selected.flatMap((entry) => entry.cases).length, 6);
     await writeFile(
       join(
         input.directory,
@@ -321,5 +329,24 @@ test('startup diagnostics cannot qualify the full release campaign', async () =>
 
 test('PDF is mandatory in full release campaigns', () => {
   assert.deepEqual(releaseCaseGroups.pdf, ['pdf']);
-  assert.throws(() => validateReleaseRow(row('pdf'), { ...expected, caseId: 'pdf' }), /PDF/u);
+  const missing = row('pdf'); missing.observations = {};
+  assert.throws(() => validateReleaseRow(missing, { ...expected, caseId: 'pdf' }), /PDF/u);
+});
+
+test('PDF release rows reject false worker, fixture, input, cache, print and disposal facts', () => {
+  validateReleaseRow(row('pdf'), {...expected,caseId:'pdf'});
+  for (const mutate of [p=>p.facts.worker='false',p=>p.fixture_sha256='c'.repeat(64),p=>p.cold_resolved_view=false,p=>p.warm_resolved_send=false,p=>p.stream_cache_removed=false,p=>p.disposal.elapsed_ms=251,p=>p.reading_journey.checks.search=false,p=>p.print.all.output_ink=[0,0,0,0],p=>p.print.selected.output_pages=4,p=>p.source_unchanged=false]) {const changed=row('pdf'); mutate(changed.observations); assert.throws(()=>validateReleaseRow(changed,{...expected,caseId:'pdf'}),/PDF/u);}
+});
+test('PDF diagnostics capture raw prints and installed bytes without qualifying the whole release', async () => {
+  const input=await fixture('pdf');
+  try {
+    const result=await validateReleaseDirectory({...input,mode:'pdf'});
+    assert.equal(result.diagnostic_only,true); assert.equal(result.candidate_qualified,false);
+    await assert.rejects(validateReleaseDirectory(input),/unexpected|missing/u);
+    await writeFile(join(input.directory,'pdf-attempt-1','s049-print-output-all.pdf'),'wrong output');
+    await assert.rejects(validateReleaseDirectory({...input,mode:'pdf'}),/printed bytes/u);
+    await writeFile(join(input.directory,'pdf-attempt-1','s049-print-output-all.pdf'),printedPdf);
+    await writeFile(join(input.directory,'pdf-attempt-1','s048-installed-application.apk'),'wrong installed app');
+    await assert.rejects(validateReleaseDirectory({...input,mode:'pdf'}),/installed application/u);
+  } finally {await rm(input.directory,{recursive:true,force:true});}
 });

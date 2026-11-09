@@ -179,7 +179,10 @@ class AndroidDeliveryInstrumentedTest {
     }
     fun activate(node:android.view.accessibility.AccessibilityNodeInfo){
       // DocumentsUI rows can expose a non-clickable label inside a touchable row.
+      automation.waitForIdle(400L,5000L)
+      assertTrue("native control remains attached after UI settles",node.refresh())
       val bounds=android.graphics.Rect();node.getBoundsInScreen(bounds)
+      println("s049_native_print_control="+JSONObject().put("text",node.text?.toString()).put("description",node.contentDescription?.toString()).put("bounds",bounds.toShortString()));System.out.flush()
       assertTrue("native control has touch geometry",bounds.width()>0&&bounds.height()>0)
       dispatchNativeTapOnce(bounds.exactCenterX(),bounds.exactCenterY(),SystemClock.elapsedRealtime()+30000L) { event -> automation.injectInputEvent(event,true) }
     }

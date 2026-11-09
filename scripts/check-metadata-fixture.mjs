@@ -45,7 +45,7 @@ export async function verifyMetadataFixture(root = repositoryRoot) {
   const fixtureBytes = await readFile(resolve(root, relativeFixture));
   const corpus = JSON.parse(fixtureBytes.toString('utf8'));
   const catalogSource = await readFile(resolve(root, 'apps/glitchpad/src/domain/metadata.ts'), 'utf8');
-  const catalogKeys = new Set([...catalogSource.matchAll(/\bentry\('([^']+)'/gu)].map((match) => match[1]));
+  const catalogKeys = new Set([...catalogSource.matchAll(/\bentry\(\s*'([^']+)'/gu)].map((match) => match[1]));
   const problems = validateMetadataCorpus(corpus, catalogKeys);
   if (catalogKeys.size < 1) problems.push('metadata catalog source did not expose any stable keys');
   const provenance = await readFile(resolve(root, 'fixtures/provenance.toml'), 'utf8');

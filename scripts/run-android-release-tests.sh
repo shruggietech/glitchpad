@@ -12,10 +12,26 @@ scripts="$(cd "$(dirname "$0")" && pwd)"
 app_sha="$(sha256sum "$app" | cut -d' ' -f1)"
 test_sha="$(sha256sum "$test_apk" | cut -d' ' -f1)"
 adb_bounded() { timeout --signal=KILL 90s adb "$@"; }
-adb_bounded install -r "$app" > "$evidence/install-application.txt"
-adb_bounded install -r -t "$test_apk" > "$evidence/install-instrumentation.txt"
-grep -Fxq Success "$evidence/install-application.txt"
-grep -Fxq Success "$evidence/install-instrumentation.txt"
+mkdir -p "$evidence/setup"
+install_selected() {
+  local role="$1" path="$2"
+  shift 2
+  local exit_code=0
+  for attempt in 1 2; do
+    local log="$evidence/setup/install-$role-attempt-$attempt"
+    exit_code=0
+    adb_bounded install --no-streaming -r "$@" "$path" > "$log.txt" 2> "$log.stderr.txt" || exit_code=$?
+    printf '{"command_exit":%s,"attempt":%s}\n' "$exit_code" "$attempt" > "$log.status.json"
+    if (( exit_code == 0 )) && grep -Fxq Success "$log.txt"; then
+      cp "$log.txt" "$evidence/install-$role.txt"
+      return 0
+    fi
+  done
+  echo "Canonical $role installation did not complete in two bounded attempts; setup logs retained." >&2
+  return 1
+}
+install_selected application "$app"
+install_selected instrumentation "$test_apk" -t
 offline_pending=false
 cleanup() {
   local status=$?

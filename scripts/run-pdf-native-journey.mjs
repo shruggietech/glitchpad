@@ -173,9 +173,9 @@ const probe = await mkdtemp(join(tmpdir(), 'glitchpad-pdf-'));
 const fixture = resolve('fixtures/pdf/s049-compatibility.pdf');
 const original = await readFile(fixture);
 await copyFile(fixture, join(probe, 's049-compatibility.pdf'));
-await copyFile(fixture,join(probe,'warm-delivery.pdf'));
-let switchDelivered=false;
-let switchProcess=null;
+await copyFile(fixture, join(probe, 'warm-delivery.pdf'));
+let switchDelivered = false;
+let switchProcess = null;
 await writeFile(join(probe, 'enabled.marker'), 'enabled\n');
 await writeFile(join(probe, 'pdf-journey-request.marker'), 'requested\n');
 const launchEpoch = Date.now();
@@ -210,13 +210,29 @@ try {
   let result;
   const deadline = Date.now() + 240000;
   while (Date.now() < deadline) {
-    if(!switchDelivered && await readFile(join(probe,'pdf-switch-request.marker'),'utf8').catch(()=>null)==='requested\n'){
-      switchDelivered=true;
-      const switchEnv={...process.env};delete switchEnv.GLITCHPAD_LIFECYCLE_PROBE_DIR;
-      switchProcess=spawn(binary,[join(probe,'warm-delivery.pdf')],{env:switchEnv,windowsHide:true,stdio:['ignore','pipe','pipe']});
-      switchProcess.on('error',error=>{stderr+=String(error);});
-      switchProcess.stdout.on('data',bytes=>{stdout=(stdout+bytes).slice(-131072);});
-      switchProcess.stderr.on('data',bytes=>{stderr=(stderr+bytes).slice(-131072);});
+    if (
+      !switchDelivered &&
+      (await readFile(join(probe, 'pdf-switch-request.marker'), 'utf8').catch(
+        () => null,
+      )) === 'requested\n'
+    ) {
+      switchDelivered = true;
+      const switchEnv = { ...process.env };
+      delete switchEnv.GLITCHPAD_LIFECYCLE_PROBE_DIR;
+      switchProcess = spawn(binary, [join(probe, 'warm-delivery.pdf')], {
+        env: switchEnv,
+        windowsHide: true,
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+      switchProcess.on('error', (error) => {
+        stderr += String(error);
+      });
+      switchProcess.stdout.on('data', (bytes) => {
+        stdout = (stdout + bytes).slice(-131072);
+      });
+      switchProcess.stderr.on('data', (bytes) => {
+        stderr = (stderr + bytes).slice(-131072);
+      });
     }
     let data = await readFile(
       join(probe, 'pdf-journey-result.json'),
@@ -289,8 +305,12 @@ try {
   );
   assert.equal(result.source_commit, expectedSource);
   assert.equal(result.source_unchanged, true);
-  assert.equal(switchDelivered,true,'actual running-instance PDF delivery required');
-  assert.equal(result.journey.warm_delivery,true);
+  assert.equal(
+    switchDelivered,
+    true,
+    'actual running-instance PDF delivery required',
+  );
+  assert.equal(result.journey.warm_delivery, true);
   assert.equal(
     result.source_sha256,
     createHash('sha256').update(original).digest('hex'),
@@ -361,7 +381,7 @@ try {
   );
 } finally {
   if (printProbe.exitCode === null) printProbe.kill();
-  if(switchProcess && switchProcess.exitCode===null)switchProcess.kill();
+  if (switchProcess && switchProcess.exitCode === null) switchProcess.kill();
   await writeFile(join(output, 'native-print-dialogs.log'), printDialogLog);
   if (child.exitCode === null) child.kill();
   await writeFile(join(output, 'stdout.log'), stdout);

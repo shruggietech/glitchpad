@@ -204,11 +204,17 @@
               .getAttribute('data-pdf-observations') || 'null',
           ),
         ];
-        await window.__TAURI_INTERNALS__.invoke('request_desktop_pdf_probe_switch');
+        await window.__TAURI_INTERNALS__.invoke(
+          'request_desktop_pdf_probe_switch',
+        );
         await wait(function () {
           return (
-            document.querySelector('[data-pdf-ready=true][data-pdf-worker=true]') &&
-            document.querySelector('.pdf-layout').getAttribute('data-pdf-owner') !== owner &&
+            document.querySelector(
+              '[data-pdf-ready=true][data-pdf-worker=true]',
+            ) &&
+            document
+              .querySelector('.pdf-layout')
+              .getAttribute('data-pdf-owner') !== owner &&
             document.body.innerText.includes('warm-delivery.pdf') &&
             disposals.some(function (row) {
               return (

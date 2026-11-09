@@ -32,17 +32,19 @@ export function nativePdfConformanceRecord(result, profile) {
     checks: {
       worker: journey.worker === 'true',
       selectable_text: journey.checks.embedded_font_text === true,
-      reading: [
-        'outline_named_destination',
-        'search',
-        'thumbnail',
-        'internal_link',
-        'external_link_disclosure',
-        'rotation',
-        'go_to_page',
-        'keyboard',
-        'metadata',
-      ].every((k) => journey.checks[k] === true) && journey.warm_delivery === true,
+      reading:
+        [
+          'outline_named_destination',
+          'search',
+          'thumbnail',
+          'internal_link',
+          'external_link_disclosure',
+          'rotation',
+          'go_to_page',
+          'keyboard',
+          'metadata',
+        ].every((k) => journey.checks[k] === true) &&
+        journey.warm_delivery === true,
       native_print:
         journey.prints.length === 2 &&
         journey.prints.every(

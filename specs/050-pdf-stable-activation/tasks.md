@@ -38,7 +38,7 @@ Independent test: original licensed codec/RTL/geometry/boundary/hostile inputs e
 - [ ] T014 [US2] Add actual static-codec pixel, Hebrew direction/extraction/search/selection and recognized-seed bounded mutation witnesses to scripts/check-pdf-runtime.mjs and focused tests, retaining denied worker authority and stable errors. (FR-004,005,006,007,008,011,013)
 - [x] T015 [US2] Add raw first-page/navigation/search/thumbnail/disposal and interaction observations with explicit methods/scopes to scripts/pdf-reading-journey.js and current runtime/native probes. (FR-010,012,013)
 - [x] T016 [US2] Add truthful render/range/cache counters and sampled named process RSS/PSS observations to existing desktop/Android native journey receipts, keeping unavailable worker heap distinct. (FR-003,008,009,010,012)
-- [ ] T017 [US2] Exercise source revision/revocation, low-memory/degraded behavior, cancellation/suspension and real private-file disposal through current controller/source/native tests; add only missing behavioral regressions. (FR-003,006,008,009,010,011)
+- [x] T017 [US2] Exercise source revision/revocation, low-memory/degraded behavior, cancellation/suspension and real private-file disposal through current controller/source/native tests; add only missing behavioral regressions. (FR-003,006,008,009,010,011)
 - [x] T018 [US2] Implement and test the narrow strict source/profile/case/latest-attempt aggregate in scripts PDF conformance validator/tests, rejecting stale/missing/newer-failed or identity-mismatched records while retaining all attempts. (FR-005,006,012,021,022)
 - [ ] T019 [US2] Integrate the full conformance case/profile policy and applicable browser/native measurement checks into existing CI and specs/050-pdf-stable-activation/validation.md. (FR-005,007,008,009,010,012,013,014,015,017)
 
@@ -46,7 +46,7 @@ Independent test: original licensed codec/RTL/geometry/boundary/hostile inputs e
 
 Independent test:0.3.0 source/docs/claims/packages agree, exact staged artifacts pass PDF/core/native gates and the real accepted-byte consumer/assembler can consume them without publishing.
 
-- [ ] T020 [US4] Reconcile technical specification, current PDF guidance, README/help/site canonical inputs, CHANGELOG and v0.3.0 notes/receipt/runbook while preserving office/advanced-tool planned status and current-public download authority. (FR-004,018,019,022; US4/AC1-4)
+- [x] T020 [US4] Reconcile technical specification, current PDF guidance, README/help/site canonical inputs, CHANGELOG and v0.3.0 notes/receipt/runbook while preserving office/advanced-tool planned status and current-public download authority. (FR-004,018,019,022; US4/AC1-4)
 - [x] T021 [US4] Add machine-readable prepared documentation-pass JSON and focused validation/tests, declaring PDF release scope instead of stale recovery scope, with truthful pending owner approval. (FR-017,018,019,020,022)
 - [ ] T022 [US4] Qualify actual staged Windows/macOS/Linux native PDF acquisition/reading/printing and bind proof into existing package/lifecycle archives across all declared profiles. (FR-001,002,014,016,020,021)
 - [ ] T023 [US4] Extend accepted-release-inputs.mjs, assemble-community-release.mjs and existing tag-only publisher/tests to require staged PDF/documentation-pass bindings and later observed PR merge evidence, without new approval/source mutation loops. (FR-017,020,021,022,024)

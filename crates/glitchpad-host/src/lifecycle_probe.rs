@@ -892,9 +892,16 @@ pub(crate) fn record_desktop_pdf_probe(
 /// Requests actual running-instance delivery of the fixed second PDF fixture.
 #[tauri::command]
 #[allow(clippy::needless_pass_by_value)]
-pub(crate) fn request_desktop_pdf_probe_switch(state: tauri::State<'_, LifecycleProbeState>) -> Result<(), CoreError> {
+pub(crate) fn request_desktop_pdf_probe_switch(
+    state: tauri::State<'_, LifecycleProbeState>,
+) -> Result<(), CoreError> {
     let root = state.pdf_probe_root()?.ok_or_else(workflow_error)?;
-    let mut file=OpenOptions::new().write(true).create_new(true).open(root.join("pdf-switch-request.marker")).map_err(|_|workflow_error())?;
-    file.write_all(b"requested\n").map_err(|_|workflow_error())?;
-    file.sync_all().map_err(|_|workflow_error())
+    let mut file = OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(root.join("pdf-switch-request.marker"))
+        .map_err(|_| workflow_error())?;
+    file.write_all(b"requested\n")
+        .map_err(|_| workflow_error())?;
+    file.sync_all().map_err(|_| workflow_error())
 }

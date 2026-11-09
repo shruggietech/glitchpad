@@ -52,12 +52,30 @@ export function parsePdfPrintRange(value: string, count: number): number[] {
 }
 /** Respect limits after the render engine rounds both pixel dimensions upward. */
 export function pdfPrintScale(width: number, height: number): number {
-  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) throw new Error('print_surface_limit');
-  let high = Math.min(1.5, Math.sqrt(16000000 / (width * height)), 8192 / width, 8192 / height);
-  const fits = (scale: number) => Math.ceil(width * scale) <= 8192 && Math.ceil(height * scale) <= 8192 && Math.ceil(width * scale) * Math.ceil(height * scale) <= 16000000;
+  if (
+    !Number.isFinite(width) ||
+    !Number.isFinite(height) ||
+    width <= 0 ||
+    height <= 0
+  )
+    throw new Error('print_surface_limit');
+  let high = Math.min(
+    1.5,
+    Math.sqrt(16000000 / (width * height)),
+    8192 / width,
+    8192 / height,
+  );
+  const fits = (scale: number) =>
+    Math.ceil(width * scale) <= 8192 &&
+    Math.ceil(height * scale) <= 8192 &&
+    Math.ceil(width * scale) * Math.ceil(height * scale) <= 16000000;
   if (high > 0 && fits(high)) return high;
   let low = 0;
-  for (let step = 0; step < 48; step++) { const middle = (low + high) / 2; if (fits(middle)) low = middle; else high = middle; }
+  for (let step = 0; step < 48; step++) {
+    const middle = (low + high) / 2;
+    if (fits(middle)) low = middle;
+    else high = middle;
+  }
   if (!(low > 0) || !fits(low)) throw new Error('print_surface_limit');
   return low;
 }
@@ -106,7 +124,10 @@ export function nativePdfPrintGateway(session: ShellSession): PdfPrintGateway {
   };
   const release = () => {
     window.removeEventListener('afterprint', finishDesktop);
-    window.removeEventListener('glitchpad-native-print-completed', finishDesktop);
+    window.removeEventListener(
+      'glitchpad-native-print-completed',
+      finishDesktop,
+    );
     if (desktopPrintOwner === id) {
       desktopPrintOwner = null;
       document.body.classList.remove('pdf-print-active');
@@ -210,7 +231,11 @@ export function nativePdfPrintGateway(session: ShellSession): PdfPrintGateway {
       handedOff = true;
       document.body.classList.add('pdf-print-active');
       window.addEventListener('afterprint', finishDesktop, { once: true });
-      window.addEventListener('glitchpad-native-print-completed', finishDesktop, { once: true });
+      window.addEventListener(
+        'glitchpad-native-print-completed',
+        finishDesktop,
+        { once: true },
+      );
       try {
         await invoke<void>('request_pdf_desktop_print', source);
       } catch (error) {

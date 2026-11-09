@@ -1,5 +1,10 @@
 import { expect, it } from 'vitest';
-import { pageAtOffset, pageOffsets, continuousFits, anchoredPdfOffset } from './pdf-viewport';
+import {
+  pageAtOffset,
+  pageOffsets,
+  continuousFits,
+  anchoredPdfOffset,
+} from './pdf-viewport';
 
 it('keeps10000page navigation bounded and locates exact visible boundaries', () => {
   const offsets = pageOffsets(10000, 600, new Map([[1, 800]]));

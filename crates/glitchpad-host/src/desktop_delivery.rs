@@ -239,7 +239,11 @@ impl DesktopDeliveryQueue {
 }
 
 fn openable_extension(path: &Path) -> bool {
-    governed_extension(path) || path.extension().and_then(|extension| extension.to_str()).is_some_and(|extension| extension.eq_ignore_ascii_case("pdf"))
+    governed_extension(path)
+        || path
+            .extension()
+            .and_then(|extension| extension.to_str())
+            .is_some_and(|extension| extension.eq_ignore_ascii_case("pdf"))
 }
 
 fn governed_extension(path: &Path) -> bool {
@@ -501,14 +505,34 @@ mod tests {
     fn explicit_pdf_candidate_deliveries_reach_native_sources_without_registration() {
         let (_root, path) = fixture("candidate.PDF");
         fs::write(&path, b"%PDF-1.7\nsynthetic candidate").expect("PDF fixture");
-        for kind in [DesktopDeliveryKind::Dialog, DesktopDeliveryKind::Drop, DesktopDeliveryKind::CommandLine, DesktopDeliveryKind::Association] {
+        for kind in [
+            DesktopDeliveryKind::Dialog,
+            DesktopDeliveryKind::Drop,
+            DesktopDeliveryKind::CommandLine,
+            DesktopDeliveryKind::Association,
+        ] {
             let host = DesktopSourceHost::new();
             let queue = DesktopDeliveryQueue::new();
-            assert_eq!(queue.enqueue_paths(&host, kind, [path.clone()]).expect("explicit candidate"), 1);
-            let result = queue.drain(1).expect("candidate result").pop().expect("source result");
+            assert_eq!(
+                queue
+                    .enqueue_paths(&host, kind, [path.clone()])
+                    .expect("explicit candidate"),
+                1
+            );
+            let result = queue
+                .drain(1)
+                .expect("candidate result")
+                .pop()
+                .expect("source result");
             assert_eq!(result.status, DesktopDeliveryStatus::Opened);
             let source = result.source.expect("native source");
-            assert_eq!(&host.read_range(&source.source_id, 0, 5, 5).expect("bounded signature").bytes, b"%PDF-");
+            assert_eq!(
+                &host
+                    .read_range(&source.source_id, 0, 5, 5)
+                    .expect("bounded signature")
+                    .bytes,
+                b"%PDF-"
+            );
         }
     }
 

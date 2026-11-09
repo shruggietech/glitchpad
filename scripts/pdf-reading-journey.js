@@ -191,7 +191,14 @@ window.runGlitchpadPdfReadingJourney = async function () {
   return {
     schema_version: 1,
     runtime: navigator.userAgent,
-    source_identity: { native: document.querySelector('.app-shell').getAttribute('data-native-source-commit'), frontend: document.querySelector('.app-shell').getAttribute('data-frontend-source-commit') },
+    source_identity: {
+      native: document
+        .querySelector('.app-shell')
+        .getAttribute('data-native-source-commit'),
+      frontend: document
+        .querySelector('.app-shell')
+        .getAttribute('data-frontend-source-commit'),
+    },
     checks: checks,
     worker: document
       .querySelector('.pdf-layout')

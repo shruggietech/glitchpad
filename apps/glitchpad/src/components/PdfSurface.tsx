@@ -171,18 +171,49 @@ export const PdfSurface = forwardRef<TextEditorHandle, Props>(
     const contentHeight = single
       ? (heights.get(view.page) ?? estimate)
       : offsets[count];
-    const previousGeometry = useRef({ offsets, key, single, request: view.request });
+    const previousGeometry = useRef({
+      offsets,
+      key,
+      single,
+      request: view.request,
+    });
     useLayoutEffect(() => {
       const previous = previousGeometry.current;
-      previousGeometry.current = { offsets, key, single, request: view.request };
+      previousGeometry.current = {
+        offsets,
+        key,
+        single,
+        request: view.request,
+      };
       const element = pane.current;
-      if (!element || !state.capabilities.view || single || previous.single || previous.key !== key || previous.request !== view.request || previous.offsets === offsets) return;
-      const next = anchoredPdfOffset(previous.offsets, offsets, element.scrollTop, scrollIntent.current ? undefined : view.page);
+      if (
+        !element ||
+        !state.capabilities.view ||
+        single ||
+        previous.single ||
+        previous.key !== key ||
+        previous.request !== view.request ||
+        previous.offsets === offsets
+      )
+        return;
+      const next = anchoredPdfOffset(
+        previous.offsets,
+        offsets,
+        element.scrollTop,
+        scrollIntent.current ? undefined : view.page,
+      );
       if (Math.abs(element.scrollTop - next) > 0.5) {
         element.scrollTop = next;
         setScrollTop(element.scrollTop);
       }
-    }, [offsets, key, single, state.capabilities.view, view.request, view.page]);
+    }, [
+      offsets,
+      key,
+      single,
+      state.capabilities.view,
+      view.request,
+      view.page,
+    ]);
     const openTask = (next: 'view' | 'page', target?: HTMLElement) => {
       if (!state.capabilities.view) return;
       opener.current = target ?? (document.activeElement as HTMLElement);

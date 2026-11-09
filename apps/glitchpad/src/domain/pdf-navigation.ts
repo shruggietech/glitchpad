@@ -156,14 +156,25 @@ export function pageMatches(
 }
 
 /** Select the extracted occurrence, preserving its item-separator offsets. */
-export function selectPdfMatch(layer: HTMLElement, match: PdfSearchMatch): boolean {
+export function selectPdfMatch(
+  layer: HTMLElement,
+  match: PdfSearchMatch,
+): boolean {
   const fragments: Array<{ node: Node; start: number; end: number }> = [];
-  for (const span of layer.querySelectorAll<HTMLElement>('[data-pdf-text-offset]')) {
+  for (const span of layer.querySelectorAll<HTMLElement>(
+    '[data-pdf-text-offset]',
+  )) {
     const offset = Number(span.dataset.pdfTextOffset);
     const node = span.firstChild;
-    if (!Number.isSafeInteger(offset) || !node || node.nodeType !== Node.TEXT_NODE) continue;
+    if (
+      !Number.isSafeInteger(offset) ||
+      !node ||
+      node.nodeType !== Node.TEXT_NODE
+    )
+      continue;
     const length = node.textContent?.length ?? 0;
-    const start = Math.max(0, match.offset - offset), end = Math.min(length, match.offset + match.text.length - offset);
+    const start = Math.max(0, match.offset - offset),
+      end = Math.min(length, match.offset + match.text.length - offset);
     if (start < end) fragments.push({ node, start, end });
   }
   if (!fragments.length) return false;
@@ -173,6 +184,7 @@ export function selectPdfMatch(layer: HTMLElement, match: PdfSearchMatch): boole
   range.setEnd(last.node, last.end);
   const selection = layer.ownerDocument.defaultView?.getSelection();
   if (!selection) return false;
-  selection.removeAllRanges(); selection.addRange(range);
+  selection.removeAllRanges();
+  selection.addRange(range);
   return true;
 }

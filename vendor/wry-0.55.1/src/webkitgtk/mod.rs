@@ -683,7 +683,7 @@ impl InnerWebView {
     let notified = std::rc::Rc::new(std::cell::Cell::new(false));
     let notify = std::rc::Rc::new(move || {
       if notified.replace(true) { return; }
-      view.run_javascript("window.dispatchEvent(new CustomEvent('glitchpad-native-print-completed'))", None::<&gio::Cancellable>, |_| {});
+      view.run_javascript("window.dispatchEvent(new CustomEvent('glitchpad-native-print-completed'))", None::<&Cancellable>, |_| {});
     });
     let finished = notify.clone();
     print.connect_finished(move |_| finished());

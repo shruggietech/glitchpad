@@ -42,9 +42,24 @@ export function measurePdfScrollCeiling(document: Document): number {
 }
 
 /** Preserve a page and its in-page pixel position as estimated heights become measured. */
-export function anchoredPdfOffset(previous: readonly number[], next: readonly number[], top: number, requestedPage?: number): number {
+export function anchoredPdfOffset(
+  previous: readonly number[],
+  next: readonly number[],
+  top: number,
+  requestedPage?: number,
+): number {
   if (previous.length < 2 || next.length < 2) return 0;
-  const page = Math.max(0, Math.min(next.length - 2, previous.length - 2, requestedPage ?? pageAtOffset(previous, top)));
-  const inside = Math.max(0, Math.min(top - previous[page], next[page + 1] - next[page] - 1));
+  const page = Math.max(
+    0,
+    Math.min(
+      next.length - 2,
+      previous.length - 2,
+      requestedPage ?? pageAtOffset(previous, top),
+    ),
+  );
+  const inside = Math.max(
+    0,
+    Math.min(top - previous[page], next[page + 1] - next[page] - 1),
+  );
   return next[page] + inside;
 }

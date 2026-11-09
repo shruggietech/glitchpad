@@ -3,7 +3,11 @@
   var readingResult = null;
   var diagnostics = function () {
     var root = document.querySelector('.pdf-layout');
-    return { body: document.body.innerText.slice(0,3072), state: root ? root.getAttribute('data-pdf-state') : null, error: root ? root.getAttribute('data-pdf-error') : null };
+    return {
+      body: document.body.innerText.slice(0, 3072),
+      state: root ? root.getAttribute('data-pdf-state') : null,
+      error: root ? root.getAttribute('data-pdf-error') : null,
+    };
   };
   var timer = setInterval(function () {
     var documentRoot = document.querySelector(
@@ -16,7 +20,10 @@
           window.__TAURI_INTERNALS__
             .invoke('record_desktop_pdf_probe', {
               owner: '',
-              proof: { error: 'PDF startup timeout', diagnostics: diagnostics() },
+              proof: {
+                error: 'PDF startup timeout',
+                diagnostics: diagnostics(),
+              },
             })
             .catch(function () {});
       }
@@ -93,7 +100,11 @@
             completionEvent = event.type;
           };
           window.addEventListener('afterprint', completed, { once: true });
-          window.addEventListener('glitchpad-native-print-completed', completed, { once: true });
+          window.addEventListener(
+            'glitchpad-native-print-completed',
+            completed,
+            { once: true },
+          );
           (
             await wait(function () {
               return button('Open system print dialog');
@@ -110,7 +121,10 @@
           }, 'snapshot cleanup');
           observer.disconnect();
           window.removeEventListener('afterprint', completed);
-          window.removeEventListener('glitchpad-native-print-completed', completed);
+          window.removeEventListener(
+            'glitchpad-native-print-completed',
+            completed,
+          );
           if (
             !snapshot ||
             snapshot.pages !== (range === 'all' ? 4 : 2) ||
@@ -133,14 +147,14 @@
               'button[aria-label="Close Print PDF"]',
             );
           }, 'close print task');
-          document
-            .querySelector('button[aria-label="Close PDF tools"]')
-            .click();
+          var closeTools = document.querySelector('button[aria-label="Close PDF tools"]');
+          if (closeTools) closeTools.click();
           await wait(function () {
             return !document.querySelector(
               'button[aria-label="Close PDF tools"]',
             );
           }, 'close tools');
+          await wait(function () { return document.querySelector('[data-pdf-ready=true][data-pdf-worker=true]'); }, 'PDF resumes after printing');
         }
         return window.__TAURI_INTERNALS__.invoke('record_desktop_pdf_probe', {
           owner: owner,
@@ -151,7 +165,11 @@
         window.__TAURI_INTERNALS__
           .invoke('record_desktop_pdf_probe', {
             owner: owner,
-            proof: { error: String(error).slice(0, 1024), reading: readingResult, diagnostics: diagnostics() },
+            proof: {
+              error: String(error).slice(0, 1024),
+              reading: readingResult,
+              diagnostics: diagnostics(),
+            },
           })
           .catch(function () {});
       });

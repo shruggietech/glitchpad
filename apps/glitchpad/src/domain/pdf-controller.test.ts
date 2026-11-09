@@ -80,21 +80,17 @@ function lease(
 function doc() {
   return {
     numPages: 4,
-    getMetadata: vi
-      .fn()
-      .mockResolvedValue({
-        info: { Title: 'Current document' },
-        metadata: null,
-      }),
+    getMetadata: vi.fn().mockResolvedValue({
+      info: { Title: 'Current document' },
+      metadata: null,
+    }),
     getPermissions: vi.fn().mockResolvedValue(null),
     getOutline: vi.fn().mockResolvedValue([]),
     getPageLabels: vi.fn().mockResolvedValue(['i', 'ii', 'iii', 'iv']),
-    getPage: vi
-      .fn()
-      .mockResolvedValue({
-        rotate: 0,
-        getViewport: () => ({ width: 612, height: 792 }),
-      }),
+    getPage: vi.fn().mockResolvedValue({
+      rotate: 0,
+      getViewport: () => ({ width: 612, height: 792 }),
+    }),
   };
 }
 function load(document: unknown) {

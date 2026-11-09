@@ -814,7 +814,7 @@ pub(crate) fn record_desktop_pdf_probe(
         return Err(workflow_error());
     }
     let path = root.join("pdf-journey-result.json");
-    let mut output = serde_json::json!({"schema_version":1,"source_commit":option_env!("GLITCHPAD_BUILD_COMMIT"),"platform":std::env::consts::OS,"architecture":std::env::consts::ARCH,"evidence_class":"actual_built_webview","journey":proof});
+    let mut output = serde_json::json!({"schema_version":1,"source_commit":option_env!("GLITCHPAD_BUILD_COMMIT"),"platform":std::env::consts::OS,"architecture":std::env::consts::ARCH,"debug_assertions":cfg!(debug_assertions),"evidence_class":"actual_built_webview","journey":proof});
     if proof.get("error").is_none() {
         let before: u64 = serde_json::from_slice(
             &fs::read(root.join("pdf-memory-before.json")).map_err(|_| workflow_error())?,

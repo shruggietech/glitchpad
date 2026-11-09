@@ -1,0 +1,9 @@
+# S050 release preparation contract
+
+Prepare v0.3.0 with existing releaseIdentity,8 canonical artifact names, trust/update-key continuity, complete S049/S050 documentation pass and stable PDF declarations. Regenerate site/notices/SBOM and reconcile every active version/claim guard. Preserve historical release evidence and /releases/latest download authority. Advanced editing and office support remain planned.
+
+The source documentation-pass JSON is a prepared immutable record with pending owner review, null approval actor/evidence and the existing owner-merge/later-publication basis. Accepted preparation binds its actual digest and PR number. The tag-only publisher later verifies merged PR/head and immutable merge-tree/ancestry, then emits observed merge metadata into external verification evidence. A later unrelated main change does not rename accepted source. No fabricated owner-authorization boolean or fresh approval ceremony is added.
+
+Freeze the exact actual source after review fixes. Four stage_release:true workflows must provide complete successful latest attempts and fresh required artifact sets. All actual staged package/native PDF observations, installed Android bytes, raw print PDFs, manifest/fixture/source identities and8 payload digests must pass existing consumer/assembler validation. Rehearse byte/content consumption without publishing. Partial failed-job retries cannot masquerade as a fresh complete accepted attempt.
+
+The final external PR receipt binds frozen source, terminal applicable checks, source/run/attempt/runtime/artifact/payload facts, failed observations, review count, convergence and issue/project state. It completes final execution records without changing their own qualified source. #81 can close on owner merge after its matrix passes. #82/#11 retain actual tag/publication/public-readback criteria as pending. No merge/tag/release/deployment occurs in this run.

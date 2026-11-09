@@ -740,6 +740,19 @@ try {
   await closeCase();
   await openCase('s049-security.pdf');
   await page.waitForSelector('[data-pdf-ready=true]');
+  await page.click('button[aria-label="More PDF tools"]');
+  const selectOccurrence = async (open) => {
+    await page.evaluate(function () { Array.from(document.querySelectorAll('.pdf-tools button')).find(function (node) { return node.textContent.trim() === 'Search'; }).click(); });
+    if (open) { await page.type('#pdf-search', 'cats'); await page.evaluate(function () { Array.from(document.querySelectorAll('.pdf-tools button')).find(function (node) { return node.textContent.trim() === 'Search PDF'; }).click(); }); }
+    await page.waitForFunction("document.body.innerText.includes('3 matches')", { timeout: 30000 });
+    await page.evaluate(function () { Array.from(document.querySelectorAll('.pdf-tools button')).find(function (node) { return node.textContent.trim() === 'Next match'; }).click(); });
+    await page.click('button[aria-label="Close Search PDF"]');
+    await page.waitForFunction("window.getSelection().toString().toLowerCase()==='cats'", { timeout: 30000 });
+    return page.evaluate(function () { var selection=window.getSelection(); return Number(selection.anchorNode.parentElement.getAttribute('data-pdf-text-offset'))+selection.anchorOffset; });
+  };
+  const firstOccurrence=await selectOccurrence(true), secondOccurrence=await selectOccurrence(false);
+  assert.ok(secondOccurrence>firstOccurrence, 'Next match must move the actual DOM selection to the later occurrence');
+  await page.click('button[aria-label="Close PDF tools"]');
   assert.equal(
     await page.evaluate(function () {
       return document.querySelectorAll(
@@ -802,12 +815,19 @@ try {
   corpus.push({
     name: 's049-security.pdf',
     outcome: 'inert_actions_readonly_forms_attachments_and_invalid_destination',
+    first_occurrence_offset:firstOccurrence,second_occurrence_offset:secondOccurrence,
   });
   await page.click('button[aria-label="Close Page links"]');
   await page.click('button[aria-label="Close PDF tools"]');
   await closeCase();
   await openCase('s049-large.pdf');
   await page.waitForSelector('[data-pdf-ready=true]');
+  await page.click('button[aria-label="Go to page"]');
+  await page.waitForSelector('#pdf-page-number');
+  await page.evaluate(function () { var field=document.getElementById('pdf-page-number'); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(field,'500');field.dispatchEvent(new Event('input',{bubbles:true})); });
+  await page.evaluate(function () { document.getElementById('pdf-page-number').form.querySelector('button[type=submit]').click(); });
+  await page.waitForFunction("document.querySelector('[data-pdf-ready=true]')&&document.querySelector('.pdf-page[data-current=true]').getAttribute('data-pdf-page')==='499'&&document.querySelector('.pdf-page[data-current=true] .pdf-text-layer').textContent.includes('page 500')",{timeout:30000});
+  await page.waitForFunction(function () { var page=document.querySelector('.pdf-page[data-current=true]').getBoundingClientRect(), pane=document.querySelector('.pdf-pane').getBoundingClientRect();return page.top<pane.bottom&&page.bottom>pane.top; },{timeout:30000});
   await page.setViewport({ width: 3600, height: 1800, hasTouch: true });
   await page.waitForFunction(
     "document.querySelector('.pdf-layout').innerText.includes('Reduced cache; thumbnails paused.')",

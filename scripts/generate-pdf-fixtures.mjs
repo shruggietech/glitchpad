@@ -139,7 +139,9 @@ export function createPdfFixture({
       stream(
         'BT /F1 18 Tf 48 720 Td (Glitchpad PDF compatibility page ' +
           (index + 1) +
-          ') Tj 0 -32 Td /F2 14 Tf (Search cats and dogs. Local document only.) Tj 0 -28 Td /F3 14 Tf (Readable italic text.) Tj 0 -28 Td /F4 14 Tf (abc) Tj' +
+          ') Tj 0 -32 Td /F2 14 Tf ' +
+          (securityCorpus ? '(Search cats and dogs. More cats and cats.)' : '(Search cats and dogs. Local document only.)') +
+          ' Tj 0 -28 Td /F3 14 Tf (Readable italic text.) Tj 0 -28 Td /F4 14 Tf (abc) Tj' +
           (embedded
             ? ' 0 -28 Td /F5 14 Tf (Embedded Courier Prime text.) Tj'
             : '') +

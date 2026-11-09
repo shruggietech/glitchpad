@@ -3,7 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { createPdfSession } from './pdf-source-gateway';
 import { noSourceCapabilities, type ExternalRevision } from './contracts';
 vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn() }));
-import { parsePdfPrintRange, nativePdfPrintGateway } from './pdf-print-gateway';
+import { parsePdfPrintRange, nativePdfPrintGateway, pdfPrintScale } from './pdf-print-gateway';
 it('binds selected and all ranges to the current document without duplicates', () => {
   expect(parsePdfPrintRange('all', 4)).toEqual([0, 1, 2, 3]);
   expect(parsePdfPrintRange('4, 2-3, 2', 4)).toEqual([1, 2, 3]);
@@ -77,4 +77,14 @@ it('retains the source-bound snapshot across tab disposal until the native after
   await next.begin(1);
   await next.cancel();
   vi.unstubAllGlobals();
+});
+
+it('keeps actual ceil-rounded print rasters inside the native pixel and dimension bounds', () => {
+  for (const [width, height] of [[5000, 4000], [4000, 5000], [16000, 500], [612, 792]]) {
+    const scale = pdfPrintScale(width, height);
+    expect(scale).toBeGreaterThan(0);
+    expect(Math.ceil(width * scale) * Math.ceil(height * scale)).toBeLessThanOrEqual(16000000);
+    expect(Math.max(Math.ceil(width * scale), Math.ceil(height * scale))).toBeLessThanOrEqual(8192);
+  }
+  expect(() => pdfPrintScale(Infinity, 5)).toThrow('print_surface_limit');
 });

@@ -456,6 +456,11 @@ export class PdfController {
           await text.render();
           this.current(generation);
           if (disposed) throw new PdfFailure('cancelled');
+          let offset = 0;
+          for (let item = 0; item < text.textDivs.length; item++) {
+            text.textDivs[item].dataset.pdfTextOffset = String(offset);
+            offset += text.textContentItemsStr[item].length + 1;
+          }
         }
         return { width, height, bytes, dispose };
       } catch (error) {

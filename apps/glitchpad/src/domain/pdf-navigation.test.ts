@@ -4,6 +4,7 @@ import {
   destinationShape,
   destinationPoint,
   pageMatches,
+  selectPdfMatch,
 } from './pdf-navigation';
 describe('PDF navigation bounds', () => {
   it('keeps document order and bounds cycles, depth and node count', () => {
@@ -49,4 +50,21 @@ describe('PDF navigation bounds', () => {
     ]);
     expect(pageMatches('aaa', '', 0, 10)).toEqual([]);
   });
+});
+
+it('selects later occurrences and maps extraction separators without choosing the first match again', () => {
+  const layer = document.createElement('div');
+  layer.innerHTML = '<span data-pdf-text-offset="0">cats first cats</span><span data-pdf-text-offset="17">cats second</span>';
+  document.body.append(layer);
+  try {
+    expect(selectPdfMatch(layer, { page: 0, offset: 11, text: 'cats', context: '' })).toBe(true);
+    let range = window.getSelection()!.getRangeAt(0);
+    expect(range.startContainer).toBe(layer.children[0].firstChild);
+    expect(range.startOffset).toBe(11);
+    expect(range.toString()).toBe('cats');
+    expect(selectPdfMatch(layer, { page: 0, offset: 17, text: 'cats', context: '' })).toBe(true);
+    range = window.getSelection()!.getRangeAt(0);
+    expect(range.startContainer).toBe(layer.children[1].firstChild);
+    expect(range.startOffset).toBe(0);
+  } finally { window.getSelection()?.removeAllRanges(); layer.remove(); }
 });

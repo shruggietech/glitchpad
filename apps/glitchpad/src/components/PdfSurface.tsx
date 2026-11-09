@@ -1,8 +1,10 @@
+import { selectPdfMatch } from '../domain/pdf-navigation';
 import {
   forwardRef,
   useCallback,
   useEffect,
   useImperativeHandle,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -24,6 +26,7 @@ import {
 } from '../domain/pdf-contract';
 import {
   continuousFits,
+  anchoredPdfOffset,
   measurePdfScrollCeiling,
   pageAtOffset,
   pageOffsets,
@@ -168,6 +171,18 @@ export const PdfSurface = forwardRef<TextEditorHandle, Props>(
     const contentHeight = single
       ? (heights.get(view.page) ?? estimate)
       : offsets[count];
+    const previousGeometry = useRef({ offsets, key, single, request: view.request });
+    useLayoutEffect(() => {
+      const previous = previousGeometry.current;
+      previousGeometry.current = { offsets, key, single, request: view.request };
+      const element = pane.current;
+      if (!element || !state.capabilities.view || single || previous.single || previous.key !== key || previous.request !== view.request || previous.offsets === offsets) return;
+      const next = anchoredPdfOffset(previous.offsets, offsets, element.scrollTop, scrollIntent.current ? undefined : view.page);
+      if (Math.abs(element.scrollTop - next) > 0.5) {
+        element.scrollTop = next;
+        setScrollTop(element.scrollTop);
+      }
+    }, [offsets, key, single, state.capabilities.view, view.request, view.page]);
     const openTask = (next: 'view' | 'page', target?: HTMLElement) => {
       if (!state.capabilities.view) return;
       opener.current = target ?? (document.activeElement as HTMLElement);
@@ -353,41 +368,7 @@ export const PdfSurface = forwardRef<TextEditorHandle, Props>(
           '.pdf-page[data-current=true] .pdf-text-layer',
         );
         if (layer) {
-          const walker = document.createTreeWalker(layer, NodeFilter.SHOW_TEXT);
-          const nodes: Text[] = [];
-          let node = walker.nextNode();
-          while (node) {
-            nodes.push(node as Text);
-            node = walker.nextNode();
-          }
-          const text = nodes.map((value) => value.data).join('');
-          const offset = text
-            .toLowerCase()
-            .indexOf(selectedMatch.text.toLowerCase());
-          if (offset >= 0) {
-            let from = offset,
-              to = offset + selectedMatch.text.length;
-            const range = document.createRange();
-            let started = false;
-            for (const value of nodes) {
-              if (!started) {
-                if (from < value.length) {
-                  range.setStart(value, from);
-                  started = true;
-                } else from -= value.length;
-              }
-              if (to <= value.length) {
-                range.setEnd(value, to);
-                break;
-              }
-              to -= value.length;
-            }
-            if (started) {
-              const selection = window.getSelection();
-              selection?.removeAllRanges();
-              selection?.addRange(range);
-            }
-          }
+          selectPdfMatch(layer, selectedMatch);
         }
       }
       return () => {

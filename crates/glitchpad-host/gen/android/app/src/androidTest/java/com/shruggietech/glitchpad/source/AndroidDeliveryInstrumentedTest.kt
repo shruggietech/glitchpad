@@ -129,7 +129,7 @@ class AndroidDeliveryInstrumentedTest {
     waitForCondition(scenario,"document.querySelector('.pdf-page[data-current=true]').getAttribute('data-pdf-page')==='0'","actual native keyboard Home navigates")
     reading.put("native_touch_outline",true).put("native_keyboard_home",true)
     val printStoreProof=PdfPrintNativeStoreChecks.verify(clientContext)
-    val printProof=verifyPdfNativePrint(scenario)
+    val printProof=JSONObject().put("selected",verifyPdfNativePrint(scenario,"2,4",2,"selected")).put("all",verifyPdfNativePrint(scenario,"all",4,"all"))
     val stream = grant(documentUri("s049-stream.pdf"))
     clientContext.startActivity(viewIntent(stream,"application/pdf").setComponent(component).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     waitForDocumentIdentity(scenario,"s049-stream.pdf")
@@ -157,7 +157,7 @@ class AndroidDeliveryInstrumentedTest {
   }
 
 
-  private fun verifyPdfNativePrint(scenario: ActivityScenario<MainActivity>): JSONObject {
+  private fun verifyPdfNativePrint(scenario: ActivityScenario<MainActivity>, range:String, expectedPages:Int, receiptName:String): JSONObject {
     val retainedView=AtomicReference<WebView?>();scenario.onActivity { retainedView.set(findWebView(it.window.decorView)) }
     val automation=instrumentation.uiAutomation
     val service=automation.serviceInfo;service.flags=service.flags or android.accessibilityservice.AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS;automation.serviceInfo=service
@@ -179,10 +179,12 @@ class AndroidDeliveryInstrumentedTest {
     }
     fun activate(node:android.view.accessibility.AccessibilityNodeInfo){var current:android.view.accessibility.AccessibilityNodeInfo?=node;while(current!=null&&!current.isClickable)current=current.parent;assertTrue("native control must activate",current?.performAction(android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK)==true)}
     clickControl(scenario,"More PDF tools");clickControl(scenario,"Print")
-    evaluate(scenario,"(()=>{const target=document.getElementById('pdf-print-range');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(target,'2,4');target.dispatchEvent(new Event('input',{bubbles:true}));return true;})()")
+    evaluate(scenario,"(()=>{const target=document.getElementById('pdf-print-range');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(target,"+JSONObject.quote(range)+");target.dispatchEvent(new Event('input',{bubbles:true}));return true;})()")
     clickControl(scenario,"Open system print dialog")
     awaitNative("system print spooler") { it.packageName?.toString()?.contains("printspooler")==true }
     val nativePrintPackage=automation.rootInActiveWindow?.packageName?.toString()
+    activate(awaitNative("print destination") { it.isEnabled&&it.viewIdResourceName?.endsWith("/destination_spinner")==true })
+    activate(awaitNative("Save as PDF destination") { val label=it.text?.toString()?:it.contentDescription?.toString();it.isEnabled&&(label?.equals("Save as PDF",true)==true||label?.equals("Save to PDF",true)==true) })
     val printButton=awaitNative("save print output") { it.isEnabled&&(it.viewIdResourceName?.endsWith("/print_button")==true||it.contentDescription?.toString()?.equals("Save to PDF",true)==true) }
     activate(printButton)
     val filename="s049-print-"+UUID.randomUUID().toString()+".pdf"
@@ -195,10 +197,10 @@ class AndroidDeliveryInstrumentedTest {
     while(SystemClock.elapsedRealtime()<deadline){output=runCatching{android.util.Base64.decode(checkedShell("base64 "+path),android.util.Base64.DEFAULT)}.getOrNull();if(output!=null&&output.size>128)break;SystemClock.sleep(200)}
     val bytes=requireNotNull(output){"system print must produce readable PDF output"}
     assertTrue("system output must be PDF",bytes.copyOfRange(0,5).contentEquals("%PDF-".toByteArray(Charsets.US_ASCII)))
-    val readback=File(clientContext.filesDir,"s049-print-output.pdf");readback.writeBytes(bytes)
+    val readback=File(clientContext.filesDir,"s049-print-output-"+receiptName+".pdf");readback.writeBytes(bytes)
     val inks=JSONArray()
     android.graphics.pdf.PdfRenderer(android.os.ParcelFileDescriptor.open(readback,android.os.ParcelFileDescriptor.MODE_READ_ONLY)).use { pdf ->
-      assertEquals("selected source pages 2 and 4 produce exactly two output pages",2,pdf.pageCount)
+      assertEquals("requested source range produces exactly the expected output pages",expectedPages,pdf.pageCount)
       for(index in 0 until pdf.pageCount){val page=pdf.openPage(index);val bitmap=android.graphics.Bitmap.createBitmap(612,792,android.graphics.Bitmap.Config.ARGB_8888);bitmap.eraseColor(android.graphics.Color.WHITE);page.render(bitmap,null,null,android.graphics.pdf.PdfRenderer.Page.RENDER_MODE_FOR_PRINT);var ink=0;for(y in 0 until bitmap.height)for(x in 0 until bitmap.width){val color=bitmap.getPixel(x,y);if(android.graphics.Color.red(color)<200&&android.graphics.Color.green(color)<200&&android.graphics.Color.blue(color)<200)ink++};assertTrue("printed page must contain actual ink",ink>500);inks.put(ink);bitmap.recycle();page.close()}
     }
     checkedShell("rm -f "+path)
@@ -206,7 +208,10 @@ class AndroidDeliveryInstrumentedTest {
     val cache=File(clientContext.cacheDir,"pdf-print-v1");val cleanupDeadline=SystemClock.elapsedRealtime()+10000L
     while(cache.walkTopDown().any { it.isFile }&&SystemClock.elapsedRealtime()<cleanupDeadline)SystemClock.sleep(100)
     assertFalse("terminal print adapter removes its private page files",cache.walkTopDown().any { it.isFile })
-    return JSONObject().put("system_package",nativePrintPackage).put("selected_pages",JSONArray(listOf(2,4))).put("output_pages",2).put("output_ink",inks).put("output_sha256",sha256(bytes)).put("output_bytes",bytes.size).put("private_spool_cleaned",true).put("physical_output_confirmed",false)
+    waitForCondition(scenario,"!!document.querySelector('[data-pdf-ready=true]')","PDF resumes after native print")
+    if(evaluate(scenario,"!!document.querySelector('button[aria-label=\"Close Print PDF\"]')")=="true")clickControl(scenario,"Close Print PDF")
+    if(evaluate(scenario,"!!document.querySelector('button[aria-label=\"Close PDF tools\"]')")=="true")clickControl(scenario,"Close PDF tools")
+    return JSONObject().put("system_package",nativePrintPackage).put("range",range).put("output_pages",expectedPages).put("output_ink",inks).put("output_sha256",sha256(bytes)).put("output_bytes",bytes.size).put("private_spool_cleaned",true).put("physical_output_confirmed",false)
   }
 
   @Test fun shellCommandTransportPreservesFixtureBytesAndExitStatus() {

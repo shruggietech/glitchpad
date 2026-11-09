@@ -11,6 +11,7 @@ import type { ShellSession } from '../domain/contracts';
 import {
   nativePdfPrintGateway,
   parsePdfPrintRange,
+  pdfPrintScale,
   type PdfPrintGateway,
 } from '../domain/pdf-print-gateway';
 import { TaskSurface } from './TaskSurface';
@@ -92,12 +93,7 @@ export const PdfPrintTools = forwardRef<
           );
         const size = await controller.pageSize(pages[index], 0);
         const canvas = document.createElement('canvas');
-        const scale = Math.min(
-          1.5,
-          Math.sqrt(16000000 / (size.width * size.height)),
-          8192 / size.width,
-          8192 / size.height,
-        );
+        const scale = pdfPrintScale(size.width, size.height);
         surface = await controller.renderPage(
           pages[index],
           canvas,

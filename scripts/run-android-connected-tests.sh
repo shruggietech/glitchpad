@@ -204,7 +204,9 @@ if [[ "${GLITCHPAD_ANDROID_PDF_PREFLIGHT:-false}" == "true" ]]; then
   retain_tested_candidate post_direct_suite_existing_install || exit 1
   adb shell -T -n run-as com.shruggietech.glitchpad cat files/s049-pdf-native-print-failure.json > "${RUNNER_TEMP:-/tmp}/s049-pdf-native-print-failure.json" || true
   adb shell -T -n run-as com.shruggietech.glitchpad cat files/s049-pdf-compatibility.json > "${RUNNER_TEMP:-/tmp}/s049-pdf-compatibility.json" || status=1
-  adb shell -T -n run-as com.shruggietech.glitchpad cat files/s049-print-output.pdf > "${RUNNER_TEMP:-/tmp}/s049-pdf-print-output.pdf" || status=1
+  for print_range in selected all; do
+    adb shell -T -n run-as com.shruggietech.glitchpad cat "files/s049-print-output-${print_range}.pdf" > "${RUNNER_TEMP:-/tmp}/s049-pdf-print-output-${print_range}.pdf" || status=1
+  done
   exit "$status"
 fi
 

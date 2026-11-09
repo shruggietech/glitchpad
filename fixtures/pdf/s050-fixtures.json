@@ -60,14 +60,14 @@
     {
       "name": "s050-geometry.pdf",
       "bytes": 1148,
-      "sha256": "cfc3257bad3423d255b1894f37bba99a16a1b0a96229a23c7766f506fb590e3b",
+      "sha256": "3be4c43aadd7168b25c0638a92d04d46cb8ac83aae98a86b8205c0338dab90ce",
       "author": "Glitchpad contributors",
       "license": "Apache-2.0"
     },
     {
       "name": "s050-huge-page.pdf",
       "bytes": 789,
-      "sha256": "27afa00f3e8cf2b34287715f5e825b42431bb9bad97b2368cebd3740bae4485c",
+      "sha256": "9be102dd523daceb05c6d973a860a50d3642b8a3807c34c13799a79a24938e01",
       "author": "Glitchpad contributors",
       "license": "Apache-2.0"
     },

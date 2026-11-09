@@ -771,7 +771,7 @@ pub(crate) fn complete_desktop_document_workflow_probe(
     state.complete_document_workflow(&host, recovery.probe_root.as_deref())
 }
 
-/// Captures the opted-in native process baseline before creating its WebView.
+/// Captures the opted-in native process baseline before creating its `WebView`.
 pub(crate) fn begin_desktop_pdf_memory(state: &LifecycleProbeState) -> Result<(), CoreError> {
     use std::io::Write;
     let root = state.pdf_probe_root()?.ok_or_else(workflow_error)?;
@@ -787,6 +787,7 @@ pub(crate) fn begin_desktop_pdf_memory(state: &LifecycleProbeState) -> Result<()
 
 /// Samples only the named native process for an explicitly enabled PDF probe.
 #[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
 pub(crate) fn sample_desktop_pdf_memory(
     state: tauri::State<'_, LifecycleProbeState>,
 ) -> Result<u64, CoreError> {

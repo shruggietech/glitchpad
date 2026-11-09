@@ -88,7 +88,9 @@ for (const [name, mutate, expected] of [
     (sources) => {
       sources.workflow = sources.workflow.replaceAll(
         "inputs.deploy && inputs.release_tag == '" + currentTag + "'",
-        "(github.event_name == 'push' && github.ref == 'refs/heads/main') || (inputs.deploy && inputs.release_tag == '" + currentTag + "')",
+        "(github.event_name == 'push' && github.ref == 'refs/heads/main') || (inputs.deploy && inputs.release_tag == '" +
+          currentTag +
+          "')",
       );
     },
     /exact trusted deployment authority/,

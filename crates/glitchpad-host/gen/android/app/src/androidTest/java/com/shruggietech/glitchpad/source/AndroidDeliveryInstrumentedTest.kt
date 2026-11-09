@@ -183,7 +183,11 @@ class AndroidDeliveryInstrumentedTest {
     clickControl(scenario,"Open system print dialog")
     awaitNative("system print spooler") { it.packageName?.toString()?.contains("printspooler")==true }
     val nativePrintPackage=automation.rootInActiveWindow?.packageName?.toString()
-    activate(awaitNative("print destination") { it.isEnabled&&it.viewIdResourceName?.endsWith("/destination_spinner")==true })
+    // The system's first-print prompt is cleared by its OnTouchListener, not ACTION_CLICK.
+    val destination=awaitNative("print destination") { it.isEnabled&&it.viewIdResourceName?.endsWith("/destination_spinner")==true }
+    val destinationBounds=android.graphics.Rect();destination.getBoundsInScreen(destinationBounds)
+    assertTrue("print destination has native touch geometry",destinationBounds.width()>0&&destinationBounds.height()>0)
+    dispatchNativeTapOnce(destinationBounds.exactCenterX(),destinationBounds.exactCenterY(),SystemClock.elapsedRealtime()+30000L) { event -> automation.injectInputEvent(event,true) }
     activate(awaitNative("Save as PDF destination") { val label=it.text?.toString()?:it.contentDescription?.toString();it.isEnabled&&(label?.equals("Save as PDF",true)==true||label?.equals("Save to PDF",true)==true) })
     val printButton=awaitNative("save print output") { it.isEnabled&&(it.viewIdResourceName?.endsWith("/print_button")==true||it.contentDescription?.toString()?.equals("Save to PDF",true)==true) }
     activate(printButton)

@@ -16,7 +16,7 @@ Shared source-bound tooling and dependency preparation.
 
 Shared contracts and deterministic inputs precede composed UI.
 
-- [ ] T004 [P] Add self-authored PDF fixture generator/corpus and provenance in scripts/generate-pdf-fixtures.mjs, fixtures/pdf/ and fixtures/provenance.toml, including hostile links/actions, structured navigation, encrypted/malformed and limits. (FR-018,020)
+- [x] T004 [P] Add self-authored PDF fixture generator/corpus and provenance in scripts/generate-pdf-fixtures.mjs, fixtures/pdf/ and fixtures/provenance.toml, including hostile links/actions, structured navigation, encrypted/malformed and limits. (FR-018,020)
 - [x] T005 Define versioned document/capability/error/source/lifecycle contracts and conformance tests in apps/glitchpad/src/domain/pdf-contract.ts and pdf-contract.test.ts. (FR-001,003,005,016,017)
 - [x] T006 Implement classic worker entry, compatibility imports, fixed resource factory and real-worker handshake in apps/glitchpad/src/domain/pdf-worker.ts and pdf-resources.ts; reject fake fallback. (FR-003,004,018,019)
 - [x] T007 Apply exact emitted worker response CSP and preserve single configured main-window setup in crates/glitchpad-host/src/lib.rs and tauri.conf.json; add isolation assertions. (FR-003,017)
@@ -33,16 +33,16 @@ Independent test: actual source-to-canvas/selectable-text journey, limits/passwo
 - [x] T013 [US1] Run actual installed ordinary API24 worker/load/render/isolation/cancel preflight through AndroidDeliveryInstrumentedTest and scripts/run-android-connected-tests.sh, then API36; retain attempts in specs/049-pdf-viewer-foundation/validation.md before broad UI. (FR-019,020)
 - [x] T014 [US1] Complete virtualized visible/adjacent canvas/text layers, fit/zoom/rotation/layout/labels/page controls and compact state in apps/glitchpad/src/components/PdfSurface.tsx and apps/glitchpad/src/domain/pdf-controller.ts. (FR-004,005,007,012)
 - [x] T015 [US1] Wire suspend/resume/close/revision cleanup and session-only navigation through apps/glitchpad/src/App.tsx and domain/tabs.ts using actual worker/canvas cancellation before resource accounting. (FR-008,009,017)
-- [ ] T016 [US1] Verify source/page/surface boundaries, reduced-cache/refusal, encrypted/malformed/revoked and stale work in apps/glitchpad/src/domain/pdf-controller.test.ts and scripts/check-pdf-runtime.mjs. (FR-005,008,009,020)
+- [x] T016 [US1] Verify source/page/surface boundaries, reduced-cache/refusal, encrypted/malformed/revoked and stale work in apps/glitchpad/src/domain/pdf-controller.test.ts and scripts/check-pdf-runtime.mjs. (FR-005,008,009,020)
 
 ## Phase 4: US2 - Find and navigate PDF content
 
 Independent test: ordered cancellable search plus all compact navigation flows, malformed targets, keyboard/touch/semantic accessibility and source-neutral persistence.
 
-- [ ] T017 [P] [US2] Add search/outline/destination/thumbnail/accessibility tests in apps/glitchpad/src/domain/pdf-navigation.test.ts, pdf-controller.test.ts and scripts/check-pdf-runtime.mjs. (FR-010,011,012)
+- [x] T017 [P] [US2] Add search/outline/destination/thumbnail/accessibility tests in apps/glitchpad/src/domain/pdf-navigation.test.ts, pdf-controller.test.ts and scripts/check-pdf-runtime.mjs. (FR-010,011,012)
 - [x] T018 [US2] Implement ordered cancellable search, page context and match selection in apps/glitchpad/src/domain/pdf-controller.ts and components/PdfSurface.tsx. (FR-010)
 - [x] T019 [US2] Implement bounded outline/named destinations/internal links and lazy thumbnails with reduced-cache disable in apps/glitchpad/src/domain/pdf-controller.ts. (FR-005,011)
-- [ ] T020 [US2] Complete dismissible search/outline/thumbnail tools with keyboard/touch/focus/current-page semantics using existing TaskSurface and tokens in apps/glitchpad/src/components/PdfSurface.tsx and styles.css. (FR-012,016,018)
+- [x] T020 [US2] Complete dismissible search/outline/thumbnail tools with keyboard/touch/focus/current-page semantics using existing TaskSurface and tokens in apps/glitchpad/src/components/PdfSurface.tsx and styles.css. (FR-012,016,018)
 - [ ] T021 [US2] Measure reduced-cache responsiveness and validate source hashes/session-only navigation in scripts/check-pdf-runtime.mjs and existing Android instrumentation. (FR-008,011,012,017,020,021)
 
 ## Phase 5: US3 - Inspect, follow links and print deliberately

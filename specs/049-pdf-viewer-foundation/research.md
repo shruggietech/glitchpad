@@ -62,38 +62,42 @@ Actual Chromium69 run42524061027 identified the post-startup failure precisely: 
 
 Pinned WorkerTransport.destroy clears fonts/filters only after awaiting a Terminate reply. Immediate native worker termination, required for a stalled parser, can leave that reply pending. Use PDF.js public ownerDocument option to track only its FontFaceSet additions, style/SVG nodes, adopted sheets and document listeners, and synchronously remove them during cancellation. Preserve real document native receivers through a narrow proxy; late work attaches only to an inert document or skips font registration after disposal. Call public TextLayer.cleanup after cancellation microtasks settle. This avoids private engine-field access and keeps cleanup independent of an unresponsive parser. Verify actual repeated native/browser resource baselines rather than counting a cleared ledger alone.
 
-## R16. Runtime readiness and continuous-page ownership
+## R16 (2026-11-08 UTC): Runtime readiness and continuous-page ownership
 
 The actual continuous-page journey exposed a viewport/status feedback loop and end-of-document scroll clamping. Status now overlays the page viewport, and explicit page destinations retain ownership while programmatic scrolling settles; genuine wheel, pointer, touch and keyboard scrolling still updates the current page. Search/outline/thumbnails/links use dismissible task surfaces with bounded batches. Worker readiness now also requires dynamic-code refusal measured in the normal worker realm: debugger evaluation can bypass CSP for nested Function calls and cannot supply that evidence. Native/browser/source/runtime evidence remains distinct.
 
-## R17. Minimum-worker dynamic-code compatibility
+## R17 (2026-11-08 UTC): Minimum-worker dynamic-code compatibility
 
 Run42531545454 passed the entire current-browser reading and isolation journey. Its actual Chromium69 worker reported code_evaluation_allowed:true from the normal worker realm despite the response CSP, and the controller correctly refused to parse. Inspection of the pinned display/worker shows no new Function document-code compiler or isEvalSupported path; only fixed compatibility initialization uses the constructor. After engine/compatibility initialization, a PDF-worker-only guard disables global eval/Function, ordinary/async/generator constructor routes and string timers. The normal-realm readiness assertion remains required. This addresses the demonstrated minimum-browser difference without modifying the main application realm, enabling PDF scripts or relaxing CSP. Future parser changes must requalify the exact pinned code and this policy.
 
-## R18. Worker output and independent inspection bounds
+## R18 (2026-11-08 UTC): Worker output and independent inspection bounds
 
 Inspected PDF replies and text streams are now bounded inside the pinned worker before structured cloning to the main WebView. The exact reviewed worker hash and one-occurrence anchors cover outline, labels, destinations, metadata, annotations and per-page streamed text, alongside the existing static decoder transform. The adapter preserves ordinary shared references and rejects cycles or excessive output. Independent metadata/outline/labels/permissions/page-dimension requests report their own availability; one failed or limited inspection does not erase unrelated valid facts. Source information remains host-owned, XMP supplies missing document-information values, and stored permissions remain informational.
 
-## R19. Legacy worker resource guard
+## R19 (2026-11-08 UTC): Legacy worker resource guard
 
 Current Chromium applies the worker response script/connect/child CSP, but the actual Chromium69 diagnostic demonstrated that CSP alone is not a complete API boundary there. After all pinned engine/static compatibility initialization, lock the PDF worker's fetch/importScripts/Worker/SharedWorker/XMLHttpRequest/WebSocket/EventSource/WebTransport APIs. The parser has no legitimate network or dynamic decoder imports: source bytes and reviewed resources arrive over the owned message port. Keep the response CSP and normal-realm dynamic-code refusal. Run42535897974 independently observed all worker denial routes and no native bridge on both current and69. No global application network API is altered.
 
-## R20. Print transport and generated light theme
+## R20 (2026-11-08 UTC): Print transport and generated light theme
 
 Installed API24 run42536058242 showed native print begin/cancel without a staged page. The PNG transport used Blob.arrayBuffer, unavailable on the minimum Chrome69 profile. Use cancellable FileReader for bounded PNG blobs rather than relaxing the minimum runtime. New actual keyboard/touch/Axe checks also found that the app's selected light theme did not enable the delivered kit's bb-light scope, leaving dark generated fields with inherited dark text. Synchronize that class with the effective selected/system theme, including legacy MediaQueryList listeners. Do not substitute palette values or change the pinned generated kit.
 
-## R21. Validate print page geometry at raster precision
+## R21 (2026-11-08 UTC): Validate print page geometry at raster precision
 
 The native raster store must account for ceil-rounded pixel dimensions at the chosen scale. A fixed absolute aspect-ratio tolerance rejects legitimate thin or small page snapshots. Validate that the pixel width and height have a common scale interval for their source-point dimensions instead. Native store qualification includes noninteger point dimensions whose valid ceil-rounded raster has a visibly different ratio. This preserves the dimension binding without an arbitrary page-shape restriction.
 
-## R22. Explicit desktop acquisition and release association inventory
+## R22 (2026-11-09 UTC): Explicit desktop acquisition and release association inventory
 
 All three delivered desktop candidates timed out before PDF readiness in run42537434321. Inspection found the native delivery queue rejecting .pdf because its acquisition gate reused the released association extension inventory. S049 explicitly requires an acquired local PDF to reach the renderer. Permit manually supplied PDF paths through the established native source acquisition and add the PDF picker filter; content detection still decides the renderer. Keep the released association inventory, packaging registrations and public stable-format records unchanged for #81/#82. This separates existing registration policy from the authorized unreleased reading capability without narrowing any included native criterion.
 
-## R23. First external review findings
+## R23 (2026-11-09 UTC): First external review findings
 
 Round1 reviewed d5fee17a2fbc3ac3755cb39d063b96c5d7c57cc6 and identified a continuous-layout measurement anchor bug, repeated-query selection choosing the first occurrence and ceil-rounded rasters exceeding the native print pixel limit. Preserve command/user page anchors as estimates change, annotate text-layer spans from PDF.js public textDivs/textContentItemsStr arrays using the same one-character extraction separators as search, select the stored occurrence offset and choose print scales against final integer raster dimensions. Add a real page500 jump and multi-occurrence source journey plus focused counterexample regressions. These fixes stay within the included navigation and print contracts; round1 remains unresolved until verification passes.
 
-## R24. Native desktop print completion
+## R24 (2026-11-09 UTC): Native desktop print completion
 
 Delivered Linux run42538027219 completed the entire real reading journey with matching native/frontend6a89c672b2a61bdb4540531198aa5f229c41e4c1 identities, then exposed that native PrintOperation does not provide the browser afterprint event expected by snapshot cleanup. Tauri2.11.4 queues native printing without returning its completion. Add a narrow native completion notification to the existing pinned Wry0.55.1 using the repository vendor-patch pattern. Keep project Rust unsafe_code=forbid and retain upstream native interop inside the vendored dependency. Linux releases on native cancel/failed/finished, exactly once; macOS uses the native modal print operation completion; Windows retains its browser event. The small patch must be carried and requalified with future Wry upgrades. No new process, source locator, print parser or document authority is introduced. Browser events and native notifications remain separately named in evidence, and neither proves paper output.
+
+## R25 (2026-11-09 UTC): First-use Android print destination touch
+
+Run42539393118 reached native PDF previews but the first-use destination popup repeated Select a printer for every item. Android7 AOSP PrintActivity clears mShowDestinationPrompt inside the destination spinner OnTouchListener; accessibility ACTION_CLICK bypasses it. The native driver now injects one real touchscreen DOWN/UP at the observed system spinner bounds, then selects the actual Save-as-PDF row. This changes the test observation, not print support or product capability. [Android7 source](https://android.googlesource.com/platform/frameworks/base/+/android-7.0.0_r1/packages/PrintSpooler/src/com/android/printspooler/ui/PrintActivity.java) establishes that event distinction.

@@ -36,7 +36,8 @@ function candidate() {
     architecture: 'x86_64',
     source_commit: sourceCommit,
     workflow_identity:
-      'shruggietech/glitchpad/.github/workflows/windows-package.yml@refs/tags/' + contract.official.tag_pattern,
+      'shruggietech/glitchpad/.github/workflows/windows-package.yml@refs/tags/' +
+      contract.official.tag_pattern,
     official: false,
     gate_status: 'candidate_valid',
     artifacts: contract.artifacts.map((artifact) => ({

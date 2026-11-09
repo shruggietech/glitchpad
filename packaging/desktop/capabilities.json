@@ -5,13 +5,8 @@
     {
       "id": "markdown",
       "description": "Markdown document",
-      "extensions": [
-        "md",
-        "markdown"
-      ],
-      "media_types": [
-        "text/markdown"
-      ],
+      "extensions": ["md", "markdown"],
+      "media_types": ["text/markdown"],
       "renderer": "markdown",
       "association": true,
       "dialog": true
@@ -19,13 +14,8 @@
     {
       "id": "mermaid",
       "description": "Mermaid diagram",
-      "extensions": [
-        "mmd",
-        "mermaid"
-      ],
-      "media_types": [
-        "text/vnd.mermaid"
-      ],
+      "extensions": ["mmd", "mermaid"],
+      "media_types": ["text/vnd.mermaid"],
       "renderer": "mermaid",
       "association": true,
       "dialog": true
@@ -33,12 +23,8 @@
     {
       "id": "plain-text",
       "description": "Plain text document",
-      "extensions": [
-        "txt"
-      ],
-      "media_types": [
-        "text/plain"
-      ],
+      "extensions": ["txt"],
+      "media_types": ["text/plain"],
       "renderer": "text",
       "association": true,
       "dialog": true
@@ -64,9 +50,7 @@
         "yaml",
         "yml"
       ],
-      "media_types": [
-        "text/plain"
-      ],
+      "media_types": ["text/plain"],
       "renderer": "source",
       "association": true,
       "dialog": true
@@ -74,12 +58,8 @@
     {
       "id": "png",
       "description": "PNG image",
-      "extensions": [
-        "png"
-      ],
-      "media_types": [
-        "image/png"
-      ],
+      "extensions": ["png"],
+      "media_types": ["image/png"],
       "renderer": "image",
       "association": true,
       "dialog": true
@@ -87,13 +67,8 @@
     {
       "id": "jpeg",
       "description": "JPEG image",
-      "extensions": [
-        "jpg",
-        "jpeg"
-      ],
-      "media_types": [
-        "image/jpeg"
-      ],
+      "extensions": ["jpg", "jpeg"],
+      "media_types": ["image/jpeg"],
       "renderer": "image",
       "association": true,
       "dialog": true
@@ -101,12 +76,8 @@
     {
       "id": "webp",
       "description": "WEBP image",
-      "extensions": [
-        "webp"
-      ],
-      "media_types": [
-        "image/webp"
-      ],
+      "extensions": ["webp"],
+      "media_types": ["image/webp"],
       "renderer": "image",
       "association": true,
       "dialog": true
@@ -114,12 +85,8 @@
     {
       "id": "bmp",
       "description": "BMP image",
-      "extensions": [
-        "bmp"
-      ],
-      "media_types": [
-        "image/bmp"
-      ],
+      "extensions": ["bmp"],
+      "media_types": ["image/bmp"],
       "renderer": "image",
       "association": true,
       "dialog": true
@@ -127,13 +94,8 @@
     {
       "id": "tiff",
       "description": "TIFF image",
-      "extensions": [
-        "tif",
-        "tiff"
-      ],
-      "media_types": [
-        "image/tiff"
-      ],
+      "extensions": ["tif", "tiff"],
+      "media_types": ["image/tiff"],
       "renderer": "image",
       "association": true,
       "dialog": true
@@ -141,12 +103,8 @@
     {
       "id": "gif",
       "description": "GIF image",
-      "extensions": [
-        "gif"
-      ],
-      "media_types": [
-        "image/gif"
-      ],
+      "extensions": ["gif"],
+      "media_types": ["image/gif"],
       "renderer": "image",
       "association": true,
       "dialog": true
@@ -154,12 +112,8 @@
     {
       "id": "svg",
       "description": "SVG image",
-      "extensions": [
-        "svg"
-      ],
-      "media_types": [
-        "image/svg+xml"
-      ],
+      "extensions": ["svg"],
+      "media_types": ["image/svg+xml"],
       "renderer": "image",
       "association": true,
       "dialog": true
@@ -167,13 +121,8 @@
     {
       "id": "ico",
       "description": "ICO image",
-      "extensions": [
-        "ico"
-      ],
-      "media_types": [
-        "image/vnd.microsoft.icon",
-        "image/x-icon"
-      ],
+      "extensions": ["ico"],
+      "media_types": ["image/vnd.microsoft.icon", "image/x-icon"],
       "renderer": "image",
       "association": true,
       "dialog": true
@@ -181,12 +130,8 @@
     {
       "id": "pdf",
       "description": "PDF document",
-      "extensions": [
-        "pdf"
-      ],
-      "media_types": [
-        "application/pdf"
-      ],
+      "extensions": ["pdf"],
+      "media_types": ["application/pdf"],
       "renderer": "pdf",
       "association": true,
       "dialog": true

@@ -68,8 +68,12 @@ test('stable PDF declarations agree across native acquisition paths', async () =
   assert.equal(pdf.dialog, true);
   assert.equal(cap.forbidden_extensions.includes('pdf'), false);
   for (const platform of ['s019-windows', 's020-macos', 's021-linux']) {
-    const tauri = await json('crates/glitchpad-host/tauri.' + platform + '.conf.json');
-    const declarations = tauri.bundle.fileAssociations.filter((entry) => entry.ext.includes('pdf'));
+    const tauri = await json(
+      'crates/glitchpad-host/tauri.' + platform + '.conf.json',
+    );
+    const declarations = tauri.bundle.fileAssociations.filter((entry) =>
+      entry.ext.includes('pdf'),
+    );
     assert.equal(declarations.length, 1, platform + ' must register PDF once');
     assert.deepEqual(declarations[0].ext, ['pdf']);
     assert.equal(declarations[0].role, 'Viewer');
@@ -77,8 +81,19 @@ test('stable PDF declarations agree across native acquisition paths', async () =
   const intents = await json('packaging/android/intent-map.json');
   assert.ok(intents.document_extensions.includes('pdf'));
   assert.ok(intents.media_types.includes('application/pdf'));
-  for (const filter of intents.intent_filters.filter((entry) => entry.id !== 'launcher'))
+  for (const filter of intents.intent_filters.filter(
+    (entry) => entry.id !== 'launcher',
+  ))
     assert.ok(filter.media_types.includes('application/pdf'), filter.id);
-  const manifest = await readFile(new URL('../crates/glitchpad-host/gen/android/app/src/main/AndroidManifest.xml', import.meta.url), 'utf8');
-  assert.equal([...manifest.matchAll(/android:mimeType="application\/pdf"/g)].length, 2);
+  const manifest = await readFile(
+    new URL(
+      '../crates/glitchpad-host/gen/android/app/src/main/AndroidManifest.xml',
+      import.meta.url,
+    ),
+    'utf8',
+  );
+  assert.equal(
+    [...manifest.matchAll(/android:mimeType="application\/pdf"/g)].length,
+    2,
+  );
 });

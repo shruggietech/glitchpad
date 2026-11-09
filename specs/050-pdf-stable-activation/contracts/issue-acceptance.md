@@ -11,7 +11,7 @@ Every included criterion has its own disposition. Implementation/qualification b
 | #82.1 | Child issues77-80 closed; #81 matrix complete; criterion-level record | Actual complete release after owner merge/publication |
 | #82.2 | Same source-bound complete PDF conformance matrix plus final staged-byte proof | Candidate must pass before owner merge |
 | #82.3 | Canonical/generated source/public claims keep DOCX/ODT planned | Candidate must pass before owner merge |
-| #82.4 |0.3.0 manifests/specification/package/tag contract and exact accepted staging; actual tag/public assets later | Remains open until authorized tag/publication/readback |
+| #82.4 | 0.3.0 manifests/specification/package/tag contract and exact accepted staging; actual tag/public assets later | Remains open until authorized tag/publication/readback |
 | #11.1 | Every child77-82 reconciled with actual completion | Remains open until #82 complete |
 | #11.2 | Reading/navigation/print/metadata/security/large-file/accessibility/four-platform proof | Candidate must pass before owner merge |
 | #11.3 | Execution/submission/automatic launch/network boundaries remain denied | Candidate must pass before owner merge |

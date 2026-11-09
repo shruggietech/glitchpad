@@ -32,10 +32,7 @@
     "exec_field_code": "%F",
     "icon": "glitchpad",
     "terminal": false,
-    "categories": [
-      "Utility",
-      "TextEditor"
-    ],
+    "categories": ["Utility", "TextEditor"],
     "mime_types": [
       "application/json",
       "application/pdf",
@@ -84,10 +81,7 @@
   "dependency_policy": {
     "debian_package_name": "glitchpad",
     "debian_architecture": "amd64",
-    "required_debian_families": [
-      "libgtk-3-0",
-      "libwebkit2gtk-4.1-0"
-    ],
+    "required_debian_families": ["libgtk-3-0", "libwebkit2gtk-4.1-0"],
     "forbidden_bundled_components": [
       "chrome",
       "chromium",

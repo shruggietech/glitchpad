@@ -6,10 +6,7 @@
       "mappings": [
         {
           "media_type": "text/markdown",
-          "extensions": [
-            "md",
-            "markdown"
-          ]
+          "extensions": ["md", "markdown"]
         }
       ]
     },
@@ -18,10 +15,7 @@
       "mappings": [
         {
           "media_type": "text/vnd.mermaid",
-          "extensions": [
-            "mmd",
-            "mermaid"
-          ]
+          "extensions": ["mmd", "mermaid"]
         }
       ]
     },
@@ -30,9 +24,7 @@
       "mappings": [
         {
           "media_type": "text/plain",
-          "extensions": [
-            "txt"
-          ]
+          "extensions": ["txt"]
         }
       ]
     },
@@ -41,64 +33,39 @@
       "mappings": [
         {
           "media_type": "application/json",
-          "extensions": [
-            "json",
-            "jsonc"
-          ]
+          "extensions": ["json", "jsonc"]
         },
         {
           "media_type": "application/toml",
-          "extensions": [
-            "toml"
-          ]
+          "extensions": ["toml"]
         },
         {
           "media_type": "application/x-typescript",
-          "extensions": [
-            "ts",
-            "tsx"
-          ]
+          "extensions": ["ts", "tsx"]
         },
         {
           "media_type": "application/x-yaml",
-          "extensions": [
-            "yaml",
-            "yml"
-          ]
+          "extensions": ["yaml", "yml"]
         },
         {
           "media_type": "text/css",
-          "extensions": [
-            "css"
-          ]
+          "extensions": ["css"]
         },
         {
           "media_type": "text/html",
-          "extensions": [
-            "htm",
-            "html"
-          ]
+          "extensions": ["htm", "html"]
         },
         {
           "media_type": "text/javascript",
-          "extensions": [
-            "cjs",
-            "js",
-            "jsx",
-            "mjs"
-          ]
+          "extensions": ["cjs", "js", "jsx", "mjs"]
         },
         {
           "media_type": "text/rust",
-          "extensions": [
-            "rs"
-          ]
+          "extensions": ["rs"]
         },
         {
           "media_type": "text/x-python",
-          "extensions": [
-            "py"
-          ]
+          "extensions": ["py"]
         }
       ]
     },
@@ -107,9 +74,7 @@
       "mappings": [
         {
           "media_type": "image/png",
-          "extensions": [
-            "png"
-          ]
+          "extensions": ["png"]
         }
       ]
     },
@@ -118,10 +83,7 @@
       "mappings": [
         {
           "media_type": "image/jpeg",
-          "extensions": [
-            "jpg",
-            "jpeg"
-          ]
+          "extensions": ["jpg", "jpeg"]
         }
       ]
     },
@@ -130,9 +92,7 @@
       "mappings": [
         {
           "media_type": "image/webp",
-          "extensions": [
-            "webp"
-          ]
+          "extensions": ["webp"]
         }
       ]
     },
@@ -141,9 +101,7 @@
       "mappings": [
         {
           "media_type": "image/bmp",
-          "extensions": [
-            "bmp"
-          ]
+          "extensions": ["bmp"]
         }
       ]
     },
@@ -152,10 +110,7 @@
       "mappings": [
         {
           "media_type": "image/tiff",
-          "extensions": [
-            "tif",
-            "tiff"
-          ]
+          "extensions": ["tif", "tiff"]
         }
       ]
     },
@@ -164,9 +119,7 @@
       "mappings": [
         {
           "media_type": "image/gif",
-          "extensions": [
-            "gif"
-          ]
+          "extensions": ["gif"]
         }
       ]
     },
@@ -175,9 +128,7 @@
       "mappings": [
         {
           "media_type": "image/svg+xml",
-          "extensions": [
-            "svg"
-          ]
+          "extensions": ["svg"]
         }
       ]
     },
@@ -186,9 +137,7 @@
       "mappings": [
         {
           "media_type": "image/vnd.microsoft.icon",
-          "extensions": [
-            "ico"
-          ]
+          "extensions": ["ico"]
         }
       ]
     },
@@ -197,15 +146,10 @@
       "mappings": [
         {
           "media_type": "application/pdf",
-          "extensions": [
-            "pdf"
-          ]
+          "extensions": ["pdf"]
         }
       ]
     }
   ],
-  "package_owned_types": [
-    "application/x-typescript",
-    "text/vnd.mermaid"
-  ]
+  "package_owned_types": ["application/x-typescript", "text/vnd.mermaid"]
 }

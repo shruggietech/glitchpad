@@ -235,10 +235,19 @@ export function createPdfFixture({
   return serializePdfObjects(objects, catalog, info, encryption);
 }
 
-export function serializePdfObjects(objects, catalog, info, encryption = null, version = '1.7') {
+export function serializePdfObjects(
+  objects,
+  catalog,
+  info,
+  encryption = null,
+  version = '1.7',
+) {
   const ref = (id) => String(id) + ' 0 R';
   const parts = [
-    Buffer.from('%PDF-' + version + '\n% Original Glitchpad fixture\n', 'ascii'),
+    Buffer.from(
+      '%PDF-' + version + '\n% Original Glitchpad fixture\n',
+      'ascii',
+    ),
   ];
   const offsets = [0];
   let length = parts[0].length;

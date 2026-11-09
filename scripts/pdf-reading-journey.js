@@ -68,6 +68,21 @@ window.runGlitchpadPdfReadingJourney = async function () {
     );
   };
   var checks = {};
+  var samples = [];
+  var timingStart = performance.now();
+  var longTasks = [];
+  var longTaskObserver = null;
+  try {
+    longTaskObserver = new PerformanceObserver(function (list) { list.getEntries().forEach(function (entry) { longTasks.push(entry.duration); }); });
+    longTaskObserver.observe({ entryTypes: ["longtask"] });
+    if (PerformanceObserver.supportedEntryTypes && PerformanceObserver.supportedEntryTypes.indexOf("longtask") < 0) { longTaskObserver.disconnect(); longTaskObserver = null; }
+  } catch (_) { longTaskObserver = null; }
+  var eventStarts = new WeakMap();
+  var handlerSamples = [];
+  var startEvent = function (event) { eventStarts.set(event, performance.now()); };
+  var endEvent = function (event) { if (eventStarts.has(event)) handlerSamples.push(performance.now() - eventStarts.get(event)); };
+  ["click", "keydown", "input"].forEach(function (type) { document.addEventListener(type, startEvent, true); window.addEventListener(type, endEvent); });
+  var sample = function (metric, scope) { samples.push({metric:metric,scope:scope,milliseconds:performance.now()-timingStart}); };
   await wait(function () {
     return rendered(0);
   }, 'first page');
@@ -94,13 +109,16 @@ window.runGlitchpadPdfReadingJourney = async function () {
   checks.canvas_ink = ink;
   document.querySelector('button[aria-label="More PDF tools"]').click();
   await click('Outline');
+  timingStart = performance.now();
   await click('Second chapter');
   await wait(function () {
     return rendered(1);
   }, 'outline destination');
+  sample("navigation", "previously_unmeasured_page_2_via_outline");
   checks.outline_named_destination = true;
   await click('Search');
   input('pdf-search', 'cats');
+  timingStart = performance.now();
   await click('Search PDF');
   await wait(function () {
     var dialogs = Array.from(document.querySelectorAll('.task-surface'));
@@ -108,12 +126,16 @@ window.runGlitchpadPdfReadingJourney = async function () {
       return node.innerText.indexOf('4 matches') >= 0;
     });
   }, 'ordered search');
+  sample("search_complete", "complete_four_page_query_cats");
+  timingStart = performance.now();
   await click('Next match');
   await close('Search PDF');
   await wait(function () {
     return rendered(0);
   }, 'search destination');
+  sample("navigation", "warm_page_1_via_search");
   checks.search = true;
+  timingStart = performance.now();
   await click('Thumbnails');
   await wait(function () {
     return Array.from(document.querySelectorAll('.pdf-thumbnail canvas')).some(
@@ -122,6 +144,7 @@ window.runGlitchpadPdfReadingJourney = async function () {
       },
     );
   }, 'thumbnail');
+  sample("first_thumbnail", "first_nonzero_decoded_thumbnail_canvas");
   await close('PDF thumbnails');
   checks.thumbnail = true;
   await click('Page links');
@@ -188,7 +211,11 @@ window.runGlitchpadPdfReadingJourney = async function () {
     });
   if (metadataClose) metadataClose.click();
   await close('PDF tools');
+  await new Promise(function (resolve) { setTimeout(resolve, 75); });
+  if (longTaskObserver) longTaskObserver.disconnect();
+  ["click", "keydown", "input"].forEach(function (type) { document.removeEventListener(type, startEvent, true); window.removeEventListener(type, endEvent); });
   return {
+    measurements: {samples:samples,clock:"performance.now",poll_interval_ms:25,interaction:{method:"capture_to_window_bubble_synchronous_event_interval",scope:"click_keydown_input_handlers; deferred callbacks excluded",samples_ms:handlerSamples},long_tasks:{method:"PerformanceObserver_longtask",supported:longTaskObserver!==null,scope:"main_realm_reading_journey_only; worker_heap_and_native_dialogs_excluded",samples_ms:longTaskObserver ? longTasks : null}},
     schema_version: 1,
     runtime: navigator.userAgent,
     source_identity: {

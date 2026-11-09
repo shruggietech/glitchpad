@@ -279,3 +279,100 @@ sensitivity_review = "Original synthetic form, attachment and inert action strin
 format = "PDF"
 purpose = "JavaScript, launch, submit, remote action, attachment, read-only form, unsafe links and malformed destination corpus"
 expected_result = "No automatic native navigation, network, script, form submission or attachment launch; invalid destinations refuse without losing readable content"
+
+[[fixture]]
+path = "fixtures/pdf/s050-version-1.4.pdf"
+source = "Original Glitchpad S050 deterministic conformance generator"
+author = "Glitchpad contributors"
+license = "Apache-2.0"
+redistribution = true
+sha256 = "2ca96117898d07d2d829ce57780a7eb19689ae85182a724ce4e91ee0824fb11f"
+sensitivity_review = "Original synthetic text and pixel patterns; no external document content"
+format = "PDF"
+purpose = "PDF 1.4 version and standard-font control"
+expected_result = "Actual worker produces the specified visible outcome or stable bounded failure without source mutation"
+
+[[fixture]]
+path = "fixtures/pdf/s050-codecs.pdf"
+source = "Original Glitchpad S050 deterministic conformance generator"
+author = "Glitchpad contributors"
+license = "Apache-2.0"
+redistribution = true
+sha256 = "b89fec79798ef0a7c84e176b20f07082b4138af78ec7832ee8a9485c4e5ea831"
+sensitivity_review = "Original synthetic text and pixel patterns; no external document content"
+format = "PDF"
+purpose = "Actual static JPX and JBIG2 decoder pixels"
+expected_result = "Actual worker produces the specified visible outcome or stable bounded failure without source mutation"
+
+[[fixture]]
+path = "fixtures/pdf/s050-hebrew.pdf"
+source = "Original Glitchpad S050 deterministic conformance generator"
+author = "Glitchpad contributors"
+license = "Apache-2.0 AND OFL-1.1"
+redistribution = true
+sha256 = "ee98ee66e6066326002bb73bbc5f98125401cfdc2f56c82c3285ac7afe40b526"
+sensitivity_review = "Original synthetic text and pixel patterns; no external document content"
+format = "PDF"
+purpose = "Embedded OFL CID font, logical Unicode, RTL extraction and selection"
+expected_result = "Actual worker produces the specified visible outcome or stable bounded failure without source mutation"
+
+[[fixture]]
+path = "fixtures/pdf/s050-geometry.pdf"
+source = "Original Glitchpad S050 deterministic conformance generator"
+author = "Glitchpad contributors"
+license = "Apache-2.0"
+redistribution = true
+sha256 = "cfc3257bad3423d255b1894f37bba99a16a1b0a96229a23c7766f506fb590e3b"
+sensitivity_review = "Original synthetic text and pixel patterns; no external document content"
+format = "PDF"
+purpose = "Mixed MediaBox, CropBox and rotations"
+expected_result = "Actual worker produces the specified visible outcome or stable bounded failure without source mutation"
+
+[[fixture]]
+path = "fixtures/pdf/s050-huge-page.pdf"
+source = "Original Glitchpad S050 deterministic conformance generator"
+author = "Glitchpad contributors"
+license = "Apache-2.0"
+redistribution = true
+sha256 = "27afa00f3e8cf2b34287715f5e825b42431bb9bad97b2368cebd3740bae4485c"
+sensitivity_review = "Original synthetic text and pixel patterns; no external document content"
+format = "PDF"
+purpose = "Huge page bounded refusal"
+expected_result = "Actual worker produces the specified visible outcome or stable bounded failure without source mutation"
+
+[[fixture]]
+path = "fixtures/pdf/s050-valid-10000.pdf"
+source = "Original Glitchpad S050 deterministic conformance generator"
+author = "Glitchpad contributors"
+license = "Apache-2.0"
+redistribution = true
+sha256 = "82bd7f4652b4590751edd000864478f34a1ffa26562cbb4f9411474016301e53"
+sensitivity_review = "Original synthetic text and pixel patterns; no external document content"
+format = "PDF"
+purpose = "Valid inclusive 10000-page boundary"
+expected_result = "Actual worker produces the specified visible outcome or stable bounded failure without source mutation"
+
+[[fixture]]
+path = "fixtures/pdf/s050-truncated-codecs.pdf"
+source = "Original Glitchpad S050 deterministic conformance generator"
+author = "Glitchpad contributors"
+license = "Apache-2.0"
+redistribution = true
+sha256 = "f8c990834d2cd98596e3cf86db061c28173d38a39726bccd543a37bfce87461c"
+sensitivity_review = "Original synthetic text and pixel patterns; no external document content"
+format = "PDF"
+purpose = "Truncated image streams bounded terminal state"
+expected_result = "Actual worker produces the specified visible outcome or stable bounded failure without source mutation"
+
+[[fixture]]
+path = "fixtures/pdf/s050-cyclic-pages.pdf"
+source = "Original Glitchpad S050 deterministic conformance generator"
+author = "Glitchpad contributors"
+license = "Apache-2.0"
+redistribution = true
+sha256 = "c71eb9f0cb1421eba940f7c90568df79dd25c01a4e74c8f302eb89f0e7c4cdac"
+sensitivity_review = "Original synthetic text and pixel patterns; no external document content"
+format = "PDF"
+purpose = "Cyclic page tree bounded terminal state"
+expected_result = "Actual worker produces the specified visible outcome or stable bounded failure without source mutation"
+

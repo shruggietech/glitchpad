@@ -150,14 +150,20 @@
               'button[aria-label="Close Print PDF"]',
             );
           }, 'close print task');
-          var closeTools = document.querySelector('button[aria-label="Close PDF tools"]');
+          var closeTools = document.querySelector(
+            'button[aria-label="Close PDF tools"]',
+          );
           if (closeTools) closeTools.click();
           await wait(function () {
             return !document.querySelector(
               'button[aria-label="Close PDF tools"]',
             );
           }, 'close tools');
-          await wait(function () { return document.querySelector('[data-pdf-ready=true][data-pdf-worker=true]'); }, 'PDF resumes after printing');
+          await wait(function () {
+            return document.querySelector(
+              '[data-pdf-ready=true][data-pdf-worker=true]',
+            );
+          }, 'PDF resumes after printing');
         }
         return window.__TAURI_INTERNALS__.invoke('record_desktop_pdf_probe', {
           owner: owner,

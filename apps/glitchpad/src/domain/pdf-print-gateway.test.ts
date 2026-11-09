@@ -70,7 +70,9 @@ it.each(['afterprint', 'glitchpad-native-print-completed'])(
     job.dispose();
     expect(image.isConnected).toBe(true);
     expect(document.body.classList.contains('pdf-print-active')).toBe(true);
-    expect(document.documentElement.classList.contains('pdf-print-active')).toBe(true);
+    expect(
+      document.documentElement.classList.contains('pdf-print-active'),
+    ).toBe(true);
     expect(revoke).not.toHaveBeenCalled();
     expect(invoke).toHaveBeenCalledWith('request_pdf_desktop_print', {
       sourceId: 'source',
@@ -79,7 +81,9 @@ it.each(['afterprint', 'glitchpad-native-print-completed'])(
     window.dispatchEvent(new Event(completion));
     expect(image.isConnected).toBe(false);
     expect(document.body.classList.contains('pdf-print-active')).toBe(false);
-    expect(document.documentElement.classList.contains('pdf-print-active')).toBe(false);
+    expect(
+      document.documentElement.classList.contains('pdf-print-active'),
+    ).toBe(false);
     expect(revoke).toHaveBeenCalledWith('blob:pdf-print-test');
     const next = nativePdfPrintGateway(session);
     await next.begin(1);

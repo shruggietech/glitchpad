@@ -2006,7 +2006,7 @@ class AndroidDeliveryInstrumentedTest {
       assertTrue("the whole action must fit the actual native visible intersection", native.getBoolean("whole_control_visible"))
       assertTrue("targets must also meet actual physical 48dp-equivalent bounds", native.getDouble("control_right") - native.getDouble("control_left") >= 47.5 * native.getDouble("density") && native.getDouble("control_bottom") - native.getDouble("control_top") >= 47.5 * native.getDouble("density"))
       val largeText = measurement.getDouble("text_size") >= 24 || (measurement.getDouble("text_size") >= 18.66 && (measurement.optString("font_weight").toIntOrNull() ?: 400) >= 700)
-      if (!measurement.getBoolean("disabled")) assertTrue("computed actual WebView text contrast must meet its normal/large threshold", !measurement.isNull("contrast") && measurement.getDouble("contrast") >= if (largeText) 2.99 else 4.49)
+      if (!measurement.getBoolean("disabled")) assertTrue("computed actual WebView text contrast must meet its normal/large threshold: profile="+profile+",control="+measurement, !measurement.isNull("contrast") && measurement.getDouble("contrast") >= if (largeText) 2.99 else 4.49)
       controls.put(measurement.put("native", native))
     }
     val css = JSONObject(evaluate(scenario, "({width:innerWidth,height:innerHeight})"))

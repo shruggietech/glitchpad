@@ -101,3 +101,9 @@ Delivered Linux run42538027219 completed the entire real reading journey with ma
 ## R25 (2026-11-09 UTC): First-use Android print destination touch
 
 Run42539393118 reached native PDF previews but the first-use destination popup repeated Select a printer for every item. Android7 AOSP PrintActivity clears mShowDestinationPrompt inside the destination spinner OnTouchListener; accessibility ACTION_CLICK bypasses it. The native driver now injects one real touchscreen DOWN/UP at the observed system spinner bounds, then selects the actual Save-as-PDF row. This changes the test observation, not print support or product capability. [Android7 source](https://android.googlesource.com/platform/frameworks/base/+/android-7.0.0_r1/packages/PrintSpooler/src/com/android/printspooler/ui/PrintActivity.java) establishes that event distinction.
+
+## R26 - Native print pagination and existing themed controls (2026-11-09 UTC)
+
+The stricter Windows native preview in run42540548604 reported one page for the selected2,4 snapshot. The generated AppFrame intentionally applies block-size:100% and overflow:hidden to html/body; PDF print now sets a temporary root class and overrides those viewport constraints only during snapshot printing. The class and object URLs remain owned until actual print completion and are removed together. The BrandBuilder kit is unchanged. Native preview2/4page checks remain mandatory.
+
+Full CI run42540731147 also exposed the existing Markdown controls inheriting light-theme foreground while retaining fixed dark backgrounds after the generated light scope was synchronized. Existing Markdown/large-text control backgrounds and borders now use the already-defined document semantic tokens. Contrast thresholds are unchanged; the native assertion now records the exact failed control if another mismatch occurs. macOS and Android dialog-driver failures are retained separately from product print failures.

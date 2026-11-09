@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { verifyPdfFixtureManifests } from './check-pdf-fixtures.mjs';
-import { readFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { createHash } from 'node:crypto';
 const sha = (bytes) => createHash('sha256').update(bytes).digest('hex');
@@ -9,9 +9,18 @@ export async function checkPdfConformanceCorpus({
   openCase,
   closeCase,
   root,
+  profile = 'current',
 }) {
   const manifest = await verifyPdfFixtureManifests(root);
   const rows = [];
+  assert.ok(['current','chrome69'].includes(profile));
+  let activeCase = null;
+  const retainProgress=async (status,error)=>{
+    const output=resolve(root,'artifacts/pdf-runtime');
+    await mkdir(output,{recursive:true});
+    await writeFile(resolve(output,'conformance-'+profile+'-progress.json'),JSON.stringify({schema_version:1,status,active_case:activeCase,cases:rows,...(error?{failed_case:{name:activeCase,status:'fail',error:String(error.message ?? error)}}:{})},null,2)+'\n','utf8');
+  };
+  try {
   const ready = async (index) =>
     page.waitForFunction(
       function (index) {
@@ -47,6 +56,7 @@ export async function checkPdfConformanceCorpus({
       };
     });
   async function open(name) {
+    activeCase=name;
     const start = Date.now();
     await openCase(name);
     await ready(0);
@@ -243,6 +253,7 @@ export async function checkPdfConformanceCorpus({
     's050-cyclic-pages.pdf',
     's050-truncated-codecs.pdf',
   ]) {
+    activeCase=name;
     const start = Date.now();
     await openCase(name);
     await page.waitForFunction(
@@ -302,7 +313,8 @@ export async function checkPdfConformanceCorpus({
   ]) {
     assert.equal(bytes.subarray(0, 5).toString('ascii'), '%PDF-');
     const start = Date.now();
-    await openCase('s050-recognized-mutation-' + id + '.pdf', undefined, bytes);
+    activeCase='s050-recognized-mutation-'+id+'.pdf';
+    await openCase(activeCase, undefined, bytes);
     await page.waitForFunction(
       function () {
         var r = document.querySelector('.pdf-layout');
@@ -341,6 +353,7 @@ export async function checkPdfConformanceCorpus({
     });
     await closeCase();
   }
+  await retainProgress('pass');
   return {
     schema_version: 1,
     status: 'pass',
@@ -351,4 +364,8 @@ export async function checkPdfConformanceCorpus({
     scope:
       'Real production worker corpus with synthetic native source transport; native staged packages are separate required evidence.',
   };
+  } catch(error) {
+    await retainProgress('fail',error);
+    throw error;
+  }
 }

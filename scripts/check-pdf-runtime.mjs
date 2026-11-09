@@ -287,7 +287,11 @@ try {
     });
   });
   await page.waitForSelector('.add-document-trigger');
-  await page.click('.add-document-trigger');
+  await page.evaluate(function () {
+    var trigger=document.querySelector('.add-document-trigger');
+    if(!trigger || trigger.disabled)throw new Error('Add document action unavailable');
+    trigger.click();
+  });
   await page.evaluate(function () {
     var button = Array.from(
       document.querySelectorAll('.add-document-menu button'),
@@ -627,7 +631,11 @@ try {
     addedFonts.length > 0,
     'Representative font cleanup must exercise actual installed PDF font faces',
   );
-  await page.click('.add-document-trigger');
+  await page.evaluate(function () {
+    var trigger=document.querySelector('.add-document-trigger');
+    if(!trigger || trigger.disabled)throw new Error('Add document action unavailable');
+    trigger.click();
+  });
   await page.evaluate(function () {
     var button = Array.from(
       document.querySelectorAll('.add-document-menu button'),
@@ -663,7 +671,11 @@ try {
       name,
       declaredLength,
     );
-    await page.click('.add-document-trigger');
+    await page.evaluate(function () {
+    var trigger=document.querySelector('.add-document-trigger');
+    if(!trigger || trigger.disabled)throw new Error('Add document action unavailable');
+    trigger.click();
+  });
     await page.evaluate(function () {
       var open = Array.from(
         document.querySelectorAll('.add-document-menu button'),
@@ -675,7 +687,11 @@ try {
     });
   };
   const closeCase = async () => {
-    await page.click('.add-document-trigger');
+    await page.evaluate(function () {
+    var trigger=document.querySelector('.add-document-trigger');
+    if(!trigger || trigger.disabled)throw new Error('Add document action unavailable');
+    trigger.click();
+  });
     await page.evaluate(function () {
       Array.from(document.querySelectorAll('.add-document-menu button'))
         .find(function (node) {
@@ -1000,6 +1016,7 @@ try {
     openCase,
     closeCase,
     root,
+    profile: legacy ? 'chrome69' : 'current',
   });
   assert.equal(
     requests.filter((url) => /\.wasm(?:$|[?#])/u.test(url)).length,

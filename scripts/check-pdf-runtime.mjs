@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {checkPdfConformanceCorpus} from './check-pdf-conformance-corpus.mjs';
 import { once } from 'node:events';
 import { createServer } from 'node:http';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
@@ -651,14 +652,12 @@ try {
     'Closing PDF must remove only its actual registered font faces',
   );
   const corpus = [];
-  const openCase = async (name, declaredLength) => {
+  const openCase = async (name, declaredLength, suppliedBytes) => {
     await page.evaluate(
       function (base64, name, length) {
         window.__setPdfFixture(base64, name, length);
       },
-      (await readFile(resolve(root, 'fixtures/pdf/' + name))).toString(
-        'base64',
-      ),
+      (suppliedBytes ?? await readFile(resolve(root, 'fixtures/pdf/' + name))).toString('base64'),
       name,
       declaredLength,
     );
@@ -994,6 +993,8 @@ try {
   });
   await closeCase();
   await page.setViewport({ width: 480, height: 800, hasTouch: true });
+  const extendedConformance = await checkPdfConformanceCorpus({page,openCase,closeCase,root});
+  assert.equal(requests.filter(url=>/\.wasm(?:$|[?#])/u.test(url)).length,0,'Static codec paths must not fetch Wasm');
   await writeFile(
     resolve(output, 'result.json'),
     JSON.stringify(
@@ -1013,6 +1014,7 @@ try {
         reading_journey: readingJourney,
         input_flows: inputFlows,
         state_limit_corpus: corpus,
+        extended_conformance: extendedConformance,
         worker_authority: workerAuthority,
         display_resources: {
           baseline_fonts: baselineFonts,

@@ -131,7 +131,7 @@ class AndroidDeliveryInstrumentedTest {
     val printProof=JSONObject().put("selected",verifyPdfNativePrint(scenario,"2,4",2,"selected")).put("all",verifyPdfNativePrint(scenario,"all",4,"all"))
     val stream = grant(documentUri("s049-stream.pdf"))
     val warmIntent = Intent(Intent.ACTION_SEND).setType("application/pdf").putExtra(Intent.EXTRA_STREAM, stream)
-      .setClipData(android.content.ClipData.newRawUri("PDF fixture", stream)).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+      .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION).apply { clipData = android.content.ClipData.newRawUri("PDF fixture", stream) }
     val warmComponent = requireNotNull(glitchpadComponent(warmIntent)) { "installed PDF SEND declaration must resolve the warm provider route" }
     clientContext.startActivity(warmIntent.setComponent(warmComponent).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     waitForDocumentIdentity(scenario,"s049-stream.pdf")

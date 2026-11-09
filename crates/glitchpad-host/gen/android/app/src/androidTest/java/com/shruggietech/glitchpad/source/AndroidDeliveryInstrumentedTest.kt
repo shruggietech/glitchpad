@@ -203,7 +203,7 @@ class AndroidDeliveryInstrumentedTest {
     val destinationBounds=android.graphics.Rect();destination.getBoundsInScreen(destinationBounds)
     assertTrue("print destination has native touch geometry",destinationBounds.width()>0&&destinationBounds.height()>0)
     dispatchNativeTapOnce(destinationBounds.exactCenterX(),destinationBounds.exactCenterY(),SystemClock.elapsedRealtime()+30000L) { event -> automation.injectInputEvent(event,true) }
-    activate(awaitNative("Save as PDF destination") { val label=it.text?.toString()?:it.contentDescription?.toString();it.isEnabled&&(label?.equals("Save as PDF",true)==true||label?.equals("Save to PDF",true)==true) })
+    activate(awaitNative("Save as PDF destination menu item") { val label=it.text?.toString();it.isEnabled&&it.viewIdResourceName?.endsWith("/title")==true&&(label?.equals("Save as PDF",true)==true||label?.equals("Save to PDF",true)==true) })
     val printButton=awaitNative("save print output") { it.isEnabled&&(it.viewIdResourceName?.endsWith("/print_button")==true||it.contentDescription?.toString()?.equals("Save to PDF",true)==true) }
     activate(printButton)
     val filename="s049-print-"+UUID.randomUUID().toString()+".pdf"
@@ -215,8 +215,16 @@ class AndroidDeliveryInstrumentedTest {
     awaitNative("final output filename") { it.isEditable&&it.text?.toString()==filename }
     activate(awaitNative("save generated PDF") { it.isEnabled&&it.text?.toString()?.equals("Save",true)==true&&!it.isEditable })
     val path="/sdcard/Download/"+filename
-    var output:ByteArray?=null;val deadline=SystemClock.elapsedRealtime()+30000L
-    while(SystemClock.elapsedRealtime()<deadline){output=runCatching{android.util.Base64.decode(checkedShell("base64 "+path),android.util.Base64.DEFAULT)}.getOrNull();if(output!=null&&output.size>128)break;SystemClock.sleep(200)}
+    var output:ByteArray?=null;var previousCompleteHash:String?=null;val deadline=SystemClock.elapsedRealtime()+30000L
+    // DocumentsUI creates the destination before the system spooler finishes copying it.
+    // Require a complete, unchanged PDF twice before snapshotting the actual output bytes.
+    while(SystemClock.elapsedRealtime()<deadline){
+      val candidate=runCatching{android.util.Base64.decode(checkedShell("base64 "+path),android.util.Base64.DEFAULT)}.getOrNull()
+      val complete=candidate!=null&&candidate.size>128&&candidate.copyOfRange(candidate.size-64,candidate.size).toString(Charsets.US_ASCII).trimEnd().endsWith("%%EOF")
+      val digest=if(complete)sha256(requireNotNull(candidate))else null
+      if(digest!=null&&digest==previousCompleteHash){output=candidate;break}
+      previousCompleteHash=digest;SystemClock.sleep(200)
+    }
     if(output==null){
       println("s049_print_output_directory="+checkedShell("ls -la /sdcard/Download").take(4096));System.out.flush()
       nativeFailure("system print must produce readable PDF output at "+path)

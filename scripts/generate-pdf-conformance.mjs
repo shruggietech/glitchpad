@@ -155,7 +155,7 @@ function geometryPdf(huge = false) {
   const info = w.add('<< /Title (Original page box and rotation fixture) >>');
   const font = w.add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
   const content = w.add(
-    w.stream('BT /F1 18 Tf 30 60 Td (Mixed geometry source preserved) Tj ET'),
+    w.stream('BT /F1 12 Tf 30 60 Td (Mixed geometry source preserved) Tj ET'),
   );
   const pages = [];
   for (const [box, crop, rotation] of huge

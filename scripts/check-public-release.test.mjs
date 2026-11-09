@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  currentVersion,
+  currentTag,
   loadPublicSources,
   verifyPublicSources,
 } from './check-public-release.mjs';
@@ -21,9 +23,9 @@ test('active public authority rejects the legacy v0.1.2 identity', async () => {
   const sources = await loadPublicSources();
   const errors = verifyPublicSources({
     ...sources,
-    readme: sources.readme.replaceAll('0.2.1', '0.1.2'),
+    readme: sources.readme.replaceAll(currentVersion, '0.1.2'),
   });
-  assert.match(errors.join('\n'), /0\.2\.1|current release identity/u);
+  assert.match(errors.join('\n'), /README\.md is missing Glitchpad v/u);
 });
 
 for (const [name, mutate, expected] of [
@@ -68,7 +70,7 @@ for (const [name, mutate, expected] of [
     'stale specification date',
     (sources) => {
       sources.specification = sources.specification.replace(
-        '| Updated | 2026-11-08 |',
+        /^\| Updated \| \d{4}-\d{2}-\d{2} \|$/mu,
         '| Updated | 2026-08-30 |',
       );
     },
@@ -85,8 +87,8 @@ for (const [name, mutate, expected] of [
     'premature main deployment authority',
     (sources) => {
       sources.workflow = sources.workflow.replaceAll(
-        "inputs.deploy && inputs.release_tag == 'v0.2.1'",
-        "(github.event_name == 'push' && github.ref == 'refs/heads/main') || (inputs.deploy && inputs.release_tag == 'v0.2.1')",
+        "inputs.deploy && inputs.release_tag == '" + currentTag + "'",
+        "(github.event_name == 'push' && github.ref == 'refs/heads/main') || (inputs.deploy && inputs.release_tag == '" + currentTag + "')",
       );
     },
     /exact trusted deployment authority/,

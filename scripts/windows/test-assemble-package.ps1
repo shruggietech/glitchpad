@@ -4,6 +4,7 @@ param()
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 $repositoryRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+$targetVersion = (Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'packaging/windows/package-contract.json') | ConvertFrom-Json).version
 $scratch = Join-Path ([System.IO.Path]::GetTempPath()) ("glitchpad-s019-" + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $scratch | Out-Null
 
@@ -13,7 +14,7 @@ try {
     [System.IO.File]::WriteAllBytes($executable, [byte[]](1..32))
     [System.IO.File]::WriteAllBytes($installer, [byte[]](33..64))
     $output = Join-Path $scratch 'out'
-    $manifestPath = & (Join-Path $PSScriptRoot 'assemble-package.ps1') -Version '0.2.1' -Executable $executable -Installer $installer -OutputRoot $output -SourceCommit ('a' * 40) -WorkflowIdentity 'local-contract-test' -RepositoryRoot $repositoryRoot
+    $manifestPath = & (Join-Path $PSScriptRoot 'assemble-package.ps1') -Version $targetVersion -Executable $executable -Installer $installer -OutputRoot $output -SourceCommit ('a' * 40) -WorkflowIdentity 'local-contract-test' -RepositoryRoot $repositoryRoot
     $manifest = Get-Content -Raw -LiteralPath $manifestPath | ConvertFrom-Json
     if ($manifest.artifacts.Count -ne 2 -or $manifest.portable_inventory.Count -ne 4) {
         throw 'Assembly did not produce the governed manifest.'
@@ -23,11 +24,11 @@ try {
             throw "Portable staging omitted $required."
         }
     }
-    if (-not (Test-Path -LiteralPath (Join-Path $output 'glitchpad-0.2.1-windows-x86_64.zip') -PathType Leaf)) {
+    if (-not (Test-Path -LiteralPath (Join-Path $output ("glitchpad-{0}-windows-x86_64.zip" -f $targetVersion)) -PathType Leaf)) {
         throw 'Portable ZIP was not created.'
     }
     try {
-        & (Join-Path $PSScriptRoot 'assemble-package.ps1') -Version '0.2.1' -Executable $executable -Installer $installer -OutputRoot $output -SourceCommit ('a' * 40) -WorkflowIdentity 'overwrite-test' -RepositoryRoot $repositoryRoot | Out-Null
+        & (Join-Path $PSScriptRoot 'assemble-package.ps1') -Version $targetVersion -Executable $executable -Installer $installer -OutputRoot $output -SourceCommit ('a' * 40) -WorkflowIdentity 'overwrite-test' -RepositoryRoot $repositoryRoot | Out-Null
         throw 'Assembly unexpectedly overwrote an existing output root.'
     }
     catch {

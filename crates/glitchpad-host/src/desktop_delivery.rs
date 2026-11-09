@@ -20,11 +20,11 @@ const MAX_DELIVERY_DRAIN: usize = 64;
 const IMAGE_EXTENSIONS: &[&str] = &[
     "png", "jpg", "jpeg", "webp", "bmp", "tif", "tiff", "gif", "svg", "ico",
 ];
-// Released OS-association inventory; explicitly acquired PDF candidates are handled below.
+// Governed OS associations and explicit native acquisition share one inventory.
 const GOVERNED_EXTENSIONS: &[&str] = &[
     "cjs", "css", "htm", "html", "js", "json", "jsonc", "jsx", "markdown", "md", "mermaid", "mjs",
     "mmd", "py", "rs", "toml", "ts", "tsx", "txt", "yaml", "yml", "png", "jpg", "jpeg", "webp",
-    "bmp", "tif", "tiff", "gif", "svg", "ico",
+    "bmp", "tif", "tiff", "gif", "svg", "ico", "pdf",
 ];
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
@@ -240,10 +240,6 @@ impl DesktopDeliveryQueue {
 
 fn openable_extension(path: &Path) -> bool {
     governed_extension(path)
-        || path
-            .extension()
-            .and_then(|extension| extension.to_str())
-            .is_some_and(|extension| extension.eq_ignore_ascii_case("pdf"))
 }
 
 fn governed_extension(path: &Path) -> bool {
@@ -502,7 +498,7 @@ mod tests {
     }
 
     #[test]
-    fn explicit_pdf_candidate_deliveries_reach_native_sources_without_registration() {
+    fn governed_pdf_deliveries_reach_native_sources() {
         let (_root, path) = fixture("candidate.PDF");
         fs::write(&path, b"%PDF-1.7\nsynthetic candidate").expect("PDF fixture");
         for kind in [

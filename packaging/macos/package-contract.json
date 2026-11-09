@@ -26,6 +26,7 @@
     "mermaid",
     "mjs",
     "mmd",
+    "pdf",
     "png",
     "py",
     "rs",
@@ -45,7 +46,10 @@
     "identifier": "com.shruggietech.glitchpad",
     "minimum_system_version": "13.0",
     "executable": "Contents/MacOS/glitchpad-host",
-    "required_architectures": ["arm64", "x86_64"],
+    "required_architectures": [
+      "arm64",
+      "x86_64"
+    ],
     "required_files": [
       "Contents/Info.plist",
       "Contents/MacOS/glitchpad-host",

@@ -2,7 +2,10 @@
   "version": "0.2.1",
   "bundle": {
     "active": true,
-    "targets": ["appimage", "deb"],
+    "targets": [
+      "appimage",
+      "deb"
+    ],
     "category": "Utility",
     "shortDescription": "Local-first document viewer and editor",
     "longDescription": "Glitchpad is a local-first viewer and editor for text, Markdown, Mermaid, and source documents.",
@@ -23,129 +26,189 @@
       {
         "name": "Glitchpad Markdown",
         "description": "Markdown document",
-        "ext": ["md", "markdown"],
+        "ext": [
+          "md",
+          "markdown"
+        ],
         "mimeType": "text/markdown"
       },
       {
         "name": "Glitchpad Mermaid",
         "description": "Mermaid diagram",
-        "ext": ["mmd", "mermaid"],
+        "ext": [
+          "mmd",
+          "mermaid"
+        ],
         "mimeType": "text/vnd.mermaid"
       },
       {
         "name": "Glitchpad Text",
         "description": "Plain text document",
-        "ext": ["txt"],
+        "ext": [
+          "txt"
+        ],
         "mimeType": "text/plain"
       },
       {
         "name": "Glitchpad JSON",
         "description": "JSON source document",
-        "ext": ["json", "jsonc"],
+        "ext": [
+          "json",
+          "jsonc"
+        ],
         "mimeType": "application/json"
       },
       {
         "name": "Glitchpad TOML",
         "description": "TOML source document",
-        "ext": ["toml"],
+        "ext": [
+          "toml"
+        ],
         "mimeType": "application/toml"
       },
       {
         "name": "Glitchpad TypeScript",
         "description": "TypeScript source document",
-        "ext": ["ts", "tsx"],
+        "ext": [
+          "ts",
+          "tsx"
+        ],
         "mimeType": "application/x-typescript"
       },
       {
         "name": "Glitchpad YAML",
         "description": "YAML source document",
-        "ext": ["yaml", "yml"],
+        "ext": [
+          "yaml",
+          "yml"
+        ],
         "mimeType": "application/x-yaml"
       },
       {
         "name": "Glitchpad CSS",
         "description": "CSS source document",
-        "ext": ["css"],
+        "ext": [
+          "css"
+        ],
         "mimeType": "text/css"
       },
       {
         "name": "Glitchpad HTML",
         "description": "HTML source document",
-        "ext": ["htm", "html"],
+        "ext": [
+          "htm",
+          "html"
+        ],
         "mimeType": "text/html"
       },
       {
         "name": "Glitchpad JavaScript",
         "description": "JavaScript source document",
-        "ext": ["cjs", "js", "jsx", "mjs"],
+        "ext": [
+          "cjs",
+          "js",
+          "jsx",
+          "mjs"
+        ],
         "mimeType": "text/javascript"
       },
       {
         "name": "Glitchpad Rust",
         "description": "Rust source document",
-        "ext": ["rs"],
+        "ext": [
+          "rs"
+        ],
         "mimeType": "text/rust"
       },
       {
         "name": "Glitchpad Python",
         "description": "Python source document",
-        "ext": ["py"],
+        "ext": [
+          "py"
+        ],
         "mimeType": "text/x-python"
       },
       {
         "name": "Glitchpad PNG",
         "description": "PNG image",
-        "ext": ["png"],
+        "ext": [
+          "png"
+        ],
         "mimeType": "image/png",
         "role": "Viewer"
       },
       {
         "name": "Glitchpad JPEG",
         "description": "JPEG image",
-        "ext": ["jpg", "jpeg"],
+        "ext": [
+          "jpg",
+          "jpeg"
+        ],
         "mimeType": "image/jpeg",
         "role": "Viewer"
       },
       {
         "name": "Glitchpad WEBP",
         "description": "WEBP image",
-        "ext": ["webp"],
+        "ext": [
+          "webp"
+        ],
         "mimeType": "image/webp",
         "role": "Viewer"
       },
       {
         "name": "Glitchpad BMP",
         "description": "BMP image",
-        "ext": ["bmp"],
+        "ext": [
+          "bmp"
+        ],
         "mimeType": "image/bmp",
         "role": "Viewer"
       },
       {
         "name": "Glitchpad TIFF",
         "description": "TIFF image",
-        "ext": ["tif", "tiff"],
+        "ext": [
+          "tif",
+          "tiff"
+        ],
         "mimeType": "image/tiff",
         "role": "Viewer"
       },
       {
         "name": "Glitchpad GIF",
         "description": "GIF image",
-        "ext": ["gif"],
+        "ext": [
+          "gif"
+        ],
         "mimeType": "image/gif",
         "role": "Viewer"
       },
       {
         "name": "Glitchpad SVG",
         "description": "SVG image",
-        "ext": ["svg"],
+        "ext": [
+          "svg"
+        ],
         "mimeType": "image/svg+xml",
         "role": "Viewer"
       },
       {
         "name": "Glitchpad ICO",
         "description": "ICO image",
-        "ext": ["ico"],
+        "ext": [
+          "ico"
+        ],
         "mimeType": "image/vnd.microsoft.icon",
+        "role": "Viewer"
+      },
+      {
+        "name": "Glitchpad PDF",
+        "description": "PDF document",
+        "ext": [
+          "pdf"
+        ],
+        "mimeType": "application/pdf",
         "role": "Viewer"
       }
     ],

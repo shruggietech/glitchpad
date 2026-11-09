@@ -2,8 +2,13 @@
   "version": "0.2.1",
   "bundle": {
     "active": true,
-    "targets": ["app", "dmg"],
-    "icon": ["icons/icon.icns"],
+    "targets": [
+      "app",
+      "dmg"
+    ],
+    "icon": [
+      "icons/icon.icns"
+    ],
     "resources": {
       "../../LICENSE": "LICENSE",
       "../../NOTICE": "NOTICE",
@@ -13,21 +18,29 @@
       {
         "name": "Glitchpad Markdown",
         "description": "Markdown document",
-        "ext": ["md", "markdown"],
+        "ext": [
+          "md",
+          "markdown"
+        ],
         "mimeType": "text/markdown",
         "role": "Editor"
       },
       {
         "name": "Glitchpad Mermaid",
         "description": "Mermaid diagram",
-        "ext": ["mmd", "mermaid"],
+        "ext": [
+          "mmd",
+          "mermaid"
+        ],
         "mimeType": "text/vnd.mermaid",
         "role": "Editor"
       },
       {
         "name": "Glitchpad Text",
         "description": "Plain text document",
-        "ext": ["txt"],
+        "ext": [
+          "txt"
+        ],
         "mimeType": "text/plain",
         "role": "Editor"
       },
@@ -58,57 +71,84 @@
       {
         "name": "Glitchpad PNG",
         "description": "PNG image",
-        "ext": ["png"],
+        "ext": [
+          "png"
+        ],
         "mimeType": "image/png",
         "role": "Viewer"
       },
       {
         "name": "Glitchpad JPEG",
         "description": "JPEG image",
-        "ext": ["jpg", "jpeg"],
+        "ext": [
+          "jpg",
+          "jpeg"
+        ],
         "mimeType": "image/jpeg",
         "role": "Viewer"
       },
       {
         "name": "Glitchpad WEBP",
         "description": "WEBP image",
-        "ext": ["webp"],
+        "ext": [
+          "webp"
+        ],
         "mimeType": "image/webp",
         "role": "Viewer"
       },
       {
         "name": "Glitchpad BMP",
         "description": "BMP image",
-        "ext": ["bmp"],
+        "ext": [
+          "bmp"
+        ],
         "mimeType": "image/bmp",
         "role": "Viewer"
       },
       {
         "name": "Glitchpad TIFF",
         "description": "TIFF image",
-        "ext": ["tif", "tiff"],
+        "ext": [
+          "tif",
+          "tiff"
+        ],
         "mimeType": "image/tiff",
         "role": "Viewer"
       },
       {
         "name": "Glitchpad GIF",
         "description": "GIF image",
-        "ext": ["gif"],
+        "ext": [
+          "gif"
+        ],
         "mimeType": "image/gif",
         "role": "Viewer"
       },
       {
         "name": "Glitchpad SVG",
         "description": "SVG image",
-        "ext": ["svg"],
+        "ext": [
+          "svg"
+        ],
         "mimeType": "image/svg+xml",
         "role": "Viewer"
       },
       {
         "name": "Glitchpad ICO",
         "description": "ICO image",
-        "ext": ["ico"],
+        "ext": [
+          "ico"
+        ],
         "mimeType": "image/vnd.microsoft.icon",
+        "role": "Viewer"
+      },
+      {
+        "name": "Glitchpad PDF",
+        "description": "PDF document",
+        "ext": [
+          "pdf"
+        ],
+        "mimeType": "application/pdf",
         "role": "Viewer"
       }
     ],

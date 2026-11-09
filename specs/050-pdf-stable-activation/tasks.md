@@ -55,8 +55,8 @@ Independent test:0.3.0 source/docs/claims/packages agree, exact staged artifacts
 
 ## Phase 7: Review, freeze and final handoff
 
-- [ ] T026 Push/open the implementation PR automatically with issue-level traceability, monitor applicable CI and record the first actual external review head/round in handoff.md. (FR-021,022,024)
-- [ ] T027 Resolve first-round findings with fresh applicable focused/native proof and resolved threads; preserve reviewed/fixed source identities in handoff.md. (FR-021,024)
+- [x] T026 Push/open the implementation PR automatically with issue-level traceability, monitor applicable CI and record the first actual external review head/round in handoff.md. (FR-021,022,024)
+- [x] T027 Resolve first-round findings with fresh applicable focused/native proof and resolved threads; preserve reviewed/fixed source identities in handoff.md. (FR-021,024)
 - [ ] T028 Complete at most one further external round, resolve actionable findings and do not request a third; record the actual cap and final differences in handoff.md. (FR-024)
 - [ ] T029 Run present-code convergence, format/regenerate/check encoding and freeze every tracked final input/checkpoint before final qualification in specs/050-pdf-stable-activation/. (FR-020,021,023,024)
 - [ ] T030 Qualify full exact-head CI plus all four stage_release:true workflows as complete successful latest attempts on the frozen source; retain exact run/attempt/artifact identities in the authoritative external receipt. (FR-014,015,017,020,021)

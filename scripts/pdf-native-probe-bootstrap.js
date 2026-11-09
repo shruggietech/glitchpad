@@ -76,6 +76,7 @@
           var snapshot = null;
           var after = false;
           var completionEvent = null;
+          var completionEpoch = null;
           var observe = function () {
             if (!document.body.classList.contains('pdf-print-active')) return;
             var images = Array.from(
@@ -98,6 +99,7 @@
           var completed = function (event) {
             after = true;
             completionEvent = event.type;
+            completionEpoch = Date.now();
           };
           window.addEventListener('afterprint', completed, { once: true });
           window.addEventListener(
@@ -136,6 +138,7 @@
             snapshot: snapshot,
             completed: after,
             completion_event: completionEvent,
+            completion_epoch_ms: completionEpoch,
             cleaned: true,
             paper_completion: false,
           });

@@ -12,6 +12,7 @@ Add-Type -AssemblyName UIAutomationClient
 Add-Type -AssemblyName UIAutomationTypes
 $until = [DateTime]::UtcNow.AddSeconds(240)
 $round = 0
+$lastPreview = ''
 while ([DateTime]::UtcNow -lt $until -and $round -lt 2) {
   try {
     $process = Get-Process -Id $CandidatePid -ErrorAction Stop
@@ -21,11 +22,15 @@ while ([DateTime]::UtcNow -lt $until -and $round -lt 2) {
       $nodes = $root.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)
       $names = @($nodes | ForEach-Object { $_.Current.Name } | Where-Object { $_ } | Select-Object -First 256)
       $cancel = @($nodes | Where-Object { $_.Current.Name -eq 'Cancel' -and $_.Current.ControlType -eq [System.Windows.Automation.ControlType]::Button -and $_.Current.IsEnabled -and -not $_.Current.IsOffscreen } | Select-Object -First 1)
-      if ($cancel.Count -eq 1 -and ($names -contains 'Print' -or $names -contains 'Destination' -or $names -contains 'Printer')) {
+      $expected = if ($round -eq 0) { 2 } else { 4 }
+      $preview = @($names | Where-Object { $_ -match 'Total:|PDF document containing' }) -join ';'
+      if ($preview -ne $lastPreview) { @{ preview = $preview; expected_pages = $expected; epoch_ms = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds() } | ConvertTo-Json -Compress; $lastPreview = $preview }
+      $ready = @($names | Where-Object { $_ -match ("PDF document containing " + $expected + " pages") -or $_ -match ("Total: " + $expected + " sheets") }).Count -gt 0
+      if ($cancel.Count -eq 1 -and $ready -and -not ($names -contains 'Loading preview')) {
         $pattern = $cancel[0].GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern)
         $pattern.Invoke()
         $round++
-        @{ round = $round; observed_native_dialog = $true; action = 'cancel'; names = $names } | ConvertTo-Json -Compress -Depth 3
+        @{ round = $round; observed_native_dialog = $true; action = 'cancel'; names = $names; epoch_ms = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds() } | ConvertTo-Json -Compress -Depth 3
         Start-Sleep -Milliseconds 750
       }
     }
@@ -52,12 +57,19 @@ while ([DateTime]::UtcNow -lt $until -and $round -lt 2) {
   } else if (process.platform === 'darwin') {
     executable = 'osascript';
     const code = `set rounds to 0
+set iteration to 0
 repeat 480 times
+  set iteration to iteration + 1
   tell application "System Events"
     set candidates to every process whose unix id is ${pid}
-    if (count of candidates) > 0 then
-      tell item 1 of candidates
+    set printCandidates to every process whose name contains "print"
+    set allCandidates to candidates & printCandidates
+    repeat with candidate in allCandidates
+      tell candidate
         repeat with candidateWindow in windows
+          if iteration mod 20 is 0 then
+            log "NATIVE_PRINT_WINDOW " & (name of candidate) & " / " & (name of candidateWindow) & " buttons=" & (name of every button of candidateWindow)
+          end if
           if (count of sheets of candidateWindow) > 0 then
             set printSheet to sheet 1 of candidateWindow
             if exists button "Cancel" of printSheet then
@@ -72,7 +84,7 @@ repeat 480 times
           end if
         end repeat
       end tell
-    end if
+    end repeat
   end tell
   if rounds is 2 then exit repeat
   delay 0.5

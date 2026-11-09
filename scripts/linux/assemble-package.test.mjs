@@ -44,8 +44,8 @@ test('assembly renames and binds both final artifacts', async () => {
     assert.deepEqual(
       result.manifest.artifacts.map(({ name }) => name),
       [
-        'glitchpad-0.2.1-linux-x86_64.AppImage',
-        'glitchpad-0.2.1-linux-x86_64.deb',
+        'glitchpad-' + contract.candidate_version + '-linux-x86_64.AppImage',
+        'glitchpad-' + contract.candidate_version + '-linux-x86_64.deb',
       ],
     );
     assert.match(

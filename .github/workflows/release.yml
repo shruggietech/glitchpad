@@ -3,16 +3,17 @@ name: release
 on:
   push:
     tags:
-      - 'v0.2.1'
+      - 'v0.3.0'
   workflow_dispatch:
 
 permissions:
   actions: read
   contents: write
   attestations: read
+  pull-requests: read
 
 concurrency:
-  group: release-v0.2.1
+  group: release-v0.3.0
   cancel-in-progress: false
 
 jobs:
@@ -75,22 +76,22 @@ jobs:
       - name: Read owner-accepted annotated tag inputs
         run: |
           set -euo pipefail
-          test "$GITHUB_REF_NAME" = v0.2.1
+          test "$GITHUB_REF_NAME" = v0.3.0
           test "$(git cat-file -t "$GITHUB_REF")" = tag
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           git for-each-ref --format='%(contents)' "$GITHUB_REF" > accepted-staging.json
-          test "$(git rev-parse 'HEAD^{tree}')" = "$(git rev-parse 'origin/main^{tree}')"
+          # The accepted-input consumer verifies the immutable merged PR tree and main ancestry.
       - name: Consume accepted payloads without rebuilding
         env:
           GH_TOKEN: ${{ github.token }}
           ANDROID_SIGNING_CERT_SHA256: ${{ secrets.ANDROID_SIGNING_CERT_SHA256 }}
         run: |
-          node scripts/accepted-release-inputs.mjs --accepted accepted-staging.json --source "$GITHUB_SHA" --directory gathered --receipt accepted-input-receipt.json
+          node scripts/accepted-release-inputs.mjs --accepted accepted-staging.json --source "$GITHUB_SHA" --directory gathered --receipt accepted-input-receipt.json --require-merged true
       - name: Assemble unchanged accepted payloads and native evidence
         run: |
           mkdir release-assets
           for platform in windows macos linux android; do
-            tar -czf "release-assets/glitchpad-0.2.1-${platform}-evidence.tar.gz" -C "gathered/$platform" .
+            tar -czf "release-assets/glitchpad-0.3.0-${platform}-evidence.tar.gz" -C "gathered/$platform" .
           done
           node scripts/assemble-community-release.mjs --input gathered --output release-assets --source-commit "$GITHUB_SHA"
           cp accepted-staging.json accepted-input-receipt.json release-assets/
@@ -113,10 +114,10 @@ jobs:
             echo 'Release already exists; refusing to replace published bytes.' >&2
             exit 1
           fi
-          gh release create "$GITHUB_REF_NAME" release-assets/* --verify-tag --title 'Glitchpad v0.2.1' --notes-file docs/releases/v0.2.1.md
+          gh release create "$GITHUB_REF_NAME" release-assets/* --verify-tag --title 'Glitchpad v0.3.0' --notes-file docs/releases/v0.3.0.md
 
   publish-site:
-    name: Publish v0.2.1 site
+    name: Publish v0.3.0 site
     needs: publish
     permissions:
       contents: read
@@ -125,4 +126,4 @@ jobs:
     uses: ./.github/workflows/docs.yml
     with:
       deploy: true
-      release_tag: v0.2.1
+      release_tag: v0.3.0

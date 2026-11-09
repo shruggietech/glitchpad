@@ -1,4 +1,6 @@
 import { startPdfPrintDialogProbe } from './lib/pdf-print-dialog-probe.mjs';
+import os from 'node:os';
+import { nativePdfConformanceRecord } from './lib/pdf-native-record.mjs';
 import assert from 'node:assert/strict';
 import { spawn, execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -18,6 +20,45 @@ let binary = resolve(process.argv[2] || '');
 if (!process.argv[2]) throw new Error('Native binary path required');
 let packageProof = null;
 let packageArtifactPath = null;
+const option = (name) => {
+  const index = process.argv.indexOf(name);
+  if (index < 0) return null;
+  if (!process.argv[index + 1] || process.argv[index + 1].startsWith('--'))
+    throw Error('Missing ' + name);
+  return process.argv[index + 1];
+};
+const stagedArtifact = option('--artifact'),
+  stagedManifest = option('--manifest'),
+  stagedProfile = option('--profile');
+let expectedSource = process.env.SOURCE_REF;
+if (stagedArtifact) {
+  assert.ok(
+    stagedManifest && stagedProfile,
+    'Staged PDF proof needs manifest and profile',
+  );
+  const bytes = await readFile(stagedArtifact),
+    manifestBytes = await readFile(stagedManifest),
+    manifest = JSON.parse(manifestBytes);
+  const entry = (manifest.artifacts || [manifest.artifact]).find(
+    (row) => row && row.name === stagedArtifact.split(/[\\/]/u).at(-1),
+  );
+  assert.ok(
+    entry && entry.sha256 === sha256(bytes),
+    'Selected staged artifact must match its actual manifest',
+  );
+  const delivered = await readFile(option('--installed-executable') || binary);
+  expectedSource = manifest.source_commit;
+  packageArtifactPath = stagedArtifact;
+  packageProof = {
+    form: stagedProfile,
+    package_sha256: sha256(bytes),
+    package_bytes: bytes.length,
+    manifest_sha256: sha256(manifestBytes),
+    executable_sha256: sha256(delivered),
+    executable_bytes: delivered.length,
+    source_commit: expectedSource,
+  };
+}
 if (process.argv.includes('--packaged')) {
   const originalBinary = binary;
   const staging = await mkdtemp(join(tmpdir(), 'glitchpad-pdf-package-'));
@@ -114,9 +155,9 @@ if (process.argv.includes('--packaged')) {
       .digest('hex'),
   };
 }
-const output = resolve('artifacts/pdf-native');
+const output = resolve(option('--output') || 'artifacts/pdf-native');
 await mkdir(output, { recursive: true });
-if (packageArtifactPath)
+if (packageArtifactPath && !stagedArtifact)
   await copyFile(
     packageArtifactPath,
     join(
@@ -132,8 +173,12 @@ const probe = await mkdtemp(join(tmpdir(), 'glitchpad-pdf-'));
 const fixture = resolve('fixtures/pdf/s049-compatibility.pdf');
 const original = await readFile(fixture);
 await copyFile(fixture, join(probe, 's049-compatibility.pdf'));
+await copyFile(fixture, join(probe, 'warm-delivery.pdf'));
+let switchDelivered = false;
+let switchProcess = null;
 await writeFile(join(probe, 'enabled.marker'), 'enabled\n');
 await writeFile(join(probe, 'pdf-journey-request.marker'), 'requested\n');
+const launchEpoch = Date.now();
 const child = spawn(binary, [join(probe, 's049-compatibility.pdf')], {
   env: { ...process.env, GLITCHPAD_LIFECYCLE_PROBE_DIR: probe },
   windowsHide: true,
@@ -165,6 +210,30 @@ try {
   let result;
   const deadline = Date.now() + 240000;
   while (Date.now() < deadline) {
+    if (
+      !switchDelivered &&
+      (await readFile(join(probe, 'pdf-switch-request.marker'), 'utf8').catch(
+        () => null,
+      )) === 'requested\n'
+    ) {
+      switchDelivered = true;
+      const switchEnv = { ...process.env };
+      delete switchEnv.GLITCHPAD_LIFECYCLE_PROBE_DIR;
+      switchProcess = spawn(binary, [join(probe, 'warm-delivery.pdf')], {
+        env: switchEnv,
+        windowsHide: true,
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+      switchProcess.on('error', (error) => {
+        stderr += String(error);
+      });
+      switchProcess.stdout.on('data', (bytes) => {
+        stdout = (stdout + bytes).slice(-131072);
+      });
+      switchProcess.stderr.on('data', (bytes) => {
+        stderr = (stderr + bytes).slice(-131072);
+      });
+    }
     let data = await readFile(
       join(probe, 'pdf-journey-result.json'),
       'utf8',
@@ -178,22 +247,89 @@ try {
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
   assert.ok(result, 'Native PDF journey did not return evidence');
+  // Preserve native failure diagnostics before any enrichment or validation can fail.
+  await writeFile(
+    join(output, 'native-result.json'),
+    JSON.stringify(result, null, 2) + '\n',
+    'utf8',
+  );
+  assert.ok(!result.journey.error, result.journey.error);
+  const observedMemory = result.native_memory;
+  assert.ok(
+    observedMemory &&
+      observedMemory.samples_bytes.length >= 3 &&
+      observedMemory.samples_bytes.every((n) => Number.isFinite(n) && n > 0),
+  );
+  assert.equal(
+    typeof result.debug_assertions,
+    'boolean',
+    'actual compiled native build profile required',
+  );
+  if (stagedArtifact)
+    assert.equal(
+      result.debug_assertions,
+      false,
+      'staged PDF proof requires an actual release build',
+    );
+  result.process_memory = observedMemory;
+  result.execution = {
+    run_id: Number(process.env.GITHUB_RUN_ID),
+    run_attempt: Number(process.env.GITHUB_RUN_ATTEMPT),
+    job: process.env.GITHUB_JOB,
+    completion: 'pending_validation',
+  };
+  result.runtime = {
+    os: os.platform() + '/' + os.release(),
+    architecture: result.architecture,
+    webview: result.journey.runtime,
+    engine: result.journey.engine,
+    api: null,
+    minified: false,
+    debuggable: result.debug_assertions,
+  };
+  if (process.platform === 'linux') {
+    const release = await readFile('/etc/os-release', 'utf8');
+    const field = (name) =>
+      release.match(new RegExp('^' + name + '="?([^"\n]+)"?$', 'm'))?.[1];
+    result.runtime.distribution = {
+      id: field('ID'),
+      version_id: field('VERSION_ID'),
+    };
+  }
+  result.native_first_page = {
+    method: 'native_process_launch_to_visible_canvas_and_text_50ms_poll',
+    samples_ms: [result.journey.first_visible_epoch_ms - launchEpoch],
+  };
+  assert.ok(
+    Number.isFinite(result.native_first_page.samples_ms[0]) &&
+      result.native_first_page.samples_ms[0] >= 0,
+  );
+  result.status = 'incomplete';
   result.package = packageProof;
-  if (packageProof) result.evidence_class = 'actual_packaged_webview';
+  if (packageProof)
+    result.evidence_class = stagedArtifact
+      ? 'staged_release_native_webview'
+      : 'actual_packaged_webview';
   await writeFile(
     join(output, 'result.json'),
     JSON.stringify(result, null, 2) + '\n',
   );
-  assert.equal(result.source_commit, process.env.SOURCE_REF);
+  assert.equal(result.source_commit, expectedSource);
   assert.equal(result.source_unchanged, true);
+  assert.equal(
+    switchDelivered,
+    true,
+    'actual running-instance PDF delivery required',
+  );
+  assert.equal(result.journey.warm_delivery, true);
   assert.equal(
     result.source_sha256,
     createHash('sha256').update(original).digest('hex'),
   );
   assert.ok(!result.journey.error, result.journey.error);
   assert.equal(result.journey.worker, 'true');
-  assert.equal(result.journey.source_identity.native, process.env.SOURCE_REF);
-  assert.equal(result.journey.source_identity.frontend, process.env.SOURCE_REF);
+  assert.equal(result.journey.source_identity.native, expectedSource);
+  assert.equal(result.journey.source_identity.frontend, expectedSource);
   assert.ok(result.journey.runtime.length > 0);
   for (const key of [
     'outline_named_destination',
@@ -234,11 +370,29 @@ try {
     await readFile(join(probe, 's049-compatibility.pdf')),
     original,
   );
+  result.status = 'pass';
+  result.execution.completion = 'clean';
+  await writeFile(
+    join(output, 'result.json'),
+    JSON.stringify(result, null, 2) + '\n',
+    'utf8',
+  );
+  if (stagedProfile)
+    await writeFile(
+      join(output, 'conformance-record.json'),
+      JSON.stringify(
+        nativePdfConformanceRecord(result, stagedProfile),
+        null,
+        2,
+      ) + '\n',
+      'utf8',
+    );
   console.log(
     'Actual native PDF reading journey passed on ' + process.platform,
   );
 } finally {
   if (printProbe.exitCode === null) printProbe.kill();
+  if (switchProcess && switchProcess.exitCode === null) switchProcess.kill();
   await writeFile(join(output, 'native-print-dialogs.log'), printDialogLog);
   if (child.exitCode === null) child.kill();
   await writeFile(join(output, 'stdout.log'), stdout);

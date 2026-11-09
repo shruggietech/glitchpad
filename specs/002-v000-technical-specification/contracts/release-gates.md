@@ -26,6 +26,8 @@ Windows v0.1.0 artifacts are explicitly unsigned community packages. The macOS a
 
 The release commit must contain a machine-readable receipt listing the target version, prior version, completed Spec Kit slices reviewed, affected specification sections, capability rows changed, platform rows changed, security changes, contributor-tool changes, changelog fragment set, approver, and UTC completion timestamp. Release CI validates the receipt against repository state but does not generate or commit it.
 
+For the S050 v0.3.0 preparation workflow, the committed machine-readable receipt records a UTC preparation timestamp and pending owner review, with approver/evidence null. It cannot invent approval or publication authority. Accepted staging binds that receipt digest and the implementation PR. After owner merge and later publication authorization, the tag-only publisher observes the actual merged PR, merge actor/time, accepted-source/merge-commit tree agreement and merge ancestry in an external accepted-input receipt. Later unrelated main changes do not require source mutation or change compiled package identity.
+
 ```mermaid
 flowchart TB
   prepare["Assemble changelog and documentation pass"] --> review["Review release commit"]

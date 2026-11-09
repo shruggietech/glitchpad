@@ -67,12 +67,20 @@ export function AboutPanel({
       <h3>Glitchpad</h3>
       <p>A local file viewer and editor by ShruggieTech.</p>
       {help && (
-        <p>
-          Use Add document to create Markdown, create a text file, or open a
-          file. Document tools apply to the current file. Support links open
-          only when selected; reports and diagnostics are never attached
-          automatically.
-        </p>
+        <>
+          <p>
+            Use Add document to create Markdown, create a text file, or open a
+            file. Document tools apply to the current file. Support links open
+            only when selected; reports and diagnostics are never attached
+            automatically.
+          </p>
+          <p>
+            Open PDFs with Open file, a desktop file association, or Android
+            Open/Share. PDF controls provide pages and fit; More PDF tools
+            contains search, outline, thumbnails, links, file information and
+            Print. PDFs remain read only. DOCX and ODT viewing are planned.
+          </p>
+        </>
       )}
       {info && (
         <dl data-application-info>

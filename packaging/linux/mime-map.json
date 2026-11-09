@@ -140,6 +140,15 @@
           "extensions": ["ico"]
         }
       ]
+    },
+    {
+      "id": "pdf",
+      "mappings": [
+        {
+          "media_type": "application/pdf",
+          "extensions": ["pdf"]
+        }
+      ]
     }
   ],
   "package_owned_types": ["application/x-typescript", "text/vnd.mermaid"]

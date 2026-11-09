@@ -1,0 +1,45 @@
+%PDF-1.4
+% Original Glitchpad fixture
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Count 3 /Kids [6 0 R 7 0 R 8 0 R] >>
+endobj
+3 0 obj
+<< /Title (Original page box and rotation fixture) >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+5 0 obj
+<< /Length 61  >>
+stream
+BT /F1 12 Tf 30 60 Td (Mixed geometry source preserved) Tj ET
+endstream
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 400 300] /CropBox [20 30 380 280] /Rotate 0 /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [-20 -10 300 500] /CropBox [0 0 280 480] /Rotate 90 /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>
+endobj
+8 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 600 200] /CropBox [0 0 600 200] /Rotate 270 /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>
+endobj
+xref
+0 9
+0000000000 65535 f 
+0000000038 00000 n 
+0000000087 00000 n 
+0000000156 00000 n 
+0000000225 00000 n 
+0000000295 00000 n 
+0000000407 00000 n 
+0000000568 00000 n 
+0000000732 00000 n 
+trailer
+<< /Size 9 /Root 1 0 R /Info 3 0 R >>
+startxref
+893
+%%EOF

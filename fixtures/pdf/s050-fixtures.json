@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "generator": "scripts/generate-pdf-conformance.mjs",
+  "preserved_s049": [
+    {
+      "name": "s049-compatibility.pdf",
+      "sha256": "8e826935273b7ab605a28a30bade3e3c5c419a7446f3ad61c4a7026279a4fec8"
+    },
+    {
+      "name": "s049-small.pdf",
+      "sha256": "31e981793bd0f7a5a6e10331fda1f7a4f7dd23186d71cdc68ed81400b85a7f47"
+    },
+    {
+      "name": "s049-large.pdf",
+      "sha256": "ed542a8be63c1ce135c1cb6c659c86c4bcf727f3040e11546618c21ca5050649"
+    },
+    {
+      "name": "s049-page-limit.pdf",
+      "sha256": "c94a8fff75911d76e0fc58aa2fbc96cc86ee5265bd237b5804382b39542cce00"
+    },
+    {
+      "name": "s049-unsupported-encryption.pdf",
+      "sha256": "1942d619567b1e76ccdfbfea0af53495f1f6bb6252df90668262e51f2b3dce98"
+    },
+    {
+      "name": "s049-malformed.pdf",
+      "sha256": "411511bdb3d98354a77bbe6b72c97b6b3cb18feb9c90302ad7f221ed2ec5ea91"
+    },
+    {
+      "name": "s049-security.pdf",
+      "sha256": "18493f010f81f44acbe6cd29de11218b2c2b6b92284b9053c028aa18400bfea1"
+    },
+    {
+      "name": "s049-encrypted.pdf",
+      "sha256": "cb34298e5a7b12a784f71c7007f55dad59c44bdeb6f483723367d528c047b15d"
+    }
+  ],
+  "fixtures": [
+    {
+      "name": "s050-version-1.4.pdf",
+      "bytes": 2376,
+      "sha256": "2ca96117898d07d2d829ce57780a7eb19689ae85182a724ce4e91ee0824fb11f",
+      "author": "Glitchpad contributors",
+      "license": "Apache-2.0"
+    },
+    {
+      "name": "s050-codecs.pdf",
+      "bytes": 1766,
+      "sha256": "96f6be4da08f419a6a0e256694daa53bc24e35e5990077e096a2c7c98f787882",
+      "author": "Glitchpad contributors",
+      "license": "Apache-2.0"
+    },
+    {
+      "name": "s050-hebrew.pdf",
+      "bytes": 6532,
+      "sha256": "ee98ee66e6066326002bb73bbc5f98125401cfdc2f56c82c3285ac7afe40b526",
+      "author": "Glitchpad contributors",
+      "license": "Apache-2.0 AND OFL-1.1"
+    },
+    {
+      "name": "s050-geometry.pdf",
+      "bytes": 1148,
+      "sha256": "3be4c43aadd7168b25c0638a92d04d46cb8ac83aae98a86b8205c0338dab90ce",
+      "author": "Glitchpad contributors",
+      "license": "Apache-2.0"
+    },
+    {
+      "name": "s050-huge-page.pdf",
+      "bytes": 789,
+      "sha256": "9be102dd523daceb05c6d973a860a50d3642b8a3807c34c13799a79a24938e01",
+      "author": "Glitchpad contributors",
+      "license": "Apache-2.0"
+    },
+    {
+      "name": "s050-valid-10000.pdf",
+      "bytes": 948475,
+      "sha256": "82bd7f4652b4590751edd000864478f34a1ffa26562cbb4f9411474016301e53",
+      "author": "Glitchpad contributors",
+      "license": "Apache-2.0"
+    },
+    {
+      "name": "s050-truncated-codecs.pdf",
+      "bytes": 1312,
+      "sha256": "72f45c8cbe5025e34c9897579262cbf3de76cb7d0db6cb37dc7526154238edd5",
+      "author": "Glitchpad contributors",
+      "license": "Apache-2.0"
+    },
+    {
+      "name": "s050-cyclic-pages.pdf",
+      "bytes": 364,
+      "sha256": "c71eb9f0cb1421eba940f7c90568df79dd25c01a4e74c8f302eb89f0e7c4cdac",
+      "author": "Glitchpad contributors",
+      "license": "Apache-2.0"
+    }
+  ]
+}

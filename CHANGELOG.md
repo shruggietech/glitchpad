@@ -1,10 +1,32 @@
 # Changelog
 
-S048 reconciles S046 and S047 product recovery into the v0.2.1 release definition, preserving historical S043-S045 image qualification/publication evidence. Exact staged payloads and current installed-runtime evidence remain distinct from later owner-authorized publication.
+S050 reconciles S049 PDF viewing, conformance and stable activation into the v0.3.0 source definition. Historical image/product recovery records remain unchanged. Current staged/installed evidence remains distinct from later owner-authorized publication.
 
 All notable changes to Glitchpad are documented in this file. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.3.0]
+
+### Added
+
+- S049 adds the isolated PDF.js worker viewer, bounded ranged/stream sources, virtualized pages, selectable text, search, outline/thumbnails, page controls, explicit links, metadata and selected/all native printing.
+- S050 activates governed desktop PDF associations and exact Android PDF VIEW/SEND delivery, and adds original codec/Unicode/RTL/geometry/hostile and inclusive 10,000-page conformance inputs while retaining prior fixture hashes.
+
+### Changed
+
+- S050 binds staged native PDF operation, scoped timings/process memory/render/range/cache observations and actual minified Android installed/output captures to current source/package identities.
+- S050 prepares version 0.3.0/code 1006, reconciles specification/help/site claims and adds machine-readable documentation-pass plus later observed-merge bindings to accepted-byte publication. DOCX, ODT and advanced PDF editing remain planned.
+
+### Fixed
+
+- S050 stages and verifies the actual release test reading-journey asset, preserves native acquisition/uninstall declarations, and rejects stale/incomplete/newer-failed conformance evidence.
+- S050 restores asynchronous static JPX/JBIG2 decoder initialization and reports failed image decoding as an explicit malformed-document state instead of silently displaying missing images.
+
+### Decisions
+
+- 2026-11-08 (S049): Keep the bundled PDF viewer read only, preserve source/session ownership, deny document scripts/submission/attachment launch and automatic external resources, and defer stable native activation to its release gate.
+- 2026-11-09 (S050): Reuse the viewer and accepted-byte release pipeline, original licensed fixtures and existing resource/manual/reference policy. Front-load actual signed/minified Android PDF proof, retain failed attempts, require complete fresh final staging, resolve findings within two external rounds and stop unmerged for owner review. Later owner authorization is required for tag/publication.
 
 ## [0.2.1]
 

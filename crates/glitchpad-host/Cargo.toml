@@ -17,8 +17,8 @@ tauri-build.workspace = true
 
 [dependencies]
 sha2.workspace = true
-glitchpad-core = { path = "../glitchpad-core", version = "=0.2.1" }
-glitchpad-android-source = { path = "../glitchpad-android-source", version = "=0.2.1" }
+glitchpad-core = { path = "../glitchpad-core", version = "=0.3.0" }
+glitchpad-android-source = { path = "../glitchpad-android-source", version = "=0.3.0" }
 atomic-write-file.workspace = true
 serde.workspace = true
 serde_json.workspace = true

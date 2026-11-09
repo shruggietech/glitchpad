@@ -212,7 +212,7 @@ function receipt(
 
 test('repository macOS package configuration is internally consistent', async () => {
   assert.deepEqual(await checkMacosConfiguration(repositoryRoot), {
-    capabilityCount: 31,
+    capabilityCount: 32,
     artifactCount: 1,
   });
 });
@@ -475,7 +475,7 @@ test('candidate inventory and public claims fail closed', () => {
     /unexpected executable/u,
   );
   const planned = candidate();
-  planned.document_extensions.push('pdf');
+  planned.document_extensions.push('docx');
   assert.throws(
     () => validateMacosEvidence(planned, contract),
     /document declarations drift/u,
@@ -580,7 +580,7 @@ test('official community mode binds final bytes and truthful macOS trust', async
     evidence.gate_status = 'official_valid';
     evidence.event = contract.official.authorized_event;
     evidence.publication_context = 'staged_unpublished';
-    evidence.tag = 'v0.2.1';
+    evidence.tag = contract.official.tag_pattern;
     evidence.evidence_files = [...contract.official.required_evidence];
     evidence.artifact.signature_status = 'not_signed';
     evidence.artifact.notarization_status = 'not_submitted';

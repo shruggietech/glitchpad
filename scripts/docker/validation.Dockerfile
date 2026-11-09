@@ -28,9 +28,12 @@ RUN apt-get update \
         libwebkit2gtk-4.1-dev \
         patchelf \
         pkg-config \
+        python3 \
         shared-mime-info \
         squashfs-tools \
+        unzip \
         xdg-utils \
+        xdotool \
         xvfb \
         xz-utils \
     && rm -rf /var/lib/apt/lists/*
@@ -80,8 +83,11 @@ RUN apt-get update \
         libgtk-3-0t64 \
         libwebkit2gtk-4.1-0 \
         pkg-config \
+        python3 \
         shared-mime-info \
+        unzip \
         xdg-utils \
+        xdotool \
         xvfb \
     && rm -rf /var/lib/apt/lists/*
 

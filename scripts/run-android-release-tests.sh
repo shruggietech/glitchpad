@@ -6,22 +6,41 @@ if [[ "$api" != 24 && "$api" != 36 ]] || [[ ! "$source" =~ ^[0-9a-f]{40}$ ]] || 
   echo 'usage: run-android-release-tests.sh API24_OR_36 SOURCE APPLICATION_APK TEST_APK EVIDENCE_DIRECTORY' >&2
   exit 2
 fi
-[[ "$mode" == full || "$mode" == startup ]] || exit 2
+[[ "$mode" == full || "$mode" == startup || "$mode" == pdf ]] || exit 2
 mkdir -p "$evidence"
 scripts="$(cd "$(dirname "$0")" && pwd)"
 app_sha="$(sha256sum "$app" | cut -d' ' -f1)"
 test_sha="$(sha256sum "$test_apk" | cut -d' ' -f1)"
 adb_bounded() { timeout --signal=KILL 90s adb "$@"; }
-adb_bounded install -r "$app" > "$evidence/install-application.txt"
-adb_bounded install -r -t "$test_apk" > "$evidence/install-instrumentation.txt"
-grep -Fxq Success "$evidence/install-application.txt"
-grep -Fxq Success "$evidence/install-instrumentation.txt"
+mkdir -p "$evidence/setup"
+install_selected() {
+  local role="$1" path="$2"
+  shift 2
+  local exit_code=0
+  for attempt in 1 2; do
+    local log="$evidence/setup/install-$role-attempt-$attempt"
+    exit_code=0
+    adb_bounded install --no-streaming -r "$@" "$path" > "$log.txt" 2> "$log.stderr.txt" || exit_code=$?
+    local passed=false
+    if (( exit_code == 0 )) && grep -Fxq Success "$log.txt"; then passed=true; fi
+    printf '{"command_exit":%s,"attempt":%s,"pass":%s}\n' "$exit_code" "$attempt" "$passed" > "$log.status.json"
+    if [[ "$passed" == true ]]; then
+      cp "$log.txt" "$evidence/install-$role.txt"
+      return 0
+    fi
+  done
+  echo "Canonical $role installation did not complete in two bounded attempts; setup logs retained." >&2
+  return 1
+}
+install_selected application "$app"
+install_selected instrumentation "$test_apk" -t
 offline_pending=false
+offline_prefix=''
 cleanup() {
   local status=$?
   trap - EXIT
   if [[ "$offline_pending" == true ]]; then
-    bash "$scripts/android-offline-mode.sh" restore "$evidence/offline" "$source" || status=1
+    bash "$scripts/android-offline-mode.sh" restore "$offline_prefix" "$source" || status=1
   fi
   exit "$status"
 }
@@ -54,11 +73,18 @@ run_phase() {
       "files/document-provider-fixtures/s048-$case_id.$extension" \
       > "$directory/s048-$case_id.$extension" 2> "$directory/$case_id-$extension-capture-error.txt" || capture_exit=$?
   done
-  if [[ "$case_id" == delivery || "$case_id" == startup ]]; then
+  if [[ "$case_id" == delivery || "$case_id" == startup || "$case_id" == pdf ]]; then
     for package in application instrumentation; do
       adb_bounded exec-out run-as com.shruggietech.glitchpad.test cat \
         "files/document-provider-fixtures/s048-installed-$package.apk" \
         > "$directory/s048-installed-$package.apk" 2> "$directory/$package-capture-error.txt" || capture_exit=$?
+    done
+  fi
+  if [[ "$case_id" == pdf ]]; then
+    for range in selected all; do
+      adb_bounded exec-out run-as com.shruggietech.glitchpad.test cat \
+        "files/document-provider-fixtures/s049-print-output-$range.pdf" \
+        > "$directory/s049-print-output-$range.pdf" 2> "$directory/print-$range-capture-error.txt" || capture_exit=$?
     done
   fi
   if (( command_exit == 0 && logcat_exit == 0 && capture_exit == 0 )); then
@@ -75,13 +101,15 @@ run_phase() {
     "$command_exit" "$logcat_exit" "$capture_exit" "$pass" > "$directory/$case_id-status.json"
   [[ "$pass" == true ]]
 }
-groups=(delivery authoring recovery back_about)
+groups=(delivery authoring recovery back_about pdf)
 if [[ "$mode" == startup ]]; then groups=(startup); fi
+if [[ "$mode" == pdf ]]; then groups=(pdf); fi
 for group in "${groups[@]}"; do
   completed=false
-  if [[ "$group" == back_about || "$group" == startup ]]; then
+  if [[ "$group" == back_about || "$group" == startup || "$group" == pdf ]]; then
+    offline_prefix="$evidence/offline-$group"
     offline_pending=true
-    bash "$scripts/android-offline-mode.sh" setup "$evidence/offline" "$source"
+    bash "$scripts/android-offline-mode.sh" setup "$offline_prefix" "$source"
   fi
   for attempt in 1 2; do
     directory="$evidence/$group-attempt-$attempt"
@@ -89,6 +117,7 @@ for group in "${groups[@]}"; do
     node "$scripts/prepare-android-instrumentation.mjs" "$directory/setup.txt"
     case "$group" in
       startup) if run_phase "$directory" startup releaseStartupIdentityAndCapture -e offlineSetup hosted_controller; then completed=true; fi ;;
+      pdf) if run_phase "$directory" pdf pdfCompatibility -e offlineSetup hosted_controller; then completed=true; fi ;;
       delivery) if run_phase "$directory" delivery resolvedIntentDisplaysColdAndWarmProviderDocuments; then completed=true; fi ;;
       authoring) if run_phase "$directory" authoring standaloneAuthoringAndDiagnosticJourneys; then completed=true; fi ;;
       recovery)
@@ -98,12 +127,12 @@ for group in "${groups[@]}"; do
     esac
     if [[ "$completed" == true ]]; then break; fi
   done
-  if [[ "$group" == back_about || "$group" == startup ]]; then
-    bash "$scripts/android-offline-mode.sh" restore "$evidence/offline" "$source"
+  if [[ "$group" == back_about || "$group" == startup || "$group" == pdf ]]; then
+    bash "$scripts/android-offline-mode.sh" restore "$offline_prefix" "$source"
     offline_pending=false
   fi
   [[ "$completed" == true ]] || exit 1
 done
 node "$scripts/validate-android-release-evidence.mjs" \
   --directory "$evidence" --source "$source" --api "$api" \
-  --application "$app" --instrumentation "$test_apk" --mode "$mode" --output "$evidence/release-runtime.json"
+  --application "$app" --instrumentation "$test_apk" --mode "$mode" --manifest "$(dirname "$app")/android-package-manifest.json" --input-identity "$(dirname "$test_apk")/identity.json" --output "$evidence/release-runtime.json"

@@ -9,7 +9,7 @@
 
 **A fast, cross-platform viewer and editor for local files.**
 
-[![CI](https://github.com/ShruggieTech/glitchpad/actions/workflows/ci.yml/badge.svg)](https://github.com/ShruggieTech/glitchpad/actions/workflows/ci.yml) [![CodeQL](https://github.com/ShruggieTech/glitchpad/actions/workflows/codeql.yml/badge.svg)](https://github.com/ShruggieTech/glitchpad/actions/workflows/codeql.yml) [![Version](https://img.shields.io/badge/version-0.2.1-6f42c1)](https://github.com/ShruggieTech/glitchpad/releases) [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE) [![Status](https://img.shields.io/badge/status-community%20release-green)](#status)
+[![CI](https://github.com/ShruggieTech/glitchpad/actions/workflows/ci.yml/badge.svg)](https://github.com/ShruggieTech/glitchpad/actions/workflows/ci.yml) [![CodeQL](https://github.com/ShruggieTech/glitchpad/actions/workflows/codeql.yml/badge.svg)](https://github.com/ShruggieTech/glitchpad/actions/workflows/codeql.yml) [![Version](https://img.shields.io/badge/version-0.3.0-6f42c1)](https://github.com/ShruggieTech/glitchpad/releases) [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE) [![Status](https://img.shields.io/badge/status-community%20release-green)](#status)
 
 </div>
 
@@ -17,7 +17,7 @@ Glitchpad is a minimal desktop and Android application for opening, inspecting, 
 
 ## Status
 
-Glitchpad v0.2.1 defines the S046/S047 product recovery release: Android New/Open/edit/save/copy/recovery, a compact document shell, truthful document tools, useful inert SVG handling, and verified diagnostic export. It retains bounded image and text-family capabilities. Download the [latest published release](https://github.com/ShruggieTech/glitchpad/releases/latest); the source version alone does not establish publication. Windows packages are unsigned, and macOS is ad-hoc signed and not notarized. See the [release notes](docs/releases/v0.2.1.md) and [preparation receipt](docs/releases/v0.2.1-receipt.md).
+Glitchpad v0.3.0 defines PDF viewing, selectable text, search, thumbnails, outline/page navigation, links, metadata and system printing through S049/S050. It retains the text/image families and Android document tasks. Download the [latest published release](https://github.com/ShruggieTech/glitchpad/releases/latest); the source version alone does not establish publication. Windows packages are unsigned, and macOS is ad-hoc signed and not notarized. See the [release notes](docs/releases/v0.3.0.md) and [preparation receipt](docs/releases/v0.3.0-receipt.md).
 
 Specification and product versions move together. Published releases retain their immutable historical receipts, and each release requires documentation reconciliation and current package/runtime evidence.
 
@@ -26,7 +26,7 @@ Specification and product versions move together. Published releases retain thei
 - Markdown viewing and in-place editing, including Mermaid diagram source, preview, and validation.
 - Plain-text and supported source-code viewing and editing with language detection and syntax highlighting.
 - Image viewing and inspection, including WebP, SVG, animation and multi-image ICO containers.
-- Planned: PDF viewing with page navigation, document outlines, search, and metadata.
+- Read-only PDF viewing with selectable text, search, thumbnails, outline/page navigation, links, rotation, metadata and system printing. PDF scripts, form submission and attachment launch remain disabled.
 - Planned: DOCX and OpenDocument viewing through a safe, read-only rendering pipeline.
 - A compact metadata inspector for supported text-family filesystem and document properties; image metadata is included with explicit GPS/location reveal.
 - Small, keyboard-friendly tabs without workspace or project-management UI.
@@ -35,7 +35,7 @@ Capability claims are promoted from planned to implemented only after their spec
 
 ## Supported platforms
 
-| Platform | v0.2.1 baseline | Distribution status |
+| Platform | v0.3.0 baseline | Distribution status |
 | --- | --- | --- |
 | Windows 11 x86_64 | Tauri desktop host | Unsigned NSIS installer and portable ZIP |
 | macOS 13+ universal | Tauri desktop host | Ad-hoc-signed application in a non-notarized DMG |
@@ -50,7 +50,7 @@ Use Add document for New Markdown, New text file or Open file. New drafts are ed
 
 Document tools holds actions for the current file; Menu holds Preferences, Diagnostics, Help and About. Back dismisses the keyboard or top temporary layer before document navigation. Unsupported previews explain their cause while retaining available source/details access. Diagnostics lets you inspect one frozen redacted preview before native Save or Share.
 
-Android 7/API24 is the minimum OS baseline; Chromium 69-class WebView is the minimum qualified compatibility profile. Actual API24/API36 WebView versions and package-specific task evidence belong to the [release receipt](docs/releases/v0.2.1-receipt.md).
+Android 7/API24 is the minimum OS baseline; Chromium 69-class WebView is the minimum qualified compatibility profile. Actual API24/API36 WebView versions and package-specific task evidence belong to the [release receipt](docs/releases/v0.3.0-receipt.md).
 
 ## Development
 

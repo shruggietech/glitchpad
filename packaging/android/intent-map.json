@@ -13,6 +13,7 @@
   "schemes": ["content"],
   "media_types": [
     "application/json",
+    "application/pdf",
     "application/toml",
     "application/x-typescript",
     "application/x-yaml",
@@ -54,6 +55,7 @@
     "mermaid",
     "mjs",
     "mmd",
+    "pdf",
     "png",
     "py",
     "rs",
@@ -89,6 +91,7 @@
       "authorities": [],
       "media_types": [
         "application/json",
+        "application/pdf",
         "application/toml",
         "application/x-typescript",
         "application/x-yaml",
@@ -120,6 +123,7 @@
       "authorities": [],
       "media_types": [
         "application/json",
+        "application/pdf",
         "application/toml",
         "application/x-typescript",
         "application/x-yaml",

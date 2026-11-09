@@ -3,12 +3,20 @@ import { createHash } from 'node:crypto';
 import { mkdtemp, mkdir, readFile, rm, writeFile, cp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { releaseIdentity } from './lib/release-identity.mjs';
+const androidContract = JSON.parse(
+  await readFile(
+    new URL('../packaging/android/package-contract.json', import.meta.url),
+    'utf8',
+  ),
+);
 import test from 'node:test';
 import {
   validateReleaseRow,
   validateReleaseAttempt,
   validateReleaseDirectory,
   releaseCaseGroups,
+  createAndroidPdfReleaseRecord,
 } from './validate-android-release-evidence.mjs';
 
 const sha = (bytes) => createHash('sha256').update(bytes).digest('hex');
@@ -29,8 +37,16 @@ const readback = (kind) => ({
   expected_sha256: sha('expected document'),
   actual_sha256: sha('expected document'),
 });
+const pdfFixtureSha = sha(
+  await readFile(
+    new URL('../fixtures/pdf/s049-compatibility.pdf', import.meta.url),
+  ),
+);
+const printedPdf = Buffer.from(
+  '%PDF-1.7\n' + 'fixture '.repeat(30) + '\n%%EOF\n',
+);
 function row(caseId) {
-  return {
+  const result = {
     schema: 1,
     status: 'pass',
     case_id: caseId,
@@ -41,8 +57,8 @@ function row(caseId) {
       frontend_source_commit: source,
       application_sha256: expected.applicationSha,
       instrumentation_sha256: expected.instrumentationSha,
-      version: '0.2.1',
-      version_code: 1005,
+      version: releaseIdentity.version,
+      version_code: androidContract.version_code,
       api_level: 24,
       build_variant: 'ordinary',
       channel: 'release',
@@ -56,6 +72,7 @@ function row(caseId) {
       instrumentation_package: 'com.shruggietech.glitchpad.test',
       signing_certificate_sha256: 'b'.repeat(64),
       instrumentation_certificate_sha256: 'b'.repeat(64),
+      architecture: 'x86_64',
       webview_package: 'com.android.chrome',
       webview_version: '69.0.3497.100',
     },
@@ -79,6 +96,96 @@ function row(caseId) {
       },
     },
   };
+  if (caseId === 'pdf') {
+    const print = (pages) => ({
+      output_pages: pages,
+      output_ink: Array(pages).fill(700),
+      output_sha256: sha(printedPdf),
+      output_bytes: printedPdf.length,
+      private_spool_cleaned: true,
+      physical_output_confirmed: false,
+    });
+    result.observations = {
+      fixture_sha256: pdfFixtureSha,
+      cold_resolved_view: true,
+      warm_resolved_send: true,
+      facts: {
+        worker: 'true',
+        engine: '6.5.438',
+        ink: 800,
+        executed: false,
+        selected: 'Glitchpad PDF compatibility page 1',
+      },
+      reading_journey: {
+        checks: Object.fromEntries(
+          [
+            'outline_named_destination',
+            'search',
+            'thumbnail',
+            'internal_link',
+            'external_link_disclosure',
+            'rotation',
+            'go_to_page',
+            'keyboard',
+            'metadata',
+            'embedded_font_text',
+          ].map((k) => [k, true]),
+        ),
+        native_touch_outline: true,
+        native_keyboard_home: true,
+      },
+      source_unchanged: true,
+      stream_rendered: true,
+      stream_cache_removed: true,
+      stream_cache_files: [1000],
+      disposal: {
+        worker_terminated: true,
+        workers: 0,
+        surfaces: 0,
+        surfaceBytes: 0,
+        elapsed_ms: 20,
+      },
+      print: { selected: print(2), all: print(4) },
+    };
+  }
+  if (caseId === 'pdf') {
+    const resource = {
+      peakSurfaceBytes: 1000,
+      peakSurfaces: 2,
+      range: { maximumRequestBytes: 4096, peakConcurrency: 2 },
+    };
+    result.observations.reading_journey.checks.canvas_ink = 800;
+    result.observations.resource_phases = [resource, resource];
+    result.observations.measurements = {
+      first_page: { method: 'SystemClock_elapsedRealtime', samples_ms: [20] },
+      memory: {
+        method: 'Debug_MemoryInfo_totalPss',
+        process_name: 'com.shruggietech.glitchpad',
+        scope: 'actual app process',
+        samples_bytes: [1000, 1500, 1100],
+      },
+      reading: {
+        samples: [
+          { metric: 'navigation', milliseconds: 10 },
+          { metric: 'search_complete', milliseconds: 20 },
+          { metric: 'first_thumbnail', milliseconds: 15 },
+        ],
+        interaction: {
+          method: 'synchronous_event_interval',
+          scope: 'handlers only',
+          samples_ms: [1, 2],
+        },
+        long_tasks: {
+          method: 'PerformanceObserver_longtask',
+          supported: true,
+          scope: 'main realm reading only',
+          samples_ms: [],
+        },
+      },
+      resources: resource,
+    };
+  }
+  return result;
 }
 test('release rows require independent installed bytes, source, role and actual API', () => {
   validateReleaseRow(row('delivery'), { ...expected, caseId: 'delivery' });
@@ -179,7 +286,11 @@ async function fixture(mode = 'full') {
   await writeFile(app, application);
   await writeFile(testApk, instrumentation);
   for (const [group, cases] of Object.entries(
-    mode === 'startup' ? { startup: ['startup'] } : releaseCaseGroups,
+    mode === 'startup'
+      ? { startup: ['startup'] }
+      : mode === 'pdf'
+        ? { pdf: ['pdf'] }
+        : releaseCaseGroups,
   )) {
     const path = join(directory, group + '-attempt-1');
     await mkdir(path);
@@ -193,6 +304,12 @@ async function fixture(mode = 'full') {
       const bytes = Buffer.from(JSON.stringify(receipt));
       await writeFile(join(path, 's048-' + caseId + '.json'), bytes);
       await writeFile(join(path, 's048-' + caseId + '.png'), png);
+      if (caseId === 'pdf')
+        for (const range of ['selected', 'all'])
+          await writeFile(
+            join(path, 's049-print-output-' + range + '.pdf'),
+            printedPdf,
+          );
       await writeFile(
         join(path, caseId + '-status.json'),
         JSON.stringify({
@@ -213,7 +330,7 @@ async function fixture(mode = 'full') {
           '\nOK (1 test)\nINSTRUMENTATION_CODE: -1\n',
       );
     }
-    if (group === 'delivery' || group === 'startup') {
+    if (['delivery', 'startup', 'pdf'].includes(group)) {
       await writeFile(
         join(path, 's048-installed-application.apk'),
         application,
@@ -232,11 +349,11 @@ async function fixture(mode = 'full') {
     api: 24,
   };
 }
-test('complete campaign selects all five cases and reads installed APK captures', async () => {
+test('complete campaign selects all six cases and reads installed APK captures', async () => {
   const input = await fixture();
   try {
     const result = await validateReleaseDirectory(input);
-    assert.equal(result.selected.flatMap((entry) => entry.cases).length, 5);
+    assert.equal(result.selected.flatMap((entry) => entry.cases).length, 6);
     await writeFile(
       join(
         input.directory,
@@ -312,6 +429,137 @@ test('startup diagnostics cannot qualify the full release campaign', async () =>
       validateReleaseDirectory(input),
       /unexpected|missing/u,
     );
+  } finally {
+    await rm(input.directory, { recursive: true, force: true });
+  }
+});
+
+test('PDF is mandatory in full release campaigns', () => {
+  assert.deepEqual(releaseCaseGroups.pdf, ['pdf']);
+  const missing = row('pdf');
+  missing.observations = {};
+  assert.throws(
+    () => validateReleaseRow(missing, { ...expected, caseId: 'pdf' }),
+    /PDF/u,
+  );
+});
+
+test('PDF release rows reject false worker, fixture, input, cache, print and disposal facts', () => {
+  validateReleaseRow(row('pdf'), { ...expected, caseId: 'pdf' });
+  for (const mutate of [
+    (p) => (p.facts.worker = 'false'),
+    (p) => (p.fixture_sha256 = 'c'.repeat(64)),
+    (p) => (p.cold_resolved_view = false),
+    (p) => (p.warm_resolved_send = false),
+    (p) => (p.stream_cache_removed = false),
+    (p) => (p.disposal.elapsed_ms = 251),
+    (p) => (p.reading_journey.checks.search = false),
+    (p) => (p.print.all.output_ink = [0, 0, 0, 0]),
+    (p) => (p.print.selected.output_pages = 4),
+    (p) => (p.source_unchanged = false),
+  ]) {
+    const changed = row('pdf');
+    mutate(changed.observations);
+    assert.throws(
+      () => validateReleaseRow(changed, { ...expected, caseId: 'pdf' }),
+      /PDF/u,
+    );
+  }
+});
+test('PDF diagnostics capture raw prints and installed bytes without qualifying the whole release', async () => {
+  const input = await fixture('pdf');
+  try {
+    const result = await validateReleaseDirectory({ ...input, mode: 'pdf' });
+    assert.equal(result.diagnostic_only, true);
+    assert.equal(result.candidate_qualified, false);
+    await assert.rejects(
+      validateReleaseDirectory(input),
+      /unexpected|missing/u,
+    );
+    await writeFile(
+      join(input.directory, 'pdf-attempt-1', 's049-print-output-all.pdf'),
+      'wrong output',
+    );
+    await assert.rejects(
+      validateReleaseDirectory({ ...input, mode: 'pdf' }),
+      /printed bytes/u,
+    );
+    await writeFile(
+      join(input.directory, 'pdf-attempt-1', 's049-print-output-all.pdf'),
+      printedPdf,
+    );
+    await writeFile(
+      join(input.directory, 'pdf-attempt-1', 's048-installed-application.apk'),
+      'wrong installed app',
+    );
+    await assert.rejects(
+      validateReleaseDirectory({ ...input, mode: 'pdf' }),
+      /installed application/u,
+    );
+  } finally {
+    await rm(input.directory, { recursive: true, force: true });
+  }
+});
+
+test('full Android PDF record binds canonical bytes, R8 map and matching instrumentation', async () => {
+  const input = await fixture();
+  try {
+    const summary = await validateReleaseDirectory(input);
+    const mapping = Buffer.from('actual R8 mapping input');
+    const manifestPath = join(input.directory, 'android-package-manifest.json');
+    const inputIdentityPath = join(input.directory, 'identity.json');
+    await writeFile(
+      manifestPath,
+      JSON.stringify({
+        source_commit: source,
+        artifacts: [{ role: 'universal', sha256: expected.applicationSha }],
+      }),
+    );
+    await writeFile(join(input.directory, 'r8-mapping.txt'), mapping);
+    const identity = {
+      source_commit: source,
+      application_sha256: expected.applicationSha,
+      instrumentation_sha256: expected.instrumentationSha,
+      minified: true,
+      application_debuggable: false,
+      r8_mapping_sha256: sha(mapping),
+    };
+    await writeFile(inputIdentityPath, JSON.stringify(identity));
+    const options = {
+      summary,
+      manifestPath,
+      inputIdentityPath,
+      instrumentation: input.instrumentation,
+      execution: {
+        run_id: 123,
+        run_attempt: 1,
+        job: 'release-runtime',
+        completion: 'clean',
+      },
+    };
+    const record = await createAndroidPdfReleaseRecord(options);
+    assert.equal(record.profile, 'android_api24');
+    assert.equal(record.checks.reading, true);
+    assert.equal(record.artifact_sha256, expected.applicationSha);
+    assert.equal(record.execution.run_id, 123);
+    await assert.rejects(
+      createAndroidPdfReleaseRecord({
+        ...options,
+        summary: { ...summary, diagnostic_only: true },
+      }),
+      /Full release campaign/,
+    );
+    await writeFile(
+      inputIdentityPath,
+      JSON.stringify({ ...identity, source_commit: 'c'.repeat(40) }),
+    );
+    await assert.rejects(
+      createAndroidPdfReleaseRecord(options),
+      /source.application binding/,
+    );
+    await writeFile(inputIdentityPath, JSON.stringify(identity));
+    await writeFile(join(input.directory, 'r8-mapping.txt'), 'changed');
+    await assert.rejects(createAndroidPdfReleaseRecord(options), /R8 mapping/);
   } finally {
     await rm(input.directory, { recursive: true, force: true });
   }

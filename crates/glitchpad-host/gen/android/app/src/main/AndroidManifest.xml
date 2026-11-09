@@ -27,6 +27,7 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="content" />
                 <data android:mimeType="application/json" />
+                <data android:mimeType="application/pdf" />
                 <data android:mimeType="application/toml" />
                 <data android:mimeType="application/x-typescript" />
                 <data android:mimeType="application/x-yaml" />
@@ -52,6 +53,7 @@
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="application/json" />
+                <data android:mimeType="application/pdf" />
                 <data android:mimeType="application/toml" />
                 <data android:mimeType="application/x-typescript" />
                 <data android:mimeType="application/x-yaml" />

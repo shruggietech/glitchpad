@@ -1,5 +1,5 @@
 {
-  "version": "0.2.1",
+  "version": "0.3.0",
   "bundle": {
     "active": true,
     "targets": ["app", "dmg"],
@@ -109,6 +109,13 @@
         "description": "ICO image",
         "ext": ["ico"],
         "mimeType": "image/vnd.microsoft.icon",
+        "role": "Viewer"
+      },
+      {
+        "name": "Glitchpad PDF",
+        "description": "PDF document",
+        "ext": ["pdf"],
+        "mimeType": "application/pdf",
         "role": "Viewer"
       }
     ],

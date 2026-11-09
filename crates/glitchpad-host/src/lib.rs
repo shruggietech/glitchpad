@@ -169,6 +169,8 @@ pub fn run() {
         desktop_delivery::save_desktop_source_as,
         lifecycle_probe::record_desktop_lifecycle_probe,
         lifecycle_probe::record_desktop_pdf_probe,
+        lifecycle_probe::sample_desktop_pdf_memory,
+        lifecycle_probe::request_desktop_pdf_probe_switch,
         lifecycle_probe::record_desktop_device_scale_probe,
         lifecycle_probe::consume_desktop_markdown_failure_probe,
         lifecycle_probe::begin_desktop_document_workflow_probe,
@@ -320,6 +322,10 @@ pub fn run() {
                 .map_err(|_| std::io::Error::other("The PDF probe request is invalid"))?
                 .is_some()
             {
+                lifecycle_probe::begin_desktop_pdf_memory(
+                    &app.state::<lifecycle_probe::LifecycleProbeState>(),
+                )
+                .map_err(|_| std::io::Error::other("The PDF memory baseline is unavailable"))?;
                 main_builder.initialization_script(concat!(
                     include_str!("../../../scripts/pdf-reading-journey.js"),
                     "\n",

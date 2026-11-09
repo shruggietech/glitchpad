@@ -14,16 +14,17 @@ import {
 } from './check-community-release.mjs';
 
 const finalHandoff = () => ({
+  scope: { capability: 'pdf', slices: ['S049', 'S050'], issues: [81, 82, 11] },
   releaseNotes:
-    'S046 and S047 product recovery for #244 and #255; issue #66 and #239 remain open. unsigned not notarized SHA-256',
+    'S049 and S050 PDF viewing for #81, #82 and #11; issue #66 and #239 remain open. unsigned not notarized SHA-256',
   releaseReceipt:
-    'S046 and S047 product recovery for #244 and #255. Preparation is unpublished; final source/package evidence is confirmed in the PR handoff. issue #66 and #239 remain open.',
+    'S049 and S050 PDF viewing for #81, #82 and #11. Preparation is unpublished; final source/package evidence is confirmed in the PR handoff. issue #66 and #239 remain open.',
   operatorRunbook:
-    'Stop unmerged with auto-merge disabled. Tagging and publication require later owner authorization. Use the accepted candidate SHA and accepted staging inputs; consume accepted payloads without rebuilding. S046 S047 product recovery #244 #255.',
-  changelog: 'S046 and S047 product recovery.',
+    'Stop unmerged with auto-merge disabled. Tagging and publication require later owner authorization. Use the accepted candidate SHA and accepted staging inputs; consume accepted payloads without rebuilding. S049 S050 PDF viewing #81 #82 #11.',
+  changelog: 'S049 and S050 PDF viewing.',
 });
 
-test('accepts the S048 preparation handoff without publication authority', () =>
+test('accepts the S050 preparation handoff without publication authority', () =>
   assert.equal(validateFinalReleaseHandoff(finalHandoff()), true));
 for (const [name, mutate, expected] of [
   [
@@ -65,18 +66,18 @@ for (const [name, mutate, expected] of [
     /accepted payloads/u,
   ],
   [
-    'missing recovery traceability',
+    'missing PDF slice traceability',
     (h) => {
-      h.releaseNotes = h.releaseNotes.replace('S047', 'S043');
+      h.releaseNotes = h.releaseNotes.replace('S050', 'S043');
     },
-    /S047/u,
+    /S050/u,
   ],
   [
-    'missing tracked recovery gate',
+    'missing tracked PDF gate',
     (h) => {
-      h.releaseReceipt = h.releaseReceipt.replace('#255', '#75');
+      h.releaseReceipt = h.releaseReceipt.replace('#82', '#75');
     },
-    /#255/u,
+    /#82/u,
   ],
 ])
   test('rejects handoff with ' + name, () => {
@@ -87,6 +88,12 @@ for (const [name, mutate, expected] of [
 
 const contract = () => ({
   schema_version: 1,
+  release_scope: JSON.parse(
+    readFileSync(
+      new URL('../packaging/release/package-contract.json', import.meta.url),
+      'utf8',
+    ),
+  ).release_scope,
   version: releaseIdentity.version,
   tag: releaseIdentity.tag,
   repository: 'shruggietech/glitchpad',

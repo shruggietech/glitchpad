@@ -1,6 +1,6 @@
-# Unreleased PDF candidate
+# PDF viewing and release qualification
 
-S049 adds the candidate PDF viewer described by [the slice specification](../../specs/049-pdf-viewer-foundation/spec.md). Version 0.2.1 remains the published release. PDF file associations, Android PDF intents and public stable support remain separate activation work.
+S049 introduced the PDF viewer and S050 reconciles its conformance and stable native activation into the v0.3.0 source target. Desktop associations and exact Android PDF VIEW/SEND delivery use the same governed capability. Source activation is separate from actual publication; use the [latest published release](https://github.com/ShruggieTech/glitchpad/releases/latest) and the [v0.3.0 preparation receipt](../releases/v0.3.0-receipt.md) for current publication/evidence authority.
 
 Open a local PDF through the existing file picker or an explicitly granted delivery. The document stays read only. The PDF controls provide previous/next page, a page-number task and fit. More PDF tools contains zoom (10–800 percent), rotation, continuous/single-page layout, search, outline, thumbnails, page links, printing and file information. Stored page labels appear in page semantics and file information; page-number entry always uses the physical one-based page ordinal.
 
@@ -12,4 +12,4 @@ Print all pages or a comma-separated selection such as 1-3, 5. Printing prepares
 
 PDF file information contributes version/pages/labels, encryption and stored permission flags, document information fields, current-page dimensions, outline and unsupported-feature facts through the existing provenance/availability catalog. Missing fields remain Not provided. Stored permission flags are informational. Embedded fonts and platform font fallback are used; unembedded font appearance can vary. Embedded ICC profiles are not applied. PDF scripts, form submission/editing, attachment launch, embedded media and automatic remote resources are not activated.
 
-Current qualification, failed diagnostics and exact source/artifact identities are maintained in [the S049 validation ledger](../../specs/049-pdf-viewer-foundation/validation.md). Candidate behavior is not release qualification.
+Current qualification, failed diagnostics and exact source/artifact identities are maintained in [the S050 validation ledger](../../specs/050-pdf-stable-activation/validation.md) and final external PR confirmation. The historical [S049 ledger](../../specs/049-pdf-viewer-foundation/validation.md) retains its original source-bound scope. Current/Chrome 69 browser corpus, staged native profiles, debug regression roles and minified installed release operation are distinct proof classes.

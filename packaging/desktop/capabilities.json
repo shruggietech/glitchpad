@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "release": "0.2.1",
+  "release": "0.3.0",
   "families": [
     {
       "id": "markdown",
@@ -126,6 +126,15 @@
       "renderer": "image",
       "association": true,
       "dialog": true
+    },
+    {
+      "id": "pdf",
+      "description": "PDF document",
+      "extensions": ["pdf"],
+      "media_types": ["application/pdf"],
+      "renderer": "pdf",
+      "association": true,
+      "dialog": true
     }
   ],
   "forbidden_extensions": [
@@ -139,7 +148,6 @@
     "odp",
     "ods",
     "odt",
-    "pdf",
     "pptx",
     "rar",
     "xlsx",

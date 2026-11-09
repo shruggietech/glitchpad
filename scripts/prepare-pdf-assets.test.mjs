@@ -49,3 +49,90 @@ test('offline resources include CMaps and BSD symbol fonts only', async () => {
   assert.ok(data.includes('FoxitDingbats.pfb'));
   assert.ok(!/Liberation|\.ttf|quickjs/i.test(data));
 });
+
+// Execute the transformed upstream method so async module semantics are covered.
+test('static decoder rewrite awaits the factory before instantiating both codecs', async () => {
+  const code = await readFile(
+    join(pdfPackageRoot(), 'legacy/build/pdf.worker.mjs'),
+    'utf8',
+  );
+  const transformed = transformPdfWorker(code);
+  const method = transformed.match(
+    /async #getJsInstance\(imports\) \{([\s\S]*?)\n  \}/,
+  );
+  assert.ok(method, 'reviewed upstream decoder method must be present');
+  const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+  for (const name of [
+    'jbig2_nowasm_fallback.js',
+    'openjpeg_nowasm_fallback.js',
+  ]) {
+    const imports = { codec: name };
+    const exports = { decoded: name };
+    let called = 0;
+    const invoke = new AsyncFunction(
+      '__glitchpadPdfDecoder',
+      'imports',
+      method[1],
+    );
+    const result = await invoke.call(
+      { _noWasmFilename: name },
+      (observed) => {
+        assert.equal(observed, name);
+        return (actualImports) => {
+          called++;
+          assert.equal(actualImports, imports);
+          return exports;
+        };
+      },
+      imports,
+    );
+    assert.equal(called, 1);
+    assert.equal(result.exports, exports);
+  }
+});
+
+test('failed image data emits an explicit bounded failure while valid pixels retain their transport', async () => {
+  const code = await readFile(
+    join(pdfPackageRoot(), 'legacy/build/pdf.worker.mjs'),
+    'utf8',
+  );
+  const transformed = transformPdfWorker(code);
+  const method = transformed.match(
+    /_sendImgData\(objId, imgData, cacheGlobally = false\) \{([\s\S]*?)\n  \}/,
+  );
+  assert.ok(method);
+  let failures = 0;
+  const sent = [];
+  const invoke = new Function(
+    '__glitchpadPdfImageFailure',
+    'objId',
+    'imgData',
+    'cacheGlobally',
+    method[1],
+  );
+  const receiver = {
+    parsingType3Font: false,
+    pageProxyId: 7,
+    handler: {
+      send: (...args) => {
+        sent.push(args);
+        return 'sent';
+      },
+    },
+  };
+  const pixels = { data: new Uint8Array(4) };
+  assert.equal(
+    invoke.call(receiver, () => failures++, 'valid', pixels, false),
+    'sent',
+  );
+  assert.equal(failures, 0);
+  assert.equal(sent[0][1][3], pixels);
+  assert.equal(
+    invoke.call(receiver, () => failures++, 'failed', null, false),
+    'sent',
+  );
+  assert.equal(failures, 1);
+  assert.equal(sent[1][1][3], null);
+  invoke.call(receiver, () => failures++, 'cached-failed', null, true);
+  assert.equal(failures, 2);
+});

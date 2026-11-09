@@ -1,0 +1,33 @@
+{
+  "generator": "scripts/generate-pdf-conformance-assets.py",
+  "pillow": "12.3.0",
+  "fonttools": "4.65.0",
+  "openjpeg": "2.5.4",
+  "font_source_sha256": "7ef36a2c3593758cdb622e1bdef4f84523e92fbc3ccc667438dd80ff54c2de88",
+  "patterns": {
+    "jpx": "16x16 original RGB quadrants: red green / blue yellow",
+    "jbig2": "16x16 original black top-left 6x10 and bottom-right 6x8 on white"
+  },
+  "assets": [
+    {
+      "name": "GlitchpadPdfHebrewFixture.ttf",
+      "bytes": 1592,
+      "sha256": "716376f531833ceb8f106d399ec34f1374114f9840ba0160f9be80b9253f29db"
+    },
+    {
+      "name": "hebrew-metrics.json",
+      "bytes": 273,
+      "sha256": "236535a66798850ce1b7dedccd72e9b439543311ee865ce4fbbc260e23aea988"
+    },
+    {
+      "name": "original-jbig2.jb2",
+      "bytes": 83,
+      "sha256": "0e369e9382415590a72baf14bd9f3b71abf7023149905d3ba7d712586d8b2718"
+    },
+    {
+      "name": "original-jpx.j2k",
+      "bytes": 394,
+      "sha256": "fb9bd3404103706d13a8c6fec7c7ae5f5845717141cc9b0abb0781c371d6c3aa"
+    }
+  ]
+}

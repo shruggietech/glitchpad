@@ -222,4 +222,61 @@ describe('PDF controller actual asynchronous ownership', () => {
     ).toEqual({ kind: 'text', value: 'i' });
     expect(value.state.state).toBe('ready');
   });
+  it('measures actual range reads and keeps late old-source counters out of a replacement', async () => {
+    const pending = deferred<Uint8Array>();
+    const first = lease(
+      vi.fn((offset: number, length: number) =>
+        offset === 0
+          ? Promise.resolve(new Uint8Array(length))
+          : pending.promise,
+      ),
+    );
+    engine.getDocument.mockReturnValue(load(doc()));
+    const value = controller();
+    await value.open(first);
+    engine.transports[0].requestDataRange(4096, 8192);
+    engine.transports[0].requestDataRange(4096, 8192);
+    expect(value.resourceObservations.range).toMatchObject({
+      calls: 3,
+      inFlight: 2,
+      peakConcurrency: 2,
+      maximumRequestBytes: 4096,
+      completedBytes: 4096,
+    });
+    await value.open(lease());
+    pending.resolve(new Uint8Array(4096));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(value.resourceObservations.range).toMatchObject({
+      calls: 1,
+      inFlight: 0,
+      peakConcurrency: 1,
+      maximumRequestBytes: 4096,
+      completedBytes: 4096,
+    });
+  });
+});
+
+it('reports actual decoder image failure and ignores an obsolete worker decode event', async () => {
+  const first = lease(),
+    current = lease();
+  engine.getDocument.mockReturnValue(load(doc()));
+  const value = controller();
+  await value.open(first);
+  const old = ParserWorker.instances[0];
+  await value.open(current);
+  const event = () =>
+    new MessageEvent('message', {
+      data: { type: 'glitchpad-pdf-decode-failure' },
+    });
+  old.dispatchEvent(event());
+  expect(value.state.state).toBe('ready');
+  expect(current.close).not.toHaveBeenCalled();
+  ParserWorker.instances[1].dispatchEvent(event());
+  expect(value.state).toMatchObject({ state: 'failed', error: 'malformed' });
+  expect(value.resourceCounts).toEqual({
+    workers: 0,
+    surfaces: 0,
+    surfaceBytes: 0,
+  });
+  expect(current.close).toHaveBeenCalledOnce();
 });

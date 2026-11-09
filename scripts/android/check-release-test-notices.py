@@ -18,7 +18,14 @@ def verify_instrumentation_notices(apk: Path) -> None:
             content = source.read_bytes()
             if metadata.file_size != len(content) or archive.read(name) != content:
                 raise ValueError("Instrumentation notice bytes differ: " + name)
-    print("All five release test notice assets match their reviewed source bytes.")
+        for name in ("OFL-Courier-Prime.txt", "OFL-Noto-Sans-Hebrew.txt"):
+            source = NOTICE_ROOT.parents[2] / "fixtures/pdf" / name
+            if archive.read("assets/" + name) != source.read_bytes():
+                raise ValueError("Embedded PDF test-font license differs: " + name)
+        journey_source = NOTICE_ROOT.parents[2] / "scripts/pdf-reading-journey.js"
+        if archive.read("assets/pdf-reading-journey.js") != journey_source.read_bytes():
+            raise ValueError("The packaged PDF reading journey differs from its exact source.")
+    print("Release test notices, PDF font licenses and the actual PDF journey asset match source bytes.")
 
 
 if __name__ == "__main__":

@@ -410,7 +410,7 @@ function renderIntroduction(parsed, workspace) {
     'Authoritative project documentation for Glitchpad.',
   )}${generatedMarker}
 
-Glitchpad is a fast, cross-platform viewer and editor for local files. This source defines v${workspace.version} product recovery for Markdown, Mermaid, plain text, supported source files and bounded images, including Android New/Open/save/recovery and current document tools.
+Glitchpad is a fast, cross-platform viewer and editor for local files. This source defines v${workspace.version} PDF viewing, search, navigation, metadata and system printing, alongside Markdown, Mermaid, plain text, supported source files, bounded images and Android document tasks.
 
 ## Technical Specification authority
 

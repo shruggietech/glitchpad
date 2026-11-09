@@ -282,8 +282,10 @@ export async function checkMacosConfiguration(
     tauri.bundle.fileAssociations.some(
       ({ role, ext }) =>
         role !==
-        (capabilities.families.find((f) => f.extensions.includes(ext[0]))
-          ?.renderer === 'image'
+        (['image', 'pdf'].includes(
+          capabilities.families.find((f) => f.extensions.includes(ext[0]))
+            ?.renderer,
+        )
           ? 'Viewer'
           : 'Editor'),
     )

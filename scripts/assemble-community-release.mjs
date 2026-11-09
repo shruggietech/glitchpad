@@ -1,3 +1,4 @@
+import { collectPdfReleaseEvidence } from './lib/pdf-release-evidence.mjs';
 import { validateDocumentWorkflowProof } from './lib/package-document-workflow.mjs';
 import { createHash } from 'node:crypto';
 import { cp, mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
@@ -226,6 +227,13 @@ export async function assembleCommunityRelease({
       }
     }
   }
+  const pdfConformance =
+    contract.release_scope?.capability === 'pdf'
+      ? await collectPdfReleaseEvidence({
+          files: available,
+          source: sourceCommit,
+        })
+      : null;
   await mkdir(output, { recursive: true });
   const artifacts = [];
   for (const name of contract.artifacts) {
@@ -264,6 +272,7 @@ export async function assembleCommunityRelease({
     artifacts,
     trust_states: contract.trust_states,
     practical_use_evidence: practicalUseEvidence,
+    ...(pdfConformance ? { pdf_conformance: pdfConformance } : {}),
     accepted_staging_evidence: contract.accepted_staging_evidence,
     practical_use_required_passes: practicalUseRequiredPasses,
     evidence_bundles: Object.keys(contract.trust_states).map(

@@ -1,7 +1,8 @@
+import { androidPdfConformanceRecord } from './lib/pdf-native-record.mjs';
 import { createHash } from 'node:crypto';
 import { createReadStream, readFileSync } from 'node:fs';
 import { readFile, readdir, writeFile } from 'node:fs/promises';
-import { join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { releaseIdentity } from './lib/release-identity.mjs';
 
@@ -17,6 +18,7 @@ export const releaseCaseGroups = Object.freeze({
   authoring: ['authoring'],
   recovery: ['recovery_seed', 'recovery_verify'],
   back_about: ['back_about'],
+  pdf: ['pdf'],
 });
 const digest = (bytes) => createHash('sha256').update(bytes).digest('hex');
 export async function hashReleaseFile(path) {
@@ -142,6 +144,168 @@ export function validateReleaseRow(row, expected) {
       'offline native notices missing',
     );
   }
+  if (expected.caseId === 'pdf') {
+    const pdf = row.observations ?? {};
+    const measured = pdf.measurements;
+    required(
+      typeof identity.architecture === 'string' &&
+        identity.architecture.length > 0,
+      'PDF observed architecture missing',
+    );
+    required(
+      measured?.first_page?.method &&
+        measured.first_page.samples_ms?.length >= 1 &&
+        measured.first_page.samples_ms.every(
+          (n) => Number.isFinite(n) && n >= 0,
+        ),
+      'PDF first-page raw measurement missing',
+    );
+    required(
+      measured.memory?.method &&
+        measured.memory.process_name === identity.package_identifier &&
+        measured.memory.scope &&
+        measured.memory.samples_bytes?.length >= 2 &&
+        measured.memory.samples_bytes.every((n) => Number.isFinite(n) && n > 0),
+      'PDF named process memory measurements missing',
+    );
+    const readings = measured.reading;
+    for (const metric of ['navigation', 'search_complete', 'first_thumbnail'])
+      required(
+        readings?.samples?.some(
+          (s) =>
+            s.metric === metric &&
+            Number.isFinite(s.milliseconds) &&
+            s.milliseconds >= 0,
+        ),
+        'PDF reading measurement missing: ' + metric,
+      );
+    required(
+      readings.interaction?.scope &&
+        readings.interaction.samples_ms?.length > 0 &&
+        readings.interaction.samples_ms.every(
+          (n) => Number.isFinite(n) && n >= 0,
+        ),
+      'PDF synchronous interaction observations are missing',
+    );
+    required(
+      typeof readings.long_tasks?.supported === 'boolean' &&
+        readings.long_tasks.scope,
+      'PDF main-realm long-task observer scope missing',
+    );
+    if (readings.long_tasks.supported)
+      required(
+        Array.isArray(readings.long_tasks.samples_ms) &&
+          readings.long_tasks.samples_ms.every(
+            (n) => Number.isFinite(n) && n >= 0,
+          ),
+        'PDF observed reading task samples invalid',
+      );
+    else
+      required(
+        readings.long_tasks.samples_ms === null,
+        'PDF unsupported task observer must remain unmeasured',
+      );
+    required(
+      Array.isArray(pdf.resource_phases) &&
+        pdf.resource_phases.length >= 2 &&
+        pdf.resource_phases.every(
+          (p) =>
+            Number.isFinite(p.peakSurfaceBytes) &&
+            p.peakSurfaceBytes >= 0 &&
+            p.peakSurfaceBytes <= 96 * 1024 * 1024 &&
+            Number.isFinite(p.range?.maximumRequestBytes) &&
+            p.range.maximumRequestBytes <= 262144 &&
+            Number.isFinite(p.range.peakConcurrency) &&
+            p.range.peakConcurrency <= 2,
+        ),
+      'PDF actual owned surface/range observations missing or over budget',
+    );
+    required(
+      pdf.fixture_sha256 ===
+        digest(
+          readFileSync(
+            new URL('../fixtures/pdf/s049-compatibility.pdf', import.meta.url),
+          ),
+        ),
+      'PDF fixture identity mismatch',
+    );
+    required(
+      pdf.cold_resolved_view === true && pdf.warm_resolved_send === true,
+      'PDF resolved cold/warm acquisition missing',
+    );
+    required(
+      pdf.facts?.worker === 'true' &&
+        pdf.facts.engine === '6.5.438' &&
+        pdf.facts.ink > 500 &&
+        pdf.facts.executed === false &&
+        pdf.facts.selected?.includes('Glitchpad PDF compatibility page 1'),
+      'PDF actual worker/canvas/selection proof missing',
+    );
+    for (const key of [
+      'outline_named_destination',
+      'search',
+      'thumbnail',
+      'internal_link',
+      'external_link_disclosure',
+      'rotation',
+      'go_to_page',
+      'keyboard',
+      'metadata',
+      'embedded_font_text',
+    ])
+      required(
+        pdf.reading_journey?.checks?.[key] === true,
+        'PDF reading check missing: ' + key,
+      );
+    required(
+      pdf.reading_journey.checks.canvas_ink > 500,
+      'PDF embedded reading canvas ink missing',
+    );
+    required(
+      pdf.reading_journey.native_touch_outline === true &&
+        pdf.reading_journey.native_keyboard_home === true,
+      'PDF native input proof missing',
+    );
+    required(
+      pdf.source_unchanged === true &&
+        pdf.stream_rendered === true &&
+        pdf.stream_cache_removed === true &&
+        pdf.stream_cache_files?.length === 1 &&
+        pdf.stream_cache_files[0] > 0,
+      'PDF source/private cache proof missing',
+    );
+    required(
+      pdf.disposal?.worker_terminated === true &&
+        pdf.disposal.workers === 0 &&
+        pdf.disposal.surfaces === 0 &&
+        pdf.disposal.surfaceBytes === 0 &&
+        Number.isFinite(pdf.disposal.elapsed_ms) &&
+        pdf.disposal.elapsed_ms <= 250,
+      'PDF worker disposal proof missing',
+    );
+    for (const [range, pages] of [
+      ['selected', 2],
+      ['all', 4],
+    ]) {
+      const print = pdf.print?.[range];
+      required(
+        print?.output_pages === pages &&
+          print.output_ink?.length === pages &&
+          print.output_ink.every((n) => Number.isFinite(n) && n > 500) &&
+          /^[a-f0-9]{64}$/u.test(print.output_sha256) &&
+          Number.isInteger(print.output_bytes) &&
+          print.output_bytes > 128 &&
+          print.private_spool_cleaned === true &&
+          print.physical_output_confirmed === false,
+        'PDF actual print proof missing: ' + range,
+      );
+    }
+    if (expected.api === 24)
+      required(
+        row.identity.webview_version.startsWith('69.'),
+        'PDF minimum profile requires actual Chrome69',
+      );
+  }
   return row;
 }
 export function validateReleaseAttempt(
@@ -191,7 +355,7 @@ export async function validateReleaseCapture({ directory, caseId, expected }) {
       row.screenshot.sha256 === digest(png),
     'release screenshot bytes missing/mismatch',
   );
-  if (caseId === 'delivery' || caseId === 'startup') {
+  if (['delivery', 'startup', 'pdf'].includes(caseId)) {
     required(
       (await hashReleaseFile(
         join(directory, 's048-installed-application.apk'),
@@ -205,12 +369,29 @@ export async function validateReleaseCapture({ directory, caseId, expected }) {
       'captured installed instrumentation differs from test input',
     );
   }
+  if (caseId === 'pdf') {
+    for (const range of ['selected', 'all']) {
+      const bytes = await readFile(
+        join(directory, 's049-print-output-' + range + '.pdf'),
+      );
+      const print = row.observations.print[range];
+      required(
+        bytes.subarray(0, 5).toString('ascii') === '%PDF-' &&
+          bytes.subarray(-64).toString('ascii').trimEnd().endsWith('%%EOF') &&
+          bytes.length === print.output_bytes &&
+          digest(bytes) === print.output_sha256,
+        'PDF captured printed bytes mismatch: ' + range,
+      );
+    }
+  }
   return {
     case_id: caseId,
+    status: row.status,
     receipt_sha256: digest(receipt),
     screenshot_sha256: digest(png),
     identity: row.identity,
     readbacks: row.readbacks,
+    observations: row.observations,
   };
 }
 
@@ -222,9 +403,16 @@ export async function validateReleaseDirectory({
   instrumentation,
   mode = 'full',
 }) {
-  required(['full', 'startup'].includes(mode), 'unknown release campaign mode');
+  required(
+    ['full', 'startup', 'pdf'].includes(mode),
+    'unknown release campaign mode',
+  );
   const groups =
-    mode === 'startup' ? { startup: ['startup'] } : releaseCaseGroups;
+    mode === 'startup'
+      ? { startup: ['startup'] }
+      : mode === 'pdf'
+        ? { pdf: ['pdf'] }
+        : releaseCaseGroups;
   required(
     /^[0-9a-f]{40}$/u.test(source) && [24, 36].includes(api),
     'exact release source/API required',
@@ -306,7 +494,7 @@ export async function validateReleaseDirectory({
   return {
     schema: 1,
     status: 'pass',
-    diagnostic_only: mode === 'startup',
+    diagnostic_only: mode !== 'full',
     candidate_qualified: mode === 'full',
     evidence_class: 'hosted_minified_release_instrumentation',
     ...expected,
@@ -315,9 +503,62 @@ export async function validateReleaseDirectory({
     scope:
       mode === 'startup'
         ? 'Startup/identity/Back/About diagnostic only; no release campaign qualification.'
-        : 'Five bounded release-runtime cases. Separate debug ordinary/fault campaigns qualify the S047 ten-journey matrix; physical/manual conformance remains waived under #66.',
+        : mode === 'pdf'
+          ? 'PDF minified-release diagnostic only; no complete release campaign qualification.'
+          : 'Six bounded release-runtime cases including actual PDF output. Separate debug ordinary/fault campaigns qualify the S047 ten-journey matrix; physical/manual conformance remains waived under #66.',
   };
 }
+
+export async function createAndroidPdfReleaseRecord({
+  summary,
+  manifestPath,
+  inputIdentityPath,
+  instrumentation,
+  execution,
+}) {
+  required(
+    summary.status === 'pass' &&
+      summary.candidate_qualified === true &&
+      summary.diagnostic_only === false,
+    'Full release campaign required for PDF qualification',
+  );
+  const manifestBytes = await readFile(manifestPath),
+    manifest = JSON.parse(manifestBytes);
+  const input = JSON.parse(await readFile(inputIdentityPath, 'utf8'));
+  const universal = manifest.artifacts?.find((row) => row.role === 'universal');
+  required(
+    manifest.source_commit === summary.source &&
+      input.source_commit === summary.source &&
+      universal?.sha256 === summary.applicationSha &&
+      input.application_sha256 === summary.applicationSha,
+    'PDF canonical Android source/application binding mismatch',
+  );
+  required(
+    input.instrumentation_sha256 === summary.instrumentationSha &&
+      (await hashReleaseFile(instrumentation)) === summary.instrumentationSha &&
+      input.minified === true &&
+      input.application_debuggable === false,
+    'PDF matching minified instrumentation binding mismatch',
+  );
+  required(
+    (await hashReleaseFile(
+      join(dirname(inputIdentityPath), 'r8-mapping.txt'),
+    )) === input.r8_mapping_sha256,
+    'PDF actual R8 mapping binding mismatch',
+  );
+  const row = summary.selected
+    .flatMap((group) => group.cases)
+    .find((row) => row.case_id === 'pdf');
+  required(row, 'PDF full campaign capture missing');
+  return androidPdfConformanceRecord(row, {
+    campaignComplete: true,
+    minified: true,
+    manifestSha: digest(manifestBytes),
+    artifactSha: summary.applicationSha,
+    execution,
+  });
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const values = {};
@@ -352,6 +593,25 @@ async function main() {
     JSON.stringify(result, null, 2) + '\n',
     'utf8',
   );
+  if ((values.mode ?? 'full') === 'full') {
+    const record = await createAndroidPdfReleaseRecord({
+      summary: result,
+      manifestPath: values.manifest,
+      inputIdentityPath: values['input-identity'],
+      instrumentation: values.instrumentation,
+      execution: {
+        run_id: Number(process.env.GITHUB_RUN_ID),
+        run_attempt: Number(process.env.GITHUB_RUN_ATTEMPT),
+        job: process.env.GITHUB_JOB,
+        completion: 'clean',
+      },
+    });
+    await writeFile(
+      join(values.directory, 'pdf-conformance-record.json'),
+      JSON.stringify(record, null, 2) + '\n',
+      'utf8',
+    );
+  }
   console.log(
     'Installed minified release evidence passed on API ' + result.api + '.',
   );

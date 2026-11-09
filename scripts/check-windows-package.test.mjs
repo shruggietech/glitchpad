@@ -31,12 +31,13 @@ const sourceCommit = 'b'.repeat(40);
 function candidate() {
   return {
     schema_version: 1,
-    version: '0.2.1',
+    version: contract.candidate_version,
     platform: 'windows',
     architecture: 'x86_64',
     source_commit: sourceCommit,
     workflow_identity:
-      'shruggietech/glitchpad/.github/workflows/windows-package.yml@refs/tags/v0.2.1',
+      'shruggietech/glitchpad/.github/workflows/windows-package.yml@refs/tags/' +
+      contract.official.tag_pattern,
     official: false,
     gate_status: 'candidate_valid',
     artifacts: contract.artifacts.map((artifact) => ({
@@ -58,7 +59,7 @@ function candidate() {
 
 test('repository Windows package configuration is internally consistent', async () => {
   assert.deepEqual(await checkWindowsConfiguration(repositoryRoot), {
-    capabilityCount: 31,
+    capabilityCount: 32,
     artifactCount: 2,
   });
 });
@@ -449,7 +450,7 @@ test('a self-asserted official manifest cannot bypass live verification', () => 
   evidence.gate_status = 'official_valid';
   evidence.event = contract.official.authorized_event;
   evidence.publication_context = 'staged_unpublished';
-  evidence.tag = 'v0.2.1';
+  evidence.tag = contract.official.tag_pattern;
   evidence.evidence_files = [...contract.official.required_evidence];
   evidence.artifacts = evidence.artifacts.map((artifact) => ({
     ...artifact,
@@ -472,7 +473,7 @@ test('official community mode binds unsigned final bytes and recorded trust evid
     evidence.gate_status = 'official_valid';
     evidence.event = contract.official.authorized_event;
     evidence.publication_context = 'staged_unpublished';
-    evidence.tag = 'v0.2.1';
+    evidence.tag = contract.official.tag_pattern;
     evidence.evidence_files = [...contract.official.required_evidence];
     for (const artifact of evidence.artifacts) {
       const bytes = Buffer.from(artifact.kind);

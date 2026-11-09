@@ -25,6 +25,7 @@ $requiredEvidence = @(
     'brand/INTEGRATION.md',
     "docs/releases/v$($package.version).md",
     "docs/releases/v$($package.version)-receipt.md",
+    "docs/releases/v$($package.version)-documentation-pass.json",
     'packaging/release/package-contract.json'
 )
 
@@ -34,4 +35,6 @@ foreach ($relativePath in $requiredEvidence) {
     }
 }
 
+& node (Join-Path $repositoryRoot 'scripts/validate-documentation-pass.mjs') $repositoryRoot
+if ($LASTEXITCODE -ne 0) { throw 'Prepared documentation-pass validation failed.' }
 Write-Host "Release readiness evidence exists for v$($package.version)."

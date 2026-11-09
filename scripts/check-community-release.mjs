@@ -1,3 +1,4 @@
+import { checkPreparedDocumentationPass } from './validate-documentation-pass.mjs';
 import { parse as parseYaml } from 'yaml';
 import {
   releaseIdentity,
@@ -26,6 +27,8 @@ export function validateReleaseContract(contract) {
   )
     throw new Error('release must declare exactly eight unique artifacts');
   targetReleaseIdentity(contract);
+  const scope=contract.release_scope;
+  if(scope?.capability!=='pdf'||!Array.isArray(scope.slices)||scope.slices.length===0||new Set(scope.slices).size!==scope.slices.length||scope.slices.some(s=>!/^S[0-9]{3}$/u.test(s))||!Array.isArray(scope.issues)||scope.issues.length===0||new Set(scope.issues).size!==scope.issues.length||scope.issues.some(n=>!Number.isSafeInteger(n)||n<=0)||!/^\d+[.]\d+[.]\d+$/u.test(scope.prior_version??'')||scope.documentation_pass!=='docs/releases/'+contract.tag+'-documentation-pass.json')throw Error('current release scope is invalid');
   if (
     JSON.stringify(contract.accepted_staging_evidence) !==
     JSON.stringify(['accepted-staging.json', 'accepted-input-receipt.json'])
@@ -200,6 +203,7 @@ export function validateFinalReleaseHandoff({
   releaseReceipt,
   operatorRunbook,
   changelog,
+  scope,
 }) {
   if (
     /authorizes publication before final PR merge|owner publication is already authorized/iu.test(
@@ -233,13 +237,13 @@ export function validateFinalReleaseHandoff({
     ['operator runbook', operatorRunbook],
     ['changelog', changelog],
   ]) {
-    for (const phrase of ['S046', 'S047', 'product recovery'])
+    for (const phrase of [...scope.slices, scope.capability.toUpperCase()])
       if (!content.includes(phrase))
         throw new Error(source + ' omits ' + phrase);
   }
-  for (const issue of ['#244', '#255'])
+  for (const issue of scope.issues.map(number=>'#'+number))
     if (!releaseNotes.includes(issue) || !releaseReceipt.includes(issue))
-      throw new Error('Release handoff omits tracked recovery gate ' + issue);
+      throw new Error('Release handoff omits tracked release gate ' + issue);
   for (const issue of ['#66', '#239'])
     if (!releaseNotes.includes(issue) || !releaseReceipt.includes(issue))
       throw new Error('Release handoff omits separate follow-up ' + issue);
@@ -511,6 +515,7 @@ export async function checkCommunityRelease(repositoryRoot = root) {
     loadJson(join(repositoryRoot, 'crates/glitchpad-host/tauri.conf.json')),
   ]);
   validateReleaseContract(contract);
+  await checkPreparedDocumentationPass(repositoryRoot);
   validateReleaseAuthorityGate(releaseWorkflow);
   validateReleaseReadinessEvidence(readinessScript);
   validateFinalReleaseHandoff({
@@ -518,6 +523,7 @@ export async function checkCommunityRelease(repositoryRoot = root) {
     releaseReceipt,
     operatorRunbook,
     changelog,
+    scope:contract.release_scope,
   });
   validateGovernedClaims({
     releaseWorkflow,

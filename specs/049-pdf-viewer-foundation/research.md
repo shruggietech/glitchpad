@@ -85,3 +85,7 @@ Installed API24 run42536058242 showed native print begin/cancel without a staged
 ## R21. Validate print page geometry at raster precision
 
 The native raster store must account for ceil-rounded pixel dimensions at the chosen scale. A fixed absolute aspect-ratio tolerance rejects legitimate thin or small page snapshots. Validate that the pixel width and height have a common scale interval for their source-point dimensions instead. Native store qualification includes noninteger point dimensions whose valid ceil-rounded raster has a visibly different ratio. This preserves the dimension binding without an arbitrary page-shape restriction.
+
+## R22. Explicit desktop acquisition and release association inventory
+
+All three delivered desktop candidates timed out before PDF readiness in run42537434321. Inspection found the native delivery queue rejecting .pdf because its acquisition gate reused the released association extension inventory. S049 explicitly requires an acquired local PDF to reach the renderer. Permit manually supplied PDF paths through the established native source acquisition and add the PDF picker filter; content detection still decides the renderer. Keep the released association inventory, packaging registrations and public stable-format records unchanged for #81/#82. This separates existing registration policy from the authorized unreleased reading capability without narrowing any included native criterion.

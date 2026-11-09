@@ -20,6 +20,7 @@ const MAX_DELIVERY_DRAIN: usize = 64;
 const IMAGE_EXTENSIONS: &[&str] = &[
     "png", "jpg", "jpeg", "webp", "bmp", "tif", "tiff", "gif", "svg", "ico",
 ];
+// Released OS-association inventory; explicitly acquired PDF candidates are handled below.
 const GOVERNED_EXTENSIONS: &[&str] = &[
     "cjs", "css", "htm", "html", "js", "json", "jsonc", "jsx", "markdown", "md", "mermaid", "mjs",
     "mmd", "py", "rs", "toml", "ts", "tsx", "txt", "yaml", "yml", "png", "jpg", "jpeg", "webp",
@@ -120,7 +121,7 @@ impl DesktopDeliveryQueue {
         let mut accepted = 0;
         for resource in resources {
             let acquired = match resource {
-                Ok(path) if governed_extension(&path) => {
+                Ok(path) if openable_extension(&path) => {
                     let delivery = match kind {
                         DesktopDeliveryKind::Dialog => DesktopDelivery::dialog(path),
                         DesktopDeliveryKind::Drop => DesktopDelivery::dropped(path),
@@ -237,6 +238,10 @@ impl DesktopDeliveryQueue {
     }
 }
 
+fn openable_extension(path: &Path) -> bool {
+    governed_extension(path) || path.extension().and_then(|extension| extension.to_str()).is_some_and(|extension| extension.eq_ignore_ascii_case("pdf"))
+}
+
 fn governed_extension(path: &Path) -> bool {
     path.extension()
         .and_then(|extension| extension.to_str())
@@ -286,6 +291,7 @@ pub(crate) async fn choose_desktop_sources(
         dialog_app
             .dialog()
             .file()
+            .add_filter("PDF", &["pdf"])
             .add_filter("Images", IMAGE_EXTENSIONS)
             .add_filter("Markdown", &["md", "markdown"])
             .add_filter("Mermaid", &["mmd", "mermaid"])
@@ -489,6 +495,21 @@ mod tests {
         assert!(results[0].sequence < results[1].sequence);
         let encoded = serde_json::to_string(&results).expect("serialize");
         assert!(!encoded.contains(std::env::temp_dir().to_string_lossy().as_ref()));
+    }
+
+    #[test]
+    fn explicit_pdf_candidate_deliveries_reach_native_sources_without_registration() {
+        let (_root, path) = fixture("candidate.PDF");
+        fs::write(&path, b"%PDF-1.7\nsynthetic candidate").expect("PDF fixture");
+        for kind in [DesktopDeliveryKind::Dialog, DesktopDeliveryKind::Drop, DesktopDeliveryKind::CommandLine, DesktopDeliveryKind::Association] {
+            let host = DesktopSourceHost::new();
+            let queue = DesktopDeliveryQueue::new();
+            assert_eq!(queue.enqueue_paths(&host, kind, [path.clone()]).expect("explicit candidate"), 1);
+            let result = queue.drain(1).expect("candidate result").pop().expect("source result");
+            assert_eq!(result.status, DesktopDeliveryStatus::Opened);
+            let source = result.source.expect("native source");
+            assert_eq!(&host.read_range(&source.source_id, 0, 5, 5).expect("bounded signature").bytes, b"%PDF-");
+        }
     }
 
     #[test]

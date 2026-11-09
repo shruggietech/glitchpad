@@ -24,6 +24,10 @@ function validateRow(row, expected) {
   const runtime=row.runtime ?? {};
   for (const key of ['os','architecture','webview']) requireValue(typeof runtime[key]==='string' && runtime[key].length>0, 'actual runtime '+key+' missing');
   requireValue(runtime.engine==='6.5.438', 'PDF engine mismatch');
+  const architecture=profile==='macos_arm64'?'aarch64':'x86_64';
+  const osPrefix=android?'Android/API':profile.startsWith('windows')?'win32/':profile.startsWith('macos')?'darwin/':'linux/';
+  requireValue(runtime.architecture===architecture && runtime.os.startsWith(osPrefix),'actual native OS/architecture profile mismatch');
+  requireValue(runtime.debuggable===false,'debuggable evidence cannot qualify staged release profiles');
   if (android) {
     requireValue(runtime.api===(profile==='android_api24'?24:36), 'actual Android API mismatch');
     requireValue(runtime.minified===true && runtime.debuggable===false, 'minified nondebuggable Android evidence required');

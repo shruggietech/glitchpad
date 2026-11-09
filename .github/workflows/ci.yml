@@ -600,7 +600,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: sudo apt-get update && sudo apt-get install --yes qpdf
       - run: node scripts/generate-pdf-fixtures.mjs --extended
-      - run: node --test scripts/prepare-pdf-assets.test.mjs
+      - run: node scripts/prepare-pdf-assets.mjs
+      - run: node --test scripts/prepare-pdf-assets.test.mjs scripts/pdf-conformance.test.mjs
       - run: pnpm --filter @shruggietech/glitchpad exec vitest run src/domain/pdf-
       - run: pnpm build
       - run: pnpm exec puppeteer browsers install chrome-headless-shell

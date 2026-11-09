@@ -10,6 +10,7 @@ permissions:
   actions: read
   contents: write
   attestations: read
+  pull-requests: read
 
 concurrency:
   group: release-v0.3.0
@@ -79,13 +80,13 @@ jobs:
           test "$(git cat-file -t "$GITHUB_REF")" = tag
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           git for-each-ref --format='%(contents)' "$GITHUB_REF" > accepted-staging.json
-          test "$(git rev-parse 'HEAD^{tree}')" = "$(git rev-parse 'origin/main^{tree}')"
+          # The accepted-input consumer verifies the immutable merged PR tree and main ancestry.
       - name: Consume accepted payloads without rebuilding
         env:
           GH_TOKEN: ${{ github.token }}
           ANDROID_SIGNING_CERT_SHA256: ${{ secrets.ANDROID_SIGNING_CERT_SHA256 }}
         run: |
-          node scripts/accepted-release-inputs.mjs --accepted accepted-staging.json --source "$GITHUB_SHA" --directory gathered --receipt accepted-input-receipt.json
+          node scripts/accepted-release-inputs.mjs --accepted accepted-staging.json --source "$GITHUB_SHA" --directory gathered --receipt accepted-input-receipt.json --require-merged true
       - name: Assemble unchanged accepted payloads and native evidence
         run: |
           mkdir release-assets

@@ -27,7 +27,7 @@ Independent test: exact canonical signed/minified app and matching test APK comp
 - [x] T008 [US3] Add failing release PDF case/mode/installed/output validation regressions in scripts/run-android-release-tests.test.mjs and validate-android-release-evidence.test.mjs. (FR-006,014,015,016; US3/AC1-4)
 - [x] T009 [US3] Make pdfCompatibility release-safe through resolved intents, observedTestWebViewPackage, public print commands, PDF-visible screenshot and test-owned JSON/APK/raw-PDF capture in AndroidDeliveryInstrumentedTest.kt and fixture provider. (FR-002,003,007,010,011,015,016)
 - [x] T010 [US3] Add diagnostic pdf runtime mode and mandatory PDF full-campaign case with offline setup/clean completion/output bindings in scripts/run-android-release-tests.sh, validate-android-release-evidence.mjs and android-package.yml. (FR-014,015,016,020)
-- [ ] T011 [US3] Run actual minified API24/Chrome69 then API36 PDF preflights, retain failures and repair demonstrated fixture/transport/R8/native defects before broad campaigns; record exact identities in validation.md. (FR-012,015,016,021)
+- [x] T011 [US3] Run actual minified API24/Chrome69 then API36 PDF preflights, retain failures and repair demonstrated fixture/transport/R8/native defects before broad campaigns; record exact identities in validation.md. (FR-012,015,016,021)
 
 ## Phase 5: US2 - Complete PDF conformance
 
@@ -39,7 +39,7 @@ Independent test: original licensed codec/RTL/geometry/boundary/hostile inputs e
 - [ ] T015 [US2] Add raw first-page/navigation/search/thumbnail/disposal and interaction observations with explicit methods/scopes to scripts/pdf-reading-journey.js and current runtime/native probes. (FR-010,012,013)
 - [ ] T016 [US2] Add truthful render/range/cache counters and sampled named process RSS/PSS observations to existing desktop/Android native journey receipts, keeping unavailable worker heap distinct. (FR-003,008,009,010,012)
 - [ ] T017 [US2] Exercise source revision/revocation, low-memory/degraded behavior, cancellation/suspension and real private-file disposal through current controller/source/native tests; add only missing behavioral regressions. (FR-003,006,008,009,010,011)
-- [ ] T018 [US2] Implement and test the narrow strict source/profile/case/latest-attempt aggregate in scripts PDF conformance validator/tests, rejecting stale/missing/newer-failed or identity-mismatched records while retaining all attempts. (FR-005,006,012,021,022)
+- [x] T018 [US2] Implement and test the narrow strict source/profile/case/latest-attempt aggregate in scripts PDF conformance validator/tests, rejecting stale/missing/newer-failed or identity-mismatched records while retaining all attempts. (FR-005,006,012,021,022)
 - [ ] T019 [US2] Integrate the full conformance case/profile policy and applicable browser/native measurement checks into existing CI and specs/050-pdf-stable-activation/validation.md. (FR-005,007,008,009,010,012,013,014,015,017)
 
 ## Phase 6: US4 - Release preparation and staged-byte proof
@@ -47,7 +47,7 @@ Independent test: original licensed codec/RTL/geometry/boundary/hostile inputs e
 Independent test:0.3.0 source/docs/claims/packages agree, exact staged artifacts pass PDF/core/native gates and the real accepted-byte consumer/assembler can consume them without publishing.
 
 - [ ] T020 [US4] Reconcile technical specification, current PDF guidance, README/help/site canonical inputs, CHANGELOG and v0.3.0 notes/receipt/runbook while preserving office/advanced-tool planned status and current-public download authority. (FR-004,018,019,022; US4/AC1-4)
-- [ ] T021 [US4] Add machine-readable prepared documentation-pass JSON and focused validation/tests, declaring PDF release scope instead of stale recovery scope, with truthful pending owner approval. (FR-017,018,019,020,022)
+- [x] T021 [US4] Add machine-readable prepared documentation-pass JSON and focused validation/tests, declaring PDF release scope instead of stale recovery scope, with truthful pending owner approval. (FR-017,018,019,020,022)
 - [ ] T022 [US4] Qualify actual staged Windows/macOS/Linux native PDF acquisition/reading/printing and bind proof into existing package/lifecycle archives across all declared profiles. (FR-001,002,014,016,020,021)
 - [ ] T023 [US4] Extend accepted-release-inputs.mjs, assemble-community-release.mjs and existing tag-only publisher/tests to require staged PDF/documentation-pass bindings and later observed PR merge evidence, without new approval/source mutation loops. (FR-017,020,021,022,024)
 - [ ] T024 [US4] Regenerate site/registrations/notices/SBOM inputs and validate version/docs/links/Mermaid/encoding/brand plus every package/source/security gate through existing scripts. (FR-017,018,019,023)

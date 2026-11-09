@@ -198,7 +198,7 @@ try {
   assert.ok(observedMemory && observedMemory.samples_bytes.length>=3 && observedMemory.samples_bytes.every(n=>Number.isFinite(n)&&n>0));
   result.process_memory=observedMemory;
   result.execution={run_id:Number(process.env.GITHUB_RUN_ID),run_attempt:Number(process.env.GITHUB_RUN_ATTEMPT),job:process.env.GITHUB_JOB,completion:'pending_validation'};
-  result.runtime={os:os.platform()+'/'+os.release(),architecture:os.arch(),webview:result.journey.runtime,engine:result.journey.engine,api:null,minified:false,debuggable:!stagedArtifact};
+  result.runtime={os:os.platform()+'/'+os.release(),architecture:result.architecture,webview:result.journey.runtime,engine:result.journey.engine,api:null,minified:false,debuggable:!stagedArtifact};
   result.native_first_page={method:'native_process_launch_to_visible_canvas_and_text_50ms_poll',samples_ms:[result.journey.first_visible_epoch_ms-launchEpoch]};
   assert.ok(Number.isFinite(result.native_first_page.samples_ms[0])&&result.native_first_page.samples_ms[0]>=0);
   result.status="incomplete";

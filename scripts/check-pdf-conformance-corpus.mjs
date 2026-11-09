@@ -8,8 +8,8 @@ export async function checkPdfConformanceCorpus({page,openCase,closeCase,root}) 
   const rows=[];
   const ready=async index=>page.waitForFunction(function(index){var r=document.querySelector('[data-pdf-ready=true][data-pdf-worker=true]'),p=document.querySelector('.pdf-page[data-current=true]');return r&&p&&Number(p.getAttribute('data-pdf-page'))===index&&p.querySelector('canvas').width>0;},{timeout:60000},index);
   const visible=async()=>page.evaluate(function(){var p=document.querySelector('.pdf-page[data-current=true]'),c=p.querySelector('canvas'),t=p.querySelector('.pdf-text-layer'),r=document.querySelector('.pdf-layout');return {text:t.textContent,width:c.width,height:c.height,worker:r.getAttribute('data-pdf-worker'),engine:r.getAttribute('data-pdf-engine'),observations:JSON.parse(r.getAttribute('data-pdf-observations')||'null')};});
-  async function open(name) {const start=Date.now();await openCase(name);await ready(0);return start;}
-  async function retain(name,start,extra={}) {const source=manifest.fixtures.find(f=>f.name===name);const current=await readFile(resolve(root,'fixtures/pdf',name));assert.equal(sha(current),source.sha256);rows.push({name,status:'pass',fixture_sha256:source.sha256,fixture_bytes:current.length,first_page_ms:Date.now()-start,...await visible(),...extra});await closeCase();}
+  async function open(name) {const start=Date.now();await openCase(name);await ready(0);return {opened_epoch_ms:start,first_page_ms:Date.now()-start};}
+  async function retain(name,start,extra={}) {const source=manifest.fixtures.find(f=>f.name===name);const current=await readFile(resolve(root,'fixtures/pdf',name));assert.equal(sha(current),source.sha256);rows.push({name,status:'pass',fixture_sha256:source.sha256,fixture_bytes:current.length,first_page_ms:start.first_page_ms,case_elapsed_ms:Date.now()-start.opened_epoch_ms,first_page_method:"synthetic_source_open_to_ready_canvas_text",...await visible(),...extra});await closeCase();}
   var started=await open('s050-version-1.4.pdf');
   assert.match((await visible()).text,/Glitchpad PDF compatibility page 1/u);
   await retain('s050-version-1.4.pdf',started,{version:'1.4'});
@@ -49,6 +49,7 @@ export async function checkPdfConformanceCorpus({page,openCase,closeCase,root}) 
     const start=Date.now();await openCase(name);
     await page.waitForFunction(function(){var r=document.querySelector('.pdf-layout');return r&&(r.getAttribute('data-pdf-error')||r.getAttribute('data-pdf-ready')==='true');},{timeout:60000});
     const outcome=await page.evaluate(function(){var r=document.querySelector('.pdf-layout'),c=document.querySelector('.pdf-page[data-current=true] canvas');return {state:r.getAttribute('data-pdf-state'),error:r.getAttribute('data-pdf-error'),canvas:c?{width:c.width,height:c.height}:null,observations:JSON.parse(r.getAttribute('data-pdf-observations')||'null')};});
+    if(name.includes("cyclic")||name.includes("truncated"))assert.ok(outcome.error,"Corrupt PDF content must expose a stable actionable failure, not silent blank success: "+name);
     if(outcome.error)assert.ok(stableErrors.includes(outcome.error));else assert.ok(outcome.canvas.width>0&&outcome.canvas.height>0&&outcome.canvas.width*outcome.canvas.height*4<=96*1024*1024);
     const original=manifest.fixtures.find(f=>f.name===name);rows.push({name,status:'pass',fixture_sha256:original.sha256,fixture_bytes:original.bytes,terminal_ms:Date.now()-start,...outcome});await closeCase();
   }

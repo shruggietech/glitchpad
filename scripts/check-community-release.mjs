@@ -175,7 +175,7 @@ export function validateReleaseAuthorityGate(releaseWorkflow) {
       'cp accepted-staging.json accepted-input-receipt.json release-assets/',
     ) ||
     !commands.includes('git cat-file -t "$GITHUB_REF"') ||
-    !commands.includes('origin/main^{tree}') ||
+    !commands.includes('--require-merged true') ||
     /(?:cargo|tauri)\s+(?:android\s+)?build|pnpm\s+(?:run\s+)?build|actions\/workflows\/.*dispatches/u.test(
       commands,
     )

@@ -106,6 +106,7 @@ export function nativePdfPrintGateway(session: ShellSession): PdfPrintGateway {
   };
   const release = () => {
     window.removeEventListener('afterprint', finishDesktop);
+    window.removeEventListener('glitchpad-native-print-completed', finishDesktop);
     if (desktopPrintOwner === id) {
       desktopPrintOwner = null;
       document.body.classList.remove('pdf-print-active');
@@ -209,6 +210,7 @@ export function nativePdfPrintGateway(session: ShellSession): PdfPrintGateway {
       handedOff = true;
       document.body.classList.add('pdf-print-active');
       window.addEventListener('afterprint', finishDesktop, { once: true });
+      window.addEventListener('glitchpad-native-print-completed', finishDesktop, { once: true });
       try {
         await invoke<void>('request_pdf_desktop_print', source);
       } catch (error) {

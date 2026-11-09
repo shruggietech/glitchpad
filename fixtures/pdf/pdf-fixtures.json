@@ -45,8 +45,8 @@
     },
     {
       "name": "s049-security.pdf",
-      "bytes": 4427,
-      "sha256": "4b182d721e79b18f4ddec6c02da330f641948173426c199b6bbeb4c25c987c09",
+      "bytes": 4426,
+      "sha256": "18493f010f81f44acbe6cd29de11218b2c2b6b92284b9053c028aa18400bfea1",
       "author": "Glitchpad contributors",
       "license": "Apache-2.0"
     },

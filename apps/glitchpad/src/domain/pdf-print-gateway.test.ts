@@ -12,7 +12,7 @@ it('binds selected and all ranges to the current document without duplicates', (
   expect(() => parsePdfPrintRange('all', 10001)).toThrow();
 });
 
-it('retains the source-bound snapshot across tab disposal until the native afterprint boundary', async () => {
+it.each(['afterprint', 'glitchpad-native-print-completed'])('retains the source-bound snapshot across tab disposal until %s', async (completion) => {
   const identity = {
     authority: 'synthetic' as const,
     scope: 'print',
@@ -69,7 +69,7 @@ it('retains the source-bound snapshot across tab disposal until the native after
     sourceId: 'source',
     expectedRevision: revision,
   });
-  window.dispatchEvent(new Event('afterprint'));
+  window.dispatchEvent(new Event(completion));
   expect(image.isConnected).toBe(false);
   expect(document.body.classList.contains('pdf-print-active')).toBe(false);
   expect(revoke).toHaveBeenCalledWith('blob:pdf-print-test');

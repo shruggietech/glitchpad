@@ -56,3 +56,4 @@ must_use_candidate = "allow"
 tao = { path = "vendor/tao-0.35.3" }
 tauri-plugin-opener = { path = "vendor/tauri-plugin-opener-2.5.5" }
 tauri-plugin-single-instance = { path = "vendor/tauri-plugin-single-instance-2.4.5" }
+wry = { path = "vendor/wry-0.55.1" }

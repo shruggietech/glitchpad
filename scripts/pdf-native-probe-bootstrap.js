@@ -68,6 +68,7 @@
           field.dispatchEvent(new Event('input', { bubbles: true }));
           var snapshot = null;
           var after = false;
+          var completionEvent = null;
           var observe = function () {
             if (!document.body.classList.contains('pdf-print-active')) return;
             var images = Array.from(
@@ -87,10 +88,12 @@
             childList: true,
             attributeFilter: ['class'],
           });
-          var completed = function () {
+          var completed = function (event) {
             after = true;
+            completionEvent = event.type;
           };
           window.addEventListener('afterprint', completed, { once: true });
+          window.addEventListener('glitchpad-native-print-completed', completed, { once: true });
           (
             await wait(function () {
               return button('Open system print dialog');
@@ -98,7 +101,7 @@
           ).click();
           await wait(function () {
             return after;
-          }, 'actual afterprint event');
+          }, 'actual native operation or browser print completion');
           await wait(function () {
             return (
               !document.body.classList.contains('pdf-print-active') &&
@@ -107,6 +110,7 @@
           }, 'snapshot cleanup');
           observer.disconnect();
           window.removeEventListener('afterprint', completed);
+          window.removeEventListener('glitchpad-native-print-completed', completed);
           if (
             !snapshot ||
             snapshot.pages !== (range === 'all' ? 4 : 2) ||
@@ -116,7 +120,8 @@
           proof.prints.push({
             range: range,
             snapshot: snapshot,
-            afterprint: after,
+            completed: after,
+            completion_event: completionEvent,
             cleaned: true,
             paper_completion: false,
           });

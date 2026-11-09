@@ -14749,3 +14749,6 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+Wry 0.55.1 native print completion adaptation (S049)
+The MIT/Apache-2.0 Wry dependency is pinned and locally patched to report native WebKitGTK and macOS print-operation completion for snapshot cleanup. Original notices and license terms remain unchanged. The exact upstream archive and two-method patch are documented in vendor/wry-0.55.1/GLITCHPAD-PATCH.md.

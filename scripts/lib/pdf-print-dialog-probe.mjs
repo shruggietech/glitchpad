@@ -65,6 +65,10 @@ repeat 480 times
               set rounds to rounds + 1
               log "NATIVE_PRINT_CANCEL " & rounds
             end if
+          else if exists button "Cancel" of candidateWindow then
+            click button "Cancel" of candidateWindow
+            set rounds to rounds + 1
+            log "NATIVE_PRINT_CANCEL " & rounds
           end if
         end repeat
       end tell
@@ -84,7 +88,14 @@ while time.monotonic()<until and rounds<2:
     for window in search.stdout.split():
         title=subprocess.run(['xdotool','getwindowname',window],capture_output=True,text=True).stdout.strip()
         if title != 'Print': continue
-        subprocess.run(['xdotool','key','--window',window,'Escape'],check=True,capture_output=True)
+        subprocess.run(['xdotool','windowfocus','--sync',window],check=True,capture_output=True)
+        subprocess.run(['xdotool','key','Escape'],check=True,capture_output=True)
+        closed=False
+        for attempt in range(20):
+            visible=subprocess.run(['xdotool','search','--onlyvisible','--pid','${pid}','--name','^Print$'],capture_output=True,text=True).stdout.split()
+            if window not in visible: closed=True;break
+            time.sleep(0.1)
+        if not closed: raise RuntimeError('Observed print dialog did not close after native Escape')
         rounds+=1
         print(json.dumps({'round':rounds,'observed_native_dialog':True,'title':title,'action':'cancel'}),flush=True)
         time.sleep(0.75)

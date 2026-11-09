@@ -216,7 +216,7 @@ try {
   );
   assert.ok(
     result.journey.prints.every(
-      (item) => item.afterprint && item.cleaned && !item.paper_completion,
+      (item) => item.completed && item.cleaned && !item.paper_completion,
     ),
   );
   await new Promise((resolve) => setTimeout(resolve, 200));

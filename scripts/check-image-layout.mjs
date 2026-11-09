@@ -85,6 +85,8 @@ try {
   const failures = [];
   page.on('pageerror', (e) => failures.push(e.message));
   const click = async (name) => {
+    const deadline = Date.now() + 30000;
+    const remaining = () => Math.max(1, deadline - Date.now());
     const selector = await page.evaluate((name) => {
       const scope =
         document.querySelector('.task-surface[data-state="open"]') || document;
@@ -103,23 +105,53 @@ try {
       button.dataset.layoutTarget = 'true';
       delete button.dataset.layoutPriorRectangle;
       window.__layoutTrustedClick = false;
-      button.addEventListener('click', event => { window.__layoutTrustedClick = event.isTrusted; }, { once: true });
+      button.addEventListener(
+        'click',
+        (event) => {
+          window.__layoutTrustedClick = event.isTrusted;
+        },
+        { once: true },
+      );
       button.scrollIntoView({ block: 'center' });
       return '[data-layout-target="true"]';
     }, name);
-    await page.waitForFunction(() => {
-      const button = document.querySelector('[data-layout-target="true"]');
-      if (!button || button.disabled) return false;
-      const r = button.getBoundingClientRect();
-      const rectangle = JSON.stringify([r.left, r.top, r.width, r.height]);
-      const stable = button.dataset.layoutPriorRectangle === rectangle;
-      button.dataset.layoutPriorRectangle = rectangle;
-      const hit = document.elementFromPoint((r.left+r.right)/2, (r.top+r.bottom)/2);
-      return stable && r.width > 0 && r.height > 0 && r.left >= 0 && r.right <= innerWidth+1 && r.top >= 0 && r.bottom <= innerHeight+1 && (hit === button || button.contains(hit));
-    }, { timeout: 30000 });
+    await page.waitForFunction(
+      () => {
+        const button = document.querySelector('[data-layout-target="true"]');
+        if (!button || button.disabled) return false;
+        const r = button.getBoundingClientRect();
+        const rectangle = JSON.stringify([r.left, r.top, r.width, r.height]);
+        const stable = button.dataset.layoutPriorRectangle === rectangle;
+        button.dataset.layoutPriorRectangle = rectangle;
+        const hit = document.elementFromPoint(
+          (r.left + r.right) / 2,
+          (r.top + r.bottom) / 2,
+        );
+        return (
+          stable &&
+          r.width > 0 &&
+          r.height > 0 &&
+          r.left >= 0 &&
+          r.right <= innerWidth + 1 &&
+          r.top >= 0 &&
+          r.bottom <= innerHeight + 1 &&
+          (hit === button || button.contains(hit))
+        );
+      },
+      { timeout: remaining() },
+    );
+    assert.ok(Date.now() < deadline, 'Image action deadline exceeded');
     await page.click(selector);
-    await page.waitForFunction(() => window.__layoutTrustedClick === true, { timeout: 30000 });
-    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    await page.waitForFunction(() => window.__layoutTrustedClick === true, {
+      timeout: remaining(),
+    });
+    await page.evaluate(
+      () =>
+        new Promise((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(resolve)),
+        ),
+    );
+    assert.ok(Date.now() < deadline, 'Image action deadline exceeded');
     await page.evaluate(() =>
       document
         .querySelector('[data-layout-target]')

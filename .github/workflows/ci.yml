@@ -457,6 +457,7 @@ jobs:
             ${{ runner.temp }}/*.png
             ${{ runner.temp }}/*.json
             ${{ runner.temp }}/*.xml
+            ${{ runner.temp }}/s049-pdf-print-output-*.pdf
             ${{ runner.temp }}/android-tested-candidate/**
           if-no-files-found: warn
           retention-days: 30

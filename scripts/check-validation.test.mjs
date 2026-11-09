@@ -635,10 +635,26 @@ test('link validation keeps local provenance while excluding exact upstream vend
     '# Retired unowned tree\n',
   );
   for (const name of ['CHANGELOG.md', 'MOBILE.md', 'README.md', 'SECURITY.md'])
-    await writeFixture(root, 'vendor/wry-0.55.1/' + name, '# Upstream Wry ' + name + '\n');
-  await writeFixture(root, 'vendor/wry-0.55.1/GLITCHPAD-PATCH.md', '# Local Wry patch provenance\n');
-  await writeFixture(root, 'vendor/wry-0.55.2/README.md', '# Other Wry version\n');
-  await writeFixture(root, 'docs/wry-0.55.1/README.md', '# Owned Wry basename\n');
+    await writeFixture(
+      root,
+      'vendor/wry-0.55.1/' + name,
+      '# Upstream Wry ' + name + '\n',
+    );
+  await writeFixture(
+    root,
+    'vendor/wry-0.55.1/GLITCHPAD-PATCH.md',
+    '# Local Wry patch provenance\n',
+  );
+  await writeFixture(
+    root,
+    'vendor/wry-0.55.2/README.md',
+    '# Other Wry version\n',
+  );
+  await writeFixture(
+    root,
+    'docs/wry-0.55.1/README.md',
+    '# Owned Wry basename\n',
+  );
   const seen = [];
   const result = await validateLinks({
     repositoryRoot: root,

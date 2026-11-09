@@ -1,6 +1,6 @@
 # S049 issue acceptance map
 
-All sixteen included criteria map to implementation and concrete verification below. These checkpoints distinguish synthetic contract/browser evidence from actual packaged/installed native operation. Final exact-head qualification is still pending and must be confirmed in the final PR receipt before owner handoff. Issues remain open until owner merge.
+All sixteen included criteria map to implementation and concrete verification below. These checkpoints distinguish synthetic contract/browser evidence from actual packaged/installed native operation. Final exact-head qualification and owner readiness are confirmed in the [final PR receipt](https://github.com/ShruggieTech/glitchpad/pull/264#issuecomment-6730079545); a pending receipt never qualifies the candidate. Issues remain open until owner merge.
 
 | Issue criterion | Implemented behavior | Concrete verification |
 | --- | --- | --- |

@@ -63,7 +63,7 @@ Independent test: reconcile all16 issue criteria, unchanged source/session contr
 - [x] T028 [P] [US4] Extend actual Windows/macOS/Linux package probes to await PDF canvas/text/navigation/metadata/isolation and source identity in scripts/run-pdf-native-journey.mjs, scripts/pdf-native-probe-bootstrap.js and crates/glitchpad-host/src/lifecycle_probe.rs. (FR-004,017,020; SC-002)
 - [x] T029 [US4] Complete Android PDF keyboard/touch/navigation/metadata/links/lifecycle/print candidate journeys on API24/API36 in AndroidDeliveryInstrumentedTest and scripts/run-android-connected-tests.sh. (FR-004,020,021; SC-002)
 - [x] T030 [US4] Run full contract/source/session/text/image regression and hostile-input/budget/accessibility/compatibility suites, binding source/run/attempt/artifact/runtime facts in specs/049-pdf-viewer-foundation/validation.md. (FR-017,019,020; SC-003,004,005)
-- [ ] T031 [US4] Verify package resources/notices/security/dependency/brand gates and exact delivered kit conformance in existing CI/scripts and specs/049-pdf-viewer-foundation/validation.md. (FR-018,020,021; SC-005)
+- [x] T031 [US4] Verify package resources/notices/security/dependency/brand gates and exact delivered kit conformance in existing CI/scripts and specs/049-pdf-viewer-foundation/validation.md. (FR-018,020,021; SC-005)
 - [x] T032 [US4] Reconcile each criterion with concrete current evidence in specs/049-pdf-viewer-foundation/contracts/issue-acceptance.md and handoff.md; preserve #81/#82 scope and literal unrun/waived observations. (FR-021,022; SC-001)
 
 ## Phase 7: Polish and owner handoff
@@ -71,9 +71,9 @@ Independent test: reconcile all16 issue criteria, unchanged source/session contr
 Freeze only after generated/format checks; no merge/publication.
 
 - [x] T033 [P] Document unreleased PDF behavior/limits and changelog in docs/glitchpad-technical-specification.md, relevant user documentation and changelog.d/S049.md without changing released0.2.1 authority. (FR-022)
-- [ ] T034 Format, check encoding/mojibake and freeze final source; qualify all applicable exact-source checks and independently read artifacts in specs/049-pdf-viewer-foundation/validation.md. (FR-020,023; SC-005)
-- [ ] T035 Push/open PR automatically, keep auto-merge off, monitor CI and resolve findings within two external rounds; record reviewed/final heads and issue/project state in specs/049-pdf-viewer-foundation/handoff.md. (FR-024; SC-006)
-- [ ] T036 Run formal present-code convergence and final PR/readback audit, leave ready/unmerged and report owner boundary in specs/049-pdf-viewer-foundation/handoff.md. (FR-020,024; SC-001,006)
+- [x] T034 Format, check encoding/mojibake and freeze final source; qualify all applicable exact-source checks and independently read artifacts in specs/049-pdf-viewer-foundation/validation.md. (FR-020,023; SC-005)
+- [x] T035 Push/open PR automatically, keep auto-merge off, monitor CI and resolve findings within two external rounds; record reviewed/final heads and issue/project state in specs/049-pdf-viewer-foundation/handoff.md. (FR-024; SC-006)
+- [x] T036 Run formal present-code convergence and final PR/readback audit, leave ready/unmerged and report owner boundary in specs/049-pdf-viewer-foundation/handoff.md. (FR-020,024; SC-001,006)
 
 ## Dependencies and implementation strategy
 

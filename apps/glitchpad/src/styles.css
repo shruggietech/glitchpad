@@ -891,8 +891,8 @@ button:focus-visible,
 .mermaid-controls,
 .mermaid-search,
 .diagram-controls {
-  border-bottom: 1px solid #343842;
-  background: #181a20;
+  border-bottom: 1px solid var(--gl-border);
+  background: var(--gl-panel);
 }
 
 .mermaid-controls button,
@@ -900,9 +900,9 @@ button:focus-visible,
 .diagram-controls button,
 .embedded-mermaid button {
   min-height: 2rem;
-  border: 1px solid #4c5260;
+  border: 1px solid var(--gl-border);
   border-radius: 0.3rem;
-  background: #262a33;
+  background: var(--gl-panel-raised);
   color: inherit;
 }
 

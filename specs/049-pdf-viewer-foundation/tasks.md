@@ -54,14 +54,14 @@ Independent test: known metadata facts, no automatic network/execution/opener ca
 - [x] T024 [US3] Integrate read-only link/form representation and explicit scheme-validated opener actions in apps/glitchpad/src/components/PdfSurface.tsx and domain/markdown-gateway.ts; never dispatch executable actions. (FR-003,014,016)
 - [x] T025 [US3] Implement bounded source/revision-bound print snapshot staging and truthful desktop dialog handoff in apps/glitchpad/src/domain/pdf-print-gateway.ts, components/PdfSurface.tsx and crates/glitchpad-host/src/lib.rs. (FR-005,008,015,016)
 - [x] T026 [US3] Implement validated chunked raster job storage and custom Android PrintDocumentAdapter in crates/glitchpad-android-source/android/src/main/java/com/shruggietech/glitchpad/source/PdfPrintStore.kt, PdfPrintAdapter.kt and narrow Rust/Kotlin model/command registration. (FR-005,008,015)
-- [ ] T027 [US3] Run actual supported native selected/all-page print smoke plus cancel/failure/unavailable cases and security corpus through scripts/check-pdf-runtime.mjs, desktop probes and Android instrumentation; record outcomes in specs/049-pdf-viewer-foundation/validation.md. (FR-003,014,015,020)
+- [x] T027 [US3] Run actual supported native selected/all-page print smoke plus cancel/failure/unavailable cases and security corpus through scripts/check-pdf-runtime.mjs, desktop probes and Android instrumentation; record outcomes in specs/049-pdf-viewer-foundation/validation.md. (FR-003,014,015,020)
 
 ## Phase 6: US4 - Review a complete traceable candidate
 
 Independent test: reconcile all16 issue criteria, unchanged source/session contracts, actual four-platform candidate evidence, package/license/brand and owner PR boundary.
 
 - [x] T028 [P] [US4] Extend actual Windows/macOS/Linux package probes to await PDF canvas/text/navigation/metadata/isolation and source identity in scripts/run-pdf-native-journey.mjs, scripts/pdf-native-probe-bootstrap.js and crates/glitchpad-host/src/lifecycle_probe.rs. (FR-004,017,020; SC-002)
-- [ ] T029 [US4] Complete Android PDF keyboard/touch/navigation/metadata/links/lifecycle/print candidate journeys on API24/API36 in AndroidDeliveryInstrumentedTest and scripts/run-android-connected-tests.sh. (FR-004,020,021; SC-002)
+- [x] T029 [US4] Complete Android PDF keyboard/touch/navigation/metadata/links/lifecycle/print candidate journeys on API24/API36 in AndroidDeliveryInstrumentedTest and scripts/run-android-connected-tests.sh. (FR-004,020,021; SC-002)
 - [ ] T030 [US4] Run full contract/source/session/text/image regression and hostile-input/budget/accessibility/compatibility suites, binding source/run/attempt/artifact/runtime facts in specs/049-pdf-viewer-foundation/validation.md. (FR-017,019,020; SC-003,004,005)
 - [ ] T031 [US4] Verify package resources/notices/security/dependency/brand gates and exact delivered kit conformance in existing CI/scripts and specs/049-pdf-viewer-foundation/validation.md. (FR-018,020,021; SC-005)
 - [ ] T032 [US4] Reconcile each criterion with concrete current evidence in specs/049-pdf-viewer-foundation/contracts/issue-acceptance.md and handoff.md; preserve #81/#82 scope and literal unrun/waived observations. (FR-021,022; SC-001)

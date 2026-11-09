@@ -62,9 +62,9 @@ Independent test: reconcile all16 issue criteria, unchanged source/session contr
 
 - [x] T028 [P] [US4] Extend actual Windows/macOS/Linux package probes to await PDF canvas/text/navigation/metadata/isolation and source identity in scripts/run-pdf-native-journey.mjs, scripts/pdf-native-probe-bootstrap.js and crates/glitchpad-host/src/lifecycle_probe.rs. (FR-004,017,020; SC-002)
 - [x] T029 [US4] Complete Android PDF keyboard/touch/navigation/metadata/links/lifecycle/print candidate journeys on API24/API36 in AndroidDeliveryInstrumentedTest and scripts/run-android-connected-tests.sh. (FR-004,020,021; SC-002)
-- [ ] T030 [US4] Run full contract/source/session/text/image regression and hostile-input/budget/accessibility/compatibility suites, binding source/run/attempt/artifact/runtime facts in specs/049-pdf-viewer-foundation/validation.md. (FR-017,019,020; SC-003,004,005)
+- [x] T030 [US4] Run full contract/source/session/text/image regression and hostile-input/budget/accessibility/compatibility suites, binding source/run/attempt/artifact/runtime facts in specs/049-pdf-viewer-foundation/validation.md. (FR-017,019,020; SC-003,004,005)
 - [ ] T031 [US4] Verify package resources/notices/security/dependency/brand gates and exact delivered kit conformance in existing CI/scripts and specs/049-pdf-viewer-foundation/validation.md. (FR-018,020,021; SC-005)
-- [ ] T032 [US4] Reconcile each criterion with concrete current evidence in specs/049-pdf-viewer-foundation/contracts/issue-acceptance.md and handoff.md; preserve #81/#82 scope and literal unrun/waived observations. (FR-021,022; SC-001)
+- [x] T032 [US4] Reconcile each criterion with concrete current evidence in specs/049-pdf-viewer-foundation/contracts/issue-acceptance.md and handoff.md; preserve #81/#82 scope and literal unrun/waived observations. (FR-021,022; SC-001)
 
 ## Phase 7: Polish and owner handoff
 
@@ -82,3 +82,12 @@ Setup → foundational contracts/resources/worker policy → US1 minimal read �
 ## Parallel opportunities
 
 US1 source test fixtures can be authored independently of the controller tests once contracts exist. US2 destination corpus and UI semantics tests are separate files after US1. US3 metadata facts and print-model tests are separate files after the document contract. US4 platform probe edits are independent after product behavior freezes. These are file-level opportunities; this run executes without unrequested implementation-agent delegation.
+
+## Phase 8: Convergence
+
+Present-code audit:24functional requirements,6success criteria,16acceptance scenarios,16issue criteria,12plan decisions and8constitution principles. No missing product implementation, contradictions or unrequested capability expansion were found. Two partial delivery gates remain (one high, one medium).
+
+- [ ] T037 Confirm terminal applicable checks on the frozen final branch/PR head and independently verify its native-package, installed-APK and PDF-output artifacts; bind exact source/run/attempt/runtime/hash evidence per FR-020 and SC-005 (partial, HIGH).
+- [ ] T038 Complete the final PR receipt and issue/project audit, confirm exactly two external review rounds with no unresolved findings, then stop ready/unmerged/auto-merge off for owner review per FR-024 and SC-006 (partial, MEDIUM).
+
+The final-gate checkboxes record the immutable source-freeze snapshot. Their completed execution is confirmed in the [final PR receipt](https://github.com/ShruggieTech/glitchpad/pull/264#issuecomment-6730079545), which is authoritative for final-head readiness and avoids editing the source after its own qualification. A pending receipt never qualifies the candidate.

@@ -494,7 +494,7 @@ Malformed, unsupported, external-reference, cyclic/missing-reference, resource/d
 
 ## 20. PDF Viewing and Navigation
 
-The [S049 PDF candidate](https://github.com/shruggietech/glitchpad/blob/74f507b12ab3cd85ac891820360449747f0cee4b/docs/operations/pdf-candidate.md) implements the first bundled PDF reading/navigation/metadata/print increment under the existing source/session contracts. Its bounded implementation and validation do not change the published 0.2.1 release authority, stable format registry, PDF associations or Android PDF intent activation. The [slice acceptance map](https://github.com/shruggietech/glitchpad/blob/74f507b12ab3cd85ac891820360449747f0cee4b/specs/049-pdf-viewer-foundation/contracts/issue-acceptance.md) retains all included issue criteria; #81 exhaustive conformance and #82 stable activation remain separate.
+The [S049 PDF candidate](https://github.com/ShruggieTech/glitchpad/blob/74f507b12ab3cd85ac891820360449747f0cee4b/docs/operations/pdf-candidate.md) implements the first bundled PDF reading/navigation/metadata/print increment under the existing source/session contracts. Its bounded implementation and validation do not change the published 0.2.1 release authority, stable format registry, PDF associations or Android PDF intent activation. The [slice acceptance map](https://github.com/ShruggieTech/glitchpad/blob/74f507b12ab3cd85ac891820360449747f0cee4b/specs/049-pdf-viewer-foundation/contracts/issue-acceptance.md) retains all included issue criteria; #81 exhaustive conformance and #82 stable activation remain separate.
 
 PDF support activates in v0.3.0 and uses the PDF.js display layer in a dedicated worker. Glitchpad supplies its own compact shell rather than embedding the generic PDF.js viewer.
 

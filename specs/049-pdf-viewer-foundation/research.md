@@ -111,3 +111,7 @@ Full CI run42540731147 also exposed the existing Markdown controls inheriting li
 ## R27 - Original search offsets (2026-11-09 UTC)
 
 Case conversion can expand Unicode characters (for example, uppercase dotted I becomes two UTF-16 code units when lowercased), shifting later result offsets away from original selectable text. Literal escaped Unicode case-insensitive matching now runs against original extracted text instead of indexing a lowercased copy. The regression places two cats hits after dotted I and confirms original offsets and matched text; a+b is also checked as a literal query. This preserves the existing bounded per-page search and source-neutral selection contract.
+
+## R28 - Pinned upstream documentation link scope (2026-11-09 UTC)
+
+The new unchanged Wry0.55.1 upstream CHANGELOG/README/MOBILE/SECURITY Markdown entered the project link crawl, which already excludes other exact owned upstream distributions. Exclude only those four pinned upstream files after verifying their bytes against the original crate archive. Extend the common Markdown collector to honor exact file exclusions as well as directories. Keep the local GLITCHPAD-PATCH.md, project provenance, same-named project paths and neighboring Wry versions checked; cover that boundary in the existing validation regression. No project-document or brand/renderer check is waived.

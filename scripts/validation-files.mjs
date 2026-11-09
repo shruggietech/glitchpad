@@ -29,7 +29,8 @@ export async function collectMarkdownFiles(
           await visit(path);
       } else if (
         entry.isFile() &&
-        extname(entry.name).toLowerCase() === '.md'
+        extname(entry.name).toLowerCase() === '.md' &&
+        !excludedPaths.has(repositoryPath(repositoryRoot, path))
       ) {
         files.push(path);
       }

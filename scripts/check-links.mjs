@@ -20,6 +20,10 @@ const upstreamDocumentationPaths = new Set([
   'vendor/tauri-plugin-opener-2.5.5',
   'vendor/tauri-plugin-single-instance-2.4.5',
   'vendor/tao-0.35.3',
+  'vendor/wry-0.55.1/CHANGELOG.md',
+  'vendor/wry-0.55.1/MOBILE.md',
+  'vendor/wry-0.55.1/README.md',
+  'vendor/wry-0.55.1/SECURITY.md',
 ]);
 const defaultCheckLinks = promisify(markdownLinkCheck);
 

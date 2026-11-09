@@ -288,8 +288,9 @@ try {
   });
   await page.waitForSelector('.add-document-trigger');
   await page.evaluate(function () {
-    var trigger=document.querySelector('.add-document-trigger');
-    if(!trigger || trigger.disabled)throw new Error('Add document action unavailable');
+    var trigger = document.querySelector('.add-document-trigger');
+    if (!trigger || trigger.disabled)
+      throw new Error('Add document action unavailable');
     trigger.click();
   });
   await page.evaluate(function () {
@@ -632,8 +633,9 @@ try {
     'Representative font cleanup must exercise actual installed PDF font faces',
   );
   await page.evaluate(function () {
-    var trigger=document.querySelector('.add-document-trigger');
-    if(!trigger || trigger.disabled)throw new Error('Add document action unavailable');
+    var trigger = document.querySelector('.add-document-trigger');
+    if (!trigger || trigger.disabled)
+      throw new Error('Add document action unavailable');
     trigger.click();
   });
   await page.evaluate(function () {
@@ -672,10 +674,11 @@ try {
       declaredLength,
     );
     await page.evaluate(function () {
-    var trigger=document.querySelector('.add-document-trigger');
-    if(!trigger || trigger.disabled)throw new Error('Add document action unavailable');
-    trigger.click();
-  });
+      var trigger = document.querySelector('.add-document-trigger');
+      if (!trigger || trigger.disabled)
+        throw new Error('Add document action unavailable');
+      trigger.click();
+    });
     await page.evaluate(function () {
       var open = Array.from(
         document.querySelectorAll('.add-document-menu button'),
@@ -688,10 +691,11 @@ try {
   };
   const closeCase = async () => {
     await page.evaluate(function () {
-    var trigger=document.querySelector('.add-document-trigger');
-    if(!trigger || trigger.disabled)throw new Error('Add document action unavailable');
-    trigger.click();
-  });
+      var trigger = document.querySelector('.add-document-trigger');
+      if (!trigger || trigger.disabled)
+        throw new Error('Add document action unavailable');
+      trigger.click();
+    });
     await page.evaluate(function () {
       Array.from(document.querySelectorAll('.add-document-menu button'))
         .find(function (node) {

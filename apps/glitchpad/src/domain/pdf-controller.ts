@@ -312,7 +312,7 @@ export class PdfController {
         isImageDecoderSupported: false,
         BinaryDataFactory: PdfBinaryDataFactory,
         maxImageSize: source.platform === 'android' ? 24_000_000 : 50_000_000,
-        stopAtErrors: false,
+        stopAtErrors: true,
       });
       this.loading = loading;
       loading.onPassword = (

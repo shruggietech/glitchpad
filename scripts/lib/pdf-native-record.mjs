@@ -42,7 +42,7 @@ export function nativePdfConformanceRecord(result, profile) {
         'go_to_page',
         'keyboard',
         'metadata',
-      ].every((k) => journey.checks[k] === true),
+      ].every((k) => journey.checks[k] === true) && journey.warm_delivery === true,
       native_print:
         journey.prints.length === 2 &&
         journey.prints.every(

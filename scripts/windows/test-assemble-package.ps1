@@ -4,7 +4,7 @@ param()
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 $repositoryRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-$targetVersion = (Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'packaging/windows/package-contract.json') | ConvertFrom-Json).version
+$targetVersion = (Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'packaging/windows/package-contract.json') | ConvertFrom-Json).candidate_version
 $scratch = Join-Path ([System.IO.Path]::GetTempPath()) ("glitchpad-s019-" + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $scratch | Out-Null
 

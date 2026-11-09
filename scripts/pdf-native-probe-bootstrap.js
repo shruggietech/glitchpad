@@ -204,19 +204,12 @@
               .getAttribute('data-pdf-observations') || 'null',
           ),
         ];
-        document.querySelector('.add-document-trigger').click();
-        (
-          await wait(function () {
-            return Array.from(
-              document.querySelectorAll('.add-document-menu button'),
-            ).find(function (node) {
-              return node.textContent.trim() === 'New text file';
-            });
-          }, 'new text to suspend PDF')
-        ).click();
+        await window.__TAURI_INTERNALS__.invoke('request_desktop_pdf_probe_switch');
         await wait(function () {
           return (
-            !document.querySelector('.pdf-layout') &&
+            document.querySelector('[data-pdf-ready=true][data-pdf-worker=true]') &&
+            document.querySelector('.pdf-layout').getAttribute('data-pdf-owner') !== owner &&
+            document.body.innerText.includes('warm-delivery.pdf') &&
             disposals.some(function (row) {
               return (
                 row.worker_terminated === true &&
@@ -229,6 +222,7 @@
         }, 'actual suspended PDF worker disposal');
         window.removeEventListener('glitchpad-pdf-disposed', observeDisposal);
         proof.disposal = disposals[disposals.length - 1];
+        proof.warm_delivery = true;
         clearInterval(memoryTimer);
         if (memoryPending) await memoryPending;
         if (memoryFailure)

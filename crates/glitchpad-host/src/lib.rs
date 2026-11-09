@@ -170,6 +170,7 @@ pub fn run() {
         lifecycle_probe::record_desktop_lifecycle_probe,
         lifecycle_probe::record_desktop_pdf_probe,
         lifecycle_probe::sample_desktop_pdf_memory,
+        lifecycle_probe::request_desktop_pdf_probe_switch,
         lifecycle_probe::record_desktop_device_scale_probe,
         lifecycle_probe::consume_desktop_markdown_failure_probe,
         lifecycle_probe::begin_desktop_document_workflow_probe,

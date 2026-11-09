@@ -31,6 +31,7 @@ RUN apt-get update \
         python3 \
         shared-mime-info \
         squashfs-tools \
+        unzip \
         xdg-utils \
         xdotool \
         xvfb \
@@ -84,6 +85,7 @@ RUN apt-get update \
         pkg-config \
         python3 \
         shared-mime-info \
+        unzip \
         xdg-utils \
         xdotool \
         xvfb \

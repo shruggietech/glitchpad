@@ -173,6 +173,9 @@ const probe = await mkdtemp(join(tmpdir(), 'glitchpad-pdf-'));
 const fixture = resolve('fixtures/pdf/s049-compatibility.pdf');
 const original = await readFile(fixture);
 await copyFile(fixture, join(probe, 's049-compatibility.pdf'));
+await copyFile(fixture,join(probe,'warm-delivery.pdf'));
+let switchDelivered=false;
+let switchProcess=null;
 await writeFile(join(probe, 'enabled.marker'), 'enabled\n');
 await writeFile(join(probe, 'pdf-journey-request.marker'), 'requested\n');
 const launchEpoch = Date.now();
@@ -207,6 +210,14 @@ try {
   let result;
   const deadline = Date.now() + 240000;
   while (Date.now() < deadline) {
+    if(!switchDelivered && await readFile(join(probe,'pdf-switch-request.marker'),'utf8').catch(()=>null)==='requested\n'){
+      switchDelivered=true;
+      const switchEnv={...process.env};delete switchEnv.GLITCHPAD_LIFECYCLE_PROBE_DIR;
+      switchProcess=spawn(binary,[join(probe,'warm-delivery.pdf')],{env:switchEnv,windowsHide:true,stdio:['ignore','pipe','pipe']});
+      switchProcess.on('error',error=>{stderr+=String(error);});
+      switchProcess.stdout.on('data',bytes=>{stdout=(stdout+bytes).slice(-131072);});
+      switchProcess.stderr.on('data',bytes=>{stderr=(stderr+bytes).slice(-131072);});
+    }
     let data = await readFile(
       join(probe, 'pdf-journey-result.json'),
       'utf8',
@@ -221,8 +232,12 @@ try {
   }
   assert.ok(result, 'Native PDF journey did not return evidence');
   // Preserve native failure diagnostics before any enrichment or validation can fail.
-  await writeFile(join(output,'native-result.json'),JSON.stringify(result,null,2)+'\n','utf8');
-  assert.ok(!result.journey.error,result.journey.error);
+  await writeFile(
+    join(output, 'native-result.json'),
+    JSON.stringify(result, null, 2) + '\n',
+    'utf8',
+  );
+  assert.ok(!result.journey.error, result.journey.error);
   const observedMemory = result.native_memory;
   assert.ok(
     observedMemory &&
@@ -245,10 +260,14 @@ try {
     minified: false,
     debuggable: !stagedArtifact,
   };
-  if(process.platform==='linux'){
-    const release=await readFile('/etc/os-release','utf8');
-    const field=name=>release.match(new RegExp('^'+name+'="?([^"\n]+)"?$','m'))?.[1];
-    result.runtime.distribution={id:field('ID'),version_id:field('VERSION_ID')};
+  if (process.platform === 'linux') {
+    const release = await readFile('/etc/os-release', 'utf8');
+    const field = (name) =>
+      release.match(new RegExp('^' + name + '="?([^"\n]+)"?$', 'm'))?.[1];
+    result.runtime.distribution = {
+      id: field('ID'),
+      version_id: field('VERSION_ID'),
+    };
   }
   result.native_first_page = {
     method: 'native_process_launch_to_visible_canvas_and_text_50ms_poll',
@@ -270,6 +289,8 @@ try {
   );
   assert.equal(result.source_commit, expectedSource);
   assert.equal(result.source_unchanged, true);
+  assert.equal(switchDelivered,true,'actual running-instance PDF delivery required');
+  assert.equal(result.journey.warm_delivery,true);
   assert.equal(
     result.source_sha256,
     createHash('sha256').update(original).digest('hex'),
@@ -340,6 +361,7 @@ try {
   );
 } finally {
   if (printProbe.exitCode === null) printProbe.kill();
+  if(switchProcess && switchProcess.exitCode===null)switchProcess.kill();
   await writeFile(join(output, 'native-print-dialogs.log'), printDialogLog);
   if (child.exitCode === null) child.kill();
   await writeFile(join(output, 'stdout.log'), stdout);

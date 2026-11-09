@@ -99,7 +99,13 @@ function validateRow(row, expected) {
     runtime.debuggable === false,
     'debuggable evidence cannot qualify staged release profiles',
   );
-  if(profile.startsWith('ubuntu_')) requireValue(runtime.distribution?.id==='ubuntu' && runtime.distribution.version_id===(profile.startsWith('ubuntu_22_04')?'22.04':'24.04'),'actual Ubuntu distribution profile mismatch');
+  if (profile.startsWith('ubuntu_'))
+    requireValue(
+      runtime.distribution?.id === 'ubuntu' &&
+        runtime.distribution.version_id ===
+          (profile.startsWith('ubuntu_22_04') ? '22.04' : '24.04'),
+      'actual Ubuntu distribution profile mismatch',
+    );
   if (android) {
     requireValue(
       runtime.api === (profile === 'android_api24' ? 24 : 36),

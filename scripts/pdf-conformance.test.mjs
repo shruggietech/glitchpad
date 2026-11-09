@@ -60,7 +60,16 @@ function record(profile, attempt = 1) {
             : null,
       minified: profile.startsWith('android'),
       debuggable: false,
-      ...(profile.startsWith('ubuntu_')?{distribution:{id:'ubuntu',version_id:profile.startsWith('ubuntu_22_04')?'22.04':'24.04'}}:{}),
+      ...(profile.startsWith('ubuntu_')
+        ? {
+            distribution: {
+              id: 'ubuntu',
+              version_id: profile.startsWith('ubuntu_22_04')
+                ? '22.04'
+                : '24.04',
+            },
+          }
+        : {}),
     },
     execution: {
       run_id: 123,
@@ -270,4 +279,16 @@ test('release collection cannot qualify synthetic aggregate records without raw 
   );
 });
 
-test('Ubuntu profiles require the actual observed distribution release',()=>{const rows=all();rows[4].runtime.distribution.version_id='24.04';assert.throws(()=>validatePdfConformance(rows,expected),/Ubuntu distribution/);delete rows[4].runtime.distribution;assert.throws(()=>validatePdfConformance(rows,expected),/Ubuntu distribution/);});
+test('Ubuntu profiles require the actual observed distribution release', () => {
+  const rows = all();
+  rows[4].runtime.distribution.version_id = '24.04';
+  assert.throws(
+    () => validatePdfConformance(rows, expected),
+    /Ubuntu distribution/,
+  );
+  delete rows[4].runtime.distribution;
+  assert.throws(
+    () => validatePdfConformance(rows, expected),
+    /Ubuntu distribution/,
+  );
+});

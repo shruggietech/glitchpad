@@ -21,6 +21,7 @@ All notable changes to Glitchpad are documented in this file. The format follows
 ### Fixed
 
 - S050 stages and verifies the actual release test reading-journey asset, preserves native acquisition/uninstall declarations, and rejects stale/incomplete/newer-failed conformance evidence.
+- S050 restores asynchronous static JPX/JBIG2 decoder initialization and reports failed image decoding as an explicit malformed-document state instead of silently displaying missing images.
 
 ### Decisions
 

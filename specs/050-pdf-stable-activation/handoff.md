@@ -1,6 +1,6 @@
 # S050 handoff state
 
-S050 /050-pdf-stable-activation targets v0.3.0 PDF conformance/activation for #81/#82 and #11 reconciliation. [Implementation PR #266](https://github.com/ShruggieTech/glitchpad/pull/266) is open as a draft while complete source/native/staged qualification proceeds. No external review round has been used.
+S050 /050-pdf-stable-activation targets v0.3.0 PDF conformance/activation for #81/#82 and #11 reconciliation. [Implementation PR #266](https://github.com/ShruggieTech/glitchpad/pull/266) is entering its first external review while complete source/native/staged qualification proceeds. No external review result has been received yet. Actual reviewed/fixed source identities and round counts are recorded in the authoritative external receipt; at most two rounds are permitted.
 
 Owner authorization covers source work, push/PR publication, CI monitoring and at most two external review rounds. Stop ready/unmerged/auto-merge off. No merge, tag, release or deployment. #82/#11 remain open for actual publication/readback; #66/#239 and existing waivers keep separate dispositions.
 

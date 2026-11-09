@@ -65,12 +65,12 @@ repeat 480 times
     set printCandidates to every process whose name contains "print"
     set allCandidates to candidates & printCandidates
     repeat with candidate in allCandidates
-      tell candidate
+      tell (contents of candidate)
         repeat with candidateWindow in windows
           if iteration mod 20 is 0 then
             log "NATIVE_PRINT_WINDOW " & (name of candidate) & " / " & (name of candidateWindow) & " buttons=" & (name of every button of candidateWindow)
           end if
-          if (count of sheets of candidateWindow) > 0 then
+          if exists sheet 1 of candidateWindow then
             set printSheet to sheet 1 of candidateWindow
             if exists button "Cancel" of printSheet then
               click button "Cancel" of printSheet

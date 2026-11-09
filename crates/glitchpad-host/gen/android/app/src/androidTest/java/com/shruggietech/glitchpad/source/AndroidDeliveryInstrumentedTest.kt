@@ -195,6 +195,8 @@ class AndroidDeliveryInstrumentedTest {
     val name=awaitNative("output filename") { it.isEditable&&it.className?.toString()=="android.widget.EditText" }
     val args=Bundle();args.putCharSequence(android.view.accessibility.AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE,filename)
     assertTrue(name.performAction(android.view.accessibility.AccessibilityNodeInfo.ACTION_SET_TEXT,args))
+    activate(awaitNative("output location roots") { val description=it.contentDescription?.toString();it.isEnabled&&(description?.equals("Show roots",true)==true||description?.startsWith("Show navigation",true)==true) })
+    activate(awaitNative("Downloads output location") { it.isEnabled&&it.text?.toString()?.equals("Downloads",true)==true })
     activate(awaitNative("save generated PDF") { it.isEnabled&&it.text?.toString()?.equals("Save",true)==true&&!it.isEditable })
     val path="/sdcard/Download/"+filename
     var output:ByteArray?=null;val deadline=SystemClock.elapsedRealtime()+30000L

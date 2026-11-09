@@ -71,6 +71,7 @@ function row(caseId) {
       instrumentation_package: 'com.shruggietech.glitchpad.test',
       signing_certificate_sha256: 'b'.repeat(64),
       instrumentation_certificate_sha256: 'b'.repeat(64),
+      architecture: 'x86_64',
       webview_package: 'com.android.chrome',
       webview_version: '69.0.3497.100',
     },
@@ -144,6 +145,11 @@ function row(caseId) {
       },
       print: { selected: print(2), all: print(4) },
     };
+  }
+  if(caseId==='pdf') {
+    const resource={peakSurfaceBytes:1000,peakSurfaces:2,range:{maximumRequestBytes:4096,peakConcurrency:2}};
+    result.observations.resource_phases=[resource,resource];
+    result.observations.measurements={first_page:{method:'SystemClock_elapsedRealtime',samples_ms:[20]},memory:{method:'Debug_MemoryInfo_totalPss',process_name:'com.shruggietech.glitchpad',scope:'actual app process',samples_bytes:[1000,1500,1100]},reading:{samples:[{metric:'navigation',milliseconds:10},{metric:'search_complete',milliseconds:20},{metric:'first_thumbnail',milliseconds:15}],interaction:{method:'synchronous_event_interval',scope:'handlers only',samples_ms:[1,2]},long_tasks:{method:'PerformanceObserver_longtask',supported:true,scope:'main realm reading only',samples_ms:[]}},resources:resource};
   }
   return result;
 }

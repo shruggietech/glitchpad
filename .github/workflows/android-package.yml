@@ -167,6 +167,9 @@ jobs:
           cp crates/glitchpad-host/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk "$RUNNER_TEMP/app-universal-release.apk"
           cp crates/glitchpad-host/gen/android/app/build/outputs/bundle/universalRelease/app-universal-release.aab "$RUNNER_TEMP/app-universal-release.aab"
 
+      - name: Stage exact PDF journey test asset
+        run: node --input-type=module -e "import { copyFile } from 'node:fs/promises'; await copyFile('scripts/pdf-reading-journey.js', 'fixtures/pdf/pdf-reading-journey.js');"
+
       - name: Build matching release instrumentation without changing canonical inputs
         run: |
           ./crates/glitchpad-host/gen/android/gradlew --project-dir crates/glitchpad-host/gen/android :app:assembleUniversalReleaseAndroidTest -Pglitchpad.testBuildType=release -PabiList=arm64-v8a,x86_64 -ParchList=arm64,x86_64 -PtargetList=aarch64,x86_64 -x :app:rustBuildUniversalRelease -x :app:rustBuildArm64Release -x :app:rustBuildX86_64Release --no-daemon

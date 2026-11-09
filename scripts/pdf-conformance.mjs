@@ -36,6 +36,10 @@ function validateRow(row, expected) {
   requireValue(measurements.interaction.maximum<=50 && typeof measurements.interaction.scope==='string','synchronous interaction interval exceeds50ms or scope missing');
   requireValue(typeof measurements.memory.process_name==='string' && measurements.memory.process_name.length>0 && typeof measurements.memory.scope==='string' && measurements.memory.scope.length>0,'named process memory measurement missing');
   requireValue(row.measurements.worker_heap?.status==='not_measured' && typeof row.measurements.worker_heap.reason==='string' && row.measurements.worker_heap.reason.length>0,'unmeasured worker heap must stay explicit');
+  const longTasks=row.measurements.long_tasks;
+  requireValue(typeof longTasks?.supported==='boolean' && typeof longTasks.method==='string' && typeof longTasks.scope==='string','long-task observer scope missing');
+  if(longTasks.supported) requireValue(Array.isArray(longTasks.samples_ms) && longTasks.samples_ms.every(n=>Number.isFinite(n)&&n>=0&&n<=50),'observed main-realm reading task exceeds50ms');
+  else requireValue(longTasks.samples_ms===null,'unsupported long-task API must remain explicitly unmeasured');
   const resource=row.measurements.resources;
   requireValue(resource && [resource.peak_surface_bytes,resource.max_range_bytes,resource.peak_range_concurrency,resource.cache_before_bytes,resource.cache_after_bytes].every(n=>Number.isFinite(n)&&n>=0),'actual resource observations missing');
   requireValue(resource.surface_limit_bytes===(android?96:200)*1024*1024 && resource.peak_surface_bytes<=resource.surface_limit_bytes,'owned surface budget mismatch');

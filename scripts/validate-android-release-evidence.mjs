@@ -145,6 +145,17 @@ export function validateReleaseRow(row, expected) {
   }
   if (expected.caseId === 'pdf') {
     const pdf = row.observations ?? {};
+    const measured=pdf.measurements;
+    required(typeof identity.architecture==='string' && identity.architecture.length>0,'PDF observed architecture missing');
+    required(measured?.first_page?.method && measured.first_page.samples_ms?.length>=1 && measured.first_page.samples_ms.every(n=>Number.isFinite(n)&&n>=0),'PDF first-page raw measurement missing');
+    required(measured.memory?.method && measured.memory.process_name===identity.package_identifier && measured.memory.scope && measured.memory.samples_bytes?.length>=2 && measured.memory.samples_bytes.every(n=>Number.isFinite(n)&&n>0),'PDF named process memory measurements missing');
+    const readings=measured.reading;
+    for(const metric of ['navigation','search_complete','first_thumbnail']) required(readings?.samples?.some(s=>s.metric===metric && Number.isFinite(s.milliseconds)&&s.milliseconds>=0),'PDF reading measurement missing: '+metric);
+    required(readings.interaction?.scope && readings.interaction.samples_ms?.length>0 && readings.interaction.samples_ms.every(n=>Number.isFinite(n)&&n>=0&&n<=50),'PDF synchronous interaction interval exceeds50ms or is missing');
+    required(typeof readings.long_tasks?.supported==='boolean' && readings.long_tasks.scope,'PDF main-realm long-task observer scope missing');
+    if(readings.long_tasks.supported) required(Array.isArray(readings.long_tasks.samples_ms)&&readings.long_tasks.samples_ms.every(n=>Number.isFinite(n)&&n>=0&&n<=50),'PDF observed reading task exceeds50ms');
+    else required(readings.long_tasks.samples_ms===null,'PDF unsupported task observer must remain unmeasured');
+    required(Array.isArray(pdf.resource_phases) && pdf.resource_phases.length>=2 && pdf.resource_phases.every(p=>Number.isFinite(p.peakSurfaceBytes)&&p.peakSurfaceBytes>=0&&p.peakSurfaceBytes<=96*1024*1024&&Number.isFinite(p.range?.maximumRequestBytes)&&p.range.maximumRequestBytes<=262144&&Number.isFinite(p.range.peakConcurrency)&&p.range.peakConcurrency<=2),'PDF actual owned surface/range observations missing or over budget');
     required(
       pdf.fixture_sha256 ===
         digest(

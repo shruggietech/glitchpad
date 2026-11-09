@@ -849,6 +849,29 @@ finally {
         Remove-Item -LiteralPath $webviewState -Recurse -Force -ErrorAction SilentlyContinue
     }
 }
+$pdfProfile = if ($ApplicationName -eq 'glitchpad-host.exe') { 'windows_installed' } else { 'windows_portable' }
+$packageDocument = Get-Content -Raw -LiteralPath $manifestPath | ConvertFrom-Json
+$pdfArtifact = @($packageDocument.artifacts | Where-Object { if ($pdfProfile -eq 'windows_installed') { $_.name.EndsWith('-setup.exe') } else { $_.name.EndsWith('.zip') } })
+if ($pdfArtifact.Count -ne 1) { throw 'The PDF lifecycle must bind one selected actual package.' }
+$pdfOutput = Join-Path (Split-Path -Parent $manifestPath) ("pdf-native-" + $pdfProfile)
+$pdfStart = [Diagnostics.ProcessStartInfo]::new((Get-Command node -CommandType Application).Source)
+$pdfStart.UseShellExecute = $false
+$pdfStart.CreateNoWindow = $true
+$pdfStart.WindowStyle = [Diagnostics.ProcessWindowStyle]::Hidden
+$pdfStart.RedirectStandardOutput = $true
+$pdfStart.RedirectStandardError = $true
+foreach ($argument in @('scripts/run-pdf-native-journey.mjs', $application, '--artifact', (Join-Path (Split-Path -Parent $manifestPath) $pdfArtifact[0].name), '--manifest', $manifestPath, '--profile', $pdfProfile, '--output', $pdfOutput)) { $pdfStart.ArgumentList.Add($argument) }
+$pdfProcess = [Diagnostics.Process]::Start($pdfStart)
+try {
+    $pdfOut = $pdfProcess.StandardOutput.ReadToEndAsync()
+    $pdfErr = $pdfProcess.StandardError.ReadToEndAsync()
+    if (-not $pdfProcess.WaitForExit(300000)) { $pdfProcess.Kill($true); throw 'The actual staged Windows PDF journey timed out.' }
+    $pdfLog = $pdfOut.GetAwaiter().GetResult() + $pdfErr.GetAwaiter().GetResult()
+    [IO.File]::WriteAllText("$pdfOutput-runner.log", $pdfLog, [Text.UTF8Encoding]::new($false))
+    if ($pdfProcess.ExitCode -ne 0) { throw 'The actual staged Windows PDF journey failed; retained PDF runner and native logs identify the cause.' }
+}
+finally { $pdfProcess.Dispose() }
+
 $associationAfter = Get-AssociationSnapshot | ConvertTo-Json -Compress
 if ($associationAfter -cne $associationBefore) { throw 'Portable launch changed governed file associations.' }
 foreach ($fixture in $fixtureDigests.GetEnumerator()) {

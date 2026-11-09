@@ -483,6 +483,10 @@ async function main() {
       'raw',
       webkitPlist,
     ]);
+    const pdfProfile='macos_'+options.architecture;
+    const pdfOutput=join(receiptPath,'..','pdf-native-'+pdfProfile);
+    const pdfResult=await command(process.execPath,['scripts/run-pdf-native-journey.mjs',executable,'--artifact',dmgPath,'--manifest',manifestPath,'--profile',pdfProfile,'--output',pdfOutput],{timeout:300000});
+    await writeFile(pdfOutput+'-runner.log',pdfResult.stdout+pdfResult.stderr,'utf8');
     await rm(installedApplication, { recursive: true, force: true });
     if (
       await stat(installedApplication).then(

@@ -1,5 +1,19 @@
 (function () {
   var deadline = Date.now() + 90000;
+  var memorySamples = [];
+  var memoryFailure = null;
+  var memoryPending = null;
+  var memoryTimer = setInterval(function(){
+    if(memoryPending || !window.__TAURI_INTERNALS__) return;
+    memoryPending=window.__TAURI_INTERNALS__.invoke("sample_desktop_pdf_memory").then(function(value){
+      memorySamples.push(value);
+      if(memorySamples.length>58) {
+        var peak=Math.max.apply(Math,memorySamples);
+        memorySamples.splice(0,memorySamples.length-56);
+        memorySamples.unshift(peak);
+      }
+    }).catch(function(error){memoryFailure=String(error);}).then(function(){memoryPending=null;});
+  },1000);
   var readingResult = null;
   var diagnostics = function () {
     var root = document.querySelector('.pdf-layout');
@@ -16,6 +30,7 @@
     if (!documentRoot) {
       if (Date.now() > deadline) {
         clearInterval(timer);
+        clearInterval(memoryTimer);
         if (window.__TAURI_INTERNALS__)
           window.__TAURI_INTERNALS__
             .invoke('record_desktop_pdf_probe', {
@@ -29,12 +44,18 @@
       }
       return;
     }
+    var firstVisibleEpoch = Date.now();
     clearInterval(timer);
     var owner = documentRoot.getAttribute('data-pdf-owner');
     window
       .runGlitchpadPdfReadingJourney()
       .then(async function (proof) {
         readingResult = proof;
+        proof.first_visible_epoch_ms = firstVisibleEpoch;
+        proof.memory_samples = memorySamples;
+        var disposals = [];
+        var observeDisposal = function(event) { if(event.detail.owner_id === owner) disposals.push(event.detail); };
+        window.addEventListener("glitchpad-pdf-disposed", observeDisposal);
         var wait = async function (predicate, label) {
           var until = Date.now() + 45000;
           while (Date.now() < until) {
@@ -165,12 +186,24 @@
             );
           }, 'PDF resumes after printing');
         }
+        proof.resource_phases = [proof.resources, JSON.parse(document.querySelector(".pdf-layout").getAttribute("data-pdf-observations") || "null")];
+        document.querySelector(".add-document-trigger").click();
+        (await wait(function(){return Array.from(document.querySelectorAll(".add-document-menu button")).find(function(node){return node.textContent.trim()==="New text file";});},"new text to suspend PDF")).click();
+        await wait(function(){return !document.querySelector(".pdf-layout") && disposals.some(function(row){return row.worker_terminated===true && row.workers===0 && row.surfaces===0 && row.surfaceBytes===0;});},"actual suspended PDF worker disposal");
+        window.removeEventListener("glitchpad-pdf-disposed", observeDisposal);
+        proof.disposal = disposals[disposals.length-1];
+        clearInterval(memoryTimer);
+        if(memoryPending) await memoryPending;
+        if(memoryFailure) throw new Error("Native memory sampling failed: "+memoryFailure);
+        proof.resource_phases.push(proof.disposal.observations);
+        if (proof.disposal.elapsed_ms > 250) throw new Error("Native PDF disposal exceeded250ms");
         return window.__TAURI_INTERNALS__.invoke('record_desktop_pdf_probe', {
           owner: owner,
           proof: proof,
         });
       })
       .catch(function (error) {
+        clearInterval(memoryTimer);
         window.__TAURI_INTERNALS__
           .invoke('record_desktop_pdf_probe', {
             owner: owner,

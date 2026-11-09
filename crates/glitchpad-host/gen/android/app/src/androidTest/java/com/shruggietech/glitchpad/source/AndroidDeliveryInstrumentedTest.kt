@@ -92,10 +92,20 @@ class AndroidDeliveryInstrumentedTest {
   @Test
   fun pdfCompatibility() {
     assertEquals("PDF preflight uses the ordinary composed application", "ordinary", expectedBuildVariant())
+    fun processPss(): Long { val memory=android.os.Debug.MemoryInfo(); android.os.Debug.getMemoryInfo(memory); return memory.totalPss.toLong()*1024L }
+    val processName=File("/proc/self/cmdline").readText(Charsets.UTF_8).substringBefore(0.toChar())
+    assertEquals("instrumentation observes the actual product process", TARGET_PACKAGE, processName)
+    val memoryBefore=processPss()
+    val memorySamples=mutableListOf<Long>()
+    val memoryFailure=AtomicReference<Throwable?>(null)
+    val memoryTimer=java.util.Timer("pdf-process-memory",true)
+    memoryTimer.scheduleAtFixedRate(object:java.util.TimerTask(){override fun run(){try{val value=processPss();synchronized(memorySamples){memorySamples.add(value);if(memorySamples.size>58){val peak=memorySamples.maxOrNull()!!;while(memorySamples.size>56)memorySamples.removeAt(0);memorySamples.add(0,peak)}}}catch(failure:Throwable){memoryFailure.set(failure)}}},1000L,1000L)
+    try {
     val uri = grant(documentUri("s049-compatibility.pdf"))
     val original = readBytes(uri)
     val coldIntent = viewIntent(uri, "application/pdf")
     val component = requireNotNull(glitchpadComponent(coldIntent)) { "installed PDF VIEW declaration must resolve the cold provider route" }
+    val coldStarted=SystemClock.elapsedRealtime()
     val scenario = ActivityScenario.launch<MainActivity>(coldIntent.setComponent(component)).also { ownedScenario = it }
     waitForDocumentIdentity(scenario, "s049-compatibility.pdf")
     try {
@@ -104,6 +114,7 @@ class AndroidDeliveryInstrumentedTest {
       println("s049_pdf_failure=" + runCatching { evaluate(scenario, "JSON.stringify({body:document.body.innerText,state:document.querySelector('.pdf-layout')?document.querySelector('.pdf-layout').outerHTML:null})") }.getOrDefault("unavailable"))
       System.out.flush(); throw failure
     }
+    val firstPageElapsed=SystemClock.elapsedRealtime()-coldStarted
     val facts = JSONObject(evaluate(scenario, "(()=>{const c=document.querySelector('.pdf-page[data-current=true] canvas');const d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;let ink=0;for(let i=0;i<d.length;i+=4)if(d[i]<200&&d[i+1]<200&&d[i+2]<200)ink++;const t=document.querySelector('.pdf-page[data-current=true] .pdf-text-layer');const content=t.textContent;const s=window.getSelection();s.selectAllChildren(t);const selected=s.toString();s.removeAllRanges();return {width:c.width,height:c.height,ink,text:content,selected,worker:document.querySelector('.pdf-layout').getAttribute('data-pdf-worker'),engine:document.querySelector('.pdf-layout').getAttribute('data-pdf-engine'),executed:window.__s049PdfExecuted===true,frames:document.querySelectorAll('[data-bb-app-frame]').length};})()"))
     assertTrue("PDF canvas must contain real text ink", facts.getInt("ink") > 500)
     assertTrue(facts.getString("text").contains("Glitchpad PDF compatibility page 1"))
@@ -127,6 +138,7 @@ class AndroidDeliveryInstrumentedTest {
     instrumentation.sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_MOVE_HOME)
     waitForCondition(scenario,"document.querySelector('.pdf-page[data-current=true]').getAttribute('data-pdf-page')==='0'","actual native keyboard Home navigates")
     reading.put("native_touch_outline",true).put("native_keyboard_home",true)
+    evaluate(scenario,"window.__s050PdfResourcePhases=[];window.addEventListener('glitchpad-pdf-disposed',e=>{if(e.detail.observations)window.__s050PdfResourcePhases.push(e.detail.observations)});true")
     val printStoreProof=if (isReleaseRuntimeEvidence()) JSONObject().put("scope", "debug_internal_store_checks_not_executed") else PdfPrintNativeStoreChecks.verify(clientContext)
     val printProof=JSONObject().put("selected",verifyPdfNativePrint(scenario,"2,4",2,"selected")).put("all",verifyPdfNativePrint(scenario,"all",4,"all"))
     val stream = grant(documentUri("s049-stream.pdf"))
@@ -157,9 +169,19 @@ class AndroidDeliveryInstrumentedTest {
     if (Build.VERSION.SDK_INT == 24) assertTrue("minimum profile must retain actual Chrome69", webview?.versionName?.startsWith("69.") == true)
     val result = JSONObject().put("schema_version",1).put("diagnostic_only",true).put("candidate_qualified",false).put("source_commit",InstrumentationRegistry.getArguments().getString("expectedSource")).put("api_level",Build.VERSION.SDK_INT).put("webview_package",webview?.packageName).put("webview_version",webview?.versionName).put("candidate_identity",identity).put("fixture_sha256",sha256(original)).put("facts",facts).put("reading_journey",reading).put("print",printProof).put("native_print_store",printStoreProof).put("stream_cache_files",JSONArray(streamCacheObserved)).put("stream_rendered",true).put("second_page",true).put("disposal",disposal).put("source_unchanged",true)
     File(clientContext.filesDir,"s049-pdf-compatibility.json").writeText(result.toString(2)+"\n",Charsets.UTF_8)
+    memoryTimer.cancel()
+    assertEquals("native PSS sampling must succeed", null, memoryFailure.get())
+    val memoryAfter=processPss()
+    val retainedMemory=JSONArray().put(memoryBefore)
+    synchronized(memorySamples){memorySamples.forEach{retainedMemory.put(it)}}
+    retainedMemory.put(memoryAfter)
+    val resourcePhases=JSONArray(evaluate(scenario,"window.__s050PdfResourcePhases")).put(reading.getJSONObject("resources")).put(disposal.getJSONObject("observations"))
+    result.put("resource_phases",resourcePhases)
+    result.put("measurements",JSONObject().put("first_page",JSONObject().put("method","SystemClock_elapsedRealtime_cold_resolved_intent_to_ready_canvas_and_text").put("samples_ms",JSONArray().put(firstPageElapsed))).put("memory",JSONObject().put("method","Android_Debug_MemoryInfo_totalPss_before_1000ms_peak_after").put("scope","Actual named application process PSS; separate WebView process and parser heap excluded").put("process_name",processName).put("pid",android.os.Process.myPid()).put("samples_bytes",retainedMemory).put("before_bytes",memoryBefore).put("after_bytes",memoryAfter).put("interval_ms",1000)).put("reading",reading.getJSONObject("measurements")).put("resources",reading.getJSONObject("resources")))
     result.put("cold_resolved_view", true).put("warm_resolved_send", true).put("stream_cache_removed", true)
     retainReleaseEvidence(scenario, "pdf", includePackages = true, observations = result, visibleScreenshot = "s050-pdf-visible.png")
     println("s049_pdf_compatibility="+result.toString());System.out.flush()
+    } finally {memoryTimer.cancel()}
   }
 
 
@@ -3232,6 +3254,7 @@ class AndroidDeliveryInstrumentedTest {
       .put("package_identifier", TARGET_PACKAGE).put("instrumentation_package", instrumentation.context.packageName).put("clipboard_provider", clipboardProviderFacts())
       .put("version", app.versionName).put("version_code", if (Build.VERSION.SDK_INT >= 28) app.longVersionCode else { @Suppress("DEPRECATION") app.versionCode.toLong() }).put("channel", if ((clientContext.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0) "debug" else "release")
       .put("build_variant", facts.getString("role")).put("api_level", Build.VERSION.SDK_INT).put("android_version", Build.VERSION.RELEASE)
+      .put("architecture", System.getProperty("os.arch")).put("supported_abis", JSONArray(Build.SUPPORTED_ABIS.toList()))
       .put("webview_package", webview.packageName).put("webview_version", webview.versionName)
   }
   private fun emitS047Journey(scenario: ActivityScenario<MainActivity>, journey: Int, variants: List<String>, details: JSONObject = JSONObject()) {

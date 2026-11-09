@@ -83,6 +83,7 @@ window.runGlitchpadPdfReadingJourney = async function () {
   var endEvent = function (event) { if (eventStarts.has(event)) handlerSamples.push(performance.now() - eventStarts.get(event)); };
   ["click", "keydown", "input"].forEach(function (type) { document.addEventListener(type, startEvent, true); window.addEventListener(type, endEvent); });
   var sample = function (metric, scope) { samples.push({metric:metric,scope:scope,milliseconds:performance.now()-timingStart}); };
+  try {
   await wait(function () {
     return rendered(0);
   }, 'first page');
@@ -212,10 +213,9 @@ window.runGlitchpadPdfReadingJourney = async function () {
   if (metadataClose) metadataClose.click();
   await close('PDF tools');
   await new Promise(function (resolve) { setTimeout(resolve, 75); });
-  if (longTaskObserver) longTaskObserver.disconnect();
-  ["click", "keydown", "input"].forEach(function (type) { document.removeEventListener(type, startEvent, true); window.removeEventListener(type, endEvent); });
   return {
     measurements: {samples:samples,clock:"performance.now",poll_interval_ms:25,interaction:{method:"capture_to_window_bubble_synchronous_event_interval",scope:"click_keydown_input_handlers; deferred callbacks excluded",samples_ms:handlerSamples},long_tasks:{method:"PerformanceObserver_longtask",supported:longTaskObserver!==null,scope:"main_realm_reading_journey_only; worker_heap_and_native_dialogs_excluded",samples_ms:longTaskObserver ? longTasks : null}},
+    engine: document.querySelector(".pdf-layout").getAttribute("data-pdf-engine"),
     schema_version: 1,
     runtime: navigator.userAgent,
     source_identity: {
@@ -226,6 +226,7 @@ window.runGlitchpadPdfReadingJourney = async function () {
         .querySelector('.app-shell')
         .getAttribute('data-frontend-source-commit'),
     },
+    resources: JSON.parse(document.querySelector(".pdf-layout").getAttribute("data-pdf-observations") || "null"),
     checks: checks,
     worker: document
       .querySelector('.pdf-layout')
@@ -234,4 +235,8 @@ window.runGlitchpadPdfReadingJourney = async function () {
       document.querySelector('.pdf-layout').getAttribute('data-pdf-surfaces'),
     ),
   };
+  } finally {
+    if (longTaskObserver) longTaskObserver.disconnect();
+    ["click", "keydown", "input"].forEach(function (type) { document.removeEventListener(type, startEvent, true); window.removeEventListener(type, endEvent); });
+  }
 };

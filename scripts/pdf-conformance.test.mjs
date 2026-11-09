@@ -11,3 +11,14 @@ test('latest attempt is authoritative and prior failed attempts remain visible',
 test('claimed passes cannot omit native checks, completion, measurements or actual runtime',()=>{for(const mutate of [r=>r.checks.native_print=false,r=>r.execution.completion='marker_only',r=>r.runtime.webview='',r=>r.runtime.architecture='wrong',r=>r.runtime.os='wrong',r=>r.runtime.debuggable=true,r=>r.measurements.first_page.samples_ms=[],r=>r.measurements.memory.process_name='',r=>r.measurements.resources.cache_after_bytes=5,r=>r.measurements.resources.max_range_bytes=999999,r=>r.measurements.disposal.samples_ms=[251],r=>r.measurements.interaction.samples_ms=[NaN],r=>r.measurements.worker_heap={status:'pass',bytes:0},r=>r.measurements.long_tasks={method:'PerformanceObserver_longtask',supported:true,scope:'main realm reading',samples_ms:[NaN]}]){const rows=all();mutate(rows[0]);assert.throws(()=>validatePdfConformance(rows,expected));}const rows=all();rows[8].runtime.api=36;assert.throws(()=>validatePdfConformance(rows,expected),/API/u);rows[8]=record('android_api24');rows[8].runtime.minified=false;assert.throws(()=>validatePdfConformance(rows,expected),/minified/u);});
 
 test('hosted timings retain over-reference observations without inventing a reference pass',()=>{const rows=all();rows[0].measurements.interaction.samples_ms=[51];rows[0].measurements.long_tasks={method:'PerformanceObserver_longtask',supported:true,scope:'actual hosted main realm',samples_ms:[104]};const result=validatePdfConformance(rows,expected);assert.equal(result.selected[0].measurements.interaction.maximum,51);assert.equal(result.selected[0].measurements.long_tasks.samples_ms[0],104);assert.equal(result.selected[0].reference_performance.status,'not_run_existing_owner_reference_waiver');});
+
+import { validatePdfExecutionBindings, collectPdfReleaseEvidence } from './lib/pdf-release-evidence.mjs';
+test('release PDF proof binds each profile to its accepted platform run and attempt',()=>{
+ const runs=Object.fromEntries(['windows','macos','linux','android'].map(p=>[p,{run_id:123,run_attempt:1}]));
+ validatePdfExecutionBindings(all(),runs);
+ assert.throws(()=>validatePdfExecutionBindings(all(),{...runs,android:{run_id:124,run_attempt:1}}),/stale execution/);
+ assert.throws(()=>validatePdfExecutionBindings(all(),{...runs,linux:{run_id:123,run_attempt:2}}),/stale execution/);
+});
+test('release collection cannot qualify synthetic aggregate records without raw native captures',async()=>{
+ await assert.rejects(collectPdfReleaseEvidence({files:[],source}),/all ten native PDF/);
+});

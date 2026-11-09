@@ -1,3 +1,4 @@
+import { collectPdfReleaseEvidence } from './lib/pdf-release-evidence.mjs';
 import { observeAcceptedMerge } from './verify-accepted-merge.mjs';
 import { checkPreparedDocumentationPass } from './validate-documentation-pass.mjs';
 import { verifyRepositoryAttestations } from './check-linux-package.mjs';
@@ -447,6 +448,7 @@ export async function consumeAcceptedInputs({
   }
   const files = await verifyAcceptedPayloads(directory, record);
   await verifyAndroidRuntime(files, record);
+  const pdfConformance=await collectPdfReleaseEvidence({files,source,platformRuns:record.platforms});
   const linuxManifests = files.filter(
     (path) => path.split(/[\\/]/u).at(-1) === 'linux-package-manifest.json',
   );
@@ -473,6 +475,7 @@ export async function consumeAcceptedInputs({
     version: releaseIdentity.version,
     tag: releaseIdentity.tag,
     linux_attestation_verification: linuxAttestation,
+    pdf_conformance:pdfConformance,
     documentation_pass:record.documentation_pass,
     implementation_pull_request:record.implementation_pull_request,
     observed_merge:observedMerge,

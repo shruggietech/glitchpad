@@ -1,7 +1,8 @@
+import { androidPdfConformanceRecord } from './lib/pdf-native-record.mjs';
 import { createHash } from 'node:crypto';
 import { createReadStream, readFileSync } from 'node:fs';
 import { readFile, readdir, writeFile } from 'node:fs/promises';
-import { join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { releaseIdentity } from './lib/release-identity.mjs';
 
@@ -187,11 +188,13 @@ export function validateReleaseRow(row, expected) {
       'go_to_page',
       'keyboard',
       'metadata',
+      'embedded_font_text',
     ])
       required(
         pdf.reading_journey?.checks?.[key] === true,
         'PDF reading check missing: ' + key,
       );
+    required(pdf.reading_journey.checks.canvas_ink > 500, 'PDF embedded reading canvas ink missing');
     required(
       pdf.reading_journey.native_touch_outline === true &&
         pdf.reading_journey.native_keyboard_home === true,
@@ -317,6 +320,7 @@ export async function validateReleaseCapture({ directory, caseId, expected }) {
   }
   return {
     case_id: caseId,
+    status: row.status,
     receipt_sha256: digest(receipt),
     screenshot_sha256: digest(png),
     identity: row.identity,
@@ -438,6 +442,20 @@ export async function validateReleaseDirectory({
           : 'Six bounded release-runtime cases including actual PDF output. Separate debug ordinary/fault campaigns qualify the S047 ten-journey matrix; physical/manual conformance remains waived under #66.',
   };
 }
+
+export async function createAndroidPdfReleaseRecord({summary, manifestPath, inputIdentityPath, instrumentation, execution}) {
+  required(summary.status==='pass' && summary.candidate_qualified===true && summary.diagnostic_only===false, 'Full release campaign required for PDF qualification');
+  const manifestBytes=await readFile(manifestPath), manifest=JSON.parse(manifestBytes);
+  const input=JSON.parse(await readFile(inputIdentityPath,'utf8'));
+  const universal=manifest.artifacts?.find(row=>row.role==='universal');
+  required(manifest.source_commit===summary.source && input.source_commit===summary.source && universal?.sha256===summary.applicationSha && input.application_sha256===summary.applicationSha, 'PDF canonical Android source/application binding mismatch');
+  required(input.instrumentation_sha256===summary.instrumentationSha && await hashReleaseFile(instrumentation)===summary.instrumentationSha && input.minified===true && input.application_debuggable===false, 'PDF matching minified instrumentation binding mismatch');
+  required(await hashReleaseFile(join(dirname(inputIdentityPath),'r8-mapping.txt'))===input.r8_mapping_sha256, 'PDF actual R8 mapping binding mismatch');
+  const row=summary.selected.flatMap(group=>group.cases).find(row=>row.case_id==='pdf');
+  required(row,'PDF full campaign capture missing');
+  return androidPdfConformanceRecord(row,{campaignComplete:true,minified:true,manifestSha:digest(manifestBytes),artifactSha:summary.applicationSha,execution});
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const values = {};
@@ -472,6 +490,10 @@ async function main() {
     JSON.stringify(result, null, 2) + '\n',
     'utf8',
   );
+  if ((values.mode ?? 'full') === 'full') {
+    const record=await createAndroidPdfReleaseRecord({summary:result,manifestPath:values.manifest,inputIdentityPath:values['input-identity'],instrumentation:values.instrumentation,execution:{run_id:Number(process.env.GITHUB_RUN_ID),run_attempt:Number(process.env.GITHUB_RUN_ATTEMPT),job:process.env.GITHUB_JOB,completion:'clean'}});
+    await writeFile(join(values.directory,'pdf-conformance-record.json'),JSON.stringify(record,null,2)+'\n','utf8');
+  }
   console.log(
     'Installed minified release evidence passed on API ' + result.api + '.',
   );

@@ -21,8 +21,10 @@ install_selected() {
     local log="$evidence/setup/install-$role-attempt-$attempt"
     exit_code=0
     adb_bounded install --no-streaming -r "$@" "$path" > "$log.txt" 2> "$log.stderr.txt" || exit_code=$?
-    printf '{"command_exit":%s,"attempt":%s}\n' "$exit_code" "$attempt" > "$log.status.json"
-    if (( exit_code == 0 )) && grep -Fxq Success "$log.txt"; then
+    local passed=false
+    if (( exit_code == 0 )) && grep -Fxq Success "$log.txt"; then passed=true; fi
+    printf '{"command_exit":%s,"attempt":%s,"pass":%s}\n' "$exit_code" "$attempt" "$passed" > "$log.status.json"
+    if [[ "$passed" == true ]]; then
       cp "$log.txt" "$evidence/install-$role.txt"
       return 0
     fi
@@ -131,4 +133,4 @@ for group in "${groups[@]}"; do
 done
 node "$scripts/validate-android-release-evidence.mjs" \
   --directory "$evidence" --source "$source" --api "$api" \
-  --application "$app" --instrumentation "$test_apk" --mode "$mode" --output "$evidence/release-runtime.json"
+  --application "$app" --instrumentation "$test_apk" --mode "$mode" --manifest "$(dirname "$app")/android-package-manifest.json" --input-identity "$(dirname "$test_apk")/identity.json" --output "$evidence/release-runtime.json"

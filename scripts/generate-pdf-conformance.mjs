@@ -58,7 +58,7 @@ function imagePdf(jpx, jbig2) {
           ' /BitsPerComponent ' +
           bits +
           ' /Filter /' +
-          filter,
+          filter + (filter === 'JBIG2Decode' ? ' /Decode [1 0]' : ''),
       ),
     );
     const content = w.add(w.stream('q 160 0 0 160 20 20 cm /Pattern Do Q'));

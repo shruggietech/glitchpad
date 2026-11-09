@@ -115,3 +115,7 @@ Case conversion can expand Unicode characters (for example, uppercase dotted I b
 ## R28 - Pinned upstream documentation link scope (2026-11-09 UTC)
 
 The new unchanged Wry0.55.1 upstream CHANGELOG/README/MOBILE/SECURITY Markdown entered the project link crawl, which already excludes other exact owned upstream distributions. Exclude only those four pinned upstream files after verifying their bytes against the original crate archive. Extend the common Markdown collector to honor exact file exclusions as well as directories. Keep the local GLITCHPAD-PATCH.md, project provenance, same-named project paths and neighboring Wry versions checked; cover that boundary in the existing validation regression. No project-document or brand/renderer check is waived.
+
+## R29 - Observe one stable trusted image-audit click (2026-11-09 UTC)
+
+The composed image audit retained a case35ICO Reset result in actual mode. Its helper scrolled a target and clicked immediately without confirming geometry had settled, the trusted click reached that target, or React had painted before measurement. Require two stable hit-testable frames, exactly one existing pointer click, its observed trusted DOM event and two post-action animation frames. Preserve the original action deadline, Fit/geometry/state assertions and failure artifacts; do not retry the click or synthesize state. This aligns the browser driver with the existing native input-observation contract.

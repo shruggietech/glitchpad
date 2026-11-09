@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { readFile, writeFile } from 'node:fs/promises';
+import { readFile, readdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -28,7 +28,7 @@ const manifest = manifestBytes
   : null;
 if (manifest && manifest.source_commit !== sourceCommit)
   throw new Error('scale receipt manifest source commit is stale');
-// Follow the entry HTML. Lazy renderer chunks can contain additional CSS files.
+// Include the bootstrap entry and lazy application/document CSS in this composed fixture.
 const builtIndex = await readFile(
   join(repositoryRoot, 'apps', 'glitchpad', 'dist', 'index.html'),
   'utf8',
@@ -40,6 +40,11 @@ assert.ok(
   cssAssets.length > 0,
   'production entry must declare its stylesheets',
 );
+const assetDirectory = join(repositoryRoot, 'apps', 'glitchpad', 'dist', 'assets');
+for (const name of (await readdir(assetDirectory)).filter(name => name.endsWith('.css')).sort()) {
+  const asset = '/assets/' + name;
+  if (!cssAssets.includes(asset)) cssAssets.push(asset);
+}
 const css = (
   await Promise.all(
     cssAssets.map((asset) => {

@@ -541,6 +541,8 @@ export const PdfSurface = forwardRef<TextEditorHandle, Props>(
         data-pdf-engine="6.5.438"
         data-pdf-layout={single ? 'single' : 'continuous'}
         data-pdf-surfaces={rendered.length}
+        data-pdf-observations={JSON.stringify(controller.resourceObservations)}
+        data-pdf-surface-bytes={controller.resourceCounts.surfaceBytes}
       >
         <div className="pdf-controls" role="group" aria-label="PDF controls">
           <Button

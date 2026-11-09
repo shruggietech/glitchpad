@@ -131,6 +131,9 @@ export class PdfController {
   private listeners = new Set<Listener>();
   private surfaces = new Set<() => void>();
   private surfaceBytes = 0;
+  private peakSurfaceBytes = 0;
+  private peakSurfaces = 0;
+  private rangeMeasures = { calls: 0, inFlight: 0, peakConcurrency: 0, maximumRequestBytes: 0, completedBytes: 0 };
   private readonly renders = new PdfWorkQueue();
   private passwordContinuation: ((password: string) => void) | null = null;
 
@@ -168,7 +171,22 @@ export class PdfController {
 
   async open(source: PdfSourceLease): Promise<void> {
     this.release();
-    this.source = source;
+    this.peakSurfaceBytes = 0;
+    this.peakSurfaces = 0;
+    const observed = { calls: 0, inFlight: 0, peakConcurrency: 0, maximumRequestBytes: 0, completedBytes: 0 };
+    this.rangeMeasures = observed;
+    const measuredSource: PdfSourceLease = {
+      length: source.length, platform: source.platform, revision: source.revision,
+      close: () => source.close(),
+      read: async (offset, length, signal) => {
+        observed.calls += 1; observed.inFlight += 1;
+        observed.peakConcurrency = Math.max(observed.peakConcurrency, observed.inFlight);
+        observed.maximumRequestBytes = Math.max(observed.maximumRequestBytes, length);
+        try { const bytes = await source.read(offset, length, signal); observed.completedBytes += bytes.byteLength; return bytes; }
+        finally { observed.inFlight -= 1; }
+      },
+    };
+    this.source = measuredSource;
     this.aborter = new AbortController();
     const generation = ++this.generation;
     this.publish({ state: 'loading', error: null });
@@ -236,14 +254,14 @@ export class PdfController {
       await parserWorker.promise;
       this.current(generation);
       if (parserWorker.port !== worker) throw new PdfFailure('worker_failure');
-      const initial = await source.read(
+      const initial = await measuredSource.read(
         0,
         Math.min(source.length, 4096),
         this.aborter.signal,
       );
       this.current(generation);
       const range = new SourceRangeTransport(
-        source,
+        measuredSource,
         initial,
         this.aborter.signal,
         (error) => {
@@ -439,6 +457,8 @@ export class PdfController {
         page.cleanup();
       };
       this.surfaces.add(dispose);
+      this.peakSurfaceBytes = Math.max(this.peakSurfaceBytes, this.surfaceBytes);
+      this.peakSurfaces = Math.max(this.peakSurfaces, this.surfaces.size);
       signal?.addEventListener('abort', dispose, { once: true });
       try {
         const context = canvas.getContext('2d');
@@ -814,6 +834,9 @@ export class PdfController {
     }
     return { matches, limited };
   }
+  get resourceObservations() {
+    return { range: { ...this.rangeMeasures }, peakSurfaceBytes: this.peakSurfaceBytes, peakSurfaces: this.peakSurfaces, scope: "controller source-read attempts and owned render surfaces; excludes parser heap" };
+  }
   get resourceCounts(): {
     workers: number;
     surfaces: number;
@@ -858,6 +881,7 @@ export class PdfController {
     this.source = null;
     if (source) void Promise.resolve(source.close()).catch(() => undefined);
     const releasedCounts = this.resourceCounts;
+    const releasedObservations = this.resourceObservations;
     if (terminated)
       queueMicrotask(() => {
         TextLayer.cleanup();
@@ -867,6 +891,7 @@ export class PdfController {
               detail: {
                 owner_id: this.state.owner_id,
                 worker_terminated: true,
+                observations: releasedObservations,
                 ...releasedCounts,
                 elapsed_ms: performance.now() - started,
               },

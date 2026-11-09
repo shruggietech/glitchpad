@@ -66,11 +66,11 @@ repeat 480 times
           log "NATIVE_PRINT_OBSERVED round=" & (rounds + 1)
           set frontmost to true
           key code 53
+          set rounds to rounds + 1
+          log "NATIVE_PRINT_CANCEL " & rounds & " observed_native_dialog=true action=native_escape"
+          -- The next operation can already own a Print window before a delayed absence check.
+          -- The candidate separately requires two native completion callbacks and DOM cleanup.
           delay 0.75
-          if not (exists window "Print") then
-            set rounds to rounds + 1
-            log "NATIVE_PRINT_CANCEL " & rounds & " observed_closed=true action=native_escape"
-          end if
         else
           repeat with candidateWindow in windows
             if exists sheet 1 of candidateWindow then

@@ -495,7 +495,7 @@ Malformed, unsupported, external-reference, cyclic/missing-reference, resource/d
 
 ## 20. PDF Viewing and Navigation
 
-S049 introduced the bundled PDF viewer under the existing source/session contracts. S050 reconciles #81 conformance and #82 stable activation into the v0.3.0 target, including desktop PDF associations and exact Android application/pdf VIEW/SEND delivery. The [PDF operations guide](operations/pdf-candidate.md), [S050 criterion map](../specs/050-pdf-stable-activation/contracts/issue-acceptance.md) and [release preparation receipt](releases/v0.3.0-receipt.md) retain behavior, evidence classes and publication-only open criteria. Source activation does not establish publication.
+S049 introduced the bundled PDF viewer under the existing source/session contracts. S050 reconciles #81 conformance and #82 stable activation into the v0.3.0 target, including desktop PDF associations and exact Android application/pdf VIEW/SEND delivery. The [PDF operations guide](https://github.com/ShruggieTech/glitchpad/blob/main/docs/operations/pdf-candidate.md), [S050 criterion map](https://github.com/ShruggieTech/glitchpad/blob/main/specs/050-pdf-stable-activation/contracts/issue-acceptance.md) and [release preparation receipt](https://github.com/ShruggieTech/glitchpad/blob/main/docs/releases/v0.3.0-receipt.md) retain behavior, evidence classes and publication-only open criteria. Source activation does not establish publication.
 
 PDF support activates in v0.3.0 and uses the PDF.js display layer in a dedicated worker. Glitchpad supplies its own compact shell rather than embedding the generic PDF.js viewer.
 

@@ -220,6 +220,9 @@ try {
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
   assert.ok(result, 'Native PDF journey did not return evidence');
+  // Preserve native failure diagnostics before any enrichment or validation can fail.
+  await writeFile(join(output,'native-result.json'),JSON.stringify(result,null,2)+'\n','utf8');
+  assert.ok(!result.journey.error,result.journey.error);
   const observedMemory = result.native_memory;
   assert.ok(
     observedMemory &&
@@ -242,6 +245,11 @@ try {
     minified: false,
     debuggable: !stagedArtifact,
   };
+  if(process.platform==='linux'){
+    const release=await readFile('/etc/os-release','utf8');
+    const field=name=>release.match(new RegExp('^'+name+'="?([^"\n]+)"?$','m'))?.[1];
+    result.runtime.distribution={id:field('ID'),version_id:field('VERSION_ID')};
+  }
   result.native_first_page = {
     method: 'native_process_launch_to_visible_canvas_and_text_50ms_poll',
     samples_ms: [result.journey.first_visible_epoch_ms - launchEpoch],

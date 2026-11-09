@@ -182,10 +182,9 @@ test('canonical technical specification produces 38 ordered sections and two leg
     documentation.files.get('38-appendices.mdx'),
     /## Appendix K\. Release documentation pass checklist/,
   );
-  assert.match(
-    documentation.files.get('index.mdx'),
-    /\| Updated \| 2026-11-08 \|/,
-  );
+  const updatedRow=source.match(/^\| Updated \| \d{4}-\d{2}-\d{2} \|$/m)?.[0];
+  assert.ok(updatedRow);
+  assert.ok(documentation.files.get('index.mdx').includes(updatedRow));
   assert.doesNotMatch(
     [...documentation.files.values()].join('\n'),
     /^## Table of Contents$/m,
@@ -428,7 +427,8 @@ test('landing copy keeps the current release, canonical brand, and navigation co
     join(siteRoot, 'components', 'footer.tsx'),
     'utf8',
   );
-  assert.match(home, /v0\.2\.1 product recovery source/i);
+  const workspace=JSON.parse(await readFile(join(repositoryRoot,'package.json'),'utf8'));
+  assert.ok(home.includes('v'+workspace.version+' PDF viewing source'));
   assert.match(home, /View your files\./);
   assert.match(
     home,

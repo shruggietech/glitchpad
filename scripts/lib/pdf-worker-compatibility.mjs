@@ -46,7 +46,7 @@ export function transformPdfWorker(code) {
   if (offset < 0 || code.indexOf(importBlock, offset + 1) >= 0)
     throw new Error('PDF static decoder transform occurrence mismatch');
   const replacement =
-    'Promise.resolve({ default: __glitchpadPdfDecoder(this._noWasmFilename) })';
+    'await Promise.resolve({ default: __glitchpadPdfDecoder(this._noWasmFilename) })';
   const bounds = fileURLToPath(
     new URL(
       '../../apps/glitchpad/src/domain/pdf-worker-bounds.ts',

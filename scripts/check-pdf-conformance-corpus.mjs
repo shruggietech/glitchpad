@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
+import {verifyPdfFixtureManifests} from './check-pdf-fixtures.mjs';
 import {readFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
 import {createHash} from 'node:crypto';
 const sha=bytes=>createHash('sha256').update(bytes).digest('hex');
 export async function checkPdfConformanceCorpus({page,openCase,closeCase,root}) {
-  const manifest=JSON.parse(await readFile(resolve(root,'fixtures/pdf/s050-fixtures.json'),'utf8'));
+  const manifest=await verifyPdfFixtureManifests(root);
   const rows=[];
   const ready=async index=>page.waitForFunction(function(index){var r=document.querySelector('[data-pdf-ready=true][data-pdf-worker=true]'),p=document.querySelector('.pdf-page[data-current=true]');return r&&p&&Number(p.getAttribute('data-pdf-page'))===index&&p.querySelector('canvas').width>0;},{timeout:60000},index);
   const visible=async()=>page.evaluate(function(){var p=document.querySelector('.pdf-page[data-current=true]'),c=p.querySelector('canvas'),t=p.querySelector('.pdf-text-layer'),r=document.querySelector('.pdf-layout');return {text:t.textContent,width:c.width,height:c.height,worker:r.getAttribute('data-pdf-worker'),engine:r.getAttribute('data-pdf-engine'),observations:JSON.parse(r.getAttribute('data-pdf-observations')||'null')};});

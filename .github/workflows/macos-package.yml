@@ -179,5 +179,7 @@ jobs:
             clean-host-${{ matrix.architecture }}.json
             clean-host-${{ matrix.architecture }}.json.startup.json
             startup-comparison-${{ matrix.architecture }}.json
+            pdf-native-macos_${{ matrix.architecture }}/**
+            pdf-native-macos_${{ matrix.architecture }}-runner.log
           if-no-files-found: error
           retention-days: 30

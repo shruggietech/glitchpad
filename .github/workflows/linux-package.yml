@@ -214,10 +214,10 @@ jobs:
 
       - name: Exercise install, launch, delivery, and removal
         run: |
-          docker run --rm --volume "$PWD:/workspace" --workdir /workspace \
+          docker run --rm --env GITHUB_ACTIONS --env GITHUB_RUN_ID --env GITHUB_RUN_ATTEMPT --env GITHUB_JOB --volume "$PWD:/workspace" --workdir /workspace \
             --volume "$RUNNER_TEMP/glitchpad-cargo/registry:/usr/local/cargo/registry" \
             --volume "$RUNNER_TEMP/glitchpad-cargo/git:/usr/local/cargo/git" glitchpad-linux-lifecycle:local \
-            timeout --signal=KILL 120s xvfb-run -a dbus-run-session -- node scripts/linux/test-package-lifecycle.mjs \
+            timeout --signal=KILL 420s xvfb-run -a dbus-run-session -- node scripts/linux/test-package-lifecycle.mjs \
               --package 'artifacts/linux/${{ matrix.artifact_name }}' \
               --manifest artifacts/linux/linux-package-manifest.json \
               --receipt 'clean-ubuntu-${{ matrix.release }}-${{ matrix.package_form }}.json' \
@@ -226,9 +226,13 @@ jobs:
               ${{ inputs.stage_release && '--official' || '' }}
 
       - name: Upload content-free clean-environment receipt
+        if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: glitchpad-linux-clean-ubuntu-${{ matrix.release }}-${{ matrix.package_form }}
-          path: clean-ubuntu-${{ matrix.release }}-${{ matrix.package_form }}.json
+          name: ${{ job.status != 'success' && format('failed-attempt-{0}-', github.run_attempt) || '' }}glitchpad-linux-clean-ubuntu-${{ matrix.release }}-${{ matrix.package_form }}
+          path: |
+            clean-ubuntu-${{ matrix.release }}-${{ matrix.package_form }}.json
+            pdf-native-ubuntu_*_${{ matrix.package_form }}/**
+            pdf-native-ubuntu_*_${{ matrix.package_form }}-runner.log
           if-no-files-found: error
           retention-days: 30

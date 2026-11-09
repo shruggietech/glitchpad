@@ -222,7 +222,7 @@ jobs:
         run: cargo test -p glitchpad-host --test desktop_source_conformance --locked
 
       - name: Generate original PDF journey fixture
-        run: node scripts/generate-pdf-fixtures.mjs
+        run: node scripts/check-pdf-fixtures.mjs --stage-reading-journey
       - name: Build Windows candidate package
         if: runner.os == 'Windows'
         run: pnpm tauri build --debug --config tauri.s019-windows.conf.json --bundles nsis --ci
@@ -374,7 +374,7 @@ jobs:
           cache-on-failure: true
 
       - name: Generate original PDF instrumentation fixtures
-        run: node scripts/generate-pdf-fixtures.mjs
+        run: node scripts/check-pdf-fixtures.mjs --stage-reading-journey
 
       - name: Build emulator APK and provider unit tests
         env:
@@ -599,7 +599,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: sudo apt-get update && sudo apt-get install --yes qpdf
-      - run: node scripts/generate-pdf-fixtures.mjs --extended
+      - run: node scripts/check-pdf-fixtures.mjs --stage-reading-journey
       - run: node scripts/prepare-pdf-assets.mjs
       - run: node --test scripts/prepare-pdf-assets.test.mjs scripts/pdf-conformance.test.mjs
       - run: pnpm --filter @shruggietech/glitchpad exec vitest run src/domain/pdf-

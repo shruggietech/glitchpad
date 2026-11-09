@@ -168,7 +168,7 @@ jobs:
           cp crates/glitchpad-host/gen/android/app/build/outputs/bundle/universalRelease/app-universal-release.aab "$RUNNER_TEMP/app-universal-release.aab"
 
       - name: Stage exact PDF journey test asset
-        run: node --input-type=module -e "import { copyFile } from 'node:fs/promises'; await copyFile('scripts/pdf-reading-journey.js', 'fixtures/pdf/pdf-reading-journey.js');"
+        run: node scripts/check-pdf-fixtures.mjs --stage-reading-journey
 
       - name: Build matching release instrumentation without changing canonical inputs
         run: |

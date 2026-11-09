@@ -17,3 +17,7 @@ Retain identified raw samples/methods for acquired-source-to-first-visible-page,
 ## Aggregate integrity
 
 Required case/profile keys, criterion mapping, exact source and package/installed/manifest/fixture/runtime identities are mandatory. Select the latest required attempt, require real terminal success and clean applicable JUnit/ADB/operation completion, retain prior failures and reject a newer failed/missing/stale/unbounded result. No any-success fallback. Every required row is passed or an existing explicit manual/physical/reference waiver; unperformed observations remain not_run and do not become passes.
+
+## Existing reference-performance waiver
+
+The governed repeated_interaction_task 50ms hard limit and minimum20 samples apply to the declared desktop_reference_v1/android_api24_reference_v1/android_api36_reference_v1 release profiles in fixtures/performance/budgets.json. S050 preserves the existing owner reference-hardware waiver. Hosted named-process/handler/long-task observations remain raw hosted evidence, including any above-reference values; they do not create a new reference release gate or a reference pass. Functional, source-integrity, actual disposal/cancellation, file/surface/range and package hard limits remain required.

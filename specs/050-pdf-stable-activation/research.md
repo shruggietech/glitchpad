@@ -51,3 +51,7 @@ Decision: attach PDF proof to existing staged native/package/runtime archives an
 ## R12: Review and issue closure
 
 Decision: publish one PR, count at most two actual external review rounds and retain every reviewed/final head. Resolve threads and freeze completion records before final qualification; final external receipt records execution without editing its own source hash. #81 can close on merge after its matrix passes; #82/#11 remain open for actual tag/publication/public readback. Rationale: this is the owner-approved stop boundary. Existing physical/manual-screen-reader/reference waivers persist and automated observations are never relabelled manual.
+
+## R13 - Correct hosted/reference classification (2026-11-09)
+
+Actual minified API24 functional/JUnit/print/cache checks completed in run42576973414, but an S050-added validator incorrectly rejected any hosted main-realm long task above50ms. The canonical repeated_interaction_task metric applies to three named reference release profiles, while approved FR-012 preserves the existing reference-hardware waiver and forbids unsupported reference claims. Remove the newly introduced hosted timing gate, preserve raw50-104ms observations and the unchanged reference budget, and report reference performance as not_run_existing_owner_reference_waiver. Reuse the exact signed app/test inputs for fresh diagnostic-only API24 then API36 execution; final accepted qualification still requires fresh complete current-source staging.

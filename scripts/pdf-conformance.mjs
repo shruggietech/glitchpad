@@ -33,19 +33,19 @@ function validateRow(row, expected) {
   const measurements={};
   for (const name of ['first_page','navigation','search','thumbnail','disposal','interaction','memory']) measurements[name]=summarize(row.measurements?.[name],name);
   requireValue(measurements.disposal.maximum<=250,'cancellation exceeds250ms');
-  requireValue(measurements.interaction.maximum<=50 && typeof measurements.interaction.scope==='string','synchronous interaction interval exceeds50ms or scope missing');
+  requireValue(typeof measurements.interaction.scope==='string','synchronous interaction observation scope missing');
   requireValue(typeof measurements.memory.process_name==='string' && measurements.memory.process_name.length>0 && typeof measurements.memory.scope==='string' && measurements.memory.scope.length>0,'named process memory measurement missing');
   requireValue(row.measurements.worker_heap?.status==='not_measured' && typeof row.measurements.worker_heap.reason==='string' && row.measurements.worker_heap.reason.length>0,'unmeasured worker heap must stay explicit');
   const longTasks=row.measurements.long_tasks;
   requireValue(typeof longTasks?.supported==='boolean' && typeof longTasks.method==='string' && typeof longTasks.scope==='string','long-task observer scope missing');
-  if(longTasks.supported) requireValue(Array.isArray(longTasks.samples_ms) && longTasks.samples_ms.every(n=>Number.isFinite(n)&&n>=0&&n<=50),'observed main-realm reading task exceeds50ms');
+  if(longTasks.supported) requireValue(Array.isArray(longTasks.samples_ms) && longTasks.samples_ms.every(n=>Number.isFinite(n)&&n>=0),'observed main-realm reading task samples invalid');
   else requireValue(longTasks.samples_ms===null,'unsupported long-task API must remain explicitly unmeasured');
   const resource=row.measurements.resources;
   requireValue(resource && [resource.peak_surface_bytes,resource.max_range_bytes,resource.peak_range_concurrency,resource.cache_before_bytes,resource.cache_after_bytes].every(n=>Number.isFinite(n)&&n>=0),'actual resource observations missing');
   requireValue(resource.surface_limit_bytes===(android?96:200)*1024*1024 && resource.peak_surface_bytes<=resource.surface_limit_bytes,'owned surface budget mismatch');
   requireValue(resource.range_limit_bytes===262144 && resource.max_range_bytes<=262144 && resource.range_concurrency_limit===2 && resource.peak_range_concurrency<=2,'bounded source-range budget mismatch');
   requireValue(resource.cache_after_bytes===0,'private cache disposal missing');
-  return {...row,measurements:{...row.measurements,...measurements}};
+  return {...row,measurements:{...row.measurements,...measurements},reference_performance:{metric:'repeated_interaction_task',reference_limit_ms:50,status:'not_run_existing_owner_reference_waiver',scope:'These are hosted observations; no reference-profile budget pass is claimed.'}};
 }
 export function validatePdfConformance(records,expected) {
   requireValue(Array.isArray(records),'record array missing');

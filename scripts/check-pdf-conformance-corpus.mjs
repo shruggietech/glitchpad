@@ -199,7 +199,12 @@ export async function checkPdfConformanceCorpus({
         .click();
     });
     await page.waitForSelector('#pdf-search');
-    await page.type('#pdf-search', 'שלום');
+    // Chrome69's CDP lacks Input.insertText; this corpus uses explicit synthetic input.
+    await page.evaluate(function (query) {
+      var input=document.getElementById('pdf-search');
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,query);
+      input.dispatchEvent(new Event('input',{bubbles:true}));
+    }, 'שלום');
     await page.evaluate(function () {
       Array.from(document.querySelectorAll('button'))
         .reverse()

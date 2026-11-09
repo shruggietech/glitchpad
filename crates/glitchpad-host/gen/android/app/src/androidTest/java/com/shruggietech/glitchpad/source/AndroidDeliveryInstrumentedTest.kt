@@ -182,11 +182,14 @@ class AndroidDeliveryInstrumentedTest {
     }
     fun activate(node:android.view.accessibility.AccessibilityNodeInfo){
       // DocumentsUI rows can expose a non-clickable label inside a touchable row.
+      val expectedId=node.viewIdResourceName;val expectedText=node.text?.toString();val expectedDescription=node.contentDescription?.toString();val expectedClass=node.className?.toString()
       automation.waitForIdle(400L,5000L)
-      assertTrue("native control remains attached after UI settles",node.refresh())
-      if(node.isClickable&&node.performAction(android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK))return
-      val bounds=android.graphics.Rect();node.getBoundsInScreen(bounds)
-      println("s049_native_print_control="+JSONObject().put("text",node.text?.toString()).put("description",node.contentDescription?.toString()).put("bounds",bounds.toShortString()));System.out.flush()
+      val control=if(node.refresh())node else awaitNative("refreshed system control "+(expectedText?:expectedDescription?:expectedId)) { candidate ->
+        candidate.isEnabled&&candidate.viewIdResourceName==expectedId&&candidate.text?.toString()==expectedText&&candidate.contentDescription?.toString()==expectedDescription&&candidate.className?.toString()==expectedClass
+      }
+      if(control.isClickable&&control.performAction(android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK))return
+      val bounds=android.graphics.Rect();control.getBoundsInScreen(bounds)
+      println("s049_native_print_control="+JSONObject().put("text",control.text?.toString()).put("description",control.contentDescription?.toString()).put("bounds",bounds.toShortString()));System.out.flush()
       assertTrue("native control has touch geometry",bounds.width()>0&&bounds.height()>0)
       dispatchNativeTapOnce(bounds.exactCenterX(),bounds.exactCenterY(),SystemClock.elapsedRealtime()+30000L) { event -> automation.injectInputEvent(event,true) }
     }

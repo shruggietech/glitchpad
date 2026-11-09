@@ -40,8 +40,16 @@ assert.ok(
   cssAssets.length > 0,
   'production entry must declare its stylesheets',
 );
-const assetDirectory = join(repositoryRoot, 'apps', 'glitchpad', 'dist', 'assets');
-for (const name of (await readdir(assetDirectory)).filter(name => name.endsWith('.css')).sort()) {
+const assetDirectory = join(
+  repositoryRoot,
+  'apps',
+  'glitchpad',
+  'dist',
+  'assets',
+);
+for (const name of (await readdir(assetDirectory))
+  .filter((name) => name.endsWith('.css'))
+  .sort()) {
   const asset = '/assets/' + name;
   if (!cssAssets.includes(asset)) cssAssets.push(asset);
 }

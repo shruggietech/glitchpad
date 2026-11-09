@@ -43,7 +43,7 @@ Independent test: ordered cancellable search plus all compact navigation flows, 
 - [x] T018 [US2] Implement ordered cancellable search, page context and match selection in apps/glitchpad/src/domain/pdf-controller.ts and components/PdfSurface.tsx. (FR-010)
 - [x] T019 [US2] Implement bounded outline/named destinations/internal links and lazy thumbnails with reduced-cache disable in apps/glitchpad/src/domain/pdf-controller.ts. (FR-005,011)
 - [x] T020 [US2] Complete dismissible search/outline/thumbnail tools with keyboard/touch/focus/current-page semantics using existing TaskSurface and tokens in apps/glitchpad/src/components/PdfSurface.tsx and styles.css. (FR-012,016,018)
-- [ ] T021 [US2] Measure reduced-cache responsiveness and validate source hashes/session-only navigation in scripts/check-pdf-runtime.mjs and existing Android instrumentation. (FR-008,011,012,017,020,021)
+- [x] T021 [US2] Measure reduced-cache responsiveness and validate source hashes/session-only navigation in scripts/check-pdf-runtime.mjs and existing Android instrumentation. (FR-008,011,012,017,020,021)
 
 ## Phase 5: US3 - Inspect, follow links and print deliberately
 

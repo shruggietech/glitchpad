@@ -39,6 +39,10 @@ describe('PDF navigation bounds', () => {
     });
     expect(destinationShape([0, { name: 'Fit' }]).mode).toBe('Fit');
   });
+  it('preserves original offsets after Unicode case expansion and treats query syntax literally', () => {
+    expect(pageMatches('İ cats CATS', 'cats', 0, 10).map(hit => [hit.offset, hit.text])).toEqual([[2, 'cats'], [7, 'CATS']]);
+    expect(pageMatches('İ a+b aab', 'a+b', 0, 10).map(hit => [hit.offset, hit.text])).toEqual([[2, 'a+b']]);
+  });
   it('returns bounded ordered search results with context', () => {
     expect(pageMatches('One match. Another MATCH.', 'match', 4, 1)).toEqual([
       {

@@ -132,25 +132,22 @@ export function pageMatches(
   limit: number,
 ): PdfSearchMatch[] {
   const output: PdfSearchMatch[] = [];
-  const haystack = text.toLowerCase(),
-    needle = query.toLowerCase();
-  if (!needle) return output;
-  let from = 0;
+  if (!query) return output;
+  // Match original UTF-16 text; lowercasing can expand characters before a hit.
+  const literal = query.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
+  const expression = new RegExp(literal, 'giu');
   while (output.length < limit) {
-    const offset = haystack.indexOf(needle, from);
-    if (offset < 0) break;
+    const match = expression.exec(text);
+    if (!match) break;
+    const offset = match.index;
     output.push({
       page,
       offset,
-      text: text.slice(offset, offset + query.length),
+      text: match[0],
       context: text
-        .slice(
-          Math.max(0, offset - 48),
-          Math.min(text.length, offset + query.length + 80),
-        )
+        .slice(Math.max(0, offset - 48), Math.min(text.length, offset + match[0].length + 80))
         .replace(/\s+/gu, ' '),
     });
-    from = offset + Math.max(1, query.length);
   }
   return output;
 }

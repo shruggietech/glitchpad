@@ -33,6 +33,12 @@ export interface TabState {
 
 export type TabAction =
   | {
+      type: 'update_pdf';
+      id: string;
+      expectedRevision: number;
+      pdf: import('./pdf-contract').PdfDocumentState;
+    }
+  | {
       type: 'destination_save_started';
       id: string;
       revision: number;
@@ -172,6 +178,33 @@ export const projectTabs = (
 
 export const tabReducer = (state: TabState, action: TabAction): TabState => {
   switch (action.type) {
+    case 'update_pdf':
+      return {
+        ...state,
+        sessions: state.sessions.map((s) =>
+          s.id === action.id &&
+          s.revision === action.expectedRevision &&
+          s.pdf_document?.owner_id === action.pdf.owner_id
+            ? {
+                ...s,
+                pdf_document: action.pdf,
+                renderer: {
+                  ...s.renderer,
+                  capabilities: {
+                    ...s.renderer.capabilities,
+                    view: action.pdf.capabilities.view,
+                    navigate: action.pdf.capabilities.navigate,
+                    search: action.pdf.capabilities.search,
+                    zoom: action.pdf.capabilities.zoom,
+                    copy: action.pdf.capabilities.text_selection,
+                    edit: false,
+                    save: false,
+                  },
+                },
+              }
+            : s,
+        ),
+      };
     case 'destination_save_started':
       return {
         ...state,

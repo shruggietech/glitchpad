@@ -183,3 +183,99 @@ sensitivity_review = "Synthetic numeric thresholds, classifications, and stable 
 format = "JSON"
 purpose = "Exact classification boundaries, consecutive-warning history, and malformed evidence validation"
 expected_result = "All policy consumers reject invalid evidence and agree on pass, warning, failure, and follow-up results"
+
+[[fixture]]
+path = "fixtures/pdf/s049-compatibility.pdf"
+source = "Original Glitchpad S049 PDF fixture generator"
+author = "Glitchpad contributors"
+license = "Apache-2.0 AND OFL-1.1"
+redistribution = true
+sha256 = "8e826935273b7ab605a28a30bade3e3c5c419a7446f3ad61c4a7026279a4fec8"
+sensitivity_review = "Self-authored synthetic PDF text, metadata and inert security strings only"
+format = "PDF"
+purpose = "Offline worker, fonts, range reads, navigation and inert action/link validation"
+expected_result = "Readable selectable content; scripts and automatic links remain inert; source bytes unchanged"
+
+[[fixture]]
+path = "fixtures/pdf/s049-small.pdf"
+source = "Original Glitchpad S049 PDF fixture generator"
+author = "Glitchpad contributors"
+license = "Apache-2.0 AND OFL-1.1"
+redistribution = true
+sha256 = "31e981793bd0f7a5a6e10331fda1f7a4f7dd23186d71cdc68ed81400b85a7f47"
+sensitivity_review = "Self-authored synthetic PDF text, metadata and inert security strings only"
+format = "PDF"
+purpose = "Offline worker, fonts, range reads, navigation and inert action/link validation"
+expected_result = "Readable selectable content; scripts and automatic links remain inert; source bytes unchanged"
+
+[[fixture]]
+path = "fixtures/pdf/s049-malformed.pdf"
+source = "Original Glitchpad S049 PDF fixture generator"
+author = "Glitchpad contributors"
+license = "Apache-2.0"
+redistribution = true
+sha256 = "411511bdb3d98354a77bbe6b72c97b6b3cb18feb9c90302ad7f221ed2ec5ea91"
+sensitivity_review = "Self-authored synthetic PDF text, metadata and inert security strings only"
+format = "PDF"
+purpose = "Bounded malformed parser outcome"
+expected_result = "Stable malformed result without source mutation"
+
+[[fixture]]
+path = "fixtures/pdf/s049-large.pdf"
+source = "Original Glitchpad S049 PDF fixture generator"
+author = "Glitchpad contributors"
+license = "Apache-2.0"
+redistribution = true
+sha256 = "ed542a8be63c1ce135c1cb6c659c86c4bcf727f3040e11546618c21ca5050649"
+sensitivity_review = "Synthetic text and metadata only; test passwords are public fixture values"
+format = "PDF"
+purpose = "1000-page reduced-cache responsiveness and bounded surfaces"
+expected_result = "Bounded explicit state without source mutation or executable document actions"
+
+[[fixture]]
+path = "fixtures/pdf/s049-page-limit.pdf"
+source = "Original Glitchpad S049 PDF fixture generator"
+author = "Glitchpad contributors"
+license = "Apache-2.0"
+redistribution = true
+sha256 = "c94a8fff75911d76e0fc58aa2fbc96cc86ee5265bd237b5804382b39542cce00"
+sensitivity_review = "Synthetic text and metadata only; test passwords are public fixture values"
+format = "PDF"
+purpose = "Compact valid 10001-page tree exercises page-count refusal"
+expected_result = "Bounded explicit state without source mutation or executable document actions"
+
+[[fixture]]
+path = "fixtures/pdf/s049-unsupported-encryption.pdf"
+source = "Original Glitchpad S049 PDF fixture generator"
+author = "Glitchpad contributors"
+license = "Apache-2.0"
+redistribution = true
+sha256 = "1942d619567b1e76ccdfbfea0af53495f1f6bb6252df90668262e51f2b3dce98"
+sensitivity_review = "Synthetic text and metadata only; test passwords are public fixture values"
+format = "PDF"
+purpose = "Unsupported encryption handler classification"
+expected_result = "Bounded explicit state without source mutation or executable document actions"
+
+[[fixture]]
+path = "fixtures/pdf/s049-encrypted.pdf"
+source = "Original Glitchpad S049 PDF fixture generator and qpdf static test encryption"
+author = "Glitchpad contributors"
+license = "Apache-2.0 AND OFL-1.1"
+redistribution = true
+sha256 = "cb34298e5a7b12a784f71c7007f55dad59c44bdeb6f483723367d528c047b15d"
+sensitivity_review = "Synthetic text and metadata only; test passwords are public fixture values"
+format = "PDF"
+purpose = "Password-required, incorrect-password and decrypted rendering"
+expected_result = "Bounded explicit state without source mutation or executable document actions"
+
+[[fixture]]
+path = "fixtures/pdf/s049-security.pdf"
+source = "Original Glitchpad S049 PDF fixture generator"
+author = "Glitchpad contributors"
+license = "Apache-2.0"
+redistribution = true
+sha256 = "18493f010f81f44acbe6cd29de11218b2c2b6b92284b9053c028aa18400bfea1"
+sensitivity_review = "Original synthetic form, attachment and inert action strings only"
+format = "PDF"
+purpose = "JavaScript, launch, submit, remote action, attachment, read-only form, unsafe links and malformed destination corpus"
+expected_result = "No automatic native navigation, network, script, form submission or attachment launch; invalid destinations refuse without losing readable content"

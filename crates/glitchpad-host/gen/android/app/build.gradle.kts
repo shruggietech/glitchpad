@@ -43,6 +43,7 @@ require(instrumentationBuildType in setOf("debug", "release")) { "glitchpad.test
 android {
     testBuildType = instrumentationBuildType
     sourceSets.getByName("androidTest").assets.srcDir(rootProject.file("../../../../fixtures/images"))
+    sourceSets.getByName("androidTest").assets.srcDir(rootProject.file("../../../../fixtures/pdf"))
     sourceSets.getByName("androidTest").assets.srcDir(rootProject.file("../../../../packaging/android/release-test-notices"))
     compileSdk = 36
     ndkVersion = "28.2.13676358"

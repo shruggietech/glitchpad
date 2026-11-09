@@ -50,6 +50,7 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
   private val rejections = ArrayBlockingQueue<String>(MAX_PENDING_REJECTIONS)
   private val sources = ConcurrentHashMap<String, NativeSource>()
   private val imageExports = ImageExportCancellations()
+  private val pdfPrintStore by lazy { PdfPrintStore(File(activity.cacheDir, "pdf-print-v1")) }
   private val streams = ConcurrentHashMap<String, NativeStream>()
   private val restoration = RestorationStore(activity)
   private val initialIntentConsumed = AtomicBoolean(false)
@@ -640,6 +641,37 @@ class AndroidSourcePlugin(private val activity: Activity) : Plugin(activity) {
       .put("right", value.right).put("bottom", value.bottom)
     return JSObject().put("webviewScreen", rectangle(observed.webviewScreen)).put("visibleScreen", rectangle(observed.visibleScreen))
       .put("viewWidth", observed.viewWidth).put("viewHeight", observed.viewHeight).put("density", observed.density.toDouble())
+  }
+
+  @Command
+  fun pdfPrint(invoke: Invoke) {
+    val args = invoke.parseArgs(PdfPrintArgs::class.java)
+    ioExecutor.execute {
+      runCatching {
+        when (args.operation) {
+          "begin" -> invoke.resolve(pdfPrintStore.begin(args))
+          "append" -> invoke.resolve(pdfPrintStore.append(args))
+          "seal" -> invoke.resolve(pdfPrintStore.seal(args))
+          "inspect" -> invoke.resolve(pdfPrintStore.status(args))
+          "cancel" -> invoke.resolve(pdfPrintStore.cancel(args))
+          "handoff" -> {
+            val job = pdfPrintStore.handedOff(args)
+            activity.runOnUiThread {
+              try {
+                val manager = activity.getSystemService(android.content.Context.PRINT_SERVICE) as? android.print.PrintManager ?: throw IllegalStateException("print_unavailable")
+                manager.print("Glitchpad PDF", PdfPrintAdapter(activity, pdfPrintStore, job, ioExecutor), null)
+                invoke.resolve(pdfPrintStore.status(args))
+              } catch (_: Exception) { pdfPrintStore.observe(job, "failed"); pdfPrintStore.finish(job); invoke.reject("print_unavailable") }
+            }
+          }
+          else -> invoke.reject("invalid_print_operation")
+        }
+      }.onFailure { error ->
+        val reason=error.message?.takeIf { it.matches(Regex("[a-z_]{1,64}")) } ?: "native_failure"
+        android.util.Log.w("GlitchpadPdfPrint", "operation="+args.operation+" reason="+reason)
+        invoke.reject("pdf_print_unavailable")
+      }
+    }
   }
 
   @Command

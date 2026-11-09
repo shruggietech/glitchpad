@@ -90,6 +90,7 @@ describe('Android startup restoration', () => {
       };
       const call = vi.fn(
         (command: string, args?: Record<string, unknown>): Promise<unknown> => {
+          if (command === 'identify_pdf_source') return Promise.resolve(false);
           if (command === 'identify_image_source') return Promise.resolve(null);
           if (command !== 'read_android_range')
             throw new Error('unexpected native command');
@@ -137,6 +138,7 @@ describe('Android startup restoration', () => {
         command: string,
         args?: Record<string, unknown>,
       ): Promise<unknown> => {
+        if (command === 'identify_pdf_source') return Promise.resolve(false);
         if (command === 'identify_image_source') return Promise.resolve(null);
         if (command !== 'read_android_range')
           throw new Error('unexpected native command');
@@ -193,6 +195,7 @@ describe('Android startup restoration', () => {
 
   it('keeps known oversized sources out of full-snapshot reads', async () => {
     const call = vi.fn((command: string): Promise<unknown> => {
+      if (command === 'identify_pdf_source') return Promise.resolve(false);
       if (command === 'identify_image_source') return Promise.resolve(null);
       throw new Error(
         'oversized sources must not be read into a full snapshot',
@@ -209,7 +212,7 @@ describe('Android startup restoration', () => {
       (await materializeAndroidSource(call, original, 'markdown', 'android'))
         .text_document?.mode,
     ).toBe('large_read_only');
-    expect(call).toHaveBeenCalledOnce();
+    expect(call.mock.calls.map(([command]) => command)).toEqual(['identify_image_source', 'identify_pdf_source']);
     await expect(
       materializeAndroidSource(
         call,
@@ -244,6 +247,7 @@ describe('Android startup restoration', () => {
   });
   it('reopens only projected durable sources and materializes their bounded content', async () => {
     const nativeCall = (command: string): Promise<unknown> => {
+      if (command === 'identify_pdf_source') return Promise.resolve(false);
       if (command === 'identify_image_source') return Promise.resolve(null);
       if (command === 'restore_android_sources')
         return Promise.resolve([

@@ -10,6 +10,7 @@ import {
 import { detectLanguage } from './language';
 import { identifyImageSource } from './image-gateway';
 import { createImageSession } from './image-contract';
+import { identifyPdfSource, createPdfSession } from './pdf-source-gateway';
 import { markdownEligibility } from './markdown-contract';
 import { initialMermaidViewport } from './mermaid-contract';
 import type { SessionProjection } from './persistence';
@@ -26,6 +27,7 @@ const RESTORABLE_RENDERERS = new Set([
   'source',
   'text',
   'image',
+  'pdf',
 ]);
 
 interface RangeReadResult {
@@ -171,6 +173,9 @@ export const materializeAndroidSource = async (
       imageCodec,
       idPrefix,
     );
+  if (await identifyPdfSource(call, source.source_id, source.external_revision))
+    return createPdfSession(source.descriptor, source.source_id, source.external_revision, idPrefix);
+  if (rendererId === 'pdf') throw new Error('The restored source is no longer a PDF');
   if (rendererId === 'image')
     throw new Error('The restored source is no longer a supported image');
   const { text, sourceBytes, encoding } = await readBoundedText(call, source);

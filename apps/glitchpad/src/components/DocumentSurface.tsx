@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useState } from 'react';
+import { forwardRef, lazy, Suspense, useEffect, useState } from 'react';
 import {
   reportRecoveryFailure,
   type RecoveryFailureReporter,
@@ -24,11 +24,14 @@ import {
 import { LargeTextSurface } from './LargeTextSurface';
 import { MermaidSurface } from './MermaidSurface';
 import { ImageSurface } from './ImageSurface';
+const PdfSurface = lazy(() => import('./PdfSurface').then(module => ({ default: module.PdfSurface })));
+import type { PdfDocumentState } from '../domain/pdf-contract';
 import type { ImageDocumentState } from '../domain/image-contract';
 import type { MetadataContribution } from '../domain/metadata';
 import { DocumentErrorBoundary } from './DocumentErrorBoundary';
 
 interface DocumentSurfaceProps {
+  onPdfChange?: (id: string, expectedRevision: number, state: PdfDocumentState) => void;
   session: ShellSession | null;
   onCommandStateChange?: (state: EditorCommandState) => void;
   onFailure?: RecoveryFailureReporter;
@@ -91,6 +94,7 @@ export const DocumentSurface = forwardRef<
     onOpenMetadata,
     onMetadataContribution,
     onImageChange,
+    onPdfChange,
   },
   ref,
 ) {
@@ -194,7 +198,11 @@ export const DocumentSurface = forwardRef<
     reset?.();
   };
 
-  const presentation = session.image_document ? (
+  const presentation = session.pdf_document ? (
+    <Suspense fallback={<p role="status">Loading PDF renderer…</p>}>
+      <PdfSurface ref={ref} key={session.id} session={session} onPdfChange={onPdfChange} onOpenMetadata={onOpenMetadata} externalLinkGateway={externalLinkGateway} onMetadataContribution={onMetadataContribution} />
+    </Suspense>
+  ) : session.image_document ? (
     <ImageSurface
       ref={ref}
       key={session.id}

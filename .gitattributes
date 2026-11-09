@@ -58,3 +58,6 @@ crates/glitchpad-host/gen/android/** linguist-generated=true
 
 # Unified patch context preserves upstream blank-line whitespace.
 patches/*.patch -whitespace
+
+# Checksum-pinned upstream WebView with a narrow documented native print patch.
+vendor/wry-0.55.1/** linguist-vendored=true

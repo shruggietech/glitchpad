@@ -12,3 +12,4 @@ site/next-env.d.ts
 site/playwright-report/
 site/test-results/
 fixtures/macos-startup/v0.1.4-package-manifest.json
+vendor/wry-0.55.1/

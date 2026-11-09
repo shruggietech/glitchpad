@@ -28,6 +28,18 @@ const manifest = manifestBytes
   : null;
 if (manifest && manifest.source_commit !== sourceCommit)
   throw new Error('scale receipt manifest source commit is stale');
+// Include the bootstrap entry and lazy application/document CSS in this composed fixture.
+const builtIndex = await readFile(
+  join(repositoryRoot, 'apps', 'glitchpad', 'dist', 'index.html'),
+  'utf8',
+);
+const cssAssets = [...builtIndex.matchAll(/<link\b[^>]*>/gu)]
+  .filter(([tag]) => /\brel=["']stylesheet["']/u.test(tag))
+  .map(([tag]) => /\bhref=["']([^"']+)["']/u.exec(tag)?.[1]);
+assert.ok(
+  cssAssets.length > 0,
+  'production entry must declare its stylesheets',
+);
 const assetDirectory = join(
   repositoryRoot,
   'apps',
@@ -35,11 +47,23 @@ const assetDirectory = join(
   'dist',
   'assets',
 );
-const cssAsset = (await readdir(assetDirectory)).find((name) =>
-  name.endsWith('.css'),
-);
-assert.ok(cssAsset, 'the production build must contain a CSS asset');
-const css = await readFile(join(assetDirectory, cssAsset), 'utf8');
+for (const name of (await readdir(assetDirectory))
+  .filter((name) => name.endsWith('.css'))
+  .sort()) {
+  const asset = '/assets/' + name;
+  if (!cssAssets.includes(asset)) cssAssets.push(asset);
+}
+const css = (
+  await Promise.all(
+    cssAssets.map((asset) => {
+      assert.match(asset ?? '', /^\/assets\/[A-Za-z0-9_.-]+\.css$/u);
+      return readFile(
+        join(repositoryRoot, 'apps', 'glitchpad', 'dist', asset.slice(1)),
+        'utf8',
+      );
+    }),
+  )
+).join('\n');
 const [applicationSource, indexSource] = await Promise.all([
   readFile(join(repositoryRoot, 'apps', 'glitchpad', 'src', 'App.tsx'), 'utf8'),
   readFile(join(repositoryRoot, 'apps', 'glitchpad', 'index.html'), 'utf8'),

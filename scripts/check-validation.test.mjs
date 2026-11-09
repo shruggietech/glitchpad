@@ -97,6 +97,7 @@ test('Configuration discovery excludes only the root private session directory',
 test('Markdown discovery is deterministic and preserves exclusion policy', async (t) => {
   const root = await temporaryRepository(t);
   await writeFixture(root, 'z.md', '# Z\n');
+  await writeFixture(root, 'excluded.md', '# Exact file exclusion\n');
   await writeFixture(root, 'docs with space/éclair.md', '# Unicode\n');
   await writeFixture(root, 'docs with space/alpha.md', '# Alpha\n');
   await writeFixture(root, '.agents/ignored.md', '# Ignored\n');
@@ -104,6 +105,7 @@ test('Markdown discovery is deterministic and preserves exclusion policy', async
 
   const files = await collectMarkdownFiles(root, {
     excludedDirectories: new Set(['.agents', 'node_modules']),
+    excludedPaths: new Set(['excluded.md']),
   });
 
   assert.deepEqual(repositoryPaths(root, files), [
@@ -632,6 +634,27 @@ test('link validation keeps local provenance while excluding exact upstream vend
     'vendor/tauri-2.11.6/README.md',
     '# Retired unowned tree\n',
   );
+  for (const name of ['CHANGELOG.md', 'MOBILE.md', 'README.md', 'SECURITY.md'])
+    await writeFixture(
+      root,
+      'vendor/wry-0.55.1/' + name,
+      '# Upstream Wry ' + name + '\n',
+    );
+  await writeFixture(
+    root,
+    'vendor/wry-0.55.1/GLITCHPAD-PATCH.md',
+    '# Local Wry patch provenance\n',
+  );
+  await writeFixture(
+    root,
+    'vendor/wry-0.55.2/README.md',
+    '# Other Wry version\n',
+  );
+  await writeFixture(
+    root,
+    'docs/wry-0.55.1/README.md',
+    '# Owned Wry basename\n',
+  );
   const seen = [];
   const result = await validateLinks({
     repositoryRoot: root,
@@ -641,11 +664,14 @@ test('link validation keeps local provenance while excluding exact upstream vend
       return [];
     },
   });
-  assert.equal(result.fileCount, 4);
+  assert.equal(result.fileCount, 7);
   assert.deepEqual(
     seen.sort(),
     [
       '# Local patch provenance\n',
+      '# Local Wry patch provenance\n',
+      '# Other Wry version\n',
+      '# Owned Wry basename\n',
       '# Other version\n',
       '# Owned same basename\n',
       '# Retired unowned tree\n',

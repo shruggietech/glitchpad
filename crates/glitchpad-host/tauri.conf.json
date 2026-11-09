@@ -11,7 +11,7 @@
   },
   "app": {
     "security": {
-      "csp": "default-src 'self'; connect-src 'none'; object-src 'none'; frame-src 'none'; media-src 'none'; base-uri 'none'; img-src 'self' asset: data: blob:; style-src 'self' 'unsafe-inline'"
+      "csp": "default-src 'self'; connect-src 'none'; object-src 'none'; frame-src 'none'; media-src 'none'; base-uri 'none'; img-src 'self' asset: data: blob:; style-src 'self' 'unsafe-inline'; worker-src 'self'; font-src 'self' blob: data:"
     },
     "windows": [
       {
@@ -21,7 +21,8 @@
         "minWidth": 480,
         "minHeight": 360,
         "resizable": true,
-        "fullscreen": false
+        "fullscreen": false,
+        "create": false
       }
     ]
   },

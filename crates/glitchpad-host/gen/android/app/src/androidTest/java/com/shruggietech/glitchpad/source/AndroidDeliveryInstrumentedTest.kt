@@ -17,6 +17,7 @@ import android.view.accessibility.AccessibilityNodeInfo
 import android.content.pm.ActivityInfo
 import android.graphics.Bitmap
 import android.os.Build
+import android.os.Bundle
 import androidx.webkit.WebViewCompat
 import java.io.File
 import java.security.MessageDigest
@@ -86,6 +87,165 @@ class AndroidDeliveryInstrumentedTest {
       }
       grantedUris.clear()
     }
+  }
+
+  @Test
+  fun pdfCompatibility() {
+    assertEquals("PDF preflight uses the ordinary composed application", "ordinary", expectedBuildVariant())
+    val scenario = launchS047()
+    val identity = candidateIdentity(scenario)
+    val uri = grant(documentUri("s049-compatibility.pdf"))
+    val original = readBytes(uri)
+    val component = ComponentName(clientContext, MainActivity::class.java)
+    clientContext.startActivity(viewIntent(uri, "application/pdf").setComponent(component).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    waitForDocumentIdentity(scenario, "s049-compatibility.pdf")
+    try {
+      waitForCondition(scenario, "!!document.querySelector('[data-pdf-ready=true][data-pdf-worker=true]')", "actual PDF worker and page content must become ready", deadlineOverride = SystemClock.elapsedRealtime() + 60_000L)
+    } catch (failure: Throwable) {
+      println("s049_pdf_failure=" + runCatching { evaluate(scenario, "JSON.stringify({body:document.body.innerText,state:document.querySelector('.pdf-layout')?document.querySelector('.pdf-layout').outerHTML:null})") }.getOrDefault("unavailable"))
+      System.out.flush(); throw failure
+    }
+    val facts = JSONObject(evaluate(scenario, "(()=>{const c=document.querySelector('.pdf-page[data-current=true] canvas');const d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;let ink=0;for(let i=0;i<d.length;i+=4)if(d[i]<200&&d[i+1]<200&&d[i+2]<200)ink++;const t=document.querySelector('.pdf-page[data-current=true] .pdf-text-layer');const content=t.textContent;const s=window.getSelection();s.selectAllChildren(t);const selected=s.toString();s.removeAllRanges();return {width:c.width,height:c.height,ink,text:content,selected,worker:document.querySelector('.pdf-layout').getAttribute('data-pdf-worker'),engine:document.querySelector('.pdf-layout').getAttribute('data-pdf-engine'),executed:window.__s049PdfExecuted===true,frames:document.querySelectorAll('[data-bb-app-frame]').length};})()"))
+    assertTrue("PDF canvas must contain real text ink", facts.getInt("ink") > 500)
+    assertTrue(facts.getString("text").contains("Glitchpad PDF compatibility page 1"))
+    assertTrue("PDF display text must remain selectable", facts.getString("selected").contains("Glitchpad PDF compatibility page 1"))
+    assertEquals("true", facts.getString("worker")); assertEquals("6.5.438", facts.getString("engine"))
+    assertFalse("PDF OpenAction JavaScript must remain inert", facts.getBoolean("executed"));assertEquals(1, facts.getInt("frames"))
+    clickControl(scenario, "Next page")
+    waitForCondition(scenario, "!!document.querySelector('[data-pdf-ready=true]')&&document.querySelector('.pdf-page[data-current=true] .pdf-text-layer').textContent.includes('page 2')", "actual PDF page navigation must finish")
+    clickControl(scenario,"Previous page")
+    waitForCondition(scenario,"document.querySelector('.pdf-page[data-current=true] .pdf-text-layer').textContent.includes('page 1')","reading journey returns to first page")
+    val readingScript = instrumentation.context.assets.open("pdf-reading-journey.js").bufferedReader(Charsets.UTF_8).use { it.readText() }
+    evaluate(scenario,readingScript + ";window.__s049ReadingResult=null;window.runGlitchpadPdfReadingJourney().then(value=>window.__s049ReadingResult=value).catch(error=>window.__s049ReadingResult={error:String(error)});true")
+    waitForCondition(scenario,"window.__s049ReadingResult!==null","complete PDF reading journey",deadlineOverride=SystemClock.elapsedRealtime()+120_000L)
+    val reading = JSONObject(evaluate(scenario,"window.__s049ReadingResult"))
+    assertFalse("PDF journey must complete: $reading",reading.has("error"))
+    for (key in listOf("outline_named_destination","search","thumbnail","internal_link","external_link_disclosure","rotation","go_to_page","keyboard","metadata")) assertTrue(key,reading.getJSONObject("checks").getBoolean(key))
+    tapNativeControlOnce(scenario,"More PDF tools");tapNativeControlOnce(scenario,"Outline");tapNativeControlOnce(scenario,"Second chapter")
+    waitForCondition(scenario,"document.querySelector('.pdf-page[data-current=true]').getAttribute('data-pdf-page')==='1'","native touch follows outline destination")
+    tapNativeControlOnce(scenario,"Close PDF tools")
+    evaluate(scenario,"document.querySelector('.pdf-pane').focus();true")
+    instrumentation.sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_MOVE_HOME)
+    waitForCondition(scenario,"document.querySelector('.pdf-page[data-current=true]').getAttribute('data-pdf-page')==='0'","actual native keyboard Home navigates")
+    reading.put("native_touch_outline",true).put("native_keyboard_home",true)
+    val printStoreProof=PdfPrintNativeStoreChecks.verify(clientContext)
+    val printProof=JSONObject().put("selected",verifyPdfNativePrint(scenario,"2,4",2,"selected")).put("all",verifyPdfNativePrint(scenario,"all",4,"all"))
+    val stream = grant(documentUri("s049-stream.pdf"))
+    clientContext.startActivity(viewIntent(stream,"application/pdf").setComponent(component).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    waitForDocumentIdentity(scenario,"s049-stream.pdf")
+    waitForCondition(scenario,"!!document.querySelector('[data-pdf-ready=true][data-pdf-worker=true]')&&document.querySelector('.pdf-page[data-current=true] .pdf-text-layer').textContent.includes('page 1')","native stream-only private cache must render",deadlineOverride=SystemClock.elapsedRealtime()+60_000L)
+    assertTrue("stream-only cache preserves provider bytes",original.contentEquals(readBytes(stream)))
+    val streamCache=File(clientContext.cacheDir,"pdf-source-v1")
+    val streamCacheObserved=streamCache.walkTopDown().filter { it.isFile }.map { it.length() }.toList()
+    assertEquals("native stream observation must inspect the actual populated private cache",listOf(original.size.toLong()),streamCacheObserved)
+    evaluate(scenario, "window.__s049PdfDisposals=[];window.addEventListener('glitchpad-pdf-disposed',e=>window.__s049PdfDisposals.push(e.detail));true")
+    val warm = grant(documentUri("resolver-warm"))
+    clientContext.startActivity(viewIntent(warm, "text/plain").setComponent(component).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    waitForBodyText(scenario, "resolver-warm.txt", "S031_WARM_MARKER_7C9D")
+    waitForCondition(scenario, "window.__s049PdfDisposals.length>0", "tab switch must dispose the actual PDF worker")
+    val disposal = JSONObject(evaluate(scenario, "window.__s049PdfDisposals[0]"))
+    assertTrue(disposal.getBoolean("worker_terminated"));assertEquals(0, disposal.getInt("workers"));assertEquals(0, disposal.getInt("surfaces"));assertEquals(0, disposal.getInt("surfaceBytes"));assertTrue("actual cancellation acknowledgement must remain within250ms", disposal.getDouble("elapsed_ms") <= 250.0)
+    val cacheDeadline=SystemClock.elapsedRealtime()+5000L
+    while(streamCache.exists()&&streamCache.walkTopDown().any {it.isFile}&&SystemClock.elapsedRealtime()<cacheDeadline)SystemClock.sleep(50)
+    assertFalse("suspended stream-only source cache must release actual private files",streamCache.exists()&&streamCache.walkTopDown().any {it.isFile})
+    assertTrue("viewing/navigation must preserve original provider bytes", original.contentEquals(readBytes(uri)))
+    val webview = WebViewCompat.getCurrentWebViewPackage(clientContext)
+    if (Build.VERSION.SDK_INT == 24) assertTrue("minimum profile must retain actual Chrome69", webview?.versionName?.startsWith("69.") == true)
+    val result = JSONObject().put("schema_version",1).put("diagnostic_only",true).put("candidate_qualified",false).put("source_commit",InstrumentationRegistry.getArguments().getString("expectedSource")).put("api_level",Build.VERSION.SDK_INT).put("webview_package",webview?.packageName).put("webview_version",webview?.versionName).put("candidate_identity",identity).put("fixture_sha256",sha256(original)).put("facts",facts).put("reading_journey",reading).put("print",printProof).put("native_print_store",printStoreProof).put("stream_cache_files",JSONArray(streamCacheObserved)).put("stream_rendered",true).put("second_page",true).put("disposal",disposal).put("source_unchanged",true)
+    File(clientContext.filesDir,"s049-pdf-compatibility.json").writeText(result.toString(2)+"\n",Charsets.UTF_8)
+    println("s049_pdf_compatibility="+result.toString());System.out.flush()
+  }
+
+
+  private fun verifyPdfNativePrint(scenario: ActivityScenario<MainActivity>, range:String, expectedPages:Int, receiptName:String): JSONObject {
+    val retainedView=AtomicReference<WebView?>();scenario.onActivity { retainedView.set(findWebView(it.window.decorView)) }
+    val automation=instrumentation.uiAutomation
+    val service=automation.serviceInfo;service.flags=service.flags or android.accessibilityservice.AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS;automation.serviceInfo=service
+    fun findNative(predicate:(android.view.accessibility.AccessibilityNodeInfo)->Boolean):android.view.accessibility.AccessibilityNodeInfo? {
+      val root=automation.rootInActiveWindow?:return null
+      val pending=java.util.ArrayDeque<android.view.accessibility.AccessibilityNodeInfo>();pending.add(root);var seen=0
+      while(pending.isNotEmpty()&&seen++<5000){val node=pending.removeFirst();if(node.isVisibleToUser&&predicate(node))return node;for(index in 0 until node.childCount)node.getChild(index)?.let { pending.add(it) }}
+      return null
+    }
+    fun nativeFailure(label:String):Nothing {
+      val nodes=JSONArray();val pending=java.util.ArrayDeque<android.view.accessibility.AccessibilityNodeInfo>();automation.rootInActiveWindow?.let{pending.add(it)}
+      while(pending.isNotEmpty()&&nodes.length()<256){val node=pending.removeFirst();nodes.put(JSONObject().put("id",node.viewIdResourceName).put("class",node.className?.toString()).put("text",node.text?.toString()?.take(256)).put("description",node.contentDescription?.toString()?.take(256)).put("enabled",node.isEnabled));for(index in 0 until node.childCount)node.getChild(index)?.let{pending.add(it)}}
+      val body=AtomicReference("unavailable");val latch=CountDownLatch(1);instrumentation.runOnMainSync {retainedView.get()?.evaluateJavascript("document.body.innerText.slice(0,8192)") { value->body.set(value);latch.countDown() }};latch.await(2,TimeUnit.SECONDS)
+      val details=JSONObject().put("label",label).put("nodes",nodes).put("body",body.get()).put("spool_files",JSONArray(File(clientContext.cacheDir,"pdf-print-v1").walkTopDown().filter {it.isFile}.map {it.name+":"+it.length()}.toList()))
+      File(clientContext.filesDir,"s049-pdf-native-print-failure.json").writeText(details.toString(2),Charsets.UTF_8);println("s049_pdf_native_print_failure="+details.toString());System.out.flush()
+      throw AssertionError("Native print control unavailable: $label; package="+automation.rootInActiveWindow?.packageName)
+    }
+    fun awaitNative(label:String,predicate:(android.view.accessibility.AccessibilityNodeInfo)->Boolean):android.view.accessibility.AccessibilityNodeInfo {
+      val deadline=SystemClock.elapsedRealtime()+30000L
+      while(SystemClock.elapsedRealtime()<deadline){findNative(predicate)?.let{return it};SystemClock.sleep(100)}
+      nativeFailure(label)
+    }
+    fun activate(node:android.view.accessibility.AccessibilityNodeInfo){
+      // DocumentsUI rows can expose a non-clickable label inside a touchable row.
+      val expectedId=node.viewIdResourceName;val expectedText=node.text?.toString();val expectedDescription=node.contentDescription?.toString();val expectedClass=node.className?.toString()
+      automation.waitForIdle(400L,5000L)
+      val control=if(node.refresh())node else awaitNative("refreshed system control "+(expectedText?:expectedDescription?:expectedId)) { candidate ->
+        candidate.isEnabled&&candidate.viewIdResourceName==expectedId&&candidate.text?.toString()==expectedText&&candidate.contentDescription?.toString()==expectedDescription&&candidate.className?.toString()==expectedClass
+      }
+      if(control.isClickable&&control.performAction(android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK))return
+      val bounds=android.graphics.Rect();control.getBoundsInScreen(bounds)
+      println("s049_native_print_control="+JSONObject().put("text",control.text?.toString()).put("description",control.contentDescription?.toString()).put("bounds",bounds.toShortString()));System.out.flush()
+      assertTrue("native control has touch geometry",bounds.width()>0&&bounds.height()>0)
+      dispatchNativeTapOnce(bounds.exactCenterX(),bounds.exactCenterY(),SystemClock.elapsedRealtime()+30000L) { event -> automation.injectInputEvent(event,true) }
+    }
+    clickControl(scenario,"More PDF tools");clickControl(scenario,"Print")
+    evaluate(scenario,"(()=>{const target=document.getElementById('pdf-print-range');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(target,"+JSONObject.quote(range)+");target.dispatchEvent(new Event('input',{bubbles:true}));return true;})()")
+    clickControl(scenario,"Open system print dialog")
+    awaitNative("system print spooler") { it.packageName?.toString()?.contains("printspooler")==true }
+    val nativePrintPackage=automation.rootInActiveWindow?.packageName?.toString()
+    // The system's first-print prompt is cleared by its OnTouchListener, not ACTION_CLICK.
+    val destination=awaitNative("print destination") { it.isEnabled&&it.viewIdResourceName?.endsWith("/destination_spinner")==true }
+    val destinationBounds=android.graphics.Rect();destination.getBoundsInScreen(destinationBounds)
+    assertTrue("print destination has native touch geometry",destinationBounds.width()>0&&destinationBounds.height()>0)
+    dispatchNativeTapOnce(destinationBounds.exactCenterX(),destinationBounds.exactCenterY(),SystemClock.elapsedRealtime()+30000L) { event -> automation.injectInputEvent(event,true) }
+    activate(awaitNative("Save as PDF destination menu item") { val label=it.text?.toString();it.isEnabled&&it.viewIdResourceName?.endsWith("/title")==true&&(label?.equals("Save as PDF",true)==true||label?.equals("Save to PDF",true)==true) })
+    val printButton=awaitNative("save print output") { it.isEnabled&&(it.viewIdResourceName?.endsWith("/print_button")==true||it.contentDescription?.toString()?.equals("Save to PDF",true)==true) }
+    activate(printButton)
+    val filename="s049-print-"+UUID.randomUUID().toString()+".pdf"
+    activate(awaitNative("output location roots") { val description=it.contentDescription?.toString();it.isEnabled&&(description?.equals("Show roots",true)==true||description?.startsWith("Show navigation",true)==true) })
+    activate(awaitNative("Downloads output location") { it.isEnabled&&it.text?.toString()?.equals("Downloads",true)==true })
+    val name=awaitNative("output filename") { it.isEditable&&it.className?.toString()=="android.widget.EditText" }
+    val args=Bundle();args.putCharSequence(android.view.accessibility.AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE,filename)
+    assertTrue(name.performAction(android.view.accessibility.AccessibilityNodeInfo.ACTION_SET_TEXT,args))
+    awaitNative("final output filename") { it.isEditable&&it.text?.toString()==filename }
+    activate(awaitNative("save generated PDF") { it.isEnabled&&it.text?.toString()?.equals("Save",true)==true&&!it.isEditable })
+    val path="/sdcard/Download/"+filename
+    var output:ByteArray?=null;var previousCompleteHash:String?=null;val deadline=SystemClock.elapsedRealtime()+30000L
+    // DocumentsUI creates the destination before the system spooler finishes copying it.
+    // Require a complete, unchanged PDF twice before snapshotting the actual output bytes.
+    while(SystemClock.elapsedRealtime()<deadline){
+      val candidate=runCatching{android.util.Base64.decode(checkedShell("base64 "+path),android.util.Base64.DEFAULT)}.getOrNull()
+      val complete=candidate!=null&&candidate.size>128&&candidate.copyOfRange(candidate.size-64,candidate.size).toString(Charsets.US_ASCII).trimEnd().endsWith("%%EOF")
+      val digest=if(complete)sha256(requireNotNull(candidate))else null
+      if(digest!=null&&digest==previousCompleteHash){output=candidate;break}
+      previousCompleteHash=digest;SystemClock.sleep(200)
+    }
+    if(output==null){
+      println("s049_print_output_directory="+checkedShell("ls -la /sdcard/Download").take(4096));System.out.flush()
+      nativeFailure("system print must produce readable PDF output at "+path)
+    }
+    val bytes=requireNotNull(output)
+    assertTrue("system output must be PDF",bytes.copyOfRange(0,5).contentEquals("%PDF-".toByteArray(Charsets.US_ASCII)))
+    val readback=File(clientContext.filesDir,"s049-print-output-"+receiptName+".pdf");readback.writeBytes(bytes)
+    val inks=JSONArray()
+    android.graphics.pdf.PdfRenderer(android.os.ParcelFileDescriptor.open(readback,android.os.ParcelFileDescriptor.MODE_READ_ONLY)).use { pdf ->
+      assertEquals("requested source range produces exactly the expected output pages",expectedPages,pdf.pageCount)
+      for(index in 0 until pdf.pageCount){val page=pdf.openPage(index);val bitmap=android.graphics.Bitmap.createBitmap(612,792,android.graphics.Bitmap.Config.ARGB_8888);bitmap.eraseColor(android.graphics.Color.WHITE);page.render(bitmap,null,null,android.graphics.pdf.PdfRenderer.Page.RENDER_MODE_FOR_PRINT);var ink=0;for(y in 0 until bitmap.height)for(x in 0 until bitmap.width){val color=bitmap.getPixel(x,y);if(android.graphics.Color.red(color)<200&&android.graphics.Color.green(color)<200&&android.graphics.Color.blue(color)<200)ink++};assertTrue("printed page must contain actual ink",ink>500);inks.put(ink);bitmap.recycle();page.close()}
+    }
+    checkedShell("rm -f "+path)
+    waitForCondition(scenario,"!!document.querySelector('.pdf-layout')","return from native print")
+    val cache=File(clientContext.cacheDir,"pdf-print-v1");val cleanupDeadline=SystemClock.elapsedRealtime()+10000L
+    while(cache.walkTopDown().any { it.isFile }&&SystemClock.elapsedRealtime()<cleanupDeadline)SystemClock.sleep(100)
+    assertFalse("terminal print adapter removes its private page files",cache.walkTopDown().any { it.isFile })
+    waitForCondition(scenario,"!!document.querySelector('[data-pdf-ready=true]')","PDF resumes after native print")
+    if(evaluate(scenario,"!!document.querySelector('button[aria-label=\"Close Print PDF\"]')")=="true")clickControl(scenario,"Close Print PDF")
+    if(evaluate(scenario,"!!document.querySelector('button[aria-label=\"Close PDF tools\"]')")=="true")clickControl(scenario,"Close PDF tools")
+    return JSONObject().put("system_package",nativePrintPackage).put("range",range).put("output_pages",expectedPages).put("output_ink",inks).put("output_sha256",sha256(bytes)).put("output_bytes",bytes.size).put("private_spool_cleaned",true).put("physical_output_confirmed",false)
   }
 
   @Test fun shellCommandTransportPreservesFixtureBytesAndExitStatus() {
@@ -1869,7 +2029,7 @@ class AndroidDeliveryInstrumentedTest {
       assertTrue("the whole action must fit the actual native visible intersection", native.getBoolean("whole_control_visible"))
       assertTrue("targets must also meet actual physical 48dp-equivalent bounds", native.getDouble("control_right") - native.getDouble("control_left") >= 47.5 * native.getDouble("density") && native.getDouble("control_bottom") - native.getDouble("control_top") >= 47.5 * native.getDouble("density"))
       val largeText = measurement.getDouble("text_size") >= 24 || (measurement.getDouble("text_size") >= 18.66 && (measurement.optString("font_weight").toIntOrNull() ?: 400) >= 700)
-      if (!measurement.getBoolean("disabled")) assertTrue("computed actual WebView text contrast must meet its normal/large threshold", !measurement.isNull("contrast") && measurement.getDouble("contrast") >= if (largeText) 2.99 else 4.49)
+      if (!measurement.getBoolean("disabled")) assertTrue("computed actual WebView text contrast must meet its normal/large threshold: profile="+profile+",control="+measurement, !measurement.isNull("contrast") && measurement.getDouble("contrast") >= if (largeText) 2.99 else 4.49)
       controls.put(measurement.put("native", native))
     }
     val css = JSONObject(evaluate(scenario, "({width:innerWidth,height:innerHeight})"))

@@ -12,6 +12,10 @@ pub mod external_link;
 pub mod images;
 #[cfg(not(mobile))]
 pub mod lifecycle_probe;
+pub mod pdf;
+#[cfg(any(target_os = "android", test))]
+mod pdf_cache;
+mod pdf_print;
 pub mod performance;
 pub mod recovery;
 #[cfg(not(mobile))]
@@ -128,6 +132,8 @@ pub fn run() {
         application_info,
         application_notices,
         images::identify_image_source,
+        pdf::identify_pdf_source,
+        pdf_print::pdf_print_available,
         images::render_image_source,
         images::cancel_image_render,
         images::export_image_entry,
@@ -156,11 +162,13 @@ pub fn run() {
         source::note_source_session_revision,
         source::save_source,
         source::close_source,
+        pdf_print::request_pdf_desktop_print,
         desktop_delivery::close_desktop_source,
         desktop_delivery::choose_desktop_sources,
         desktop_delivery::drain_desktop_deliveries,
         desktop_delivery::save_desktop_source_as,
         lifecycle_probe::record_desktop_lifecycle_probe,
+        lifecycle_probe::record_desktop_pdf_probe,
         lifecycle_probe::record_desktop_device_scale_probe,
         lifecycle_probe::consume_desktop_markdown_failure_probe,
         lifecycle_probe::begin_desktop_document_workflow_probe,
@@ -171,6 +179,8 @@ pub fn run() {
         application_info,
         application_notices,
         images::identify_image_source,
+        pdf::identify_pdf_source,
+        pdf_print::pdf_print_available,
         images::render_image_source,
         images::cancel_image_render,
         images::export_image_entry,
@@ -196,6 +206,11 @@ pub fn run() {
         advance_android_integrity,
         cancel_android_integrity,
         revalidate_android_source,
+        pdf_print::pdf_print_operation,
+        pdf_cache::begin_pdf_cache,
+        pdf_cache::advance_pdf_cache,
+        pdf_cache::read_pdf_cache,
+        pdf_cache::cancel_pdf_cache,
         restore_android_sources,
         save_android_source_as,
         create_android_document,
@@ -284,10 +299,45 @@ pub fn run() {
             #[cfg(target_os = "android")]
             {
                 use glitchpad_android_source::AndroidSourceExt;
+                app.manage(pdf_cache::PdfCacheHost::for_app(app));
                 app.manage(android_source::AndroidSourceHost::new(
                     app.android_source().inner().clone(),
                 ));
             }
+            // Preserve the configured main WebView, created once after all managed state.
+            let main = app
+                .config()
+                .app
+                .windows
+                .iter()
+                .find(|window| window.label == "main")
+                .ok_or_else(|| std::io::Error::other("The configured main window is missing"))?;
+            let main_builder = tauri::WebviewWindowBuilder::from_config(app, main)?;
+            #[cfg(not(mobile))]
+            let main_builder = if app
+                .state::<lifecycle_probe::LifecycleProbeState>()
+                .pdf_probe_root()
+                .map_err(|_| std::io::Error::other("The PDF probe request is invalid"))?
+                .is_some()
+            {
+                main_builder.initialization_script(concat!(
+                    include_str!("../../../scripts/pdf-reading-journey.js"),
+                    "\n",
+                    include_str!("../../../scripts/pdf-native-probe-bootstrap.js")
+                ))
+            } else {
+                main_builder
+            };
+            main_builder
+                .on_web_resource_request(|request, response| {
+                    if pdf::is_pdf_worker_path(request.uri().path()) {
+                        response.headers_mut().insert(
+                            tauri::http::header::CONTENT_SECURITY_POLICY,
+                            tauri::http::HeaderValue::from_static(pdf::WORKER_CSP),
+                        );
+                    }
+                })
+                .build()?;
             Ok(())
         })
         .build(tauri::generate_context!())

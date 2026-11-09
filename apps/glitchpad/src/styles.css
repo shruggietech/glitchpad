@@ -586,9 +586,9 @@ button:focus-visible,
 
 .large-text-controls button {
   min-height: 44px;
-  border: 1px solid #555c68;
+  border: 1px solid var(--gl-border);
   border-radius: 0.3rem;
-  background: #272b33;
+  background: var(--gl-panel-raised);
 }
 
 .large-text-controls label {
@@ -601,9 +601,9 @@ button:focus-visible,
 .large-text-controls input {
   width: 8rem;
   min-height: 36px;
-  border: 1px solid #555c68;
+  border: 1px solid var(--gl-border);
   border-radius: 0.25rem;
-  background: #15171b;
+  background: var(--gl-panel);
   color: inherit;
 }
 
@@ -703,9 +703,9 @@ button:focus-visible,
 .markdown-outline button,
 .markdown-link {
   min-height: 36px;
-  border: 1px solid #555c68;
+  border: 1px solid var(--gl-border);
   border-radius: 0.3rem;
-  background: #272b33;
+  background: var(--gl-panel-raised);
   color: inherit;
 }
 
@@ -718,9 +718,9 @@ button:focus-visible,
 
 .markdown-search input {
   min-height: 36px;
-  border: 1px solid #555c68;
+  border: 1px solid var(--gl-border);
   border-radius: 0.25rem;
-  background: #15171b;
+  background: var(--gl-panel);
   color: inherit;
 }
 
@@ -891,8 +891,8 @@ button:focus-visible,
 .mermaid-controls,
 .mermaid-search,
 .diagram-controls {
-  border-bottom: 1px solid #343842;
-  background: #181a20;
+  border-bottom: 1px solid var(--gl-border);
+  background: var(--gl-panel);
 }
 
 .mermaid-controls button,
@@ -900,9 +900,9 @@ button:focus-visible,
 .diagram-controls button,
 .embedded-mermaid button {
   min-height: 2rem;
-  border: 1px solid #4c5260;
+  border: 1px solid var(--gl-border);
   border-radius: 0.3rem;
-  background: #262a33;
+  background: var(--gl-panel-raised);
   color: inherit;
 }
 

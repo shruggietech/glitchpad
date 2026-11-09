@@ -12,6 +12,7 @@ import {
 import { detectLanguage } from './language';
 import { identifyImageSource } from './image-gateway';
 import { createImageSession } from './image-contract';
+import { identifyPdfSource, createPdfSession } from './pdf-source-gateway';
 import { markdownEligibility } from './markdown-contract';
 import { initialMermaidViewport } from './mermaid-contract';
 import {
@@ -290,6 +291,8 @@ export const createDesktopDeliveryGateway = (
         imageCodec,
         'desktop',
       );
+    if (await identifyPdfSource(call, source.source_id, source.external_revision))
+      return createPdfSession(source.descriptor, source.source_id, source.external_revision, 'desktop');
     const { text, sourceBytes, encoding } = await readSource(call, source);
     const renderer = rendererFor(source.descriptor.display_name);
     const textDocument = createTextDocument({

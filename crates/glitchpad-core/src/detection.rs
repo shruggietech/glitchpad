@@ -86,7 +86,11 @@ pub enum FormatCandidate {
     Markdown,
     Mermaid,
     PlainText,
-    SourceCode { language: String },
+    SourceCode {
+        language: String,
+    },
+    /// Unreleased PDF worker candidate; stable activation remains a separate release gate.
+    Pdf,
     Binary,
 }
 
@@ -273,6 +277,17 @@ pub fn detect(input: &DetectionInput<'_>) -> DetectionResult {
             truncated,
         );
     }
+    if input.probe.starts_with(b"%PDF-") {
+        return result_with_evidence(
+            DetectionOutcome::Supported,
+            Some(FormatCandidate::Pdf),
+            Some(DetectionConfidence::High),
+            EvidenceKind::Signature,
+            "PDF signature verified; worker candidate",
+            input.probe.len(),
+            truncated,
+        );
+    }
     if binary_signature(input.probe).is_some() {
         return result_with_evidence(
             DetectionOutcome::Binary,
@@ -451,9 +466,7 @@ fn is_encrypted(probe: &[u8]) -> bool {
 }
 
 fn binary_signature(probe: &[u8]) -> Option<&'static str> {
-    if probe.starts_with(b"%PDF-") {
-        Some("PDF signature")
-    } else if probe.starts_with(b"\x89PNG\r\n\x1a\n") {
+    if probe.starts_with(b"\x89PNG\r\n\x1a\n") {
         Some("PNG signature")
     } else if probe.starts_with(b"PK\x03\x04") {
         Some("ZIP container signature")
@@ -702,8 +715,22 @@ mod tests {
             })
         );
         assert_eq!(
-            detected("fake.md", b"%PDF-1.7", None).outcome,
-            DetectionOutcome::Binary
+            detected("fake.md", b"%PDF-1.7", None).candidate,
+            Some(FormatCandidate::Pdf)
+        );
+    }
+
+    #[test]
+    fn detects_pdf_by_content_without_promoting_a_filename_or_text_profile() {
+        let pdf = detected("misnamed.txt", b"%PDF-2.0\n", Some(512 * 1024 * 1024));
+        assert_eq!(pdf.outcome, DetectionOutcome::Supported);
+        assert_eq!(pdf.candidate, Some(FormatCandidate::Pdf));
+        assert_eq!(pdf.confidence, Some(DetectionConfidence::High));
+        assert!(pdf.text_profile.is_none());
+        assert!(pdf.truncated);
+        assert_ne!(
+            detected("fake.pdf", b"ordinary text", None).candidate,
+            Some(FormatCandidate::Pdf)
         );
     }
 

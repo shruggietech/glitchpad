@@ -11,3 +11,4 @@ Third-party components introduced for development and contract verification:
 - axe-core, Copyright Deque Systems, Inc., used under the Mozilla Public License 2.0 as a development-only accessibility test dependency.
 - Mermaid, Copyright Mermaid contributors, used under the MIT License.
 - DOMPurify, Copyright Mario Heiderich and contributors, used under the Apache License 2.0 option.
+- PDF.js display/worker and CMaps, Copyright Mozilla Foundation and contributors, Apache-2.0; bundled symbol fonts and decoder contributions retain their BSD/Apache notices in platform THIRD_PARTY_NOTICES.txt.

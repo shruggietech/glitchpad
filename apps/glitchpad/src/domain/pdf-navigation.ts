@@ -145,7 +145,10 @@ export function pageMatches(
       offset,
       text: match[0],
       context: text
-        .slice(Math.max(0, offset - 48), Math.min(text.length, offset + match[0].length + 80))
+        .slice(
+          Math.max(0, offset - 48),
+          Math.min(text.length, offset + match[0].length + 80),
+        )
         .replace(/\s+/gu, ' '),
     });
   }

@@ -260,8 +260,17 @@ try {
       observedMemory.samples_bytes.length >= 3 &&
       observedMemory.samples_bytes.every((n) => Number.isFinite(n) && n > 0),
   );
-  assert.equal(typeof result.debug_assertions,'boolean','actual compiled native build profile required');
-  if(stagedArtifact)assert.equal(result.debug_assertions,false,'staged PDF proof requires an actual release build');
+  assert.equal(
+    typeof result.debug_assertions,
+    'boolean',
+    'actual compiled native build profile required',
+  );
+  if (stagedArtifact)
+    assert.equal(
+      result.debug_assertions,
+      false,
+      'staged PDF proof requires an actual release build',
+    );
   result.process_memory = observedMemory;
   result.execution = {
     run_id: Number(process.env.GITHUB_RUN_ID),

@@ -3,7 +3,9 @@ export function nativePdfConformanceRecord(result, profile) {
   if (
     result.status !== 'pass' ||
     result.execution?.completion !== 'clean' ||
-    result.evidence_class !== 'staged_release_native_webview'
+    result.evidence_class !== 'staged_release_native_webview' ||
+    result.debug_assertions !== false ||
+    result.runtime?.debuggable !== result.debug_assertions
   )
     throw Error('Completed actual staged native proof required');
   const journey = result.journey,

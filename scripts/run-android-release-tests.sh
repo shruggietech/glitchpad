@@ -35,11 +35,12 @@ install_selected() {
 install_selected application "$app"
 install_selected instrumentation "$test_apk" -t
 offline_pending=false
+offline_prefix=''
 cleanup() {
   local status=$?
   trap - EXIT
   if [[ "$offline_pending" == true ]]; then
-    bash "$scripts/android-offline-mode.sh" restore "$evidence/offline" "$source" || status=1
+    bash "$scripts/android-offline-mode.sh" restore "$offline_prefix" "$source" || status=1
   fi
   exit "$status"
 }
@@ -106,8 +107,9 @@ if [[ "$mode" == pdf ]]; then groups=(pdf); fi
 for group in "${groups[@]}"; do
   completed=false
   if [[ "$group" == back_about || "$group" == startup || "$group" == pdf ]]; then
+    offline_prefix="$evidence/offline-$group"
     offline_pending=true
-    bash "$scripts/android-offline-mode.sh" setup "$evidence/offline" "$source"
+    bash "$scripts/android-offline-mode.sh" setup "$offline_prefix" "$source"
   fi
   for attempt in 1 2; do
     directory="$evidence/$group-attempt-$attempt"
@@ -126,7 +128,7 @@ for group in "${groups[@]}"; do
     if [[ "$completed" == true ]]; then break; fi
   done
   if [[ "$group" == back_about || "$group" == startup || "$group" == pdf ]]; then
-    bash "$scripts/android-offline-mode.sh" restore "$evidence/offline" "$source"
+    bash "$scripts/android-offline-mode.sh" restore "$offline_prefix" "$source"
     offline_pending=false
   fi
   [[ "$completed" == true ]] || exit 1

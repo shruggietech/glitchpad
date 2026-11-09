@@ -75,4 +75,4 @@ Fixture provenance/assets are separate from Android release capture; aggregate p
 
 ## Frozen final-gate execution records
 
-At final source freeze, T030-T034 may retain their freeze-time checkbox states. Their completed execution is bound to one authoritative external PR receipt, linked from handoff.md before freeze. A pending receipt never qualifies the candidate. No tracked self-SHA checkbox/receipt edit is made after its own final qualification.
+At final source freeze, execution-only T022, T025, T028 and T030-T034 may retain their freeze-time checkbox states. Their completed execution is bound to one authoritative external PR receipt, linked from handoff.md before freeze. A pending receipt never qualifies the candidate. No tracked self-SHA checkbox/receipt edit is made after its own final qualification.

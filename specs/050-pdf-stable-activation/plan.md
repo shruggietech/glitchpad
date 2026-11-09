@@ -66,6 +66,10 @@ Release: canonical Cargo/package/Tauri/Gradle versions/lock entries, active pack
 
 Finish tasks and blocking cross-artifact analysis before product edits. Add failing activation/release-proof/evidence tests, implement declaration promotion and release-safe PDF preflight, then prove actual minified API24 and API36 early. Fix compatibility/fixture/transport defects at that boundary before broad matrices. Add licensed corpus/measurements/aggregate and complete release documents/staged-package PDF proof. Format/regenerate and run focused standard gates, publish the PR, resolve at most two external rounds, then freeze all tracked inputs. Run final exact-head full CI and four complete accepted staging attempts, independently verify bytes/native facts and rehearse the actual assembler. Complete present-code convergence, issue/project/review readback and one authoritative external receipt; stop unmerged.
 
+## Source freeze and execution records
+
+Complete source changes, focused regressions, retained integration diagnostics and review fixes before freezing tracked inputs. Execute one complete final current-source qualification after that freeze. The authoritative external PR receipt records execution-only completion (including T022, T025, T028 and T030-T034) without editing their own qualified source. Unchecked freeze-time execution boxes are pending until that receipt supplies the required actual proof. No pending observation is treated as passed, and no earlier source or partial campaign qualifies the final candidate. This avoids rebuilding unchanged packages merely to update task checkboxes.
+
 ## Complexity Tracking
 
 No constitution violations. Additive fixture assets, one narrow PDF aggregate and existing receipt/publisher extensions close demonstrated release gaps. No new renderer, service, approval workflow, platform promise or general validation infrastructure is introduced.

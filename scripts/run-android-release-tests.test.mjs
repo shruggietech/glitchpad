@@ -222,3 +222,33 @@ test(
     }
   },
 );
+
+test('full runner preserves separate offline restoration ownership for About and PDF', {skip:process.platform!=='linux'}, async()=>{
+ const root=await mkdtemp(join(tmpdir(),'s050-offline-groups-'));
+ try {
+  const bin=join(root,'bin'), scripts=join(root,'scripts');await mkdir(bin);await mkdir(scripts);
+  const commandLog=join(root,'offline-commands.txt');
+  await writeFile(join(scripts,'run.sh'),await readFile(new URL('./run-android-release-tests.sh',import.meta.url),'utf8'));
+  await writeFile(join(scripts,'android-offline-mode.sh'),[
+   '#!/usr/bin/env bash','set -euo pipefail',
+   'printf "%s:%s\\n" "$1" "$2" >> "$S050_OFFLINE_LOG"',
+   'if [[ "$1" == setup ]]; then [[ ! -e "$2-before-state.txt" ]]; echo baseline > "$2-before-state.txt"; else [[ -e "$2-before-state.txt" ]]; echo restored > "$2-restore-status.txt"; fi',''
+  ].join('\n'));
+  await writeFile(join(bin,'node'),'#!/usr/bin/env bash\nexit 0\n',{mode:0o755});
+  await writeFile(join(bin,'adb'),[
+   '#!/usr/bin/env bash',
+   'if [[ "$1" == install ]]; then echo Success; exit 0; fi',
+   'if [[ "$1 $2 $3" == "shell am instrument" ]]; then echo s048_release_evidence={}; echo "OK (1 test)"; echo "INSTRUMENTATION_CODE: -1"; exit 0; fi',
+   'if [[ "$1" == exec-out ]]; then echo fixture; fi', 'exit 0',''
+  ].join('\n'),{mode:0o755});
+  const application=join(root,'app.apk'),instrumentation=join(root,'test.apk'),evidence=join(root,'evidence');
+  await writeFile(application,'app');await writeFile(instrumentation,'test');
+  const result=spawnSync('bash',[join(scripts,'run.sh'),'24','a'.repeat(40),application,instrumentation,evidence,'full'],{env:{...process.env,PATH:bin+delimiter+process.env.PATH,S050_OFFLINE_LOG:commandLog},encoding:'utf8',windowsHide:true,timeout:15000});
+  assert.equal(result.error,undefined);assert.equal(result.status,0,result.stderr+result.stdout);
+  const lines=(await readFile(commandLog,'utf8')).trim().split('\n');
+  assert.deepEqual(lines,['setup:'+join(evidence,'offline-back_about'),'restore:'+join(evidence,'offline-back_about'),'setup:'+join(evidence,'offline-pdf'),'restore:'+join(evidence,'offline-pdf')]);
+  for(const group of ['back_about','pdf'])assert.equal((await readFile(join(evidence,'offline-'+group+'-restore-status.txt'),'utf8')).trim(),'restored');
+  // Validators are stubbed: this covers process ownership, never product qualification.
+  await assert.rejects(readFile(join(evidence,'release-runtime.json')));
+ } finally {await rm(root,{recursive:true,force:true});}
+});

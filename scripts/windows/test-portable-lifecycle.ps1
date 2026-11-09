@@ -854,7 +854,7 @@ $packageDocument = Get-Content -Raw -LiteralPath $manifestPath | ConvertFrom-Jso
 $pdfArtifact = @($packageDocument.artifacts | Where-Object { if ($pdfProfile -eq 'windows_installed') { $_.name.EndsWith('-setup.exe') } else { $_.name.EndsWith('.zip') } })
 if ($pdfArtifact.Count -ne 1) { throw 'The PDF lifecycle must bind one selected actual package.' }
 $pdfOutput = Join-Path (Split-Path -Parent $manifestPath) ("pdf-native-" + $pdfProfile)
-$pdfStart = [Diagnostics.ProcessStartInfo]::new((Get-Command node -CommandType Application).Source)
+$pdfStart = [Diagnostics.ProcessStartInfo]::new((Get-Command node -CommandType Application | Select-Object -First 1).Source)
 $pdfStart.UseShellExecute = $false
 $pdfStart.CreateNoWindow = $true
 $pdfStart.WindowStyle = [Diagnostics.ProcessWindowStyle]::Hidden

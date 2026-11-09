@@ -810,8 +810,8 @@ pub(crate) fn record_desktop_pdf_probe(
         let mut actual = Sha256::new();
         let mut offset = 0;
         while offset < length {
-            let size = (length - offset).min(262144);
-            let chunk = host.read_range(&source, offset, size, 262144)?;
+            let size = (length - offset).min(262_144);
+            let chunk = host.read_range(&source, offset, size, 262_144)?;
             if chunk.bytes.len() as u64 != size {
                 return Err(workflow_error());
             }

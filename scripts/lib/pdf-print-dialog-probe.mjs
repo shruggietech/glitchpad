@@ -57,32 +57,35 @@ while ([DateTime]::UtcNow -lt $until -and $round -lt 2) {
   } else if (process.platform === 'darwin') {
     executable = 'osascript';
     const code = `set rounds to 0
-set iteration to 0
 repeat 480 times
-  set iteration to iteration + 1
   tell application "System Events"
     set candidates to every process whose unix id is ${pid}
-    set printCandidates to every process whose name contains "print"
-    set allCandidates to candidates & printCandidates
-    repeat with candidate in allCandidates
+    repeat with candidate in candidates
       tell (contents of candidate)
-        repeat with candidateWindow in windows
-          if iteration mod 20 is 0 then
-            log "NATIVE_PRINT_WINDOW " & (name of candidate) & " / " & (name of candidateWindow) & " buttons=" & (name of every button of candidateWindow)
-          end if
-          if exists sheet 1 of candidateWindow then
-            set printSheet to sheet 1 of candidateWindow
-            if exists button "Cancel" of printSheet then
-              click button "Cancel" of printSheet
-              set rounds to rounds + 1
-              log "NATIVE_PRINT_CANCEL " & rounds
-            end if
-          else if exists button "Cancel" of candidateWindow then
-            click button "Cancel" of candidateWindow
+        if exists window "Print" then
+          log "NATIVE_PRINT_OBSERVED round=" & (rounds + 1)
+          set frontmost to true
+          key code 53
+          delay 0.75
+          if not (exists window "Print") then
             set rounds to rounds + 1
-            log "NATIVE_PRINT_CANCEL " & rounds
+            log "NATIVE_PRINT_CANCEL " & rounds & " observed_closed=true action=native_escape"
           end if
-        end repeat
+        else
+          repeat with candidateWindow in windows
+            if exists sheet 1 of candidateWindow then
+              set printSheet to sheet 1 of candidateWindow
+              if exists button "Cancel" of printSheet then
+                click button "Cancel" of printSheet
+                delay 0.75
+                if not (exists sheet 1 of candidateWindow) then
+                  set rounds to rounds + 1
+                  log "NATIVE_PRINT_CANCEL " & rounds & " observed_closed=true action=native_cancel"
+                end if
+              end if
+            end if
+          end repeat
+        end if
       end tell
     end repeat
   end tell

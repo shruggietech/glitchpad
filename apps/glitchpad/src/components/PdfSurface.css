@@ -157,6 +157,14 @@
   display: none;
 }
 @media print {
+  /* AppFrame clips the interactive viewport; a print snapshot must fragment. */
+  html.pdf-print-active,
+  html.pdf-print-active body {
+    block-size: auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
   body.pdf-print-active > * {
     display: none !important;
   }

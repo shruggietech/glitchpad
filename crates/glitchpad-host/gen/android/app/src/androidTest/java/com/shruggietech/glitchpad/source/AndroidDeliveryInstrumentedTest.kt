@@ -177,7 +177,12 @@ class AndroidDeliveryInstrumentedTest {
       File(clientContext.filesDir,"s049-pdf-native-print-failure.json").writeText(details.toString(2),Charsets.UTF_8);println("s049_pdf_native_print_failure="+details.toString());System.out.flush()
       throw AssertionError("Native print control unavailable: $label; package="+automation.rootInActiveWindow?.packageName)
     }
-    fun activate(node:android.view.accessibility.AccessibilityNodeInfo){var current:android.view.accessibility.AccessibilityNodeInfo?=node;while(current!=null&&!current.isClickable)current=current.parent;assertTrue("native control must activate",current?.performAction(android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK)==true)}
+    fun activate(node:android.view.accessibility.AccessibilityNodeInfo){
+      // DocumentsUI rows can expose a non-clickable label inside a touchable row.
+      val bounds=android.graphics.Rect();node.getBoundsInScreen(bounds)
+      assertTrue("native control has touch geometry",bounds.width()>0&&bounds.height()>0)
+      dispatchNativeTapOnce(bounds.exactCenterX(),bounds.exactCenterY(),SystemClock.elapsedRealtime()+30000L) { event -> automation.injectInputEvent(event,true) }
+    }
     clickControl(scenario,"More PDF tools");clickControl(scenario,"Print")
     evaluate(scenario,"(()=>{const target=document.getElementById('pdf-print-range');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(target,"+JSONObject.quote(range)+");target.dispatchEvent(new Event('input',{bubbles:true}));return true;})()")
     clickControl(scenario,"Open system print dialog")

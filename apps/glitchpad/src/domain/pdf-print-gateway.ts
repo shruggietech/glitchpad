@@ -131,6 +131,7 @@ export function nativePdfPrintGateway(session: ShellSession): PdfPrintGateway {
     if (desktopPrintOwner === id) {
       desktopPrintOwner = null;
       document.body.classList.remove('pdf-print-active');
+      document.documentElement.classList.remove('pdf-print-active');
     }
     owner?.remove();
     owner = null;
@@ -230,6 +231,7 @@ export function nativePdfPrintGateway(session: ShellSession): PdfPrintGateway {
       }
       handedOff = true;
       document.body.classList.add('pdf-print-active');
+      document.documentElement.classList.add('pdf-print-active');
       window.addEventListener('afterprint', finishDesktop, { once: true });
       window.addEventListener(
         'glitchpad-native-print-completed',

@@ -1,8 +1,8 @@
 # S050 issue acceptance map
 
-Every included criterion has its own disposition. Implementation/qualification below is planned, not yet a pass. Final source/run/attempt/artifact evidence will be linked in validation.md and the authoritative PR receipt.
+This table defines the required implementation and qualification boundary for every included criterion. Actual final dispositions and exact source/run/attempt/artifact proof are recorded in the [authoritative PR receipt](https://github.com/shruggietech/glitchpad/pull/266#issuecomment-6735742145). This static map is not itself a passing receipt; publication-only criteria remain pending.
 
-| Criterion | Planned implementation/verification | Closure boundary |
+| Criterion | Implementation and verification | Closure boundary |
 | --- | --- | --- |
 | #81.1 | Full worker/corpus/limits/accessible reading and10 native package-profile matrix, strict aggregate | Candidate must pass before owner merge |
 | #81.2 | Real hostile/action/form/attachment/link/resource fixtures observe zero implicit execution/network/native invocation | Candidate must pass before owner merge |

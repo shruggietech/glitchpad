@@ -294,8 +294,28 @@ test('Ubuntu profiles require the actual observed distribution release', () => {
 });
 
 import { nativePdfConformanceRecord } from './lib/pdf-native-record.mjs';
-test('a staged label cannot qualify missing, debug or contradictory actual native build mode',()=>{
- const result={status:'pass',execution:{completion:'clean'},evidence_class:'staged_release_native_webview',runtime:{debuggable:false}};
- for(const debug_assertions of [undefined,true])assert.throws(()=>nativePdfConformanceRecord({...result,debug_assertions},'windows_installed'),/actual staged native proof/);
- assert.throws(()=>nativePdfConformanceRecord({...result,debug_assertions:false,runtime:{debuggable:true}},'windows_installed'),/actual staged native proof/);
+test('a staged label cannot qualify missing, debug or contradictory actual native build mode', () => {
+  const result = {
+    status: 'pass',
+    execution: { completion: 'clean' },
+    evidence_class: 'staged_release_native_webview',
+    runtime: { debuggable: false },
+  };
+  for (const debug_assertions of [undefined, true])
+    assert.throws(
+      () =>
+        nativePdfConformanceRecord(
+          { ...result, debug_assertions },
+          'windows_installed',
+        ),
+      /actual staged native proof/,
+    );
+  assert.throws(
+    () =>
+      nativePdfConformanceRecord(
+        { ...result, debug_assertions: false, runtime: { debuggable: true } },
+        'windows_installed',
+      ),
+    /actual staged native proof/,
+  );
 });

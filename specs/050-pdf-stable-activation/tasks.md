@@ -49,8 +49,8 @@ Independent test:0.3.0 source/docs/claims/packages agree, exact staged artifacts
 - [x] T020 [US4] Reconcile technical specification, current PDF guidance, README/help/site canonical inputs, CHANGELOG and v0.3.0 notes/receipt/runbook while preserving office/advanced-tool planned status and current-public download authority. (FR-004,018,019,022; US4/AC1-4)
 - [x] T021 [US4] Add machine-readable prepared documentation-pass JSON and focused validation/tests, declaring PDF release scope instead of stale recovery scope, with truthful pending owner approval. (FR-017,018,019,020,022)
 - [ ] T022 [US4] Qualify actual staged Windows/macOS/Linux native PDF acquisition/reading/printing and bind proof into existing package/lifecycle archives across all declared profiles. (FR-001,002,014,016,020,021)
-- [ ] T023 [US4] Extend accepted-release-inputs.mjs, assemble-community-release.mjs and existing tag-only publisher/tests to require staged PDF/documentation-pass bindings and later observed PR merge evidence, without new approval/source mutation loops. (FR-017,020,021,022,024)
-- [ ] T024 [US4] Regenerate site/registrations/notices/SBOM inputs and validate version/docs/links/Mermaid/encoding/brand plus every package/source/security gate through existing scripts. (FR-017,018,019,023)
+- [x] T023 [US4] Extend accepted-release-inputs.mjs, assemble-community-release.mjs and existing tag-only publisher/tests to require staged PDF/documentation-pass bindings and later observed PR merge evidence, without new approval/source mutation loops. (FR-017,020,021,022,024)
+- [x] T024 [US4] Regenerate site/registrations/notices/SBOM inputs and validate version/docs/links/Mermaid/encoding/brand plus every package/source/security gate through existing scripts. (FR-017,018,019,023)
 - [ ] T025 [US4] Run focused complete implementation checks and pre-candidate conformance/native diagnostics, resolve their findings and retain original failed attempts in validation.md. (FR-005,012,013,014,015,016,017,021)
 
 ## Phase 7: Review, freeze and final handoff
@@ -58,7 +58,7 @@ Independent test:0.3.0 source/docs/claims/packages agree, exact staged artifacts
 - [x] T026 Push/open the implementation PR automatically with issue-level traceability, monitor applicable CI and record the first actual external review head/round in handoff.md. (FR-021,022,024)
 - [x] T027 Resolve first-round findings with fresh applicable focused/native proof and resolved threads; preserve reviewed/fixed source identities in handoff.md. (FR-021,024)
 - [ ] T028 Complete at most one further external round, resolve actionable findings and do not request a third; record the actual cap and final differences in handoff.md. (FR-024)
-- [ ] T029 Run present-code convergence, format/regenerate/check encoding and freeze every tracked final input/checkpoint before final qualification in specs/050-pdf-stable-activation/. (FR-020,021,023,024)
+- [x] T029 Run present-code convergence, format/regenerate/check encoding and freeze every tracked final input/checkpoint before final qualification in specs/050-pdf-stable-activation/. (FR-020,021,023,024)
 - [ ] T030 Qualify full exact-head CI plus all four stage_release:true workflows as complete successful latest attempts on the frozen source; retain exact run/attempt/artifact identities in the authoritative external receipt. (FR-014,015,017,020,021)
 - [ ] T031 Independently read all8 canonical payloads, actual installed APK copies, staged native PDF facts/manifest bindings and printed PDFs, checking full hashes/lengths/source/runtime identities in the authoritative external receipt. (FR-014,015,016,020,021)
 - [ ] T032 Construct the accepted preparation record and rehearse actual accepted-release-inputs/strict assembler byte consumption without publication; bind documentation-pass digest and PR identity in the authoritative external receipt. (FR-018,019,020,021)

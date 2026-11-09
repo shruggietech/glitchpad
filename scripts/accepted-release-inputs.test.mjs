@@ -28,6 +28,8 @@ function accepted() {
     repository: releaseIdentity.repository,
     accepted_source_commit: source,
     publication_context: 'qualified_preparation_unpublished',
+    documentation_pass:{path:'docs/releases/'+releaseIdentity.tag+'-documentation-pass.json',sha256:digest},
+    implementation_pull_request:{number:500,head_sha:source},
     ci: { workflow: 'ci.yml', run_id: 1, run_attempt: 1 },
     platforms: Object.fromEntries(
       Object.entries(stagingWorkflows).map(([platform, workflow]) => [
@@ -73,6 +75,10 @@ test('accepted inputs require all platform runs, immutable artifact sets and eig
     (record) => (record.payloads[0].source_commit = 'b'.repeat(40)),
     (record) => (record.publication_context = 'published'),
     (record) => delete record.ci,
+    (record) => delete record.documentation_pass,
+    (record) => (record.documentation_pass.sha256="unhashed"),
+    (record) => delete record.implementation_pull_request,
+    (record) => (record.implementation_pull_request.head_sha="b".repeat(40)),
   ];
   for (const mutate of mutations) {
     const record = accepted();

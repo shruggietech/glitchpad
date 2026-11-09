@@ -58,7 +58,7 @@ function candidate() {
 
 test('repository Windows package configuration is internally consistent', async () => {
   assert.deepEqual(await checkWindowsConfiguration(repositoryRoot), {
-    capabilityCount: 31,
+    capabilityCount: 32,
     artifactCount: 2,
   });
 });

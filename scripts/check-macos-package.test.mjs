@@ -212,7 +212,7 @@ function receipt(
 
 test('repository macOS package configuration is internally consistent', async () => {
   assert.deepEqual(await checkMacosConfiguration(repositoryRoot), {
-    capabilityCount: 31,
+    capabilityCount: 32,
     artifactCount: 1,
   });
 });
@@ -475,7 +475,7 @@ test('candidate inventory and public claims fail closed', () => {
     /unexpected executable/u,
   );
   const planned = candidate();
-  planned.document_extensions.push('pdf');
+  planned.document_extensions.push('docx');
   assert.throws(
     () => validateMacosEvidence(planned, contract),
     /document declarations drift/u,

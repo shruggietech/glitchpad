@@ -197,8 +197,8 @@ function receipt(
 test('repository Linux package configuration is internally consistent', async () => {
   assert.deepEqual(await checkLinuxConfiguration(repositoryRoot), {
     artifactCount: 2,
-    capabilityCount: 31,
-    mimeTypeCount: 20,
+    capabilityCount: 32,
+    mimeTypeCount: 21,
   });
 });
 

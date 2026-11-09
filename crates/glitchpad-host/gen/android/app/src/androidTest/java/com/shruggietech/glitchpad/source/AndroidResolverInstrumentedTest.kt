@@ -29,7 +29,6 @@ class AndroidResolverInstrumentedTest {
     val negativeCases = listOf(
       viewIntent(Uri.parse("file:///tmp/private.md"), "text/markdown"),
       viewIntent(Uri.parse("content://com.shruggietech.synthetic/document/image"), "image/avif"),
-      viewIntent(Uri.parse("content://com.shruggietech.synthetic/document/pdf"), "application/pdf"),
       viewIntent(Uri.parse("content://com.shruggietech.synthetic/document/docx"), "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
       viewIntent(Uri.parse("content://com.shruggietech.synthetic/document/odt"), "application/vnd.oasis.opendocument.text"),
       viewIntent(Uri.parse("content://com.shruggietech.synthetic/document/opaque.md"), "application/octet-stream"),
@@ -62,6 +61,7 @@ class AndroidResolverInstrumentedTest {
     private const val TARGET_PACKAGE = "com.shruggietech.glitchpad"
     private val BROAD_REQUEST_MEDIA_TYPES = listOf("*/*", "application/*", "text/*")
     private val EXACT_MEDIA_TYPES = listOf(
+      "application/pdf",
       "application/json",
       "application/toml",
       "application/x-typescript",

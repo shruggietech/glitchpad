@@ -4,18 +4,18 @@
 
 ## Phase 1: Setup
 
-- [ ] T001 Validate actual specify/clarify/plan/tasks context, selected branch/feature and16-item quality checklist in specs/050-pdf-stable-activation/; retain phase identities in validation.md. (FR-022,023,024)
-- [ ] T002 Establish criterion/profile/receipt and release-preparation contracts in specs/050-pdf-stable-activation/contracts/ and data-model.md, including all12 issue criteria and publication-only dispositions. (FR-005,012,020,022)
+- [x] T001 Validate actual specify/clarify/plan/tasks context, selected branch/feature and16-item quality checklist in specs/050-pdf-stable-activation/; retain phase identities in validation.md. (FR-022,023,024)
+- [x] T002 Establish criterion/profile/receipt and release-preparation contracts in specs/050-pdf-stable-activation/contracts/ and data-model.md, including all12 issue criteria and publication-only dispositions. (FR-005,012,020,022)
 
 ## Phase 2: Foundations
 
-- [ ] T003 Record the twelve dated scope/process/license/staging decisions in changelog.d/S050.md and preserve existing .gitignore/.dockerignore/formatter/linter ownership; no unrelated toolchain or brand change. (FR-017,023)
+- [x] T003 Record the twelve dated scope/process/license/staging decisions in changelog.d/S050.md and preserve existing .gitignore/.dockerignore/formatter/linter ownership; no unrelated toolchain or brand change. (FR-017,023)
 
 ## Phase 3: US1 - Native PDF acquisition
 
 Independent test: real cold/warm native PDF delivery resolves to the existing viewer, preserves sources and retains unsupported-format/source-policy negatives.
 
-- [ ] T004 [US1] Add failing positive-PDF declaration/count/resolver and still-unsupported negative tests in scripts/check-image-activation.test.mjs, package validator tests and AndroidResolverInstrumentedTest.kt. (FR-001,002; US1/AC1-4)
+- [x] T004 [US1] Add failing positive-PDF declaration/count/resolver and still-unsupported negative tests in scripts/check-image-activation.test.mjs, package validator tests and AndroidResolverInstrumentedTest.kt. (FR-001,002; US1/AC1-4)
 - [ ] T005 [US1] Promote the canonical PDF family and reconcile generated desktop/Tauri/Linux/Android declarations in packaging/desktop/capabilities.json, native package/intent/MIME contracts and the source AndroidManifest.xml. (FR-001,002)
 - [ ] T006 [US1] Promote governed PDF delivery without duplicate exceptions and cover cold/warm content-based source routing in crates/glitchpad-host/src/desktop_delivery.rs and existing Android instrumentation. (FR-002,003,004,006,007,011)
 - [ ] T007 [US1] Prepare consistent0.3.0 target identities and monotonic Android code1006 across canonical Cargo/package/Tauri/Gradle/package/workflow authorities, retaining published latest links and historical receipts. (FR-017,018,019)

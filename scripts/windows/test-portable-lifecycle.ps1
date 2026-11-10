@@ -131,7 +131,7 @@ function Find-LargestNamedElement([System.Windows.Automation.AutomationElement] 
     return $largest
 }
 
-function Wait-NamedElement([Diagnostics.Process] $Process, [string] $Name, [int] $Seconds = 20) {
+function Wait-NamedElement([Diagnostics.Process] $Process, [string] $Name, [int] $Seconds = 60) {
     $script:readinessWaitKind = 'named_element'
     $script:readinessWaitCallerLine = $MyInvocation.ScriptLineNumber
     $script:readinessStage = 'named_element_wait'

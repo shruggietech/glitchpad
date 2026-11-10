@@ -5,7 +5,7 @@ import crypto from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import YAML from 'yaml';
 const base = 'acc2047b449b9226a621dd9604e8343f8e165a87';
-const git = (...args) => execFileSync('git', args, { encoding: 'utf8' });
+const git = (...args) => execFileSync('git', args, { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
 const sha256 = (b) => crypto.createHash('sha256').update(b).digest('hex');
 const cargoPackages = (s) => [...s.matchAll(/\[\[package\]\]([\s\S]*?)(?=\n\[\[|$)/g)].map((m) => Object.fromEntries([...m[1].matchAll(/^(name|version|checksum|source) = "([^"]+)"$/gm)].map((a) => [a[1], a[2]])));
 const oldCargo = new Set(cargoPackages(git('show', base + ':Cargo.lock')).map((p) => p.name + '@' + p.version));

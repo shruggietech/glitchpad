@@ -369,7 +369,7 @@ fn domain_hash(domain: &[u8], evidence: &[u8]) -> String {
     let mut digest = Sha256::new();
     digest.update(domain);
     digest.update(evidence);
-    format!("{:x}", digest.finalize())
+    hex::encode(digest.finalize())
 }
 
 fn sanitize_display_hint(value: &str) -> String {

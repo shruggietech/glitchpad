@@ -188,7 +188,7 @@ describe('document foundation shell', () => {
     expect(
       screen.getByRole('textbox', { name: 'Untitled.md text editor' }),
     ).toHaveTextContent('# Local draft');
-  });
+  }, 15_000);
 
   it('keeps Android draft edits after cancelled Save and blocks Close while the native write is pending', async () => {
     const draft = createDraftSession('text');

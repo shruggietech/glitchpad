@@ -307,7 +307,7 @@ impl CacheEntry {
                     "The PDF source length changed while spooling",
                 ));
             }
-            progress.snapshot.sha256 = Some(format!("{:x}", progress.hasher.clone().finalize()));
+            progress.snapshot.sha256 = Some(hex::encode(progress.hasher.clone().finalize()));
             progress.snapshot.state = "ready";
         }
         Ok(progress.snapshot.clone())
@@ -411,7 +411,7 @@ mod tests {
         assert!(entry.read(7, 2).is_err());
         assert_eq!(
             entry.snapshot().unwrap().sha256.unwrap(),
-            format!("{:x}", Sha256::digest(b"01234567"))
+            hex::encode(Sha256::digest(b"01234567"))
         );
         store.remove(&entry).unwrap();
         assert!(!entry.path.exists());

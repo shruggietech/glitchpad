@@ -1,0 +1,61 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import os from 'node:os';
+import crypto from 'node:crypto';
+import { execFileSync } from 'node:child_process';
+import YAML from 'yaml';
+const base = 'acc2047b449b9226a621dd9604e8343f8e165a87';
+const git = (...args) => execFileSync('git', args, { encoding: 'utf8' });
+const sha256 = (b) => crypto.createHash('sha256').update(b).digest('hex');
+const cargoPackages = (s) => [...s.matchAll(/\[\[package\]\]([\s\S]*?)(?=\n\[\[|$)/g)].map((m) => Object.fromEntries([...m[1].matchAll(/^(name|version|checksum|source) = "([^"]+)"$/gm)].map((a) => [a[1], a[2]])));
+const oldCargo = new Set(cargoPackages(git('show', base + ':Cargo.lock')).map((p) => p.name + '@' + p.version));
+const crates = cargoPackages(await fs.readFile('Cargo.lock', 'utf8')).filter((p) => p.source?.startsWith('registry') && !oldCargo.has(p.name + '@' + p.version));
+const oldPnpm = YAML.parse(git('show', base + ':pnpm-lock.yaml'));
+const newPnpm = YAML.parse(await fs.readFile('pnpm-lock.yaml', 'utf8'));
+const list = JSON.parse(execFileSync('pnpm', ['--filter', '@shruggietech/glitchpad', 'list', '--prod', '--json', '--depth', 'Infinity'], { encoding: 'utf8', maxBuffer: 32*1024*1024 }));
+const npm = new Map();
+const visit = (deps) => { for (const [name, p] of Object.entries(deps || {})) { const key = name + '@' + p.version; if (newPnpm.packages[key] && !oldPnpm.packages[key]) npm.set(key, {name, version:p.version, path:p.path, integrity:newPnpm.packages[key].resolution?.integrity}); visit(p.dependencies); } };
+for (const project of list) visit(project.dependencies);
+const sections = [], provenance = [];
+async function licenses(root) {
+  let files = (await fs.readdir(root, {withFileTypes:true})).filter((f) => f.isFile() && /^(license|copying|notice)([-_.]|$)/i.test(f.name)).map((f) => f.name).sort();
+  if (!files.length && root.endsWith('ndk-context-0.1.1')) {
+    const result = [];
+    for (const file of ['LICENSE-APACHE','LICENSE-MIT']) {
+      const url = 'https://raw.githubusercontent.com/rust-windowing/android-ndk-rs/10f2ba388fca20f7349996ebae26ccda7a6fda5c/'+file;
+      const response = await fetch(url); if (!response.ok) throw new Error('Missing exact upstream license: '+url);
+      const data = Buffer.from(await response.arrayBuffer()); result.push({file,url,sha256:sha256(data),text:data.toString('utf8')});
+    }
+    return result;
+  }
+  if (!files.length && /webview2-com(?:-sys)?-0[.]39[.]1$/.test(root)) {
+    const file = 'LICENSE';
+    const url = 'https://raw.githubusercontent.com/wravery/webview2-rs/edc2caf886175ccaebe86078c9cfe1ae2a187328/LICENSE';
+    const response = await fetch(url); if (!response.ok) throw new Error('Missing exact upstream license: '+url);
+    const data = Buffer.from(await response.arrayBuffer()); return [{file,url,sha256:sha256(data),text:data.toString('utf8')}];
+  }
+  if (!files.length) throw new Error('Missing exact license texts in ' + root);
+  const texts = [];
+  for (const file of files) { const data = await fs.readFile(path.join(root,file)); texts.push({file,sha256:sha256(data),text:data.toString('utf8')}); }
+  return texts;
+}
+const registry = path.join(process.env.CARGO_HOME || path.join(os.homedir(),'.cargo'),'registry','src');
+const registryRoots = await fs.readdir(registry);
+for (const p of crates) {
+  let root; for (const r of registryRoots) { const candidate = path.join(registry,r,p.name+'-'+p.version); if (await fs.stat(candidate).then((s)=>s.isDirectory(),()=>false)) {root=candidate;break;} }
+  if (!root) throw new Error('Missing downloaded crate ' + p.name+'@'+p.version);
+  const texts = await licenses(root); sections.push('Component: '+p.name+'-'+p.version+'\n\n'+texts.map((t)=>t.text.trim()).join('\n\n'));
+  provenance.push({ecosystem:'cargo',name:p.name,version:p.version,registry_checksum:p.checksum,texts:texts.map(({text,...t})=>t)});
+}
+for (const p of [...npm.values()].sort((a,b)=>(a.name+'@'+a.version).localeCompare(b.name+'@'+b.version))) {
+  const texts = await licenses(p.path); sections.push('Component: '+p.name+'-'+p.version+'\n\n'+texts.map((t)=>t.text.trim()).join('\n\n'));
+  provenance.push({ecosystem:'npm',name:p.name,version:p.version,registry_integrity:p.integrity,texts:texts.map(({text,...t})=>t)});
+}
+for (const platform of ['windows','macos','linux','android']) {
+  const file = 'packaging/'+platform+'/THIRD_PARTY_NOTICES.txt';
+  const previous = git('show',base+':'+file).trimEnd();
+  await fs.writeFile(file,previous+'\n\nDependabot dependency convergence (2026-11-10). Changed application dependencies and exact upstream license texts follow. Current platform SBOMs identify distributed components.\n\n'+sections.join('\n\n')+'\n');
+}
+await fs.writeFile('packaging/dependabot-20261110-notice-sources.json',JSON.stringify({schema_version:1,baseline:base,source_policy:'Changed Cargo lock packages and application production npm packages. Exact downloaded registry license texts bound to lock checksums and integrity.',components:provenance},null,2)+'\n');
+console.log('Updated exact notices for '+crates.length+' Cargo packages and '+npm.size+' application npm packages.');
+

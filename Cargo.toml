@@ -15,11 +15,12 @@ license = "Apache-2.0"
 repository = "https://github.com/ShruggieTech/glitchpad"
 
 [workspace.dependencies]
-base64 = "=0.22.1"
+hex = "=0.4.3"
+base64 = "=0.23.1"
 image = { version = "0.25.10", default-features = false, features = ["png", "jpeg", "webp", "bmp", "tiff", "ico"] }
 gif = { version = "=0.14.2", default-features = false, features = ["std", "raii_no_panic"] }
 image-webp = { version = "=0.2.4", default-features = false }
-resvg = { version = "=0.48.1", default-features = false, features = ["text"] }
+resvg = { version = "=0.49.0", default-features = false, features = ["text"] }
 simplecss = "=0.2.2"
 svgtypes = "=0.16.2"
 roxmltree = { version = "=0.21.2", default-features = false, features = ["std"] }
@@ -32,7 +33,7 @@ notify = "8.2.0"
 schemars = { version = "1.2.2", features = ["derive"] }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.145"
-sha2 = "0.10.9"
+sha2 = "0.11.1"
 tauri = "2.11.5"
 tauri-build = "2.6.3"
 tauri-plugin = "2.6.3"
@@ -41,7 +42,7 @@ tauri-plugin-dialog = "2.7.3"
 tauri-plugin-single-instance = "2.4.3"
 url = "2.5.8"
 uuid = { version = "1.26.0", features = ["serde", "v4"] }
-sysinfo = { version = "0.39.6", default-features = false, features = ["system"] }
+sysinfo = { version = "0.40.1", default-features = false, features = ["system"] }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

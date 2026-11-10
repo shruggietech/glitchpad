@@ -62,12 +62,9 @@ pub(crate) async fn pdf_print_operation(
     {
         return Err(unavailable());
     }
-    request.owner = format!(
-        "{:x}",
-        Sha256::digest(
+    request.owner = hex::encode(Sha256::digest(
             serde_json::to_vec(&(&source_id, &expected_revision)).map_err(|_| unavailable())?
-        )
-    );
+        ));
     crate::android_interactive::run(move || {
         if request.operation == "begin" || request.operation == "handoff" {
             let prefix = crate::images::document_prefix(&app, &source_id, &expected_revision)?;

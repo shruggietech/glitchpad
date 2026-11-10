@@ -164,7 +164,7 @@ fn main() {
     paths.sort();
     let files = paths.iter().map(|path| {
         let bytes = fs::read(path).unwrap();
-        serde_json::json!({ "name": path.file_name().unwrap().to_str().unwrap(), "sha256": format!("{:x}", Sha256::digest(&bytes)), "bytes": bytes.len(), "width": if path.file_name().unwrap() == "svg-viewport.svg" {1600} else {4}, "height": if path.file_name().unwrap() == "svg-viewport.svg" {1200} else {3} })
+        serde_json::json!({ "name": path.file_name().unwrap().to_str().unwrap(), "sha256": hex::encode(Sha256::digest(&bytes)), "bytes": bytes.len(), "width": if path.file_name().unwrap() == "svg-viewport.svg" {1600} else {4}, "height": if path.file_name().unwrap() == "svg-viewport.svg" {1200} else {3} })
     }).collect::<Vec<_>>();
     let manifest = serde_json::json!({ "license": "Apache-2.0", "author": "Glitchpad contributors", "generator": "cargo run -p glitchpad-core --example generate_image_fixtures", "files": files });
     fs::write(

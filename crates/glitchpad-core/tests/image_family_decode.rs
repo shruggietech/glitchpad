@@ -375,7 +375,7 @@ fn original_family_corpus_preserves_dimensions_and_independent_dib_entries() {
     }
     let font = include_bytes!("../../../brand/fonts/ttf/Geist-Regular.ttf");
     assert_eq!(
-        format!("{:x}", Sha256::digest(font)),
+        hex::encode(Sha256::digest(font)),
         "43065e72260288e84672cd1f27e1a8f8889b636a74f5f9252649365c41e8eca8"
     );
 }

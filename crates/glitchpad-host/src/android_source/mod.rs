@@ -1401,7 +1401,7 @@ impl AndroidSourceHost {
                 false,
             ));
         }
-        let hash = format!("{:x}", Sha256::digest(original));
+        let hash = hex::encode(Sha256::digest(original));
         let response = self
             .plugin
             .export_image(glitchpad_android_source::models::ImageExportRequest {

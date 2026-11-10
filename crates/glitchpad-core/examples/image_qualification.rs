@@ -18,7 +18,7 @@ fn main() {
         let done = Arc::clone(&done);
         let peak = Arc::clone(&peak);
         std::thread::spawn(move || {
-            let mut system = System::new();
+            let mut system = System::new().expect("process sampler must initialize");
             while !done.load(Ordering::Acquire) {
                 system.refresh_processes(ProcessesToUpdate::Some(&[pid]), true);
                 if let Some(process) = system.process(pid) {
@@ -70,7 +70,7 @@ fn main() {
         elapsed.sort_unstable();
         let p95_us = elapsed[18];
         assert!(p95_us <= 5_000_000, "{name} exceeds 5-second stage budget");
-        rows.push(json!({"fixture":name,"sha256":format!("{:x}", Sha256::digest(&bytes)),"iterations":20,"p95_us":p95_us}));
+        rows.push(json!({"fixture":name,"sha256":hex::encode(Sha256::digest(&bytes)),"iterations":20,"p95_us":p95_us}));
     }
     // Ensure at least one process sample even on an unusually fast runner.
     std::thread::sleep(Duration::from_millis(20));

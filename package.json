@@ -6,7 +6,7 @@
   "license": "Apache-2.0",
   "packageManager": "pnpm@10.28.2",
   "engines": {
-    "node": ">=24.11.0 <25",
+    "node": ">=24.22.2 <25",
     "pnpm": ">=10.28.2 <11"
   },
   "pnpm": {
@@ -37,7 +37,7 @@
     "check:validation": "node --test scripts/check-validation.test.mjs scripts/run-android-evidence.test.mjs scripts/run-android-s046-journeys.test.mjs scripts/test-android-recovery-evidence.mjs scripts/android-offline-mode.test.mjs scripts/validate-android-release-evidence.test.mjs",
     "check:mermaid-runtime": "node --test scripts/check-mermaid-runtime.test.mjs && node scripts/check-mermaid-runtime.mjs",
     "check:metadata": "node --test scripts/check-metadata-fixture.test.mjs && node scripts/check-metadata-fixture.mjs",
-    "check:images": "node scripts/check-fuzz-lock.mjs && node --test scripts/check-image-activation.test.mjs && node scripts/check-image-layout.mjs",
+    "check:images": "node --test scripts/check-vendored-patches.test.mjs && node scripts/check-vendored-patches.mjs && node scripts/check-fuzz-lock.mjs && node --test scripts/check-image-activation.test.mjs && node scripts/check-image-layout.mjs",
     "check:persistence": "node --test scripts/check-persistence-fixture.test.mjs && node scripts/check-persistence-fixture.mjs",
     "check:performance": "node --test scripts/check-performance.test.mjs scripts/run-performance.test.mjs && node scripts/check-performance.mjs",
     "check:shell-layout": "pnpm run build && node scripts/check-shell-layout.mjs",
@@ -64,14 +64,14 @@
     "check:app-layout": "node --test scripts/check-app-layout.test.mjs && node scripts/check-app-layout.mjs --receipt artifacts/android-task-layout/receipt.json"
   },
   "devDependencies": {
-    "@mermaid-js/mermaid-cli": "11.17.0",
+    "@mermaid-js/mermaid-cli": "12.2.0",
     "@taplo/cli": "0.7.0",
-    "@tauri-apps/cli": "2.11.5",
+    "@tauri-apps/cli": "2.12.4",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "markdown-link-check": "3.15.0",
     "markdownlint-cli2": "0.24.0",
-    "prettier": "3.9.9",
+    "prettier": "3.9.10",
     "puppeteer": "25.16.0",
     "yaml": "2.9.1"
   },

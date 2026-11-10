@@ -74,7 +74,7 @@ fn doctor(repository: &Path) -> Result<(), String> {
     println!("Glitchpad development environment");
     require_output(repository, "rustc", ["--version"], "rustc 1.96.0")?;
     require_output(repository, "cargo", ["--version"], "cargo 1.96.0")?;
-    require_output(repository, "node", ["--version"], "v24.11.0")?;
+    require_output(repository, "node", ["--version"], "v24.22.2")?;
     require_output(repository, "pnpm", ["--version"], "10.28.2")?;
     require_minimum_version(repository, "git", ["--version"], (2, 45, 0))?;
     require_output(

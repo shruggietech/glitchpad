@@ -239,7 +239,7 @@ async function main() {
     runner_image: options.runnerImage,
     tool_versions: {
       rust: '1.96.0',
-      node: '24.11.0',
+      node: '24.22.2',
       pnpm: '10.28.2',
     },
     subjects: [

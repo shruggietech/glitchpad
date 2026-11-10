@@ -63,7 +63,7 @@ function candidate() {
       compiler: 'cc (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0',
       linker: 'GNU ld (GNU Binutils for Ubuntu) 2.38',
       rust: 'rustc 1.96.0 (ac68faa20 2026-05-25)',
-      node: 'v24.11.0',
+      node: 'v24.22.2',
       pnpm: '10.28.2',
     },
     artifacts: contract.artifacts.map((artifact) => ({

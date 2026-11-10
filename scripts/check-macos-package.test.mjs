@@ -395,7 +395,7 @@ test('candidate mode binds staged application, DMG, supply chain, and notices', 
           source_commit: evidence.source_commit,
           workflow_identity: evidence.workflow_identity,
           runner_image: 'macos-15',
-          tool_versions: { rust: '1.96.0', node: '24.11.0', pnpm: '10.28.2' },
+          tool_versions: { rust: '1.96.0', node: '24.22.2', pnpm: '10.28.2' },
           subjects: [
             { name: evidence.artifact.name, sha256: evidence.artifact.sha256 },
             {

@@ -2,7 +2,7 @@ FROM mcr.microsoft.com/powershell:7.5-debian-12 AS powershell
 
 FROM ubuntu:22.04 AS linux-package
 
-ARG NODE_VERSION=24.11.0
+ARG NODE_VERSION=24.22.2
 ARG RUST_VERSION=1.96.0
 
 ENV COREPACK_HOME=/opt/corepack
@@ -167,7 +167,7 @@ WORKDIR /workspace
 
 FROM rust:1.96.0-bookworm AS validation
 
-ARG NODE_VERSION=24.11.0
+ARG NODE_VERSION=24.22.2
 ARG CARGO_DENY_VERSION=0.20.2
 ARG PLAYWRIGHT_VERSION=1.63.0
 ARG PUPPETEER_VERSION=25.16.0

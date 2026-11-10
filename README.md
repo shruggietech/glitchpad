@@ -54,7 +54,7 @@ Android 7/API24 is the minimum OS baseline; Chromium 69-class WebView is the min
 
 ## Development
 
-The shared toolchain is Rust 1.96.0, Node.js 24.11.0, pnpm 10.28.2, PowerShell 7, and Git. Desktop and Android builds add the platform SDKs described in [CONTRIBUTING.md](CONTRIBUTING.md).
+The shared toolchain is Rust 1.96.0, Node.js 24.22.2, pnpm 10.28.2, PowerShell 7, and Git. Desktop and Android builds add the platform SDKs described in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ```powershell
 corepack prepare pnpm@10.28.2 --activate

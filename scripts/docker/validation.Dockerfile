@@ -2,7 +2,13 @@ FROM mcr.microsoft.com/powershell:7.5-debian-12 AS powershell
 
 FROM ubuntu:22.04 AS linux-package
 
+# Bootstrap TLS from the already-used trusted image, then install distro CAs below.
+COPY --from=powershell /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY scripts/docker/apt-network.conf /etc/apt/apt.conf.d/99glitchpad-network
+RUN set -eu; \
+    for apt_source in /etc/apt/sources.list /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do \
+        if [ -f "$apt_source" ]; then sed -i 's|http://|https://|g' "$apt_source"; fi; \
+    done
 
 ARG NODE_VERSION=24.22.2
 ARG RUST_VERSION=1.96.0
@@ -71,7 +77,13 @@ WORKDIR /workspace
 
 FROM ubuntu:24.04 AS linux-lifecycle-24
 
+# Bootstrap TLS from the already-used trusted image, then install distro CAs below.
+COPY --from=powershell /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY scripts/docker/apt-network.conf /etc/apt/apt.conf.d/99glitchpad-network
+RUN set -eu; \
+    for apt_source in /etc/apt/sources.list /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do \
+        if [ -f "$apt_source" ]; then sed -i 's|http://|https://|g' "$apt_source"; fi; \
+    done
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV CARGO_HOME=/usr/local/cargo
@@ -102,7 +114,13 @@ WORKDIR /workspace
 
 FROM ubuntu:22.04 AS android-package
 
+# Bootstrap TLS from the already-used trusted image, then install distro CAs below.
+COPY --from=powershell /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY scripts/docker/apt-network.conf /etc/apt/apt.conf.d/99glitchpad-network
+RUN set -eu; \
+    for apt_source in /etc/apt/sources.list /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do \
+        if [ -f "$apt_source" ]; then sed -i 's|http://|https://|g' "$apt_source"; fi; \
+    done
 
 ARG ANDROID_COMMAND_LINE_TOOLS_VERSION=15859902
 ARG ANDROID_COMMAND_LINE_TOOLS_SHA256=4e4c464f145a7512b57d088ac6c278c03c9eea610886b35a5e0804e74eedf583
@@ -173,7 +191,13 @@ WORKDIR /workspace
 
 FROM rust:1.96.0-bookworm AS validation
 
+# Bootstrap TLS from the already-used trusted image, then install distro CAs below.
+COPY --from=powershell /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY scripts/docker/apt-network.conf /etc/apt/apt.conf.d/99glitchpad-network
+RUN set -eu; \
+    for apt_source in /etc/apt/sources.list /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do \
+        if [ -f "$apt_source" ]; then sed -i 's|http://|https://|g' "$apt_source"; fi; \
+    done
 
 ARG NODE_VERSION=24.22.2
 ARG CARGO_DENY_VERSION=0.20.2

@@ -260,7 +260,8 @@ test(
           '#!/usr/bin/env bash',
           'if [[ "$1" == install ]]; then echo Success; exit 0; fi',
           'if [[ "$1 $2 $3" == "shell am instrument" ]]; then echo s048_release_evidence={}; echo "OK (1 test)"; echo "INSTRUMENTATION_CODE: -1"; exit 0; fi',
-          'if [[ "$1" == exec-out ]]; then echo fixture; fi',
+          'if [[ "$1" == exec-out ]]; then echo unframed-capture-refused >&2; exit 9; fi',
+          'if [[ "$1 $2 $3" == "shell -T -n" ]]; then printf "\\000\\377\\015\\012PK"; fi',
           'exit 0',
           '',
         ].join('\n'),
@@ -295,6 +296,13 @@ test(
       );
       assert.equal(result.error, undefined);
       assert.equal(result.status, 0, result.stderr + result.stdout);
+      for (const kind of ['application', 'instrumentation']) {
+        assert.deepEqual(
+          await readFile(join(evidence, 'delivery-attempt-1', 's048-installed-' + kind + '.apk')),
+          Buffer.from([0, 255, 13, 10, 80, 75]),
+          'framed capture must preserve binary bytes',
+        );
+      }
       const lines = (await readFile(commandLog, 'utf8')).trim().split('\n');
       assert.deepEqual(lines, [
         'setup:' + join(evidence, 'offline-back_about'),

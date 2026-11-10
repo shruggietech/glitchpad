@@ -26,6 +26,7 @@ jobs:
           cargo update -p uuid --precise 1.29.2
           cp Cargo.lock fuzz/Cargo.lock
           cargo metadata --manifest-path fuzz/Cargo.toml --format-version 1 > /tmp/fuzz-metadata.json
+          cargo fetch --locked
           cargo fmt --all
           cargo check -p glitchpad-core --all-targets --locked
           node --test scripts/check-vendored-patches.test.mjs

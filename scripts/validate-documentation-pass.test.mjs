@@ -5,7 +5,10 @@ import { readFile } from 'node:fs/promises';
 import { validatePreparedDocumentationPass } from './validate-documentation-pass.mjs';
 const receipt = JSON.parse(
   await readFile(
-    new URL(`../docs/releases/${releaseIdentity.tag}-documentation-pass.json`, import.meta.url),
+    new URL(
+      `../docs/releases/${releaseIdentity.tag}-documentation-pass.json`,
+      import.meta.url,
+    ),
     'utf8',
   ),
 );

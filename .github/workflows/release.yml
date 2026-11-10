@@ -10,7 +10,7 @@ on:
         description: Validated staging JSON for a non-publishing accepted-byte rehearsal
         required: false
         type: string
-        default: ""
+        default: ''
 
 permissions:
   actions: read

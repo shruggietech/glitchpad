@@ -3,10 +3,7 @@
   "record_kind": "prepared_documentation_pass",
   "target_version": "0.3.1",
   "prior_version": "0.3.0",
-  "reviewed_slices": [
-    "S049",
-    "S050"
-  ],
+  "reviewed_slices": ["S049", "S050"],
   "sections_reviewed": [
     "1",
     "5",
@@ -27,15 +24,8 @@
     "Appendix F",
     "Appendix K"
   ],
-  "capability_rows_changed": [
-    "pdf"
-  ],
-  "platform_rows_changed": [
-    "windows",
-    "macos",
-    "linux",
-    "android"
-  ],
+  "capability_rows_changed": ["pdf"],
+  "platform_rows_changed": ["windows", "macos", "linux", "android"],
   "security_changes": [
     "Dependency, license and source-integrity contracts reviewed after PRs #265 and #267; PDF worker and native trust boundaries retained"
   ],
@@ -43,10 +33,7 @@
     "Node 24.22.2, refreshed Rust/JavaScript dependencies and native patch selection",
     "SHA-2 output encoding, fallible memory sampling, framed Android capture and bounded readiness allowances reviewed"
   ],
-  "changelog_fragments": [
-    "changelog.d/S049.md",
-    "changelog.d/S050.md"
-  ],
+  "changelog_fragments": ["changelog.d/S049.md", "changelog.d/S050.md"],
   "prepared_utc": "2026-11-10T10:53:04.978Z",
   "approval_state_at_preparation": "pending_owner_review",
   "approver": null,

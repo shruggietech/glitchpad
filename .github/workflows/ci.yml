@@ -208,7 +208,7 @@ jobs:
           cargo run -p glitchpad-core --example image_qualification --locked > artifacts/image-qualification/native-${{ matrix.os }}.json
 
       - name: Retain native image measurements
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: image-qualification-${{ matrix.os }}
           path: artifacts/image-qualification/
@@ -574,7 +574,7 @@ jobs:
           cargo +nightly-2026-10-31 fuzz run image_boundaries .tmp/s043-fuzz/corpus -- -max_total_time=60 -timeout=10 -rss_limit_mb=1536 -max_len=65536 -seed=43 -artifact_prefix=.tmp/s043-fuzz/ 2>&1 | tee .tmp/s043-fuzz/campaign.log
       - name: Retain fuzz campaign and findings
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: image-fuzz-qualification
           path: .tmp/s043-fuzz/

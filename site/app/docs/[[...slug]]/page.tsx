@@ -20,13 +20,10 @@ export default async function Page({
   if (!page) notFound();
   const MDX = page.data.body;
   return (
-    <DocsPage
-      id="main-content"
-      tabIndex={-1}
-      toc={page.data.toc}
-      full={page.data.full}
-    >
-      <DocsTitle>{page.data.title}</DocsTitle>
+    <DocsPage tabIndex={-1} toc={page.data.toc} full={page.data.full}>
+      <DocsTitle id="main-content" tabIndex={-1}>
+        {page.data.title}
+      </DocsTitle>
       <DocsDescription>{page.data.description}</DocsDescription>
       <DocsBody>
         <MDX components={getMDXComponents()} />

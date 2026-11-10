@@ -200,6 +200,16 @@ export function validateReleaseAuthorityGate(releaseWorkflow) {
   return true;
 }
 
+export function validateAcceptedRehearsal(source) {
+  const workflow = parseYaml(source);
+  const job = workflow.jobs?.rehearse;
+  if (job?.if !== "github.event_name == \'workflow_dispatch\' && inputs.accepted_staging != \'\'" || job.needs !== "readiness") throw Error("Accepted-byte rehearsal must require explicit manual inputs and readiness");
+  if (JSON.stringify(job.permissions) !== JSON.stringify({ actions: "read", contents: "read", attestations: "read", "pull-requests": "read" })) throw Error("Rehearsal permissions must remain read-only");
+  const commands = job.steps.map(step => step.run ?? "").join("\n");
+  if (!commands.includes("scripts/accepted-release-inputs.mjs") || !commands.includes("--require-merged true") || !commands.includes("scripts/assemble-community-release.mjs") || /gh\s+release|git\s+(tag|push)|(?:cargo|tauri)\s+(?:android\s+)?build|pnpm\s+(?:run\s+)?build/u.test(commands)) throw Error("Rehearsal must consume accepted bytes without publishing or rebuilding");
+  return true;
+}
+
 export function validateReleaseReadinessEvidence(readinessScript) {
   for (const path of ['brand/manifest.json', 'brand/INTEGRATION.md']) {
     if (!readinessScript.includes(`'${path}'`))
@@ -531,6 +541,7 @@ export async function checkCommunityRelease(repositoryRoot = root) {
   validateReleaseContract(contract);
   await checkPreparedDocumentationPass(repositoryRoot);
   validateReleaseAuthorityGate(releaseWorkflow);
+  validateAcceptedRehearsal(releaseWorkflow);
   validateReleaseReadinessEvidence(readinessScript);
   validateFinalReleaseHandoff({
     releaseNotes,

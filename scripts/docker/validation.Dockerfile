@@ -2,6 +2,8 @@ FROM mcr.microsoft.com/powershell:7.5-debian-12 AS powershell
 
 FROM ubuntu:22.04 AS linux-package
 
+COPY scripts/docker/apt-network.conf /etc/apt/apt.conf.d/99glitchpad-network
+
 ARG NODE_VERSION=24.22.2
 ARG RUST_VERSION=1.96.0
 
@@ -69,6 +71,8 @@ WORKDIR /workspace
 
 FROM ubuntu:24.04 AS linux-lifecycle-24
 
+COPY scripts/docker/apt-network.conf /etc/apt/apt.conf.d/99glitchpad-network
+
 ENV DEBIAN_FRONTEND=noninteractive
 ENV CARGO_HOME=/usr/local/cargo
 ENV PATH="/usr/local/cargo/bin:${PATH}"
@@ -97,6 +101,8 @@ COPY --from=linux-package /opt/corepack /opt/corepack
 WORKDIR /workspace
 
 FROM ubuntu:22.04 AS android-package
+
+COPY scripts/docker/apt-network.conf /etc/apt/apt.conf.d/99glitchpad-network
 
 ARG ANDROID_COMMAND_LINE_TOOLS_VERSION=15859902
 ARG ANDROID_COMMAND_LINE_TOOLS_SHA256=4e4c464f145a7512b57d088ac6c278c03c9eea610886b35a5e0804e74eedf583
@@ -166,6 +172,8 @@ ENV GRADLE_USER_HOME=/opt/gradle
 WORKDIR /workspace
 
 FROM rust:1.96.0-bookworm AS validation
+
+COPY scripts/docker/apt-network.conf /etc/apt/apt.conf.d/99glitchpad-network
 
 ARG NODE_VERSION=24.22.2
 ARG CARGO_DENY_VERSION=0.20.2

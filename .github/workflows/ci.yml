@@ -27,6 +27,11 @@ jobs:
           cargo metadata --locked --format-version 1 > /tmp/cargo-metadata.json
           node .github/dependency-refresh.mjs
           pnpm exec prettier --write package.json apps/glitchpad/package.json site/package.json packaging/dependabot-20261109-notice-sources.json vendor/provenance.json .github/dependabot.yml
+      - name: Focused frontend and validation contracts
+        run: |
+          pnpm check:frontend
+          node --test scripts/check-validation.test.mjs scripts/check-vendored-patches.test.mjs
+          pnpm docs:format
       - name: Export source-bound generated changes
         if: always()
         run: |

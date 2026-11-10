@@ -28,6 +28,12 @@ async function licenses(root) {
     }
     return result;
   }
+  if (!files.length && /webview2-com(?:-sys)?-0[.]39[.]1$/.test(root)) {
+    const file = 'LICENSE';
+    const url = 'https://raw.githubusercontent.com/wravery/webview2-rs/edc2caf886175ccaebe86078c9cfe1ae2a187328/LICENSE';
+    const response = await fetch(url); if (!response.ok) throw new Error('Missing exact upstream license: '+url);
+    const data = Buffer.from(await response.arrayBuffer()); return [{file,url,sha256:sha256(data),text:data.toString('utf8')}];
+  }
   if (!files.length) throw new Error('Missing exact license texts in ' + root);
   const texts = [];
   for (const file of files) { const data = await fs.readFile(path.join(root,file)); texts.push({file,sha256:sha256(data),text:data.toString('utf8')}); }

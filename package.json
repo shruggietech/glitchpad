@@ -1,6 +1,6 @@
 {
   "name": "@shruggietech/glitchpad-workspace",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "private": true,
   "description": "Repository tooling for Glitchpad.",
   "license": "Apache-2.0",
@@ -46,7 +46,7 @@
     "check:linux-package": "node --test scripts/lib/package-document-workflow.test.mjs scripts/check-linux-package.test.mjs scripts/linux/assemble-package.test.mjs scripts/linux/test-package-lifecycle.test.mjs scripts/linux/thin-appimage.test.mjs && node scripts/check-linux-package.mjs",
     "check:macos-package": "node --test scripts/lib/package-document-workflow.test.mjs scripts/check-macos-package.test.mjs scripts/macos/assemble-package.test.mjs scripts/macos/test-package-lifecycle.test.mjs scripts/macos/startup-sampler.test.mjs scripts/macos/compare-startup.test.mjs && node scripts/check-macos-package.mjs",
     "check:windows-package": "node --test scripts/check-windows-package.test.mjs && pwsh -NoLogo -NoProfile -NonInteractive -File scripts/windows/test-startup-diagnostics.ps1 && node scripts/check-windows-package.mjs",
-    "check:community-release": "node --test scripts/check-community-release.test.mjs scripts/assemble-community-release.test.mjs scripts/promote-community-package.test.mjs scripts/accepted-release-inputs.test.mjs && node scripts/check-community-release.mjs",
+    "check:community-release": "node --test scripts/check-community-release.test.mjs scripts/assemble-community-release.test.mjs scripts/promote-community-package.test.mjs scripts/accepted-release-inputs.test.mjs scripts/release-rehearsal.test.mjs && node scripts/check-community-release.mjs",
     "check:frontend": "pnpm --filter @shruggietech/glitchpad check",
     "check:site": "pnpm --filter @shruggietech/glitchpad-site check",
     "check:config": "node scripts/check-config.mjs && taplo lint \"**/*.toml\"",

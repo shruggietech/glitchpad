@@ -80,3 +80,28 @@ test('a failed attempt with successful cleanup is retained and later attempts st
   assert.equal(result.baseline.reference_classification, 'unavailable');
   assert.equal(result.candidate.campaign, 'pass');
 });
+
+test('historical cold-start allowance preserves the current candidate budget', async () => {
+  const journal = { attempts: [], persist: async () => {} };
+  const result = await compareCampaign({
+    order: pairedOrder(6),
+    packages: { baseline: {}, candidate: {} },
+    journal,
+    measure: async (row) => {
+      journal.attempts.push({
+        identity: row.identity,
+        index: row.index,
+        sequence: row.sequence,
+        status: 'pass',
+        cleanup: 'pass',
+        shell_ready_ms: 15_000,
+      });
+    },
+  });
+  assert.equal(result.baseline.campaign, 'pass');
+  assert.equal(result.baseline.hosted_smoke_hard_limit_ms, 30_000);
+  assert.equal(result.baseline.reference_classification, 'failure');
+  assert.equal(result.candidate.campaign, 'failure');
+  assert.equal(result.candidate.hosted_smoke_hard_limit_ms, 10_000);
+  assert.equal(result.candidate.reference_classification, 'failure');
+});

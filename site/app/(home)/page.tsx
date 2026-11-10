@@ -22,7 +22,7 @@ export default function HomePage() {
         <div className="hero-inner">
           <div className="hero-copy">
             <p className="eyebrow">
-              Desktop + Android · v0.3.0 PDF viewing source
+              Desktop + Android · v0.3.1 PDF viewing source
             </p>
             <h1>View your files.</h1>
             <p className="hero-summary">

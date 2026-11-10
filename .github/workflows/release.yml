@@ -3,8 +3,14 @@ name: release
 on:
   push:
     tags:
-      - 'v0.3.0'
+      - 'v0.3.1'
   workflow_dispatch:
+    inputs:
+      accepted_staging:
+        description: Validated staging JSON for a non-publishing accepted-byte rehearsal
+        required: false
+        type: string
+        default: ''
 
 permissions:
   actions: read
@@ -13,7 +19,7 @@ permissions:
   pull-requests: read
 
 concurrency:
-  group: release-v0.3.0
+  group: release-v0.3.1
   cancel-in-progress: false
 
 jobs:
@@ -59,6 +65,54 @@ jobs:
         if: github.event_name == 'workflow_dispatch'
         run: echo 'Readiness passed. Manual dispatch cannot publish.'
 
+  rehearse:
+    name: Rehearse accepted immutable bytes
+    permissions:
+      actions: read
+      contents: read
+      attestations: read
+      pull-requests: read
+    if: github.event_name == 'workflow_dispatch' && inputs.accepted_staging != ''
+    needs: readiness
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.28.2
+          run_install: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+      - run: pnpm install --frozen-lockfile
+      - name: Validate and assemble accepted bytes without publication
+        env:
+          ACCEPTED_STAGING: ${{ inputs.accepted_staging }}
+          GH_TOKEN: ${{ github.token }}
+          ANDROID_SIGNING_CERT_SHA256: ${{ secrets.ANDROID_SIGNING_CERT_SHA256 }}
+        run: |
+          set -euo pipefail
+          node --input-type=module -e 'import fs from "node:fs"; const r=JSON.parse(process.env.ACCEPTED_STAGING); fs.writeFileSync("accepted-staging.json",JSON.stringify(r)); fs.writeFileSync("accepted-source.txt",r.accepted_source_commit);'
+          source=$(cat accepted-source.txt)
+          node scripts/accepted-release-inputs.mjs --accepted accepted-staging.json --source "$source" --directory gathered --receipt accepted-input-receipt.json --require-merged true
+          mkdir release-assets
+          for platform in windows macos linux android; do tar -czf "release-assets/glitchpad-0.3.1-${platform}-evidence.tar.gz" -C "gathered/$platform" .; done
+          node scripts/assemble-community-release.mjs --input gathered --output release-assets --source-commit "$source"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: v031-accepted-byte-rehearsal
+          path: |
+            accepted-staging.json
+            accepted-input-receipt.json
+            release-assets/community-release-manifest.json
+          if-no-files-found: error
+          retention-days: 90
+
   publish:
     name: Publish accepted immutable bytes
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
@@ -76,7 +130,7 @@ jobs:
       - name: Read owner-accepted annotated tag inputs
         run: |
           set -euo pipefail
-          test "$GITHUB_REF_NAME" = v0.3.0
+          test "$GITHUB_REF_NAME" = v0.3.1
           test "$(git cat-file -t "$GITHUB_REF")" = tag
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           git for-each-ref --format='%(contents)' "$GITHUB_REF" > accepted-staging.json
@@ -91,7 +145,7 @@ jobs:
         run: |
           mkdir release-assets
           for platform in windows macos linux android; do
-            tar -czf "release-assets/glitchpad-0.3.0-${platform}-evidence.tar.gz" -C "gathered/$platform" .
+            tar -czf "release-assets/glitchpad-0.3.1-${platform}-evidence.tar.gz" -C "gathered/$platform" .
           done
           node scripts/assemble-community-release.mjs --input gathered --output release-assets --source-commit "$GITHUB_SHA"
           cp accepted-staging.json accepted-input-receipt.json release-assets/
@@ -114,10 +168,10 @@ jobs:
             echo 'Release already exists; refusing to replace published bytes.' >&2
             exit 1
           fi
-          gh release create "$GITHUB_REF_NAME" release-assets/* --verify-tag --title 'Glitchpad v0.3.0' --notes-file docs/releases/v0.3.0.md
+          gh release create "$GITHUB_REF_NAME" release-assets/* --verify-tag --title 'Glitchpad v0.3.1' --notes-file docs/releases/v0.3.1.md
 
   publish-site:
-    name: Publish v0.3.0 site
+    name: Publish v0.3.1 site
     needs: publish
     permissions:
       contents: read
@@ -126,4 +180,4 @@ jobs:
     uses: ./.github/workflows/docs.yml
     with:
       deploy: true
-      release_tag: v0.3.0
+      release_tag: v0.3.1

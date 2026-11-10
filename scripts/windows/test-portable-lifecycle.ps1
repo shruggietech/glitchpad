@@ -224,7 +224,14 @@ function Wait-WindowText([Diagnostics.Process] $Process, [string] $Text, [int] $
 function Wait-FileText([string] $Path, [string] $ExpectedText, [int] $Seconds = 10) {
     $deadline = [DateTimeOffset]::UtcNow.AddSeconds($Seconds)
     do {
-        if ((Test-Path -LiteralPath $Path -PathType Leaf) -and [IO.File]::ReadAllText($Path, [Text.Encoding]::UTF8) -ceq $ExpectedText) { return }
+        try {
+            if ((Test-Path -LiteralPath $Path -PathType Leaf) -and [IO.File]::ReadAllText($Path, [Text.Encoding]::UTF8) -ceq $ExpectedText) { return }
+        }
+        catch [IO.IOException] {
+            # A native atomic save can briefly hold the destination. Keep the existing deadline.
+            $nativeError = $_.Exception.GetBaseException().HResult -band 0xFFFF
+            if ($nativeError -notin @(32, 33)) { throw }
+        }
         Start-Sleep -Milliseconds 50
     } while ([DateTimeOffset]::UtcNow -lt $deadline)
     throw "Packaged save did not persist expected content to '$Path'."

@@ -265,7 +265,7 @@ jobs:
       - name: Upload governed Android package
         uses: actions/upload-artifact@v7
         with:
-          name: ${{ inputs.stage_release && 'glitchpad-0.3.0-android-community-release' || 'glitchpad-0.3.0-android-candidates' }}
+          name: ${{ inputs.stage_release && 'glitchpad-0.3.1-android-community-release' || 'glitchpad-0.3.1-android-candidates' }}
           path: artifacts/android/
           if-no-files-found: error
           retention-days: 30
@@ -294,7 +294,7 @@ jobs:
       - name: Download unchanged canonical release package
         uses: actions/download-artifact@v8
         with:
-          name: ${{ inputs.stage_release && 'glitchpad-0.3.0-android-community-release' || 'glitchpad-0.3.0-android-candidates' }}
+          name: ${{ inputs.stage_release && 'glitchpad-0.3.1-android-community-release' || 'glitchpad-0.3.1-android-candidates' }}
           path: ${{ runner.temp }}/canonical-android
       - name: Download matching release test inputs
         uses: actions/download-artifact@v8
@@ -340,8 +340,8 @@ jobs:
             node scripts/bounded-android-adb.mjs shell settings get secure show_ime_with_hard_keyboard > "$RUNNER_TEMP/s048-release-runtime/ime-environment.txt"
             grep -Fxq 1 "$RUNNER_TEMP/s048-release-runtime/ime-environment.txt"
             node scripts/bounded-android-adb.mjs shell settings get secure default_input_method >> "$RUNNER_TEMP/s048-release-runtime/ime-environment.txt"
-            if [ "${{ inputs.runtime_scope || 'full' }}" = full ]; then bash scripts/run-android-release-tests.sh "${{ matrix.api }}" "$GITHUB_SHA" "$RUNNER_TEMP/canonical-android/glitchpad-0.3.0-android-universal.apk" "$RUNNER_TEMP/android-release-inputs/instrumentation.apk" "$RUNNER_TEMP/s048-release-startup" startup && mv "$RUNNER_TEMP/s048-release-startup/release-runtime.json" "$RUNNER_TEMP/s048-release-startup/startup-diagnostic.json"; fi
-            bash scripts/run-android-release-tests.sh "${{ matrix.api }}" "$GITHUB_SHA" "$RUNNER_TEMP/canonical-android/glitchpad-0.3.0-android-universal.apk" "$RUNNER_TEMP/android-release-inputs/instrumentation.apk" "$RUNNER_TEMP/s048-release-runtime" "${{ inputs.runtime_scope || 'full' }}"
+            if [ "${{ inputs.runtime_scope || 'full' }}" = full ]; then bash scripts/run-android-release-tests.sh "${{ matrix.api }}" "$GITHUB_SHA" "$RUNNER_TEMP/canonical-android/glitchpad-0.3.1-android-universal.apk" "$RUNNER_TEMP/android-release-inputs/instrumentation.apk" "$RUNNER_TEMP/s048-release-startup" startup && mv "$RUNNER_TEMP/s048-release-startup/release-runtime.json" "$RUNNER_TEMP/s048-release-startup/startup-diagnostic.json"; fi
+            bash scripts/run-android-release-tests.sh "${{ matrix.api }}" "$GITHUB_SHA" "$RUNNER_TEMP/canonical-android/glitchpad-0.3.1-android-universal.apk" "$RUNNER_TEMP/android-release-inputs/instrumentation.apk" "$RUNNER_TEMP/s048-release-runtime" "${{ inputs.runtime_scope || 'full' }}"
       - name: Retain every release-runtime attempt
         if: always()
         uses: actions/upload-artifact@v7

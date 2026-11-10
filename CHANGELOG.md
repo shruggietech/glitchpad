@@ -4,6 +4,10 @@ S050 reconciles S049 PDF viewing, conformance and stable activation into the v0.
 
 All notable changes to Glitchpad are documented in this file. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2026-11-10
+
+Maintenance for the S049/S050 PDF release: dependency convergence in #265 and #267, preserved native print and Android task contracts, stable integrity encoding, fallible memory sampling, refreshed notices, and bounded test-readiness allowances. Fresh packages and accepted staging evidence are required before publication.
+
 ## [Unreleased]
 
 ## [0.3.0]

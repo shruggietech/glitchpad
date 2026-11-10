@@ -1,10 +1,14 @@
+import { releaseIdentity } from './lib/release-identity.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFile } from 'node:fs/promises';
 import { validatePreparedDocumentationPass } from './validate-documentation-pass.mjs';
 const receipt = JSON.parse(
   await readFile(
-    new URL('../docs/releases/v0.3.0-documentation-pass.json', import.meta.url),
+    new URL(
+      `../docs/releases/${releaseIdentity.tag}-documentation-pass.json`,
+      import.meta.url,
+    ),
     'utf8',
   ),
 );

@@ -1,14 +1,14 @@
-# Glitchpad Technical Specification v0.3.0
+# Glitchpad Technical Specification v0.3.1
 
 | Field | Value |
 | --- | --- |
 | Status | Normative PDF stable-activation release definition |
-| Specification version | 0.3.0 |
-| Product version | 0.3.0 |
+| Specification version | 0.3.1 |
+| Product version | 0.3.1 |
 | Release class | Installable community release |
 | Audience | Maintainers, contributors, reviewers, release operators, and implementation agents |
 | Issued | 2026-08-30 |
-| Updated | 2026-11-09 |
+| Updated | 2026-11-10 |
 | Repository | `github.com/ShruggieTech/glitchpad` |
 | License | Apache License 2.0 (`Apache-2.0`) |
 
@@ -55,7 +55,7 @@
 
 ## 1. Document Control and Authority
 
-This document is the architecture, behavior, platform, security, development, and delivery contract for Glitchpad v0.3.0 PDF viewing and stable activation. Its version MUST equal the product version. This source defines release behavior; actual publication and accepted package identities remain independently evidenced in the release receipt.
+This document is the architecture, behavior, platform, security, development, and delivery contract for Glitchpad v0.3.1 PDF viewing and stable activation. Its version MUST equal the product version. This source defines release behavior; actual publication and accepted package identities remain independently evidenced in the release receipt.
 
 The root Rust workspace version is the canonical product-version authority. packaging/release/package-contract.json independently declares the target release version, tag and payload inventory. Tauri configuration, npm metadata, Android version name, this document, changelog, release tag, artifact filenames, SBOM metadata and provenance MUST agree. Automated consistency checks MUST reject mismatches.
 
@@ -87,6 +87,7 @@ flowchart TB
 | 0.2.0 | 2026-11-02 | 0.2.0 | S043 image qualification and stable activation candidate; owner removes unavailable physical-device and manual screen-reader gates; automated accessibility and hosted native qualification retained |
 | 0.2.1 | 2026-11-08 | 0.2.1 | S048 reconciles S046/S047 product recovery, installed Android task evidence, current release identity and exact staged-payload preparation; publication remains separately owner-authorized |
 | 0.3.0 | 2026-11-09 | 0.3.0 | S050 reconciles S049 PDF viewing, full conformance, measured native resource behavior and stable native acquisition; accepted staged bytes, owner merge and later publication remain separate evidence |
+| 0.3.1 | 2026-11-10 | 0.3.1 | Dependency and runtime maintenance, preserved native contracts, bounded test readiness, and fresh accepted-byte publication following PRs #265 and #267 |
 
 Changes to normative released behavior require a product release and a matching specification version. Typographical corrections that do not alter meaning may be applied to the current version with a dated revision-history note and reviewed pull request.
 
@@ -157,7 +158,7 @@ Notes and rationale are non-normative. Tables labeled as matrices are normative 
 
 v0.3.0 retains the text/image capabilities and Android document tasks, and reconciles the S049 PDF viewer with S050 conformance and stable native activation. Source declarations become official release claims only after the release gate and publication. DOCX and ODT remain planned.
 
-| Format family | Examples | v0.3.0 status | First release | Capabilities | Fidelity boundary |
+| Format family | Examples | v0.3.1 status | First release | Capabilities | Fidelity boundary |
 | --- | --- | --- | --- | --- | --- |
 | Markdown | `.md`, `.markdown` | Stable | v0.1.0 | View, edit, save, search, navigate, inspect, print | CommonMark, GFM, footnotes, independently bounded fenced Mermaid blocks |
 | Mermaid diagrams | `.mmd`, `.mermaid` | Stable | v0.1.0 | View, edit, save, search, zoom, pan, inspect | Local strict rendering; no active links, callbacks, source rewriting, or generated-output export |
@@ -553,7 +554,7 @@ The initial language is US English. All user-visible strings, dates, units, plur
 
 All four target families are Tier 1 targets for v0.3.0. Support for an actual release requires its identified artifact, native build host, shared suite, adapter tests, installation/core-flow evidence, version/licensing evidence and declared baseline. A source build or historical package does not establish current runtime qualification.
 
-| Platform | Runtime baseline | Architectures | v0.3.0 artifact forms | Native WebView |
+| Platform | Runtime baseline | Architectures | v0.3.1 artifact forms | Native WebView |
 | --- | --- | --- | --- | --- |
 | Windows | Windows 11 | x86_64 | NSIS installer, portable ZIP | WebView2 Evergreen |
 | macOS | macOS 13+ | arm64 and x86_64 universal | Ad-hoc-signed application in a non-notarized DMG | WKWebView |

@@ -61,6 +61,9 @@ export async function compareCampaign({
     ['baseline', 'candidate'].map((identity) => {
       const summary = summarizeAttempts(
         journal.attempts.filter((r) => r.identity === identity),
+        // The historical control can cold-start slowly on hosted runners.
+        // Keep the current candidate's budget and reference classifications.
+        identity === 'baseline' ? 30_000 : 10_000,
       );
       summary.planned = order.filter((r) => r.identity === identity).length;
       if (summary.attempted !== summary.planned) {

@@ -12,7 +12,7 @@ test('landing route supports keyboard entry and responsive layout', async ({
   await page.goto('/');
   await page.keyboard.press('Tab');
   await expect(
-    page.getByRole('link', { name: 'Skip to content' }),
+    page.getByRole('link', { name: 'Skip to content', exact: true }),
   ).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(page.locator('#main-content')).toBeFocused();
@@ -59,7 +59,7 @@ test('sectioned documentation remains keyboard reachable at narrow viewport', as
   await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
   await page.keyboard.press('Tab');
   await expect(
-    page.getByRole('link', { name: 'Skip to content' }),
+    page.getByRole('link', { name: 'Skip to content', exact: true }),
   ).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(page.locator('#main-content')).toBeFocused();

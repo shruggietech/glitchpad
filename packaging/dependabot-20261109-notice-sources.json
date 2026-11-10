@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "baseline": "404c73e7a90d5e50f3af4c7589073c6c830144a5",
-  "source_policy": "Changed Cargo lock packages and application production npm packages. Exact downloaded registry license texts bound to lock checksums and integrity.",
+  "source_policy": "Changed Cargo lock packages and application production npm packages. Exact package license texts are hashed and bound to registry lock checksums/integrity; omitted crate licenses are read from the archive-recorded upstream source commit and carry explicit URLs.",
   "components": [
     {
       "ecosystem": "cargo",

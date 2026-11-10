@@ -19,7 +19,7 @@ const args = process.argv.slice(2);
 state.calls.push(args);
 const save = () => fs.writeFileSync(file, JSON.stringify(state));
 const fail = () => { save(); process.exit(1); };
-if (args[0] === 'root') { if (state.rootDenied) fail(); state.uid = 0; }
+if (args[0] === 'root') { if (state.rootDenied) fail(); state.uid = 0; if (state.rootClosesConnection) { console.error('adb: unable to connect for root: closed'); fail(); } }
 else if (args[0] === 'unroot') { state.uid = 2000; }
 else if (args[0] === 'wait-for-device') {}
 else if (args.join(' ') === 'shell id -u') console.log(state.uid);
@@ -103,6 +103,37 @@ test(
       assert.match(
         await readFile(f.prefix + '-restore-status.txt', 'utf8'),
         /^restored_verified:/,
+      );
+    } finally {
+      await f.cleanup();
+    }
+  },
+);
+test(
+  'a closed root connection requires reconnection and an observed root identity',
+  { skip },
+  async () => {
+    const f = await fixture({ rootClosesConnection: true });
+    try {
+      assert.equal(f.run('setup').status, 0);
+      assert.match(
+        await readFile(f.prefix + '-commands.txt', 'utf8'),
+        /setup-root exit=1[\s\S]*setup-root-wait exit=0/u,
+      );
+      assert.equal(
+        (await readFile(f.prefix + '-setup-root-observed.txt', 'utf8')).trim(),
+        '0',
+      );
+      const offline = await f.state();
+      assert.deepEqual(
+        [offline.uid, offline.wifi_on, offline.mobile_data],
+        [0, 0, 0],
+      );
+      assert.equal(f.run('restore').status, 0);
+      const restored = await f.state();
+      assert.deepEqual(
+        [restored.uid, restored.wifi_on, restored.mobile_data],
+        [2000, 1, 1],
       );
     } finally {
       await f.cleanup();

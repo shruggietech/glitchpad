@@ -95,6 +95,8 @@ elif [[ "$1" = pull ]]; then
   original="$2"
   if [[ "\${MOCK_MISMATCH:-0}" = 1 && "$2" = "$FIXTURE_APPLICATION" ]]; then original="$FIXTURE_WRONG"; fi
   cp "$original" "$3"
+elif [[ "$1" = shell && "$2" = -T && "$3" = -n && "$4" = getprop ]]; then
+  if [[ "$5" = ro.build.version.sdk ]]; then echo "\${MOCK_SDK_LEVEL:-36}"; else echo 16; fi
 elif [[ "$1" = shell && "$2" = getprop ]]; then
   if [[ "$3" = ro.build.version.sdk ]]; then echo "\${MOCK_SDK_LEVEL:-36}"; elif [[ "$3" = sys.boot_completed ]]; then echo 1; else echo 16; fi
 elif [[ "$1" = shell && "$2" = am && "$3" = instrument ]]; then

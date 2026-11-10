@@ -19,6 +19,15 @@ for (const project of list) visit(project.dependencies);
 const sections = [], provenance = [];
 async function licenses(root) {
   let files = (await fs.readdir(root, {withFileTypes:true})).filter((f) => f.isFile() && /^(license|copying|notice)([-_.]|$)/i.test(f.name)).map((f) => f.name).sort();
+  if (!files.length && root.endsWith('ndk-context-0.1.1')) {
+    const result = [];
+    for (const file of ['LICENSE-APACHE','LICENSE-MIT']) {
+      const url = 'https://raw.githubusercontent.com/rust-windowing/android-ndk-rs/10f2ba388fca20f7349996ebae26ccda7a6fda5c/'+file;
+      const response = await fetch(url); if (!response.ok) throw new Error('Missing exact upstream license: '+url);
+      const data = Buffer.from(await response.arrayBuffer()); result.push({file,url,sha256:sha256(data),text:data.toString('utf8')});
+    }
+    return result;
+  }
   if (!files.length) throw new Error('Missing exact license texts in ' + root);
   const texts = [];
   for (const file of files) { const data = await fs.readFile(path.join(root,file)); texts.push({file,sha256:sha256(data),text:data.toString('utf8')}); }

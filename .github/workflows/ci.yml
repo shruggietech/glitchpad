@@ -21,20 +21,12 @@ jobs:
       - name: Refresh compatible dependency locks
         run: |
           set -euo pipefail
-          git show 404c73e7a90d5e50f3af4c7589073c6c830144a5:Cargo.lock > Cargo.lock
-          cargo update -p svgtypes --precise 0.16.2
-          cargo update -p kamadak-exif --precise 0.6.2
-          cargo update -p tauri-build --precise 2.7.4
-          cargo update -p tauri-plugin-dialog --precise 2.8.4
-          cargo update -p crossbeam-channel --precise 0.5.17
           node --test scripts/check-vendored-patches.test.mjs
-          cp Cargo.lock fuzz/Cargo.lock
-          cargo metadata --manifest-path fuzz/Cargo.toml --format-version 1 > /tmp/fuzz-metadata.json
           node scripts/check-fuzz-lock.mjs
-          pnpm install --no-frozen-lockfile
+          pnpm install --frozen-lockfile
           cargo metadata --locked --format-version 1 > /tmp/cargo-metadata.json
           node .github/dependency-refresh.mjs
-          pnpm exec prettier --write package.json apps/glitchpad/package.json site/package.json packaging/dependabot-20261109-notice-sources.json .github/dependabot.yml
+          pnpm exec prettier --write package.json apps/glitchpad/package.json site/package.json packaging/dependabot-20261109-notice-sources.json vendor/provenance.json .github/dependabot.yml
       - name: Export source-bound generated changes
         if: always()
         run: |

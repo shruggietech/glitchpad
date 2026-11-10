@@ -57,23 +57,23 @@
     },
     {
       "name": "tao",
-      "registry_version": "0.35.3",
-      "crate_sha256": "d1c93047acf68669466a34690ac58cca7010bd1b201e1ec86f1fd0a75d3dd4a9",
+      "registry_version": "0.37.2",
+      "crate_sha256": "d5777b06fe6435126ae8d816eba269e050e1e10d302cf5461e9c49eccabc3548",
       "source": {
         "git": {
-          "sha1": "5a14e624c81b7a799728129417e9218be25f17d9",
+          "sha1": "2d9b2ba15247879787878ae565e350bcc1b9f622",
           "dirty": true
         },
         "path_in_vcs": ""
       },
       "license": "Apache-2.0",
-      "upstream_archive_files": 119,
-      "upstream_archive_bytes": 308672,
-      "upstream_uncompressed_bytes": 1302732,
+      "upstream_archive_files": 118,
+      "upstream_archive_bytes": 314105,
+      "upstream_uncompressed_bytes": 1410048,
       "modified_files": [
         {
           "path": "src/platform_impl/android/mod.rs",
-          "sha256": "fb6bc93e35bae2597cfbbf0385727653cddf48def11921f8d40cdf1813730298"
+          "sha256": "ff1b91c51cee45d6076f3d23dfd125082e6cecb8ae4f47e5a8057fe3d4ec27b6"
         }
       ],
       "added_files": [
@@ -84,10 +84,45 @@
         {
           "path": "tests/android_user_event_queue.rs",
           "sha256": "792b7680659101ea642d8e43aa474e6dc0799387c88f168bc77c905a75bbe21c"
+        },
+        {
+          "path": "GLITCHPAD-PATCH.md",
+          "sha256": "409a62baed605fcbd50dda116cc954ebd6d4212d6249a6288441be516378398c"
         }
       ],
-      "purpose": "S046 T056 Android poll/wake contract repair: poll_once, common user-event drain and truthful nonblocking queue admission; existing non-Android source and manifest bytes remain exact.",
+      "purpose": "Carry the existing Android poll-once, user-event drain, and truthful nonblocking queue admission fixes onto the Tauri 2.12 runtime dependency. Upstream multi-window dispatch is retained.",
       "retirement": "Remove when an upstream replacement preserves the same dispatch/queue contracts and passes the existing strict Android cancellation qualification."
+    },
+    {
+      "name": "wry",
+      "registry_version": "0.57.1",
+      "crate_sha256": "759c50ddad0ef9913bb5496cb9d509a50433a3b78cb0238d61105526589cf0e9",
+      "source": {
+        "git": {
+          "sha1": "2446feadae623d6f2ac8d2136e3ccef3d7197e0e",
+          "dirty": true
+        },
+        "path_in_vcs": ""
+      },
+      "license": "Apache-2.0 OR MIT",
+      "modified_files": [
+        {
+          "path": "src/webkitgtk/mod.rs",
+          "sha256": "ecf0aa3dd9e18ba517a6c61b5001100728c021777c3ecf0ba17d1604085da14b"
+        },
+        {
+          "path": "src/wkwebview/mod.rs",
+          "sha256": "144fbfd1ea7da41288d3d2047342a02f411e95beb6b7b543f1440b4af35ed3da"
+        }
+      ],
+      "added_files": [
+        {
+          "path": "GLITCHPAD-PATCH.md",
+          "sha256": "7ccca1d02a06162f3a6e2203ca717fe650fc17d1830eccde075785178af3ca29"
+        }
+      ],
+      "purpose": "Carry the existing Linux and macOS native print completion notification and raster lifetime contract onto upstream 0.57.1.",
+      "retirement": "Remove when upstream provides the same actual native completion signal and packaged print journeys pass."
     }
   ],
   "modified_files": [
@@ -144,6 +179,15 @@
         "tao-0.35.3/tests/android_user_event_queue.rs"
       ],
       "verification": "Exact production poll and WaitUntil-arm fixtures fail Wake/Callback before repair and pass all4return cases afterward; existing5host queue cases pass. Public Android run_return deadline cases compile only locally; installed-APK qualification remains separate."
+    },
+    {
+      "date": "2026-11-09",
+      "reason": "Dependabot dialog 2.8.4 requires Tauri 2.12. Carry the existing Android queue and native print completion repairs onto the required Tao 0.37.2 and Wry 0.57.1 releases; preserve upstream behavior outside the owned patch methods.",
+      "files": [
+        "tao-0.37.2/src/platform_impl/android/mod.rs",
+        "wry-0.57.1/src/webkitgtk/mod.rs",
+        "wry-0.57.1/src/wkwebview/mod.rs"
+      ]
     }
   ]
 }

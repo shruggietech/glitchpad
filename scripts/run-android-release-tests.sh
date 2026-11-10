@@ -69,20 +69,20 @@ run_phase() {
     > "$directory/$case_id-instrumentation.txt" 2>&1 || command_exit=$?
   adb_bounded logcat -d -t 2000 > "$directory/$case_id-logcat.txt" 2>&1 || logcat_exit=$?
   for extension in json png; do
-    adb_bounded exec-out run-as com.shruggietech.glitchpad.test cat \
+    adb_bounded shell -T -n run-as com.shruggietech.glitchpad.test cat \
       "files/document-provider-fixtures/s048-$case_id.$extension" \
       > "$directory/s048-$case_id.$extension" 2> "$directory/$case_id-$extension-capture-error.txt" || capture_exit=$?
   done
   if [[ "$case_id" == delivery || "$case_id" == startup || "$case_id" == pdf ]]; then
     for package in application instrumentation; do
-      adb_bounded exec-out run-as com.shruggietech.glitchpad.test cat \
+      adb_bounded shell -T -n run-as com.shruggietech.glitchpad.test cat \
         "files/document-provider-fixtures/s048-installed-$package.apk" \
         > "$directory/s048-installed-$package.apk" 2> "$directory/$package-capture-error.txt" || capture_exit=$?
     done
   fi
   if [[ "$case_id" == pdf ]]; then
     for range in selected all; do
-      adb_bounded exec-out run-as com.shruggietech.glitchpad.test cat \
+      adb_bounded shell -T -n run-as com.shruggietech.glitchpad.test cat \
         "files/document-provider-fixtures/s049-print-output-$range.pdf" \
         > "$directory/s049-print-output-$range.pdf" 2> "$directory/print-$range-capture-error.txt" || capture_exit=$?
     done

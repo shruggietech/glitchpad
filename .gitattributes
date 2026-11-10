@@ -60,4 +60,4 @@ crates/glitchpad-host/gen/android/** linguist-generated=true
 patches/*.patch -whitespace
 
 # Checksum-pinned upstream WebView with a narrow documented native print patch.
-vendor/wry-0.55.1/** linguist-vendored=true
+vendor/wry-0.57.1/** linguist-vendored=true

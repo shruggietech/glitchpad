@@ -14,7 +14,7 @@ Do not add product features directly to the foundation shell without an approved
 | --- | --- | --- |
 | Git | 2.45 or newer | Source control and repository checks |
 | Rust | 1.96.0 with Cargo, rustfmt, and Clippy | Native workspace |
-| Node.js | 24.11.0 | Frontend and documentation tooling |
+| Node.js | 24.22.2 | Frontend and documentation tooling |
 | pnpm | 10.28.2 through Corepack | Reproducible JavaScript installs |
 | PowerShell | 7.x | Cross-platform repository validation |
 | Spec Kit | Committed `.specify` environment | Specification workflow |

@@ -45,7 +45,9 @@ ensure_host_root() {
   uid=$(read_value "$label-uid" shell id -u) || return 1
   if [[ "$uid" != 0 ]]; then
     [[ "$uid" == 2000 ]] || return 1
-    run_adb "$label-root" root || return 1
+    # adbd can close the root request while restarting. Reconnect and require
+    # the observed UID below before changing radios; retain the command status.
+    run_adb "$label-root" root || true
     run_adb "$label-root-wait" wait-for-device || return 1
   fi
   [[ "$(read_value "$label-root-observed" shell id -u)" == 0 ]]

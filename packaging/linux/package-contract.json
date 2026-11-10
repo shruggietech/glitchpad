@@ -12,7 +12,7 @@
     "maximum_glibc_version": "2.35",
     "webkitgtk_api": "4.1",
     "rust_version": "1.96.0",
-    "node_version": "24.11.0",
+    "node_version": "24.22.2",
     "pnpm_version": "10.28.2",
     "compiler_family": "Ubuntu 11.4.0",
     "linker_family": "GNU ld"

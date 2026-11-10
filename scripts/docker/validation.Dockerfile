@@ -1,5 +1,7 @@
 FROM mcr.microsoft.com/powershell:7.5-debian-12 AS powershell
 
+# The official main archive also serves signed security suites and avoids
+# intermittent security-host pool 404s without changing package verification.
 FROM ubuntu:22.04 AS linux-package
 
 # Bootstrap TLS from the already-used trusted image, then install distro CAs below.
@@ -7,7 +9,7 @@ COPY --from=powershell /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-cert
 COPY scripts/docker/apt-network.conf /etc/apt/apt.conf.d/99glitchpad-network
 RUN set -eu; \
     for apt_source in /etc/apt/sources.list /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do \
-        if [ -f "$apt_source" ]; then sed -i 's|http://|https://|g' "$apt_source"; fi; \
+        if [ -f "$apt_source" ]; then sed -i 's|http://|https://|g;s|https://security.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' "$apt_source"; fi; \
     done
 
 ARG NODE_VERSION=24.22.2
@@ -82,7 +84,7 @@ COPY --from=powershell /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-cert
 COPY scripts/docker/apt-network.conf /etc/apt/apt.conf.d/99glitchpad-network
 RUN set -eu; \
     for apt_source in /etc/apt/sources.list /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do \
-        if [ -f "$apt_source" ]; then sed -i 's|http://|https://|g' "$apt_source"; fi; \
+        if [ -f "$apt_source" ]; then sed -i 's|http://|https://|g;s|https://security.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' "$apt_source"; fi; \
     done
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -119,7 +121,7 @@ COPY --from=powershell /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-cert
 COPY scripts/docker/apt-network.conf /etc/apt/apt.conf.d/99glitchpad-network
 RUN set -eu; \
     for apt_source in /etc/apt/sources.list /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do \
-        if [ -f "$apt_source" ]; then sed -i 's|http://|https://|g' "$apt_source"; fi; \
+        if [ -f "$apt_source" ]; then sed -i 's|http://|https://|g;s|https://security.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' "$apt_source"; fi; \
     done
 
 ARG ANDROID_COMMAND_LINE_TOOLS_VERSION=15859902
@@ -196,7 +198,7 @@ COPY --from=powershell /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-cert
 COPY scripts/docker/apt-network.conf /etc/apt/apt.conf.d/99glitchpad-network
 RUN set -eu; \
     for apt_source in /etc/apt/sources.list /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do \
-        if [ -f "$apt_source" ]; then sed -i 's|http://|https://|g' "$apt_source"; fi; \
+        if [ -f "$apt_source" ]; then sed -i 's|http://|https://|g;s|https://security.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' "$apt_source"; fi; \
     done
 
 ARG NODE_VERSION=24.22.2

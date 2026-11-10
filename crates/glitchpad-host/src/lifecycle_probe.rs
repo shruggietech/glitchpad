@@ -870,8 +870,8 @@ pub(crate) fn record_desktop_pdf_probe(
             actual.update(&chunk.bytes);
             offset += size;
         }
-        let expected_hash = format!("{:x}", Sha256::digest(&expected));
-        let actual_hash = format!("{:x}", actual.finalize());
+        let expected_hash = hex::encode(Sha256::digest(&expected));
+        let actual_hash = hex::encode(actual.finalize());
         if expected_hash != actual_hash {
             return Err(workflow_error());
         }

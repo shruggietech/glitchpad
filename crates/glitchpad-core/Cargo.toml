@@ -9,6 +9,7 @@ description = "Platform-independent domain core for Glitchpad."
 publish = false
 
 [dependencies]
+hex.workspace = true
 image.workspace = true
 gif.workspace = true
 image-webp.workspace = true

@@ -1,0 +1,163 @@
+{
+  "schema_version": 1,
+  "baseline": "acc2047b449b9226a621dd9604e8343f8e165a87",
+  "source_policy": "Changed Cargo lock packages and application production npm packages. Exact downloaded registry license texts bound to lock checksums and integrity.",
+  "components": [
+    {
+      "ecosystem": "cargo",
+      "name": "block-buffer",
+      "version": "0.12.1",
+      "registry_checksum": "d2f6c7dbe95a6ed67ad9f18e57daf93a2f034c524b99fd2b76d18fdfeb6660aa",
+      "texts": [
+        {
+          "file": "LICENSE-APACHE",
+          "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+        },
+        {
+          "file": "LICENSE-MIT",
+          "sha256": "98181e7249d0c01737645ec982499ce99a0f07eb8f7d625b8840d799d10dbc01"
+        }
+      ]
+    },
+    {
+      "ecosystem": "cargo",
+      "name": "const-oid",
+      "version": "0.10.2",
+      "registry_checksum": "a6ef517f0926dd24a1582492c791b6a4818a4d94e789a334894aa15b0d12f55c",
+      "texts": [
+        {
+          "file": "LICENSE-APACHE",
+          "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+        },
+        {
+          "file": "LICENSE-MIT",
+          "sha256": "73b9dc2e79c7308998dd30296e073aefaefb944a68fb89aa412c23c0edcabcaa"
+        }
+      ]
+    },
+    {
+      "ecosystem": "cargo",
+      "name": "crypto-common",
+      "version": "0.2.2",
+      "registry_checksum": "ce6e4c961d6cd6c9a86db418387425e8bdeaf05b3c8bc1411e6dca4c252f1453",
+      "texts": [
+        {
+          "file": "LICENSE-APACHE",
+          "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+        },
+        {
+          "file": "LICENSE-MIT",
+          "sha256": "d2e7ec5355c96eeade56b09187ceb48a6a30299da3ce7531a66d3d11405ab963"
+        }
+      ]
+    },
+    {
+      "ecosystem": "cargo",
+      "name": "digest",
+      "version": "0.11.3",
+      "registry_checksum": "f1dd6dbb5841937940781866fa1281a1ff7bd3bf827091440879f9994983d5c2",
+      "texts": [
+        {
+          "file": "LICENSE-APACHE",
+          "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+        },
+        {
+          "file": "LICENSE-MIT",
+          "sha256": "af59cea35d7f5e2777a713b8d155d65efa2c339eb43f3c14e868c6ac8506edad"
+        }
+      ]
+    },
+    {
+      "ecosystem": "cargo",
+      "name": "hybrid-array",
+      "version": "0.4.15",
+      "registry_checksum": "27f864f10dfb56725ce5ce5472bc52252c8f93a4ab86327122cebf62c5f59a17",
+      "texts": [
+        {
+          "file": "LICENSE-APACHE",
+          "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+        },
+        {
+          "file": "LICENSE-MIT",
+          "sha256": "70c9d40f1f9545c3f133b8a67206e89da850f6468eed072281bb3701514114a9"
+        }
+      ]
+    },
+    {
+      "ecosystem": "cargo",
+      "name": "resvg",
+      "version": "0.49.0",
+      "registry_checksum": "1572844b6727a1bf842190e9947641a68ac44bed83f50afb4bd1407a2564bee8",
+      "texts": [
+        {
+          "file": "LICENSE-APACHE",
+          "sha256": "a6cba85bc92e0cff7a450b1d873c0eaa2e9fc96bf472df0247a26bec77bf3ff9"
+        },
+        {
+          "file": "LICENSE-MIT",
+          "sha256": "f5d934dc281b44e0003ee461ac740b18b6629a454decd872c774d34e4ee0b21d"
+        }
+      ]
+    },
+    {
+      "ecosystem": "cargo",
+      "name": "sha2",
+      "version": "0.11.1",
+      "registry_checksum": "47d7069beb7d6ac7b9acd1039986e73443f24234f41074da099d6f994ac9ad19",
+      "texts": [
+        {
+          "file": "LICENSE-APACHE",
+          "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+        },
+        {
+          "file": "LICENSE-MIT",
+          "sha256": "831e0f43ad0bf014c1c4fec5767aae470434c1d66d6e671be2d823e729063e25"
+        }
+      ]
+    },
+    {
+      "ecosystem": "cargo",
+      "name": "sysinfo",
+      "version": "0.40.1",
+      "registry_checksum": "0e8a3edbe0394ce115f3917a00349dd242be09eb5a091ed509eaf67b55cfb8a8",
+      "texts": [
+        {
+          "file": "LICENSE",
+          "sha256": "1f14f9ce70a5fdedab449bb32cd7d3f20e6e9d18c2a2b74221fc203db8684d43"
+        }
+      ]
+    },
+    {
+      "ecosystem": "cargo",
+      "name": "usvg",
+      "version": "0.49.0",
+      "registry_checksum": "d09b73ee83641d390ad7ffd9000f347b16eb128e437675b6ff277ea5c7fcf22c",
+      "texts": [
+        {
+          "file": "LICENSE-APACHE",
+          "sha256": "a6cba85bc92e0cff7a450b1d873c0eaa2e9fc96bf472df0247a26bec77bf3ff9"
+        },
+        {
+          "file": "LICENSE-MIT",
+          "sha256": "f5d934dc281b44e0003ee461ac740b18b6629a454decd872c774d34e4ee0b21d"
+        }
+      ]
+    },
+    {
+      "ecosystem": "cargo",
+      "name": "uuid",
+      "version": "1.29.2",
+      "registry_checksum": "bed99139f7dac9b5cfe5f17be4d66dc7079a34dee1d74bcc77217119240e267c",
+      "texts": [
+        {
+          "file": "LICENSE-APACHE",
+          "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+        },
+        {
+          "file": "LICENSE-MIT",
+          "sha256": "436bc5a105d8e57dcd8778730f3754f7bf39c14d2f530e4cde4bd2d17a83ec3d"
+        }
+      ]
+    }
+  ]
+}

@@ -327,7 +327,7 @@ impl IntegrityHasher {
 
     /// Returns the lowercase SHA-256 digest.
     pub fn finalize(self) -> String {
-        format!("{:x}", self.0.finalize())
+        hex::encode(self.0.finalize())
     }
 }
 

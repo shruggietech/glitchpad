@@ -76,7 +76,7 @@ pub fn working_set_bytes_for_pid(pid: u32) -> Result<u64, PerformanceSampleError
         return Err(PerformanceSampleError::WorkingSetUnavailable);
     }
     let pid = Pid::from_u32(pid);
-    let mut system = System::new();
+    let mut system = System::new().map_err(|_| PerformanceSampleError::WorkingSetUnavailable)?;
     system.refresh_processes(ProcessesToUpdate::Some(&[pid]), true);
     system
         .process(pid)

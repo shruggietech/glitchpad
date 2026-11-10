@@ -32,7 +32,7 @@ updates:
     # Jackson 2.14+ requires Android API 26; Glitchpad retains API 24.
     ignore:
       - dependency-name: com.fasterxml.jackson.core:jackson-databind
-        versions: [">=2.14"]
+        versions: ['>=2.14']
     labels: [dependencies, android]
 
   - package-ecosystem: github-actions

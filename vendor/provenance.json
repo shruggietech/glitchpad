@@ -148,9 +148,7 @@
       "date": "2026-11-04",
       "slice": "S046",
       "reason": "Observe actual default create_android_document error reply formatting, enqueue and WebView acknowledgement only under Android debug compilation; retain identical script and unchanged release/other-command paths",
-      "files": [
-        "tauri-2.11.6/src/ipc/protocol.rs"
-      ]
+      "files": ["tauri-2.11.6/src/ipc/protocol.rs"]
     },
     {
       "date": "2026-11-04",

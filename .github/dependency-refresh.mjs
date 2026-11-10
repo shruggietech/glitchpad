@@ -32,6 +32,11 @@ for (const p of crates) {
   const texts = await licenses(root); sections.push('Component: '+p.name+'-'+p.version+'\n\n'+texts.map((t)=>t.text.trim()).join('\n\n'));
   provenance.push({ecosystem:'cargo',name:p.name,version:p.version,registry_checksum:p.checksum,texts:texts.map(({text,...t})=>t)});
 }
+for (const [name,version,checksum] of [['tao','0.37.2','d5777b06fe6435126ae8d816eba269e050e1e10d302cf5461e9c49eccabc3548'],['wry','0.57.1','759c50ddad0ef9913bb5496cb9d509a50433a3b78cb0238d61105526589cf0e9']]) {
+  const texts = await licenses('vendor/'+name+'-'+version);
+  sections.push('Component: '+name+'-'+version+' (Glitchpad patch)\n\n'+texts.map((t)=>t.text.trim()).join('\n\n'));
+  provenance.push({ecosystem:'cargo',name,version,upstream_archive_sha256:checksum,vendored_patch:true,texts:texts.map(({text,...t})=>t)});
+}
 for (const p of [...npm.values()].sort((a,b)=>(a.name+'@'+a.version).localeCompare(b.name+'@'+b.version))) {
   const texts = await licenses(p.path); sections.push('Component: '+p.name+'-'+p.version+'\n\n'+texts.map((t)=>t.text.trim()).join('\n\n'));
   provenance.push({ecosystem:'npm',name:p.name,version:p.version,registry_integrity:p.integrity,texts:texts.map(({text,...t})=>t)});

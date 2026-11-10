@@ -622,11 +622,11 @@ test('link validation keeps local provenance while excluding exact upstream vend
     'vendor/tauri-plugin-single-instance-2.4.5/CHANGELOG.md',
     '# Upstream changelog\n',
   );
-  await writeFixture(root, 'vendor/tao-0.35.3/README.md', '# Upstream Tao\n');
-  await writeFixture(root, 'vendor/tao-0.35.4/README.md', '# Other version\n');
+  await writeFixture(root, 'vendor/tao-0.37.2/README.md', '# Upstream Tao\n');
+  await writeFixture(root, 'vendor/tao-0.37.3/README.md', '# Other version\n');
   await writeFixture(
     root,
-    'docs/tao-0.35.3/README.md',
+    'docs/tao-0.37.2/README.md',
     '# Owned same basename\n',
   );
   await writeFixture(
@@ -637,22 +637,22 @@ test('link validation keeps local provenance while excluding exact upstream vend
   for (const name of ['CHANGELOG.md', 'MOBILE.md', 'README.md', 'SECURITY.md'])
     await writeFixture(
       root,
-      'vendor/wry-0.55.1/' + name,
+      'vendor/wry-0.57.1/' + name,
       '# Upstream Wry ' + name + '\n',
     );
   await writeFixture(
     root,
-    'vendor/wry-0.55.1/GLITCHPAD-PATCH.md',
+    'vendor/wry-0.57.1/GLITCHPAD-PATCH.md',
     '# Local Wry patch provenance\n',
   );
   await writeFixture(
     root,
-    'vendor/wry-0.55.2/README.md',
+    'vendor/wry-0.57.2/README.md',
     '# Other Wry version\n',
   );
   await writeFixture(
     root,
-    'docs/wry-0.55.1/README.md',
+    'docs/wry-0.57.1/README.md',
     '# Owned Wry basename\n',
   );
   const seen = [];

@@ -53,7 +53,7 @@ module_name_repetitions = "allow"
 must_use_candidate = "allow"
 
 [patch.crates-io]
-tao = { path = "vendor/tao-0.35.3" }
+tao = { path = "vendor/tao-0.37.2" }
 tauri-plugin-opener = { path = "vendor/tauri-plugin-opener-2.5.5" }
 tauri-plugin-single-instance = { path = "vendor/tauri-plugin-single-instance-2.4.5" }
-wry = { path = "vendor/wry-0.55.1" }
+wry = { path = "vendor/wry-0.57.1" }

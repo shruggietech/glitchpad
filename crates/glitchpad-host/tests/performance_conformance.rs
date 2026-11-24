@@ -7,8 +7,8 @@ use std::process::{Child, Command, Stdio};
 use std::time::Duration;
 use std::{env, fs, thread};
 
-use chrono::{SecondsFormat, Utc};
 use serde_json::json;
+use time::{OffsetDateTime, macros::format_description};
 
 #[cfg(windows)]
 use std::os::windows::process::CommandExt;
@@ -90,6 +90,11 @@ fn desktop_reference_working_set_receipt() {
     } else {
         "failure"
     };
+    let measured_at = OffsetDateTime::now_utc()
+        .format(format_description!(
+            "[year]-[month]-[day]T[hour]:[minute]:[second].[subsecond digits:3]Z"
+        ))
+        .expect("format UTC performance receipt timestamp");
     let evidence = json!({
         "schema_version": 1,
         "catalog_version": "v0.1.3-performance-1",
@@ -110,7 +115,7 @@ fn desktop_reference_working_set_receipt() {
         "invariants": {},
         "classification": classification,
         "cleanup_complete": true,
-        "measured_at": Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true),
+        "measured_at": measured_at,
     });
     println!("performance_evidence={evidence}");
 }

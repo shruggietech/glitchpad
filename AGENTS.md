@@ -83,6 +83,12 @@ the destination and read back writes. If no connector is available, continue
 under the available instructions and provide an appropriately private,
 ready-to-paste nested outline with its exact destination. Mark it unsynced.
 
+<!-- BEGIN GENERATED BRANDBUILDER AGENT CONTRACT -->
+
+Repository integration context: generated paths are kit-root-relative. In this repository, the kit root is `brand/`; resolve `consumer-contract.json` and `IMPLEMENTATION.md` in `brand/enforcement/`, and prefix every generated `enforcement/...` path with `brand/`.
+
+<!-- BEGIN SHRUGGIE-BRANDBUILDER: CONSUMER CONTRACT -->
+
 ## Governed BrandBuilder contract
 
 BrandBuilder is mandatory for brand-system authoring, consumer implementation, and conformance audit. This kit pins Brand Canon `1.3.0`, Interface Canon `1.0.0`, component recipes `1.1.0`, Web/React adapter `1.1.0`, egui adapter `1.0.2`, compiler `2.0.3`, and brand `1.1.1`.
